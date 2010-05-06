@@ -3,7 +3,7 @@
 !> \author Chris Bradley
 !> \brief This module handles all solver routines.
 !>
-!> \section LICENSE
+!> \section LICENSE 
 !>
 !> Version: MPL 1.1/GPL 2.0/LGPL 2.1
 !>
@@ -2976,6 +2976,13 @@ CONTAINS
         DYNAMIC_SOLVER%LINEAR_SOLVER%LINKING_SOLVER=>SOLVER
         DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVE_TYPE=SOLVER_LINEAR_TYPE
         CALL SOLVER_LINEAR_INITIALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+        IF(DYNAMIC_SOLVER%LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
+          CALL SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO, &
+            & ERR,ERROR,*999)
+        ENDIF
+
+! xyz
+
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
@@ -3128,24 +3135,33 @@ CONTAINS
           SELECT CASE(LINEARITY_TYPE)
           CASE(SOLVER_DYNAMIC_LINEAR)
             DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_LINEAR
-            !                 !allocate new linked linear solver
-            !                 ALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER,STAT=ERR)
-            !                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver linear solver.",ERR,ERROR,*999)
             CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
             SOLVER%LINKED_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
             DYNAMIC_SOLVER%LINEAR_SOLVER%LINKING_SOLVER=>SOLVER
             DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVE_TYPE=SOLVER_LINEAR_TYPE
             CALL SOLVER_LINEAR_INITIALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+            IF(DYNAMIC_SOLVER%LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
+              CALL SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO, &
+                & ERR,ERROR,*999)
+            ENDIF
+! xyz
           CASE(SOLVER_DYNAMIC_NONLINEAR)
             DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_NONLINEAR
-            !                 !allocate new linked nonlinear solver
-            !                 ALLOCATE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,STAT=ERR)
-            !                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
             CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
             SOLVER%LINKED_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
             DYNAMIC_SOLVER%NONLINEAR_SOLVER%LINKING_SOLVER=>SOLVER
             DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVE_TYPE=SOLVER_NONLINEAR_TYPE
             CALL SOLVER_NONLINEAR_INITIALISE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
+            IF(DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
+              CALL SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%NONLINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO, &
+                & ERR,ERROR,*999)
+            ENDIF
+            IF(DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE== &
+              & SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
+              CALL SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER% &
+                & LINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO,ERR,ERROR,*999)
+            ENDIF
+! xyz
           CASE DEFAULT
             LOCAL_ERROR="The specified solver equations linearity type of "// &
               & TRIM(NUMBER_TO_VSTRING(LINEARITY_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -7095,8 +7111,11 @@ CONTAINS
               IF(ASSOCIATED(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER)) THEN
                 SELECT CASE(SOLUTION_INITIALISE_TYPE)
                 CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
+                  SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_ZERO
                 CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
+                  SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
                 CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
+                  SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_NO_CHANGE
                 CASE DEFAULT
                   LOCAL_ERROR="The specified solution initialise type of "// &
                     & TRIM(NUMBER_TO_VSTRING(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -8895,7 +8914,7 @@ CONTAINS
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DEPENDENT_VALUE,LINEAR_VALUE,LINEAR_VALUE_SUM,MATRIX_VALUE,RESIDUAL_VALUE,RHS_VALUE,row_coupling_coefficient, &
       & SOURCE_VALUE,VALUE,INTEGRATED_VALUE
-    REAL(DP), POINTER :: RHS_PARAMETERS(:),CHECK_DATA(:)
+    REAL(DP), POINTER :: RHS_PARAMETERS(:),CHECK_DATA(:),CHECK_DATA2(:),CHECK_DATA3(:),CHECK_DATA4(:)
     TYPE(REAL_DP_PTR_TYPE), ALLOCATABLE :: DEPENDENT_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: DEPENDENT_BOUNDARY_CONDITIONS,RHS_BOUNDARY_CONDITIONS
@@ -9164,13 +9183,25 @@ CONTAINS
                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                               & COUPLING_COEFFICIENTS(solver_row_idx)
 
-                                            VALUE=SOURCE_VALUE*row_coupling_coefficient
+                                            VALUE=-1.0_DP*SOURCE_VALUE*row_coupling_coefficient
 
                                             !Calculates the contribution from each row of the equations matrix and adds to solver matrix
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                               & ERR,ERROR,*999)
                                           ENDDO !solver_row_idx
                                         ENDIF
+                                      ENDDO !equations_row_number
+
+                                      NULLIFY(CHECK_DATA)
+                                      CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA,ERR,ERROR,*999)    
+
+                                      NULLIFY(CHECK_DATA2)
+                                      CALL DISTRIBUTED_VECTOR_DATA_GET(DISTRIBUTED_SOURCE_VECTOR,CHECK_DATA2,ERR,ERROR,*999)    
+
+
+
+                                      !Loop over the rows in the equations set
+                                      DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                         rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
                                         rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
                                         rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
@@ -9290,7 +9321,32 @@ CONTAINS
                                               ENDIF
                                             ENDDO !variable_idx
                                           ENDIF
+                                        CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_NEUMANN)
+! do nothing!
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The RHS boundary condition of "// &
+                                            & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                            & " for RHS variable dof number "// &
+                                            & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      ENDDO !equations_row_number
 
+                                      NULLIFY(CHECK_DATA2)
+                                      CALL DISTRIBUTED_VECTOR_DATA_GET(EQUATIONS_RHS_VECTOR,CHECK_DATA2,ERR,ERROR,*999)    
+                                      NULLIFY(CHECK_DATA3)
+                                      CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA3,ERR,ERROR,*999)    
+
+
+                                      !Loop over the rows in the equations set
+                                      DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                                        rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
+                                        rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
+                                        rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
+                                        !Apply boundary conditions
+                                        SELECT CASE(rhs_boundary_condition)
+                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL)
+! do nothing!
                                         CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_NEUMANN)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
@@ -9303,7 +9359,7 @@ CONTAINS
                                               row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=RHS_VALUE*row_coupling_coefficient
+                                              VALUE=1.0_DP*RHS_VALUE*row_coupling_coefficient
 
                                               CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
@@ -9322,6 +9378,11 @@ CONTAINS
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       ENDDO !equations_row_number
+
+                                      NULLIFY(CHECK_DATA4)
+                                      CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA4,ERR,ERROR,*999)    
+
+
                                     ELSE
                                       CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
                                     ENDIF
