@@ -218,7 +218,8 @@ static SessionListEntry *FieldExport_GetSession( const int handle )
 */
 static int FieldExport_File_Group( FileSession *const session, const char *const label )
 {
-    return FieldExport_FPrintf( session, " Group name: %s\n", label );
+  /* return FieldExport_FPrintf( session, " Group name: %s\n", label ); */
+    return FieldExport_FPrintf( session, " Region: /%s\n", label );
 }
 
 

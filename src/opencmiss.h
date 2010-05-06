@@ -1118,7 +1118,7 @@ static int CMISSSolverDynamicThirdDegree = 3;
  */
 static int CMISSSolverDynamicEulerScheme = 1;
 static int CMISSSolverDynamicBackwardEulerScheme = 2;
-static int CMISSSolverDynamicCrankNicholsonScheme = 3;
+static int CMISSSolverDynamicCrankNicolsonScheme = 3;
 static int CMISSSolverDynamicGalerkinScheme = 4;
 static int CMISSSolverDynamicZlamalScheme = 5;
 static int CMISSSolverDynamicSecondDegreeGearScheme = 6;
@@ -1156,7 +1156,7 @@ static int CMISSSolverDAEIndex3 = 3;
  * >@{
  */
 static int CMISSSolverDAEEuler = 1;
-static int CMISSSolverDAECrankNicholson = 2;
+static int CMISSSolverDAECrankNicolson = 2;
 static int CMISSSolverDAERungeKutta = 3;
 static int CMISSSolverDAEAdamasMoulton = 4;
 static int CMISSSolverDAEBDF = 5;

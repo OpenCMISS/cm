@@ -1623,11 +1623,11 @@ MODULE TYPES
      TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface matrices for the interface matrix.
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
-    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this equations matrix
-    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this equations matrix is to be updated
-    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this equations matrix has not been assembled
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows in this interface matrix
+    LOGICAL :: UPDATE_MATRIX !<Is .TRUE. if this interface matrix is to be updated
+    LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this interface matrix has not been assembled
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the distributed interface matrix data
-    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this equations matrix
+    TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_MATRIX !<The element matrix for this interface matrix
   END TYPE INTERFACE_MATRIX_TYPE
 
   !>A buffer type to allow for an array of pointers to a INTERFACE_MATRIX_TYPE \see TYPES::INTERFACE_MATRIX_TYPE.
@@ -1641,6 +1641,9 @@ MODULE TYPES
     LOGICAL :: INTERFACE_MATRICES_FINISHED !<Is .TRUE. if the interface  matrices have finished being created, .FALSE. if not.
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface equations mapping for the interface equations matrices.
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping for the interface equations matrices
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_COLUMNS
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_COLUMNS    
     INTEGER(INTG) :: NUMBER_OF_INTERFACE_MATRICES !<The number of interfaces matrices defined for the interface condition.
     TYPE(INTERFACE_MATRIX_PTR_TYPE), ALLOCATABLE :: MATRICES(:) !<MATRICES(matrix_idx)%PTR contains the information on the matrix_idx'th  interface matrix.
   END TYPE INTERFACE_MATRICES_TYPE
@@ -1650,30 +1653,62 @@ MODULE TYPES
     TYPE(INTERFACE_MATRIX_TYPE), POINTER :: INTERFACE_MATRIX !<A pointer to the interface matrix
     INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this interface matrix
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable that is mapped to this interface matrix
-    INTEGER(INTG) :: NUMBER_OF_ROWCOLUMNS !<The number of rows or columns in this equations matrix.
+    INTEGER(INTG) :: MESH_INDEX !<The mesh index for the matrix in the interface.
     REAL(DP) :: MATRIX_COEFFICIENT !<The multiplicative coefficent for the matrix.    
+    INTEGER(INTG) :: NUMBER_OF_ROWS !<The number of rows  in this interface matrix.
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_ROWS !<The total number of rows in this interface matrix.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The global number of rows in this interface matrix.
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOFS_MAPPING !<A pointer to the domain mapping for the row dofs.
+    INTEGER(INTG), ALLOCATABLE :: VARIABLE_DOF_TO_ROW_MAP(:) !<VARIABLE_DOF_TO_ROW_MAP(dof_idx). The mapping from the dof_idx'th variable dof to the rows on the interface matrix
   END TYPE INTERFACE_MATRIX_TO_VAR_MAP_TYPE
 
   TYPE INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE
-    INTEGER(INTG) :: NUMBER_OF_INTERFACE_MATRICES
-    REAL(DP), ALLOCATABLE :: MATRIX_COEFFICIENTS(:)
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_ROW_FIELD_INDEXES(:)
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_COL_FIELD_INDEXES(:)
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_ROW_VARIABLE_TYPES(:)
-    INTEGER(INTG), ALLOCATABLE :: MATRIX_COL_VARIABLE_TYPES(:)
+    INTEGER(INTG) :: NUMBER_OF_INTERFACE_MATRICES !<Cache of the number of interface matrices
+    INTEGER(INTG) :: LAGRANGE_VARIABLE_TYPE
+    REAL(DP), ALLOCATABLE :: MATRIX_COEFFICIENTS(:) !<MATRIX_COEFFICIENTS(matrix_idx). The matrix cooefficient for the matrix_idx'th interface matrix.
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_ROW_FIELD_VARIABLE_INDICES(:)
+    INTEGER(INTG), ALLOCATABLE :: MATRIX_COL_FIELD_VARIABLE_INDICES(:)
   END TYPE INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE
   
-  !>Contains information on an interface mapping.
+  !>Contains information on an interface mapping. TODO: Generalise to non-Lagrange multipler mappings
   TYPE INTERFACE_MAPPING_TYPE  
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS  !<A pointer to the interface equations for this interface mapping
     LOGICAL :: INTERFACE_MAPPING_FINISHED !<Is .TRUE. if the interface mapping has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LAGRANGE_VARIABLE_TYPE !<The variable type of the mapped Lagrange field variable.
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: LAGRANGE_VARIABLE !<A pointer to the variable that is mapped to the Lagrange multiplier field variable.
+    INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in the interface mapping
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_COLUMNS !<The total number of columns in the interface mapping
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_COLUMNS !<The global number of columns in the interface mapping
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the domain mapping for the columns
+    INTEGER(INTG), ALLOCATABLE :: LAGRANGE_DOF_TO_COLUMN_MAP(:) !<LAGRANGE_DOF_TO_COLUMN_MAP(dof_idx). The mapping from the dof_idx'th Lagrange dof to the interface matrices column
     INTEGER(INTG) :: NUMBER_OF_INTERFACE_MATRICES !<The number of interface matrices that the mapping is set up for.
     TYPE(INTERFACE_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(:)
-    TYPE(INTERFACE_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: INTERFACE_MATRIX_COLS_TO_VAR_MAPS(:)
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
   END TYPE INTERFACE_MAPPING_TYPE
+
+  !>Contains information about the interpolation for a parameter set in interface equations
+  TYPE INTERFACE_EQUATIONS_INTERPOLATION_SET_TYPE
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:) !<INTERPOLATION_PARAMETERS(field_variable_type). A pointer to the field_variable_type'th field interpolation parameters.
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:) !<INTERPOLATED_POINT(field_variable_type). A pointer to the field_variable_type'th field interpolated point. 
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: INTERPOLATED_POINT_METRICS(:) !<INTERPOLATED_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th field interpolated point metrics.
+  END TYPE INTERFACE_EQUATIONS_INTERPOLATION_SET_TYPE
+
+  !>Contains information about the interpolation for a domain (interface or coupled mesh) in the interface equations
+  TYPE INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_TYPE
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field for the domain
+    INTEGER(INTG) :: NUMBER_OF_GEOMETRIC_INTERPOLATION_SETS !<The number of geometric interpolation sets in the domain
+    TYPE(INTERFACE_EQUATIONS_INTERPOLATION_SET_TYPE), ALLOCATABLE :: GEOMETRIC_INTERPOLATION(:) !<GEOMETRIC_INTERPOLATION(interpolation_set_idx). The geometric interpolation information for the interpolation_set_idx'th interpolation set.
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the domain
+    INTEGER(INTG) :: NUMBER_OF_DEPENDENT_INTERPOLATION_SETS !<The number of dependent interpolation sets in the domain
+    TYPE(INTERFACE_EQUATIONS_INTERPOLATION_SET_TYPE), ALLOCATABLE :: DEPENDENT_INTERPOLATION(:) !<DEPENDENT_INTERPOLATION(interpolation_set_idx). The dependent interpolation information for the interpolation_set_idx'th interpolation set.
+  END TYPE INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_TYPE
+  
+  !>Contains information on the interpolation for the interface equations
+  TYPE INTERFACE_EQUATIONS_INTERPOLATION_TYPE
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS !<A pointer to the equations
+    TYPE(INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_TYPE) :: INTERFACE_INTERPOLATION !<The interpolation information for interpolating on the interface.
+    TYPE(INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_TYPE), ALLOCATABLE :: VARIABLE_INTERPOLATION(:) !<VARIABLE_INTERPOLATION(variable_idx). The interpolation for the variable_idx'th field variable in the interface condition.
+  END TYPE INTERFACE_EQUATIONS_INTERPOLATION_TYPE
 
   !>Contains information about the interface equations for an interface condition. 
   TYPE INTERFACE_EQUATIONS_TYPE
@@ -1681,7 +1716,7 @@ MODULE TYPES
     LOGICAL :: INTERFACE_EQUATIONS_FINISHED !<Is .TRUE. if the interface equations have finished being created, .FALSE. if not.
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the interface equations 
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the interface equation matrices of the interface equations
-     
+    TYPE(INTERFACE_EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the interface equations.
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface equations mapping for the interface.
     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface equations matrices and vectors used for the interface equations.
   END TYPE INTERFACE_EQUATIONS_TYPE
@@ -1712,7 +1747,7 @@ MODULE TYPES
     INTEGER(INTG) :: OPERATOR !<An integer which denotes whether type of interface operator. \see INTERFACE_CONDITIONS_Operator,INTERFACE_CONDITIONS
     INTEGER(INTG) :: NUMBER_OF_DEPENDENT_VARIABLES !<The number of dependent variables in the interface condition
     TYPE(FIELD_VARIABLE_PTR_TYPE), POINTER :: FIELD_VARIABLES(:) !<FIELD_VARIABLES(variable_idx). The pointer to the variable_idx'th dependent variable in the interface condition.
-    INTEGER(INTG), POINTER :: VARIABLE_MESH_INDEXES(:) !<VARIABLE_MESH_INDEXES(variable_idx). The mesh index of the variable_idx'th dependent variable in the interface condition.
+    INTEGER(INTG), POINTER :: VARIABLE_MESH_INDICES(:) !<VARIABLE_MESH_INDICES(variable_idx). The mesh index of the variable_idx'th dependent variable in the interface condition.
     TYPE(INTERFACE_GEOMETRY_TYPE) :: GEOMETRY !<The geometry information for the interface condition.
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE !<A pointer to the interface condition Lagrange multipler information if there are any for this interface condition.
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS !<A pointer to the interface equations if there are any for this interface condition
@@ -1907,10 +1942,10 @@ MODULE TYPES
   END TYPE EULER_DAE_SOLVER_TYPE
 
   !>Contains information for a Crank-Nicholson differential-algebraic equation solver
-  TYPE CRANK_NICHOLSON_DAE_SOLVER_TYPE
+  TYPE CRANK_NICOLSON_DAE_SOLVER_TYPE
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Crank-Nicholson differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-  END TYPE CRANK_NICHOLSON_DAE_SOLVER_TYPE
+  END TYPE CRANK_NICOLSON_DAE_SOLVER_TYPE
   
   !>Contains information for a Runge-Kutta differential-algebraic equation solver
   TYPE RUNGE_KUTTA_DAE_SOLVER_TYPE
@@ -1945,7 +1980,7 @@ MODULE TYPES
     REAL(DP) :: END_TIME !<The end time to integrate to
     REAL(DP) :: INITIAL_STEP !<The (initial) time step
     TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER !<A pointer to information for an Euler solver
-    TYPE(CRANK_NICHOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICHOLSON_SOLVER !<A pointer to information for a Crank-Nicholson solver
+    TYPE(CRANK_NICOLSON_DAE_SOLVER_TYPE), POINTER :: CRANK_NICOLSON_SOLVER !<A pointer to information for a Crank-Nicholson solver
     TYPE(RUNGE_KUTTA_DAE_SOLVER_TYPE), POINTER :: RUNGE_KUTTA_SOLVER !<A pointer to information for a Runge-Kutta solver
     TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_SOLVER !<A pointer to information for an Adams-Moulton solver
     TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_SOLVER !<A pointer to information for a BDF solver

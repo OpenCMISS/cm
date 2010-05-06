@@ -4225,7 +4225,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicEulerScheme = SOLVER_DYNAMIC_EULER_SCHEME !<Euler (explicit) dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBackwardEulerScheme = SOLVER_DYNAMIC_BACKWARD_EULER_SCHEME !<Backward Euler (implicit) dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicCrankNicholsonScheme = SOLVER_DYNAMIC_CRANK_NICHOLSON_SCHEME !<Crank-Nicholson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicCrankNicolsonScheme = SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME !<Crank-Nicolson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicGalerkinScheme = SOLVER_DYNAMIC_GALERKIN_SCHEME !<Galerkin dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicZlamalScheme = SOLVER_DYNAMIC_ZLAMAL_SCHEME !<Zlamal dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDynamicSecondDegreeGearScheme = SOLVER_DYNAMIC_SECOND_DEGREE_GEAR_SCHEME !<2nd degree Gear dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
@@ -4259,7 +4259,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSSolverDAEEuler = SOLVER_DAE_EULER !<Euler differential-algebraic equation solver. \see 
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAECrankNicholson = SOLVER_DAE_CRANK_NICHOLSON !<Crank-Nicholson differential-algebraic equation solver. \see 
+  INTEGER(INTG), PARAMETER :: CMISSSolverDAECrankNicolson = SOLVER_DAE_CRANK_NICOLSON !<Crank-Nicolson differential-algebraic equation solver. \see 
   INTEGER(INTG), PARAMETER :: CMISSSolverDAERungeKutta = SOLVER_DAE_RUNGE_KUTTA !<Runge-Kutta differential-algebraic equation solver. \see 
   INTEGER(INTG), PARAMETER :: CMISSSolverDAEAdamsMoulton = SOLVER_DAE_ADAMS_MOULTON !<Adams-Moulton differential-algebraic equation solver. \see 
   INTEGER(INTG), PARAMETER :: CMISSSolverDAEBDF = SOLVER_DAE_BDF !<General BDF differential-algebraic equation solver. \see 
@@ -4649,7 +4649,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverDynamicFirstDegree,CMISSSolverDynamicSecondDegree,CMISSSolverDynamicThirdDegree
 
-  PUBLIC CMISSSolverDynamicEulerScheme,CMISSSolverDynamicBackwardEulerScheme,CMISSSolverDynamicCrankNicholsonScheme, &
+  PUBLIC CMISSSolverDynamicEulerScheme,CMISSSolverDynamicBackwardEulerScheme,CMISSSolverDynamicCrankNicolsonScheme, &
     & CMISSSolverDynamicGalerkinScheme,CMISSSolverDynamicZlamalScheme,CMISSSolverDynamicSecondDegreeGearScheme, &
     & CMISSSolverDynamicSecondDegreeLiniger1Scheme,CMISSSolverDynamicSecondDegreeLiniger2Scheme, &
     & CMISSSolverDynamicNewmark1Scheme,CMISSSolverDynamicNewmark2Scheme,CMISSSolverDynamicNewmark3Scheme, &
@@ -4660,7 +4660,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverDAEDifferentialOnly,CMISSSolverDAEIndex1,CMISSSolverDAEIndex2,CMISSSolverDAEIndex3
 
-  PUBLIC CMISSSolverDAEEuler,CMISSSolverDAECrankNicholson,CMISSSolverDAERungeKutta,CMISSSolverDAEAdamsMoulton,CMISSSolverDAEBDF, &
+  PUBLIC CMISSSolverDAEEuler,CMISSSolverDAECrankNicolson,CMISSSolverDAERungeKutta,CMISSSolverDAEAdamsMoulton,CMISSSolverDAEBDF, &
     & CMISSSolverRushLarson
 
   PUBLIC CMISSSolverDAEEulerForward,CMISSSolverDAEEulerBackward,CMISSSolverDAEEulerImproved

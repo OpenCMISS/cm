@@ -54,6 +54,7 @@ MODULE PROBLEM_ROUTINES
   USE FINITE_ELASTICITY_ROUTINES
   USE FLUID_MECHANICS_ROUTINES
   USE INPUT_OUTPUT
+  USE INTERFACE_CONDITIONS_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
   USE MULTI_PHYSICS_ROUTINES
@@ -1787,8 +1788,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
+    INTEGER(INTG) :: equations_set_idx,interface_condition_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     
@@ -1820,8 +1822,21 @@ CONTAINS
             CALL TAU_PHASE_STOP(PHASE)
 #endif
           ENDDO !equations_set_idx          
-          !Solve
+          !Make sure the interface matrices are up to date
+          DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+#ifdef TAUPROF
+            WRITE (CVAR,'(a8,i2)') 'Interface',interface_condition_idx
+            CALL TAU_PHASE_CREATE_DYNAMIC(PHASE,CVAR)
+            CALL TAU_PHASE_START(PHASE)
+#endif
+            INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+            CALL INTERFACE_CONDITION_ASSEMBLE(INTERFACE_CONDITION,ERR,ERROR,*999)
+#ifdef TAUPROF
+            CALL TAU_PHASE_STOP(PHASE)
+#endif
+          ENDDO !interface_condition_idx
 
+          !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
 
 #ifdef TAUPROF
@@ -1864,8 +1879,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
+    INTEGER(INTG) :: equations_set_idx,interface_condition_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     
@@ -1881,6 +1897,19 @@ CONTAINS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
             !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
           ENDDO !equations_set_idx          
+          !Make sure the interface matrices are up to date
+          DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+#ifdef TAUPROF
+            WRITE (CVAR,'(a8,i2)') 'Interface',interface_condition_idx
+            CALL TAU_PHASE_CREATE_DYNAMIC(PHASE,CVAR)
+            CALL TAU_PHASE_START(PHASE)
+#endif
+            INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+            CALL INTERFACE_CONDITION_ASSEMBLE(INTERFACE_CONDITION,ERR,ERROR,*999)
+#ifdef TAUPROF
+            CALL TAU_PHASE_STOP(PHASE)
+#endif
+          ENDDO !interface_condition_idx
           !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
         ELSE
