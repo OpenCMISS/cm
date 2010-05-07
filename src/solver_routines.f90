@@ -8349,7 +8349,8 @@ CONTAINS
                                               & GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
                                             !Apply boundary conditions
                                             SELECT CASE(rhs_boundary_condition)
-                                            CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL)
+                                            CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL, &
+                                              & BOUNDARY_CONDITION_NEUMANN)
                                               !Get the equations RHS values
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
@@ -9207,7 +9208,8 @@ CONTAINS
                                         rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
                                         !Apply boundary conditions
                                         SELECT CASE(rhs_boundary_condition)
-                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL)
+                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL, &
+                                          & BOUNDARY_CONDITION_NEUMANN)
                                           !Add in equations RHS values
                                           CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                             & RHS_VALUE,ERR,ERROR,*999)
@@ -9321,7 +9323,7 @@ CONTAINS
                                               ENDIF
                                             ENDDO !variable_idx
                                           ENDIF
-                                        CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_NEUMANN)
+                                        CASE(BOUNDARY_CONDITION_FIXED)
 ! do nothing!
                                         CASE DEFAULT
                                           LOCAL_ERROR="The RHS boundary condition of "// &
@@ -9345,9 +9347,10 @@ CONTAINS
                                         rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
                                         !Apply boundary conditions
                                         SELECT CASE(rhs_boundary_condition)
-                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL)
+                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL, &
+                                          & BOUNDARY_CONDITION_NEUMANN)
 ! do nothing!
-                                        CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_NEUMANN)
+                                        CASE(BOUNDARY_CONDITION_FIXED)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
@@ -9359,7 +9362,7 @@ CONTAINS
                                               row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                                                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                                 & COUPLING_COEFFICIENTS(solver_row_idx)
-                                              VALUE=1.0_DP*RHS_VALUE*row_coupling_coefficient
+                                              VALUE=-1.0_DP*RHS_VALUE*row_coupling_coefficient
 
                                               CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
                                                 & ERR,ERROR,*999)
