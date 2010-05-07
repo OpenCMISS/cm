@@ -269,7 +269,7 @@ CONTAINS
 
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
-                                    !VALUE=2*X(1)+6*X(2)+2*X(3)
+                                    !VALUE=2*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
 
                                     !---------------This is for 2x2 quad
@@ -322,12 +322,11 @@ CONTAINS
                                 END SELECT 
 
                               CASE(TEST_CASE_NEUMANN_WITHOUT_SOURCE)
-                                !u=x^2+3y^2+z^2 Test case example used
+                                !u=-3x^2+3y^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
-                                    !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
                                     VALUE=-3*X(1)**2+3*X(2)**2     !2D version - no source needed
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -348,7 +347,7 @@ CONTAINS
 
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
                                   CASE(NO_GLOBAL_DERIV)
-                                    !VALUE=2*X(1)+6*X(2)+2*X(3)
+                                    !VALUE=-6*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
 
                                     !---------------This is for 2x2 quad
@@ -401,7 +400,7 @@ CONTAINS
                                 END SELECT 
 
                               CASE(TEST_CASE_DIRICHLET)
-                                !u=x^2+3y^2+z^2 Test case example used
+                                !u=x^2+3y^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
@@ -2700,8 +2699,14 @@ CONTAINS
                   SUM=0.0_DP
                   !Additional terms for analytic solution
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                    SUM=8.0_DP !For 2D TEST_CASE_NEUMANN and TEST_CASE_DIRICHLET
-                    !SUM=0.0_DP
+
+                    SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                    CASE(TEST_CASE_NEUMANN,TEST_CASE_DIRICHLET)
+                      SUM=8.0_DP !For 2D TEST_CASE_NEUMANN and TEST_CASE_DIRICHLET
+                    CASE DEFAULT
+                     SUM=0.0_DP
+                    END SELECT
+
                   ENDIF
                   SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+ & !This needs to changed to the source vector
                      & SUM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG
