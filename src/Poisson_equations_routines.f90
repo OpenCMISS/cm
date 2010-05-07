@@ -135,6 +135,15 @@ CONTAINS
               ALLOCATE(CONDITION(12)) !For 2x2 quad
               ALLOCATE(DOF_NUMBER(12)) !For 2x2 quad
               ALLOCATE(VALUE_BC(12)) !For 2x2 quad
+            ELSEIF((EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_1).OR.&
+              & (EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_2)) THEN
+              ALLOCATE(CONDITION(3)) !For 2x2 quad
+              ALLOCATE(DOF_NUMBER(3)) !For 2x2 quad
+              ALLOCATE(VALUE_BC(3)) !For 2x2 quad
+            ELSEIF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_3) THEN
+              ALLOCATE(CONDITION(6)) !For 2x2 quad
+              ALLOCATE(DOF_NUMBER(6)) !For 2x2 quad
+              ALLOCATE(VALUE_BC(6)) !For 2x2 quad
             ENDIF
             COUNT_DOF=0
 
@@ -445,6 +454,196 @@ CONTAINS
                                     & " is invalid."
                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                 END SELECT
+
+                              CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_1)
+                                !u=x^2+3y^2+z^2 Test case example used
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
+                                    VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                  global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !VALUE=2*X(1)+6*X(2)
+                                    !This is for testing Integrated Neumann Boundary Conditions
+
+                                    !---------------This is for 2x2 quad
+                                    SELECT CASE(node_idx)
+                                    CASE(2,3,4)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=-6*X(2)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE DEFAULT
+                                      VALUE=0
+                                    END SELECT
+                                    !---------------
+
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT 
+
+                              CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_2)
+                                !u=x^2+3y^2+z^2 Test case example used
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
+                                    VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                  global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !VALUE=2*X(1)+6*X(2)
+                                    !This is for testing Integrated Neumann Boundary Conditions
+
+                                    !---------------This is for 2x2 quad
+                                    SELECT CASE(node_idx)
+                                    CASE(22,23,24)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=6*X(2)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE DEFAULT
+                                      VALUE=0
+                                    END SELECT
+                                    !---------------
+
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT 
+
+                              CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_3)
+                                !u=x^2+3y^2+z^2 Test case example used
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
+                                    VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                  global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
+
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !VALUE=2*X(1)+6*X(2)
+                                    !This is for testing Integrated Neumann Boundary Conditions
+
+                                    !---------------This is for 2x2 quad
+                                    SELECT CASE(node_idx)
+                                    CASE(2,3,4)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=-6*X(2)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE(22,23,24)
+                                      COUNT_DOF = COUNT_DOF+1
+                                      VALUE=6*X(2)
+                                      VALUE_BC(COUNT_DOF)=VALUE
+                                      DOF_NUMBER(COUNT_DOF)=global_ny
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                    CASE DEFAULT
+                                      VALUE=0
+                                    END SELECT
+                                    !---------------
+
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT 
+
                               CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2)
                                 CALL FLAG_ERROR("The analytic function type is not implemented yet.",ERR,ERROR,*999)
                               CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3)
@@ -503,12 +702,41 @@ CONTAINS
 
                               SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                               CASE(TEST_CASE_NEUMANN,TEST_CASE_NEUMANN_WITHOUT_SOURCE)
-                                IF(node_idx==1.OR.node_idx==5.OR.node_idx==21.OR.node_idx==25) THEN  !For 2x2 Quad
+                                SELECT CASE(node_idx)
+                                CASE(1,5,21,25) !For 2x2 Quad
                                   IF(variable_type==FIELD_U_VARIABLE_TYPE.AND.DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !For Dirichlet
                                     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                       & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                   ENDIF
-                                ENDIF       
+                                CASE DEFAULT
+                                END SELECT
+                              CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_1)
+                                SELECT CASE(node_idx)
+                                CASE(1,6,11,16,5,10,15,20,21,22,23,24,25) !For 2x2 Quad
+                                  IF(variable_type==FIELD_U_VARIABLE_TYPE.AND.DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !For Dirichlet
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                CASE DEFAULT
+                                END SELECT
+                              CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_2)
+                                SELECT CASE(node_idx)
+                                CASE(1,2,3,4,5,6,11,16,10,15,20,21,25) !For 2x2 Quad
+                                  IF(variable_type==FIELD_U_VARIABLE_TYPE.AND.DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !For Dirichlet
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                CASE DEFAULT
+                                END SELECT
+                              CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_3)
+                                SELECT CASE(node_idx)
+                                CASE(1,6,11,16,21,5,10,15,20,25) !For 2x2 Quad
+                                  IF(variable_type==FIELD_U_VARIABLE_TYPE.AND.DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !For Dirichlet
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                CASE DEFAULT
+                                END SELECT
                               CASE DEFAULT
                                 IF(variable_type==FIELD_U_VARIABLE_TYPE.AND.DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN !For Dirichlet
                                   CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
@@ -550,7 +778,10 @@ CONTAINS
 
               !If FIELD_DELUDELN_VARIABLE_TYPE and TEST_CASE then Neumann
               IF((EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_NEUMANN.OR. &
-                & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_NEUMANN_WITHOUT_SOURCE) &
+                & (EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_NEUMANN_WITHOUT_SOURCE.OR. &
+                & (EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_1.OR. &
+                & (EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_2.OR. &
+                & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_3)))) &
                 & .AND.variable_type==FIELD_DELUDELN_VARIABLE_TYPE) THEN
                 ID=1
                 NUMBER_OF_NEUMANN=1
@@ -563,7 +794,10 @@ CONTAINS
             ENDDO !variable_idx
 
             IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_NEUMANN.OR. &
-              & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_NEUMANN_WITHOUT_SOURCE) THEN
+              & (EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_NEUMANN_WITHOUT_SOURCE.OR. &
+                & (EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_1.OR. &
+                & (EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_2.OR. &
+                & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==TEST_CASE_MIXED_NEUMANN_DIRICHLET_3)))) THEN
               DEALLOCATE(CONDITION)
               DEALLOCATE(DOF_NUMBER)
               DEALLOCATE(VALUE_BC)
@@ -1908,6 +2142,75 @@ CONTAINS
                         & " requires that the equations set subtype be an constant source Poisson equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
+                  CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_1)
+                    !Check that we have an constant source
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE) THEN
+                      !Check that we are in 3D or 2D
+                      IF(NUMBER_OF_DIMENSIONS>2) THEN
+                        LOCAL_ERROR="The number of geometric dimensions of "// &
+                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                          & " is invalid. The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " requires that there be at least 2 geometric dimensions."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      !Create analytic field if required
+                      !Set analytic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=TEST_CASE_MIXED_NEUMANN_DIRICHLET_1
+                    ELSE
+                      LOCAL_ERROR="The equations set subtype of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that the equations set subtype be an constant source Poisson equation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_2)
+                    !Check that we have an constant source
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE) THEN
+                      !Check that we are in 3D or 2D
+                      IF(NUMBER_OF_DIMENSIONS>2) THEN
+                        LOCAL_ERROR="The number of geometric dimensions of "// &
+                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                          & " is invalid. The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " requires that there be at least 2 geometric dimensions."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      !Create analytic field if required
+                      !Set analytic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=TEST_CASE_MIXED_NEUMANN_DIRICHLET_2
+                    ELSE
+                      LOCAL_ERROR="The equations set subtype of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that the equations set subtype be an constant source Poisson equation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  CASE(TEST_CASE_MIXED_NEUMANN_DIRICHLET_3)
+                    !Check that we have an constant source
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE) THEN
+                      !Check that we are in 3D or 2D
+                      IF(NUMBER_OF_DIMENSIONS>2) THEN
+                        LOCAL_ERROR="The number of geometric dimensions of "// &
+                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                          & " is invalid. The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " requires that there be at least 2 geometric dimensions."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      !Create analytic field if required
+                      !Set analytic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=TEST_CASE_MIXED_NEUMANN_DIRICHLET_3
+                    ELSE
+                      LOCAL_ERROR="The equations set subtype of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that the equations set subtype be an constant source Poisson equation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The specified analytic function type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -2701,8 +3004,9 @@ CONTAINS
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
 
                     SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                    CASE(TEST_CASE_NEUMANN,TEST_CASE_DIRICHLET)
-                      SUM=8.0_DP !For 2D TEST_CASE_NEUMANN and TEST_CASE_DIRICHLET
+                    CASE(TEST_CASE_NEUMANN,TEST_CASE_DIRICHLET,TEST_CASE_MIXED_NEUMANN_DIRICHLET_1,&
+                      & TEST_CASE_MIXED_NEUMANN_DIRICHLET_2,TEST_CASE_MIXED_NEUMANN_DIRICHLET_3)
+                      SUM=-8.0_DP !For 2D TEST_CASE_NEUMANN and TEST_CASE_DIRICHLET and TEST_CASE_MIXED_NEUMANN_DIRICHLET
                     CASE DEFAULT
                      SUM=0.0_DP
                     END SELECT

@@ -306,6 +306,9 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN=7 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   INTEGER(INTG), PARAMETER :: TEST_CASE_DIRICHLET=8 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN_WITHOUT_SOURCE=9 !<Test case setup to test Neumann Boundary Conditions with Poisson example
+  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_1=10 !<Test case setup to test Neumann Boundary Conditions with Poisson example
+  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_2=11 !<Test case setup to test Neumann Boundary Conditions with Poisson example
+  INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_3=12 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DiffusionAnalyticFunctionTypes
   !> \brief The analytic function types for a diffusion equation
