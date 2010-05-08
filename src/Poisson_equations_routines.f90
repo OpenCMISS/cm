@@ -285,25 +285,25 @@ CONTAINS
                                     SELECT CASE(node_idx)
                                     CASE(2,3,4)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-6*X(2)
+                                      VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE(6,11,16)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-2*X(1)
+                                      VALUE=2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE(10,15,20)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=2*X(1)
+                                      VALUE=-2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE(22,23,24)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=6*X(2)
+                                      VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
@@ -363,25 +363,25 @@ CONTAINS
                                     SELECT CASE(node_idx)
                                     CASE(2,3,4)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-6*X(2)
+                                      VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE(6,11,16)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=6*X(1)
+                                      VALUE=-6*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE(10,15,20)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-6*X(1)
+                                      VALUE=6*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE(22,23,24)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=6*X(2)
+                                      VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
@@ -489,7 +489,7 @@ CONTAINS
                                     SELECT CASE(node_idx)
                                     CASE(2,3,4)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-6*X(2)
+                                      VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
@@ -550,7 +550,7 @@ CONTAINS
                                     SELECT CASE(node_idx)
                                     CASE(22,23,24)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=6*X(2)
+                                      VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
@@ -611,13 +611,13 @@ CONTAINS
                                     SELECT CASE(node_idx)
                                     CASE(2,3,4)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=-6*X(2)
+                                      VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
                                     CASE(22,23,24)
                                       COUNT_DOF = COUNT_DOF+1
-                                      VALUE=6*X(2)
+                                      VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN

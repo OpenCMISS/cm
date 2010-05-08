@@ -9347,10 +9347,9 @@ CONTAINS
                                         rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
                                         !Apply boundary conditions
                                         SELECT CASE(rhs_boundary_condition)
-                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL, &
-                                          & BOUNDARY_CONDITION_NEUMANN)
+                                        CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL)
 ! do nothing!
-                                        CASE(BOUNDARY_CONDITION_FIXED)
+                                        CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_NEUMANN)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
