@@ -32049,7 +32049,8 @@ CONTAINS
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Problem Create')
 #endif
- 
+
+    NULLIFY(PROBLEM)
     CALL PROBLEM_CREATE_START(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
 
     CALL EXITS("CMISSProblemCreateStartNumber")
