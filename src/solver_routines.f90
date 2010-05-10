@@ -9193,11 +9193,11 @@ CONTAINS
                                         ENDIF
                                       ENDDO !equations_row_number
 
-                                      NULLIFY(CHECK_DATA)
-                                      CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA,ERR,ERROR,*999)    
-
-                                      NULLIFY(CHECK_DATA2)
-                                      CALL DISTRIBUTED_VECTOR_DATA_GET(DISTRIBUTED_SOURCE_VECTOR,CHECK_DATA2,ERR,ERROR,*999)    
+!                                       NULLIFY(CHECK_DATA)
+!                                       CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA,ERR,ERROR,*999)    
+! 
+!                                       NULLIFY(CHECK_DATA2)
+!                                       CALL DISTRIBUTED_VECTOR_DATA_GET(DISTRIBUTED_SOURCE_VECTOR,CHECK_DATA2,ERR,ERROR,*999)    
 
 
 
