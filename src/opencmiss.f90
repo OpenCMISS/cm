@@ -770,7 +770,9 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCauchy = BOUNDARY_CONDITION_CAUCHY
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionRobin = BOUNDARY_CONDITION_ROBIN
 
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedIncremented = BOUNDARY_CONDITION_FIXED_INCREMENTED_TYPE
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedIncremented = BOUNDARY_CONDITION_FIXED_INCREMENTED
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressure = BOUNDARY_CONDITION_PRESSURE
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressureIncremented = BOUNDARY_CONDITION_PRESSURE_INCREMENTED
   !>@}
   !>@}
   
@@ -849,6 +851,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionNeumann,CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionDirichlet
   PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented
+  PUBLIC CMISSBoundaryConditionPressure,CMISSBoundaryConditionPressureIncremented
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -2407,6 +2410,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSInitialAccelerationSetType = FIELD_INITIAL_ACCELERATION_SET_TYPE !<The parameter set corresponding to the initial acceleration values for dynamic problems. This is also the previous accelearation values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldPreviousAccelerationSetType = FIELD_PREVIOUS_ACCELERATION_SET_TYPE !<The parameter set corresponding to the previous acceleration values (at time T).This is also the initial acceleration values for dynamic problems. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSMeanPredictedAccelerationSetType = FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE !<The parameter set corresponding to the mean predicited acceleration values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldPressureValuesSetType = FIELD_PRESSURE_VALUES_SET_TYPE !<The parameter set corresponding to the surface pressure values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldPreviousPressureSetType = FIELD_PREVIOUS_PRESSURE_SET_TYPE !<The parameter set corresponding to the previous surface pressure values (at time T). \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldScalingTypes OPENCMISS::Field::ScalingTypes
   !> \brief Field scaling type parameters
@@ -2856,7 +2861,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSPreviousValuesSetType,CMISSMeanPredictedDisplacementSetType,CMISSFieldVelocityValuesSetType, &
     & CMISSFieldInitialVelocitySetType,CMISSFieldPreviousVelocitySetType,CMISSFieldMeanPredictedVelocitySetType, &
     & CMISSFieldAccelerationValuesSetType,CMISSInitialAccelerationSetType,CMISSFieldPreviousAccelerationSetType, &
-    & CMISSMeanPredictedAccelerationSetType
+    & CMISSMeanPredictedAccelerationSetType, CMISSFieldPressureValuesSetType, CMISSFieldPreviousPressureSetType
 
   PUBLIC CMISSFieldNoScaling,CMISSFieldUnitScaling,CMISSFieldArcLengthScaling,CMISSFieldArithmeticMeanScaling, &
     & CMISSFieldHarmonicMeanScaling

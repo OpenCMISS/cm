@@ -9309,6 +9309,8 @@ CONTAINS
                                         CASE(BOUNDARY_CONDITION_MIXED)
                                           !Set Robin or is it Cauchy??? boundary conditions
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE(BOUNDARY_CONDITION_PRESSURE,BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
+                                          !Don't do anything - it's taken care of in the finite elasticity residual calculation
                                         CASE DEFAULT
                                           LOCAL_ERROR="The RHS boundary condition of "// &
                                             & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &

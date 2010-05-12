@@ -4960,6 +4960,8 @@ CONTAINS
     REAL(DP) :: FULL_LOAD, CURRENT_LOAD, NEW_LOAD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+    CALL ENTERS("EQUATIONS_SET_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
+
     NULLIFY(BOUNDARY_CONDITIONS)
     NULLIFY(DEPENDENT_FIELD)
     NULLIFY(DEPENDENT_VARIABLE)
@@ -4976,6 +4978,7 @@ CONTAINS
         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
           IF(ALLOCATED(DEPENDENT_FIELD%VARIABLES)) THEN
             !Loop over the variables associated with this equations set
+            !\todo: Looping over all field variables is not safe when volume-coupled problem is solved. Look at matrix and rhs mapping instead?
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLES(variable_idx)
               variable_type=DEPENDENT_VARIABLE%VARIABLE_TYPE
@@ -4993,7 +4996,7 @@ CONTAINS
                     DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                       dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
                       IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                        & BOUNDARY_CONDITION_FIXED_INCREMENTED_TYPE) THEN !Only increment if it's a incremented type bc
+                        & BOUNDARY_CONDITION_FIXED_INCREMENTED) THEN !Only increment if it's a incremented type bc
                         FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
                         ! Apply full load if last step, or fixed BC
                         IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
