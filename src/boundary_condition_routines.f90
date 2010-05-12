@@ -1,4 +1,4 @@
-!> \file
+!> \file 
 !> $Id$
 !> \author Ting Yu
 !> \brief This module set the boundary conditions for the given equation set
@@ -2120,8 +2120,8 @@ CONTAINS
                                     ENDDO !i
 !!Check here that global_ny is the best thing to do here
                                     global_ny=BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING(j)
-                                    !Ensure the set dof are set as BOUNDARY_CONDITION_NEUMANN
-                                    BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN
+!                                     !Ensure the set dof are set as BOUNDARY_CONDITION_NEUMANN
+!                                     BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN
                                   ENDDO !j
 
                                   BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_SIZE=TOTAL_NUMBER_OF_FACE_DOF
@@ -2387,8 +2387,8 @@ CONTAINS
                                     ENDDO !i
 !!Check here that global_ny is the best thing to do here
                                     global_ny=BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING(j)
-                                    !Ensure the set dof are set as BOUNDARY_CONDITION_NEUMANN
-                                    BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN
+!                                     !Ensure the set dof are set as BOUNDARY_CONDITION_NEUMANN
+!                                     BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN
                                   ENDDO !j
 
                                   BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_SIZE=TOTAL_NUMBER_OF_LINE_DOF
