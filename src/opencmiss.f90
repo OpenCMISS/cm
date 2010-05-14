@@ -1938,7 +1938,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_5 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_5 !<Test case setup for testing of Neumann boundary conditions
   INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_6 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_6 !<Test case setup for testing of Neumann boundary conditions
   INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_7 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_7 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumannCubic = TEST_CASE_MIXED_NEUMANN_CUBIC !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumannCubic = TEST_CASE_NEUMANN_CUBIC !<Test case setup for testing of Neumann boundary conditions
   !>@}
   !> \addtogroup OPENCMISS_DiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Diffusion
   !> \brief The analytic function types for a diffusion equation.
