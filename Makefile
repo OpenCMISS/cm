@@ -54,9 +54,16 @@ MAKEFLAGS = --no-builtin-rules --warn-undefined-variables
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-OPENCMISS_ROOT = $(CURDIR)/../
-GLOBAL_CM_ROOT = $(CURDIR)
+ifndef OPENCMISS_ROOT
+  OPENCMISS_ROOT := $(CURDIR)/../
+endif
+ifndef OPENCMISSEXTRAS_ROOT
+  OPENCMISSEXTRAS_ROOT := ../../opencmissextras
+endif
+
+GLOBAL_CM_ROOT = $(OPENCMISS_ROOT)/cm
 GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
+GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -72,6 +79,10 @@ endif
 
 ifndef USECELLML
   USECELLML := false
+endif
+
+ifndef USEFIELDML
+  USEFIELDML := false
 endif
 
 ifeq ($(MPI),mpich2)
@@ -629,6 +640,20 @@ ifeq ($(USECELLML),true)
   endif
 endif
 
+#FIELDML
+FIELDML_INCLUDE_PATH =#
+ifeq ($(USEFIELDML),true)
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+         FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
+    else# windows
+         FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
+    endif
+  endif
+endif
+
 #TAU/PAPI
 ifeq ($(TAUPROF),true)
   CPPFLAGS += -DTAUPROF
@@ -665,9 +690,15 @@ BLAS_INCLUDE_PATH =#
 EXTERNAL_INCLUDE_PATH = $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPCK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
 
 ifeq ($(USECELLML),true)
-     EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
+  EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
   FPPFLAGS += -DUSECELLML
   CPPFLAGS += -DUSECELLML
+endif
+
+ifeq ($(USEFIELDML),true)
+  EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
+  FPPFLAGS += -DUSEFIELDML
+  CPPFLAGS += -DUSEFIELDML
 endif
 
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
@@ -771,6 +802,11 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o 
+
+ifeq ($(USEFIELDML),true)
+     FIELDML_OBJECT = 
+     OBJECTS += $(FIELDML_OBJECT)
+endif
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o

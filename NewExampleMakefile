@@ -54,9 +54,13 @@ ifndef OPENCMISSEXTRAS_ROOT
   OPENCMISSEXTRAS_ROOT := ../../opencmissextras
   EXTERNAL_CM_ROOT := $(CURDIR)/../../opencmissextras/cm/external
   EXTERNAL_CELLML_ROOT := $(CURDIR)/../../opencmissextras/cellml
+  EXTERNAL_FIELDML_ROOT := $(CURDIR)/../../opencmissextras/fieldml
+  EXTERNAL_COMMON_ROOT := $(CURDIR)/../../opencmissextras/common
 else
   EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
   EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
+  EXTERNAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
+  EXTERNAL_COMMON_ROOT := ${OPENCMISSEXTRAS_ROOT}/common
 endif
 
 ifndef GLOBAL_ROOT
@@ -72,8 +76,12 @@ ifndef MPI
   MPI := mpich2
 endif
 
-ifndef USECELLMLL
+ifndef USECELLML
   USECELLML := false
+endif
+
+ifndef USEFIELDML
+  USEFIELDML := false
 endif
 
 ifeq ($(MPI),mpich2)
@@ -145,6 +153,8 @@ else
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   endif
 endif
+EXTERNAL_FEILDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
 
 C_INCLUDE_DIRS := $(MAIN_SOURCE_DIR) \
   $(EXAMPLE_SOURCE_DIR) 
@@ -632,13 +642,35 @@ ifeq ($(USECELLML),true)
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
     CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+    CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
   else
     ifeq ($(OPERATING_SYSTEM),aix)# AIX
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
          CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
     else# windows
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
          CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
+    endif
+  endif
+endif
+
+#FIELDML
+FIELDML_LIBRARIES =#
+FIELDML_LIB_PATH =#
+ifeq ($(USEFIELDML),true)
+  FIELDML_LIBRARIES += -lfieldml -lxml2
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+    FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+       FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+       FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
+    else# windows
+       FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+       FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
     endif
   endif
 endif
@@ -712,6 +744,11 @@ EXTERNAL_INCLUDE_PATH = $(strip $(MPI_INCLUDE_PATH) )
 ifeq ($(USECELLML),true)
   EXTERNAL_LIBRARIES += $(CELLML_LIBRARIES)
   EXTERNAL_LIB_PATH += $(CELLML_LIB_PATH)
+endif
+
+ifeq ($(USEFIELDML),true)
+  EXTERNAL_LIBRARIES += $(FIELDML_LIBRARIES)
+  EXTERNAL_LIB_PATH += $(FIELDML_LIB_PATH)
 endif
 
 FPPFLAGS += $(OPENCMISS_INCLUDE_PATH) $(EXTERNAL_INCLUDE_PATH)
