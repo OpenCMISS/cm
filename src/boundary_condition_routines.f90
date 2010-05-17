@@ -2160,7 +2160,7 @@ CONTAINS
                                   DEALLOCATE(TEMP_FACES)
 
                                 ELSE
-                                  CALL FLAG_ERROR("Topology faces is not associated",ERR,ERROR,*999)
+                                  CALL FLAG_ERROR("Topology faces is not associated.",ERR,ERROR,*999)
                                 ENDIF
 
                               ELSEIF(DEPENDENT_FIELD%DECOMPOSITION% &
@@ -2426,7 +2426,7 @@ CONTAINS
                                   DEALLOCATE(TEMP_SET_NODES)
                                   DEALLOCATE(TEMP_LINES)
                                 ELSE
-                                  CALL FLAG_ERROR("Topology lines is not associated",ERR,ERROR,*999)
+                                  CALL FLAG_ERROR("Topology lines is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
                                 CALL FLAG_ERROR("Invalid number of dimensions for Neumann boundary conditions.",ERR,ERROR,*999)
@@ -2449,10 +2449,10 @@ CONTAINS
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
                             END SELECT                 
                           ELSE
-                            CALL FLAG_ERROR("Topology nodes is not associated",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Topology is not associated",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !component_idx
                     ENDDO !id
@@ -2467,7 +2467,7 @@ CONTAINS
                 CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The boundary condition neumann is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("The boundary condition Neumann is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The boundary conditions for variable type "&
@@ -2476,7 +2476,7 @@ CONTAINS
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
         CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
@@ -2608,19 +2608,19 @@ CONTAINS
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Quadrature scheme is not associated",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Quadrature scheme is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Domain topology face is not associated",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Domain topology face is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Domain topology faces is not associated",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Domain topology faces is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Domain topology is not associated",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The boundary condition neumann is not associated",ERR,ERROR,*999)
+              CALL FLAG_ERROR("The boundary condition Neumann is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The boundary conditions for variable type " &

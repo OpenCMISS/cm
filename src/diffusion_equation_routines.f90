@@ -126,6 +126,7 @@ CONTAINS
           IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
             NULLIFY(GEOMETRIC_VARIABLE)
+            NULLIFY(GEOMETRIC_PARAMETERS)
             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
               & ERR,ERROR,*999)            
@@ -236,8 +237,10 @@ CONTAINS
     !TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
 
     !These are parameters for the analytical solution
-    k = 1.0_DP !this is a time decay constant for the exponential term
-    phi = 0.785398163397_DP !pi/4 - this sets the orientation of the solution relative to the axes
+!     k = 1.0_DP !this is a time decay constant for the exponential term
+!     phi = 0.785398163397_DP !pi/4 - this sets the orientation of the solution relative to the axes
+    k = 10.0_DP !this is a time decay constant for the exponential term
+    phi = 1.0_DP !pi/4 - this sets the orientation of the solution relative to the axes
     !These are parameters for the 3D analytical solution with a linear source
     A = -0.25_DP
     B = 0.5_DP   
@@ -1368,6 +1371,7 @@ CONTAINS
                             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
                               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                             NULLIFY(GEOMETRIC_VARIABLE)
+                            NULLIFY(GEOMETRIC_PARAMETERS)
                             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
                             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,& 
                               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
@@ -1488,6 +1492,7 @@ CONTAINS
                             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
                               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                             NULLIFY(GEOMETRIC_VARIABLE)
+                            NULLIFY(GEOMETRIC_PARAMETERS)
                             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
                             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,& 
                               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
@@ -1951,7 +1956,7 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)
-              CALL DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              !CALL DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE)
               ! do nothing ???
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
