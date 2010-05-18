@@ -3127,10 +3127,10 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   END INTERFACE !CMISSInterfaceMeshConnectivityElementXiSet <<>>
 
   !>Sets the number of elements coupled through a given interface mesh element
-  INTERFACE CMISSInterfaceMeshConnectivityElementNumberElementsSet
-    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber
-    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementNumberElementsSetObj
-  END INTERFACE !CMISSInterfaceMeshConnectivityElementNumberElementsSet <<>>
+  INTERFACE CMISSInterfaceMeshConnectivityElementNumberSet
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementNumberSetNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementNumberSetObj
+  END INTERFACE !CMISSInterfaceMeshConnectivityElementNumberSet <<>>
 
   !>Destroys an interface meshes connectivity.
   INTERFACE CMISSInterfaceMeshConnectivityDestroy
@@ -3148,7 +3148,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   
   PUBLIC CMISSInterfaceMeshConnectivityDestroy
 
-  PUBLIC CMISSInterfaceMeshConnectivityElementNumberElementsSet, CMISSInterfaceMeshConnectivityElementXiSet
+  PUBLIC CMISSInterfaceMeshConnectivityElementNumberSet, CMISSInterfaceMeshConnectivityElementXiSet
  
 !!==================================================================================================================================
 !!
@@ -27364,7 +27364,7 @@ CONTAINS
   !   
 
   !>Sets the number of coupled mesh elements which are linked to a specific interface element.
-  SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber(RegionUserNumber,InterfaceUserNumber, &
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberSetNumber(RegionUserNumber,InterfaceUserNumber, &
      &  InterfaceElementNumber,CoupledMeshIndexNumber,NumberOfElements,Err)
   
     !Argument variables
@@ -27379,7 +27379,7 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber",Err,ERROR,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementNumberSetNumber",Err,ERROR,*999)
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -27387,7 +27387,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
-        CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_ELEMENTS_SET(INTERFACE%MESH_CONNECTIVITY,InterfaceElementNumber, &
+        CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(INTERFACE%MESH_CONNECTIVITY,InterfaceElementNumber, &
          & CoupledMeshIndexNumber,NumberOfElements,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
@@ -27400,14 +27400,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber")
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberSetNumber")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementNumberSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberSetNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetNumber
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberSetNumber
 
   !  
   !================================================================================================================================
@@ -27501,7 +27501,7 @@ CONTAINS
   !   
 
   !>Sets the number of coupled mesh elements which are linked to a specific interface element.
-  SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetObj(InterfaceMeshConnectivity,InterfaceElementNumber, & 
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberSetObj(InterfaceMeshConnectivity,InterfaceElementNumber, & 
      &  CoupledMeshIndexNumber,NumberOfElements,Err)
   
     !Argument variables
@@ -27513,19 +27513,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementNumberSetObj",Err,ERROR,*999)
  
-    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_ELEMENTS_SET(InterfaceMeshConnectivity%MESH_CONNECTIVITY, &
+    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(InterfaceMeshConnectivity%MESH_CONNECTIVITY, &
          & InterfaceElementNumber,CoupledMeshIndexNumber,NumberOfElements,Err,ERROR,*999)
 
-    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj")
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberSetObj")
     RETURN
-999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj",Err,ERROR)
-    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberElementsSetObj")
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementNumberSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementNumberSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberElementsSetObj
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberSetObj
 
   !  
   !================================================================================================================================

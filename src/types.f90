@@ -1769,9 +1769,8 @@ MODULE TYPES
   
   !>Contains information on a mesh connectivity point
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
-    INTEGER(INTG) :: NUMBER_OF_COUPLED_MESH_ELEMENTS !<
-    INTEGER(INTG), ALLOCATABLE :: COUPLED_MESH_ELEMENT_NUMBERS(:) !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx)
-    REAL(DP), ALLOCATABLE :: XI(:,:,:,:) !<XI(xi_idx,spatial component,local node,coupled mesh index)
+    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx)
+    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,spatial component,local node)
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
 
   !>Contains information on the coupling between meshes in an interface

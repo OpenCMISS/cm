@@ -523,43 +523,33 @@ CONTAINS
                                                     CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_row)%PTR,global_column, &
                                                       & ERR,ERROR,*999)                                               
                                                   CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
-                                                    DO domain_element_idx=1,MESH_CONNECTIVITY% &
+                                                    domain_element=MESH_CONNECTIVITY% &
                                                       & ELEMENTS_CONNECTIVITY(interface_element_idx,INTERFACE_MESH_INDEX)% &
-                                                      & NUMBER_OF_COUPLED_MESH_ELEMENTS
-                                                      domain_element=MESH_CONNECTIVITY% &
-                                                        & ELEMENTS_CONNECTIVITY(interface_element_idx,INTERFACE_MESH_INDEX)% &
-                                                        & COUPLED_MESH_ELEMENT_NUMBERS(domain_element_idx)
-                                                      local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)%PARAM_TO_DOF_MAP% &
-                                                        & ELEMENT_PARAM2DOF_MAP(domain_element)
-                                                      CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_row)%PTR,global_column, &
-                                                        & ERR,ERROR,*999)
-                                                    ENDDO !domain_element_idx
+                                                      & COUPLED_MESH_ELEMENT_NUMBER
+                                                    local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)%PARAM_TO_DOF_MAP% &
+                                                      & ELEMENT_PARAM2DOF_MAP(domain_element)
+                                                    CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_row)%PTR,global_column, &
+                                                      & ERR,ERROR,*999)
                                                   CASE(FIELD_NODE_BASED_INTERPOLATION)
                                                     ROW_DOMAIN_ELEMENTS=>ROW_VARIABLE%COMPONENTS(row_component_idx)%DOMAIN% &
                                                       & TOPOLOGY%ELEMENTS
-                                                    !Now loop over the elements in the domain mesh
-                                                    DO domain_element_idx=1,MESH_CONNECTIVITY% &
-                                                      & ELEMENTS_CONNECTIVITY(interface_element_idx,INTERFACE_MESH_INDEX)% &
-                                                      & NUMBER_OF_COUPLED_MESH_ELEMENTS
-                                                      domain_element=MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY( &
-                                                        & interface_element_idx,INTERFACE_MESH_INDEX)% &
-                                                        & COUPLED_MESH_ELEMENT_NUMBERS(domain_element_idx)
-                                                      ROW_BASIS=>ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)%BASIS
-                                                      !Loop over the row DOFs in the domain mesh element
-                                                      DO row_local_node_idx=1,ROW_BASIS%NUMBER_OF_NODES
-                                                        row_node=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
-                                                          & ELEMENT_NODES(row_local_node_idx)
-                                                        DO row_local_derivative_idx=1,ROW_BASIS% &
-                                                          & NUMBER_OF_DERIVATIVES(row_local_node_idx)
-                                                          row_derivative=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
-                                                            & ELEMENT_DERIVATIVES(row_local_derivative_idx,row_local_node_idx)
-                                                          local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)%PARAM_TO_DOF_MAP% &
-                                                            & NODE_PARAM2DOF_MAP(row_derivative,row_node)
-                                                          CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_row)%PTR,global_column, &
-                                                            & ERR,ERROR,*999)                                                      
-                                                        ENDDO !row_local_derivative_idx
-                                                      ENDDO !row_local_node_idx
-                                                    ENDDO !domain_element_idx
+                                                    domain_element=MESH_CONNECTIVITY%ELEMENTS_CONNECTIVITY(interface_element_idx, &
+                                                      & INTERFACE_MESH_INDEX)%COUPLED_MESH_ELEMENT_NUMBER
+                                                    ROW_BASIS=>ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)%BASIS
+                                                    !Loop over the row DOFs in the domain mesh element
+                                                    DO row_local_node_idx=1,ROW_BASIS%NUMBER_OF_NODES
+                                                      row_node=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
+                                                        & ELEMENT_NODES(row_local_node_idx)
+                                                      DO row_local_derivative_idx=1,ROW_BASIS% &
+                                                        & NUMBER_OF_DERIVATIVES(row_local_node_idx)
+                                                        row_derivative=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
+                                                          & ELEMENT_DERIVATIVES(row_local_derivative_idx,row_local_node_idx)
+                                                        local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)%PARAM_TO_DOF_MAP% &
+                                                          & NODE_PARAM2DOF_MAP(row_derivative,row_node)
+                                                        CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_row)%PTR,global_column, &
+                                                          & ERR,ERROR,*999)                                                      
+                                                      ENDDO !row_local_derivative_idx
+                                                    ENDDO !row_local_node_idx
                                                   CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                                   CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
