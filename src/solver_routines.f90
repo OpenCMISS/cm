@@ -8202,6 +8202,7 @@ CONTAINS
                                   ENDIF
                                   RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
                                   IF(ASSOCIATED(RHS_MAPPING)) THEN
+                                    NULLIFY(RHS_PARAMETERS)
                                     RHS_VARIABLE_TYPE=RHS_MAPPING%RHS_VARIABLE_TYPE
                                     CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,RHS_VARIABLE_TYPE, &
                                       & FIELD_VALUES_SET_TYPE,RHS_PARAMETERS,ERR,ERROR,*999)
@@ -8338,6 +8339,7 @@ CONTAINS
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
                                           ENDDO !equations_row_number
+                                         NULLIFY(BOUNDARY_CONDITION_VECTOR)
                                          CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                             FIELD_INCREMENTAL_VALUES_SET_TYPE,BOUNDARY_CONDITION_VECTOR,ERR,ERROR,*999)
 
@@ -9083,6 +9085,7 @@ CONTAINS
                               ENDIF
                               RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
                               IF(ASSOCIATED(RHS_MAPPING)) THEN
+                                NULLIFY(RHS_PARAMETERS)
                                 RHS_VARIABLE_TYPE=RHS_MAPPING%RHS_VARIABLE_TYPE
                                 CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                   & RHS_PARAMETERS,ERR,ERROR,*999)
