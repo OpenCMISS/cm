@@ -731,6 +731,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
 	$(CELLML_OBJECT) \
+	$(OBJECT_DIR)/util_array.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/cmiss_parmetis.o \
 	$(OBJECT_DIR)/cmiss_petsc.o \
@@ -741,6 +742,9 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
 	$(OBJECT_DIR)/Darcy_equations_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
+	$(OBJECT_DIR)/fieldml_api.o \
+	$(OBJECT_DIR)/fieldml_input_routines.o \
+	$(OBJECT_DIR)/fieldml_output_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
 	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
@@ -842,7 +846,10 @@ $(LIBRARY) : $(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
 $(MOD_INCLUDE) : $(MOD_SOURCE_INC)
-	cp $(MOD_SOURCE_INC) $@ 
+	cp $(MOD_SOURCE_INC) $@
+	cp $(OBJECT_DIR)/fieldml_api.mod $(INC_DIR)/fieldml_api.mod #CPL temporary
+	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod #CPL temporary
+	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod #CPL temporary 
 
 $(HEADER_INCLUDE) : $(HEADER_SOURCE_INC)
 	cp $(HEADER_SOURCE_INC) $@ 
@@ -1349,6 +1356,14 @@ $(OBJECT_DIR)/field_IO_routines.o	:	$(SOURCE_DIR)/field_IO_routines.f90 \
 	$(OBJECT_DIR)/region_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/fieldml_api.o: $(SOURCE_DIR)/fieldml_api.f90
+
+$(OBJECT_DIR)/fieldml_input_routines.o: $(SOURCE_DIR)/fieldml_input_routines.f90
+
+$(OBJECT_DIR)/fieldml_output_routines.o: $(SOURCE_DIR)/fieldml_output_routines.f90
+
+$(OBJECT_DIR)/util_array.o: $(SOURCE_DIR)/util_array.f90
 
 $(OBJECT_DIR)/finite_elasticity_routines.o	:	$(SOURCE_DIR)/finite_elasticity_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
