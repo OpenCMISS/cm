@@ -809,12 +809,12 @@ CONTAINS
                         & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) !
                       !Also create current & previous pressue set types, if FINITE ELASTICITY equations type
                       !\todo: this is a hacky place to do it
-                      IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PREVIOUS_PRESSURE_SET_TYPE,ERR,ERROR,*999)  !
-                      ENDIF
+!                       IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
+!                         CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
+!                           & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
+!                         CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
+!                           & FIELD_PREVIOUS_PRESSURE_SET_TYPE,ERR,ERROR,*999)  !
+!                       ENDIF
                     ELSE
                       CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
