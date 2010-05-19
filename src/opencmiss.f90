@@ -3564,8 +3564,20 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSMeshElementsUserNumberSetNumber
     MODULE PROCEDURE CMISSMeshElementsUserNumberSetObj
   END INTERFACE !CMISSMeshElementsUserNumberSet
+  
+  !>Returns true if the given node is in the given mesh component.
+  INTERFACE CMISSMeshNodeExists
+    MODULE PROCEDURE CMISSMeshNodeExistsNumber
+    MODULE PROCEDURE CMISSMeshNodeExistsObj
+  ENDINTERFACE !CMISSMeshNodeExists
+  
+  !>Returns true if the given element is in the given mesh component.
+  INTERFACE CMISSMeshElementExists
+    MODULE PROCEDURE CMISSMeshElementExistsNumber
+    MODULE PROCEDURE CMISSMeshElementExistsObj
+  ENDINTERFACE !CMISSMeshElementExists
 
-    !>Returns the domain for a given element in a decomposition of a mesh.
+  !>Returns the domain for a given element in a decomposition of a mesh.
   INTERFACE CMISSDecompositionNodeDomainGet
     MODULE PROCEDURE CMISSDecompositionNodeDomainGetNumber
     MODULE PROCEDURE CMISSDecompositionNodeDomainGetObj
@@ -3602,6 +3614,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSMeshElementsNodesGet,CMISSMeshElementsNodesSet
 
   PUBLIC CMISSMeshElementsUserNumberGet,CMISSMeshElementsUserNumberSet
+
+  PUBLIC CMISSMeshNodeExists,CMISSMeshElementExists
   
   PUBLIC CMISSDecompositionNodeDomainGet
 
@@ -31354,6 +31368,177 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSMeshElementsUserNumberSetObj 
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Checks if the given node exists on the given mesh component.
+  SUBROUTINE CMISSMeshNodeExistsNumber( RegionUserNumber, MeshUserNumber, MeshComponentNumber, NodeUserNumber, NodeExists, Err )
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to check the node for.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to check the node for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to check the node for.
+    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to check.
+    LOGICAL, INTENT(OUT) :: NodeExists !<True if the node exists, false otherwise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: Mesh
+    TYPE(REGION_TYPE), POINTER :: Region
+    INTEGER(INTG) :: GlobalNodeNumber
+    TYPE(VARYING_STRING) :: LocalError
+    
+    CALL ENTERS("CMISSMeshNodeExistsNumber",Err,ERROR,*999)
+
+    NodeExists = .FALSE.
+ 
+    NULLIFY( Region )
+    NULLIFY( Mesh )
+    CALL REGION_USER_NUMBER_FIND( RegionUserNumber, Region, Err, ERROR, *999 )
+    IF( ASSOCIATED( REGION ) ) THEN
+      CALL MESH_USER_NUMBER_FIND( MeshUserNumber, Region, Mesh, Err, ERROR, *999 )
+      IF( ASSOCIATED( MESH ) ) THEN
+        CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(Mesh,MeshComponentNumber,NodeUserNumber,NodeExists, GlobalNodeNumber,Err,ERROR,*999)
+      ELSE
+        LocalError="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LocalError,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LocalError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LocalError,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshNodeExistsNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshNodeExistsNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshNodeExistsNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshNodeExistsNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Checks if the given node exists on the given mesh component.
+  SUBROUTINE CMISSMeshNodeExistsObj( Mesh, MeshComponentNumber, NodeUserNumber, NodeExists, Err )
+  
+    !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to check the node for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to check the node for.
+    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to check.
+    LOGICAL, INTENT(OUT) :: NodeExists !<True if the node exists, false otherwise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    !Local variables
+    INTEGER(INTG) :: GlobalNodeNumber
+
+    NodeExists = .FALSE.
+  
+    CALL ENTERS("CMISSMeshNodeExistsObj",Err,ERROR,*999)
+ 
+    CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(Mesh%MESH,MeshComponentNumber,NodeUserNumber,NodeExists,GlobalNodeNumber,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshNodeExistsObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshNodeExistsObj",Err,ERROR)
+    CALL EXITS("CMISSMeshNodeExistsObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshNodeExistsObj 
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Checks if the given element exists on the given mesh component.
+  SUBROUTINE CMISSMeshElementExistsNumber( RegionUserNumber, MeshUserNumber, MeshComponentNumber, &
+    & ElementUserNumber, ElementExists, Err )
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to check the element for.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to check the element for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to check the element for.
+    INTEGER(INTG), INTENT(IN) :: ElementUserNumber !<The user number of the element to check.
+    LOGICAL, INTENT(OUT) :: ElementExists !<True if the element exists, false otherwise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: Mesh
+    TYPE(REGION_TYPE), POINTER :: Region
+    INTEGER(INTG) :: GlobalElementNumber
+    TYPE(VARYING_STRING) :: LocalError
+    
+    CALL ENTERS("CMISSMeshElementExistsNumber",Err,ERROR,*999)
+
+    ElementExists = .FALSE.
+ 
+    NULLIFY( Region )
+    NULLIFY( Mesh )
+    CALL REGION_USER_NUMBER_FIND( RegionUserNumber, Region, Err, ERROR, *999 )
+    IF( ASSOCIATED( REGION ) ) THEN
+      CALL MESH_USER_NUMBER_FIND( MeshUserNumber, Region, Mesh, Err, ERROR, *999 )
+      IF( ASSOCIATED( MESH ) ) THEN
+        CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(Mesh,MeshComponentNumber,ElementUserNumber,ElementExists, &
+          & GlobalElementNumber,Err,ERROR,*999)
+      ELSE
+        LocalError="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LocalError,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LocalError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LocalError,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshElementExistsNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementExistsNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshElementExistsNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementExistsNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Checks if the given element exists on the given mesh component.
+  SUBROUTINE CMISSMeshElementExistsObj( Mesh, MeshComponentNumber, ElementUserNumber, ElementExists, Err )
+  
+    !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to check the node for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to check the element for.
+    INTEGER(INTG), INTENT(IN) :: ElementUserNumber !<The user number of the element to check.
+    LOGICAL, INTENT(OUT) :: ElementExists !<True if the element exists, false otherwise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    !Local variables
+    INTEGER(INTG) :: GlobalElementNumber
+  
+    CALL ENTERS("CMISSMeshElementExistsObj",Err,ERROR,*999)
+    
+    ElementExists = .FALSE.
+ 
+    CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(Mesh%MESH,MeshComponentNumber,ElementUserNumber,ElementExists, GlobalElementNumber, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshElementExistsObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementExistsObj",Err,ERROR)
+    CALL EXITS("CMISSMeshElementExistsObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementExistsObj 
 
 !!==================================================================================================================================
 !!

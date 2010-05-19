@@ -322,6 +322,11 @@ MODULE TYPES
     TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the mesh global element number to the mesh user element number.
   END TYPE MESH_ELEMENTS_TYPE
 
+  !>mesh elements type pointer
+  TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: PTR !< pointer field variable component
+  END TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
+
   !>Contains the topology information for a global node of a mesh.
   TYPE MESH_NODE_TYPE
     INTEGER(INTG) :: MESH_NUMBER !<The mesh node number in the mesh.
@@ -999,6 +1004,11 @@ MODULE TYPES
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolations parameters in an element for a field variable component.
     TYPE(FIELD_PARAM_TO_DOF_MAP_TYPE) :: PARAM_TO_DOF_MAP !<The mapping of the field parameters to the field dofs for this field variable component.
   END TYPE FIELD_VARIABLE_COMPONENT_TYPE
+
+  !>field variable compoment type pointer
+  TYPE FIELD_VARIABLE_COMPONENT_PTR_TYPE
+    TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: PTR !< pointer field variable component
+  END TYPE FIELD_VARIABLE_COMPONENT_PTR_TYPE
 
   !>A type to hold the parameter sets for a field.
   TYPE FIELD_PARAMETER_SET_TYPE
