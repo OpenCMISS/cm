@@ -152,7 +152,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(C_INT) :: i, indexCount, count1, handle1
+    INTEGER(C_INT) :: indexCount, count1, handle1
     INTEGER(C_INT), TARGET :: dummy(0)
     TYPE(C_PTR) :: writer
     

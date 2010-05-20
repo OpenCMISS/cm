@@ -100,37 +100,37 @@ MODULE FIELDML_API
   INTEGER(C_INT), PARAMETER :: FHT_UNKNOWN_CONTINUOUS_SOURCE = 21
 
   INTERFACE
-    FUNCTION Fieldml_ParseFile( filename ) &
-      & BIND(C,NAME="Fieldml_ParseFile")
+    FUNCTION Fieldml_CreateFromFile( filename ) &
+      & BIND(C,NAME="Fieldml_CreateFromFile")
       USE TYPES
       USE ISO_C_BINDING
       CHARACTER(KIND=C_CHAR) :: filename(*)
-      TYPE(C_PTR) :: Fieldml_ParseFile
-    END FUNCTION Fieldml_ParseFile
+      TYPE(C_PTR) :: Fieldml_CreateFromFile
+    END FUNCTION Fieldml_CreateFromFile
 
     FUNCTION Fieldml_Create( ) &
       & BIND(C,NAME="Fieldml_Create")
       USE TYPES
       USE ISO_C_BINDING
-      INTEGER(C_INT) :: Fieldml_Create
+      TYPE(C_PTR) :: Fieldml_Create
     END FUNCTION Fieldml_Create
 
-    FUNCTION Fieldml_WriteFile( parse, filename ) &
+    FUNCTION Fieldml_WriteFile( handle, filename ) &
       & BIND(C,NAME="Fieldml_WriteFile")
       USE TYPES
       USE ISO_C_BINDING
-      TYPE(C_PTR), VALUE :: parse
+      TYPE(C_PTR), VALUE :: handle
       CHARACTER(KIND=C_CHAR) :: filename(*)
       INTEGER(C_INT) :: Fieldml_WriteFile
     END FUNCTION Fieldml_WriteFile
 
-    FUNCTION Fieldml_DestroyParse( handle ) &
-      & BIND(C,NAME="Fieldml_DestroyParse")
+    FUNCTION Fieldml_Destroy( handle ) &
+      & BIND(C,NAME="Fieldml_Destroy")
       USE TYPES
       USE ISO_C_BINDING
       TYPE(C_PTR), VALUE :: handle
-      INTEGER(C_INT) :: Fieldml_DestroyParse
-    END FUNCTION Fieldml_DestroyParse
+      INTEGER(C_INT) :: Fieldml_Destroy
+    END FUNCTION Fieldml_Destroy
 
     FUNCTION Fieldml_GetErrorCount( handle ) &
       & BIND(C,NAME="Fieldml_GetErrorCount")
@@ -887,7 +887,7 @@ MODULE FIELDML_API
 
   END INTERFACE
 
-  PUBLIC Fieldml_ParseFile, Fieldml_Create, Fieldml_WriteFile, Fieldml_DestroyParse, Fieldml_GetErrorCount, &
+  PUBLIC Fieldml_CreateFromFile, Fieldml_Create, Fieldml_WriteFile, Fieldml_Destroy, Fieldml_GetErrorCount, &
     & Fieldml_CopyError, Fieldml_GetObjectCount, Fieldml_GetObjectHandle, Fieldml_GetObjectType, &
     & Fieldml_GetNamedObjectHandle, Fieldml_GetMarkupCount, Fieldml_ValidateObject, Fieldml_CopyMarkupAttribute, &
     & Fieldml_CopyMarkupValue, Fieldml_CopyMarkupAttributeValue, Fieldml_SetMarkup, Fieldml_GetDomainComponentEnsemble, &
