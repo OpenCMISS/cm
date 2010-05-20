@@ -1486,6 +1486,8 @@ MODULE TYPES
   TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
     INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
     REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
+    INTEGER(INTG), ALLOCATABLE :: SET_DOF_CONDITIONS(:) !<Array of user-set conditions of DOFs on boundary
+    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES_PREV(:) !<Array of user-set values of DOFs on boundary from previous time step
   END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
 
   !>A buffer type to allow for an array of pointers to BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
@@ -1499,9 +1501,17 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: FACES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per face, indexed by face and element_parameter, returns local_ny (dof) number. 
     REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:) !<Array for results from face basis calculation for an individual face
     INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: FACE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from face basis calculation for an individual face
+    INTEGER(INTG), ALLOCATABLE :: FACE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_STIFFNESS_MATRIX
+    REAL(DP), ALLOCATABLE :: FACE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from face basis calculation for an individual face
+    INTEGER(INTG), ALLOCATABLE :: FACE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_NONLINEAR_MATRIX
     INTEGER(INTG), ALLOCATABLE :: LINES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per line, indexed by line and element_parameter, returns local_ny (dof) number. 
     REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:) !<Array for results from line basis calculation for an individual line
     INTEGER(INTG), ALLOCATABLE :: LINE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: LINE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from line basis calculation for an individual line
+    INTEGER(INTG), ALLOCATABLE :: LINE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_STIFFNESS_MATRIX
+    REAL(DP), ALLOCATABLE :: LINE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from line basis calculation for an individual line
+    INTEGER(INTG), ALLOCATABLE :: LINE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_NONLINEAR_MATRIX
     REAL(DP), ALLOCATABLE :: INTEGRATION_MATRIX(:,:) !<The INTEGRATION_MATRIX - array for conglomeration of FACE_INTEGRATION_MATRIX, the 'A' matrix
     INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_X(:) !<Mapping array of domain nodes to X axis of INTEGRATION_MATRIX
     INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_Y(:) !<Mapping array of domain nodes to Y axis of INTEGRATION_MATRIX
@@ -1509,7 +1519,6 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: POINT_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes in POINT_VALUES_VECTOR
     REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR(:) !<Vector for the storage of the integrated values, the 'b' vector of Ax=b 
     INTEGER(INTG), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes and components in INTEGRATED_VALUES_VECTOR
-    !REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES(:) !<Vector for storing values from INTEGRATED_VALUES_VECTOR indexed by dof number
     INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
   END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
 

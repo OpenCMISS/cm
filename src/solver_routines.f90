@@ -8352,7 +8352,7 @@ CONTAINS
                                             !Apply boundary conditions
                                             SELECT CASE(rhs_boundary_condition)
                                             CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL, &
-                                              & BOUNDARY_CONDITION_NEUMANN)
+                                              & BOUNDARY_CONDITION_NEUMANN_POINT)
                                               !Get the equations RHS values
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
@@ -9131,7 +9131,7 @@ CONTAINS
                                         rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
                                         rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
                                         rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS(rhs_global_dof)
-                                        IF(rhs_boundary_condition==BOUNDARY_CONDITION_NEUMANN) THEN
+                                        IF(rhs_boundary_condition==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
                                           NUMBER_OF_NEUMANN_ROWS=NUMBER_OF_NEUMANN_ROWS+1
                                         ENDIF
                                       ENDDO !equations_row_number
@@ -9292,7 +9292,8 @@ CONTAINS
                                               ENDIF
                                             ENDDO !variable_idx
                                           ENDIF
-                                        CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FREE_WALL,BOUNDARY_CONDITION_NEUMANN)
+                                        CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
+                                          & BOUNDARY_CONDITION_NEUMANN_POINT)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row

@@ -1316,7 +1316,7 @@ CONTAINS
                                                 & rhs_global_dof)
                                               SELECT CASE(rhs_boundary_condition)
                                               CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
-                                                                                                & BOUNDARY_CONDITION_NEUMANN)
+                                                                                           & BOUNDARY_CONDITION_NEUMANN_POINT)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix
                                                 DO equations_column_idx=1,COLUMN_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
@@ -1365,7 +1365,7 @@ CONTAINS
                                                 & rhs_global_dof)
                                               SELECT CASE(rhs_boundary_condition)
                                               CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
-                                                                                                & BOUNDARY_CONDITION_NEUMANN)
+                                                                                           & BOUNDARY_CONDITION_NEUMANN_POINT)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix
                                                 DO equations_column_idx=ROW_INDICES(equations_row_number), &

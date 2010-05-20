@@ -303,25 +303,25 @@ CONTAINS
                                       VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(6,11,16)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(10,15,20)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-2*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(22,23,24)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE DEFAULT
                                       VALUE=0
                                     END SELECT
@@ -381,25 +381,25 @@ CONTAINS
                                       VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(6,11,16)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-6*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(10,15,20)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=6*X(1)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(22,23,24)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE DEFAULT
                                       VALUE=0
                                     END SELECT
@@ -507,7 +507,7 @@ CONTAINS
                                       VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE DEFAULT
                                       VALUE=0
                                     END SELECT
@@ -568,7 +568,7 @@ CONTAINS
                                       VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE DEFAULT
                                       VALUE=0
                                     END SELECT
@@ -629,13 +629,13 @@ CONTAINS
                                       VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(22,23,24)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE DEFAULT
                                       VALUE=0
                                     END SELECT
@@ -743,13 +743,13 @@ CONTAINS
 !                                       VALUE=1
 !                                       VALUE_BC(COUNT_DOF)=VALUE
 !                                       DOF_NUMBER(COUNT_DOF)=global_ny
-!                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+!                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289) 
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-1
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE DEFAULT
                                       VALUE=0
                                     END SELECT
@@ -809,13 +809,13 @@ CONTAINS
                                         VALUE=-1
                                         VALUE_BC(COUNT_DOF)=VALUE
                                         DOF_NUMBER(COUNT_DOF)=global_ny
-                                        CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                        CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                       ELSEIF(X(2)==0.0_dp) THEN
                                         COUNT_DOF = COUNT_DOF+1
                                         VALUE=1
                                         VALUE_BC(COUNT_DOF)=VALUE
                                         DOF_NUMBER(COUNT_DOF)=global_ny
-                                        CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                        CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                       ENDIF
                                     ENDIF
                                     !---------------
@@ -873,14 +873,14 @@ CONTAINS
                                       VALUE=6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE(602,603,604,605,606,607,608,609,610,611,612, &
                                        & 613,614,615,616,617,618,619,620,621,622,623,624)
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-6*X(2)
                                       VALUE_BC(COUNT_DOF)=VALUE
                                       DOF_NUMBER(COUNT_DOF)=global_ny
-                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN
+                                      CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
                                     CASE DEFAULT
                                       VALUE=0
                                     END SELECT
