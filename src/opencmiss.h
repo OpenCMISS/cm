@@ -474,7 +474,8 @@ static int CMISSEquationsSetQuadraticSourcePoissonSubtype = 3;
 static int CMISSEquationsSetExponentialSourcePoissonSubtype = 4;
 static int CMISSEquationsSetStokesPoissonSubtype = 5;
 static int CMISSEquationsSetNavierStokesPoissonSubtype = 6;
-static int CMISSEquationsSetNoSourceHelmholtzSubtype = 1;
+static int CMISSEquationsSetStandardHelmholtzSubtype = 2;
+static int CMISSEquationsSetGeneralisedHelmholtzSubtype = 3;
 static int CMISSEquationsSetNoSourceDiffusionSubtype = 1;
 static int CMISSEquationsSetConstantSourceDiffusionSubtype = 2;
 static int CMISSEquationsSetLinearSourceDiffusionSubtype = 3;
@@ -538,6 +539,14 @@ static int CMISSEquationsSetLaplaceEquationTwoDim1 = 1;
 static int CMISSEquationsSetLaplaceEquationTwoDim2 = 2;
 static int CMISSEquationsSetLaplaceEquationThreeDim1 = 3;
 static int CMISSEquationsSetLaplaceEquationThreeDim2 = 4;
+/*
+ * >@}
+ * > \addtogroup OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Helmholtz
+ * > \brief The analytic function types for a Helmholtz equation
+ * > \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+ * >@{
+ */
+static int CMISSEquationsSetHelmholtzEquationTwoDim1 = 1;
 /*
  * >@}
  * > \addtogroup OPENCMISS_PoissonAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poisson
@@ -899,7 +908,8 @@ static int CMISSProblemStandardLaplaceSubtype = 1;
 static int CMISSProblemGeneralisedLaplaceSubtype = 2;
 static int CMISSProblemLinearSourcePoissonSubtype = 1;
 static int CMISSProblemNonlinearSourcePoissonSubtype = 2;
-static int CMISSProblemNoSourceHelmholtzSubtype = 1;
+static int CMISSProblemStandardHelmholtzSubtype = 2;
+static int CMISSProblemGeneralisedHelmholtzSubtype = 3;
 static int CMISSProblemNoSourceDiffusionSubtype = 1;
 static int CMISSProblemLinearSourceDiffusionSubtype = 2;
 static int CMISSProblemNonlinearSourceDiffusionSubtype = 3;

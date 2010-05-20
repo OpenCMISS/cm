@@ -293,6 +293,11 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1=3 !<u=x**2-2*y**2+z**2
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2=4 !<u=cos(x)*cosh(y)*z
   !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_HelmholtzAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:HelmholtzAnalyticFunctionTypes
+  !> \brief The analytic function types for a Laplace equation
+  !>@{  
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1=1 !<u=cos(sqrt(2)*k*x)*sin(sqrt(2)*k*y)
+  !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_PoissonAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:PoissonAnalyticFunctionTypes
   !> \brief The analytic function types for a Poisson equation
   !>@{  

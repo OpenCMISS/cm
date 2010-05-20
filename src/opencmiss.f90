@@ -1919,6 +1919,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationThreeDim1 = EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1 !<u=x**2-2*y**2+z**2 \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationThreeDim2 = EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2 !<u=cos(x)*cosh(y)*z \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
   !>@}
+  !> \addtogroup OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Helmholtz
+  !> \brief The analytic function types for a Helmholtz equation
+  !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+  !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetHelmholtzEquationTwoDim1 = EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1 !<u=cos(sqrt(2)*k*x)*sin(sqrt(2)*k*y) \see OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes,OPENCMISS
+  !>@}
   !> \addtogroup OPENCMISS_PoissonAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poisson
   !> \brief The analytic function types for a Poisson equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
@@ -2073,6 +2079,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetLaplaceEquationTwoDim1,CMISSEquationsSetLaplaceEquationTwoDim2, &
     & CMISSEquationsSetLaplaceEquationThreeDim1,CMISSEquationsSetLaplaceEquationThreeDim2
+
+  PUBLIC CMISSEquationsSetHelmholtzEquationTwoDim1
 
   PUBLIC CMISSEquationsSetLinearElasticityEquationOneDim1,CMISSEquationsSetLinearElasticityEquationTwoDim1, &
     & CMISSEquationsSetLinearElasticityEquationThreeDim1
