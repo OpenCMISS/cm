@@ -1827,7 +1827,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourcePoissonSubtype = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourcePoissonSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourcePoissonSubtype = EQUATIONS_SET_EXPONENTIAL_SOURCE_POISSON_SUBTYPE !<Exponential source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceHelmholtzSubtype = EQUATIONS_SET_NO_SOURCE_HELMHOLTZ_SUBTYPE !<No source Helmholtz equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardHelmholtzSubtype = EQUATIONS_SET_STANDARD_HELMHOLTZ_SUBTYPE !<No source Helmholtz equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedHelmholtzSubtype = EQUATIONS_SET_GENERALISED_HELMHOLTZ_SUBTYPE !<No source Helmholtz equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceDiffusionSubtype = EQUATIONS_SET_NO_SOURCE_DIFFUSION_SUBTYPE !<No source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceDiffusionSubtype = EQUATIONS_SET_CONSTANT_SOURCE_DIFFUSION_SUBTYPE !<Constant source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceDiffusionSubtype = EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE !<Linear source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2045,7 +2046,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
     & CMISSEquationsSetStokesPoissonSubtype, CMISSEquationsSetNavierStokesPoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
-    & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetNoSourceHelmholtzSubtype, &
+    & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetStandardHelmholtzSubtype, &
+    & CMISSEquationsSetGeneralisedHelmholtzSubtype, &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
     & CMISSEquationsSetLinearSourceDiffusionSubtype,CMISSEquationsSetQuadraticSourceDiffusionSubtype, &
     & CMISSEquationsSetExponentialSourceDiffusionSubtype,CMISSEquationsSetMultiCompTransportDiffusionSubtype, &
@@ -3764,7 +3766,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemStokesPoissonSubtype = PROBLEM_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesPoissonSubtype = PROBLEM_NAVIER_STOKES_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourcePoissonSubtype = PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE !<Nonlinear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceHelmholtzSubtype = PROBLEM_NO_SOURCE_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemStandardHelmholtzSubtype = PROBLEM_STANDARD_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedHelmholtzSubtype = PROBLEM_GENERALISED_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceDiffusionSubtype = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceDiffusionSubtype = PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE !<Linear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceDiffusionSubtype = PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE !<Nonlinear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -3861,7 +3864,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemStokesPoissonSubtype, &
     & CMISSProblemNavierStokesPoissonSubtype
 
-  PUBLIC CMISSProblemNoSourceHelmholtzSubtype
+  PUBLIC CMISSProblemStandardHelmholtzSubtype,CMISSProblemGeneralisedHelmholtzSubtype
 
   PUBLIC CMISSProblemNoSourceDiffusionSubtype,CMISSProblemLinearSourceDiffusionSubtype,CMISSProblemNonlinearSourceDiffusionSubtype
 
