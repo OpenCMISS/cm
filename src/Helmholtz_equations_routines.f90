@@ -159,7 +159,7 @@ CONTAINS
                                 DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                   SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
                                   CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
-                                    !u=cos(sqrt(2)*k*x)*sin(sqrt(2)*k*y)
+                                    !u=cos(k*x/sqrt(2))*sin(k*y/sqrt(2))
                                     SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
                                       SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
