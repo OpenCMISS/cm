@@ -121,6 +121,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("INTERFACE_EQUATIONS_CREATE_FINISH",ERR,ERROR,*999)
@@ -135,30 +136,35 @@ CONTAINS
           SELECT CASE(INTERFACE_CONDITION%METHOD)
           CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
             IF(ASSOCIATED(INTERFACE_CONDITION%LAGRANGE)) THEN
-              IF(ASSOCIATED(INTERFACE_EQUATIONS%INTERPOLATION)) THEN
-                GEOMETRIC_FIELD=>INTERFACE_CONDITION%GEOMETRY%GEOMETRIC_FIELD
-                DEPENDENT_FIELD=>INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD                
-                CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_SETUP(INTERFACE_EQUATIONS%INTERPOLATION%INTERFACE_INTERPOLATION, &
-                  & GEOMETRIC_FIELD,DEPENDENT_FIELD,ERR,ERROR,*999)
-                DO variable_idx=1,INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES
-                  DEPENDENT_VARIABLE=>INTERFACE_CONDITION%FIELD_VARIABLES(variable_idx)%PTR
-                  IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
-                    DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
-                    IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                      GEOMETRIC_FIELD=>DEPENDENT_FIELD%GEOMETRIC_FIELD
-                      CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_SETUP(INTERFACE_EQUATIONS%INTERPOLATION% &
-                        & VARIABLE_INTERPOLATION(variable_idx),GEOMETRIC_FIELD,DEPENDENT_FIELD,ERR,ERROR,*999)
+              INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
+              IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
+                IF(ASSOCIATED(INTERFACE_EQUATIONS%INTERPOLATION)) THEN
+                  GEOMETRIC_FIELD=>INTERFACE_CONDITION%GEOMETRY%GEOMETRIC_FIELD
+                  DEPENDENT_FIELD=>INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD                
+                  CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_SETUP(INTERFACE_EQUATIONS%INTERPOLATION%INTERFACE_INTERPOLATION, &
+                    & GEOMETRIC_FIELD,DEPENDENT_FIELD,ERR,ERROR,*999)
+                  DO variable_idx=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                    DEPENDENT_VARIABLE=>INTERFACE_DEPENDENT%FIELD_VARIABLES(variable_idx)%PTR
+                    IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                      DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
+                      IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                        GEOMETRIC_FIELD=>DEPENDENT_FIELD%GEOMETRIC_FIELD
+                        CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_SETUP(INTERFACE_EQUATIONS%INTERPOLATION% &
+                          & VARIABLE_INTERPOLATION(variable_idx),GEOMETRIC_FIELD,DEPENDENT_FIELD,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("Dependent variable field is not associated.",ERR,ERROR,*999)
+                      ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Dependent variable field is not associated.",ERR,ERROR,*999)
+                      LOCAL_ERROR="Dependent variable is not associated for variable index "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                  ELSE
-                    LOCAL_ERROR="Dependent variable is not associated for variable index "// &
-                      & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ENDDO !variable_idx
+                  ENDDO !variable_idx
+                ELSE
+                  CALL FLAG_ERROR("Interface equations interpolation is not associated.",ERR,ERROR,*999)
+                ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface equations interpolation is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
@@ -592,6 +598,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,variable_idx
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
     TYPE(VARYING_STRING) :: DUMMY_ERROR
  
     CALL ENTERS("INTERFACE_EQUATIONS_INTERPOLATION_INITIALISE",ERR,ERROR,*998)
@@ -602,18 +609,23 @@ CONTAINS
         IF(ASSOCIATED(INTERFACE_EQUATIONS%INTERPOLATION)) THEN
           CALL FLAG_ERROR("Interface equations interpolation is already associated.",ERR,ERROR,*998)
         ELSE
-          ALLOCATE(INTERFACE_EQUATIONS%INTERPOLATION,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface equations interpolation.",ERR,ERROR,*999)
-          INTERFACE_EQUATIONS%INTERPOLATION%INTERFACE_EQUATIONS=>INTERFACE_EQUATIONS
-          CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_INITIALISE(INTERFACE_EQUATIONS%INTERPOLATION%INTERFACE_INTERPOLATION, &
-            & ERR,ERROR,*999)
-          ALLOCATE(INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES), &
-            & STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface equations interpolation mesh interpolation.",ERR,ERROR,*999)
-          DO variable_idx=1,INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES
-            CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_INITIALISE(INTERFACE_EQUATIONS%INTERPOLATION% &
-              & VARIABLE_INTERPOLATION(variable_idx),ERR,ERROR,*999)
-          ENDDO !variable_idx
+          INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
+          IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
+            ALLOCATE(INTERFACE_EQUATIONS%INTERPOLATION,STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface equations interpolation.",ERR,ERROR,*999)
+            INTERFACE_EQUATIONS%INTERPOLATION%INTERFACE_EQUATIONS=>INTERFACE_EQUATIONS
+            CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_INITIALISE(INTERFACE_EQUATIONS%INTERPOLATION%INTERFACE_INTERPOLATION, &
+              & ERR,ERROR,*999)
+            ALLOCATE(INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES), &
+              & STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface equations interpolation mesh interpolation.",ERR,ERROR,*999)
+            DO variable_idx=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+              CALL INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_INITIALISE(INTERFACE_EQUATIONS%INTERPOLATION% &
+                & VARIABLE_INTERPOLATION(variable_idx),ERR,ERROR,*999)
+            ENDDO !variable_idx
+          ELSE
+            CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
+          ENDIF
         ENDIF
       ELSE
         CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*998)
@@ -857,6 +869,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("INTERFACE_EQUATIONS_VARIABLE_INTERP_SETS_NUMBER_SET",ERR,ERROR,*999)
@@ -869,30 +882,35 @@ CONTAINS
           IF(ALLOCATED(INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION)) THEN
             INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
             IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
-              IF(VARIABLE_INDEX>0.AND.VARIABLE_INDEX<=INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES) THEN
-                IF(NUMBER_OF_GEOMETRIC_SETS>0) THEN
-                  IF(NUMBER_OF_DEPENDENT_SETS>0) THEN
-                    INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(VARIABLE_INDEX)% &
-                      & NUMBER_OF_GEOMETRIC_INTERPOLATION_SETS=NUMBER_OF_GEOMETRIC_SETS
-                    INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(VARIABLE_INDEX)% &
-                      & NUMBER_OF_DEPENDENT_INTERPOLATION_SETS=NUMBER_OF_DEPENDENT_SETS
+              INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
+              IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
+                IF(VARIABLE_INDEX>0.AND.VARIABLE_INDEX<=INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES) THEN
+                  IF(NUMBER_OF_GEOMETRIC_SETS>0) THEN
+                    IF(NUMBER_OF_DEPENDENT_SETS>0) THEN
+                      INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(VARIABLE_INDEX)% &
+                        & NUMBER_OF_GEOMETRIC_INTERPOLATION_SETS=NUMBER_OF_GEOMETRIC_SETS
+                      INTERFACE_EQUATIONS%INTERPOLATION%VARIABLE_INTERPOLATION(VARIABLE_INDEX)% &
+                        & NUMBER_OF_DEPENDENT_INTERPOLATION_SETS=NUMBER_OF_DEPENDENT_SETS
+                    ELSE
+                      LOCAL_ERROR="The specified number of dependent sets of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DEPENDENT_SETS,"*",ERR,ERROR))// &
+                        & " is invalid. The number of dependent sets must be > 0."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ELSE
-                    LOCAL_ERROR="The specified number of dependent sets of "// &
-                      & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DEPENDENT_SETS,"*",ERR,ERROR))// &
-                      & " is invalid. The number of dependent sets must be > 0."
+                    LOCAL_ERROR="The specified number of geometric sets of "// &
+                      & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_GEOMETRIC_SETS,"*",ERR,ERROR))// &
+                      & " is invalid. The number of geometric sets must be > 0."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  LOCAL_ERROR="The specified number of geometric sets of "// &
-                    & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_GEOMETRIC_SETS,"*",ERR,ERROR))// &
-                    & " is invalid. The number of geometric sets must be > 0."
+                  LOCAL_ERROR="The specified variable index of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_INDEX,"*",ERR,ERROR))// &
+                    & " is invalid. The index needs to be > 0 and <= "// &
+                    & TRIM(NUMBER_TO_VSTRING(INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                LOCAL_ERROR="The specified variable index of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_INDEX,"*",ERR,ERROR))// &
-                  & " is invalid. The index needs to be > 0 and <= "// &
-                  & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)

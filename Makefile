@@ -1554,7 +1554,8 @@ $(OBJECT_DIR)/lists.o	:	$(SOURCE_DIR)/lists.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/machine_constants_aix.o	:	$(SOURCE_DIR)/machine_constants_aix.f90 \
 	$(OBJECT_DIR)/constants.o \
@@ -1804,8 +1805,10 @@ $(OBJECT_DIR)/solver_mapping_routines.o	:	$(SOURCE_DIR)/solver_mapping_routines.
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/interface_conditions_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \

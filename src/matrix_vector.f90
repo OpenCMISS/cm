@@ -308,14 +308,14 @@ CONTAINS
           MATRIX%DATA_INTG=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the given value"
+            & " does not correspond to the integer data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_ALL_VALUES_SET_INTG")
@@ -348,14 +348,14 @@ CONTAINS
           MATRIX%DATA_SP=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the given value"
+            & " does not correspond to the single precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_ALL_VALUES_SET_SP")
@@ -388,14 +388,14 @@ CONTAINS
           MATRIX%DATA_DP=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the given value"
+            & " does not correspond to the double precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_ALL_VALUES_SET_DP")
@@ -428,14 +428,14 @@ CONTAINS
           MATRIX%DATA_L=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the given value"
+            & " does not correspond to the logical data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_ALL_VALUES_SET_L")
@@ -542,23 +542,23 @@ CONTAINS
             IF(COUNT>MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW) MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=COUNT
           ENDDO !row_idx          
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         IF(MATRIX%SIZE>0) THEN
           SELECT CASE(MATRIX%DATA_TYPE)
           CASE(MATRIX_VECTOR_INTG_TYPE)
             ALLOCATE(MATRIX%DATA_INTG(MATRIX%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix integer data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix integer data.",ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_SP_TYPE)
             ALLOCATE(MATRIX%DATA_SP(MATRIX%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix single precision data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix single precision data.",ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_DP_TYPE)
             ALLOCATE(MATRIX%DATA_DP(MATRIX%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix double precision data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix double precision data.",ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_L_TYPE)
             ALLOCATE(MATRIX%DATA_L(MATRIX%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix logical data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix logical data.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -596,10 +596,10 @@ CONTAINS
     CALL ENTERS("MATRIX_CREATE_START",ERR,ERROR,*999)
 
     IF(ASSOCIATED(MATRIX)) THEN
-      CALL FLAG_ERROR("Matrix is already associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Matrix is already associated.",ERR,ERROR,*998)
     ELSE
       ALLOCATE(MATRIX,STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate the matrix",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate the matrix.",ERR,ERROR,*999)
       CALL MATRIX_INITIALISE(MATRIX,ERR,ERROR,*999)
       !Set the defaults
       MATRIX%DATA_TYPE=MATRIX_VECTOR_DP_TYPE
@@ -633,7 +633,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)    
         IF(MATRIX%MATRIX_FINISHED) THEN
@@ -641,15 +641,15 @@ CONTAINS
             DATA=>MATRIX%DATA_INTG
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the integer data type of the requested values"
+              & " does not correspond to the integer data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_DATA_GET_INTG")
@@ -678,7 +678,7 @@ CONTAINS
 
      IF(ASSOCIATED(MATRIX)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)
         IF(MATRIX%MATRIX_FINISHED) THEN
@@ -686,15 +686,15 @@ CONTAINS
             DATA=>MATRIX%DATA_SP
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the single precision data type of the requested values"
+              & " does not correspond to the single precision data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_DATA_GET_SP")
@@ -723,7 +723,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)
         IF(MATRIX%MATRIX_FINISHED) THEN
@@ -731,15 +731,15 @@ CONTAINS
             DATA=>MATRIX%DATA_DP
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the double precision data type of the requested values"
+              & " does not correspond to the double precision data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_DATA_GET_DP")
@@ -768,7 +768,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)
         IF(MATRIX%MATRIX_FINISHED) THEN
@@ -776,15 +776,15 @@ CONTAINS
             DATA=>MATRIX%DATA_L
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the logical data type of the requested values"
+              & " does not correspond to the logical data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_DATA_GET_L")
@@ -813,7 +813,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN      
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(DATA_TYPE)
         CASE(MATRIX_VECTOR_INTG_TYPE)
@@ -825,12 +825,12 @@ CONTAINS
         CASE(MATRIX_VECTOR_L_TYPE)
           MATRIX%DATA_TYPE=MATRIX_VECTOR_L_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="The matrix vector data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix vector data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_DATA_TYPE_SET")
@@ -857,7 +857,7 @@ CONTAINS
     IF(ASSOCIATED(MATRIX)) THEN
       CALL MATRIX_FINALISE(MATRIX,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_DESTROY")
@@ -886,7 +886,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(ASSOCIATED(NEW_MATRIX)) THEN
-        CALL FLAG_ERROR("New matrix is already associated",ERR,ERROR,*998)
+        CALL FLAG_ERROR("New matrix is already associated.",ERR,ERROR,*998)
       ELSE
         CALL MATRIX_CREATE_START(NEW_MATRIX,ERR,ERROR,*999)
         CALL MATRIX_DATA_TYPE_SET(NEW_MATRIX,MATRIX%DATA_TYPE,ERR,ERROR,*999)
@@ -901,13 +901,13 @@ CONTAINS
           CALL MATRIX_NUMBER_NON_ZEROS_SET(NEW_MATRIX,MATRIX%NUMBER_NON_ZEROS,ERR,ERROR,*999)
           CALL MATRIX_STORAGE_LOCATIONS_SET(NEW_MATRIX,MATRIX%ROW_INDICES,MATRIX%COLUMN_INDICES,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         CALL MATRIX_CREATE_FINISH(NEW_MATRIX,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*998)
     ENDIF
 
     CALL EXITS("MATRIX_DUPLICATE")
@@ -979,7 +979,7 @@ CONTAINS
       MATRIX%SIZE=0      
       MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=0      
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_INITIALISE")
@@ -1009,7 +1009,7 @@ CONTAINS
       IF(MATRIX%MATRIX_FINISHED) THEN
         MAX_COLUMNS_PER_ROW=MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
@@ -1138,7 +1138,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has been finished.",ERR,ERROR,*999)
       ELSE
         IF(MAX_M>0) THEN
           IF(MAX_N>0) THEN
@@ -1148,27 +1148,27 @@ CONTAINS
                 MATRIX%MAX_N=MAX_N
               ELSE
                 LOCAL_ERROR="The maximum number of matrix rows ("//TRIM(NUMBER_TO_VSTRING(MAX_N,"*",ERR,ERROR))// &
-                  & ") must be >= the number of matrix rows ("//TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))//")"
+                  & ") must be >= the number of matrix rows ("//TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))//")."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The maximum number of matrix columns ("//TRIM(NUMBER_TO_VSTRING(MAX_M,"*",ERR,ERROR))// &
-                & ") must be >= the number of matrix columns ("//TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//")"
+                & ") must be >= the number of matrix columns ("//TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//")."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The maximum number of matrix columns of "//TRIM(NUMBER_TO_VSTRING(MAX_N,"*",ERR,ERROR))// &
-              & " is invalid. The number must be > 0"
+              & " is invalid. The number must be > 0."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The maximum number of matrix rows of "//TRIM(NUMBER_TO_VSTRING(MAX_M,"*",ERR,ERROR))// &
-            & " is invalid. The number must be > 0"
+            & " is invalid. The number must be > 0."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_MAX_SIZE_SET")
@@ -1220,15 +1220,15 @@ CONTAINS
               & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,L13))','(20X,8(X,L13))', &
               & ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+            LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
           DO i=1,MATRIX%M
             ROW_STRING=NUMBER_TO_CHARACTER(i,"I9",ERR,ERROR)
@@ -1250,7 +1250,7 @@ CONTAINS
               CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1)-1,8,8,MATRIX%DATA_L,INITIAL_STRING, &
                 & '(20X,8(X,L13))',ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDDO !i
@@ -1275,21 +1275,21 @@ CONTAINS
               CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1)-1,8,8,MATRIX%DATA_L, &
                 & INITIAL_STRING,'(20X,8(X,L13))',ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDDO !j
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
-          CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_OUTPUT")
@@ -1319,7 +1319,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has been finished.",ERR,ERROR,*999)
       ELSE
         IF(M>0) THEN
           IF(N>0) THEN
@@ -1327,17 +1327,17 @@ CONTAINS
             MATRIX%N=N
           ELSE
             LOCAL_ERROR="The number of matrix columns of "//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))// &
-              & " is invalid. The number must be >0"
+              & " is invalid. The number must be >0."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The number of matrix rows of "//TRIM(NUMBER_TO_VSTRING(M,"*",ERR,ERROR))// &
-            & " is invalid. The number must be >0"
+            & " is invalid. The number must be >0."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_SIZE_SET")
@@ -1368,18 +1368,17 @@ CONTAINS
 
     CALL ENTERS("MATRIX_STORAGE_LOCATION_FIND",ERR,ERROR,*999)
 
+    LOCATION=0
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
         IF(I<1.OR.I>MATRIX%M) THEN
-          LOCATION=0
           LOCAL_ERROR="Row number "//TRIM(NUMBER_TO_VSTRING(I,"*",ERR,ERROR))//" is outside the matrix range of 1 to "// &
-            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))
+            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
         IF(J<1.OR.J>MATRIX%N) THEN
-          LOCATION=0
           LOCAL_ERROR="Column number "//TRIM(NUMBER_TO_VSTRING(J,"*",ERR,ERROR))//" is outside the matrix range of 1 to "// &
-            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))
+            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       
@@ -1387,11 +1386,7 @@ CONTAINS
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
           LOCATION=I+(J-1)*MATRIX%M
         CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-          IF(I==J) THEN
-            LOCATION=I
-          ELSE
-            LOCATION=0
-          ENDIF
+          IF(I==J) LOCATION=I
         CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
           LOCATION=I+(J-1)*MATRIX%MAX_M
         CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
@@ -1401,50 +1396,38 @@ CONTAINS
           LOWLIMIT=MATRIX%ROW_INDICES(I)
           IF(J>=MATRIX%COLUMN_INDICES(LOWLIMIT)) THEN
             UPLIMIT=MATRIX%ROW_INDICES(I+1)
-            IF(J<=MATRIX%COLUMN_INDICES(UPLIMIT-1)) THEN
-              DO WHILE((UPLIMIT-LOWLIMIT)>1)
-                MIDPOINT=(UPLIMIT+LOWLIMIT)/2
-                IF(MATRIX%COLUMN_INDICES(MIDPOINT)>J) THEN
-                  UPLIMIT=MIDPOINT
-                ELSE
-                  LOWLIMIT=MIDPOINT
-                ENDIF
-              ENDDO
-              IF(MATRIX%COLUMN_INDICES(LOWLIMIT)==J) THEN
-                LOCATION=LOWLIMIT
-              ELSE
-                LOCATION=0
+            IF(UPLIMIT>LOWLIMIT) THEN
+              IF(J<=MATRIX%COLUMN_INDICES(UPLIMIT-1)) THEN
+                DO WHILE((UPLIMIT-LOWLIMIT)>1)
+                  MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                  IF(MATRIX%COLUMN_INDICES(MIDPOINT)>J) THEN
+                    UPLIMIT=MIDPOINT
+                  ELSE
+                    LOWLIMIT=MIDPOINT
+                  ENDIF
+                ENDDO
+                IF(MATRIX%COLUMN_INDICES(LOWLIMIT)==J) LOCATION=LOWLIMIT
               ENDIF
-            ELSE
-              LOCATION=0
             ENDIF
-          ELSE
-            LOCATION=0
           ENDIF
         CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
           !Search for the row number in the sparsity list using the bisection (binary search) algorithm
           LOWLIMIT=MATRIX%COLUMN_INDICES(J)
           IF(I>=MATRIX%ROW_INDICES(LOWLIMIT)) THEN
             UPLIMIT=MATRIX%COLUMN_INDICES(J+1)
-            IF(I<=MATRIX%ROW_INDICES(UPLIMIT-1)) THEN
-              DO WHILE((UPLIMIT-LOWLIMIT)>1)
-                MIDPOINT=(UPLIMIT+LOWLIMIT)/2
-                IF(MATRIX%ROW_INDICES(MIDPOINT)>I) THEN
-                  UPLIMIT=MIDPOINT
-                ELSE
-                  LOWLIMIT=MIDPOINT
-                ENDIF
-              ENDDO
-              IF(MATRIX%ROW_INDICES(LOWLIMIT)==I) THEN
-                LOCATION=LOWLIMIT
-              ELSE
-                LOCATION=0
+            IF(UPLIMIT>LOWLIMIT) THEN
+              IF(I<=MATRIX%ROW_INDICES(UPLIMIT-1)) THEN
+                DO WHILE((UPLIMIT-LOWLIMIT)>1)
+                  MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                  IF(MATRIX%ROW_INDICES(MIDPOINT)>I) THEN
+                    UPLIMIT=MIDPOINT
+                  ELSE
+                    LOWLIMIT=MIDPOINT
+                  ENDIF
+                ENDDO
+                IF(MATRIX%ROW_INDICES(LOWLIMIT)==I) LOCATION=LOWLIMIT
               ENDIF
-            ELSE
-              LOCATION=0
             ENDIF
-          ELSE
-            LOCATION=0
           ENDIF
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
           FOUNDROW=.FALSE.
@@ -1466,14 +1449,14 @@ CONTAINS
           ENDDO
           IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_STORAGE_LOCATION_FIND")
@@ -1505,13 +1488,13 @@ CONTAINS
       IF(MATRIX%MATRIX_FINISHED) THEN
         SELECT CASE(MATRIX%STORAGE_TYPE)
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get matrix locations for a block storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not get matrix locations for a block storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get matrix locations for a diagonal storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not get matrix locations for a diagonal storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get matrix locations for a column major storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not get matrix locations for a column major storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not get matrix locations for a row major storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not get matrix locations for a row major storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)          
           ROW_INDICES=>MATRIX%ROW_INDICES
           COLUMN_INDICES=>MATRIX%COLUMN_INDICES
@@ -1560,17 +1543,17 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("Matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Matrix has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(MATRIX%STORAGE_TYPE)
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set matrix locations for a block storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not set matrix locations for a block storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set matrix locations for a diagonal storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not set matrix locations for a diagonal storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set matrix locations for a column major storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not set matrix locations for a column major storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
-          CALL FLAG_ERROR("Can not set matrix locations for a row major storage matrix",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not set matrix locations for a row major storage matrix.",ERR,ERROR,*999)
         CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
           IF(SIZE(ROW_INDICES,1)==MATRIX%M+1) THEN
             IF(SIZE(COLUMN_INDICES,1)==MATRIX%NUMBER_NON_ZEROS) THEN
@@ -1581,7 +1564,7 @@ CONTAINS
                       LOCAL_ERROR="Invalid row indices. Row "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" index number ("// &
                         & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//") is less than row "// &
                         & TRIM(NUMBER_TO_VSTRING(i-1,"*",ERR,ERROR))//" index number ("// &
-                        & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i-1),"*",ERR,ERROR))//")"
+                        & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i-1),"*",ERR,ERROR))//")."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF                    
                   ENDDO !i
@@ -1811,7 +1794,7 @@ CONTAINS
 
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
-        CALL FLAG_ERROR("The matrix has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(STORAGE_TYPE)
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
@@ -1829,12 +1812,12 @@ CONTAINS
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
           MATRIX%STORAGE_TYPE=MATRIX_ROW_COLUMN_STORAGE_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_STORAGE_TYPE_SET")
@@ -1873,7 +1856,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(k)
@@ -1881,26 +1864,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the integer data type of the given values"
+                & " does not correspond to the integer data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_INTG")
@@ -1936,21 +1919,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the given value"
+            & " does not correspond to the integer data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_INTG1")
@@ -1990,7 +1973,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -1999,28 +1982,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the integer data type of the given values"
+                & " does not correspond to the integer data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_INTG2")
@@ -2059,7 +2042,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(k)
@@ -2067,26 +2050,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the single precision data type of the given values"
+                & " does not correspond to the single precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_SP")
@@ -2122,21 +2105,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the given value"
+            & " does not correspond to the single precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_SP1")
@@ -2176,7 +2159,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2185,28 +2168,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the single precision data type of the given values"
+                & " does not correspond to the single precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_SP2")
@@ -2245,7 +2228,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(k)
@@ -2253,26 +2236,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the double precision data type of the given values"
+                & " does not correspond to the double precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_DP")
@@ -2308,21 +2291,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the given value"
+            & " does not correspond to the double precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_DP1")
@@ -2362,7 +2345,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2371,28 +2354,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the double precision data type of the given values"
+                & " does not correspond to the double precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_DP2")
@@ -2431,7 +2414,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(k)
@@ -2439,26 +2422,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the logical data type of the given values"
+                & " does not correspond to the logical data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_L")
@@ -2494,21 +2477,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the given value"
+            & " does not correspond to the logical data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_L1")
@@ -2548,7 +2531,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -2557,28 +2540,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the logical data type of the given values"
+                & " does not correspond to the logical data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_ADD_L2")
@@ -2623,26 +2606,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the integer data type of the given values"
+                & " does not correspond to the integer data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_INTG")
@@ -2683,14 +2666,14 @@ CONTAINS
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the given value"
+            & " does not correspond to the integer data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_INTG1")
@@ -2737,28 +2720,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the integer data type of the given values"
+                & " does not correspond to the integer data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_VALUES_GET_INTG2")
@@ -2803,26 +2786,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the single precision data type of the given values"
+                & " does not correspond to the single precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_SP")
@@ -2863,14 +2846,14 @@ CONTAINS
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the given value"
+            & " does not correspond to the single precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_SP1")
@@ -2917,28 +2900,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the single precision data type of the given values"
+                & " does not correspond to the single precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_SP2")
@@ -2983,26 +2966,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the double precision data type of the given values"
+                & " does not correspond to the double precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_DP")
@@ -3043,14 +3026,14 @@ CONTAINS
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the given value"
+            & " does not correspond to the double precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_DP1")
@@ -3097,28 +3080,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the double precision data type of the given values"
+                & " does not correspond to the double precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_DP2")
@@ -3163,26 +3146,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the logical data type of the given values"
+                & " does not correspond to the logical data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_L")
@@ -3223,14 +3206,14 @@ CONTAINS
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the given value"
+            & " does not correspond to the logical data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_L1")
@@ -3277,28 +3260,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the logical data type of the given values"
+                & " does not correspond to the logical data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_GET_L2")
@@ -3337,7 +3320,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_INTG(LOCATION)=VALUES(k)
@@ -3345,26 +3328,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the integer data type of the given values"
+                & " does not correspond to the integer data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_INTG")
@@ -3400,21 +3383,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_INTG(LOCATION)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the given value"
+            & " does not correspond to the integer data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_INTG1")
@@ -3454,7 +3437,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_INTG(LOCATION)=VALUES(i,j)
@@ -3463,28 +3446,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the integer data type of the given values"
+                & " does not correspond to the integer data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_VALUES_SET_INTG2")
@@ -3523,7 +3506,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_SP(LOCATION)=VALUES(k)
@@ -3531,26 +3514,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the single precision data type of the given values"
+                & " does not correspond to the single precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_SP")
@@ -3586,21 +3569,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_SP(LOCATION)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the given value"
+            & " does not correspond to the single precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_SP1")
@@ -3640,7 +3623,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_SP(LOCATION)=VALUES(i,j)
@@ -3649,28 +3632,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the single precision data type of the given values"
+                & " does not correspond to the single precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("MATRIX_VALUES_SET_SP2")
@@ -3709,7 +3692,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_DP(LOCATION)=VALUES(k)
@@ -3717,26 +3700,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the double precision data type of the given values"
+                & " does not correspond to the double precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_DP")
@@ -3772,21 +3755,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_DP(LOCATION)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the given value"
+            & " does not correspond to the double precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_DP1")
@@ -3826,7 +3809,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_DP(LOCATION)=VALUES(i,j)
@@ -3835,28 +3818,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the double precision data type of the given values"
+                & " does not correspond to the double precision data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_DP2")
@@ -3895,7 +3878,7 @@ CONTAINS
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
                   LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix"
+                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_L(LOCATION)=VALUES(k)
@@ -3903,26 +3886,26 @@ CONTAINS
               ENDDO !k
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the logical data type of the given values"
+                & " does not correspond to the logical data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_L")
@@ -3958,21 +3941,21 @@ CONTAINS
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
             LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix"
+              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_L(LOCATION)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the given value"
+            & " does not correspond to the logical data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_L1")
@@ -4012,7 +3995,7 @@ CONTAINS
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix"
+                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_L(LOCATION)=VALUES(i,j)
@@ -4021,28 +4004,28 @@ CONTAINS
               ENDDO !i
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
-                & " does not correspond to the logical data type of the given values"
+                & " does not correspond to the logical data type of the given values."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")"
+              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The matrix has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("MATRIX_VALUES_SET_L2")
@@ -4075,14 +4058,14 @@ CONTAINS
           VECTOR%DATA_INTG=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the given value"
+            & " does not correspond to the integer data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_ALL_VALUES_SET_INTG")
@@ -4115,14 +4098,14 @@ CONTAINS
           VECTOR%DATA_SP=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the given value"
+            & " does not correspond to the single precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_ALL_VALUES_SET_SP")
@@ -4155,14 +4138,14 @@ CONTAINS
           VECTOR%DATA_DP=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the given value"
+            & " does not correspond to the double precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_ALL_VALUES_SET_DP")
@@ -4195,14 +4178,14 @@ CONTAINS
           VECTOR%DATA_L=VALUE
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the given value"
+            & " does not correspond to the logical data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_ALL_VALUES_SET_L")
@@ -4230,24 +4213,24 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(VECTOR%VECTOR_FINISHED) THEN
-        CALL FLAG_ERROR("Vector has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Vector has been finished.",ERR,ERROR,*999)
       ELSE
         IF(VECTOR%SIZE>0) THEN
           SELECT CASE(VECTOR%DATA_TYPE)
           CASE(MATRIX_VECTOR_INTG_TYPE)
             ALLOCATE(VECTOR%DATA_INTG(VECTOR%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector integer data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector integer data.",ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_SP_TYPE)
             ALLOCATE(VECTOR%DATA_SP(VECTOR%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector single precision data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector single precision data.",ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_DP_TYPE)
             ALLOCATE(VECTOR%DATA_DP(VECTOR%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector double precision data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector double precision data.",ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_L_TYPE)
             ALLOCATE(VECTOR%DATA_L(VECTOR%SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector logical data",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate vector logical data.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The vector data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+            LOCAL_ERROR="The vector data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
@@ -4256,7 +4239,7 @@ CONTAINS
         VECTOR%VECTOR_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("VECTOR_CREATE_FINISH")
@@ -4282,10 +4265,10 @@ CONTAINS
     CALL ENTERS("VECTOR_CREATE_START",ERR,ERROR,*999)
 
     IF(ASSOCIATED(VECTOR)) THEN
-      CALL FLAG_ERROR("Vector is already associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Vector is already associated.",ERR,ERROR,*998)
     ELSE
       ALLOCATE(VECTOR,STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate the vector",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate the vector.",ERR,ERROR,*999)
       CALL VECTOR_INITIALISE(VECTOR,ERR,ERROR,*999)
       !Set the defaults
       VECTOR%DATA_TYPE=MATRIX_VECTOR_DP_TYPE
@@ -4318,7 +4301,7 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)
         IF(VECTOR%VECTOR_FINISHED) THEN
@@ -4326,15 +4309,15 @@ CONTAINS
             DATA=>VECTOR%DATA_INTG
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the integer data type of the requested values"
+              & " does not correspond to the integer data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("VECTOR_DATA_GET_INTG")
@@ -4363,7 +4346,7 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)
         IF(VECTOR%VECTOR_FINISHED) THEN
@@ -4371,15 +4354,15 @@ CONTAINS
             DATA=>VECTOR%DATA_SP
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the single precision data type of the requested values"
+              & " does not correspond to the single precision data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("VECTOR_DATA_GET_SP")
@@ -4408,7 +4391,7 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)
         IF(VECTOR%VECTOR_FINISHED) THEN
@@ -4416,15 +4399,15 @@ CONTAINS
             DATA=>VECTOR%DATA_DP
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the double precision data type of the requested values"
+              & " does not correspond to the double precision data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("VECTOR_DATA_GET_DP")
@@ -4453,7 +4436,7 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(ASSOCIATED(DATA)) THEN
-        CALL FLAG_ERROR("Data is already associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Data is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(DATA)
         IF(VECTOR%VECTOR_FINISHED) THEN
@@ -4461,15 +4444,15 @@ CONTAINS
             DATA=>VECTOR%DATA_L
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the logical data type of the requested values"
+              & " does not correspond to the logical data type of the requested values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("VECTOR_DATA_GET_L")
@@ -4498,7 +4481,7 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(VECTOR%VECTOR_FINISHED) THEN
-        CALL FLAG_ERROR("The vector has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(DATA_TYPE)
         CASE(MATRIX_VECTOR_INTG_TYPE)
@@ -4510,12 +4493,12 @@ CONTAINS
         CASE(MATRIX_VECTOR_L_TYPE)
           VECTOR%DATA_TYPE=MATRIX_VECTOR_L_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="The vector data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid"
+          LOCAL_ERROR="The vector data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_DATA_TYPE_SET")
@@ -4543,7 +4526,7 @@ CONTAINS
     IF(ASSOCIATED(VECTOR)) THEN
       CALL VECTOR_FINALISE(VECTOR,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_DESTROY")
@@ -4571,7 +4554,7 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(ASSOCIATED(NEW_VECTOR)) THEN
-        CALL FLAG_ERROR("New vector is already associated",ERR,ERROR,*998)
+        CALL FLAG_ERROR("New vector is already associated.",ERR,ERROR,*998)
       ELSE
         CALL VECTOR_CREATE_START(NEW_VECTOR,ERR,ERROR,*999)
         CALL VECTOR_DATA_TYPE_SET(NEW_VECTOR,VECTOR%DATA_TYPE,ERR,ERROR,*999)
@@ -4579,7 +4562,7 @@ CONTAINS
         CALL VECTOR_CREATE_FINISH(NEW_VECTOR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*998)
     ENDIF
 
     CALL EXITS("VECTOR_DUPLICATE")
@@ -4643,7 +4626,7 @@ CONTAINS
       VECTOR%DATA_TYPE=0
       VECTOR%SIZE=0      
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_INITIALISE")
@@ -4672,18 +4655,18 @@ CONTAINS
 
     IF(ASSOCIATED(VECTOR)) THEN
       IF(VECTOR%VECTOR_FINISHED) THEN
-        CALL FLAG_ERROR("The vector has been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has been finished.",ERR,ERROR,*999)
       ELSE
         IF(N>0) THEN
           VECTOR%N=N
         ELSE
           LOCAL_ERROR="The size of the vector ("//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))// &
-            & ") is invalid. The number must be >0"
+            & ") is invalid. The number must be >0."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_SIZE_SET")
@@ -4721,7 +4704,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_INTG(k)
@@ -4729,19 +4712,19 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the integer data type of the given values"
+              & " does not correspond to the integer data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_INTG")
@@ -4774,21 +4757,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_INTG(INDEX)
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the given value"
+            & " does not correspond to the integer data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_INTG1")
@@ -4826,7 +4809,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_SP(k)
@@ -4834,19 +4817,19 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the single precision data type of the given values"
+              & " does not correspond to the single precision data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_SP")
@@ -4879,21 +4862,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_SP(INDEX)
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the given value"
+            & " does not correspond to the single precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_SP1")
@@ -4931,7 +4914,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_DP(k)
@@ -4939,19 +4922,19 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the double precision data type of the given values"
+              & " does not correspond to the double precision data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_DP")
@@ -4984,21 +4967,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_DP(INDEX)
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the given value"
+            & " does not correspond to the double precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_DP1")
@@ -5036,7 +5019,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_L(k)
@@ -5044,7 +5027,7 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the logical data type of the given values"
+              & " does not correspond to the logical data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
@@ -5053,10 +5036,10 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_L")
@@ -5089,21 +5072,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_L(INDEX)
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the given value"
+            & " does not correspond to the logical data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_GET_L1")
@@ -5141,7 +5124,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VECTOR%DATA_INTG(k)=VALUES(i)
@@ -5149,19 +5132,19 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the integer data type of the given values"
+              & " does not correspond to the integer data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_INTG")
@@ -5194,21 +5177,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_INTG(INDEX)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the integer data type of the given value"
+            & " does not correspond to the integer data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_INTG1")
@@ -5246,7 +5229,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                VECTOR%DATA_SP(k)=VALUES(i)
@@ -5254,19 +5237,19 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the single precision data type of the given values"
+              & " does not correspond to the single precision data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_SP")
@@ -5299,21 +5282,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_SP(INDEX)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the single precision data type of the given value"
+            & " does not correspond to the single precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_SP1")
@@ -5351,7 +5334,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VECTOR%DATA_DP(k)=VALUES(i)
@@ -5359,19 +5342,19 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the double precision data type of the given values"
+              & " does not correspond to the double precision data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_DP")
@@ -5404,21 +5387,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_DP(INDEX)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the double precision data type of the given value"
+            & " does not correspond to the double precision data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_DP1")
@@ -5456,7 +5439,7 @@ CONTAINS
               IF(k<1.OR.k>VECTOR%N) THEN
                 LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
                     & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VECTOR%DATA_L(k)=VALUES(i)
@@ -5464,19 +5447,19 @@ CONTAINS
             ENDDO !i
           ELSE
             LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not correspond to the logical data type of the given values"
+              & " does not correspond to the logical data type of the given values."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_L")
@@ -5509,21 +5492,21 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
             LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))
+              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_L(INDEX)=VALUE
           ENDIF
         ELSE
           LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
-            & " does not correspond to the logical data type of the given value"
+            & " does not correspond to the logical data type of the given value."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The vector has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("The vector has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Vector is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Vector is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("VECTOR_VALUES_SET_L1")

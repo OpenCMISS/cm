@@ -75,7 +75,7 @@ ifndef MPI
   MPI := mpich2
 endif
 
-ifndef USECELLMLL
+ifndef USECELLML
   USECELLML := false
 endif
 

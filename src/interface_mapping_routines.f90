@@ -89,13 +89,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) ::    ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: column_idx,dof_idx,matrix_idx,mesh_idx,variable_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,LAGRANGE_VARIABLE
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("INTERFACE_MAPPING_CALCULATE",ERR,ERROR,*999)
 
@@ -109,69 +111,85 @@ CONTAINS
           CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
             LAGRANGE=>INTERFACE_CONDITION%LAGRANGE
             IF(ASSOCIATED(LAGRANGE)) THEN
-              !Set the Lagrange variable information
-              LAGRANGE_FIELD=>LAGRANGE%LAGRANGE_FIELD
-              NULLIFY(LAGRANGE_VARIABLE)
-              CALL FIELD_VARIABLE_GET(LAGRANGE_FIELD,CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE,LAGRANGE_VARIABLE, &
-                & ERR,ERROR,*999)
-              INTERFACE_MAPPING%LAGRANGE_VARIABLE_TYPE=CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE
-              INTERFACE_MAPPING%LAGRANGE_VARIABLE=>LAGRANGE_VARIABLE
-              !Set the number of columns in the interface matrices
-              INTERFACE_MAPPING%NUMBER_OF_COLUMNS=LAGRANGE_VARIABLE%NUMBER_OF_DOFS
-              INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS=LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS
-              INTERFACE_MAPPING%NUMBER_OF_GLOBAL_COLUMNS=LAGRANGE_VARIABLE%NUMBER_OF_GLOBAL_DOFS
-              !Set the column dofs mapping
-              INTERFACE_MAPPING%COLUMN_DOFS_MAPPING=>LAGRANGE_VARIABLE%DOMAIN_MAPPING
-              ALLOCATE(INTERFACE_MAPPING%LAGRANGE_DOF_TO_COLUMN_MAP(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Lagrange dof to column map.",ERR,ERROR,*999)
-              !1-1 mapping for now
-              DO dof_idx=1,LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                column_idx=LAGRANGE_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(dof_idx)
-                INTERFACE_MAPPING%LAGRANGE_DOF_TO_COLUMN_MAP(dof_idx)=column_idx
-              ENDDO
-              !Set the number of interface matrices
-              INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
-              ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface matrix rows to variable maps.",ERR,ERROR,*999)
-              !Loop over the interface matrices and calculate the row mappings
-              DO matrix_idx=1,INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
-                !Initialise and setup the interface matrix
-                CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
-                mesh_idx=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)
-                NULLIFY(FIELD_VARIABLE)
-                DO variable_idx=1,INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES
-                  IF(INTERFACE_CONDITION%VARIABLE_MESH_INDICES(variable_idx)==mesh_idx) THEN
-                    FIELD_VARIABLE=>INTERFACE_CONDITION%FIELD_VARIABLES(variable_idx)%PTR
-                    EXIT
+              INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
+              IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
+                !Set the Lagrange variable information
+                LAGRANGE_FIELD=>LAGRANGE%LAGRANGE_FIELD
+                NULLIFY(LAGRANGE_VARIABLE)
+                CALL FIELD_VARIABLE_GET(LAGRANGE_FIELD,CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE,LAGRANGE_VARIABLE, &
+                  & ERR,ERROR,*999)
+                INTERFACE_MAPPING%LAGRANGE_VARIABLE_TYPE=CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE
+                INTERFACE_MAPPING%LAGRANGE_VARIABLE=>LAGRANGE_VARIABLE
+                !Set the number of columns in the interface matrices
+                INTERFACE_MAPPING%NUMBER_OF_COLUMNS=LAGRANGE_VARIABLE%NUMBER_OF_DOFS
+                INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS=LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                INTERFACE_MAPPING%NUMBER_OF_GLOBAL_COLUMNS=LAGRANGE_VARIABLE%NUMBER_OF_GLOBAL_DOFS
+                !Set the column dofs mapping
+                INTERFACE_MAPPING%COLUMN_DOFS_MAPPING=>LAGRANGE_VARIABLE%DOMAIN_MAPPING
+                ALLOCATE(INTERFACE_MAPPING%LAGRANGE_DOF_TO_COLUMN_MAP(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Lagrange dof to column map.",ERR,ERROR,*999)
+                !1-1 mapping for now
+                DO dof_idx=1,LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                  column_idx=LAGRANGE_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(dof_idx)
+                  INTERFACE_MAPPING%LAGRANGE_DOF_TO_COLUMN_MAP(dof_idx)=column_idx
+                ENDDO
+                !Set the number of interface matrices
+                INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
+                ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES), &
+                  & STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface matrix rows to variable maps.",ERR,ERROR,*999)
+                !Loop over the interface matrices and calculate the row mappings
+                DO matrix_idx=1,INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
+                  !Initialise and setup the interface matrix
+                  CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
+                  mesh_idx=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)
+                  NULLIFY(EQUATIONS_SET)
+                  NULLIFY(FIELD_VARIABLE)
+                  DO variable_idx=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                    IF(INTERFACE_DEPENDENT%VARIABLE_MESH_INDICES(variable_idx)==mesh_idx) THEN
+                      EQUATIONS_SET=>INTERFACE_DEPENDENT%EQUATIONS_SETS(variable_idx)%PTR
+                      FIELD_VARIABLE=>INTERFACE_DEPENDENT%FIELD_VARIABLES(variable_idx)%PTR
+                      EXIT
+                    ENDIF
+                  ENDDO !variable_idx
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%EQUATIONS_SET=>EQUATIONS_SET
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE=>FIELD_VARIABLE
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MESH_INDEX=mesh_idx
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MATRIX_COEFFICIENT=INTERFACE_MAPPING% &
+                        & CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(matrix_idx)
+                      !Set the number of rows
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_ROWS=FIELD_VARIABLE%NUMBER_OF_DOFS
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%TOTAL_NUMBER_OF_ROWS= &
+                        & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_GLOBAL_ROWS= &
+                        & FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS
+                      !Set the row mapping
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%ROW_DOFS_MAPPING=> &
+                        & FIELD_VARIABLE%DOMAIN_MAPPING
+                      ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP( &
+                        & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dof to row map.",ERR,ERROR,*999)
+                      !1-1 mapping for now
+                      DO dof_idx=1,FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                        INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP(dof_idx)=dof_idx
+                      ENDDO !dof_idx                  
+                    ELSE
+                      LOCAL_ERROR="Dependent variable for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
+                        & " could not be found."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    LOCAL_ERROR="Equations set for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
+                      & " could not be found."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
-                ENDDO !variable_idx
-                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE=>FIELD_VARIABLE
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MESH_INDEX=mesh_idx
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MATRIX_COEFFICIENT=INTERFACE_MAPPING% &
-                    & CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(matrix_idx)
-                  !Set the number of rows
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_ROWS=FIELD_VARIABLE%NUMBER_OF_DOFS
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%TOTAL_NUMBER_OF_ROWS= &
-                    & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_GLOBAL_ROWS= &
-                    & FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS
-                  !Set the row mapping
-                  INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%ROW_DOFS_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
-                  ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP( &
-                    & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dof to row map.",ERR,ERROR,*999)
-                  !1-1 mapping for now
-                  DO dof_idx=1,FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                    INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP(dof_idx)=dof_idx
-                  ENDDO !dof_idx                  
-                ELSE
-                  LOCAL_ERROR="Dependent variable for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
-                    & " could not be found."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDDO !matrix_idx
+                ENDDO !matrix_idx
+              ELSE
+                CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -326,6 +344,7 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR,variable_idx,variable_type_idx
     TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
@@ -352,30 +371,35 @@ CONTAINS
               IF(ASSOCIATED(LAGRANGE)) THEN
                 LAGRANGE_FIELD=>LAGRANGE%LAGRANGE_FIELD
                 IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
-                  !Default the number of interface matrices to the number of added dependent variables
-                  INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES= &
-                    INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES
-                  !Default the Lagrange variable to the first Lagrange variable              
-                  INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=0
-                  DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-                    IF(ASSOCIATED(LAGRANGE_FIELD%VARIABLE_TYPE_MAP(variable_type_idx)%PTR)) THEN
-                      INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=variable_type_idx
-                      EXIT
-                    ENDIF
-                  ENDDO !variable_type_idx
-                  ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(INTERFACE_MAPPING% &
-                    & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix coefficients.",ERR,ERROR,*999)
-                  !Default the interface matrices coefficients to add.
-                  INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS=1.0_DP
-                  ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(INTERFACE_CONDITION% &
-                    & NUMBER_OF_DEPENDENT_VARIABLES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix row field variable indexes.", &
-                    & ERR,ERROR,*999)
-                  !Default the interface matrices to be in mesh index order.
-                  DO variable_idx=1,INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES
-                    INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(variable_idx)=variable_idx
-                  ENDDO !variable_idx
+                  INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
+                  IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
+                    !Default the number of interface matrices to the number of added dependent variables
+                    INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES= &
+                      INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                    !Default the Lagrange variable to the first Lagrange variable              
+                    INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=0
+                    DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+                      IF(ASSOCIATED(LAGRANGE_FIELD%VARIABLE_TYPE_MAP(variable_type_idx)%PTR)) THEN
+                        INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=variable_type_idx
+                        EXIT
+                      ENDIF
+                    ENDDO !variable_type_idx
+                    ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(INTERFACE_MAPPING% &
+                      & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix coefficients.",ERR,ERROR,*999)
+                    !Default the interface matrices coefficients to add.
+                    INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS=1.0_DP
+                    ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(INTERFACE_DEPENDENT% &
+                      & NUMBER_OF_DEPENDENT_VARIABLES),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix row field variable indexes.", &
+                      & ERR,ERROR,*999)
+                    !Default the interface matrices to be in mesh index order.
+                    DO variable_idx=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                      INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(variable_idx)=variable_idx
+                    ENDDO !variable_idx
+                  ELSE
+                    CALL FLAG_ERROR("Interface condition depdendent is not associated.",ERR,ERROR,*999)
+                  ENDIF
                 ELSE
                   CALL FLAG_ERROR("Interface condition Lagrange field is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -654,6 +678,7 @@ CONTAINS
         IF(matrix_idx>0.AND.matrix_idx<=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES) THEN
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MATRIX_NUMBER=matrix_idx
           NULLIFY(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%INTERFACE_MATRIX)
+          NULLIFY(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%EQUATIONS_SET)
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_TYPE=0
           NULLIFY(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE)
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MESH_INDEX=0
@@ -838,6 +863,7 @@ CONTAINS
     INTEGER(INTG) :: mesh_idx,mesh_idx2,mesh_idx3
     LOGICAL :: FOUND
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -859,35 +885,40 @@ CONTAINS
                 !Check the size of the mesh indicies array
                 IF(SIZE(ROW_MESH_INDICES,1)==CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
                   !Check that mesh indices are valid.
-                  DO mesh_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
-                    FOUND=.FALSE.
-                    DO mesh_idx2=1,INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES
-                      IF(ROW_MESH_INDICES(mesh_idx)==INTERFACE_CONDITION%VARIABLE_MESH_INDICES(mesh_idx2)) THEN
-                        FOUND=.TRUE.
-                        EXIT
-                      ENDIF
-                    ENDDO !mesh_idx2
-                    IF(FOUND) THEN
-                      !Check that the mesh index has not been repeated.
-                      DO mesh_idx3=mesh_idx+1,CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
-                        IF(ROW_MESH_INDICES(mesh_idx)==ROW_MESH_INDICES(mesh_idx3)) THEN
-                          LOCAL_ERROR="The supplied mesh index of "// &
-                            & TRIM(NUMBER_TO_VSTRING(ROW_MESH_INDICES(mesh_idx),"*",ERR,ERROR))// &
-                            & " at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
-                            & " has been repeated at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx3,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
+                  IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
+                    DO mesh_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
+                      FOUND=.FALSE.
+                      DO mesh_idx2=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                        IF(ROW_MESH_INDICES(mesh_idx)==INTERFACE_DEPENDENT%VARIABLE_MESH_INDICES(mesh_idx2)) THEN
+                          FOUND=.TRUE.
+                          EXIT
                         ENDIF
-                      ENDDO !mesh_idx3
-                      !Set the mesh indices
-                      CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES=ROW_MESH_INDICES
-                    ELSE
-                      LOCAL_ERROR="The supplied mesh index of "// &
-                        & TRIM(NUMBER_TO_VSTRING(ROW_MESH_INDICES(mesh_idx),"*",ERR,ERROR))// &
-                        & " at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
-                        & " has not been added as a dependent variable to the interface condition."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ENDDO !mesh_idx
+                      ENDDO !mesh_idx2
+                      IF(FOUND) THEN
+                        !Check that the mesh index has not been repeated.
+                        DO mesh_idx3=mesh_idx+1,CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
+                          IF(ROW_MESH_INDICES(mesh_idx)==ROW_MESH_INDICES(mesh_idx3)) THEN
+                            LOCAL_ERROR="The supplied mesh index of "// &
+                              & TRIM(NUMBER_TO_VSTRING(ROW_MESH_INDICES(mesh_idx),"*",ERR,ERROR))// &
+                              & " at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
+                              & " has been repeated at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx3,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ENDIF
+                        ENDDO !mesh_idx3
+                        !Set the mesh indices
+                        CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES=ROW_MESH_INDICES
+                      ELSE
+                        LOCAL_ERROR="The supplied mesh index of "// &
+                          & TRIM(NUMBER_TO_VSTRING(ROW_MESH_INDICES(mesh_idx),"*",ERR,ERROR))// &
+                          & " at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
+                          & " has not been added as a dependent variable to the interface condition."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO !mesh_idx
+                  ELSE
+                    CALL FLAG_ERROR("Interface condition dependent is not assocaited.",ERR,ERROR,*999)
+                  ENDIF
                 ELSE
                   LOCAL_ERROR="Invalid size of mesh indices. The size of the supplied array ("// &
                     & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_MESH_INDICES,1),"*",ERR,ERROR))// &
@@ -945,6 +976,7 @@ CONTAINS
     LOGICAL :: FOUND
     REAL(DP), ALLOCATABLE :: OLD_MATRIX_COEFFICIENTS(:)
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -965,69 +997,74 @@ CONTAINS
               CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
                 !Check the number of interface matrices
                 IF(NUMBER_OF_INTERFACE_MATRICES>0) THEN
-                  IF(NUMBER_OF_INTERFACE_MATRICES<=INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES) THEN
-                    !If we need to reallocate and reset all the create values cache arrays and change the number of matrices
-                    IF(NUMBER_OF_INTERFACE_MATRICES/=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
-                      ALLOCATE(OLD_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix coefficients.",ERR,ERROR,*999)
-                      ALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix row field indexes.",ERR,ERROR,*999)
-                      OLD_MATRIX_COEFFICIENTS=CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS
-                      OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES
-                      IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)) &
-                        & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)
-                      IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)) &
-                        & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)
-                      ALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix coefficients.",ERR,ERROR,*999)
-                      ALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row field variable indexes.",ERR,ERROR,*999)
-                      IF(NUMBER_OF_INTERFACE_MATRICES>CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
-                        CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)= &
-                          & OLD_MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)
-                        CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES+1: &
-                          & NUMBER_OF_INTERFACE_MATRICES)=1.0_DP
-                        CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(1:CREATE_VALUES_CACHE% &
-                          & NUMBER_OF_INTERFACE_MATRICES)=OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(1:CREATE_VALUES_CACHE% &
-                          & NUMBER_OF_INTERFACE_MATRICES)
-                        !Loop through in mesh index order and set the default matrix to variable map to be in mesh index order
-                        DO matrix_idx=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES+1,NUMBER_OF_INTERFACE_MATRICES
-                          CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)=0
-                          DO variable_idx=1,INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES
-                            FOUND=.FALSE.
-                            DO matrix_idx2=1,CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
-                              IF(INTERFACE_CONDITION%VARIABLE_MESH_INDICES(variable_idx)==CREATE_VALUES_CACHE% &
-                                MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx2)) THEN
-                                FOUND=.TRUE.
-                                EXIT
+                  INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
+                  IF(ASSOCIATED(INTERFACE_DEPENDENT)) THEN
+                    IF(NUMBER_OF_INTERFACE_MATRICES<=INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES) THEN
+                      !If we need to reallocate and reset all the create values cache arrays and change the number of matrices
+                      IF(NUMBER_OF_INTERFACE_MATRICES/=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
+                        ALLOCATE(OLD_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix coefficients.",ERR,ERROR,*999)
+                        ALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix row field indexes.",ERR,ERROR,*999)
+                        OLD_MATRIX_COEFFICIENTS=CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS
+                        OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES
+                        IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)) &
+                          & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)
+                        IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)) &
+                          & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)
+                        ALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix coefficients.",ERR,ERROR,*999)
+                        ALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row field variable indexes.",ERR,ERROR,*999)
+                        IF(NUMBER_OF_INTERFACE_MATRICES>CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
+                          CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)= &
+                            & OLD_MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)
+                          CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES+1: &
+                            & NUMBER_OF_INTERFACE_MATRICES)=1.0_DP
+                          CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(1:CREATE_VALUES_CACHE% &
+                            & NUMBER_OF_INTERFACE_MATRICES)=OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(1:CREATE_VALUES_CACHE% &
+                            & NUMBER_OF_INTERFACE_MATRICES)
+                          !Loop through in mesh index order and set the default matrix to variable map to be in mesh index order
+                          DO matrix_idx=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES+1,NUMBER_OF_INTERFACE_MATRICES
+                            CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)=0
+                            DO variable_idx=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
+                              FOUND=.FALSE.
+                              DO matrix_idx2=1,CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
+                                IF(INTERFACE_DEPENDENT%VARIABLE_MESH_INDICES(variable_idx)==CREATE_VALUES_CACHE% &
+                                  MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx2)) THEN
+                                  FOUND=.TRUE.
+                                  EXIT
+                                ENDIF
+                              ENDDO !matrix_idx2
+                              IF(.NOT.FOUND) THEN
+                                CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)=INTERFACE_DEPENDENT% &
+                                  & VARIABLE_MESH_INDICES(variable_idx)
                               ENDIF
-                            ENDDO !matrix_idx2
-                            IF(.NOT.FOUND) THEN
-                              CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)=INTERFACE_CONDITION% &
-                                & VARIABLE_MESH_INDICES(variable_idx)
+                            ENDDO !variable_idx2
+                            IF(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)==0) THEN
+                              LOCAL_ERROR="Could not map an interface mesh index for interface matrix "// &
+                                & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
-                          ENDDO !variable_idx2
-                          IF(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)==0) THEN
-                            LOCAL_ERROR="Could not map an interface mesh index for interface matrix "// &
-                              & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          ENDIF
-                        ENDDO !matrix_idx
-                      ELSE
-                        CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:NUMBER_OF_INTERFACE_MATRICES)= &
-                          & OLD_MATRIX_COEFFICIENTS(1:NUMBER_OF_INTERFACE_MATRICES)
-                        CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(1:NUMBER_OF_INTERFACE_MATRICES)= &
-                          & OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(1:NUMBER_OF_INTERFACE_MATRICES)
+                          ENDDO !matrix_idx
+                        ELSE
+                          CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:NUMBER_OF_INTERFACE_MATRICES)= &
+                            & OLD_MATRIX_COEFFICIENTS(1:NUMBER_OF_INTERFACE_MATRICES)
+                          CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(1:NUMBER_OF_INTERFACE_MATRICES)= &
+                            & OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(1:NUMBER_OF_INTERFACE_MATRICES)
+                        ENDIF
+                        IF(ALLOCATED(OLD_MATRIX_COEFFICIENTS)) DEALLOCATE(OLD_MATRIX_COEFFICIENTS)
+                        IF(ALLOCATED(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)) DEALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)
                       ENDIF
-                      IF(ALLOCATED(OLD_MATRIX_COEFFICIENTS)) DEALLOCATE(OLD_MATRIX_COEFFICIENTS)
-                      IF(ALLOCATED(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)) DEALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)
+                    ELSE
+                      LOCAL_ERROR="The specified number of interface matrices of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))// &
+                        & " is invalid. The number must be <= the number of added dependent variables of "// &
+                        & TRIM(NUMBER_TO_VSTRING(INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    LOCAL_ERROR="The specified number of interface matrices of "// &
-                    & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))// &
-                    & " is invalid. The number must be <= the number of added dependent variables of "// &
-                    & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%NUMBER_OF_DEPENDENT_VARIABLES,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The specified number of interface matrices of "// &

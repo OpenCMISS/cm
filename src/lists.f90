@@ -49,6 +49,7 @@ MODULE LISTS
   USE ISO_VARYING_STRING
   USE KINDS
   USE STRINGS
+  USE TYPES
   
   IMPLICIT NONE
 
@@ -85,31 +86,7 @@ MODULE LISTS
 
   !Module types
 
-  !>Buffer type to allow arrays of pointers to a list
-  TYPE LIST_PTR_TYPE
-    TYPE(LIST_TYPE), POINTER :: PTR !<The pointer to the list
-  END TYPE LIST_PTR_TYPE
-
-  !>Contains information on a list
-  TYPE LIST_TYPE
-    LOGICAL :: LIST_FINISHED !<Is .TRUE. if the list has finished being created, .FALSE. if not.
-    INTEGER(INTG) :: NUMBER_IN_LIST !<The number of items currently in the list
-    INTEGER(INTG) :: DATA_DIMENSION !<The dimension of the data being stored
-    INTEGER(INTG) :: INITIAL_SIZE !<The size of the list when it was initially created.
-    INTEGER(INTG) :: SIZE !<The current size of the list.
-    INTEGER(INTG) :: DATA_TYPE !<The data type of the list \see LISTS_DataType
-    INTEGER(INTG) :: KEY_DIMENSION !<The key dimension number i.e., the dimension index used for indexing and sorting
-    INTEGER(INTG) :: SORT_ORDER !<The ordering to be used when sorting the list \see LISTS_SortingOrder
-    INTEGER(INTG) :: SORT_METHOD !<The sorting method to be used when sorting the list \see LISTS_SortingMethod
-    INTEGER(INTG), POINTER :: LIST_INTG(:) !<A pointer to the integer data (dimension = 1) for integer lists. 
-    INTEGER(INTG), POINTER :: LIST_INTG2(:,:) !<A pointer to the integer data (dimension > 1) for integer lists. 
-    REAL(SP), POINTER :: LIST_SP(:) !<A pointer to the single precision data (dimension = 1)for single precision real lists. 
-    REAL(SP), POINTER :: LIST_SP2(:,:) !<A pointer to the single precision data (dimension > 1) for single precision real lists. 
-    REAL(DP), POINTER :: LIST_DP(:) !<A pointer to the double precision data (dimension = 1)for double precision real lists. 
-    REAL(DP), POINTER :: LIST_DP2(:,:) !<A pointer to the double precision data (dimension > 1) for double precision real lists. 
-  END TYPE LIST_TYPE
-    
-  !Module variables
+ !Module variables
   
   !Interfaces
 
@@ -123,7 +100,17 @@ MODULE LISTS
     MODULE PROCEDURE LIST_ITEM_ADD_DP2
   END INTERFACE !LIST_ITEM_ADD
   
- !>Determines if an item is in a list and returns the position of the item \see LISTS.
+  !>Returns an item in a list at a specififed position. \see LISTS.
+  INTERFACE LIST_ITEM_GET
+    MODULE PROCEDURE LIST_ITEM_GET_INTG1
+    MODULE PROCEDURE LIST_ITEM_GET_INTG2
+    MODULE PROCEDURE LIST_ITEM_GET_SP1
+    MODULE PROCEDURE LIST_ITEM_GET_SP2
+    MODULE PROCEDURE LIST_ITEM_GET_DP1
+    MODULE PROCEDURE LIST_ITEM_GET_DP2
+  END INTERFACE !LIST_ITEM_IN_LIST
+
+  !>Determines if an item is in a list and returns the position of the item \see LISTS.
   INTERFACE LIST_ITEM_IN_LIST
     MODULE PROCEDURE LIST_ITEM_IN_LIST_INTG1
     MODULE PROCEDURE LIST_ITEM_IN_LIST_SP1
@@ -156,6 +143,7 @@ MODULE LISTS
 
   !>Sorts a list into ascending order.
   INTERFACE LIST_SORT
+    MODULE PROCEDURE LIST_SORT_LIST
     MODULE PROCEDURE LIST_SORT_INTG1_ARRAY
     MODULE PROCEDURE LIST_SORT_INTG2_ARRAY
     MODULE PROCEDURE LIST_SORT_SP1_ARRAY
@@ -204,8 +192,6 @@ MODULE LISTS
     MODULE PROCEDURE LISTS_SUBSET_OF_INTG_ARRAY
   END INTERFACE
 
-  PUBLIC LIST_TYPE,LIST_PTR_TYPE
-
   PUBLIC LIST_INTG_TYPE,LIST_SP_TYPE,LIST_DP_TYPE
 
   PUBLIC LIST_CREATE_FINISH,LIST_CREATE_START
@@ -218,7 +204,11 @@ MODULE LISTS
 
   PUBLIC LIST_INITIAL_SIZE_SET
 
-  PUBLIC LIST_ITEM_ADD,LIST_ITEM_DELETE
+  PUBLIC LIST_ITEM_ADD
+  
+  PUBLIC LIST_ITEM_DELETE
+
+  PUBLIC LIST_ITEM_GET
 
   PUBLIC LIST_KEY_DIMENSION_SET
 
@@ -286,7 +276,8 @@ CONTAINS
             LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-         ENDIF
+        ENDIF
+        LIST%SIZE=LIST%INITIAL_SIZE
         LIST%LIST_FINISHED=.TRUE.
       ENDIF
     ELSE
@@ -497,6 +488,7 @@ CONTAINS
       LIST%INITIAL_SIZE=10
       LIST%SIZE=0
       LIST%DATA_TYPE=LIST_INTG_TYPE
+      LIST%KEY_DIMENSION=1
       LIST%SORT_ORDER=LIST_SORT_ASCENDING_TYPE
       LIST%SORT_METHOD=LIST_HEAP_SORT_METHOD
       NULLIFY(LIST%LIST_INTG)
@@ -930,6 +922,333 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the ITEM in a list at position LIST_ITEM in the given integer LIST. 
+  SUBROUTINE LIST_ITEM_GET_INTG1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
+    INTEGER(INTG), INTENT(OUT) :: ITEM !<On exit, the item at the specified position
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_GET_INTG1",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_INTG_TYPE) THEN
+          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
+            IF(LIST%DATA_DIMENSION==1) THEN
+              ITEM=LIST%LIST_INTG(LIST_ITEM)
+            ELSE
+              LOCAL_ERROR="Invalid item dimension. The specified item has dimension 1 and the list is of dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+              & " is invalid. The list item position must be > 0 and <= "// &
+              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the integer type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_GET_INTG1")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_GET_INTG1",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_GET_INTG1")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_GET_INTG1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the ITEM in a list at position LIST_ITEM in the given integer LIST. 
+  SUBROUTINE LIST_ITEM_GET_INTG2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
+    INTEGER(INTG), INTENT(OUT) :: ITEM(:) !<On exit, the item at the specified position
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_GET_INTG2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_INTG_TYPE) THEN
+          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
+            IF(LIST%DATA_DIMENSION==SIZE(ITEM,1)) THEN
+              ITEM=LIST%LIST_INTG2(:,LIST_ITEM)
+            ELSE
+              LOCAL_ERROR="Invalid item dimension. The specified item has dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+              & " is invalid. The list item position must be > 0 and <= "// &
+              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the integer type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_GET_INTG2")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_GET_INTG2",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_GET_INTG2")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_GET_INTG2
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the ITEM in a list at position LIST_ITEM in the given single precision LIST. 
+  SUBROUTINE LIST_ITEM_GET_SP1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
+    REAL(SP), INTENT(OUT) :: ITEM !<On exit, the item at the specified position.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_GET_SP1",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_SP_TYPE) THEN
+          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
+            IF(LIST%DATA_DIMENSION==1) THEN
+              ITEM=LIST%LIST_SP(LIST_ITEM)
+            ELSE
+              LOCAL_ERROR="Invalid item dimension. The specified item has dimension 1 and the list is of dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+              & " is invalid. The list item position must be > 0 and <= "// &
+              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the single precision type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_GET_SP1")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_GET_SP1",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_GET_SP1")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_GET_SP1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the ITEM in a list at position LIST_ITEM in the given single precision LIST. 
+  SUBROUTINE LIST_ITEM_GET_SP2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
+    REAL(SP), INTENT(OUT) :: ITEM(:) !<On exit, the item at the specified position
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_GET_SP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_SP_TYPE) THEN
+          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
+            IF(LIST%DATA_DIMENSION==SIZE(ITEM,1)) THEN
+              ITEM=LIST%LIST_SP2(:,LIST_ITEM)
+            ELSE
+              LOCAL_ERROR="Invalid item dimension. The specified item has dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+              & " is invalid. The list item position must be > 0 and <= "// &
+              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the single precision type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_GET_SP2")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_GET_SP2",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_GET_SP2")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_GET_SP2
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the ITEM in a list at position LIST_ITEM in the given double precision LIST. 
+  SUBROUTINE LIST_ITEM_GET_DP1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
+    REAL(DP), INTENT(OUT) :: ITEM !<On exit, the item at the specified position.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_GET_DP1",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_DP_TYPE) THEN
+          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
+            IF(LIST%DATA_DIMENSION==1) THEN
+              ITEM=LIST%LIST_DP(LIST_ITEM)
+            ELSE
+              LOCAL_ERROR="Invalid item dimension. The specified item has dimension 1 and the list is of dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+              & " is invalid. The list item position must be > 0 and <= "// &
+              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the double precision type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_GET_DP1")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_GET_DP1",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_GET_DP1")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_GET_DP1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the ITEM in a list at position LIST_ITEM in the given double precision LIST. 
+  SUBROUTINE LIST_ITEM_GET_DP2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
+    REAL(DP), INTENT(OUT) :: ITEM(:) !<On exit, the item at the specified position
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_GET_DP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_DP_TYPE) THEN
+          IF(LIST_ITEM>0.AND.LIST_ITEM<=LIST%NUMBER_IN_LIST) THEN
+            IF(LIST%DATA_DIMENSION==SIZE(ITEM,1)) THEN
+              ITEM=LIST%LIST_DP2(:,LIST_ITEM)
+            ELSE
+              LOCAL_ERROR="Invalid item dimension. The specified item has dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
+                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+              & " is invalid. The list item position must be > 0 and <= "// &
+              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the double precision type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_GET_DP2")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_GET_DP2",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_GET_DP2")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_GET_DP2
+  
+  !
+  !================================================================================================================================
+  !
+
   !>Determines if ITEM is in the given integer LIST. If it is LIST_ITEM is the index in the list. If not LIST_ITEM is 0.
   SUBROUTINE LIST_ITEM_IN_LIST_INTG1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
@@ -971,6 +1290,53 @@ CONTAINS
     CALL EXITS("LIST_ITEM_IN_LIST_INTG1")
     RETURN 1
   END SUBROUTINE LIST_ITEM_IN_LIST_INTG1
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Determines if ITEM is in the given integer LIST. If it is LIST_ITEM is the index in the list. If not LIST_ITEM is 0.
+  SUBROUTINE LIST_ITEM_IN_LIST_INTG2(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    INTEGER(INTG), INTENT(IN) :: ITEM(:) !<The item to find.
+    INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_IN_LIST_INTG2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_INTG_TYPE) THEN
+!!TODO: Could search better but requires list to be sorted.
+          IF(LIST%DATA_DIMENSION==1) THEN
+            CALL LIST_SEARCH_LINEAR(LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION),LIST_ITEM,ERR,ERROR,*999)
+          ELSE
+            CALL LIST_SEARCH_LINEAR(LIST%LIST_INTG2(LIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION), &
+              & LIST_ITEM,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the integer type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_IN_LIST_INTG2")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_IN_LIST_INTG2",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_IN_LIST_INTG2")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_IN_LIST_INTG2
   
   !
   !================================================================================================================================
@@ -1023,6 +1389,54 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !> Determines if ITEM is in the given single precision real LIST. If it is LIST_ITEM is the index in the list. If not
+  !> LIST_ITEM is 0.
+  SUBROUTINE LIST_ITEM_IN_LIST_SP2(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
+
+    !Argument Variables    
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    REAL(SP), INTENT(IN) :: ITEM(:) !<The item to find.
+    INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.     
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code    
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_IN_LIST_SP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_SP_TYPE) THEN
+!!TODO: Could search better but requires list to be sorted.
+          IF(LIST%DATA_DIMENSION==1) THEN
+            CALL LIST_SEARCH_LINEAR(LIST%LIST_SP(1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION),LIST_ITEM,ERR,ERROR,*999)
+          ELSE
+            CALL LIST_SEARCH_LINEAR(LIST%LIST_SP2(lIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION), &
+              & LIST_ITEM,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the single precision type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_IN_LIST_SP2")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_IN_LIST_SP2",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_IN_LIST_SP2")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_IN_LIST_SP2
+  
+  !
+  !================================================================================================================================
+  !
+
   !> Determines if ITEM is in the given double precision real LIST. If it is LIST_ITEM is the index in the list. If not
   !> LIST_ITEM is 0.
   SUBROUTINE LIST_ITEM_IN_LIST_DP1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
@@ -1065,6 +1479,54 @@ CONTAINS
     CALL EXITS("LIST_ITEM_IN_LIST_DP1")
     RETURN 1
   END SUBROUTINE LIST_ITEM_IN_LIST_DP1
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Determines if ITEM is in the given double precision real LIST. If it is LIST_ITEM is the index in the list. If not
+  !> LIST_ITEM is 0.
+  SUBROUTINE LIST_ITEM_IN_LIST_DP2(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    REAL(DP), INTENT(IN) :: ITEM(:)  !<The item to find.
+    INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_ITEM_IN_LIST_DP2",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        IF(LIST%DATA_TYPE==LIST_DP_TYPE) THEN
+!!TODO: Could search better but requires list to be sorted.
+          IF(LIST%DATA_DIMENSION==1) THEN
+            CALL LIST_SEARCH_LINEAR(LIST%LIST_DP(1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION),LIST_ITEM,ERR,ERROR,*999)
+          ELSE
+            CALL LIST_SEARCH_LINEAR(LIST%LIST_DP2(LIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM(LIST%KEY_DIMENSION), &
+              & LIST_ITEM,ERR,ERROR,*999)
+         ENDIF
+        ELSE
+          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            & " does not match the single precision type of the supplied list item."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_ITEM_IN_LIST_DP2")
+    RETURN
+999 CALL ERRORS("LIST_ITEM_IN_LIST_DP2",ERR,ERROR)
+    CALL EXITS("LIST_ITEM_IN_LIST_DP2")
+    RETURN 1
+  END SUBROUTINE LIST_ITEM_IN_LIST_DP2
 
   !
   !================================================================================================================================
@@ -1965,6 +2427,121 @@ CONTAINS
     CALL EXITS("LIST_SEARCH_LINEAR_DP_ARRAY")
     RETURN 1
   END SUBROUTINE LIST_SEARCH_LINEAR_DP_ARRAY
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sorts a list of into ascending order.
+  SUBROUTINE LIST_SORT_LIST(LIST,ERR,ERROR,*)
+  
+    !Argument variables
+    TYPE(LIST_TYPE), POINTER :: LIST !<The list to sort
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("LIST_SORT_LIST",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(LIST)) THEN
+      IF(LIST%LIST_FINISHED) THEN
+        SELECT CASE(LIST%SORT_METHOD)
+        CASE(LIST_BUBBLE_SORT_METHOD)
+          IF(LIST%DATA_DIMENSION==1) THEN
+            SELECT CASE(LIST%DATA_TYPE)
+            CASE(LIST_INTG_TYPE)
+              CALL LIST_SORT_BUBBLE_INTG1_ARRAY(LIST%LIST_INTG,ERR,ERROR,*999)
+            CASE(LIST_SP_TYPE)
+              CALL LIST_SORT_BUBBLE_SP1_ARRAY(LIST%LIST_SP,ERR,ERROR,*999)              
+            CASE(LIST_DP_TYPE)
+              CALL LIST_SORT_BUBBLE_DP1_ARRAY(LIST%LIST_DP,ERR,ERROR,*999)                            
+            CASE DEFAULT
+              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT            
+          ELSE
+            SELECT CASE(LIST%DATA_TYPE)
+            CASE(LIST_INTG_TYPE)
+              CALL LIST_SORT_BUBBLE_INTG2_ARRAY(LIST%LIST_INTG2,LIST%KEY_DIMENSION,ERR,ERROR,*999)
+            CASE(LIST_SP_TYPE)
+              CALL LIST_SORT_BUBBLE_SP2_ARRAY(LIST%LIST_SP2,LIST%KEY_DIMENSION,ERR,ERROR,*999)              
+            CASE(LIST_DP_TYPE)
+              CALL LIST_SORT_BUBBLE_DP2_ARRAY(LIST%LIST_DP2,LIST%KEY_DIMENSION,ERR,ERROR,*999)                            
+            CASE DEFAULT
+              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT            
+          ENDIF
+        CASE(LIST_SHELL_SORT_METHOD)
+          IF(LIST%DATA_DIMENSION==1) THEN
+            SELECT CASE(LIST%DATA_TYPE)
+            CASE(LIST_INTG_TYPE)
+              CALL LIST_SORT_SHELL_INTG1_ARRAY(LIST%LIST_INTG,ERR,ERROR,*999)
+            CASE(LIST_SP_TYPE)
+              CALL LIST_SORT_SHELL_SP1_ARRAY(LIST%LIST_SP,ERR,ERROR,*999)              
+            CASE(LIST_DP_TYPE)
+              CALL LIST_SORT_SHELL_DP1_ARRAY(LIST%LIST_DP,ERR,ERROR,*999)                            
+            CASE DEFAULT
+              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT            
+          ELSE
+            SELECT CASE(LIST%DATA_TYPE)
+            CASE(LIST_INTG_TYPE)
+              CALL LIST_SORT_SHELL_INTG2_ARRAY(LIST%LIST_INTG2,LIST%KEY_DIMENSION,ERR,ERROR,*999)
+            CASE(LIST_SP_TYPE)
+              CALL LIST_SORT_SHELL_SP2_ARRAY(LIST%LIST_SP2,LIST%KEY_DIMENSION,ERR,ERROR,*999)              
+            CASE(LIST_DP_TYPE)
+              CALL LIST_SORT_SHELL_DP2_ARRAY(LIST%LIST_DP2,LIST%KEY_DIMENSION,ERR,ERROR,*999)                            
+            CASE DEFAULT
+              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT            
+          ENDIF
+        CASE(LIST_HEAP_SORT_METHOD)
+          IF(LIST%DATA_DIMENSION==1) THEN
+            SELECT CASE(LIST%DATA_TYPE)
+            CASE(LIST_INTG_TYPE)
+              CALL LIST_SORT_HEAP_INTG1_ARRAY(LIST%LIST_INTG,ERR,ERROR,*999)
+            CASE(LIST_SP_TYPE)
+              CALL LIST_SORT_HEAP_SP1_ARRAY(LIST%LIST_SP,ERR,ERROR,*999)              
+            CASE(LIST_DP_TYPE)
+              CALL LIST_SORT_HEAP_DP1_ARRAY(LIST%LIST_DP,ERR,ERROR,*999)                            
+            CASE DEFAULT
+              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT            
+          ELSE
+            SELECT CASE(LIST%DATA_TYPE)
+            CASE(LIST_INTG_TYPE)
+              CALL LIST_SORT_HEAP_INTG2_ARRAY(LIST%LIST_INTG2,LIST%KEY_DIMENSION,ERR,ERROR,*999)
+            CASE(LIST_SP_TYPE)
+              CALL LIST_SORT_HEAP_SP2_ARRAY(LIST%LIST_SP2,LIST%KEY_DIMENSION,ERR,ERROR,*999)              
+            CASE(LIST_DP_TYPE)
+              CALL LIST_SORT_HEAP_DP2_ARRAY(LIST%LIST_DP2,LIST%KEY_DIMENSION,ERR,ERROR,*999)                            
+            CASE DEFAULT
+              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT            
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The list sort method of "//TRIM(NUMBER_TO_VSTRING(LIST%SORT_METHOD,"*",ERR,ERROR))//" is invlaid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("LIST_SORT_LIST")
+    RETURN
+999 CALL ERRORS("LIST_SORT_LIST",ERR,ERROR)
+    CALL EXITS("LIST_SORT_LIST")
+    RETURN 1
+  END SUBROUTINE LIST_SORT_LIST
   
   !
   !================================================================================================================================

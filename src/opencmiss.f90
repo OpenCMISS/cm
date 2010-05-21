@@ -27779,22 +27779,22 @@ CONTAINS
 
   !>Adds a dependent variable to an interface condition identified by a user number.
   SUBROUTINE CMISSInterfaceConditionDependentVariableAddNumber(InterfaceRegionUserNumber,InterfaceUserNumber, &
-    & InterfaceConditionUserNumber,MeshIndex,DependentFieldRegionUserNumber,DependentFieldUserNumber,VariableType,Err)
+    & InterfaceConditionUserNumber,MeshIndex,EquationsSetRegionUserNumber,EquationsSetUserNumber,VariableType,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: InterfaceRegionUserNumber !<The user number of the region containing the interface containing the interface condition to add the dependent variable for.
     INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to add the dependent variable for.
     INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to add the dependent variable for.
     INTEGER(INTG), INTENT(IN) :: MeshIndex !<The mesh index of the interface condition interface for which the dependent variable is added.
-    INTEGER(INTG), INTENT(IN) :: DependentFieldRegionUserNumber !<The user number of the region containing the dependent field varible to add.
-    INTEGER(INTG), INTENT(IN) :: DependentFieldUserNumber !<The user number of dependent field to add the variable for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetRegionUserNumber !<The user number of the region containing the equations set containing the dependent field varible to add.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set containing the dependent field to add the variable for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent variable to add.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
-    TYPE(REGION_TYPE), POINTER :: DEPENDENT_REGION,INTERFACE_REGION
+    TYPE(REGION_TYPE), POINTER :: EQUATIONS_SET_REGION,INTERFACE_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSInterfaceConditionDependentVariableAddNumber",Err,ERROR,*999)
@@ -27802,29 +27802,29 @@ CONTAINS
     NULLIFY(INTERFACE_REGION)
     NULLIFY(INTERFACE)
     NULLIFY(INTERFACE_CONDITION)
-    NULLIFY(DEPENDENT_REGION)
-    NULLIFY(DEPENDENT_FIELD)
+    NULLIFY(EQUATIONS_SET_REGION)
+    NULLIFY(EQUATIONS_SET)
     CALL REGION_USER_NUMBER_FIND(InterfaceRegionUserNumber,INTERFACE_REGION,Err,ERROR,*999)
     IF(ASSOCIATED(INTERFACE_REGION)) THEN
       CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,INTERFACE_REGION,INTERFACE,Err,ERROR,*999)
       IF(ASSOCIATED(INTERFACE)) THEN
         CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
         IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
-          CALL REGION_USER_NUMBER_FIND(DependentFieldRegionuserNumber,DEPENDENT_REGION,Err,ERROR,*999)
-          IF(ASSOCIATED(DEPENDENT_REGION)) THEN
-            CALL FIELD_USER_NUMBER_FIND(DependentFieldUserNumber,DEPENDENT_REGION,DEPENDENT_FIELD,Err,ERROR,*999)
-            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-              CALL INTERFACE_CONDITION_DEPENDENT_VARIABLE_ADD(INTERFACE_CONDITION,MeshIndex,DEPENDENT_FIELD,VariableType, &
+          CALL REGION_USER_NUMBER_FIND(EquationsSetRegionuserNumber,EQUATIONS_SET_REGION,Err,ERROR,*999)
+          IF(ASSOCIATED(EQUATIONS_SET_REGION)) THEN
+            CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,EQUATIONS_SET_REGION,EQUATIONS_SET,Err,ERROR,*999)
+            IF(ASSOCIATED(EQUATIONS_SET)) THEN
+              CALL INTERFACE_CONDITION_DEPENDENT_VARIABLE_ADD(INTERFACE_CONDITION,MeshIndex,EQUATIONS_SET,VariableType, &
                 & Err,ERROR,*999)
             ELSE
-              LOCAL_ERROR="A field with an user number of "// &
-                & TRIM(NUMBER_TO_VSTRING(DependentFieldUserNumber,"*",Err,ERROR))// &
-                & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(DependentFieldRegionUserNumber,"*",Err,ERROR))//"."
+              LOCAL_ERROR="An equations set with an user number of "// &
+                & TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+                & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(EquationsSetRegionUserNumber,"*",Err,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The dependent field region with an user number of "// &
-              & TRIM(NUMBER_TO_VSTRING(DependentFieldRegionUserNumber,"*",Err,ERROR))//" does not exist."
+            LOCAL_ERROR="The equations set region with an user number of "// &
+              & TRIM(NUMBER_TO_VSTRING(EquationsSetRegionUserNumber,"*",Err,ERROR))//" does not exist."
             CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
           ENDIF
         ELSE
@@ -27860,19 +27860,19 @@ CONTAINS
   !  
  
   !>Adds a dependent field variable to an interface condition identified by an object.
-  SUBROUTINE CMISSInterfaceConditionDependentVariableAddObj(InterfaceCondition,MeshIndex,DependentField,VariableType,Err)
+  SUBROUTINE CMISSInterfaceConditionDependentVariableAddObj(InterfaceCondition,MeshIndex,EquationsSet,VariableType,Err)
   
     !Argument variables
     TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to add the dependent variable to.
     INTEGER(INTG), INTENT(IN) :: MeshIndex !<The mesh index of the interface condition interface for which the dependent variable is added.
-    TYPE(CMISSFieldType), INTENT(IN) :: DependentField !<The dependent field containg the variable to add.
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: EquationsSet !<The equations set containg the dependent variable to add.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent variable to add.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSInterfaceConditionDependentVariableAddObj",Err,ERROR,*999)
  
-    CALL INTERFACE_CONDITION_DEPENDENT_VARIABLE_ADD(InterfaceCondition%INTERFACE_CONDITION,MeshIndex,DependentField%FIELD, &
+    CALL INTERFACE_CONDITION_DEPENDENT_VARIABLE_ADD(InterfaceCondition%INTERFACE_CONDITION,MeshIndex,EquationsSet%EQUATIONS_SET, &
       & VariableType,Err,ERROR,*999)
 
     CALL EXITS("CMISSInterfaceConditionDependentVariableAddObj")
