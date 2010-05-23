@@ -158,7 +158,7 @@ CONTAINS
                                 !Loop over the derivatives
                                 DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                   SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                                  CASE(EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1)
+                                  CASE(EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1)
                                     !u=cos(k*x/sqrt(2))*sin(k*y/sqrt(2))
                                     SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
