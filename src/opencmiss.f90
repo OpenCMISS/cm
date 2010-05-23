@@ -2000,13 +2000,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \addtogroup OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::LinearElasticity
   !> \brief The analytic function types for a LinearElasticity equation
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
-  !>@{  
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationOneDim1 = &
-    & EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_ONE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationTwoDim1 = & 
-    & EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_TWO_DIM_PLANE_STRESS_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityEquationThreeDim1 = & 
-    & EQUATIONS_SET_LINEAR_ELASTICITY_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityOneDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_ONE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityTwoDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityTwoDim2 = EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityThreeDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityThreeDim2 = EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
   !>@}
   !>@}
   !>@}
@@ -2082,8 +2081,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSEquationsSetHelmholtzEquationTwoDim1
 
-  PUBLIC CMISSEquationsSetLinearElasticityEquationOneDim1,CMISSEquationsSetLinearElasticityEquationTwoDim1, &
-    & CMISSEquationsSetLinearElasticityEquationThreeDim1
+  PUBLIC CMISSEquationsSetLinearElasticityOneDim1,CMISSEquationsSetLinearElasticityTwoDim1, &
+    & CMISSEquationsSetLinearElasticityTwoDim2,CMISSEquationsSetLinearElasticityThreeDim1, &
+    & CMISSEquationsSetLinearElasticityThreeDim2
 
   PUBLIC CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetLinearSourceDiffusionThreeDim1
 
