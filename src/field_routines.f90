@@ -1803,15 +1803,16 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       SELECT CASE(FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE(COMPONENT_NUMBER,VARIABLE_TYPE))
-                      CASE(FIELD_CONSTANT_INTERPOLATION)
-                        LOCAL_ERROR="Can not set a mesh component for field component number "// &
-                          & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                          & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                          & " which has constant interpolation."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! Should set anyway in case user changes interpolation(?) Needed by finite elasticity / material field - Sander  
+!                      CASE(FIELD_CONSTANT_INTERPOLATION)
+!                        LOCAL_ERROR="Can not set a mesh component for field component number "// &
+!                          & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+!                          & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+!                          & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+!                          & " which has constant interpolation."
+!                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       CASE(FIELD_ELEMENT_BASED_INTERPOLATION,FIELD_NODE_BASED_INTERPOLATION,FIELD_GRID_POINT_BASED_INTERPOLATION, &
-                        & FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                        & FIELD_GAUSS_POINT_BASED_INTERPOLATION, FIELD_CONSTANT_INTERPOLATION)
                         IF(MESH_COMPONENT_NUMBER>0.AND.MESH_COMPONENT_NUMBER<=MESH%NUMBER_OF_COMPONENTS) THEN
                           FIELD%CREATE_VALUES_CACHE%MESH_COMPONENT_NUMBER(COMPONENT_NUMBER,VARIABLE_TYPE)=MESH_COMPONENT_NUMBER
                         ELSE
