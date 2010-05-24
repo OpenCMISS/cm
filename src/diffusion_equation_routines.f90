@@ -1458,7 +1458,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                        !CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
@@ -1484,7 +1484,7 @@ CONTAINS
                   IF(ASSOCIATED(EQUATIONS)) THEN
                     EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                     IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
@@ -1579,7 +1579,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                        !CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)

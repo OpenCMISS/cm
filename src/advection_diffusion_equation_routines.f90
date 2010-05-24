@@ -120,7 +120,7 @@ CONTAINS
     alpha = 1.0_DP
     phi = 0.2_DP
     tanphi = TAN(phi)
-    Peclet= 50.0_DP
+    Peclet= 10.0_DP
     
     !>Set the analytic boundary conditions 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
