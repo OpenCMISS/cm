@@ -2983,7 +2983,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularMeshType = GENERATED_MESH_REGULAR_MESH_TYPE !<A regular generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshPolarMeshType = GENERATED_MESH_POLAR_MESH_TYPE !<A polar generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshFractalTreeMeshType = GENERATED_MESH_FRACTAL_TREE_MESH_TYPE !<A fractal tree generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshFractalTreeMeshType = GENERATED_MESH_FRACTAL_TREE_MESH_TYPE !<A fractal tree generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderMeshType = GENERATED_MESH_CYLINDER_MESH_TYPE !<A cylinder generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidMeshType = GENERATED_MESH_ELLIPSOID_MESH_TYPE !<An ellipsoid generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -3079,7 +3081,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   END INTERFACE !CMISSGeneratedMeshGeometricParametersCalculate
 
   PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
-
+ 
+  PUBLIC CMISSGeneratedMeshCylinderMeshType, CMISSGeneratedMeshEllipsoidMeshType 
+  
   PUBLIC CMISSGeneratedMeshBasisGet,CMISSGeneratedMeshBasisSet
 
   PUBLIC CMISSGeneratedMeshCreateFinish,CMISSGeneratedMeshCreateStart
