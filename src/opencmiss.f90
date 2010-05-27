@@ -3540,6 +3540,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSMeshElementsCreateStartNumber
     MODULE PROCEDURE CMISSMeshElementsCreateStartObj
   END INTERFACE !CMISSMeshElementsCreateStart
+  
+  !>Get the mesh elements belonging to a mesh component.
+  INTERFACE CMISSMeshElementsGet
+    MODULE PROCEDURE CMISSMeshElementsGetNumber
+    MODULE PROCEDURE CMISSMeshElementsGetObj
+  END INTERFACE !CMISSMeshElementsGet
 
   !>Returns the element nodes for an element in a mesh. 
   INTERFACE CMISSMeshElementsNodesGet
@@ -3610,6 +3616,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSMeshElementsBasisGet,CMISSMeshElementsBasisSet
 
   PUBLIC CMISSMeshElementsCreateFinish,CMISSMeshElementsCreateStart
+  
+  PUBLIC CMISSMeshElementsGet
 
   PUBLIC CMISSMeshElementsNodesGet,CMISSMeshElementsNodesSet
 
@@ -3651,6 +3659,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSNodesDestroyObj
   END INTERFACE !CMISSNodesDestroy
    
+  !>Returns the number of nodes
+  INTERFACE CMISSNumberOfNodesGet
+    MODULE PROCEDURE CMISSNumberOfNodesGetNumber
+    MODULE PROCEDURE CMISSNumberOfNodesGetObj
+  END INTERFACE !CMISSNumberOfNodesGet
+
   !>Returns the label for a node identified by a given global number. \todo should this be a user number?
   INTERFACE CMISSNodesLabelGet
     MODULE PROCEDURE CMISSNodesLabelGetCNumber
@@ -3682,6 +3696,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSNodesCreateFinish,CMISSNodesCreateStart
 
   PUBLIC CMISSNodesDestroy
+  
+  PUBLIC CMISSNumberOfNodesGet
 
   PUBLIC CMISSNodesLabelGet,CMISSNodesLabelSet
 
@@ -4775,6 +4791,21 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverEquationsSparsityTypeSet
  
+!!==================================================================================================================================
+!!
+!! GENERAL_ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Sets/changes the label of a region. 
+  INTERFACE CMISSUserNumberGet
+    MODULE PROCEDURE CMISSUserNumberGetRegion
+    MODULE PROCEDURE CMISSUserNumberGetMesh
+    MODULE PROCEDURE CMISSUserNumberGetBasis
+  END INTERFACE !CMISSRegionLabelSet
+
+  PUBLIC CMISSUserNumberGet
+  
 !!
 !!==================================================================================================================================
 !!
@@ -30876,6 +30907,83 @@ CONTAINS
   !================================================================================================================================
   !  
  
+  !>Returns the mesh elements for a mesh component on a mesh identified by an user number.
+  SUBROUTINE CMISSMeshElementsGetNumber(RegionUserNumber,MeshUserNumber,MeshComponentNumber,MeshElements,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the elements for.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to get the elements for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to get the elements for.
+    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<The mesh elements.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSMeshElementsGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,MeshComponentNumber,MeshElements%MESH_ELEMENTS,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshElementsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsGetNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsGetNumber
+
+ 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the mesh elements for a mesh component on a mesh identified by an user number.
+  SUBROUTINE CMISSMeshElementsGetObj(Mesh,MeshComponentNumber,MeshElements,Err)
+  
+    !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to get the elements for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to get the elements for.
+    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<The mesh elements.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    
+    !Local variables
+    
+    CALL ENTERS("CMISSMeshElementsGetObj",Err,ERROR,*999)
+ 
+    CALL MESH_TOPOLOGY_ELEMENTS_GET(Mesh%MESH,MeshComponentNumber,MeshElements%MESH_ELEMENTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshElementsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsGetObj",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsGetObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
   !>Returns the basis for an element in a mesh identified by an user number. \todo should the global element number be a user number?
   SUBROUTINE CMISSMeshElementsBasisGetNumber(RegionUserNumber,MeshUserNumber,MeshComponentNumber,GlobalElementNumber, &
     & BasisUserNumber,Err)
@@ -31748,6 +31856,78 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSNodesDestroyObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the number of nodes
+  SUBROUTINE CMISSNumberOfNodesGetNumber(regionUserNumber,numberOfNodes,err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the nodes to get node count for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfNodes !<The number of nodes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(NODES_TYPE), POINTER :: nodes
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSNumberOfNodesGetNumber",err,ERROR,*999)
+ 
+    NULLIFY(region)
+    NULLIFY(nodes)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,ERROR,*999)
+    IF(.NOT.ASSOCIATED(region)) THEN
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(localError,err,ERROR,*999)
+    ENDIF
+    
+    CALL REGION_NODES_GET(region,nodes,err,ERROR,*999)
+    
+    numberOfNodes = nodes%NUMBER_OF_NODES
+
+    CALL EXITS("CMISSNumberOfNodesGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSNumberOfNodesGetNumber",Err,ERROR)
+    CALL EXITS("CMISSNumberOfNodesGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSNumberOfNodesGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+  
+  !>Returns the number of nodes
+  SUBROUTINE CMISSNumberOfNodesGetObj(regionObj,numberOfNodes,err)
+  
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: regionObj !<The region containing the nodes to get node count for.
+    INTEGER(INTG), INTENT(OUT) :: numberOfNodes !<The number of nodes
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(NODES_TYPE), POINTER :: nodes
+    TYPE(VARYING_STRING) :: localError
+    
+    CALL ENTERS("CMISSNumberOfNodesGetObj",err,ERROR,*999)
+ 
+    NULLIFY(nodes)
+    
+    CALL REGION_NODES_GET(regionObj%REGION,nodes,err,ERROR,*999)
+    
+    numberOfNodes = nodes%NUMBER_OF_NODES
+
+    CALL EXITS("CMISSNumberOfNodesGetObj")
+    RETURN
+999 CALL ERRORS("CMISSNumberOfNodesGetObj",Err,ERROR)
+    CALL EXITS("CMISSNumberOfNodesGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSNumberOfNodesGetObj
 
   !  
   !================================================================================================================================
@@ -39136,5 +39316,56 @@ CONTAINS
   !  
   !================================================================================================================================
   !
+  
+  !>Get the user number of the given region.
+  SUBROUTINE CMISSUserNumberGetRegion( Region, userNumber, Err )
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the user number for
+    INTEGER(INTG), INTENT(OUT) :: userNumber !<The region's user number
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
+    Err = 0
+
+    userNumber = Region%REGION%USER_NUMBER
+    
+  END SUBROUTINE CMISSUserNumberGetRegion
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Get the user number of the given mesh.
+  SUBROUTINE CMISSUserNumberGetMesh( Mesh, userNumber, Err )
+    !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to get the user number for
+    INTEGER(INTG), INTENT(OUT) :: userNumber !<The mesh's user number
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    Err = 0
+
+    userNumber = Mesh%MESH%USER_NUMBER
+    
+  END SUBROUTINE CMISSUserNumberGetMesh
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Get the user number of the given basis.
+  SUBROUTINE CMISSUserNumberGetBasis( Basis, userNumber, Err )
+    !Argument variables
+    TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to get the user number for
+    INTEGER(INTG), INTENT(OUT) :: userNumber !<The basis's user number
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    
+    Err = 0
+
+    userNumber = Basis%BASIS%USER_NUMBER
+    
+  END SUBROUTINE CMISSUserNumberGetBasis
+
+  !  
+  !================================================================================================================================
+  !
+  
 END MODULE OPENCMISS
