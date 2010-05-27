@@ -419,6 +419,17 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in radial, circumferential and axial directions
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
   END TYPE GENERATED_MESH_CYLINDER_TYPE
+ 
+  !>Contains information of a generated ellipsoid mesh
+  !>Allows only a 3D ellipsoid mesh
+  TYPE GENERATED_MESH_ELLIPSOID_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh.
+    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (centre) of lower face of ellipsoid mesh.
+    REAL(DP), ALLOCATABLE :: ELLIPSOID_EXTENT(:) !<ELLIPSOID_EXTENT(nj). The size of long axis, short axis, wall thickness and cut off angle of ellipsoid.
+    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the ellipsoid mesh.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in circumferential, longitudinal and transmural directions
+    TYPE(BASIS_TYPE), POINTER :: BASIS, BASIS2 !<The pointer to the basis used in the ellipsoid mesh
+  END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
   !>Contains information on a generated mesh. \see OPENCMISS::CMISSGeneratedMeshType
   TYPE GENERATED_MESH_TYPE
@@ -431,7 +442,8 @@ MODULE TYPES
     INTEGER(INTG) :: GENERATED_TYPE !<The type of the generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the regular generated mesh information if the generated mesh is a regular mesh, NULL if not.
     TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH !<A pointer to the cylinder generate mesh information if the generated mesh is a cylinder mesh, NULL if not.
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that has been generated.
+     TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH !<A pointer to the ellipsoid generate mesh information if the generated mesh is a ellipsoid mesh, NULL if not.
+     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that has been generated.
   END TYPE GENERATED_MESH_TYPE
   
   !>A buffer type to allow for an array of pointers to a GENERATED_MESH_TYPE.
