@@ -40,16 +40,13 @@
 !> the terms of any one of the MPL, the GPL or the LGPL.
 !>
 
+!> Input routines for FieldML
+
 MODULE FIELDML_INPUT_ROUTINES
 
-  USE BASE_ROUTINES
-  USE INPUT_OUTPUT
-  USE KINDS
   USE FIELDML_API
-  USE BASIS_ROUTINES
-  USE COORDINATE_ROUTINES
+  USE OPENCMISS
   USE UTIL_ARRAY
-  USE CMISS
 
   IMPLICIT NONE
 
@@ -65,9 +62,6 @@ MODULE FIELDML_INPUT_ROUTINES
   INTEGER(INTG), PARAMETER :: FML_ERR_INVALID_PARAMETER = 10007
   INTEGER(INTG), PARAMETER :: FML_ERR_INVALID_MESH = 10008
   INTEGER(INTG), PARAMETER :: FML_ERR_INVALID_CONNECTIVITY = 10009
-  !INTEGER(INTG), PARAMETER ::
-  !INTEGER(INTG), PARAMETER ::
-  !INTEGER(INTG), PARAMETER ::
 
   TYPE(VARYING_STRING) :: errorString
 
@@ -92,9 +86,9 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlInput_ReadRawData_Int( parseHandle, parametersHandle, array, err )
+  SUBROUTINE FieldmlInput_ReadRawData_Int( fmlHandle, parametersHandle, array, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: parseHandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: parametersHandle
     INTEGER(C_INT), INTENT(INOUT) :: array(:,:)
     INTEGER(INTG), INTENT(OUT) :: err
@@ -105,42 +99,42 @@ CONTAINS
     INTEGER(C_INT), ALLOCATABLE, TARGET :: buffer(:)
     TYPE(C_PTR) :: reader
     
-    indexCount = Fieldml_GetSemidenseIndexCount( parseHandle, parametersHandle, 1 )
+    indexCount = Fieldml_GetSemidenseIndexCount( fmlHandle, parametersHandle, 1 )
     IF( indexCount /= 0 ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
     
-    indexCount = Fieldml_GetSemidenseIndexCount( parseHandle, parametersHandle, 0 )
+    indexCount = Fieldml_GetSemidenseIndexCount( fmlHandle, parametersHandle, 0 )
     IF( indexCount /= 2 ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
     
-    handle1 = Fieldml_GetSemidenseIndex( parseHandle, parametersHandle, 1, 0 )
-    handle2 = Fieldml_GetSemidenseIndex( parseHandle, parametersHandle, 2, 0 )
+    handle1 = Fieldml_GetSemidenseIndex( fmlHandle, parametersHandle, 1, 0 )
+    handle2 = Fieldml_GetSemidenseIndex( fmlHandle, parametersHandle, 2, 0 )
     IF( ( handle1 == FML_INVALID_HANDLE ) .OR. ( handle2 == FML_INVALID_HANDLE ) ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
     
-    count1 = Fieldml_GetEnsembleDomainElementCount( parseHandle, handle1 )
-    count2 = Fieldml_GetEnsembleDomainElementCount( parseHandle, handle2 )
+    count1 = Fieldml_GetEnsembleDomainElementCount( fmlHandle, handle1 )
+    count2 = Fieldml_GetEnsembleDomainElementCount( fmlHandle, handle2 )
 
     ALLOCATE( buffer( count1 ) )
 
-    reader = Fieldml_OpenReader( parseHandle, parametersHandle )
+    reader = Fieldml_OpenReader( fmlHandle, parametersHandle )
     IF( .NOT. C_ASSOCIATED( reader ) ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
 
     DO i = 1, count2
-      err = Fieldml_ReadIntSlice( parseHandle, reader, C_LOC(dummy), C_LOC(buffer) )
+      err = Fieldml_ReadIntSlice( fmlHandle, reader, C_LOC(dummy), C_LOC(buffer) )
       array( i, 1:count1 ) = buffer( 1:count1 )
     ENDDO
     
-    err = Fieldml_CloseReader( parseHandle, reader )
+    err = Fieldml_CloseReader( fmlHandle, reader )
 
     DEALLOCATE( buffer )
     
@@ -150,9 +144,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlInput_ReadRawData_Real( parseHandle, parametersHandle, array, err )
+  SUBROUTINE FieldmlInput_ReadRawData_Real( fmlHandle, parametersHandle, array, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: parseHandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: parametersHandle
     REAL(C_DOUBLE), INTENT(INOUT) :: array(:,:)
     INTEGER(INTG), INTENT(OUT) :: err
@@ -162,42 +156,42 @@ CONTAINS
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: buffer(:)
     TYPE(C_PTR) :: reader
     
-    indexCount = Fieldml_GetSemidenseIndexCount( parseHandle, parametersHandle, 1 )
+    indexCount = Fieldml_GetSemidenseIndexCount( fmlHandle, parametersHandle, 1 )
     IF( indexCount /= 0 ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
     
-    indexCount = Fieldml_GetSemidenseIndexCount( parseHandle, parametersHandle, 0 )
+    indexCount = Fieldml_GetSemidenseIndexCount( fmlHandle, parametersHandle, 0 )
     IF( indexCount /= 2 ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
     
-    handle1 = Fieldml_GetSemidenseIndex( parseHandle, parametersHandle, 1, 0 )
-    handle2 = Fieldml_GetSemidenseIndex( parseHandle, parametersHandle, 2, 0 )
+    handle1 = Fieldml_GetSemidenseIndex( fmlHandle, parametersHandle, 1, 0 )
+    handle2 = Fieldml_GetSemidenseIndex( fmlHandle, parametersHandle, 2, 0 )
     IF( ( handle1 == FML_INVALID_HANDLE ) .OR. ( handle2 == FML_INVALID_HANDLE ) ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
     
-    count1 = Fieldml_GetEnsembleDomainElementCount( parseHandle, handle1 )
-    count2 = Fieldml_GetEnsembleDomainElementCount( parseHandle, handle2 )
+    count1 = Fieldml_GetEnsembleDomainElementCount( fmlHandle, handle1 )
+    count2 = Fieldml_GetEnsembleDomainElementCount( fmlHandle, handle2 )
 
     ALLOCATE( buffer( count1 ) )
 
-    reader = Fieldml_OpenReader( parseHandle, parametersHandle )
+    reader = Fieldml_OpenReader( fmlHandle, parametersHandle )
     IF( .NOT. C_ASSOCIATED( reader ) ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     ENDIF
 
     DO i = 1, count2
-      err = Fieldml_ReadDoubleSlice( parseHandle, reader, C_LOC(dummy), C_LOC(buffer) )
+      err = Fieldml_ReadDoubleSlice( fmlHandle, reader, C_LOC(dummy), C_LOC(buffer) )
       array( i, 1:count1 ) = buffer( 1:count1 )
     ENDDO
     
-    err = Fieldml_CloseReader( parseHandle, reader )
+    err = Fieldml_CloseReader( fmlHandle, reader )
 
     DEALLOCATE( buffer )
     
@@ -207,9 +201,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlInput_GetBasisConnectivityInfo( parseHandle, meshHandle, basisHandle, connectivityHandle, layoutHandle, err )
+  SUBROUTINE FieldmlInput_GetBasisConnectivityInfo( fmlHandle, meshHandle, basisHandle, connectivityHandle, layoutHandle, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: parseHandle !<The parse handle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle !<The FieldML handle
     INTEGER(C_INT), INTENT(IN) :: meshHandle
     INTEGER(C_INT), INTENT(IN) :: basisHandle
     INTEGER(C_INT), INTENT(OUT) :: connectivityHandle
@@ -218,17 +212,19 @@ CONTAINS
     
     !Local variables
     INTEGER(C_INT) :: count, i, xiHandle, paramsHandle, handle1, handle2
-
-    count = Fieldml_GetAliasCount( parseHandle, basisHandle )
+    CHARACTER(LEN=BUFFER_SIZE) :: name
+    INTEGER(C_INT) :: length
+    
+    count = Fieldml_GetAliasCount( fmlHandle, basisHandle )
     IF( count /= 2 ) THEN
       err = FML_ERR_INVALID_BASIS
       RETURN
     END IF
     
-    xiHandle = Fieldml_GetMeshXiDomain( parseHandle, meshHandle )
+    xiHandle = Fieldml_GetMeshXiDomain( fmlHandle, meshHandle )
 
-    handle1 = Fieldml_GetAliasLocalHandle( parseHandle, basisHandle, 1 )
-    handle2 = Fieldml_GetAliasLocalHandle( parseHandle, basisHandle, 2 )
+    handle1 = Fieldml_GetAliasLocal( fmlHandle, basisHandle, 1 )
+    handle2 = Fieldml_GetAliasLocal( fmlHandle, basisHandle, 2 )
 
     IF( handle1 == xiHandle ) THEN
       paramsHandle = handle2
@@ -239,18 +235,25 @@ CONTAINS
       RETURN
     ENDIF
 
-    IF( Fieldml_GetObjectType( parseHandle, paramsHandle ) /= FHT_CONTINUOUS_DEREFERENCE ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, paramsHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
       err = FML_ERR_INVALID_BASIS
+      length = Fieldml_CopyObjectName( fmlHandle, paramsHandle, name, BUFFER_SIZE )
       RETURN
     ENDIF
     
-    handle1 = Fieldml_GetDereferenceIndexes( parseHandle, paramsHandle )
+    count = Fieldml_GetAliasCount( fmlHandle, paramsHandle )
+    IF( count /= 1 ) THEN
+      err = FML_ERR_INVALID_BASIS
+      RETURN
+    ENDIF
+
+    handle1 = Fieldml_GetAliasLocal( fmlHandle, paramsHandle, 1 )
     
-    count = Fieldml_GetMeshConnectivityCount( parseHandle, meshHandle )
+    count = Fieldml_GetMeshConnectivityCount( fmlHandle, meshHandle )
     DO i = 1, count
-      IF( Fieldml_GetMeshConnectivitySource( parseHandle, meshHandle, i ) == handle1 ) THEN
+      IF( Fieldml_GetMeshConnectivitySource( fmlHandle, meshHandle, i ) == handle1 ) THEN
         connectivityHandle = handle1
-        layoutHandle = Fieldml_GetMeshConnectivityDomain( parseHandle, meshHandle, i )
+        layoutHandle = Fieldml_GetMeshConnectivityDomain( fmlHandle, meshHandle, i )
         RETURN
       ENDIF
     ENDDO
@@ -263,9 +266,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlInput_GetBasisInfo( parseHandle, meshHandle, objectHandle, basisType, basisInterpolations, err )
+  SUBROUTINE FieldmlInput_GetBasisInfo( fmlHandle, meshHandle, objectHandle, basisType, basisInterpolations, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: parseHandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: meshHandle
     INTEGER(C_INT), INTENT(IN) :: objectHandle
     INTEGER(INTG), INTENT(OUT) :: basisType
@@ -276,32 +279,32 @@ CONTAINS
     INTEGER(C_INT) :: length, connectivityHandle, layoutHandle, libraryBasisHandle
     CHARACTER(LEN=BUFFER_SIZE) :: name
     
-    IF( .NOT. FieldmlInput_IsKnownBasis( parseHandle, meshHandle, objectHandle, err ) ) THEN
+    IF( .NOT. FieldmlInput_IsKnownBasis( fmlHandle, meshHandle, objectHandle, err ) ) THEN
       RETURN
     ENDIF
 
-    libraryBasisHandle = Fieldml_GetImportRemoteEvaluator( parseHandle, objectHandle )
-    length = Fieldml_CopyObjectName( parseHandle, libraryBasisHandle, name, BUFFER_SIZE )
+    libraryBasisHandle = Fieldml_GetImportRemoteEvaluator( fmlHandle, objectHandle )
+    length = Fieldml_CopyObjectName( fmlHandle, libraryBasisHandle, name, BUFFER_SIZE )
 
-    IF( Fieldml_GetObjectType( parseHandle, objectHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, objectHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
       err = FML_ERR_INVALID_BASIS
       RETURN
     ENDIF
-
+    
     IF( INDEX( name, 'library.fem.triquadratic_lagrange') == 1 ) THEN
       CALL REALLOCATE_INT( basisInterpolations, 3, "", err, errorString, *999 )
-      basisInterpolations = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
-      basisType = BASIS_LAGRANGE_HERMITE_TP_TYPE
+      basisInterpolations = CMISSBasisQuadraticLagrangeInterpolation
+      basisType = CMISSBasisLagrangeHermiteTPType
     ELSE IF( INDEX( name, 'library.fem.trilinear_lagrange') == 1 ) THEN
       CALL REALLOCATE_INT( basisInterpolations, 3, "", err, errorString, *999 )
-      basisInterpolations = BASIS_LINEAR_LAGRANGE_INTERPOLATION
-      basisType = BASIS_LAGRANGE_HERMITE_TP_TYPE
+      basisInterpolations = CMISSBasisLinearLagrangeInterpolation
+      basisType = CMISSBasisLagrangeHermiteTPType
     ELSE
       err = FML_ERR_UNKNOWN_BASIS
       RETURN
     ENDIF
     
-    CALL FieldmlInput_GetBasisConnectivityInfo( parseHandle, meshHandle, objectHandle, connectivityHandle, layoutHandle, err )
+    CALL FieldmlInput_GetBasisConnectivityInfo( fmlHandle, meshHandle, objectHandle, connectivityHandle, layoutHandle, err )
     IF( connectivityHandle == FML_INVALID_HANDLE ) THEN
       err = FML_ERR_INVALID_BASIS
       RETURN
@@ -315,9 +318,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  FUNCTION FieldmlInput_IsKnownBasis( parseHandle, meshHandle, objectHandle, err )
+  FUNCTION FieldmlInput_IsKnownBasis( fmlHandle, meshHandle, objectHandle, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: parseHandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: meshHandle
     INTEGER(C_INT), INTENT(IN) :: objectHandle
     INTEGER(INTG), INTENT(OUT) :: err
@@ -331,10 +334,10 @@ CONTAINS
     
     FieldmlInput_IsKnownBasis = .FALSE.
 
-    libraryBasisHandle = Fieldml_GetImportRemoteEvaluator( parseHandle, objectHandle )
-    length = Fieldml_CopyObjectName( parseHandle, libraryBasisHandle, name, BUFFER_SIZE )
+    libraryBasisHandle = Fieldml_GetImportRemoteEvaluator( fmlHandle, objectHandle )
+    length = Fieldml_CopyObjectName( fmlHandle, libraryBasisHandle, name, BUFFER_SIZE )
 
-    IF( Fieldml_GetObjectType( parseHandle, objectHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, objectHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
       err = FML_ERR_INVALID_BASIS
       RETURN
     ENDIF
@@ -345,7 +348,7 @@ CONTAINS
       RETURN
     ENDIF
     
-    CALL FieldmlInput_GetBasisConnectivityInfo( parseHandle, meshHandle, objectHandle, connectivityHandle, layoutHandle, err )
+    CALL FieldmlInput_GetBasisConnectivityInfo( fmlHandle, meshHandle, objectHandle, connectivityHandle, layoutHandle, err )
     IF( connectivityHandle == FML_INVALID_HANDLE ) THEN
       err = FML_ERR_INVALID_BASIS
       RETURN
@@ -359,9 +362,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlInput_GetBasisHandles( parseHandle, meshHandle, bases, err )
+  SUBROUTINE FieldmlInput_GetBasisHandles( fmlHandle, meshHandle, bases, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: parseHandle !<The parse handle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle !<The FieldML handle
     INTEGER(C_INT), INTENT(IN) :: meshHandle
     INTEGER(C_INT), ALLOCATABLE, INTENT(INOUT) :: bases(:) !<An array to hold the identified bases
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
@@ -370,13 +373,13 @@ CONTAINS
     INTEGER(INTG) :: basisCount
     INTEGER(C_INT) :: objectHandle, i, count
 
-    count = Fieldml_GetObjectCount( parseHandle, FHT_CONTINUOUS_IMPORT )
+    count = Fieldml_GetObjectCount( fmlHandle, FHT_CONTINUOUS_IMPORT )
     basisCount = 0
 
     DO i = 1, count
-      objectHandle = Fieldml_GetObjectHandle( parseHandle, FHT_CONTINUOUS_IMPORT, i )
+      objectHandle = Fieldml_GetObject( fmlHandle, FHT_CONTINUOUS_IMPORT, i )
 
-      IF( .NOT. FieldmlInput_IsKnownBasis( parseHandle, meshHandle, objectHandle, err ) ) THEN
+      IF( .NOT. FieldmlInput_IsKnownBasis( fmlHandle, meshHandle, objectHandle, err ) ) THEN
         CYCLE
       ENDIF
       
@@ -393,9 +396,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  FUNCTION FieldmlInput_HasMarkup( parse, object, attribute, value, err )
+  FUNCTION FieldmlInput_HasMarkup( fmlHandle, object, attribute, value, err )
     !Arguments
-    TYPE(C_PTR), INTENT(IN) :: parse
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: object
     CHARACTER(LEN=*), INTENT(IN) :: attribute
     CHARACTER(LEN=*), INTENT(IN) :: value
@@ -407,7 +410,7 @@ CONTAINS
     INTEGER(C_INT) :: length
     CHARACTER(LEN=BUFFER_SIZE) :: buffer
 
-    length = Fieldml_CopyMarkupAttributeValue( parse, object, attribute//C_NULL_CHAR, buffer, BUFFER_SIZE )
+    length = Fieldml_CopyMarkupAttributeValue( fmlHandle, object, attribute//C_NULL_CHAR, buffer, BUFFER_SIZE )
 
     FieldmlInput_HasMarkup = ( INDEX( buffer, value ) == 1 )
 
@@ -419,9 +422,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  FUNCTION FieldmlInput_IsElementEvaluatorCompatible( parse, object, err )
+  FUNCTION FieldmlInput_IsElementEvaluatorCompatible( fmlHandle, object, err )
     !Arguments
-    TYPE(C_PTR), INTENT(IN) :: parse
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: object
     INTEGER(INTG), INTENT(OUT) :: err
 
@@ -430,14 +433,14 @@ CONTAINS
     INTEGER(C_INT) :: type, length, evaluatorHandle
     CHARACTER(LEN=BUFFER_SIZE) :: name
 
-    type = Fieldml_GetObjectType( parse, object )
+    type = Fieldml_GetObjectType( fmlHandle, object )
     IF( type /= FHT_CONTINUOUS_IMPORT ) THEN
       FieldmlInput_IsElementEvaluatorCompatible = .FALSE.
       RETURN
     ENDIF
 
-    evaluatorHandle = Fieldml_GetImportRemoteEvaluator( parse, object )
-    length = Fieldml_CopyObjectName( parse, evaluatorHandle, name, BUFFER_SIZE )
+    evaluatorHandle = Fieldml_GetImportRemoteEvaluator( fmlHandle, object )
+    length = Fieldml_CopyObjectName( fmlHandle, evaluatorHandle, name, BUFFER_SIZE )
 
     IF( INDEX( name, 'library.fem.trilinear_lagrange' ) == 1 ) THEN
       FieldmlInput_IsElementEvaluatorCompatible = .TRUE.
@@ -455,8 +458,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  FUNCTION FieldmlInput_IsTemplateCompatible( parse, object, elementDomain, err )
-    TYPE(C_PTR), INTENT(IN) :: parse
+  FUNCTION FieldmlInput_IsTemplateCompatible( fmlHandle, object, elementDomain, err )
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: object
     INTEGER(C_INT), INTENT(IN) :: elementDomain
     INTEGER(INTG), INTENT(OUT) :: err
@@ -465,27 +468,27 @@ CONTAINS
 
     INTEGER(C_INT) :: type, count, i, evaluator, domain, firstEvaluator
 
-    type = Fieldml_GetObjectType( parse, object )
+    type = Fieldml_GetObjectType( fmlHandle, object )
     IF( type /= FHT_CONTINUOUS_PIECEWISE ) THEN
       FieldmlInput_IsTemplateCompatible = .FALSE.
       RETURN
     ENDIF
 
-    domain = Fieldml_GetIndexDomain( parse, object, 1 )
+    domain = Fieldml_GetIndexDomain( fmlHandle, object, 1 )
     IF( domain /= elementDomain ) THEN
       FieldmlInput_IsTemplateCompatible = .TRUE.
       RETURN
     ENDIF
 
-    count = Fieldml_GetEvaluatorCount( parse, object )
+    count = Fieldml_GetEvaluatorCount( fmlHandle, object )
 
     IF( count == 0 ) THEN
       FieldmlInput_IsTemplateCompatible = .FALSE.
       RETURN
     ENDIF
 
-    firstEvaluator = Fieldml_GetEvaluatorHandle( parse, object, 1 )
-    IF( .NOT. FieldmlInput_IsElementEvaluatorCompatible( parse, firstEvaluator, err ) ) THEN
+    firstEvaluator = Fieldml_GetEvaluator( fmlHandle, object, 1 )
+    IF( .NOT. FieldmlInput_IsElementEvaluatorCompatible( fmlHandle, firstEvaluator, err ) ) THEN
       FieldmlInput_IsTemplateCompatible = .FALSE.
       RETURN
     ENDIF
@@ -493,7 +496,7 @@ CONTAINS
     !At the moment, OpenCMISS does not support different evaluators per element.
 
     DO i = 2, count
-      evaluator = Fieldml_GetEvaluatorHandle( parse, object, i )
+      evaluator = Fieldml_GetEvaluator( fmlHandle, object, i )
       IF( evaluator /= firstEvaluator ) THEN
         FieldmlInput_IsTemplateCompatible = .FALSE.
         RETURN
@@ -508,8 +511,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  FUNCTION FieldmlInput_IsFieldCompatible( parse, object, elementDomain, err )
-    TYPE(C_PTR), INTENT(IN) :: parse
+  FUNCTION FieldmlInput_IsFieldCompatible( fmlHandle, object, elementDomain, err )
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: object
     INTEGER(C_INT), INTENT(IN) :: elementDomain
     INTEGER(INTG), INTENT(OUT) :: err
@@ -518,14 +521,14 @@ CONTAINS
 
     INTEGER(C_INT) :: type, count, i, evaluator
 
-    type = Fieldml_GetObjectType( parse, object )
+    type = Fieldml_GetObjectType( fmlHandle, object )
 
     IF( type /= FHT_CONTINUOUS_AGGREGATE ) THEN
       FieldmlInput_IsFieldCompatible = .FALSE.
       RETURN
     ENDIF
 
-    count = Fieldml_GetEvaluatorCount( parse, object )
+    count = Fieldml_GetEvaluatorCount( fmlHandle, object )
     IF( count < 1 ) THEN
       FieldmlInput_IsFieldCompatible = .FALSE.
       RETURN
@@ -533,8 +536,8 @@ CONTAINS
 
     FieldmlInput_IsFieldCompatible = .TRUE.
     DO i = 1, count
-      evaluator = Fieldml_GetEvaluatorHandle( parse, object, i )
-      IF( .NOT. FieldmlInput_IsTemplateCompatible( parse, evaluator, elementDomain, err ) ) THEN
+      evaluator = Fieldml_GetEvaluator( fmlHandle, object, i )
+      IF( .NOT. FieldmlInput_IsTemplateCompatible( fmlHandle, evaluator, elementDomain, err ) ) THEN
         FieldmlInput_IsFieldCompatible = .FALSE.
         RETURN
       ENDIF
@@ -546,25 +549,25 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE Fieldml_GetFieldHandles( parse, fieldHandles, meshHandle, err )
-    TYPE(C_PTR), INTENT(IN) :: parse
+  SUBROUTINE Fieldml_GetFieldHandles( fmlHandle, fieldHandles, meshHandle, err )
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), ALLOCATABLE :: fieldHandles(:)
     INTEGER(C_INT), INTENT(IN) :: meshHandle
     INTEGER(INTG), INTENT(OUT) :: err
 
     INTEGER(C_INT) :: count, i, object, fieldCount, elementDomain
 
-    elementDomain = Fieldml_GetMeshElementDomain( parse, meshHandle )
+    elementDomain = Fieldml_GetMeshElementDomain( fmlHandle, meshHandle )
 
     fieldCount = 0
-    count = Fieldml_GetObjectCount( parse, FHT_CONTINUOUS_AGGREGATE )
+    count = Fieldml_GetObjectCount( fmlHandle, FHT_CONTINUOUS_AGGREGATE )
     DO i = 1, count
-      object = Fieldml_GetObjectHandle( parse, FHT_CONTINUOUS_AGGREGATE, i )
-      IF( .NOT. FieldmlInput_HasMarkup( parse, object, 'field', 'true', err ) ) THEN
+      object = Fieldml_GetObject( fmlHandle, FHT_CONTINUOUS_AGGREGATE, i )
+      IF( .NOT. FieldmlInput_HasMarkup( fmlHandle, object, 'field', 'true', err ) ) THEN
         CYCLE
       ENDIF
 
-      IF( .NOT. FieldmlInput_IsFieldCompatible( parse, object, elementDomain, err ) ) THEN
+      IF( .NOT. FieldmlInput_IsFieldCompatible( fmlHandle, object, elementDomain, err ) ) THEN
         CYCLE
       ENDIF
 
@@ -581,9 +584,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlInput_GetCoordinateSystemInfo( parseHandle, evaluatorHandle, coordinateType, coordinateCount, err )
+  SUBROUTINE FieldmlInput_GetCoordinateSystemInfo( fmlHandle, evaluatorHandle, coordinateType, coordinateCount, err )
     !Arguments
-    TYPE(C_PTR), INTENT(IN) :: parseHandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: evaluatorHandle
     INTEGER(INTG), INTENT(OUT) :: coordinateType
     INTEGER(INTG), INTENT(OUT) :: coordinateCount
@@ -593,7 +596,7 @@ CONTAINS
     INTEGER(C_INT) :: domainHandle, length
     CHARACTER(LEN=BUFFER_SIZE) :: name
 
-    domainHandle = Fieldml_GetValueDomain( parseHandle, evaluatorHandle )
+    domainHandle = Fieldml_GetValueDomain( fmlHandle, evaluatorHandle )
 
     IF( domainHandle == FML_INVALID_HANDLE ) THEN
       coordinateType = 0 !There doesn't seem to be a COORDINATE_UNKNOWN_TYPE
@@ -601,13 +604,13 @@ CONTAINS
       RETURN
     ENDIF
 
-    length = Fieldml_CopyObjectName( parseHandle, domainHandle, name, BUFFER_SIZE )
+    length = Fieldml_CopyObjectName( fmlHandle, domainHandle, name, BUFFER_SIZE )
 
     IF( INDEX( name, 'library.coordinates.rc.3d' ) == 1 ) THEN
-      coordinateType = COORDINATE_RECTANGULAR_CARTESIAN_TYPE
+      coordinateType = CMISSCoordinateRectangularCartesianType
       coordinateCount = 3
     ELSE IF( INDEX( name, 'library.coordinates.rc.2d' ) == 1 ) THEN
-      coordinateType = COORDINATE_RECTANGULAR_CARTESIAN_TYPE
+      coordinateType = CMISSCoordinateRectangularCartesianType
       coordinateCount = 2
     ELSE
       coordinateType = 0 !There doesn't seem to be a COORDINATE_UNKNOWN_TYPE
@@ -622,9 +625,9 @@ CONTAINS
   !
 
 
-  SUBROUTINE FieldmlInput_GetMeshInfo( parseHandle, meshHandle, dimensions, elementCount, nodeDomain, err )
+  SUBROUTINE FieldmlInput_GetMeshInfo( fmlHandle, meshHandle, dimensions, elementCount, nodeDomain, err )
     !Arguments
-    TYPE(C_PTR), INTENT(IN) :: parseHandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: meshHandle
     INTEGER(INTG), INTENT(OUT) :: dimensions
     INTEGER(INTG), INTENT(OUT) :: elementCount
@@ -635,12 +638,12 @@ CONTAINS
     INTEGER(INTG) :: componentHandle, elementHandle, count, i, handle
 
     nodeDomain = FML_INVALID_HANDLE
-    elementHandle = Fieldml_GetMeshElementDomain( parseHandle, meshHandle )
-    elementCount = Fieldml_GetEnsembleDomainElementCount( parseHandle, elementHandle )
-    handle = Fieldml_GetMeshXiDomain( parseHandle, meshHandle )
-    componentHandle = Fieldml_GetDomainComponentEnsemble( parseHandle, handle )
+    elementHandle = Fieldml_GetMeshElementDomain( fmlHandle, meshHandle )
+    elementCount = Fieldml_GetEnsembleDomainElementCount( fmlHandle, elementHandle )
+    handle = Fieldml_GetMeshXiDomain( fmlHandle, meshHandle )
+    componentHandle = Fieldml_GetDomainComponentEnsemble( fmlHandle, handle )
 
-    count = Fieldml_GetMeshConnectivityCount( parseHandle, meshHandle )
+    count = Fieldml_GetMeshConnectivityCount( fmlHandle, meshHandle )
 
     IF( count == 0 ) THEN
       err = FML_ERR_INVALID_MESH
@@ -648,30 +651,30 @@ CONTAINS
     END IF
 
     DO i = 1, count
-      handle = Fieldml_GetMeshConnectivitySource( parseHandle, meshHandle, i )
-      IF( Fieldml_GetObjectType( parseHandle, handle ) /= FHT_ENSEMBLE_PARAMETERS ) THEN
+      handle = Fieldml_GetMeshConnectivitySource( fmlHandle, meshHandle, i )
+      IF( Fieldml_GetObjectType( fmlHandle, handle ) /= FHT_ENSEMBLE_PARAMETERS ) THEN
         err = FML_ERR_INVALID_CONNECTIVITY
         RETURN
       END IF
 
-      IF( Fieldml_GetIndexCount( parseHandle, handle ) /= 2 ) THEN
+      IF( Fieldml_GetIndexCount( fmlHandle, handle ) /= 2 ) THEN
         err = FML_ERR_INVALID_CONNECTIVITY
         RETURN
       END IF
 
-      IF( ( Fieldml_GetIndexDomain( parseHandle, handle, 1 ) /= elementHandle ) .AND. &
-        & ( Fieldml_GetIndexDomain( parseHandle, handle, 2 ) /= elementHandle ) ) THEN
+      IF( ( Fieldml_GetIndexDomain( fmlHandle, handle, 1 ) /= elementHandle ) .AND. &
+        & ( Fieldml_GetIndexDomain( fmlHandle, handle, 2 ) /= elementHandle ) ) THEN
         err = FML_ERR_INVALID_CONNECTIVITY
         RETURN
       END IF
       
       IF( i == 1 ) THEN
-        nodeDomain = Fieldml_GetValueDomain( parseHandle, handle )
-        IF( .NOT. FieldmlInput_HasMarkup( parseHandle, nodeDomain, "geometric", "point", err ) ) THEN
+        nodeDomain = Fieldml_GetValueDomain( fmlHandle, handle )
+        IF( .NOT. FieldmlInput_HasMarkup( fmlHandle, nodeDomain, "geometric", "point", err ) ) THEN
           err = FML_ERR_INVALID_CONNECTIVITY
           RETURN
         END IF      
-      ELSE IF( nodeDomain /= Fieldml_GetValueDomain( parseHandle, handle ) ) THEN
+      ELSE IF( nodeDomain /= Fieldml_GetValueDomain( fmlHandle, handle ) ) THEN
         err = FML_ERR_INVALID_CONNECTIVITY
         RETURN
       ENDIF
@@ -685,7 +688,7 @@ CONTAINS
 
     !At the moment, library domains do not actually exist, so we can't directly
     !ask them what their cardinality is.
-    dimensions = Fieldml_GetEnsembleDomainElementCount( parseHandle, componentHandle )
+    dimensions = Fieldml_GetEnsembleDomainElementCount( fmlHandle, componentHandle )
     IF( ( dimensions < 1 ) .OR. ( dimensions > 3 ) ) THEN
       dimensions = 0
       err = FML_ERR_UNKNOWN_MESH_XI
@@ -698,9 +701,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  FUNCTION FieldmlInput_GetComponentBasis( parseHandle, fieldHandle, componentNumber, err )
+  FUNCTION FieldmlInput_GetComponentBasis( fmlHandle, fieldHandle, componentNumber, err )
     !Arguments
-    TYPE(C_PTR), INTENT(IN) :: parseHandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: fieldHandle
     INTEGER(INTG), INTENT(IN) :: componentNumber
     INTEGER(INTG), INTENT(OUT) :: err
@@ -713,24 +716,24 @@ CONTAINS
 
     FieldmlInput_GetComponentBasis = FML_INVALID_HANDLE
 
-    IF( Fieldml_GetObjectType( parseHandle, fieldHandle ) /= FHT_CONTINUOUS_AGGREGATE ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, fieldHandle ) /= FHT_CONTINUOUS_AGGREGATE ) THEN
       err = FML_ERR_INVALID_OBJECT
       RETURN
     END IF
 
-    templateHandle = Fieldml_GetEvaluatorHandle( parseHandle, fieldHandle, componentNumber )
+    templateHandle = Fieldml_GetEvaluator( fmlHandle, fieldHandle, componentNumber )
     IF( templateHandle == FML_INVALID_HANDLE ) THEN
       err = FML_ERR_INVALID_PARAMETER
       RETURN
     END IF
 
-    IF( Fieldml_GetObjectType( parseHandle, templateHandle ) /= FHT_CONTINUOUS_PIECEWISE ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, templateHandle ) /= FHT_CONTINUOUS_PIECEWISE ) THEN
       err = FML_ERR_INVALID_PARAMETER
       RETURN
     END IF
 
     !At the moment, we don't need an element number, as the evaluator for all elements is the same
-    FieldmlInput_GetComponentBasis = Fieldml_GetEvaluatorHandle( parseHandle, templateHandle, 1 )
+    FieldmlInput_GetComponentBasis = Fieldml_GetEvaluator( fmlHandle, templateHandle, 1 )
 
   END FUNCTION FieldmlInput_GetComponentBasis
 
