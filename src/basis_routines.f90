@@ -1076,13 +1076,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: MAX_NUM_NODES,NUMBER_OF_DERIVATIVES,ni,ni1,ni2,ni3,nk,nn,nn1,nn2,nn3,nnl,ns,OLD_NUMBER_OF_DERIVATIVES, &
+    INTEGER(INTG) :: MAX_NUM_NODES,NUMBER_OF_DERIVATIVES,ni,ni1,ni2,ni3,nk,nn,nnl,ns,OLD_NUMBER_OF_DERIVATIVES, &
       & POSITION(4),MAXIMUM_NODE_EXTENT(3),COLLAPSED_XI(3),NUMBER_OF_NODES,NUMBER_OF_LOCAL_LINES,NODE_COUNT, &
-      & SPECIAL_NODE_COUNT,NODES_IN_LINE(4),nnf,NUMBER_OF_LOCAL_FACES,LOCAL_NODE_COUNT
+      & SPECIAL_NODE_COUNT,NODES_IN_LINE(4),nnf,NUMBER_OF_LOCAL_FACES,LOCAL_NODE_COUNT,ef, NUMBER_OF_ELEMENT_FACES
+    INTEGER, TARGET :: nn1,nn2,nn3,nn4
     LOGICAL, ALLOCATABLE :: NODE_AT_COLLAPSE(:)
-    !INTEGER(INTG), ALLOCATABLE :: NODES_IN_FACE(:)
+    !move to types.f90
+    TYPE INTG_POINTER
+       INTEGER, POINTER :: a1, a2, a3, a4
+    END TYPE INTG_POINTER
+    TYPE(INTG_POINTER) :: ARGLIST
+    INTEGER, POINTER :: np1, np2, np3, np4
     LOGICAL :: AT_COLLAPSE,FIRST_COLLAPSED_POSITION,PROCESS_NODE
-
+    
     CALL ENTERS("BASIS_LHTP_BASIS_CREATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BASIS)) THEN
@@ -1563,15 +1569,28 @@ CONTAINS
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face",ERR,ERROR,*999)
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE=NO_PART_DERIV
 
-          BASIS%NUMBER_OF_LOCAL_FACES=6
+          ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(MAX(MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(3), &
+                               & MAXIMUM_NODE_EXTENT(3)*MAXIMUM_NODE_EXTENT(1), &
+                               & MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(1)),NUMBER_OF_LOCAL_FACES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face",ERR,ERROR,*999)
+          BASIS%NODE_NUMBERS_IN_LOCAL_FACE=0
+
+          ALLOCATE(BASIS%LOCAL_FACE_XI_DIRECTION(NUMBER_OF_LOCAL_FACES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local face xi direction",ERR,ERROR,*999)
+          
+          !BASIS%NUMBER_OF_LOCAL_FACES=6
 
           !Find the lines and faces
           BASIS%NUMBER_OF_LOCAL_LINES=0
           DO ni1=1,3
             ni2=OTHER_XI_DIRECTIONS3(ni1,2,1)
             ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)
+            
+           ! DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
+            !  DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
+                 
             !We are looking for lines going in the ni1 direction, starting from ni1=0.
-            DO nn3=1,MAXIMUM_NODE_EXTENT(ni3),MAXIMUM_NODE_EXTENT(ni3)-1
+            DO nn3=1,MAXIMUM_NODE_EXTENT(ni3),MAXIMUM_NODE_EXTENT(ni3)-1 
               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2),MAXIMUM_NODE_EXTENT(ni2)-1
                 NODE_COUNT=0
                 SPECIAL_NODE_COUNT=0
@@ -1696,181 +1715,100 @@ CONTAINS
                 ENDIF
               ENDDO !nn2
             ENDDO !nn3
-          ENDDO !ni1
+         ENDDO !ni1
 
 
-          !Populate NODES_IN_FACE array with local node numbering
-          NODE_COUNT=0
+         !Find the faces
+         nn4=1
+         ef=0           !element face counter
+         DO ni1=1,3
+            !Go through all three directions
+            ni2=OTHER_XI_DIRECTIONS3(ni1,2,1)
+            ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)
+            !Pointers for argument list
+            np1=>nn1
+            np2=>nn2
+            np3=>nn3
+            np4=>nn4
+            IF (ni1==1) THEN
+               ARGLIST=INTG_POINTER(np1,np2,np3,np4)
+            ELSE IF (ni1==2) THEN
+               ARGLIST=INTG_POINTER(np2,np1,np3,np4)
+            ELSE
+               ARGLIST=INTG_POINTER(np2,np3,np1,np4)
+            ENDIF
 
-          !ALLOCATE(NODES_IN_FACE((MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(3)*2)+ &
-          !                     & (MAXIMUM_NODE_EXTENT(3)*MAXIMUM_NODE_EXTENT(1)*2)+ &
-          !                     & (MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(1)*2)),STAT=ERR)
-          !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in face array",ERR,ERROR,*999)
-          !NODES_IN_FACE=0
+            nn1=MAXIMUM_NODE_EXTENT(ni1)
+            !start with eventually upper face of ni1
+            LOCAL_NODE_COUNT=0
+            
+            IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI1) THEN
+               ef=ef+1  
+               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
+                  DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
+                     LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
+                     BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
+                          & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
+                     IF (BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)==0) THEN
+                        IF (BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED) THEN
+                           !set Arglist(ni1-direction)=1
+                           nn1=1
+                           BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
+                                & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
+                           nn1=MAXIMUM_NODE_EXTENT(ni1)
+                        ELSE
+                           LOCAL_NODE_COUNT=LOCAL_NODE_COUNT-1
+                        ENDIF
+                     ENDIF
+                  ENDDO
+               ENDDO
+               BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
+               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=ni1  
+            ENDIF
+            
+            
+            nn1=1
+            LOCAL_NODE_COUNT=0
+            IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI0) THEN
+               ef=ef+1  
+               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
+                  DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
+                     LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
+                     BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
+                          & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)  
+                     IF (BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)==0) THEN
+                        IF (BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED) THEN
+                           !set Arglist(ni1-direction)=Max extent
+                           nn1=MAXIMUM_NODE_EXTENT(ni1)
+                           BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
+                                & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
+                           nn1=1
+                        ELSE
+                           LOCAL_NODE_COUNT=LOCAL_NODE_COUNT-1
+                        ENDIF
+                     ENDIF
+                  ENDDO
+               ENDDO
+               BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
+               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=ni1  
+            ENDIF
+         ENDDO
+         
+         NUMBER_OF_ELEMENT_FACES=ef
+         DO ni1=1,3
+            DO ef=1,NUMBER_OF_ELEMENT_FACES
+               DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)
+                  DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,ef))
+                     IF(BASIS%DERIVATIVE_ORDER_INDEX(nk,BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,ef),ni1)== &
+                          & FIRST_PART_DERIV) THEN
+                        BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(nnf,ef)=nk
+                     ENDIF
+                  ENDDO !nk
+               ENDDO !nnf
+            ENDDO !ef
+         ENDDO !ni1
 
-          ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(MAX(MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(3), &
-                               & MAXIMUM_NODE_EXTENT(3)*MAXIMUM_NODE_EXTENT(1), &
-                               & MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(1)),NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face",ERR,ERROR,*999)
-          BASIS%NODE_NUMBERS_IN_LOCAL_FACE=0
-
-          ALLOCATE(BASIS%LOCAL_FACE_XI_DIRECTION(NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local face xi direction",ERR,ERROR,*999)
-
-          !Local Element Face 1
-          LOCAL_NODE_COUNT=0
-          DO nn2=1,MAXIMUM_NODE_EXTENT(2)
-            DO nn3=1,MAXIMUM_NODE_EXTENT(3)
-              LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-              NODE_COUNT=NODE_COUNT+1
-!              IF(BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED).OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_XI_COLLAPSED) THEN
-!                IF(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI0).AND.(nn3/=MAXIMUM_NODE_EXTENT(3))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI1).AND.(nn3/=1)&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI0).AND.(nn2/=MAXIMUM_NODE_EXTENT(2))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI1).AND.(nn2/=1) THEN
-!                  NODES_IN_FACE(NODE_COUNT)=0
-!                ENDIF
-!              ELSE
-                !NODES_IN_FACE(NODE_COUNT)=BASIS%NODE_POSITION_INDEX_INV(MAXIMUM_NODE_EXTENT(1),nn2,nn3,1)
-
-                BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,1)= &
-                                          & BASIS%NODE_POSITION_INDEX_INV(MAXIMUM_NODE_EXTENT(1),nn2,nn3,1)
-!              ENDIF
-            ENDDO !nn3
-          ENDDO !nn2
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(1)=LOCAL_NODE_COUNT
-          BASIS%LOCAL_FACE_XI_DIRECTION(1)=1
-
-          !Local Element Face 2
-          LOCAL_NODE_COUNT=0
-          DO nn2=1,MAXIMUM_NODE_EXTENT(2)
-            DO nn3=1,MAXIMUM_NODE_EXTENT(3)
-              LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-              NODE_COUNT=NODE_COUNT+1
-!              IF(BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED).OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_XI_COLLAPSED) THEN
-!                IF(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI0).AND.(nn3/=MAXIMUM_NODE_EXTENT(3))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI1).AND.(nn3/=1)&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI0).AND.(nn2/=MAXIMUM_NODE_EXTENT(2))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI1).AND.(nn2/=1) THEN
-!                  NODES_IN_FACE(NODE_COUNT)=0
-!                ENDIF
-!              ELSE
-                !NODES_IN_FACE(NODE_COUNT)=BASIS%NODE_POSITION_INDEX_INV(1,nn2,nn3,1)
-                BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,2)= &
-                                                            & BASIS%NODE_POSITION_INDEX_INV(1,nn2,nn3,1)
-!              ENDIF
-            ENDDO !nn3
-          ENDDO !nn2
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(2)=LOCAL_NODE_COUNT
-          BASIS%LOCAL_FACE_XI_DIRECTION(2)=1
-
-          !Local Element Face 3
-          LOCAL_NODE_COUNT=0
-          DO nn3=1,MAXIMUM_NODE_EXTENT(3)
-            DO nn1=1,MAXIMUM_NODE_EXTENT(1)
-              LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-              NODE_COUNT=NODE_COUNT+1
-!              IF(BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED).OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED) THEN
-!                IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0).AND.(nn1/=MAXIMUM_NODE_EXTENT(1))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI1).AND.(nn1/=1)&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI0).AND.(nn3/=MAXIMUM_NODE_EXTENT(3))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI1).AND.(nn3/=1) THEN
-!                  NODES_IN_FACE(NODE_COUNT)=0
-!                ENDIF
-!              ELSE
-                !NODES_IN_FACE(NODE_COUNT)=BASIS%NODE_POSITION_INDEX_INV(nn1,MAXIMUM_NODE_EXTENT(2),nn3,1)
-                BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,3)= &
-                                            & BASIS%NODE_POSITION_INDEX_INV(nn1,MAXIMUM_NODE_EXTENT(2),nn3,1)
-!              ENDIF
-            ENDDO !nn1
-          ENDDO !nn3
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(3)=LOCAL_NODE_COUNT
-          BASIS%LOCAL_FACE_XI_DIRECTION(3)=2
-
-          !Local Element Face 4
-          LOCAL_NODE_COUNT=0
-          DO nn3=1,MAXIMUM_NODE_EXTENT(3)
-            DO nn1=1,MAXIMUM_NODE_EXTENT(1)
-              LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-              NODE_COUNT=NODE_COUNT+1
-!              IF(BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED).OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED) THEN
-!                IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0).AND.(nn1/=MAXIMUM_NODE_EXTENT(1))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI1).AND.(nn1/=1)&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI0).AND.(nn3/=MAXIMUM_NODE_EXTENT(3))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_COLLAPSED_AT_XI1).AND.(nn3/=1) THEN
-!                  NODES_IN_FACE(NODE_COUNT)=0
-!                ENDIF
-!              ELSE
-                !NODES_IN_FACE(NODE_COUNT)=BASIS%NODE_POSITION_INDEX_INV(nn1,1,nn3,1)
-                BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,4)= &
-                                                                & BASIS%NODE_POSITION_INDEX_INV(nn1,1,nn3,1)
-!              ENDIF
-            ENDDO !nn1
-          ENDDO !nn3
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(4)=LOCAL_NODE_COUNT
-          BASIS%LOCAL_FACE_XI_DIRECTION(4)=2
-
-          !Local Element Face 5
-          LOCAL_NODE_COUNT=0
-          DO nn2=1,MAXIMUM_NODE_EXTENT(2)
-            DO nn1=1,MAXIMUM_NODE_EXTENT(1)
-              LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-              NODE_COUNT=NODE_COUNT+1
-!              IF(BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED).OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED) THEN
-!                IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0).AND.(nn1/=MAXIMUM_NODE_EXTENT(1))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI1).AND.(nn1/=1)&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI0).AND.(nn2/=MAXIMUM_NODE_EXTENT(2))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI1).AND.(nn2/=1) THEN
-!                  NODES_IN_FACE(NODE_COUNT)=0
-!                ENDIF
-!              ELSE
-
-                !NODES_IN_FACE(NODE_COUNT)=BASIS%NODE_POSITION_INDEX_INV(nn1,nn2,MAXIMUM_NODE_EXTENT(3),1)
-                BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,5)= &
-                                             & BASIS%NODE_POSITION_INDEX_INV(nn1,nn2,MAXIMUM_NODE_EXTENT(3),1)
-!              ENDIF
-            ENDDO !nn1
-          ENDDO !nn2
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(5)=LOCAL_NODE_COUNT
-          BASIS%LOCAL_FACE_XI_DIRECTION(5)=3
-
-          !Local Element Face 6
-          LOCAL_NODE_COUNT=0
-          DO nn2=1,MAXIMUM_NODE_EXTENT(2)
-            DO nn1=1,MAXIMUM_NODE_EXTENT(1)
-              LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
-              NODE_COUNT=NODE_COUNT+1
-!              IF(BASIS%COLLAPSED_XI(ni1)==BASIS_XI_COLLAPSED).OR.(BASIS%COLLAPSED_XI(ni3)==BASIS_XI_COLLAPSED) THEN
-!                IF(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI0).AND.(nn1/=MAXIMUM_NODE_EXTENT(1))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni1)==BASIS_COLLAPSED_AT_XI1).AND.(nn1/=1)&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI0).AND.(nn2/=MAXIMUM_NODE_EXTENT(2))&
-!                   &.OR.(BASIS%COLLAPSED_XI(ni2)==BASIS_COLLAPSED_AT_XI1).AND.(nn2/=1) THEN
-!                  NODES_IN_FACE(NODE_COUNT)=0
-!                ENDIF
-!              ELSE
-                !NODES_IN_FACE(NODE_COUNT)=BASIS%NODE_POSITION_INDEX_INV(nn1,nn2,1,1)
-                BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,6)= &
-                                                            & BASIS%NODE_POSITION_INDEX_INV(nn1,nn2,1,1)
-!              ENDIF
-            ENDDO !nn1
-          ENDDO !nn2
-          BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(6)=LOCAL_NODE_COUNT
-          BASIS%LOCAL_FACE_XI_DIRECTION(6)=3
-
-          DO ni1=1,3
-            DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(BASIS%NUMBER_OF_LOCAL_FACES)
-              DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,BASIS%NUMBER_OF_LOCAL_FACES))
-                IF(BASIS%DERIVATIVE_ORDER_INDEX(nk,BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,BASIS%NUMBER_OF_LOCAL_FACES),ni1)== &
-                  & FIRST_PART_DERIV) THEN
-                  BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(nnf,BASIS%NUMBER_OF_LOCAL_FACES)=nk
-                ENDIF
-              ENDDO !nk
-            ENDDO !nnf
-          ENDDO !ni1
-
-        !IF(ALLOCATED(NODES_IN_FACE)) DEALLOCATE(NODES_IN_FACE)
-
-        CASE DEFAULT
+      CASE DEFAULT
           CALL FLAG_ERROR("Invalid number of xi directions",ERR,ERROR,*999)
         END SELECT
         
