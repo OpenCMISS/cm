@@ -745,6 +745,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/fieldml_api.o \
 	$(OBJECT_DIR)/fieldml_input_routines.o \
 	$(OBJECT_DIR)/fieldml_output_routines.o \
+	$(OBJECT_DIR)/fieldml_util_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
 	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
@@ -850,6 +851,7 @@ $(MOD_INCLUDE) : $(MOD_SOURCE_INC)
 	cp $(OBJECT_DIR)/fieldml_api.mod $(INC_DIR)/fieldml_api.mod #CPL temporary
 	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod #CPL temporary
 	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod #CPL temporary 
+	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod #CPL temporary
 
 $(HEADER_INCLUDE) : $(HEADER_SOURCE_INC)
 	cp $(HEADER_SOURCE_INC) $@ 
@@ -1359,9 +1361,13 @@ $(OBJECT_DIR)/field_IO_routines.o	:	$(SOURCE_DIR)/field_IO_routines.f90 \
 
 $(OBJECT_DIR)/fieldml_api.o: $(SOURCE_DIR)/fieldml_api.f90
 
-$(OBJECT_DIR)/fieldml_input_routines.o: $(SOURCE_DIR)/fieldml_input_routines.f90
+$(OBJECT_DIR)/fieldml_input_routines.o: $(SOURCE_DIR)/fieldml_input_routines.f90 \
+	$(OBJECT_DIR)/opencmiss.o
 
-$(OBJECT_DIR)/fieldml_output_routines.o: $(SOURCE_DIR)/fieldml_output_routines.f90
+$(OBJECT_DIR)/fieldml_output_routines.o: $(SOURCE_DIR)/fieldml_output_routines.f90 \
+	$(OBJECT_DIR)/fieldml_util_routines.o
+
+$(OBJECT_DIR)/fieldml_util_routines.o: $(SOURCE_DIR)/fieldml_util_routines.f90
 
 $(OBJECT_DIR)/util_array.o: $(SOURCE_DIR)/util_array.f90
 
@@ -1744,6 +1750,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/field_IO_routines.o \
+	$(OBJECT_DIR)/history_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/interface_conditions_constants.o \
