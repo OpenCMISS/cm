@@ -66,7 +66,7 @@ MODULE FIELDML_UTIL_ROUTINES
   END INTERFACE
 
   PUBLIC :: FieldmlUtil_GetConnectivityEnsemble, FieldmlUtil_GetCoordinatesDomain, FieldmlUtil_GetGenericDomain, &
-    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiDomain
+    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiDomain, FieldmlUtil_GetValueDomain
 
 CONTAINS
 
@@ -122,9 +122,9 @@ CONTAINS
     IF( dimensions == 1 ) THEN
       domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.real.1d"//NUL )
     ELSE IF( dimensions == 2 ) THEN
-      domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.rea1.2d"//NUL )
+      domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.real.2d"//NUL )
     ELSE IF( dimensions == 3 ) THEN
-      domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.rea1.3d"//NUL )
+      domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.real.3d"//NUL )
     ELSE
       domainHandle = FML_INVALID_HANDLE
       err = FML_ERR_UNSUPPORTED
@@ -283,6 +283,44 @@ CONTAINS
     
   END SUBROUTINE FieldmlUtil_GetConnectivityEnsemble
 
+  !
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE FieldmlUtil_GetValueDomain( fmlHandle, region, field, domainHandle, err )
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
+    TYPE(CMISSRegionType), INTENT(IN) :: region
+    TYPE(CMISSFieldType), INTENT(IN) :: field
+    INTEGER(C_INT), INTENT(OUT) :: domainHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Locals
+    INTEGER(INTG) :: fieldType, subType, count
+    TYPE(CMISSCoordinateSystemType) coordinateSystem
+    
+    CALL CMISSFieldTypeGet( field, fieldType, err )
+    CALL CMISSFieldNumberOfComponentsGet( field, CMISSFieldUVariableType, count, err )
+    
+
+    SELECT CASE( fieldType )
+    CASE( CMISSFieldGeometricType )
+      CALL CMISSRegionCoordinateSystemGet( region, coordinateSystem, err )
+      CALL CMISSCoordinateSystemTypeGet( coordinateSystem, subType, err )
+      CALL FieldmlUtil_GetCoordinatesDomain( fmlHandle, subType, count, domainHandle, err )
+    
+    !CASE( CMISSFieldFibreType )
+
+    !CASE( CMISSFieldGeneralType )
+
+    !CASE( CMISSFieldMaterialType )
+
+    CASE DEFAULT
+      CALL FieldmlUtil_GetGenericDomain( fmlHandle, count, domainHandle, err )
+    END SELECT
+  
+  END SUBROUTINE FieldmlUtil_GetValueDomain
+    
   !
   !================================================================================================================================
   !
