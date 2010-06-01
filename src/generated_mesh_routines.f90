@@ -237,7 +237,7 @@ CONTAINS
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to set the basis of
     !TYPE(BASIS_PTR_TYPE) :: BASES(:) !<An array of pointers to the basis to generate the mesh with
-    TYPE(BASIS_TYPE), POINTER :: BASIS, BASIS2 !<A pointer to the basis to generate the mesh with
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis to generate the mesh with
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1269,7 +1269,7 @@ CONTAINS
     !Local Variables
     TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH
     TYPE(BASIS_TYPE), POINTER :: BASIS,BASIS2
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_ELEMENTS_XI(:),NUMBER_OF_NODES_XI(:)
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_ELEMENTS_XI(:)!,NUMBER_OF_NODES_XI(:)
     TYPE(REGION_TYPE), POINTER :: REGION 
     TYPE(NODES_TYPE), POINTER :: NODES
     INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_DIMENSIONS
@@ -1346,7 +1346,7 @@ CONTAINS
                                           ERR, ERROR,*999) 
                                      !Set the elements for the ellipsoid mesh
                                      ALLOCATE(WALL_ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate wall element nodes.",ERR,ERROR,*999)                
+                                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate wall element nodes.",ERR,ERROR,*999)
                                       ALLOCATE(APEX_ELEMENT_NODES(BASIS2%NUMBER_OF_NODES),STAT=ERR)
                                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate apex element nodes.",ERR,ERROR,*999) 
                                      ! calculate element topology (nodes per each element)
@@ -2559,12 +2559,12 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_ELEMENTS_XI(3),NUMBER_OF_NODES_XI(3)
     INTEGER(INTG) :: TOTAL_NUMBER_NODES_XI(3),INTERPOLATION_TYPES(3)
     INTEGER(INTG) :: component_idx,xi_idx
-    INTEGER(INTG) :: np,global_np,ny,nk,i,j,k
-    INTEGER(INTG) :: NUMBER_OF_PLANAR_NODES,SCALING_TYPE
+    INTEGER(INTG) :: np,global_np,ny,i,j,k
+    INTEGER(INTG) :: SCALING_TYPE!,NUMBER_OF_PLANAR_NODES
     INTEGER(INTG), ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
-    INTEGER(INTG) :: node_idx(3) ! holds r,theta,z indices
+    !INTEGER(INTG) :: node_idx(3) ! holds r,theta,z indices
     REAL(DP) :: DELTA(3),DELTAi(3),RECT_COORDS(3),t,phi,alpha,xi,nu,x,y,z
-    REAL(DP) :: ELLIPSOID_EXTENT(4),DERIV
+    REAL(DP) :: ELLIPSOID_EXTENT(4)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
 

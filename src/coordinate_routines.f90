@@ -3775,7 +3775,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: derivative_idx,xi_idx
+    INTEGER(INTG) :: derivative_idx
     REAL(DP) :: ANGLE,DXDNUR(2,2),DXDXI(2,2),R(2,2),MAGNITUDE
 
     CALL ENTERS("COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE_2D",ERR,ERROR,*999)
