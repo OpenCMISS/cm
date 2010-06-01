@@ -910,11 +910,9 @@ CONTAINS
       ENDDO
 
       IF(EQUATIONS_SET_SUBTYPE == EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE) THEN
-        CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(EQUATIONS_SET%EQUATIONS%INTERPOLATION%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,&
-        &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 1, ACTIVTIME,ERR,ERROR,*999)
-
-        CALL FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
-          & PIOLA_TENSOR(1,1),E(1,1),ACTIVTIME,ERR,ERROR,*999)
+        CALL FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,&
+             & EQUATIONS_SET%EQUATIONS%INTERPOLATION%MATERIALS_FIELD, PIOLA_TENSOR(1,1),E(1,1),         &
+             & ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*999)
       END IF
     CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE)
       !Form of constitutive model is:
@@ -983,31 +981,47 @@ CONTAINS
   !
 
   ! calculates the current active contraction component using the independent field
-  ! TODO: actual active contraction law or curve. current: Ta = Kt with length-dependence
-  SUBROUTINE FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION(INDEPENDENT_FIELD,PIOLA_FF,E_FF,ACTIVTIME,ERR,ERROR,*)
+  ! Uses a hardcoded tension transient based on GPB+NHS with length-dependence for now
+  ! TODO: Fading memory model
+  SUBROUTINE FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION(INDEPENDENT_FIELD,MATERIALS_FIELD,PIOLA_FF,E_FF,&
+             & ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
     !Argument variables
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: INDEPENDENT_FIELD, MATERIALS_FIELD
     REAL(DP), INTENT(INOUT) :: PIOLA_FF  !<The (1,1)=(fiber,fiber) component of the stress tensor
-    REAL(DP), INTENT(IN)    :: ACTIVTIME !<The activation time from the V component of the material field
     REAL(DP), INTENT(IN)    :: E_FF !<E(1,1)
-    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER,GAUSS_POINT_NUMBER !<Element/Gauss point number
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string    
 
-    REAL(DP), PARAMETER :: K = 2        ! kPa/ms, rate of increase of active tension.  Ta = Kt
+    INTEGER(INTG)  :: I
+    REAL(DP) :: S, LAMBDA, OVERLAP, TA, ACTIVTIME, TIME
+
+!    REAL(DP), PARAMETER :: K = 2        ! kPa/ms, rate of increase of active tension.  Ta = Kt
     REAL(DP), PARAMETER :: BETA_0 = 4.9 ! Length-dependence
+    REAL(DP), PARAMETER :: PERIOD = 1000 ! 1 Hz
+    REAL(DP), PARAMETER, DIMENSION(12) :: TIMES    = (/ 0, 40, 75, 140, 170, 172, 180, 250, 400, 500, 800, 1000 /) ! | simple tension curve based on GPB/NHS
+    REAL(DP), PARAMETER, DIMENSION(12) :: TENSIONS = (/ 4, 4 , 50, 90,  98,  99 , 99,  75,  20,  10,    5,  4 /)   ! /
 
-
-    REAL(DP) :: TIME, LAMBDA, OVERLAP, TA
-  
+ 
     CALL ENTERS("FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION",ERR,ERROR,*999)
-    ! TODO: which element/gp are we in? : here 1/1 since it's constant anyway
-    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1, &
-      & 2, TIME ,ERR,ERROR,*999)
+    ! Get time, active time from material and independent fields
+    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
+      &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 2, TIME,ERR,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,&
+      &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 1, ACTIVTIME,ERR,ERROR,*999)
 
     LAMBDA = MAX(0.8, MIN(SQRT(2*E_FF + 1), 1.15))
     OVERLAP= 1.0 + BETA_0 * (LAMBDA-1.0)
-    TIME = MAX(TIME - ACTIVTIME, 0.0) ! start activation at this time
-    TA   = (K * TIME) * OVERLAP
+    TIME =  MAX( MOD(TIME, PERIOD) - ACTIVTIME, 0.0) ! start activation at this time
+   
+    I = 1
+    DO WHILE (TIMES(I) <= TIME) ! find first I such that times(I) >= time
+      I = I+1
+    ENDDO
+    S    = (TIME - TIMES(I-1)) /  (TIMES(I) - TIMES(I-1)) !| linear interpolation
+    TA   = TENSIONS(I-1) * (1-S) + TENSIONS(I) * S        !/ 
+  
+!    TA   = (K * TIME) * OVERLAP
 
     PIOLA_FF = PIOLA_FF + TA
 
