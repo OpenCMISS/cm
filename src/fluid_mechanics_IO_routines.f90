@@ -166,6 +166,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: ALLOC_ERROR
   INTEGER(INTG):: FIELD_VAR_TYPE, var_idx
 
+  INTEGER(INTG):: parameter_set_idx
+
   LOGICAL :: DN
 
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::ElementNodesScales
@@ -311,7 +313,20 @@ CONTAINS
       END SELECT
     END SELECT
 
-
+    parameter_set_idx = 1
+    SELECT CASE(EQUATIONS_SET%CLASS)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+          & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+          IF(EQUATIONS_SET_GLOBAL_NUMBER==3) THEN  !multi-physics: solid - mat.properties - Darcy
+            parameter_set_idx = 3  ! of shared dependent variable field
+          END IF
+        END SELECT
+      END SELECT
+    END SELECT
 !---toe
 
 !     NumberOfFields=REGION%fields%number_of_fields
@@ -488,15 +503,17 @@ CONTAINS
 
 !         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+          & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
 !         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+          & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
+          & cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-!             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
-            & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+!             & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+            & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
+            & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
@@ -561,10 +578,10 @@ CONTAINS
       DO K=1,NodesPerMeshComponent(2)
         IF(NumberOfDimensions==2)THEN
           NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2*NodesPerMeshComponent(1)+K)
+            & %parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(2*NodesPerMeshComponent(1)+K)
         ELSE IF(NumberOfDimensions==3)THEN
           NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
-            & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3*NodesPerMeshComponent(1)+K)
+            & %parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(3*NodesPerMeshComponent(1)+K)
         ENDIF
       ENDDO
     ENDIF
@@ -699,6 +716,21 @@ CONTAINS
         END SELECT
       END SELECT
     END SELECT
+
+    parameter_set_idx = 1 
+    SELECT CASE(EQUATIONS_SET%CLASS)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+          & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+          IF(EQUATIONS_SET_GLOBAL_NUMBER==3) THEN  !multi-physics: solid - mat.properties - Darcy
+            parameter_set_idx = 3  ! of shared dependent variable field
+          END IF
+        END SELECT
+      END SELECT
+    END SELECT
 !---toe
 
 !     NumberOfFields=REGION%fields%number_of_fields
@@ -801,15 +833,17 @@ CONTAINS
 
 !         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+          & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
 !         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-          & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+          & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
+          & cmiss%data_dp(K+NodesPerMeshComponent(1))
 
         IF(NumberOfDimensions==3)THEN
           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-!             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
-            & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+!             & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+            & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
+            & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
@@ -1305,6 +1339,21 @@ CONTAINS
         END SELECT
       END SELECT
     END SELECT
+
+    parameter_set_idx = 1 
+    SELECT CASE(EQUATIONS_SET%CLASS)
+    CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+          & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+          IF(EQUATIONS_SET_GLOBAL_NUMBER==3) THEN  !multi-physics: solid - mat.properties - Darcy
+            parameter_set_idx = 3  ! of shared dependent variable field
+          END IF
+        END SELECT
+      END SELECT
+    END SELECT
 !---toe
 
 !     NumberOfFields=REGION%fields%number_of_fields
@@ -1421,8 +1470,8 @@ CONTAINS
               & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STOKES_POISSON_SUBTYPE) &
                 & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE))) THEN
           NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-!             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-            & variables(var_idx)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+!             & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
+            & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
         END IF
       END DO 
     END DO
