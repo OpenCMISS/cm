@@ -301,7 +301,8 @@ CONTAINS
     
     CALL CMISSFieldTypeGet( field, fieldType, err )
     CALL CMISSFieldNumberOfComponentsGet( field, CMISSFieldUVariableType, count, err )
-    
+
+    CALL CMISSCoordinateSystemTypeInitialise( coordinateSystem, err )
 
     SELECT CASE( fieldType )
     CASE( CMISSFieldGeometricType )
