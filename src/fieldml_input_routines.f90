@@ -235,7 +235,7 @@ CONTAINS
       RETURN
     ENDIF
 
-    IF( Fieldml_GetObjectType( fmlHandle, paramsHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, paramsHandle ) /= FHT_CONTINUOUS_REFERENCE ) THEN
       err = FML_ERR_INVALID_BASIS
       length = Fieldml_CopyObjectName( fmlHandle, paramsHandle, name, BUFFER_SIZE )
       RETURN
@@ -283,10 +283,10 @@ CONTAINS
       RETURN
     ENDIF
 
-    libraryBasisHandle = Fieldml_GetImportRemoteEvaluator( fmlHandle, objectHandle )
+    libraryBasisHandle = Fieldml_GetReferenceRemoteEvaluator( fmlHandle, objectHandle )
     length = Fieldml_CopyObjectName( fmlHandle, libraryBasisHandle, name, BUFFER_SIZE )
 
-    IF( Fieldml_GetObjectType( fmlHandle, objectHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, objectHandle ) /= FHT_CONTINUOUS_REFERENCE ) THEN
       err = FML_ERR_INVALID_BASIS
       RETURN
     ENDIF
@@ -334,10 +334,10 @@ CONTAINS
     
     FieldmlInput_IsKnownBasis = .FALSE.
 
-    libraryBasisHandle = Fieldml_GetImportRemoteEvaluator( fmlHandle, objectHandle )
+    libraryBasisHandle = Fieldml_GetReferenceRemoteEvaluator( fmlHandle, objectHandle )
     length = Fieldml_CopyObjectName( fmlHandle, libraryBasisHandle, name, BUFFER_SIZE )
 
-    IF( Fieldml_GetObjectType( fmlHandle, objectHandle ) /= FHT_CONTINUOUS_IMPORT ) THEN
+    IF( Fieldml_GetObjectType( fmlHandle, objectHandle ) /= FHT_CONTINUOUS_REFERENCE ) THEN
       err = FML_ERR_INVALID_BASIS
       RETURN
     ENDIF
@@ -373,11 +373,11 @@ CONTAINS
     INTEGER(INTG) :: basisCount
     INTEGER(C_INT) :: objectHandle, i, count
 
-    count = Fieldml_GetObjectCount( fmlHandle, FHT_CONTINUOUS_IMPORT )
+    count = Fieldml_GetObjectCount( fmlHandle, FHT_CONTINUOUS_REFERENCE )
     basisCount = 0
 
     DO i = 1, count
-      objectHandle = Fieldml_GetObject( fmlHandle, FHT_CONTINUOUS_IMPORT, i )
+      objectHandle = Fieldml_GetObject( fmlHandle, FHT_CONTINUOUS_REFERENCE, i )
 
       IF( .NOT. FieldmlInput_IsKnownBasis( fmlHandle, meshHandle, objectHandle, err ) ) THEN
         CYCLE
@@ -434,12 +434,12 @@ CONTAINS
     CHARACTER(LEN=BUFFER_SIZE) :: name
 
     type = Fieldml_GetObjectType( fmlHandle, object )
-    IF( type /= FHT_CONTINUOUS_IMPORT ) THEN
+    IF( type /= FHT_CONTINUOUS_REFERENCE ) THEN
       FieldmlInput_IsElementEvaluatorCompatible = .FALSE.
       RETURN
     ENDIF
 
-    evaluatorHandle = Fieldml_GetImportRemoteEvaluator( fmlHandle, object )
+    evaluatorHandle = Fieldml_GetReferenceRemoteEvaluator( fmlHandle, object )
     length = Fieldml_CopyObjectName( fmlHandle, evaluatorHandle, name, BUFFER_SIZE )
 
     IF( INDEX( name, 'library.fem.trilinear_lagrange' ) == 1 ) THEN

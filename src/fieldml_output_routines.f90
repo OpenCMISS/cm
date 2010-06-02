@@ -80,7 +80,7 @@ MODULE FIELDML_OUTPUT_ROUTINES
   TYPE BasisInfoType
     INTEGER(INTG) :: basisNumber
     INTEGER(C_INT) :: connectivityHandle
-    INTEGER(C_INT) :: importHandle
+    INTEGER(C_INT) :: referenceHandle
   END TYPE BasisInfoType
   
   TYPE FieldmlInfoType
@@ -98,8 +98,7 @@ MODULE FIELDML_OUTPUT_ROUTINES
 
   PUBLIC :: FieldmlInfoType
 
-  PUBLIC :: FieldmlOutput_WriteRawData, FieldmlOutput_AddConnectivity, FieldmlOutput_AddField, FieldmlOutput_AddFieldNodeDofs, &
-    & FieldmlOutput_AddFieldComponents
+  PUBLIC :: FieldmlOutput_Start, FieldmlOutput_AddField, FieldmlOutput_Finish
 
 CONTAINS
 
@@ -449,21 +448,19 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_CreateBasisImport( fmlhandle, meshHandle, nodeDofsHandle, baseName, basisInfo, err )
+  SUBROUTINE FieldmlUtil_CreateBasisReference( fieldmlInfo, baseName, basisInfo, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: fmlhandle
-    INTEGER(C_INT), INTENT(IN) :: meshHandle
-    INTEGER(C_INT), INTENT(IN) :: nodeDofsHandle
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
     TYPE(BasisInfoType), INTENT(INOUT) :: basisInfo
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(C_INT) :: basisType, xiCount, dofsImportHandle, interpolationParametersHandle, handle, evaluatorHandle
+    INTEGER(C_INT) :: basisType, xiCount, dofsReferenceHandle, interpolationParametersHandle, handle, evaluatorHandle
     INTEGER(C_INT), ALLOCATABLE :: xiInterpolations(:)
     CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: name
     INTEGER(INTG) :: length
-    TYPE(VARYING_STRING) :: importName
+    TYPE(VARYING_STRING) :: referenceName
     
     CALL CMISSBasisTypeGet( basisInfo%basisNumber, basisType, err )
     
@@ -472,27 +469,29 @@ CONTAINS
     IF( basisType == CMISSBasisLagrangeHermiteTPType ) THEN
       ALLOCATE( xiInterpolations( xiCount ) )
       CALL CMISSBasisInterpolationXiGet( basisInfo%basisNumber, xiInterpolations, err )
-      CALL FieldmlUtil_GetTPBasisEvaluator( fmlhandle, xiInterpolations, evaluatorHandle, interpolationParametersHandle, err )
+      CALL FieldmlUtil_GetTPBasisEvaluator( fieldmlInfo%fmlhandle, xiInterpolations, evaluatorHandle, &
+        & interpolationParametersHandle, err )
       DEALLOCATE( xiInterpolations )
 
-      CALL FieldmlOutput_GetSimpleBasisName( fmlHandle, evaluatorHandle, name, length, err )
+      CALL FieldmlOutput_GetSimpleBasisName( fieldmlInfo%fmlHandle, evaluatorHandle, name, length, err )
       
-      importName = baseName//name(1:length)//".parameters"
+      referenceName = baseName//name(1:length)//".parameters"
       
-      handle = Fieldml_GetValueDomain( fmlHandle, basisInfo%connectivityHandle )
-      dofsImportHandle = Fieldml_CreateContinuousImport( fmlHandle, char(importName//NUL), nodeDofsHandle, &
-        & Fieldml_GetValueDomain( fmlHandle, nodeDofsHandle ) )
-      err = Fieldml_SetAlias( fmlHandle, dofsImportHandle, handle, basisInfo%connectivityHandle )
+      handle = Fieldml_GetValueDomain( fieldmlInfo%fmlHandle, basisInfo%connectivityHandle )
+      dofsReferenceHandle = Fieldml_CreateContinuousReference( fieldmlInfo%fmlHandle, char(referenceName//NUL), &
+        &fieldmlInfo%nodeDofsHandle, Fieldml_GetValueDomain( fieldmlInfo%fmlHandle, fieldmlInfo%nodeDofsHandle ) )
+      err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, dofsReferenceHandle, handle, basisInfo%connectivityHandle )
       
-      importName = baseName//name(1:length)//".evaluator"
+      referenceName = baseName//name(1:length)//".evaluator"
 
-      basisInfo%importHandle = Fieldml_CreateContinuousImport( fmlHandle, char(importName//NUL), evaluatorHandle, &
-        & Fieldml_GetValueDomain( fmlHandle, nodeDofsHandle ) )
-      CALL FieldmlUtil_GetXiDomain( fmlhandle, xiCount, handle, err )
-      err = Fieldml_SetAlias( fmlHandle, basisInfo%importHandle, handle, Fieldml_GetMeshXiDomain( fmlhandle, meshHandle ) )
-      err = Fieldml_SetAlias( fmlHandle, basisInfo%importHandle, interpolationParametersHandle, dofsImportHandle )
+      basisInfo%referenceHandle = Fieldml_CreateContinuousReference( fieldmlInfo%fmlHandle, char(referenceName//NUL), &
+        & evaluatorHandle, Fieldml_GetValueDomain( fieldmlInfo%fmlHandle, fieldmlInfo%nodeDofsHandle ) )
+      CALL FieldmlUtil_GetXiDomain( fieldmlInfo%fmlhandle, xiCount, handle, err )
+      err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, handle, fieldmlInfo%xihandle )
+      err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, interpolationParametersHandle, &
+        & dofsReferenceHandle )
     ELSE
-      basisInfo%importHandle = FML_INVALID_HANDLE
+      basisInfo%referenceHandle = FML_INVALID_HANDLE
       err = FML_ERR_INVALID_OBJECT
     ENDIF
     
@@ -500,7 +499,7 @@ CONTAINS
       err = FML_ERR_UNKNOWN_OBJECT
     ENDIF
 
-  END SUBROUTINE FieldmlUtil_CreateBasisImport
+  END SUBROUTINE FieldmlUtil_CreateBasisReference
 
   !
   !================================================================================================================================
@@ -539,7 +538,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlOutput_AddConnectivity( fieldmlInfo, baseName, componentNumber, meshElements, err )
+  SUBROUTINE FieldmlOutput_AddMeshComponent( fieldmlInfo, baseName, componentNumber, meshElements, err )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
@@ -615,16 +614,15 @@ CONTAINS
         basisCount = basisCount + 1
         basisInfo( basisCount )%basisNumber = basisNumber
         basisInfo( basisCount )%connectivityHandle = connectivityHandle
-        CALL FieldmlUtil_CreateBasisImport( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, fieldmlInfo%nodeDofsHandle, &
-          char(componentName), basisInfo(basisCount), err )
+        CALL FieldmlUtil_CreateBasisReference( fieldmlInfo, char(componentName), basisInfo(basisCount), err )
         idx = basisCount
       ENDIF
 
       IF( i == 1 ) THEN
-        defaultHandle = basisInfo( idx )%importHandle
+        defaultHandle = basisInfo( idx )%referenceHandle
         err = Fieldml_SetDefaultEvaluator( fieldmlInfo%fmlHandle, templateHandle, defaultHandle )
-      ELSEIF( basisInfo( idx )%importHandle /= defaultHandle ) THEN
-        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, templateHandle, i, basisInfo( idx )%importHandle )
+      ELSEIF( basisInfo( idx )%referenceHandle /= defaultHandle ) THEN
+        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, templateHandle, i, basisInfo( idx )%referenceHandle )
       ENDIF
       
     ENDDO
@@ -652,7 +650,7 @@ CONTAINS
     
     fieldmlInfo%componentHandles( componentNumber ) = templateHandle
     
-  END SUBROUTINE FieldmlOutput_AddConnectivity
+  END SUBROUTINE FieldmlOutput_AddMeshComponent
 
   !
   !================================================================================================================================
@@ -909,7 +907,7 @@ CONTAINS
     hasNode = .FALSE.
     hasElement = .FALSE.
     hasConstant = .FALSE.
-    !Other types not yet supported.
+    !TODO Other types or interpolation not yet supported.
     DO i = 1, componentCount
       CALL CMISSFieldComponentInterpolationGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
         interpolationType, err )
@@ -945,6 +943,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
   SUBROUTINE FieldmlOutput_AddField( fieldmlInfo, baseName, region, mesh, field, err )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
@@ -958,6 +957,8 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: fieldComponentNumbers(:)
     INTEGER(INTG) :: componentCount, i
     INTEGER(C_INT) :: domainHandle
+    
+    !TODO Only u-values currently exported.
   
     CALL FieldmlUtil_GetValueDomain( fieldmlInfo%fmlHandle, region, field, domainHandle, err )
     
@@ -978,6 +979,84 @@ CONTAINS
     DEALLOCATE( fieldComponentNumbers )
     
   END SUBROUTINE FieldmlOutput_AddField
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FieldmlOutput_Start( region, mesh, dimensions, baseName, fieldmlInfo, err )
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: region
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    INTEGER(INTG), INTENT(IN) :: dimensions
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Locals
+    INTEGER(INTG) :: componentCount, i, nodeCount, elementCount
+    INTEGER(C_INT) :: real1DHandle, xiHandle
+    TYPE(CMISSMeshElementsType) :: meshElements
+
+    fieldmlInfo%fmlHandle = Fieldml_Create()
+    
+    CALL CMISSNumberOfNodesGet( Region, nodeCount, err )
+    
+    fieldmlInfo%nodesHandle = Fieldml_CreateEnsembleDomain( fieldmlInfo%fmlHandle, baseName//".nodes"//NUL, FML_INVALID_HANDLE )
+    err = Fieldml_SetContiguousBoundsCount( fieldmlInfo%fmlHandle, fieldmlInfo%nodesHandle, nodeCount )
+    err = Fieldml_SetMarkup( fieldmlInfo%fmlHandle, fieldmlInfo%nodesHandle, "geometric"//NUL, "point"//NUL )
+    
+    CALL CMISSMeshNumberOfElementsGet( Mesh, elementCount, err )
+
+    CALL FieldmlUtil_GetXiEnsemble( fieldmlInfo%fmlHandle, dimensions, xiHandle, err )
+    fieldmlInfo%meshHandle = Fieldml_CreateMeshDomain( fieldmlInfo%fmlHandle, baseName//".mesh"//NUL, xiHandle )
+    err = Fieldml_SetContiguousBoundsCount( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, elementCount )
+
+    fieldmlInfo%xiHandle = Fieldml_GetMeshXiDomain( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle )
+    fieldmlInfo%elementsHandle = Fieldml_GetMeshElementDomain( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle )
+    
+    CALL FieldmlUtil_GetGenericDomain( fieldmlInfo%fmlHandle, 1, real1DHandle, err )
+    
+    !TODO Some of these may end up being unused. Should use deferred assignment.
+    fieldmlInfo%nodeDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.node"//NUL, &
+      & real1DHandle )
+    fieldmlInfo%elementDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.element"//NUL, & 
+      & real1DHandle )
+    fieldmlInfo%constantDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.constant"//NUL, & 
+      & real1DHandle )
+
+    CALL CMISSMeshNumberOfComponentsGet( mesh, componentCount, err )
+    ALLOCATE( fieldmlInfo%componentHandles( componentCount ) )
+    DO i = 1, componentCount
+      CALL CMISSMeshElementsTypeInitialise( meshElements, err )
+      CALL CMISSMeshElementsGet( mesh, i, meshElements, err )
+      CALL FieldmlOutput_AddMeshComponent( fieldmlInfo, baseName, i, meshElements, err )
+    ENDDO
+    
+    !TODO Proper shape assignment.
+    IF( dimensions == 2 ) THEN
+      err = Fieldml_SetMeshDefaultShape( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "library.shape.square"//NUL )
+    ELSE
+      err = Fieldml_SetMeshDefaultShape( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "library.shape.cube"//NUL )
+    ENDIF
+
+  END SUBROUTINE
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FieldmlOutput_Finish( fieldmlInfo, filename, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: filename
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    err = Fieldml_WriteFile( fieldmlInfo%fmlHandle, filename//".xml"//NUL )
+
+    err = Fieldml_Destroy( fieldmlInfo%fmlHandle )
+    
+  END SUBROUTINE
 
   !
   !================================================================================================================================
