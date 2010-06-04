@@ -74,6 +74,12 @@ MODULE INTERFACE_MAPPING_ROUTINES
 
   PUBLIC INTERFACE_MAPPING_MATRICES_NUMBER_SET
 
+  PUBLIC INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET
+
+  PUBLIC INTERFACE_MAPPING_RHS_COEFF_SET
+
+  PUBLIC INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET
+
 CONTAINS
 
   !
@@ -97,6 +103,7 @@ CONTAINS
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
+    TYPE(INTERFACE_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("INTERFACE_MAPPING_CALCULATE",ERR,ERROR,*999)
@@ -160,7 +167,9 @@ CONTAINS
                       INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MESH_INDEX=mesh_idx
                       INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MATRIX_COEFFICIENT=INTERFACE_MAPPING% &
                         & CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(matrix_idx)
-                      !Set the number of rows
+                      INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%HAS_TRANSPOSE=INTERFACE_MAPPING% &
+                        & CREATE_VALUES_CACHE%HAS_TRANSPOSE(matrix_idx)
+                       !Set the number of rows
                       INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_ROWS=FIELD_VARIABLE%NUMBER_OF_DOFS
                       INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%TOTAL_NUMBER_OF_ROWS= &
                         & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
@@ -187,6 +196,35 @@ CONTAINS
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDDO !matrix_idx
+                !Calculate RHS mappings
+                IF(CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE/=0) THEN                  
+                  CALL INTERFACE_MAPPING_RHS_MAPPING_INITIALISE(INTERFACE_MAPPING,ERR,ERROR,*999)
+                  RHS_MAPPING=>INTERFACE_MAPPING%RHS_MAPPING
+                  IF(ASSOCIATED(RHS_MAPPING)) THEN
+                    RHS_MAPPING%RHS_VARIABLE_TYPE=CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE
+                    LAGRANGE_VARIABLE=>LAGRANGE_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE)%PTR
+                    RHS_MAPPING%RHS_VARIABLE=>LAGRANGE_VARIABLE
+                    RHS_MAPPING%RHS_VARIABLE_MAPPING=>LAGRANGE_VARIABLE%DOMAIN_MAPPING
+                    RHS_MAPPING%RHS_COEFFICIENT=CREATE_VALUES_CACHE%RHS_COEFFICIENT
+                    !Allocate and set up the row mappings
+                    ALLOCATE(RHS_MAPPING%RHS_DOF_TO_INTERFACE_ROW_MAP(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate rhs dof to interface row map.",ERR,ERROR,*999)
+                    ALLOCATE(RHS_MAPPING%INTERFACE_ROW_TO_RHS_DOF_MAP(INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface row to dof map.",ERR,ERROR,*999)
+                    DO dof_idx=1,LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                      !1-1 mapping for now
+                      column_idx=dof_idx
+                      RHS_MAPPING%RHS_DOF_TO_INTERFACE_ROW_MAP(dof_idx)=column_idx
+                    ENDDO !dof_idx
+                    DO column_idx=1,INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS
+                      !1-1 mapping for now
+                      dof_idx=column_idx
+                      RHS_MAPPING%INTERFACE_ROW_TO_RHS_DOF_MAP(column_idx)=dof_idx
+                    ENDDO !column_idx
+                  ELSE
+                    CALL FLAG_ERROR("RHS mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -315,6 +353,7 @@ CONTAINS
 
     IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
       IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)) DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)
+      IF(ALLOCATED(CREATE_VALUES_CACHE%HAS_TRANSPOSE)) DEALLOCATE(CREATE_VALUES_CACHE%HAS_TRANSPOSE)
       IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES))  &
         & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)
       IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_COL_FIELD_VARIABLE_INDICES)) &
@@ -341,7 +380,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,variable_idx,variable_type_idx
+    INTEGER(INTG) :: DUMMY_ERR,variable_idx,variable_type_idx,variable_type_idx2
     TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
@@ -363,6 +402,9 @@ CONTAINS
             ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE,STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface mapping create values cache.",ERR,ERROR,*999)
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES=0
+            INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=0
+            INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE=0
+            INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_COEFFICIENT=0.0_DP
             !Set the default interface mapping in the create values cache          
             !First calculate how many interface matrices we have and set the variable types
             SELECT CASE(INTERFACE_CONDITION%METHOD)
@@ -384,11 +426,28 @@ CONTAINS
                         EXIT
                       ENDIF
                     ENDDO !variable_type_idx
+                    IF(INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE==0) &
+                      & CALL FLAG_ERROR("Could not find a Lagrange variable type in the Lagrange field.",ERR,ERROR,*999)
+                    !Default the RHS Lagrange variable to the second Lagrange variable
+                    DO variable_type_idx2=variable_type_idx+1,FIELD_NUMBER_OF_VARIABLE_TYPES
+                      IF(ASSOCIATED(LAGRANGE_FIELD%VARIABLE_TYPE_MAP(variable_type_idx2)%PTR)) THEN
+                        INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE=variable_type_idx2
+                        EXIT
+                      ENDIF                       
+                    ENDDO !variable_type_idx2
+                    IF(INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE==0) &
+                      & CALL FLAG_ERROR("Could not find a RHS Lagrange variable type in the Lagrange field.",ERR,ERROR,*999)
                     ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(INTERFACE_MAPPING% &
                       & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix coefficients.",ERR,ERROR,*999)
                     !Default the interface matrices coefficients to add.
                     INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS=1.0_DP
+                    INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_COEFFICIENT=1.0_DP
+                    ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%HAS_TRANSPOSE(INTERFACE_MAPPING% &
+                      & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache has transpose.",ERR,ERROR,*999)
+                    !Default the interface matrices coefficients to add.
+                    INTERFACE_MAPPING%CREATE_VALUES_CACHE%HAS_TRANSPOSE=.TRUE.
                     ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(INTERFACE_DEPENDENT% &
                       & NUMBER_OF_DEPENDENT_VARIABLES),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix row field variable indexes.", &
@@ -491,6 +550,7 @@ CONTAINS
         ENDDO !matrix_idx
         DEALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS)
       ENDIF
+      CALL INTERFACE_MAPPING_RHS_MAPPING_FINALISE(INTERFACE_MAPPING%RHS_MAPPING,ERR,ERROR,*999)
       CALL INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE(INTERFACE_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
       DEALLOCATE(INTERFACE_MAPPING)
     ENDIF
@@ -535,6 +595,7 @@ CONTAINS
         INTERFACE_EQUATIONS%INTERFACE_MAPPING%NUMBER_OF_GLOBAL_COLUMNS=0
         NULLIFY(INTERFACE_EQUATIONS%INTERFACE_MAPPING%COLUMN_DOFS_MAPPING)
         INTERFACE_EQUATIONS%INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES=0
+        NULLIFY(INTERFACE_EQUATIONS%INTERFACE_MAPPING%RHS_MAPPING)
         NULLIFY(INTERFACE_EQUATIONS%INTERFACE_MAPPING%CREATE_VALUES_CACHE)
         CALL INTERFACE_MAPPING_CREATE_VALUES_CACHE_INITIALISE(INTERFACE_EQUATIONS%INTERFACE_MAPPING,ERR,ERROR,*999)
       ENDIF
@@ -683,6 +744,7 @@ CONTAINS
           NULLIFY(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE)
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MESH_INDEX=0
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%MATRIX_COEFFICIENT=0.0_DP
+          INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%HAS_TRANSPOSE=.FALSE.
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_ROWS=0
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%TOTAL_NUMBER_OF_ROWS=0
           INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%NUMBER_OF_GLOBAL_ROWS=0
@@ -974,6 +1036,7 @@ CONTAINS
     INTEGER(INTG) :: matrix_idx,matrix_idx2,variable_idx
     INTEGER(INTG), ALLOCATABLE :: OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(:)
     LOGICAL :: FOUND
+    LOGICAL, ALLOCATABLE :: OLD_MATRIX_TRANSPOSE(:)
     REAL(DP), ALLOCATABLE :: OLD_MATRIX_COEFFICIENTS(:)
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(INTERFACE_DEPENDENT_TYPE), POINTER :: INTERFACE_DEPENDENT
@@ -1004,16 +1067,23 @@ CONTAINS
                       IF(NUMBER_OF_INTERFACE_MATRICES/=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
                         ALLOCATE(OLD_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix coefficients.",ERR,ERROR,*999)
+                        ALLOCATE(OLD_MATRIX_TRANSPOSE(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix transpose.",ERR,ERROR,*999)
                         ALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix row field indexes.",ERR,ERROR,*999)
                         OLD_MATRIX_COEFFICIENTS=CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS
+                        OLD_MATRIX_TRANSPOSE=CREATE_VALUES_CACHE%HAS_TRANSPOSE
                         OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES
                         IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)) &
                           & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)
+                        IF(ALLOCATED(CREATE_VALUES_CACHE%HAS_TRANSPOSE)) &
+                          & DEALLOCATE(CREATE_VALUES_CACHE%HAS_TRANSPOSE)
                         IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)) &
                           & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)
                         ALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix coefficients.",ERR,ERROR,*999)
+                        ALLOCATE(CREATE_VALUES_CACHE%HAS_TRANSPOSE(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix tranpose.",ERR,ERROR,*999)
                         ALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row field variable indexes.",ERR,ERROR,*999)
                         IF(NUMBER_OF_INTERFACE_MATRICES>CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
@@ -1021,6 +1091,10 @@ CONTAINS
                             & OLD_MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)
                           CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES+1: &
                             & NUMBER_OF_INTERFACE_MATRICES)=1.0_DP
+                          CREATE_VALUES_CACHE%HAS_TRANSPOSE(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)= &
+                            & OLD_MATRIX_TRANSPOSE(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)
+                          CREATE_VALUES_CACHE%HAS_TRANSPOSE(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES+1: &
+                            & NUMBER_OF_INTERFACE_MATRICES)=.TRUE.
                           CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(1:CREATE_VALUES_CACHE% &
                             & NUMBER_OF_INTERFACE_MATRICES)=OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(1:CREATE_VALUES_CACHE% &
                             & NUMBER_OF_INTERFACE_MATRICES)
@@ -1050,10 +1124,13 @@ CONTAINS
                         ELSE
                           CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:NUMBER_OF_INTERFACE_MATRICES)= &
                             & OLD_MATRIX_COEFFICIENTS(1:NUMBER_OF_INTERFACE_MATRICES)
+                          CREATE_VALUES_CACHE%HAS_TRANSPOSE(1:NUMBER_OF_INTERFACE_MATRICES)= &
+                            & OLD_MATRIX_TRANSPOSE(1:NUMBER_OF_INTERFACE_MATRICES)
                           CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(1:NUMBER_OF_INTERFACE_MATRICES)= &
                             & OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(1:NUMBER_OF_INTERFACE_MATRICES)
                         ENDIF
                         IF(ALLOCATED(OLD_MATRIX_COEFFICIENTS)) DEALLOCATE(OLD_MATRIX_COEFFICIENTS)
+                        IF(ALLOCATED(OLD_MATRIX_TRANSPOSE)) DEALLOCATE(OLD_MATRIX_TRANSPOSE)
                         IF(ALLOCATED(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)) DEALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)
                       ENDIF
                     ELSE
@@ -1099,12 +1176,303 @@ CONTAINS
        
     CALL EXITS("INTERFACE_MAPPING_MATRICES_NUMBER_SET")
     RETURN
-999 CALL ERRORS("INTERFACE_MAPPING_MATRICES_NUMBER_SET",ERR,ERROR)
+999 IF(ALLOCATED(OLD_MATRIX_COEFFICIENTS)) DEALLOCATE(OLD_MATRIX_COEFFICIENTS)
+    IF(ALLOCATED(OLD_MATRIX_TRANSPOSE)) DEALLOCATE(OLD_MATRIX_TRANSPOSE)
+    IF(ALLOCATED(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)) DEALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES)
+    CALL ERRORS("INTERFACE_MAPPING_MATRICES_NUMBER_SET",ERR,ERROR)
     CALL EXITS("INTERFACE_MAPPING_MATRICES_NUMBER_SET")
     RETURN 1
     
   END SUBROUTINE INTERFACE_MAPPING_MATRICES_NUMBER_SET
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the transpose flag for the interface matrices. 
+  SUBROUTINE INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET(INTERFACE_MAPPING,MATRIX_TRANSPOSE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping.
+    LOGICAL, INTENT(IN) :: MATRIX_TRANSPOSE(:) !<MATRIX_TRANSPOSE(matrix_idx). The interface matrix transpose flag for the matrix_idx'th interface matrix.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+      IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
+        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+      ELSE
+        CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
+        IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN          
+           INTERFACE_EQUATIONS=>INTERFACE_MAPPING%INTERFACE_EQUATIONS
+          IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+            INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
+            IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+              SELECT CASE(INTERFACE_CONDITION%METHOD)
+              CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                !Check that the number of supplied coefficients matches the number of interface matrices
+                IF(SIZE(MATRIX_TRANSPOSE,1)==CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
+                  CREATE_VALUES_CACHE%HAS_TRANSPOSE=MATRIX_TRANSPOSE       
+                ELSE
+                  LOCAL_ERROR="Invalid size of matrix tranpose. The size of the supplied array ("// &
+                    & TRIM(NUMBER_TO_VSTRING(SIZE(MATRIX_TRANSPOSE,1),"*",ERR,ERROR))// &
+                    & ") must match the number of interface matrices ("// &
+                    & TRIM(NUMBER_TO_VSTRING(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//")."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The interface condition method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET")
+    RETURN
+999 CALL ERRORS("INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET",ERR,ERROR)
+    CALL EXITS("INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET")
+    RETURN 1
+  END SUBROUTINE INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the coefficient applied to the interface RHS vector.
+  SUBROUTINE INTERFACE_MAPPING_RHS_COEFF_SET(INTERFACE_MAPPING,RHS_COEFFICIENT,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping to set the RHS coefficent for
+    REAL(DP), INTENT(IN) :: RHS_COEFFICIENT !<The coefficient applied to the interface RHS vector.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("INTERFACE_MAPPING_RHS_COEFF_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+      IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
+        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(INTERFACE_MAPPING%CREATE_VALUES_CACHE)) THEN
+          IF(INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE/=0) THEN
+            INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_COEFFICIENT=RHS_COEFFICIENT
+          ELSE
+            CALL FLAG_ERROR("The interface mapping RHS Lagrange variable type has not been set.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface mapping create values cache is not associated",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface mapping is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("INTERFACE_MAPPING_RHS_COEFF_SET")
+    RETURN
+999 CALL ERRORS("INTERFACE_MAPPING_RHS_COEFF_SET",ERR,ERROR)
+    CALL EXITS("INTERFACE_MAPPING_RHS_COEFF_SET")
+    RETURN 1
+  END SUBROUTINE INTERFACE_MAPPING_RHS_COEFF_SET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises the interface mapping RHS mapping and deallocates all memory
+  SUBROUTINE INTERFACE_MAPPING_RHS_MAPPING_FINALISE(RHS_MAPPING,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING !<A pointer to the RHS mapping to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("INTERFACE_MAPPING_RHS_MAPPING_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(RHS_MAPPING)) THEN
+      IF(ALLOCATED(RHS_MAPPING%RHS_DOF_TO_INTERFACE_ROW_MAP)) DEALLOCATE(RHS_MAPPING%RHS_DOF_TO_INTERFACE_ROW_MAP)
+      IF(ALLOCATED(RHS_MAPPING%INTERFACE_ROW_TO_RHS_DOF_MAP)) DEALLOCATE(RHS_MAPPING%INTERFACE_ROW_TO_RHS_DOF_MAP)
+      DEALLOCATE(RHS_MAPPING)
+    ENDIF
+       
+    CALL EXITS("INTERFACE_MAPPING_RHS_MAPPING_FINALISE")
+    RETURN
+999 CALL ERRORS("INTERFACE_MAPPING_RHS_MAPPING_FINALISE",ERR,ERROR)
+    CALL EXITS("INTERFACE_MAPPING_RHS_MAPPING_FINALISE")
+    RETURN 1
+  END SUBROUTINE INTERFACE_MAPPING_RHS_MAPPING_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the interface mapping RHS mapping
+  SUBROUTINE INTERFACE_MAPPING_RHS_MAPPING_INITIALISE(INTERFACE_MAPPING,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping to initialise the RHS mapping for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("INTERFACE_MAPPING_RHS_MAPPING_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+      IF(ASSOCIATED(INTERFACE_MAPPING%RHS_MAPPING)) THEN
+        CALL FLAG_ERROR("Interface mapping RHS mapping is already associated.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(INTERFACE_MAPPING%RHS_MAPPING,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface mapping RHS mapping.",ERR,ERROR,*999)
+        INTERFACE_MAPPING%RHS_MAPPING%INTERFACE_MAPPING=>INTERFACE_MAPPING        
+        INTERFACE_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE=0
+        NULLIFY(INTERFACE_MAPPING%RHS_MAPPING%RHS_VARIABLE)
+        NULLIFY(INTERFACE_MAPPING%RHS_MAPPING%RHS_VARIABLE_MAPPING)
+        INTERFACE_MAPPING%RHS_MAPPING%RHS_COEFFICIENT=1.0_DP
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("INTERFACE_MAPPING_RHS_MAPPING_INITIALISE")
+    RETURN
+999 CALL INTERFACE_MAPPING_RHS_MAPPING_FINALISE(INTERFACE_MAPPING%RHS_MAPPING,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("INTERFACE_MAPPING_RHS_MAPPING_INITIALISE",ERR,ERROR)
+    CALL EXITS("INTERFACE_MAPPING_RHS_MAPPING_INITIALISE")
+    RETURN 1
+  END SUBROUTINE INTERFACE_MAPPING_RHS_MAPPING_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the mapping between a Lagrange field variable and the interface rhs vector.
+  SUBROUTINE INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET(INTERFACE_MAPPING,RHS_VARIABLE_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping to set the RHS variable type for.
+    INTEGER(INTG), INTENT(IN) :: RHS_VARIABLE_TYPE !<The variable type associated with the interface rhs vector. If the interface condition does not have a rhs vector then the variable type on input should be zero.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: INTERFACE_LAGRANGE
+    TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
+    TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+      IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
+        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+      ELSE
+        CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
+        IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
+          IF(RHS_VARIABLE_TYPE==0) THEN
+            CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE=0
+          ELSE
+            INTERFACE_EQUATIONS=>INTERFACE_MAPPING%INTERFACE_EQUATIONS
+            IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+              INTERFACE_CONDITION=>INTERFACE_EQUATIONS%INTERFACE_CONDITION
+              IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+                SELECT CASE(INTERFACE_CONDITION%METHOD)
+                CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                  INTERFACE_LAGRANGE=>INTERFACE_CONDITION%LAGRANGE
+                  IF(ASSOCIATED(INTERFACE_LAGRANGE)) THEN
+                    LAGRANGE_FIELD=>INTERFACE_LAGRANGE%LAGRANGE_FIELD
+                    IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
+                      !Check the RHS variable type is not being by the interface matrices
+                      IF(CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE==RHS_VARIABLE_TYPE) THEN
+                        LOCAL_ERROR="The specified RHS variable type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " is the same as the Lagrange variable type for the interface matrices."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      !Check the RHS variable number is defined on the Lagrange field
+                      IF(RHS_VARIABLE_TYPE>=1.AND.RHS_VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+                        IF(ASSOCIATED(LAGRANGE_FIELD%VARIABLE_TYPE_MAP(RHS_VARIABLE_TYPE)%PTR)) THEN
+                          CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE=RHS_VARIABLE_TYPE
+                        ELSE
+                          LOCAL_ERROR="The specified RHS variable type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                            & " is not defined on the Lagrange field."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        LOCAL_ERROR="The specified RHS variable type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " is invalid. The number must either be zero or >= 1 and <= "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Lagrange field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Interface Lagrange is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The interface condition method of "// &
+                    & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET")
+    RETURN
+999 CALL ERRORS("INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET",ERR,ERROR)
+    CALL EXITS("INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET")
+    RETURN 1
+  END SUBROUTINE INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET
+  
   !
   !================================================================================================================================
   !

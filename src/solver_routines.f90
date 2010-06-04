@@ -53,6 +53,7 @@ MODULE SOLVER_ROUTINES
   USE FIELD_ROUTINES
   USE KINDS
   USE INPUT_OUTPUT
+  USE INTERFACE_CONDITIONS_CONSTANTS
   USE ISO_VARYING_STRING
   USE PROBLEM_CONSTANTS
   USE SOLVER_MAPPING_ROUTINES
@@ -4374,9 +4375,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_EQUATIONS_CREATE_FINISH",ERR,ERROR,*998)
 
@@ -6435,12 +6435,12 @@ CONTAINS
             IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
               SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
               IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                !IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-                !  CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                !    & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-                !ELSE
-                !  CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
-                !ENDIF
+                IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
+                  CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                    & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                ENDIF
               ELSE
                 CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -8888,8 +8888,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DEPENDENT_VARIABLE_TYPE,equations_column_number,equations_matrix_idx,equations_matrix_number, &
-      & equations_row_number,equations_row_number2,equations_set_idx,LINEAR_VARIABLE_TYPE,rhs_boundary_condition, &
-      & residual_variable_type,rhs_global_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_matrix_idx, &
+      & equations_row_number,equations_row_number2,equations_set_idx,interface_column_number,interface_condition_idx, &
+      & interface_matrix_idx,LINEAR_VARIABLE_TYPE,rhs_boundary_condition,residual_variable_type,rhs_global_dof, &
+      & rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_matrix_idx, &
       & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,&
       & j,dirichlet_idx,dirichlet_row,NUMBER_OF_NEUMANN_ROWS,rhs_dof
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
@@ -8918,8 +8919,17 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX,LINEAR_MATRIX
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,LAGRANGE_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,LINEAR_VARIABLE,RESIDUAL_VARIABLE,RHS_VARIABLE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
+    TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: INTERFACE_LAGRANGE
+    TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING
+    TYPE(INTERFACE_MAPPING_RHS_TYPE), POINTER :: INTERFACE_RHS_MAPPING
+    TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES
+    TYPE(INTERFACE_MATRIX_TYPE), POINTER :: INTERFACE_MATRIX
+    TYPE(INTERFACE_RHS_TYPE), POINTER :: INTERFACE_RHS_VECTOR
+    TYPE(INTERFACE_TO_SOLVER_MAPS_TYPE), POINTER :: INTERFACE_TO_SOLVER_MAP
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -8992,6 +9002,27 @@ CONTAINS
                           ENDIF
                         ENDIF
                       ENDDO !equations_set_idx
+                      !Loop over any interface conditions
+                      DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+                        !Loop over the interface matrices
+                        DO interface_matrix_idx=1,SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                          & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_INTERFACE_MATRICES
+                          INTERFACE_TO_SOLVER_MAP=>SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
+                            & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
+                            & interface_matrix_idx)%PTR
+                          IF(ASSOCIATED(INTERFACE_TO_SOLVER_MAP)) THEN
+                            INTERFACE_MATRIX=>INTERFACE_TO_SOLVER_MAP%INTERFACE_MATRIX
+                            IF(ASSOCIATED(INTERFACE_MATRIX)) THEN
+                              CALL SOLVER_MATRIX_INTERFACE_MATRIX_ADD(SOLVER_MATRIX,interface_condition_idx,1.0_DP, &
+                                & INTERFACE_MATRIX,ERR,ERROR,*999)                              
+                            ELSE
+                              CALL FLAG_ERROR("The interface matrix is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("The interface matrix interface to solver map is not associated.",ERR,ERROR,*999)
+                          ENDIF                          
+                        ENDDO !interface_matrix_idx
+                      ENDDO !interface_condition_idx                      
                       !Update the solver matrix values
                       CALL DISTRIBUTED_MATRIX_UPDATE_START(SOLVER_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
                       IF(ASSOCIATED(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX)) THEN
@@ -9358,6 +9389,85 @@ CONTAINS
                       ENDIF
                     ENDIF
                   ENDDO !equations_set_idx
+                  !Add in any rows from any interface conditions
+                  DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
+                    INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
+                    IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+                      SELECT CASE(INTERFACE_CONDITION%METHOD)
+                      CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
+                        INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
+                        IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
+                          INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
+                          IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
+                            INTERFACE_LAGRANGE=>INTERFACE_CONDITION%LAGRANGE
+                            IF(ASSOCIATED(INTERFACE_LAGRANGE)) THEN
+                              LAGRANGE_FIELD=>INTERFACE_LAGRANGE%LAGRANGE_FIELD
+                              IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
+                                INTERFACE_RHS_MAPPING=>INTERFACE_MAPPING%RHS_MAPPING
+                                IF(ASSOCIATED(INTERFACE_RHS_MAPPING)) THEN
+                                  INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
+                                  IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
+                                    RHS_VARIABLE_TYPE=INTERFACE_RHS_MAPPING%RHS_VARIABLE_TYPE
+                                    CALL FIELD_PARAMETER_SET_DATA_GET(LAGRANGE_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                      & RHS_PARAMETERS,ERR,ERROR,*999)
+                                    INTERFACE_RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
+                                    IF(ASSOCIATED(INTERFACE_RHS_VECTOR)) THEN
+                                      !Worry about BCs on the Lagrange variables later.
+                                      DO interface_column_number=1,INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS
+                                        CALL DISTRIBUTED_VECTOR_VALUES_GET(INTERFACE_RHS_VECTOR%RHS_VECTOR, &
+                                          & interface_column_number,RHS_VALUE,ERR,ERROR,*999)
+                                        !Loop over the solver rows this interface column is mapped to
+                                        DO solver_row_idx=1,SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+                                          & interface_condition_idx)%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS( &
+                                          & interface_column_number)%NUMBER_OF_SOLVER_ROWS
+                                          solver_row_number=SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+                                            & interface_condition_idx)%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS( &
+                                            & interface_column_number)%SOLVER_ROW
+                                          row_coupling_coefficient=SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+                                            & interface_condition_idx)%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS( &
+                                            & interface_column_number)%COUPLING_COEFFICIENT
+                                          VALUE=RHS_VALUE*row_coupling_coefficient
+                                          CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR,solver_row_number,VALUE, &
+                                            & ERR,ERROR,*999)
+                                        ENDDO !solver_row_idx                                     
+                                      ENDDO !interface_column_idx
+                                    ELSE
+                                      CALL FLAG_ERROR("Interface matrices RHS vector is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("Interface equations interface matrices is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Interface mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Interface Lagrange field is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Interface Lagrange is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Interface condition equations is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(INTERFACE_CONDITION_PENALTY_METHOD)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="The interface condition method of "// &
+                          & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
+                          & " is invalid."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
+                    ELSE
+                      CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !interface_condition_idx
                   !Start the update the solver RHS vector values
                   CALL DISTRIBUTED_VECTOR_UPDATE_START(SOLVER_RHS_VECTOR,ERR,ERROR,*999)
                   NULLIFY(CHECK_DATA)
@@ -13437,8 +13547,8 @@ CONTAINS
     REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,LAGRANGE_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,LAGRANGE_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -13497,7 +13607,30 @@ CONTAINS
                             CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE(SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          !Interface condition dof.
+                          LAGRANGE_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                           & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_idx)%PTR
+                          IF(ASSOCIATED(LAGRANGE_VARIABLE)) THEN
+                            VARIABLE_TYPE=LAGRANGE_VARIABLE%VARIABLE_TYPE
+                            LAGRANGE_FIELD=>LAGRANGE_VARIABLE%FIELD
+                            IF(ASSOCIATED(LAGRANGE_FIELD)) THEN
+                              !Get the dependent field variable dof the solver dof is mapped to
+                              variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                                & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_idx)
+                              variable_coefficient=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                                & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_COEFFICIENT(equations_idx)
+                              additive_constant=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                                & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_idx)
+                              !Set the dependent field variable dof
+                              VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & variable_dof,VALUE,ERR,ERROR,*999)
+                            ELSE
+                              CALL FLAG_ERROR("Lagrange field is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Lagrange variable is not associated.",ERR,ERROR,*999)
+                          ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="The equations type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING% &
                             & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)% &
