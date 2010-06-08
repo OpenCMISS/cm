@@ -2611,7 +2611,7 @@ CONTAINS
                 k=1
                 !inner surface
                 alpha=sqrt((ELLIPSOID_EXTENT(1))**2-(ELLIPSOID_EXTENT(2))**2)
-                xi=acosh(ELLIPSOID_EXTENT(1)/alpha)
+                xi=log(ELLIPSOID_EXTENT(1)/alpha+sqrt((ELLIPSOID_EXTENT(1)/alpha)**2+1))
 
                 j=1
                 !apex node

@@ -97,7 +97,11 @@ else
         ifeq ($(MPI),cray)
           MPI := cray
         else
-          $(error unknown MPI type - $(MPI))
+          ifeq ($(MPI),poe)
+            MPI := poe
+          else
+            $(error unknown MPI type - $(MPI))
+          endif
         endif
       endif
     endif
@@ -135,7 +139,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
   else# windows
     EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   endif
@@ -821,9 +825,14 @@ ifeq ($(OPERATING_SYSTEM),aix)
    $(OBJECT_DIR)/computational_environment.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
    $(OBJECT_DIR)/distributed_matrix_vector.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
    $(OBJECT_DIR)/field_IO_routines.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+   $(OBJECT_DIR)/analytic_analysis_routines.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+   $(OBJECT_DIR)/data_projection_routines.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
 
    #Need to disable argument list checking for c interface modules to allow for the c->fortran char->integer string conversion
    $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+
+   #Need to to auto-promote single precision constants to doubles
+   $(OBJECT_DIR)/finite_elasticity_routines.o : DBGCF_FLGS = -qdpc
 
 endif
 

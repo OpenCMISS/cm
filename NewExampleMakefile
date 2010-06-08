@@ -93,7 +93,11 @@ else
     ifeq ($(MPI),openmpi)
       MPI := openmpi
     else
-      $(error unknown MPI type - $(MPI))
+      ifeq ($(MPI),poe)
+        MPI := poe
+      else
+        $(error unknown MPI type - $(MPI))
+      endif
     endif
   endif
 endif
@@ -138,8 +142,8 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
   else# windows
     EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
@@ -505,9 +509,10 @@ ifeq ($(call olist_args,test),)
 endif
 
 #TAO
-TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
+TAO_LIBRARIES =#
 TAO_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
   TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -518,9 +523,10 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+PETSC_LIBRARIES =#
 PETSC_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
   PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
   ifeq ($(ABI),64)
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
@@ -533,6 +539,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm  -lXm -lXt -lX11 
     PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
   else# windows
@@ -541,9 +548,10 @@ else
 endif
 
 #SUNDIALS
-SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
+SUNDIALS_LIBRARIES =#
 SUNDIALS_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
   SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -554,9 +562,10 @@ else
 endif
 
 #HYPRE
-HYPRE_LIBRARIES = -lHYPRE
+HYPRE_LIBRARIES =#
 HYPRE_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  HYPRE_LIBRARIES = -lHYPRE
   HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -567,9 +576,10 @@ else
 endif
 
 #MUMPS
-MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
+MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
   MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -580,9 +590,10 @@ else
 endif
 
 #ScaLAPACK
-SCALAPACK_LIBRARIES = -lscalapack 
+SCALAPACK_LIBRARIES =#
 SCALAPACK_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SCALAPACK_LIBRARIES = -lscalapack 
   SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -593,9 +604,10 @@ else
 endif
 
 #BLACS
-BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77 
+BLACS_LIBRARIES =#
 BLACS_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77 
   BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
