@@ -184,10 +184,20 @@ static int CMISSBasisNotCollapsed = 4;
  * > \see OPENCMISS::BoundaryConditions,OPENCMISS
  * >@{
  */
-static int CMISSBoundaryConditionNotFixed = 0;
+static int CMISSBoundaryConditionFree = 0;
 static int CMISSBoundaryConditionFixed = 1;
+static int CMISSBoundaryConditionNeumannPoint = 8;
+static int CMISSBoundaryConditionNeumannIntegrated = 9;
+static int CMISSBoundaryConditionDirichlet = 10;
+static int CMISSBoundaryConditionCauchy = 11;
+static int CMISSBoundaryConditionRobin = 12;
 static int CMISSBoundaryConditionMixed = 7;
+static int CMISSBoundaryConditionFixedIncremented = 13;
+static int CMISSBoundaryConditionPressure = 14;
+static int CMISSBoundaryConditionPressureIncremented = 15;
 /* Temporary boundary flags (to be removed when general boundary object becomes available!) */
+static int CMISSBoundaryConditionOutletWall = 3;
+static int CMISSBoundaryConditionFreeWall = 6;
 static int CMISSBoundaryConditionFixedWall = 4;
 static int CMISSBoundaryConditionInletWall = 2;
 static int CMISSBoundaryConditionMovedWall = 5;
