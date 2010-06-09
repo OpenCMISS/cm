@@ -226,9 +226,11 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
     REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
     REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
-    INTEGER(INTG) :: PROJECTION_COMPUTATIONAL_NODE_NUMBER !<The corresponding computational node of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    !INTEGER(INTG) :: PROJECTION_COMPUTATIONAL_NODE_NUMBER !<The corresponding computational node of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
     REAL(DP) :: PROJECTION_DISTANCE !<The distances between the data point and the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
     INTEGER(INTG) :: PROJECTION_ELEMENT_NUMBER !<The element of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    INTEGER(INTG) :: PROJECTION_ELEMENT_FACE_NUMBER !<The element face of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE is chosen    
+    INTEGER(INTG) :: PROJECTION_ELEMENT_LINE_NUMBER !<The element line of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE is chosen
     INTEGER(INTG) :: PROJECTION_EXIT_TAG !<The exit tage of the data projection. \See DATA_PROJECTION_ROUTINES. Assigned only if DATA_POINTS_PROJECTED is .TRUE. 
     REAL(DP), ALLOCATABLE :: PROJECTION_XI(:) !<The xi coordinate of the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
   END TYPE DATA_POINT_TYPE
