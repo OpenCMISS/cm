@@ -1315,7 +1315,7 @@ CONTAINS
                                               rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
                                                 & rhs_global_dof)
                                               SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
+                                              CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
                                                    & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix
@@ -1364,7 +1364,7 @@ CONTAINS
                                               rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
                                                 & rhs_global_dof)
                                               SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
+                                              CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
                                                        & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix

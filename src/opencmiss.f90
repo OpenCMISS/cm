@@ -753,7 +753,7 @@ MODULE OPENCMISS
   !> \brief Boundary conditions type parameters.
   !> \see OPENCMISS::BoundaryConditions,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNotFixed = BOUNDARY_CONDITION_NOT_FIXED !<The dof is not fixed. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNotFixed = BOUNDARY_CONDITION_FREE !<The dof is free. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixed = BOUNDARY_CONDITION_FIXED !<The dof is fixed as a boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMixed = BOUNDARY_CONDITION_MIXED !<The dof is set as a mixed boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
 

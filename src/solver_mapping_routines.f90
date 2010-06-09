@@ -189,7 +189,7 @@ CONTAINS
                                   !For now assume 1-1 mapping between rows and dofs.
                                   global_dof=global_row                                  
                                   INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                                    & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                    & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                     & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                                     & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                     & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
@@ -206,7 +206,7 @@ CONTAINS
                                     !For now assume 1-1 mapping between rows and dofs.
                                     global_dof=global_row                                  
                                     INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                                      & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                      & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                       & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                                       & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                       & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
@@ -231,7 +231,7 @@ CONTAINS
                                       !global_dof=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_dof)
                                       global_dof=global_row                                    
                                       INCLUDE_ROW=INCLUDE_ROW.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS( &
-                                        & global_dof)==BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                        & global_dof)==BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                         & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                                         & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                         & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
@@ -397,7 +397,7 @@ CONTAINS
                       !For now assume 1-1 mapping between rows and dofs.
                       global_dof=global_row                                  
                       INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE% & 
-                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                         & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                         & .OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
                     ELSE
@@ -413,7 +413,7 @@ CONTAINS
                         !For now assume 1-1 mapping between rows and dofs.
                         global_dof=global_row                                  
                         INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                          & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
+                          & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
                           & BOUNDARY_CONDITION_FREE_WALL.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                           & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
                       ELSE
@@ -435,7 +435,7 @@ CONTAINS
                           !global_dof=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_dof)
                           global_dof=global_row                                    
                           INCLUDE_ROW=INCLUDE_ROW.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
-                            & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                            & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                             & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                             & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                             & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
@@ -664,7 +664,7 @@ CONTAINS
                             ENDIF
                           ENDDO
                           IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== & 
-                            & BOUNDARY_CONDITION_NOT_FIXED.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                            & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                             & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                             & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                             & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
@@ -972,7 +972,7 @@ CONTAINS
                           EXIT
                         ENDIF
                       ENDDO                                          
-                      IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NOT_FIXED.OR. & 
+                      IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE.OR. & 
                         & BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                         & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                         & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
