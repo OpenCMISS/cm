@@ -2428,30 +2428,32 @@ CONTAINS
     CALL ENTERS("DARCY_EQUATION_PRE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-        CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-      ELSE IF(CONTROL_LOOP%CONTROL_LOOP_LEVEL>1) THEN
-        CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP%PARENT_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-      ENDIF
+      IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE.OR.CONTROL_LOOP%CONTROL_LOOP_LEVEL>1) THEN
+        IF(CONTROL_LOOP%CONTROL_LOOP_LEVEL>1) THEN
+          CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP%PARENT_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+        ELSE
+          CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+        ENDIF
 
-      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
-        & "=========================================================================================================", &
-        & ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"CURRENT_TIME   = ",CURRENT_TIME,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"TIME_INCREMENT = ",TIME_INCREMENT,ERR,ERROR,*999)
-      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
-        & "=========================================================================================================", &
-        & ERR,ERROR,*999)
+        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
+          & "=========================================================================================================", &
+          & ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"CURRENT_TIME   = ",CURRENT_TIME,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"TIME_INCREMENT = ",TIME_INCREMENT,ERR,ERROR,*999)
+        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
+          & "=========================================================================================================", &
+          & ERR,ERROR,*999)
 
-      IF(DIAGNOSTICS1) THEN
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE, &
-          & "*******************************************************************************************************", &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"CURRENT_TIME   = ",CURRENT_TIME,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"TIME_INCREMENT = ",TIME_INCREMENT,ERR,ERROR,*999)
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE, &
-          & "*******************************************************************************************************", &
-          & ERR,ERROR,*999)
+        IF(DIAGNOSTICS1) THEN
+          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE, &
+            & "*******************************************************************************************************", &
+            & ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"CURRENT_TIME   = ",CURRENT_TIME,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"TIME_INCREMENT = ",TIME_INCREMENT,ERR,ERROR,*999)
+          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE, &
+            & "*******************************************************************************************************", &
+            & ERR,ERROR,*999)
+        ENDIF
       ENDIF
 
       IF(ASSOCIATED(SOLVER)) THEN
