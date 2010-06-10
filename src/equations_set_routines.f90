@@ -5023,9 +5023,7 @@ CONTAINS
                   ENDIF
                 ENDIF
               ELSE
-                LOCAL_ERROR="Boundary condition variable type "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                  & " is not associated for the corresponding field variable."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ! do nothing
               ENDIF
             ENDDO !variable_idx
           ELSE
