@@ -1843,6 +1843,7 @@ MODULE TYPES
   TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface for the coupled mesh connectivity
     TYPE(MESH_TYPE), POINTER :: INTERFACE_MESH
+    TYPE(BASIS_TYPE), POINTER :: BASIS
     LOGICAL :: MESH_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh connectivity has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_INT_ELEM !<Is the number of elements within the interface mesh
     INTEGER(INTG) :: NUMBER_INT_DOM !<Is the number of domains coupled via the interface
