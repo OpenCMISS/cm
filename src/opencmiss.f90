@@ -17333,7 +17333,7 @@ CONTAINS
   SUBROUTINE CMISSEquationsSetAnalyticCreateStartObj(EquationsSet,AnalyticFunctionType,AnalyticFieldUserNumber,AnalyticField,Err)
   
     !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the analytic creation on.
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to start the analytic creation on.
     INTEGER(INTG), INTENT(IN) :: AnalyticFunctionType !<The analytic function type to use. \see OPENCMISS_EquationsSetAnalyticFunctionTypes
     INTEGER(INTG), INTENT(IN) :: AnalyticFieldUserNumber !<The user number of the field for the analytic function
     TYPE(CMISSFieldType), INTENT(INOUT) :: AnalyticField !<If associated on entry, the user created analytic field which has the same user number as the specified analytic field user number. If not associated on entry, on return, the created analytic field for the equations set.
@@ -17643,7 +17643,7 @@ CONTAINS
   SUBROUTINE CMISSEquationsSetBoundaryConditionsCreateStartObj(EquationsSet,BoundaryConditions,Err)
   
     !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the creation of boundary conditions on.
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to start the creation of boundary conditions on.
     TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, the created boundary conditions.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -18090,7 +18090,7 @@ CONTAINS
   SUBROUTINE CMISSEquationsSetDependentCreateStartObj(EquationsSet,DependentFieldUserNumber,DependentField,Err)
   
     !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the creation of dependent variables on.
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to start the creation of dependent variables on.
     INTEGER(INTG), INTENT(IN) :: DependentFieldUserNumber !<The user number of the dependent field.
     TYPE(CMISSFieldType), INTENT(INOUT) :: DependentField !<If associated on entry, the user created dependent field which has the same user number as the specified dependent field user number. If not associated on entry, on return, the created dependent field for the equations set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -18302,7 +18302,7 @@ CONTAINS
   SUBROUTINE CMISSEquationsSetEquationsCreateStartObj(EquationsSet,Equations,Err)
   
     !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the creation of equations on.
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to start the creation of equations on.
     TYPE(CMISSEquationsType), INTENT(INOUT) :: Equations !<On return, the created equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -18514,7 +18514,7 @@ CONTAINS
   SUBROUTINE CMISSEquationsSetIndependentCreateStartObj(EquationsSet,IndependentFieldUserNumber,IndependentField,Err)
   
     !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the creation of independent variables on.
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to start the creation of independent variables on.
     INTEGER(INTG), INTENT(IN) :: IndependentFieldUserNumber !<The user number of the dependent field.
     TYPE(CMISSFieldType), INTENT(INOUT) :: IndependentField !<If associated on entry, the user created independent field which has the same user number as the specified independent field user number. If not associated on entry, on return, the created independent field for the equations set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -18732,7 +18732,7 @@ CONTAINS
   SUBROUTINE CMISSEquationsSetMaterialsCreateStartObj(EquationsSet,MaterialsFieldUserNumber,MaterialsField,Err)
   
     !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the creation of materials on.
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to start the creation of materials on.
     INTEGER(INTG), INTENT(IN) :: MaterialsFieldUserNumber !<The user number of the materials field.
     TYPE(CMISSFieldType), INTENT(INOUT) :: MaterialsField !<If associated on entry, the user created materials field which has the same user number as the specified materials field user number. If not associated on entry, on return, the created materials field for the equations set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -19088,7 +19088,7 @@ CONTAINS
   SUBROUTINE CMISSEquationsSetSourceCreateStartObj(EquationsSet,SourceFieldUserNumber,SourceField,Err)
   
     !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<The equations set to start the creation of a source on.
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to start the creation of a source on.
     INTEGER(INTG), INTENT(IN) :: SourceFieldUserNumber !<The user number of the source field.
     TYPE(CMISSFieldType), INTENT(INOUT) :: SourceField !<If associated on entry, the user created source field which has the same user number as the specified source field user number. If not associated on entry, on return, the created source field for the equations set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
