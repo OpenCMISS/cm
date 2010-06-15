@@ -7591,8 +7591,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: solver_matrix_idx
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LINEAR_SOLVE",ERR,ERROR,*999)
 
@@ -7626,8 +7629,38 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 #ifdef TAUPROF
-          CALL TAU_STATIC_PHASE_STOP("Solve Phase")
+        CALL TAU_STATIC_PHASE_STOP("Solve Phase")
 #endif
+        
+        IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
+
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_START("Solution Output Phase")
+#endif
+          
+          SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+          IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+            SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+            IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver solution vector:",ERR,ERROR,*999)
+              DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solution vector for solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
+                CALL DISTRIBUTED_VECTOR_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR% &
+                  & SOLVER_VECTOR,ERR,ERROR,*999)
+              ENDDO !solver_matrix_idx
+            ELSE
+              CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          ENDIF
+          
+#ifdef TAUPROF
+        CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
+#endif
+        ENDIF
+        
         IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
           !Update depenent field with solution
 #ifdef TAUPROF

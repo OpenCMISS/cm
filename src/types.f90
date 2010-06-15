@@ -85,7 +85,11 @@ MODULE TYPES
 
   TYPE REAL_DP_PTR_TYPE
     REAL(DP), POINTER :: PTR(:)
-  END TYPE REAL_DP_PTR_TYPE  
+  END TYPE REAL_DP_PTR_TYPE
+  
+  TYPE INTEGER_INTG_PTR_TYPE
+    INTEGER(INTG), POINTER :: PTR(:)
+  END TYPE INTEGER_INTG_PTR_TYPE
   
   !
   !================================================================================================================================
