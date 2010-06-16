@@ -2978,6 +2978,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSGeneratedMeshBasisSetObj
   END INTERFACE !CMISSGeneratedMeshBasisSet
 
+  !>Sets/changes the base vectors for a generated mesh.
+  INTERFACE CMISSGeneratedMeshBaseVectorsSet
+    MODULE PROCEDURE CMISSGeneratedMeshBaseVectorsSetNumber
+    MODULE PROCEDURE CMISSGeneratedMeshBaseVectorsSetObj
+  END INTERFACE !CMISSGeneratedMeshBaseVectorsSet
+
   !>Finishes the creation of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshCreateStart
   INTERFACE CMISSGeneratedMeshCreateFinish
     MODULE PROCEDURE CMISSGeneratedMeshCreateFinishNumber
@@ -3054,6 +3060,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
 
   PUBLIC CMISSGeneratedMeshBasisGet,CMISSGeneratedMeshBasisSet
+
+  PUBLIC CMISSGeneratedMeshBaseVectorsSet
 
   PUBLIC CMISSGeneratedMeshCreateFinish,CMISSGeneratedMeshCreateStart
 
@@ -25992,6 +26000,78 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSGeneratedMeshBasisSetObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the base vectors for a generated mesh on a region identified by a user number.
+  SUBROUTINE CMISSGeneratedMeshBaseVectorsSetNumber(RegionUserNumber,GeneratedMeshUserNumber,BaseVectors,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the base vectors for.
+    INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the base vectors for.
+    REAL(DP), INTENT(IN) :: BaseVectors(:,:) !<BaseVectors(coordinate_idx,xi_idx). The base vectors to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSGeneratedMeshBaseVectorsSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(GENERATED_MESH)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN       
+        CALL GENERATED_MESH_BASE_VECTORS_SET(GENERATED_MESH,BaseVectors,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)      
+    ENDIF
+    
+    CALL EXITS("CMISSGeneratedMeshBaseVectorsSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSGeneratedMeshBaseVectorsSetNumber",Err,ERROR)
+    CALL EXITS("CMISSGeneratedMeshBaseVectorsSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSGeneratedMeshBaseVectorsSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the base vectors for a generated mesh identified by an object.
+  SUBROUTINE CMISSGeneratedMeshBaseVectorsSetObj(GeneratedMesh,BaseVectors,Err)
+  
+    !Argument variables
+    TYPE(CMISSGeneratedMeshType), INTENT(IN) :: GeneratedMesh !<The generated mesh to set the base vectors for.
+    REAL(DP), INTENT(IN) :: BaseVectors(:,:) !<BaseVectors(coordinate_idx,xi_idx). The base vectors to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSGeneratedMeshBaseVectorsSetObj",Err,ERROR,*999)
+ 
+    CALL GENERATED_MESH_BASE_VECTORS_SET(GeneratedMesh%GENERATED_MESH,BaseVectors,Err,ERROR,*999)
+
+    CALL EXITS("CMISSGeneratedMeshBaseVectorsSetObj")
+    RETURN
+999 CALL ERRORS("CMISSGeneratedMeshBaseVectorsSetObj",Err,ERROR)
+    CALL EXITS("CMISSGeneratedMeshBaseVectorsSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSGeneratedMeshBaseVectorsSetObj
 
   !  
   !================================================================================================================================

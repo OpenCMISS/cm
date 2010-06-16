@@ -1981,7 +1981,8 @@ CONTAINS
                         
                         !Loop over the variables
                         
-                        DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%VARIABLES(solver_variable_idx)% &
+                          & VARIABLE
                         COL_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
                         BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
                         
@@ -2068,7 +2069,7 @@ CONTAINS
                                 SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                   & solver_local_dof)%NUMBER_OF_EQUATIONS=1
                                 SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
-                                  & solver_local_dof)%EQUATIONS_TYPES(1)=equation_type
+                                  & solver_local_dof)%EQUATIONS_TYPES(1)=SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET
                                 SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                   & solver_local_dof)%EQUATIONS_INDICES(1)=equations_set_idx
                                 SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
@@ -2270,7 +2271,12 @@ CONTAINS
                         CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
                           INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
                           INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
+
+                          !Loop over the variables
                           
+                          LAGRANGE_VARIABLE=>SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%VARIABLES(solver_variable_idx)% &
+                            & VARIABLE
+                         
                           DO global_dof_idx=1,NUMBER_OF_RANK_COLS
                             global_dof=RANK_GLOBAL_COLS_LIST(1,global_dof_idx)
                             local_dof=RANK_GLOBAL_COLS_LIST(2,global_dof_idx)
@@ -2357,11 +2363,11 @@ CONTAINS
                                   SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                     & solver_local_dof)%NUMBER_OF_EQUATIONS=1
                                   SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
-                                    & solver_local_dof)%EQUATIONS_TYPES(1)=equation_type
+                                    & solver_local_dof)%EQUATIONS_TYPES(1)=SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION
                                   SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                     & solver_local_dof)%EQUATIONS_INDICES(1)=interface_condition_idx
                                   SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
-                                    & solver_local_dof)%VARIABLE(1)%PTR=>DEPENDENT_VARIABLE
+                                    & solver_local_dof)%VARIABLE(1)%PTR=>LAGRANGE_VARIABLE
                                   SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                     & solver_local_dof)%VARIABLE_DOF(1)=local_dof
                                   SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &

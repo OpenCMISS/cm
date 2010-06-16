@@ -1397,6 +1397,7 @@ $(OBJECT_DIR)/generated_mesh_routines.o	:	$(SOURCE_DIR)/generated_mesh_routines.
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \

@@ -52,6 +52,7 @@ MODULE GENERATED_MESH_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
+  USE MATHS
   USE MESH_ROUTINES
   USE NODE_ROUTINES
   USE STRINGS
@@ -112,6 +113,10 @@ MODULE GENERATED_MESH_ROUTINES
   
   PUBLIC GENERATED_MESHES_INITIALISE,GENERATED_MESHES_FINALISE
 
+  PUBLIC GENERATED_MESH_BASE_VECTORS_SET
+
+  PUBLIC GENERATED_MESH_COORDINATE_SYSTEM_GET
+  
   PUBLIC GENERATED_MESH_CREATE_START,GENERATED_MESH_CREATE_FINISH
 
   PUBLIC GENERATED_MESH_DESTROY
@@ -122,6 +127,8 @@ MODULE GENERATED_MESH_ROUTINES
   PUBLIC GENERATED_MESH_BASIS_GET,GENERATED_MESH_EXTENT_GET,GENERATED_MESH_NUMBER_OF_ELEMENTS_GET,GENERATED_MESH_ORIGIN_GET,&
     & GENERATED_MESH_TYPE_GET
 
+  PUBLIC GENERATED_MESH_REGION_GET
+  
   PUBLIC GENERATED_MESH_USER_NUMBER_FIND
 
   PUBLIC GENERATED_MESH_CYLINDER_SURFACES_GET
@@ -195,6 +202,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: COORDINATE_DIMENSION
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_BASIS_SET",ERR,ERROR,*999)
@@ -203,11 +212,25 @@ CONTAINS
       IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
         CALL FLAG_ERROR("Generated mesh has been finished.",ERR,ERROR,*999)
       ELSE
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        CALL COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,COORDINATE_DIMENSION,ERR,ERROR,*999)
         IF(ASSOCIATED(BASIS)) THEN
           SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
           CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-            IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
-              GENERATED_MESH%REGULAR_MESH%BASIS=>BASIS 
+            IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
+              IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%BASE_VECTORS)) THEN
+                CALL FLAG_ERROR("Can not reset the basis if base vectors have been specified.",ERR,ERROR,*999)
+              ELSE
+                IF(BASIS%NUMBER_OF_XI<=COORDINATE_DIMENSION) THEN
+                  GENERATED_MESH%REGULAR_MESH%BASIS=>BASIS
+                ELSE
+                  LOCAL_ERROR="The basis number of xi dimensions of "//TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))// &
+                    & " is invalid. The number of xi dimensions must be <= the number of coordinate dimensions of "// &
+                    & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -241,6 +264,158 @@ CONTAINS
     RETURN 1   
   END SUBROUTINE GENERATED_MESH_BASIS_SET
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the base vectors of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshBaseVectorsSet
+  SUBROUTINE GENERATED_MESH_BASE_VECTORS_SET(GENERATED_MESH,BASE_VECTORS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to set the base vectors fo
+    REAL(DP), INTENT(IN) :: BASE_VECTORS(:,:) !<BASE_VECTORS(coordinate_idx,xi_idx). The base vectors for the generated mesh to set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: COORDINATE_DIMENSION
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("GENERATED_MESH_BASE_VECTORS_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
+        CALL FLAG_ERROR("Generated mesh has been finished.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        CALL COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,COORDINATE_DIMENSION,ERR,ERROR,*999)
+        IF(SIZE(BASE_VECTORS,1)==COORDINATE_DIMENSION) THEN
+          SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+          CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+            IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
+              BASIS=>GENERATED_MESH%REGULAR_MESH%BASIS
+              IF(ASSOCIATED(BASIS)) THEN
+                IF(SIZE(BASE_VECTORS,2)==BASIS%NUMBER_OF_XI) THEN                  
+                  IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%BASE_VECTORS)) DEALLOCATE(GENERATED_MESH%REGULAR_MESH%BASE_VECTORS)
+                  ALLOCATE(GENERATED_MESH%REGULAR_MESH%BASE_VECTORS(SIZE(BASE_VECTORS,1),SIZE(BASE_VECTORS,2)),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate base vectors.",ERR,ERROR,*999)
+                  GENERATED_MESH%REGULAR_MESH%BASE_VECTORS=BASE_VECTORS
+                ELSE
+                  LOCAL_ERROR="The size of the second dimension of base vectors of "// &
+                    & TRIM(NUMBER_TO_VSTRING(SIZE(BASE_VECTORS,2),"*",ERR,ERROR))// &
+                    & " is invalid. The second dimension size must match the number of mesh dimensions of "// &
+                    & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("You must set the generated mesh basis before setting base vectors.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          LOCAL_ERROR="The size of the first dimension of base vectors of "// &
+            & TRIM(NUMBER_TO_VSTRING(SIZE(BASE_VECTORS,1),"*",ERR,ERROR))// &
+            & " is invalid. The first dimension size must match the coordinate system dimension of "// &
+            & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("GENERATED_MESH_BASE_VECTORS_SET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_BASE_VECTORS_SET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_BASE_VECTORS_SET")
+    RETURN 1   
+  END SUBROUTINE GENERATED_MESH_BASE_VECTORS_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the coordinate system for a generated mesh accounting for regions and interfaces
+  SUBROUTINE GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the coordinate system for
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<On return, the generated meshes coordinate system. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION,PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("GENERATED_MESH_COORDINATE_SYSTEM_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+        CALL FLAG_ERROR("Coordinate system is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(COORDINATE_SYSTEM)
+        NULLIFY(INTERFACE)
+        REGION=>GENERATED_MESH%REGION
+        IF(ASSOCIATED(REGION)) THEN
+          COORDINATE_SYSTEM=>REGION%COORDINATE_SYSTEM
+          IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
+            LOCAL_ERROR="The coordinate system is not associated for generated mesh number "// &
+              & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of region number "// &
+              & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          INTERFACE=>GENERATED_MESH%INTERFACE
+          IF(ASSOCIATED(INTERFACE)) THEN
+            PARENT_REGION=>INTERFACE%PARENT_REGION
+            IF(ASSOCIATED(PARENT_REGION)) THEN
+              COORDINATE_SYSTEM=>PARENT_REGION%COORDINATE_SYSTEM
+              IF(.NOT.ASSOCIATED(COORDINATE_SYSTEM)) THEN
+                LOCAL_ERROR="The coordinate system is not associated for generated mesh number "// &
+                  & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
+                  & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//" of parent region number "// &
+                  & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The parent region not associated for generated mesh number "// &
+                & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
+                & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The region or interface is not associated for generated mesh number "// &
+              & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("GENERATED_MESH_COORDINATE_SYSTEM_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_COORDINATE_SYSTEM_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_COORDINATE_SYSTEM_GET")
+    RETURN 1
+  END SUBROUTINE GENERATED_MESH_COORDINATE_SYSTEM_GET
+
   !
   !================================================================================================================================
   !
@@ -493,7 +668,7 @@ CONTAINS
             ENDDO !generated_mesh_idx
             DEALLOCATE(GENERATED_MESHES%GENERATED_MESHES)
             GENERATED_MESHES%GENERATED_MESHES=>NEW_GENERATED_MESHES
-            GENERATED_MESHES%NUMBER_OF_GENERATED_MESHeS=GENERATED_MESHES%NUMBER_OF_GENERATED_MESHES-1
+            GENERATED_MESHES%NUMBER_OF_GENERATED_MESHES=GENERATED_MESHES%NUMBER_OF_GENERATED_MESHES-1
           ELSE
             DEALLOCATE(GENERATED_MESHES%GENERATED_MESHES)
             GENERATED_MESHES%NUMBER_OF_GENERATED_MESHES=0
@@ -585,6 +760,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: COORDINATE_DIMENSION
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_EXTENT_SET",ERR,ERROR,*999)
@@ -593,32 +770,47 @@ CONTAINS
       IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
         CALL FLAG_ERROR("Generated mesh has been finished.",ERR,ERROR,*999)
       ELSE
-        SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
-        CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-          IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
-            IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)) DEALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)
-            ALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT(SIZE(EXTENT)),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
-            GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT=EXTENT 
-          ELSE
-            CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
-          ENDIF
-        CASE(GENERATED_MESH_POLAR_MESH_TYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
-          IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
-            ALLOCATE(GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT(SIZE(EXTENT)),STAT=ERR)
-            GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT=EXTENT 
-          ELSE
-            CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
-          ENDIF
-        CASE DEFAULT
-          LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
-            & " is invalid."
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        CALL COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,COORDINATE_DIMENSION,ERR,ERROR,*999)
+        IF(SIZE(EXTENT,1)==COORDINATE_DIMENSION) THEN
+          SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+          CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+            IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
+              IF(L2NORM(EXTENT)>ZERO_TOLERANCE) THEN
+                IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)) DEALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)
+                ALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT(COORDINATE_DIMENSION),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
+                GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT=EXTENT
+              ELSE
+                CALL FLAG_ERROR("The norm of the mesh extent is zero.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
+            IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
+              ALLOCATE(GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT(SIZE(EXTENT)),STAT=ERR)
+              GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT=EXTENT 
+            ELSE
+              CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The generated mesh mesh type of "// &
+              & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          LOCAL_ERROR="The extent size of "//TRIM(NUMBER_TO_VSTRING(SIZE(EXTENT,1),"*",ERR,ERROR))// &
+            & " is invalid. The extent size must match the coordinate system dimension of "// &
+            & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
@@ -771,6 +963,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_NUMBER_OF_ELEMENTS_SET",ERR,ERROR,*999)
@@ -781,9 +975,29 @@ CONTAINS
       ELSE
         SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
         CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-          IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
-            ALLOCATE(GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(SIZE(NUMBER_OF_ELEMENTS_XI)),STAT=ERR)
-            GENERATED_MESH%REGULAR_MESH%NUMBER_OF_ELEMENTS_XI=NUMBER_OF_ELEMENTS_XI 
+          REGULAR_MESH=>GENERATED_MESH%REGULAR_MESH
+          IF(ASSOCIATED(REGULAR_MESH)) THEN
+            BASIS=>REGULAR_MESH%BASIS
+            IF(ASSOCIATED(BASIS)) THEN
+              IF(SIZE(NUMBER_OF_ELEMENTS_XI,1)==BASIS%NUMBER_OF_XI) THEN
+                IF(ALL(NUMBER_OF_ELEMENTS_XI>0)) THEN
+                  IF(ALLOCATED(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)) DEALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)
+                  ALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(BASIS%NUMBER_OF_XI),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
+                  REGULAR_MESH%NUMBER_OF_ELEMENTS_XI=NUMBER_OF_ELEMENTS_XI
+                ELSE
+                  CALL FLAG_ERROR("Must have 1 or more elements in all directions.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The number of elements xi size of "// &
+                  & TRIM(NUMBER_TO_VSTRING(SIZE(NUMBER_OF_ELEMENTS_XI,1),"*",ERR,ERROR))// &
+                  & " is invalid. The number of elements xi size must match the basis number of xi dimensions of "// &
+                  & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Must set the generated mesh basis before setting the number of elements.",ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -884,6 +1098,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: COORDINATE_DIMENSION
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("GENERATED_MESH_ORIGIN_SET",ERR,ERROR,*999)
@@ -892,40 +1108,50 @@ CONTAINS
       IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
         CALL FLAG_ERROR("Generated mesh has been finished.",ERR,ERROR,*999)
       ELSE
-        SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
-        CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-          IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
-            IF(.NOT.ALLOCATED(GENERATED_MESH%REGULAR_MESH%ORIGIN)) THEN
-              ALLOCATE(GENERATED_MESH%REGULAR_MESH%ORIGIN(SIZE(ORIGIN)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate origin.",ERR,ERROR,*999)
-            ENDIF
-            GENERATED_MESH%REGULAR_MESH%ORIGIN=ORIGIN 
-          ELSE
-            CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
-          ENDIF
-        CASE(GENERATED_MESH_POLAR_MESH_TYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-        CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
-          IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
-            IF(SIZE(ORIGIN,1)==3) THEN
-              IF(.NOT.ALLOCATED(GENERATED_MESH%CYLINDER_MESH%ORIGIN)) THEN
-                ALLOCATE(GENERATED_MESH%CYLINDER_MESH%ORIGIN(SIZE(ORIGIN)),STAT=ERR)
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        CALL COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,COORDINATE_DIMENSION,ERR,ERROR,*999)
+        IF(SIZE(ORIGIN,1)==COORDINATE_DIMENSION) THEN
+          SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+          CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+            IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN 
+              IF(.NOT.ALLOCATED(GENERATED_MESH%REGULAR_MESH%ORIGIN)) THEN
+                ALLOCATE(GENERATED_MESH%REGULAR_MESH%ORIGIN(SIZE(ORIGIN)),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate origin.",ERR,ERROR,*999)
               ENDIF
+              GENERATED_MESH%REGULAR_MESH%ORIGIN=ORIGIN 
             ELSE
-              CALL FLAG_ERROR("Cylinder generated mesh is only supported for 3D.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
             ENDIF
-            GENERATED_MESH%CYLINDER_MESH%ORIGIN=ORIGIN 
-          ELSE
-            CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
-          END IF
-        CASE DEFAULT
-          LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
-            & " is invalid."
+          CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
+            IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
+              IF(SIZE(ORIGIN,1)==3) THEN
+                IF(.NOT.ALLOCATED(GENERATED_MESH%CYLINDER_MESH%ORIGIN)) THEN
+                  ALLOCATE(GENERATED_MESH%CYLINDER_MESH%ORIGIN(SIZE(ORIGIN)),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate origin.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Cylinder generated mesh is only supported for 3D.",ERR,ERROR,*999)
+              ENDIF
+              GENERATED_MESH%CYLINDER_MESH%ORIGIN=ORIGIN 
+            ELSE
+              CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
+            END IF
+          CASE DEFAULT
+            LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          LOCAL_ERROR="The origin size of "//TRIM(NUMBER_TO_VSTRING(SIZE(ORIGIN,1),"*",ERR,ERROR))// &
+            & " is invalid. The extent size must match the coordinate system dimension of "// &
+            & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
+        ENDIF
       ENDIF
     ELSE
       CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
@@ -950,10 +1176,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: origin_idx
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_ELEMENTS_XI(:)
-    INTEGER(INTG) :: ni,ne,ne1,ne2,ne3,NN,nn1,nn2,nn3,np,TOTAL_NUMBER_OF_NODES_XI(3),TOTAL_NUMBER_ELEMENTS_XI(3), &
-      & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_DIMENSIONS
+    INTEGER(INTG) :: coordinate_idx,COUNT,ni,ne,ne1,ne2,ne3,NN,nn1,nn2,nn3,np,NUMBER_OF_ELEMENTS_XI(3), &
+      & TOTAL_NUMBER_OF_NODES_XI(3),TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,xi_idx
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:)
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
@@ -961,173 +1185,191 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
     TYPE(NODES_TYPE), POINTER :: NODES
-    TYPE(REGION_TYPE), POINTER :: REGION 
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("GENERATED_MESH_REGULAR_CREATE_FINISH",ERR,ERROR,*999)
     
     IF(ASSOCIATED(GENERATED_MESH)) THEN
-      REGULAR_MESH=>GENERATED_MESH%REGULAR_MESH        
+      NULLIFY(COORDINATE_SYSTEM)
+      CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
+      REGION=>GENERATED_MESH%REGION
+      INTERFACE=>GENERATED_MESH%INTERFACE
+      REGULAR_MESH=>GENERATED_MESH%REGULAR_MESH
       IF(ASSOCIATED(REGULAR_MESH)) THEN
-        REGION=>GENERATED_MESH%REGION
-        IF(ASSOCIATED(REGION)) THEN
-          COORDINATE_SYSTEM=>REGION%COORDINATE_SYSTEM
-        ELSE
-          INTERFACE=>GENERATED_MESH%INTERFACE
-          IF(ASSOCIATED(INTERFACE)) THEN
-            IF(ASSOCIATED(INTERFACE%PARENT_REGION)) THEN
-              COORDINATE_SYSTEM=>INTERFACE%PARENT_REGION%COORDINATE_SYSTEM
-            ELSE
-              CALL FLAG_ERROR("Generated mesh interface parent region is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Generated mesh does not have a region or interface associated.",ERR,ERROR,*999)
-          ENDIF
-        ENDIF
-        IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
-          !TODO is regular type only for COORDINATE_RECTANGULAR_CARTESIAN_TYPE? 
-          !If that, should we use IF rather than select?
-          SELECT CASE(COORDINATE_SYSTEM%TYPE)
-          CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
-            !Determine the coordinate system and create the regular mesh for that system
-            REGULAR_MESH%MESH_DIMENSION=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-            NUMBER_OF_DIMENSIONS=REGULAR_MESH%MESH_DIMENSION
-            IF(.NOT.ALLOCATED(REGULAR_MESH%ORIGIN)) THEN
-              ALLOCATE(REGULAR_MESH%ORIGIN(NUMBER_OF_DIMENSIONS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate origin.",ERR,ERROR,*999)
-              DO origin_idx=1,NUMBER_OF_DIMENSIONS
-                REGULAR_MESH%ORIGIN(origin_idx)=0.0_DP
-              ENDDO !origin_idx
-            ENDIF
-            IF(SIZE(REGULAR_MESH%ORIGIN)==REGULAR_MESH%MESH_DIMENSION) THEN
-              IF(SIZE(REGULAR_MESH%MAXIMUM_EXTENT)==REGULAR_MESH%MESH_DIMENSION) THEN
-                IF(ASSOCIATED(REGULAR_MESH%BASIS)) THEN
-                  BASIS=>REGULAR_MESH%BASIS
-                  ALLOCATE(NUMBER_ELEMENTS_XI(SIZE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
-                  NUMBER_ELEMENTS_XI=REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
-                  SELECT CASE(BASIS%TYPE)
-                  CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-                    IF(BASIS%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1)) THEN
-                      IF(.NOT.ALL(NUMBER_ELEMENTS_XI>0)) CALL FLAG_ERROR("Must have 1 or more elements in all directions.", &
-                        & ERR,ERROR,*999)
-                      IF(.NOT.ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED))  &
-                        & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented.",ERR,ERROR,*999)
-                      !Calculate sizes
-                      TOTAL_NUMBER_OF_NODES=1
-                      TOTAL_NUMBER_OF_ELEMENTS=1
-                      TOTAL_NUMBER_OF_NODES_XI=1
-                      TOTAL_NUMBER_ELEMENTS_XI=0
-                      DO ni=1,BASIS%NUMBER_OF_XI
-                        TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XI(ni)-2)*NUMBER_ELEMENTS_XI(ni)+ &
-                          & NUMBER_ELEMENTS_XI(ni)+1
-                        TOTAL_NUMBER_ELEMENTS_XI(ni)=NUMBER_ELEMENTS_XI(ni)
-                        TOTAL_NUMBER_OF_NODES=TOTAL_NUMBER_OF_NODES*TOTAL_NUMBER_OF_NODES_XI(ni)
-                        TOTAL_NUMBER_OF_ELEMENTS=TOTAL_NUMBER_OF_ELEMENTS*TOTAL_NUMBER_ELEMENTS_XI(ni)
-                      ENDDO !ni
-                      !Create the default node set
-                      !TODO we finish create after the nodes are initialised?
-                      NULLIFY(NODES)
-                      IF(ASSOCIATED(REGION)) THEN
-                        CALL NODES_CREATE_START(REGION,TOTAL_NUMBER_OF_NODES,NODES,ERR,ERROR,*999)
-                      ELSE
-                        CALL NODES_CREATE_START(INTERFACE,TOTAL_NUMBER_OF_NODES,NODES,ERR,ERROR,*999)
-                      ENDIF
-                      !Finish the nodes creation
-                      CALL NODES_CREATE_FINISH(NODES,ERR,ERROR,*999)
-                      !Create the mesh
-                      IF(ASSOCIATED(REGION)) THEN
-                        CALL MESH_CREATE_START(MESH_USER_NUMBER,REGION,SIZE(NUMBER_ELEMENTS_XI,1),GENERATED_MESH%MESH, &
-                          & ERR,ERROR,*999)
-                      ELSE
-                        CALL MESH_CREATE_START(MESH_USER_NUMBER,INTERFACE,SIZE(NUMBER_ELEMENTS_XI,1),GENERATED_MESH%MESH, &
-                          & ERR,ERROR,*999)
-                      ENDIF
-                      !Create the elements
-                      CALL MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH%MESH,TOTAL_NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
-                      NULLIFY(MESH_ELEMENTS)
-                      CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,1,BASIS,MESH_ELEMENTS,ERR,ERROR,*999)
-                      !Set the elements for the regular mesh
-                      ALLOCATE(ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element nodes",ERR,ERROR,*999)                
-                      !Step in the xi(3) direction
-                      DO ne3=1,TOTAL_NUMBER_ELEMENTS_XI(3)+1
-                        DO ne2=1,TOTAL_NUMBER_ELEMENTS_XI(2)+1
-                          DO ne1=1,TOTAL_NUMBER_ELEMENTS_XI(1)+1
-                            IF(BASIS%NUMBER_OF_XI<3.OR.ne3<=TOTAL_NUMBER_ELEMENTS_XI(3)) THEN
-                              IF(BASIS%NUMBER_OF_XI<2.OR.ne2<=TOTAL_NUMBER_ELEMENTS_XI(2)) THEN
-                                IF(ne1<=TOTAL_NUMBER_ELEMENTS_XI(1)) THEN
-                                  ne=ne1
-                                  np=1+(ne1-1)*(BASIS%NUMBER_OF_NODES_XI(1)-1)
-                                  IF(BASIS%NUMBER_OF_XI>1) THEN
-                                    ne=ne+(ne2-1)*TOTAL_NUMBER_ELEMENTS_XI(1)
-                                    np=np+(ne2-1)*TOTAL_NUMBER_OF_NODES_XI(1)*(BASIS%NUMBER_OF_NODES_XI(2)-1)
-                                    IF(BASIS%NUMBER_OF_XI>2) THEN
-                                      ne=ne+(ne3-1)*TOTAL_NUMBER_ELEMENTS_XI(1)*TOTAL_NUMBER_ELEMENTS_XI(2)
-                                      np=np+(ne3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)* &
-                                        & (BASIS%NUMBER_OF_NODES_XI(3)-1)
-                                    ENDIF
-                                  ENDIF
-                                  nn=0
+        SELECT CASE(COORDINATE_SYSTEM%TYPE)
+        CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
+          BASIS=>REGULAR_MESH%BASIS
+          IF(ASSOCIATED(BASIS)) THEN
+            SELECT CASE(BASIS%TYPE)
+            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+              IF(.NOT.ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED)) &
+                & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented.",ERR,ERROR,*999)
+              !Determine the coordinate system and create the regular mesh for that system            
+              REGULAR_MESH%COORDINATE_DIMENSION=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
+              REGULAR_MESH%MESH_DIMENSION=BASIS%NUMBER_OF_XI
+              IF(.NOT.ALLOCATED(REGULAR_MESH%ORIGIN)) THEN
+                ALLOCATE(REGULAR_MESH%ORIGIN(REGULAR_MESH%COORDINATE_DIMENSION),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate origin.",ERR,ERROR,*999)
+                REGULAR_MESH%ORIGIN=0.0_DP
+              ENDIF
+              IF(.NOT.ALLOCATED(REGULAR_MESH%MAXIMUM_EXTENT)) THEN
+                ALLOCATE(REGULAR_MESH%MAXIMUM_EXTENT(REGULAR_MESH%COORDINATE_DIMENSION),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
+                REGULAR_MESH%MAXIMUM_EXTENT=1.0_DP
+              ENDIF
+              IF(.NOT.ALLOCATED(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)) THEN
+                ALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(REGULAR_MESH%MESH_DIMENSION),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
+                REGULAR_MESH%NUMBER_OF_ELEMENTS_XI=1
+              ENDIF
+              IF(ALLOCATED(REGULAR_MESH%BASE_VECTORS)) THEN
+!!TODO: Check base vectors
+              ELSE
+                !Calculate base vectors
+                ALLOCATE(REGULAR_MESH%BASE_VECTORS(REGULAR_MESH%COORDINATE_DIMENSION,REGULAR_MESH%MESH_DIMENSION),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
+                REGULAR_MESH%BASE_VECTORS=0.0_DP
+                IF(REGULAR_MESH%MESH_DIMENSION==1) THEN
+                  !The base vector is just the extent vector
+                  REGULAR_MESH%BASE_VECTORS(:,1)=REGULAR_MESH%MAXIMUM_EXTENT
+                ELSE
+                  IF(REGULAR_MESH%MESH_DIMENSION<REGULAR_MESH%COORDINATE_DIMENSION) THEN
+                    !Find the first number of mesh dimensions for which the extent is non-zero.
+                    COUNT=0
+                    coordinate_idx=1
+                    DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
+                      DO WHILE(coordinate_idx<=REGULAR_MESH%COORDINATE_DIMENSION)
+                        IF(ABS(REGULAR_MESH%MAXIMUM_EXTENT(coordinate_idx))>ZERO_TOLERANCE) THEN
+                          REGULAR_MESH%BASE_VECTORS(coordinate_idx,xi_idx)=REGULAR_MESH%MAXIMUM_EXTENT(xi_idx)
+                          COUNT=COUNT+1
+                        ELSE
+                          coordinate_idx=coordinate_idx+1
+                        ENDIF
+                      ENDDO
+                    ENDDO !xi_idx
+                    IF(COUNT/=REGULAR_MESH%MESH_DIMENSION)  &
+                      & CALL FLAG_ERROR("Invalid mesh extent. There number of non-zero components is < the mesh dimension.", &
+                      & ERR,ERROR,*999)
+                  ELSE IF(REGULAR_MESH%MESH_DIMENSION==REGULAR_MESH%COORDINATE_DIMENSION) THEN
+                    !The default base vectors are aligned with the coordinate vectors
+                    DO coordinate_idx=1,REGULAR_MESH%COORDINATE_DIMENSION
+                      REGULAR_MESH%BASE_VECTORS(coordinate_idx,coordinate_idx)=REGULAR_MESH%MAXIMUM_EXTENT(coordinate_idx)
+                    ENDDO !coordinate_idx
+                  ELSE
+                    CALL FLAG_ERROR("The mesh dimension is greater than the coordinate dimension.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ENDIF
+              !Calculate sizes
+              TOTAL_NUMBER_OF_NODES=1
+              TOTAL_NUMBER_OF_ELEMENTS=1
+              TOTAL_NUMBER_OF_NODES_XI=1
+              NUMBER_OF_ELEMENTS_XI=1
+              DO ni=1,BASIS%NUMBER_OF_XI
+                TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+ &
+                  REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
+                TOTAL_NUMBER_OF_NODES=TOTAL_NUMBER_OF_NODES*TOTAL_NUMBER_OF_NODES_XI(ni)
+                TOTAL_NUMBER_OF_ELEMENTS=TOTAL_NUMBER_OF_ELEMENTS*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)
+                NUMBER_OF_ELEMENTS_XI(ni)=REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)
+              ENDDO !ni
+              !Create the default node set
+              NULLIFY(NODES)
+              IF(ASSOCIATED(REGION)) THEN
+                CALL NODES_CREATE_START(REGION,TOTAL_NUMBER_OF_NODES,NODES,ERR,ERROR,*999)
+              ELSE
+                CALL NODES_CREATE_START(INTERFACE,TOTAL_NUMBER_OF_NODES,NODES,ERR,ERROR,*999)
+              ENDIF
+              !Finish the nodes creation
+              CALL NODES_CREATE_FINISH(NODES,ERR,ERROR,*999)
+              !Create the mesh
+              IF(ASSOCIATED(REGION)) THEN
+                CALL MESH_CREATE_START(MESH_USER_NUMBER,REGION,REGULAR_MESH%MESH_DIMENSION,GENERATED_MESH%MESH, &
+                  & ERR,ERROR,*999)
+              ELSE
+                CALL MESH_CREATE_START(MESH_USER_NUMBER,INTERFACE,REGULAR_MESH%MESH_DIMENSION,GENERATED_MESH%MESH, &
+                  & ERR,ERROR,*999)
+              ENDIF
+              !Create the elements
+              CALL MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH%MESH,TOTAL_NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
+              NULLIFY(MESH_ELEMENTS)
+              CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,1,BASIS,MESH_ELEMENTS,ERR,ERROR,*999)
+              !Set the elements for the regular mesh
+              ALLOCATE(ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element nodes.",ERR,ERROR,*999)                
+              !Step in the xi(3) direction
+              DO ne3=1,NUMBER_OF_ELEMENTS_XI(3)+1
+                DO ne2=1,NUMBER_OF_ELEMENTS_XI(2)+1
+                  DO ne1=1,NUMBER_OF_ELEMENTS_XI(1)+1
+                    IF(BASIS%NUMBER_OF_XI<3.OR.ne3<=NUMBER_OF_ELEMENTS_XI(3)) THEN
+                      IF(BASIS%NUMBER_OF_XI<2.OR.ne2<=NUMBER_OF_ELEMENTS_XI(2)) THEN
+                        IF(ne1<=NUMBER_OF_ELEMENTS_XI(1)) THEN
+                          ne=ne1
+                          np=1+(ne1-1)*(BASIS%NUMBER_OF_NODES_XI(1)-1)
+                          IF(BASIS%NUMBER_OF_XI>1) THEN
+                            ne=ne+(ne2-1)*NUMBER_OF_ELEMENTS_XI(1)
+                            np=np+(ne2-1)*TOTAL_NUMBER_OF_NODES_XI(1)*(BASIS%NUMBER_OF_NODES_XI(2)-1)
+                            IF(BASIS%NUMBER_OF_XI>2) THEN
+                              ne=ne+(ne3-1)*NUMBER_OF_ELEMENTS_XI(1)*NUMBER_OF_ELEMENTS_XI(2)
+                              np=np+(ne3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)* &
+                                & (BASIS%NUMBER_OF_NODES_XI(3)-1)
+                            ENDIF
+                          ENDIF
+                          nn=0
+                          DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
+                            nn=nn+1
+                            ELEMENT_NODES(nn)=np+(nn1-1)                              
+                          ENDDO !nn1
+                          IF(BASIS%NUMBER_OF_XI>1) THEN
+                            DO nn2=2,BASIS%NUMBER_OF_NODES_XI(2)
+                              DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
+                                nn=nn+1
+                                ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)
+                              ENDDO !nn1
+                            ENDDO !nn2
+                            IF(BASIS%NUMBER_OF_XI>2) THEN
+                              DO nn3=2,BASIS%NUMBER_OF_NODES_XI(3)
+                                DO nn2=1,BASIS%NUMBER_OF_NODES_XI(2)
                                   DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
                                     nn=nn+1
-                                    ELEMENT_NODES(nn)=np+(nn1-1)                              
+                                    ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+ &
+                                      & (nn3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
                                   ENDDO !nn1
-                                  IF(BASIS%NUMBER_OF_XI>1) THEN
-                                    DO nn2=2,BASIS%NUMBER_OF_NODES_XI(2)
-                                      DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
-                                        nn=nn+1
-                                        ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)
-                                      ENDDO !nn1
-                                    ENDDO !nn2
-                                    IF(BASIS%NUMBER_OF_XI>2) THEN
-                                      DO nn3=2,BASIS%NUMBER_OF_NODES_XI(3)
-                                        DO nn2=1,BASIS%NUMBER_OF_NODES_XI(2)
-                                          DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
-                                            nn=nn+1
-                                            ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+ &
-                                              & (nn3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
-                                          ENDDO !nn1
-                                        ENDDO !nn2
-                                      ENDDO !nn3
-                                    ENDIF
-                                  ENDIF
-                                  CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS,ELEMENT_NODES, &
-                                    & ERR,ERROR,*999)
-                                ENDIF
-                              ENDIF
+                                ENDDO !nn2
+                              ENDDO !nn3
                             ENDIF
-                          ENDDO !ne1
-                        ENDDO !ne2
-                      ENDDO !ne3
-                      CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH_ELEMENTS,ERR,ERROR,*999)
-                      !Finish the mesh
-                      CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
-                    ELSE
-                      CALL FLAG_ERROR("The number of xi directions of the given basis does not match the size of &
-                        &the number of elements for the mesh.",ERR,ERROR,*999)
+                          ENDIF
+                          CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS,ELEMENT_NODES,ERR,ERROR,*999)
+                        ENDIF
+                      ENDIF
                     ENDIF
-                  CASE(BASIS_SIMPLEX_TYPE)                  
-                    CALL FLAG_ERROR("Regular meshes with simplex basis types is not implemented.",ERR,ERROR,*999)
-                  CASE DEFAULT
-                    CALL FLAG_ERROR("Basis type is either invalid or not implemented.",ERR,ERROR,*999)
-                  END SELECT
-                ELSE
-                  CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("The number of dimensions of the given regular mesh does not match the size of &
-                  &the maximum extent.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("The number of dimensions of the given regular mesh does not match the size of &
-                &the origin.",ERR,ERROR,*999)
-            ENDIF
-          CASE DEFAULT
-            CALL FLAG_ERROR("Coordinate type is either invalid or not implemented.",ERR,ERROR,*999)
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Coordiate System is not associated.",ERR,ERROR,*999)
-        ENDIF
+                  ENDDO !ne1
+                ENDDO !ne2
+              ENDDO !ne3
+              CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH_ELEMENTS,ERR,ERROR,*999)
+              !Finish the mesh
+              CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
+            CASE(BASIS_SIMPLEX_TYPE)                  
+              CALL FLAG_ERROR("Regular meshes with simplex basis types is not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              CALL FLAG_ERROR("Basis type is either invalid or not implemented.",ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE(COORDINATE_CYLINDRICAL_POLAR_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="The coordinate system type of "//TRIM(NUMBER_TO_VSTRING(COORDINATE_SYSTEM%TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
       ELSE
         CALL FLAG_ERROR("Regular mesh is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -1135,14 +1377,12 @@ CONTAINS
       CALL FLAG_ERROR("Generated Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    IF(ALLOCATED(NUMBER_ELEMENTS_XI)) DEALLOCATE(NUMBER_ELEMENTS_XI)
     IF(ALLOCATED(ELEMENT_NODES)) DEALLOCATE(ELEMENT_NODES)
     
     CALL EXITS("GENERATED_MESH_REGULAR_CREATE_FINISH")
     RETURN
     ! TODO invalidate other associations
-999 IF(ALLOCATED(NUMBER_ELEMENTS_XI)) DEALLOCATE(NUMBER_ELEMENTS_XI)
-    IF(ALLOCATED(ELEMENT_NODES)) DEALLOCATE(ELEMENT_NODES)
+999 IF(ALLOCATED(ELEMENT_NODES)) DEALLOCATE(ELEMENT_NODES)
     CALL ERRORS("GENERATED_MESH_REGULAR_CREATE_FINISH",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_REGULAR_CREATE_FINISH")
     RETURN 1
@@ -1399,6 +1639,7 @@ CONTAINS
       IF(ALLOCATED(REGULAR_MESH%ORIGIN)) DEALLOCATE(REGULAR_MESH%ORIGIN)
       IF(ALLOCATED(REGULAR_MESH%MAXIMUM_EXTENT)) DEALLOCATE(REGULAR_MESH%MAXIMUM_EXTENT)
       IF(ALLOCATED(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)) DEALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)
+      IF(ALLOCATED(REGULAR_MESH%BASE_VECTORS)) DEALLOCATE(REGULAR_MESH%BASE_VECTORS)
       DEALLOCATE(REGULAR_MESH)
     ENDIF
     
@@ -1839,6 +2080,63 @@ CONTAINS
 
   !
   !================================================================================================================================
+  !
+
+  !>Returns the region for a generated mesh accounting for regions and interfaces
+  SUBROUTINE GENERATED_MESH_REGION_GET(GENERATED_MESH,REGION,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the region for
+    TYPE(REGION_TYPE), POINTER :: REGION !<On return, the generated meshes region. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("GENERATED_MESH_REGION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+      IF(ASSOCIATED(REGION)) THEN
+        CALL FLAG_ERROR("Region is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(REGION)
+        NULLIFY(INTERFACE)
+        REGION=>GENERATED_MESH%REGION
+        IF(.NOT.ASSOCIATED(REGION)) THEN          
+          INTERFACE=>GENERATED_MESH%INTERFACE
+          IF(ASSOCIATED(INTERFACE)) THEN
+            PARENT_REGION=>INTERFACE%PARENT_REGION
+            IF(ASSOCIATED(PARENT_REGION)) THEN
+              REGION=>PARENT_REGION              
+            ELSE
+              LOCAL_ERROR="The parent region not associated for generated mesh number "// &
+                & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
+                & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The region or interface is not associated for generated mesh number "// &
+              & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("GENERATED_MESH_REGION_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_REGION_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_REGION_GET")
+    RETURN 1
+  END SUBROUTINE GENERATED_MESH_REGION_GET
+
+  !
+  !
+  !================================================================================================================================
   ! 
 
   !>Updates the geometric field parameters from the initial nodal positions of the regular mesh. Any derivative values for the nodes are calculated from an average straight line approximation.
@@ -1851,8 +2149,9 @@ CONTAINS
     
     ! Local variables
     INTEGER(INTG) :: component_idx,global_np,global_np1,global_np2,nk,nk1,nk2,nl,nnl,np,np1,np2,ni,ny,&
-      & DERIVATIVES_NUMBER_OF_LINES(8), TOTAL_NUMBER_OF_NODES_XI(3), node_idx(3),nd
-    REAL(DP) :: DELTA(8),DELTA_COORD(3),MY_ORIGIN(3),MY_EXTENT(3),MESH_SIZE(3)
+      & DERIVATIVES_NUMBER_OF_LINES(8), TOTAL_NUMBER_OF_NODES_XI(3),node_idx(3),node_idx2(3)
+    REAL(DP) :: DELTA(8),DELTA_COORD(3,3),MY_ORIGIN(3),MY_EXTENT(3),VALUE
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(DOMAIN_LINES_TYPE), POINTER :: DOMAIN_LINES
@@ -1862,105 +2161,127 @@ CONTAINS
     
     CALL ENTERS("GENERATED_MESH_REGULAR_GEOMETRIC_PARAMETERS_CALCULATE",ERR,ERROR,*999)
 
-    !TODO: this subroutine can do with some more input parameter checking
-    ! e.g. rectangular_cartesian coordinates checkings
-
-    MY_ORIGIN=0.0_DP
-    MY_EXTENT=0.0_DP
-    MY_ORIGIN(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%ORIGIN
-    MY_EXTENT(1:REGULAR_MESH%MESH_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT
-    MESH_SIZE=MY_EXTENT
-    TOTAL_NUMBER_OF_NODES_XI=1
-    DO ni=1,REGULAR_MESH%BASIS%NUMBER_OF_XI
-      DELTA_COORD(ni)=MESH_SIZE(ni)/REAL(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni),DP)
-      TOTAL_NUMBER_OF_NODES_XI(ni)=(REGULAR_MESH%BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH% &
-        & NUMBER_OF_ELEMENTS_XI(ni)+REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
-    ENDDO !ni
-    IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
-      FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-          FIELD_VARIABLE_COMPONENT=>FIELD_VARIABLE%COMPONENTS(component_idx)
-          IF(FIELD_VARIABLE_COMPONENT%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-            ! update geometric parameters in this computational domain only
-            DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
-            DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-            DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
-            DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
-              global_np=DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
-              node_idx(3)=(global_np-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
-              node_idx(2)=MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
-                & TOTAL_NUMBER_OF_NODES_XI(1)+1
-              node_idx(1)=MOD(MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
-                & TOTAL_NUMBER_OF_NODES_XI(1))+1
-              ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ny, &
-                & MY_ORIGIN(component_idx)+REAL(node_idx(component_idx)-1,DP)*DELTA_COORD(component_idx), &
-                & ERR,ERROR,*999)
-              ! calculate derivatives
-              IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
-                DERIVATIVES_NUMBER_OF_LINES=0
-                DELTA=0.0_DP
-                DO nnl=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
-                  nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nnl)
-                  np1=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)
-                  global_np1=DOMAIN_NODES%NODES(np1)%GLOBAL_NUMBER
-                  np2=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                  global_np2=DOMAIN_NODES%NODES(np2)%GLOBAL_NUMBER
-                  nk1=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,1)
-                  nk2=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                  !TODO: Adjust delta calculation for polar coordinate discontinuities
-                  !TODO: this is hardcoded bit
-                  SELECT CASE(component_idx)
-                  CASE(1)
-                    nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(component_idx))
-                  CASE(2)
-                    nd=MOD(global_np2-global_np1,TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)) &
-                      & /TOTAL_NUMBER_OF_NODES_XI(1)
-                  CASE(3)
-                    nd=(global_np2-global_np1)/(TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2))
-                  CASE DEFAULT
-                    CALL FLAG_ERROR("Invalid component number.",ERR,ERROR,*999)
-                  END SELECT
-                  IF(np1==np) THEN
-                    DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
-                    DELTA(nk1)=DELTA(nk1)+REAL(nd,DP)*DELTA_COORD(component_idx)
-                  ELSE IF(np2==np) THEN
-                    DERIVATIVES_NUMBER_OF_LINES(nk2)=DERIVATIVES_NUMBER_OF_LINES(nk2)+1
-                    DELTA(nk2)=DELTA(nk2)
-                    DELTA(nk2)=DELTA(nk2)+REAL(nd,DP)*DELTA_COORD(component_idx)
-                  ELSE
-                    !Error???
-                  ENDIF
-                ENDDO !nnl
-                DO nk=1,8
-                  IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
-                    DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
-                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np)
-                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                      & ny,DELTA(nk),ERR,ERROR,*999)
-                  ENDIF
-                ENDDO !nk
-              ENDIF
-            ENDDO !np
+    IF(ASSOCIATED(REGULAR_MESH)) THEN
+      IF(ASSOCIATED(FIELD)) THEN
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        IF(COORDINATE_SYSTEM%TYPE==COORDINATE_RECTANGULAR_CARTESIAN_TYPE) THEN
+          
+          MY_ORIGIN=0.0_DP
+          MY_EXTENT=0.0_DP
+          MY_ORIGIN(1:REGULAR_MESH%COORDINATE_DIMENSION)=REGULAR_MESH%ORIGIN(1:REGULAR_MESH%COORDINATE_DIMENSION)
+          MY_EXTENT(1:REGULAR_MESH%COORDINATE_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT(1:REGULAR_MESH%COORDINATE_DIMENSION)
+          DELTA_COORD=0.0_DP
+          TOTAL_NUMBER_OF_NODES_XI=1
+          DO ni=1,REGULAR_MESH%MESH_DIMENSION
+            TOTAL_NUMBER_OF_NODES_XI(ni)=(REGULAR_MESH%BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH% &
+              & NUMBER_OF_ELEMENTS_XI(ni)+REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
+          ENDDO !ni
+          DO ni=1,REGULAR_MESH%MESH_DIMENSION          
+            DELTA_COORD(1:REGULAR_MESH%COORDINATE_DIMENSION,ni)= &
+              & REGULAR_MESH%BASE_VECTORS(1:REGULAR_MESH%COORDINATE_DIMENSION,ni)/REAL(TOTAL_NUMBER_OF_NODES_XI(ni)-1,DP)
+          ENDDO !ni
+          IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
+            FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+              DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                FIELD_VARIABLE_COMPONENT=>FIELD_VARIABLE%COMPONENTS(component_idx)
+                IF(FIELD_VARIABLE_COMPONENT%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                  ! update geometric parameters in this computational domain only
+                  DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
+                  DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                  DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
+                  DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
+                    global_np=DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
+                    node_idx(3)=(global_np-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
+                    node_idx(2)=MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
+                      & TOTAL_NUMBER_OF_NODES_XI(1)+1
+                    node_idx(1)=MOD(MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
+                      & TOTAL_NUMBER_OF_NODES_XI(1))+1
+                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np)
+                    VALUE=0.0_DP
+                    DO ni=1,REGULAR_MESH%MESH_DIMENSION
+                      VALUE=VALUE+REAL(node_idx(ni)-1,DP)*DELTA_COORD(component_idx,ni)
+                    ENDDO !ni
+                    VALUE=MY_ORIGIN(component_idx)+VALUE
+                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ny,VALUE, &
+                      & ERR,ERROR,*999)
+                    !Calculate derivatives
+                    IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
+                      DERIVATIVES_NUMBER_OF_LINES=0
+                      DELTA=0.0_DP
+                      DO nnl=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
+                        nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nnl)
+                        np1=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)
+                        global_np1=DOMAIN_NODES%NODES(np1)%GLOBAL_NUMBER
+                        np2=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
+                        global_np2=DOMAIN_NODES%NODES(np2)%GLOBAL_NUMBER
+                        nk1=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,1)
+                        nk2=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
+                        IF(np1==np) THEN
+                          node_idx2(3)=(global_np2-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          node_idx2(2)=MOD(global_np2-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
+                            & TOTAL_NUMBER_OF_NODES_XI(1)+1
+                          node_idx2(1)=MOD(MOD(global_np2-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
+                            & TOTAL_NUMBER_OF_NODES_XI(1))+1
+                        ELSE
+                          node_idx2(3)=(global_np1-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          node_idx2(2)=MOD(global_np1-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
+                            & TOTAL_NUMBER_OF_NODES_XI(1)+1
+                          node_idx2(1)=MOD(MOD(global_np1-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
+                            & TOTAL_NUMBER_OF_NODES_XI(1))+1
+                        ENDIF
+                        VALUE=0.0_DP
+                        DO ni=1,REGULAR_MESH%MESH_DIMENSION
+                          VALUE=VALUE+REAL(node_idx(ni)-node_idx2(ni),DP)*DELTA_COORD(component_idx,ni)
+                        ENDDO !ni
+                        IF(np1==np) THEN
+                          DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
+                          DELTA(nk1)=DELTA(nk1)+VALUE
+                        ELSE IF(np2==np) THEN
+                          DERIVATIVES_NUMBER_OF_LINES(nk2)=DERIVATIVES_NUMBER_OF_LINES(nk2)+1
+                          DELTA(nk2)=DELTA(nk2)+VALUE
+                        ELSE
+                          !Error???
+                        ENDIF
+                      ENDDO !nnl
+                      DO nk=1,8
+                        IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
+                          DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
+                          ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np)
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & ny,DELTA(nk),ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO !nk
+                    ENDIF
+                  ENDDO !np
+                ELSE
+                  LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
+                    & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                    & " does not have node based interpolation."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDDO !component_idx
+!!TODO: do boundary nodes first then start the update to overlap computation and computation.
+              CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            ELSE
+              LOCAL_ERROR="The standard field variable is not associated for field number "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
           ELSE
-            LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
-              & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-              & " does not have node based interpolation."
+            LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
-        ENDDO !component_idx
-    !!TODO: do boundary nodes first then start the update to overlap computation and computation.
-        CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Non rectangular Cartesian coordinate systems are not implemented.",ERR,ERROR,*999)
+        ENDIF
       ELSE
-        LOCAL_ERROR="The standard field variable is not associated for field number "// &
-          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      CALL FLAG_ERROR("Regular mesh is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("GENERATED_MESH_REGULAR_GEOMETRIC_PARAMETERS_CALCULATE")
