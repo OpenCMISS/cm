@@ -1008,6 +1008,13 @@ CONTAINS
                     CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                     !Create the equations mapping.
                     CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
+
+!---tob
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)THEN
+                      CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
+                    ENDIF
+!---toe
+
                     CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                     SELECT CASE(EQUATIONS_SET%SUBTYPE)
                     CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
@@ -2822,6 +2829,8 @@ CONTAINS
 
               IF((CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_SIMPLE_TYPE.OR.CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) &
                   & .AND.SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_MAT_PROPERTIES) THEN
+                !\ToDo: Since 'SOLVER_NUMBER_MAT_PROPERTIES' is no longer unique but now equals 'SOLVER_NUMBER_SOLID',
+                !       we have to add another conditional on the solver (solid/mat/fluid) as well ... 
                 !--- Store reference data
                 IF(CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER==1) THEN
                   NULLIFY(SOLVER_ALE_DARCY)
@@ -2946,14 +2955,10 @@ CONTAINS
                             IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
 !---tob
                               SELECT CASE(EQUATIONS_SET%SUBTYPE)
-                              CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-                                & EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
-                                !For 'EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE',
-                                !depending on whether we call this routine with mat_properties or Darcy solver,
-                                !we have linear or dynamic mapping (also elsewhere)
+                              CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
                               FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                               ! '1' associated with linear matrix
-                              CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+                              CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
                                 FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                               END SELECT
 !---toe
@@ -3359,11 +3364,10 @@ CONTAINS
 !---tob
                                   SELECT CASE(EQUATIONS_SET%SUBTYPE)
                                   CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
-                                    & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-                                    & EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                                    & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
                                   FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                                   ! '1' associated with linear matrix
-                                  CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+                                  CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
                                     FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                                   END SELECT
 !---toe
