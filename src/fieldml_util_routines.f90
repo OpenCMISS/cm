@@ -61,12 +61,23 @@ MODULE FIELDML_UTIL_ROUTINES
   TYPE(VARYING_STRING) :: errorString
 
   !Interfaces
-  INTERFACE
+  TYPE FieldmlInfoType
+    TYPE(C_PTR) :: fmlHandle
+    INTEGER(C_INT) :: nodesHandle
+    INTEGER(C_INT) :: meshHandle
+    INTEGER(C_INT) :: elementsHandle
+    INTEGER(C_INT) :: xiHandle
+    INTEGER(C_INT) :: nodeDofsHandle
+    INTEGER(C_INT) :: elementDofsHandle
+    INTEGER(C_INT) :: constantDofsHandle
+    INTEGER(C_INT), ALLOCATABLE :: componentHandles(:)
+    INTEGER(C_INT), ALLOCATABLE :: basisHandles(:)
+  END TYPE FieldmlInfoType
 
-  END INTERFACE
+  PUBLIC :: FieldmlInfoType
 
   PUBLIC :: FieldmlUtil_GetConnectivityEnsemble, FieldmlUtil_GetCoordinatesDomain, FieldmlUtil_GetGenericDomain, &
-    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiDomain, FieldmlUtil_GetValueDomain
+    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiDomain, FieldmlUtil_GetValueDomain, FieldmlUtil_FinalizeInfo
 
 CONTAINS
 
@@ -302,10 +313,9 @@ CONTAINS
     CALL CMISSFieldTypeGet( field, fieldType, err )
     CALL CMISSFieldNumberOfComponentsGet( field, CMISSFieldUVariableType, count, err )
 
-    CALL CMISSCoordinateSystemTypeInitialise( coordinateSystem, err )
-
     SELECT CASE( fieldType )
     CASE( CMISSFieldGeometricType )
+      CALL CMISSCoordinateSystemTypeInitialise( coordinateSystem, err )
       CALL CMISSRegionCoordinateSystemGet( region, coordinateSystem, err )
       CALL CMISSCoordinateSystemTypeGet( coordinateSystem, subType, err )
       CALL FieldmlUtil_GetCoordinatesDomain( fmlHandle, subType, count, domainHandle, err )
@@ -322,6 +332,36 @@ CONTAINS
   
   END SUBROUTINE FieldmlUtil_GetValueDomain
     
+  !
+  !================================================================================================================================
+  !
+  SUBROUTINE FieldmlUtil_FinalizeInfo( fieldmlInfo )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+
+    !Locals
+    INTEGER(INTG) :: err
+
+    err = Fieldml_Destroy( fieldmlInfo%fmlHandle )
+    
+    fieldmlInfo%fmlHandle = C_NULL_PTR
+    fieldmlInfo%nodesHandle = FML_INVALID_HANDLE
+    fieldmlInfo%meshHandle = FML_INVALID_HANDLE
+    fieldmlInfo%elementsHandle = FML_INVALID_HANDLE
+    fieldmlInfo%xiHandle = FML_INVALID_HANDLE
+    fieldmlInfo%nodeDofsHandle = FML_INVALID_HANDLE
+    fieldmlInfo%elementDofsHandle = FML_INVALID_HANDLE
+    fieldmlInfo%constantDofsHandle = FML_INVALID_HANDLE
+    
+    IF( ALLOCATED( fieldmlInfo%componentHandles ) ) THEN
+      DEALLOCATE( fieldmlInfo%componentHandles )
+    ENDIF
+    IF( ALLOCATED( fieldmlInfo%basisHandles ) ) THEN
+      DEALLOCATE( fieldmlInfo%basisHandles )
+    ENDIF
+    
+  END SUBROUTINE FieldmlUtil_FinalizeInfo
+
   !
   !================================================================================================================================
   !
