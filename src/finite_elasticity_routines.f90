@@ -985,9 +985,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  ! calculates the current active contraction component using the independent field
+   ! calculates the current active contraction component using the independent field
   ! Uses a hardcoded tension transient based on GPB+NHS with length-dependence for now
-  ! TODO: Fading memory model
   SUBROUTINE FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION(INDEPENDENT_FIELD,MATERIALS_FIELD,PIOLA_FF,E_FF,&
              & ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
     !Argument variables
@@ -999,34 +998,45 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string    
 
     INTEGER(INTG)  :: I
-    REAL(DP) :: S, LAMBDA, OVERLAP, TA, ACTIVTIME, TIME
+    REAL(DP) :: S, LAMBDA, OVERLAP, ISO_TA, TA, ACTIVTIME, TIME, DT, PREV_LAMBDA
+    REAL(DP), DIMENSION(1:4) :: QL
 
-!    REAL(DP), PARAMETER :: K = 2        ! kPa/ms, rate of increase of active tension.  Ta = Kt
-    REAL(DP), PARAMETER :: BETA_0 = 4.9 ! Length-dependence
     REAL(DP), PARAMETER :: PERIOD = 1000 ! 1 Hz
     REAL(DP), PARAMETER, DIMENSION(12) :: TIMES    = (/ 0, 40, 75, 140, 170, 172, 180, 250, 400, 500, 800, 1000 /) ! | simple tension curve based on GPB/NHS
-    REAL(DP), PARAMETER, DIMENSION(12) :: TENSIONS = (/ 4, 4 , 50, 90,  98,  99 , 99,  75,  20,  10,    5,  4 /)   ! /
+    REAL(DP), PARAMETER, DIMENSION(12) :: TENSIONS = (/ 4, 4 , 50, 90,  98,  99 , 99,  75,  20,  10,    5,  4 /)   ! / 
 
   
     CALL ENTERS("FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION",ERR,ERROR,*999)
-    ! Get time, active time from material and independent fields
-    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
-      &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 2, TIME,ERR,ERROR,*999)
+
+    ! Get time, dt, etc from independent field
+    CALL FIELD_PARAMETER_SET_GET_CONSTANT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 1, DT,ERR,ERROR,*999)   ! dt
+    CALL FIELD_PARAMETER_SET_GET_CONSTANT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 2, TIME,ERR,ERROR,*999) ! time
+    DO I=1,4
+      CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
+        &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 2+I, QL(I),ERR,ERROR,*999)  ! Q(1) Q(2) Q(3) Lambda for prev in 3/4/5/6
+    END DO
+
+    ! get activation time from material field
     CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,&
       &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 1, ACTIVTIME,ERR,ERROR,*999)
 
-    LAMBDA = MAX(0.8, MIN(SQRT(2*E_FF + 1), 1.15))
-    OVERLAP= 1.0 + BETA_0 * (LAMBDA-1.0)
+    LAMBDA = SQRT(2*E_FF + 1)
     TIME =  MAX( MOD(TIME, PERIOD) - ACTIVTIME, 0.0) ! start activation at this time
    
     I = 1
     DO WHILE (TIMES(I) <= TIME) ! find first I such that times(I) >= time
       I = I+1
-    ENDDO
+    END DO
     S    = (TIME - TIMES(I-1)) /  (TIMES(I) - TIMES(I-1)) !| linear interpolation
-    TA   = TENSIONS(I-1) * (1-S) + TENSIONS(I) * S        !/ 
+    ISO_TA   = TENSIONS(I-1) * (1-S) + TENSIONS(I) * S        !/ 
   
-!    TA   = (K * TIME) * OVERLAP
+    CALL FINITE_ELASTICITY_FMM(TIME,DT,QL(4),LAMBDA,QL,ISO_TA,TA)
+
+    QL(4) = LAMBDA  ! bounds applied in FMM, Qi integrated
+    DO I=1,4
+      CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
+        &  FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,GAUSS_POINT_NUMBER, 6+I, QL(I),ERR,ERROR,*999) ! store Q(1) Q(2) Q(3) Lambda for next in 7/8/9/10
+    END DO
 
     PIOLA_FF = PIOLA_FF + TA
 
@@ -1036,6 +1046,43 @@ CONTAINS
     CALL EXITS("FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION")
     RETURN 1  
   END SUBROUTINE FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION
+
+
+  ! Implements length and velocity dependence. can be used in both weak and strong coupling
+  SUBROUTINE FINITE_ELASTICITY_FMM(TIME,DT,PREV_LAMBDA,CURR_LAMBDA,Q123,ISO_TA,TA)
+    ! PARAMETERS FROM Niederer Hunter & Smith 2006
+    REAL(DP), PARAMETER, DIMENSION(1:3) :: A     = (/-29.0,138.0,129.0/)  ! 'A'
+    REAL(DP), PARAMETER, DIMENSION(1:3) :: ALPHA = (/0.03,0.13,0.625/)
+    REAL(DP), PARAMETER :: la   = 0.35, BETA_0 = 4.9  ! 'a'
+
+    REAL(DP), INTENT(INOUT), DIMENSION(:) :: Q123
+    REAL(DP), INTENT(INOUT) :: CURR_LAMBDA
+    REAL(DP), INTENT(IN) :: PREV_LAMBDA, DT, TIME, ISO_TA
+    REAL(DP), INTENT(OUT) :: TA
+
+    REAL(DP) :: QFAC, DLAMBDA_DT, Q, OVERLAP
+    INTEGER(INTG) :: I
+
+    CURR_LAMBDA = MIN(1.15, MAX(0.8, CURR_LAMBDA))  ! inout -> save this
+
+    IF( TIME - 1e-10 <= 0.0) THEN  ! preload / first step -> update method off
+      QFAC = 1.0
+    ELSE
+      DLAMBDA_DT = (CURR_LAMBDA - PREV_LAMBDA) / DT
+      DO I=1,3
+        Q123(I) = Q123(I) + DT * (A(I) * DLAMBDA_DT - ALPHA(I) * Q123(I))
+      END DO
+      Q = Q123(1)+Q123(2)+Q123(3)
+      IF(Q < 0.0) THEN 
+        QFAC = (la*Q + 1.0) / (1.0 - Q)
+      ELSE 
+        QFAC = (1.0 + (la+2.0)*Q)/(1.0+Q);
+      END IF
+    END IF
+
+    OVERLAP= 1.0 + BETA_0 * (CURR_LAMBDA-1.0) 
+    TA = OVERLAP * QFAC * ISO_TA  ! length dep * vel dep * isometric tension
+  END SUBROUTINE FINITE_ELASTICITY_FMM
 
 
   !
@@ -1593,7 +1640,7 @@ CONTAINS
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
 
            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE) THEN
-             NUMBER_OF_COMPONENTS = 17  ! this number doesn't mean anything yet
+            NUMBER_OF_COMPONENTS = 10  ! dt t Q1 Q2 Q3 lambda    prev Q1 Q2 Q3 lambda
              IF(EQUATIONS_SET%SOLUTION_METHOD /= EQUATIONS_SET_FEM_SOLUTION_METHOD .OR. &
                &.NOT. EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -1613,11 +1660,16 @@ CONTAINS
              CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
 
-             DO component_idx=1,NUMBER_OF_COMPONENTS
+             DO component_idx=1,2 ! dt t  constant 
+              CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+             END DO
+
+             DO component_idx=3,NUMBER_OF_COMPONENTS ! other gauss pt based
                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                  & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_GAUSS_POINT_BASED_INTERPOLATION,ERR,ERROR,*999)
              END DO
- 
+  
            ELSE ! coupled Darcy problem
 
 
@@ -2351,6 +2403,8 @@ CONTAINS
 
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: I
+    TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD
 
     CALL ENTERS("FINITE_ELASTICITY_POST_SOLVE",ERR,ERROR,*999)
 
@@ -2364,6 +2418,16 @@ CONTAINS
                 CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               END IF
             CASE(PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE)
+              ! how to check eqn subtype? assume active contraction 
+              INDEPENDENT_FIELD => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
+                                     & EQUATIONS_SETS(1)%PTR%INDEPENDENT%INDEPENDENT_FIELD
+              ! store lambda Q (7-10) in prev lambda Q (3-6)
+              DO I=1,4
+                CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(INDEPENDENT_FIELD,&
+                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, I+6, &
+                     & INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, I+2,ERR,ERROR,*999)
+              END DO
+              ! output data
               CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_NO_SUBTYPE)
               !CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -2552,6 +2616,9 @@ CONTAINS
               
               INDEPENDENT_FIELD => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
                                      & EQUATIONS_SETS(1)%PTR%INDEPENDENT%INDEPENDENT_FIELD !?
+              ! set component 1 to dt
+              CALL FIELD_COMPONENT_VALUES_INITIALISE(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_VALUES_SET_TYPE,1,CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT,ERR,ERROR,*999)
               ! set component 2 to current time.
               CALL FIELD_COMPONENT_VALUES_INITIALISE(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                    & FIELD_VALUES_SET_TYPE,2,CONTROL_LOOP%TIME_LOOP%CURRENT_TIME,ERR,ERROR,*999)

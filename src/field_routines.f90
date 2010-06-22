@@ -9425,7 +9425,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: elem_idx,deriv_idx,local_ny,node_idx,VALUE_INTG
+    INTEGER(INTG) :: elem_idx,deriv_idx,local_ny,node_idx,VALUE_INTG,gp_idx
     INTEGER(INTG), POINTER :: FROM_PARAMETER_DATA_INTG(:)
     REAL(SP) :: VALUE_SP
     REAL(SP), POINTER :: FROM_PARAMETER_DATA_SP(:)
@@ -9662,7 +9662,40 @@ CONTAINS
                                 CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                   CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
                                 CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                                  CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
+                                ! gp based. dp only. 
+                                  FROM_DOMAIN_TOPOLOGY=>FROM_DOMAIN%TOPOLOGY
+                                  IF(ASSOCIATED(FROM_DOMAIN_TOPOLOGY)) THEN
+                                    FROM_DOMAIN_ELEMENTS=>FROM_DOMAIN_TOPOLOGY%ELEMENTS
+                                    IF(ASSOCIATED(FROM_DOMAIN_ELEMENTS)) THEN
+                                      SELECT CASE(FROM_FIELD_VARIABLE%DATA_TYPE)
+                                      CASE(FIELD_DP_TYPE)
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
+                                          & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                                          DO gp_idx=1,size(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%&                                                  & GAUSS_POINT_PARAM2DOF_MAP,1)
+                                            local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP(gp_idx,elem_idx)
+                                            VALUE_DP=FROM_PARAMETER_DATA_DP(local_ny)
+                                            local_ny=TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                            &COMPONENTS(TO_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP(gp_idx,elem_idx)
+                                            CALL DISTRIBUTED_VECTOR_VALUES_SET(TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                            & PARAMETER_SETS%SET_TYPE(TO_PARAMETER_SET_TYPE)%PTR%PARAMETERS,local_ny,VALUE_DP,&
+                                            & ERR,ERROR,*999)
+                                          ENDDO !gp_idx
+                                        ENDDO !elem_idx
+                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
+                                          & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
+                                      CASE DEFAULT
+                                        CALL FLAG_ERROR("Invalid data type or not implemented.",ERR,ERROR,*999)
+                                      END SELECT
+                                    ELSE
+                                      CALL FLAG_ERROR("From domain topology elements is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("From domain topology is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ! / gp based
                                 CASE DEFAULT
                                   LOCAL_ERROR="The from field variable component interpolation type of "// &
                                     & TRIM(NUMBER_TO_VSTRING(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &
