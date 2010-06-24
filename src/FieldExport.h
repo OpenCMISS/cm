@@ -48,7 +48,7 @@ int fieldexport_opensession( const int type, const char *const name, int * const
 
 int fieldexport_group( const int handle, const char *const label );
 
-int fieldexport_meshdimensions( const int handle, const int dimensions );
+int fieldexport_meshdimensions( const int handle, const int dimensions, const int basisType );
 
 int fieldexport_scalingfactorcount( const int handle, const int scalingFactorCount );
 

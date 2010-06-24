@@ -2088,7 +2088,7 @@ CONTAINS
             & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
-      ELSE
+      ELSE
         LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" has not been finished."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -20178,6 +20178,62 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SETS_INITIALISE")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SETS_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the region for a field accounting for regions and interfaces
+  SUBROUTINE FIELD_REGION_GET(FIELD,REGION,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the region for
+    TYPE(REGION_TYPE), POINTER :: REGION !<On return, the fields region. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_REGION_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(ASSOCIATED(REGION)) THEN
+        CALL FLAG_ERROR("Region is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(REGION)
+        NULLIFY(INTERFACE)
+        REGION=>FIELD%REGION
+        IF(.NOT.ASSOCIATED(REGION)) THEN          
+          INTERFACE=>FIELD%INTERFACE
+          IF(ASSOCIATED(INTERFACE)) THEN
+            PARENT_REGION=>INTERFACE%PARENT_REGION
+            IF(ASSOCIATED(PARENT_REGION)) THEN
+              REGION=>PARENT_REGION              
+            ELSE
+              LOCAL_ERROR="The parent region not associated for field number "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" of interface number "// &
+                & TRIM(NUMBER_TO_VSTRING(INTERFACE%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The region or interface is not associated for field number "// &
+              & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_REGION_GET")
+    RETURN
+999 CALL ERRORS("FIELD_REGION_GET",ERR,ERROR)
+    CALL EXITS("FIELD_REGION_GET")
+    RETURN 1
+  END SUBROUTINE FIELD_REGION_GET
 
   !
   !================================================================================================================================

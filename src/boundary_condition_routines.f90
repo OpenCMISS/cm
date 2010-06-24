@@ -190,7 +190,7 @@ CONTAINS
                   ENDIF
                   ! Find out how many dirichlet conditions in problem  \todo make below just fixed
                   NUMBER_OF_DIRICHLET_CONDITIONS=0
-                  DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_DOFS
+                  DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS
                     IF(BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED.OR. &
                       & BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED_INLET.OR. &
                       & BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &
@@ -209,7 +209,7 @@ CONTAINS
                     IF(ASSOCIATED(BOUNDARY_CONDITIONS_DIRICHLET)) THEN
                       ! Find dirichlet conditions \todo make below just fixed
                       dirichlet_idx=1
-                      DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_DOFS
+                      DO dof_idx=1,FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS
                         IF(BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED.OR. &
                           & BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED_INLET.OR. &
                           & BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(dof_idx)==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &

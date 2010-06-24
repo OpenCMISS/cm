@@ -64,6 +64,11 @@
     that file, which leads to a #define collision.
 
  **********************************************************/
+
+#define BASIS_LAGRANGE_HERMITE_TP_TYPE          1 //< Lagrange Hermite tensor product basis \see BASIS_ROUTINES_BasisTypes,BASIS_ROUTINES
+#define BASIS_SIMPLEX_TYPE                      2 //< Simplex basis \see BASIS_ROUTINES_BasisTypes,BASIS_ROUTINES
+
+
 #define BASIS_LINEAR_LAGRANGE_INTERPOLATION     1 //< Linear Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
 #define BASIS_QUADRATIC_LAGRANGE_INTERPOLATION  2 //< Quadratic Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
 #define BASIS_CUBIC_LAGRANGE_INTERPOLATION      3 //< Cubic Lagrange interpolation specification \see BASIS_ROUTINES_InterpolationSpecifications,BASIS_ROUTINES
@@ -223,11 +228,28 @@ static int FieldExport_File_Group( FileSession *const session, const char *const
 }
 
 
-static int FieldExport_File_MeshDimensions( FileSession *const session, const int dimensions )
+static int FieldExport_File_MeshDimensions( FileSession *const session, const int dimensions, const int basisType )
 {
-    return FieldExport_FPrintf( session, " Shape.  Dimension=%d\n", dimensions );
+  switch( basisType )
+    {
+    case BASIS_LAGRANGE_HERMITE_TP_TYPE:
+      return FieldExport_FPrintf( session, " Shape.  Dimension=%d\n", dimensions );
+    case BASIS_SIMPLEX_TYPE:
+      switch( dimensions )
+	{
+	case 1:
+	  return FieldExport_FPrintf( session, " Shape.  Dimension=%d\n", dimensions );
+	case 2:
+	  return FieldExport_FPrintf( session, " Shape.  Dimension=%d, simplex(2)*simplex\n", dimensions );
+	case 3:
+	  return FieldExport_FPrintf( session, " Shape.  Dimension=%d, simplex(2;3)*simplex*simplex\n", dimensions );
+	default:
+	  return FieldExport_FPrintf( session, " Shape.  Dimension=%d\n", dimensions );
+	}
+    default:
+      return FieldExport_FPrintf( session, " Shape.  Dimension=%d\n", dimensions );
+    }
 }
-
 
 static int FieldExport_File_ScalingFactorCount( FileSession *const session, const int scalingFactorCount )
 {
@@ -641,11 +663,13 @@ static int FieldExport_File_ElementIndex( FileSession *session, const int dimens
     }
     else if( dimensionCount == 2 )
     {
-          return FieldExport_FPrintf( session, " Element:            0 %d 0\n", elementIndex );
+      /* return FieldExport_FPrintf( session, " Element:            0 %d 0\n", elementIndex ); */
+          return FieldExport_FPrintf( session, " Element:            %d 0 0\n", elementIndex );
     }
     else
     {
-          return FieldExport_FPrintf( session, " Element:            0 0 %d\n", elementIndex );
+      /* return FieldExport_FPrintf( session, " Element:            0 0 %d\n", elementIndex ); */
+       return FieldExport_FPrintf( session, " Element:            %d 0 0\n", elementIndex ); 
     }
 }
 
@@ -1032,7 +1056,7 @@ int FieldExport_Group( const int handle, const char *const label )
 }
 
 
-int FieldExport_MeshDimensions( const int handle, const int dimensions )
+int FieldExport_MeshDimensions( const int handle, const int dimensions, const int basisType )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1042,7 +1066,7 @@ int FieldExport_MeshDimensions( const int handle, const int dimensions )
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_MeshDimensions( &session->fileSession, dimensions );
+      return FieldExport_File_MeshDimensions( &session->fileSession, dimensions, basisType );
     }
     else
     {

@@ -231,52 +231,56 @@ CONTAINS
     NULLIFY(DECOMPOSITION)
     
     IF(ASSOCIATED(MESH)) THEN
-      IF(ASSOCIATED(MESH%TOPOLOGY)) THEN
-        IF(ASSOCIATED(MESH%DECOMPOSITIONS)) THEN
-          CALL DECOMPOSITION_USER_NUMBER_FIND(USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*999)
-          IF(ASSOCIATED(DECOMPOSITION)) THEN
-            LOCAL_ERROR="Decomposition number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-              & " has already been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      IF(MESH%MESH_FINISHED) THEN
+        IF(ASSOCIATED(MESH%TOPOLOGY)) THEN
+          IF(ASSOCIATED(MESH%DECOMPOSITIONS)) THEN
+            CALL DECOMPOSITION_USER_NUMBER_FIND(USER_NUMBER,MESH,DECOMPOSITION,ERR,ERROR,*999)
+            IF(ASSOCIATED(DECOMPOSITION)) THEN
+              LOCAL_ERROR="Decomposition number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
+                & " has already been created on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ELSE
+              ALLOCATE(NEW_DECOMPOSITION,STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition.",ERR,ERROR,*999)
+              !Set default decomposition properties
+              NEW_DECOMPOSITION%GLOBAL_NUMBER=MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1
+              NEW_DECOMPOSITION%USER_NUMBER=USER_NUMBER
+              NEW_DECOMPOSITION%DECOMPOSITION_FINISHED=.FALSE.
+              NEW_DECOMPOSITION%DECOMPOSITIONS=>MESH%DECOMPOSITIONS
+              NEW_DECOMPOSITION%MESH=>MESH
+              NEW_DECOMPOSITION%MESH_COMPONENT_NUMBER=1
+              !Default decomposition is all the mesh with one domain.
+              NEW_DECOMPOSITION%DECOMPOSITION_TYPE=DECOMPOSITION_ALL_TYPE
+              NEW_DECOMPOSITION%NUMBER_OF_DOMAINS=1          
+              ALLOCATE(NEW_DECOMPOSITION%ELEMENT_DOMAIN(MESH%NUMBER_OF_ELEMENTS),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition element domain.",ERR,ERROR,*999)
+              NEW_DECOMPOSITION%ELEMENT_DOMAIN=0          
+              !Nullify the domain
+              NULLIFY(NEW_DECOMPOSITION%DOMAIN)
+              !Nullify the topology
+              NULLIFY(NEW_DECOMPOSITION%TOPOLOGY)
+              !Add new decomposition into list of decompositions on the mesh
+              ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions.",ERR,ERROR,*999)
+              DO decomposition_no=1,MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS
+                NEW_DECOMPOSITIONS(decomposition_no)%PTR=>MESH%DECOMPOSITIONS%DECOMPOSITIONS(decomposition_no)%PTR
+              ENDDO !decomposition_no
+              NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1)%PTR=>NEW_DECOMPOSITION
+              IF(ASSOCIATED(MESH%DECOMPOSITIONS%DECOMPOSITIONS)) DEALLOCATE(MESH%DECOMPOSITIONS%DECOMPOSITIONS)
+              MESH%DECOMPOSITIONS%DECOMPOSITIONS=>NEW_DECOMPOSITIONS
+              MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS=MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1        
+              DECOMPOSITION=>NEW_DECOMPOSITION
+            ENDIF
           ELSE
-            ALLOCATE(NEW_DECOMPOSITION,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition.",ERR,ERROR,*999)
-            !Set default decomposition properties
-            NEW_DECOMPOSITION%GLOBAL_NUMBER=MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1
-            NEW_DECOMPOSITION%USER_NUMBER=USER_NUMBER
-            NEW_DECOMPOSITION%DECOMPOSITION_FINISHED=.FALSE.
-            NEW_DECOMPOSITION%DECOMPOSITIONS=>MESH%DECOMPOSITIONS
-            NEW_DECOMPOSITION%MESH=>MESH
-            NEW_DECOMPOSITION%MESH_COMPONENT_NUMBER=1
-            !Default decomposition is all the mesh with one domain.
-            NEW_DECOMPOSITION%DECOMPOSITION_TYPE=DECOMPOSITION_ALL_TYPE
-            NEW_DECOMPOSITION%NUMBER_OF_DOMAINS=1          
-            ALLOCATE(NEW_DECOMPOSITION%ELEMENT_DOMAIN(MESH%NUMBER_OF_ELEMENTS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decomposition element domain.",ERR,ERROR,*999)
-            NEW_DECOMPOSITION%ELEMENT_DOMAIN=0          
-            !Nullify the domain
-            NULLIFY(NEW_DECOMPOSITION%DOMAIN)
-            !Nullify the topology
-            NULLIFY(NEW_DECOMPOSITION%TOPOLOGY)
-            !Add new decomposition into list of decompositions on the mesh
-            ALLOCATE(NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new decompositions.",ERR,ERROR,*999)
-            DO decomposition_no=1,MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS
-              NEW_DECOMPOSITIONS(decomposition_no)%PTR=>MESH%DECOMPOSITIONS%DECOMPOSITIONS(decomposition_no)%PTR
-            ENDDO !decomposition_no
-            NEW_DECOMPOSITIONS(MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1)%PTR=>NEW_DECOMPOSITION
-            IF(ASSOCIATED(MESH%DECOMPOSITIONS%DECOMPOSITIONS)) DEALLOCATE(MESH%DECOMPOSITIONS%DECOMPOSITIONS)
-            MESH%DECOMPOSITIONS%DECOMPOSITIONS=>NEW_DECOMPOSITIONS
-            MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS=MESH%DECOMPOSITIONS%NUMBER_OF_DECOMPOSITIONS+1        
-            DECOMPOSITION=>NEW_DECOMPOSITION
+            LOCAL_ERROR="The decompositions on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
+              & " are not associated."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The decompositions on mesh number "//TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))// &
-            & " are not associated."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Mesh has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
@@ -5976,12 +5980,6 @@ CONTAINS
               & ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES,'("    Global element nodes =",8(X,I6))','(26X,8(X,I6))',ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Global element nodes are not associated.",ERR,ERROR,*999)
-          ENDIF
-          IF(ALLOCATED(ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES)) THEN
-            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES,8,8, &
-              & ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES,'("    Mesh element nodes   =",8(X,I6))','(26X,8(X,I6))',ERR,ERROR,*999)
-          ELSE
-            CALL FLAG_ERROR("Mesh element nodes are not associated.",ERR,ERROR,*999)
           ENDIF
         ENDDO !ne
       ELSE

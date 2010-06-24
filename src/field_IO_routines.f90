@@ -144,12 +144,13 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_Group
     END FUNCTION FieldExport_Group
 
-    FUNCTION FieldExport_MeshDimensions( handle, meshDimensions ) &
+    FUNCTION FieldExport_MeshDimensions( handle, meshDimensions , basisType) &
       & BIND(C,NAME="FieldExport_MeshDimensions")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: meshDimensions
+      INTEGER(C_INT), VALUE :: basisType
       INTEGER(C_INT) :: FieldExport_MeshDimensions
     END FUNCTION FieldExport_MeshDimensions
 
@@ -3101,7 +3102,7 @@ CONTAINS
     CALL FIELD_COORDINATE_SYSTEM_GET(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%COMPONENTS(1)%PTR% &
       & FIELD_VARIABLE%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
     NUM_DIM=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-
+    
     ERR = FieldExport_OpenSession( EXPORT_TYPE_FILE, char(FILE_NAME)//C_NULL_CHAR, sessionHandle )
     IF(ERR/=0) THEN
         CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
@@ -3117,10 +3118,16 @@ CONTAINS
       ENDIF
     ENDIF
     IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot write group name to elements file", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "Cannot write group name to elements file", ERR, ERROR,*999 )
     ENDIF
+      
+    components => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR
+    component => components%COMPONENTS(1)%PTR
+    DOMAIN_MAPPING_ELEMENTS=>component%DOMAIN%MAPPINGS%ELEMENTS
+    DOMAIN_ELEMENTS=>component%DOMAIN%TOPOLOGY%ELEMENTS
+    BASIS => DOMAIN_ELEMENTS%ELEMENTS( 1 )%BASIS
 
-    ERR = FieldExport_MeshDimensions( sessionHandle, NUM_DIM )
+    ERR = FieldExport_MeshDimensions( sessionHandle, NUM_DIM, BASIS%TYPE  )
     IF(ERR/=0) THEN
         CALL FLAG_ERROR( "Cannot write mesh dimensions to file", ERR, ERROR,*999 )
     ENDIF
@@ -3201,7 +3208,83 @@ CONTAINS
       !ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( element%USER_ELEMENT_NODES ) )
 !!Copy user element nodes to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
 !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-      USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)=element%USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)
+      SELECT CASE(BASIS%TYPE)
+      CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+        USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)=element%USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)
+      CASE(BASIS_SIMPLEX_TYPE)
+        SELECT CASE(BASIS%NUMBER_OF_XI)
+        CASE(1)
+          USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)=element%USER_ELEMENT_NODES(1:BASIS%NUMBER_OF_NODES)
+        CASE(2)
+          SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
+          CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
+            USER_ELEMENT_NODES(1:3)=element%USER_ELEMENT_NODES(1:3)
+          CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
+            USER_ELEMENT_NODES(1)=element%USER_ELEMENT_NODES(1)
+            USER_ELEMENT_NODES(2)=element%USER_ELEMENT_NODES(4)
+            USER_ELEMENT_NODES(3)=element%USER_ELEMENT_NODES(2)
+            USER_ELEMENT_NODES(4)=element%USER_ELEMENT_NODES(6)
+            USER_ELEMENT_NODES(5)=element%USER_ELEMENT_NODES(5)
+            USER_ELEMENT_NODES(6)=element%USER_ELEMENT_NODES(3)
+          CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
+            USER_ELEMENT_NODES(1)=element%USER_ELEMENT_NODES(1)
+            USER_ELEMENT_NODES(2)=element%USER_ELEMENT_NODES(4)
+            USER_ELEMENT_NODES(3)=element%USER_ELEMENT_NODES(5)
+            USER_ELEMENT_NODES(4)=element%USER_ELEMENT_NODES(2)
+            USER_ELEMENT_NODES(5)=element%USER_ELEMENT_NODES(9)
+            USER_ELEMENT_NODES(6)=element%USER_ELEMENT_NODES(10)
+            USER_ELEMENT_NODES(7)=element%USER_ELEMENT_NODES(6)
+            USER_ELEMENT_NODES(8)=element%USER_ELEMENT_NODES(8)
+            USER_ELEMENT_NODES(9)=element%USER_ELEMENT_NODES(7)
+            USER_ELEMENT_NODES(10)=element%USER_ELEMENT_NODES(3)
+         CASE DEFAULT
+            CALL FLAG_ERROR("Invalid basis order.",ERR,ERROR,*999)
+          END SELECT
+        CASE(3)
+          SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
+          CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
+            USER_ELEMENT_NODES(1:4)=element%USER_ELEMENT_NODES(1:4)
+          CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
+            USER_ELEMENT_NODES(1)=element%USER_ELEMENT_NODES(1)
+            USER_ELEMENT_NODES(2)=element%USER_ELEMENT_NODES(5)
+            USER_ELEMENT_NODES(3)=element%USER_ELEMENT_NODES(2)
+            USER_ELEMENT_NODES(4)=element%USER_ELEMENT_NODES(7)
+            USER_ELEMENT_NODES(5)=element%USER_ELEMENT_NODES(10)
+            USER_ELEMENT_NODES(6)=element%USER_ELEMENT_NODES(4)
+            USER_ELEMENT_NODES(7)=element%USER_ELEMENT_NODES(6)
+            USER_ELEMENT_NODES(8)=element%USER_ELEMENT_NODES(8)
+            USER_ELEMENT_NODES(9)=element%USER_ELEMENT_NODES(9)
+            USER_ELEMENT_NODES(10)=element%USER_ELEMENT_NODES(3)
+          CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
+            USER_ELEMENT_NODES(1)=element%USER_ELEMENT_NODES(1)
+            USER_ELEMENT_NODES(2)=element%USER_ELEMENT_NODES(5)
+            USER_ELEMENT_NODES(3)=element%USER_ELEMENT_NODES(6)
+            USER_ELEMENT_NODES(4)=element%USER_ELEMENT_NODES(2)
+            USER_ELEMENT_NODES(5)=element%USER_ELEMENT_NODES(7)
+            USER_ELEMENT_NODES(6)=element%USER_ELEMENT_NODES(17)
+            USER_ELEMENT_NODES(7)=element%USER_ELEMENT_NODES(11)
+            USER_ELEMENT_NODES(8)=element%USER_ELEMENT_NODES(8)
+            USER_ELEMENT_NODES(9)=element%USER_ELEMENT_NODES(12)
+            USER_ELEMENT_NODES(10)=element%USER_ELEMENT_NODES(3)
+            USER_ELEMENT_NODES(11)=element%USER_ELEMENT_NODES(9)
+            USER_ELEMENT_NODES(12)=element%USER_ELEMENT_NODES(18)
+            USER_ELEMENT_NODES(13)=element%USER_ELEMENT_NODES(15)
+            USER_ELEMENT_NODES(14)=element%USER_ELEMENT_NODES(19)
+            USER_ELEMENT_NODES(15)=element%USER_ELEMENT_NODES(20)
+            USER_ELEMENT_NODES(16)=element%USER_ELEMENT_NODES(13)
+            USER_ELEMENT_NODES(17)=element%USER_ELEMENT_NODES(10)
+            USER_ELEMENT_NODES(18)=element%USER_ELEMENT_NODES(16)
+            USER_ELEMENT_NODES(19)=element%USER_ELEMENT_NODES(14)
+            USER_ELEMENT_NODES(20)=element%USER_ELEMENT_NODES(4)
+          CASE DEFAULT
+            CALL FLAG_ERROR("Invalid basis order.",ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          CALL FLAG_ERROR("Invalid number of xi.",ERR,ERROR,*999)
+        END SELECT
+      CASE DEFAULT
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      END SELECT
       ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( USER_ELEMENT_NODES ) )
       IF(ERR/=0) THEN
         CALL FLAG_ERROR( "Cannot write node indices to file", ERR, ERROR,*999 )
