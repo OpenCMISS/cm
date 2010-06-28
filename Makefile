@@ -57,6 +57,7 @@ MAKEFLAGS = --no-builtin-rules --warn-undefined-variables
 OPENCMISS_ROOT = $(CURDIR)/../
 GLOBAL_CM_ROOT = $(CURDIR)
 GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
+GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -72,6 +73,10 @@ endif
 
 ifndef USECELLML
   USECELLML := false
+endif
+
+ifndef USEFIELDML
+  USEFIELDML := false
 endif
 
 ifeq ($(MPI),mpich2)
@@ -633,6 +638,26 @@ ifeq ($(USECELLML),true)
   endif
 endif
 
+#FIELDML
+FIELDML_INCLUDE_PATH =#
+MOD_FIELDML_TARGET = #
+
+ifeq ($(USEFIELDML),true)
+  MOD_FIELDML_TARGET = MOD_FIELDML
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
+    FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+         FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
+       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
+    else# windows
+         FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
+       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
+    endif
+  endif
+endif
+
 #TAU/PAPI
 ifeq ($(TAUPROF),true)
   CPPFLAGS += -DTAUPROF
@@ -674,6 +699,12 @@ ifeq ($(USECELLML),true)
   CPPFLAGS += -DUSECELLML
 endif
 
+ifeq ($(USEFIELDML),true)
+  EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
+  FPPFLAGS += -DUSEFIELDML
+  CPPFLAGS += -DUSEFIELDML
+endif
+
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
 FPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
 
@@ -691,6 +722,15 @@ ifeq ($(USECELLML),true)
      CELLML_OBJECT = $(OBJECT_DIR)/cmiss_cellml.o
 else
      CELLML_OBJECT = $(OBJECT_DIR)/cmiss_cellml_dummy.o
+endif
+
+ifeq ($(USEFIELDML),true)
+    FIELDML_OBJECT =  \
+      $(OBJECT_DIR)/fieldml_util_routines.o \
+      $(OBJECT_DIR)/fieldml_input_routines.o \
+      $(OBJECT_DIR)/fieldml_output_routines.o
+else
+    FIELDML_OBJECT = #
 endif
 
 OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
@@ -774,7 +814,9 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/timer_c.o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/trees.o \
-	$(OBJECT_DIR)/types.o 
+	$(OBJECT_DIR)/types.o \
+	$(OBJECT_DIR)/util_array.o \
+	$(FIELDML_OBJECT)
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
@@ -791,6 +833,7 @@ OBJECTS += $(MACHINE_OBJECTS)
 main: preliminaries \
 	$(LIBRARY) \
 	$(MOD_INCLUDE) \
+	$(MOD_FIELDML_TARGET) \
 	$(HEADER_INCLUDE)
 
 preliminaries: $(OBJECT_DIR) \
@@ -811,6 +854,11 @@ $(LIBRARY) : $(OBJECTS)
 
 $(MOD_INCLUDE) : $(MOD_SOURCE_INC)
 	cp $(MOD_SOURCE_INC) $@ 
+
+MOD_FIELDML: $(FIELDML_OBJECT) 
+	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod
+	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod
+	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 
 $(HEADER_INCLUDE) : $(HEADER_SOURCE_INC)
 	cp $(HEADER_SOURCE_INC) $@ 
@@ -1053,6 +1101,26 @@ $(OBJECT_DIR)/Darcy_equations_routines.o	:	$(SOURCE_DIR)/Darcy_equations_routine
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/fieldml_input_routines.o: $(SOURCE_DIR)/fieldml_input_routines.f90 \
+#	$(OBJECT_DIR)/fieldml_api.o \
+	$(OBJECT_DIR)/fieldml_util_routines.o \
+	$(OBJECT_DIR)/opencmiss.o \
+	$(OBJECT_DIR)/util_array.o
+
+$(OBJECT_DIR)/fieldml_output_routines.o: $(SOURCE_DIR)/fieldml_output_routines.f90 \
+	$(OBJECT_DIR)/kinds.o \
+#	$(OBJECT_DIR)/fieldml_api.o \
+	$(OBJECT_DIR)/fieldml_util_routines.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/opencmiss.o \
+	$(OBJECT_DIR)/strings.o
+
+$(OBJECT_DIR)/fieldml_util_routines.o: $(SOURCE_DIR)/fieldml_util_routines.f90 \
+	$(OBJECT_DIR)/kinds.o \
+#	$(OBJECT_DIR)/fieldml_api.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/opencmiss.o
 
 $(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(SOURCE_DIR)/finite_elasticity_Darcy_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1894,6 +1962,10 @@ $(OBJECT_DIR)/types.o	:	$(SOURCE_DIR)/types.f90 \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/trees.o
+
+$(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/types.o
 
 # ----------------------------------------------------------------------------
 #
