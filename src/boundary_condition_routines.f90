@@ -480,10 +480,12 @@ CONTAINS
         IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
           CALL FLAG_ERROR("Boundary conditions is already associated.",ERR,ERROR,*999)
         ELSE
-          SELECT CASE(EQUATIONS_SET%TYPE)
-          CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-            !Initialise the boundary conditions for load increment loop
-            CALL BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(EQUATIONS_SET,ERR,ERROR,*999)
+          SELECT CASE(EQUATIONS_SET%CLASS)
+          CASE(EQUATIONS_SET_ELASTICITY_CLASS,EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+            IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
+              !Initialise the boundary conditions for load increment loop
+              CALL BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(EQUATIONS_SET,ERR,ERROR,*999)
+            ENDIF
           CASE DEFAULT
             !Initialise the boundary conditions
             CALL BOUNDARY_CONDITIONS_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
