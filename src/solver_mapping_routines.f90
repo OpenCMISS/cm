@@ -192,7 +192,9 @@ CONTAINS
                                     & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                     & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                                     & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
-                                    & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
+                                    & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT &
+                                    & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                    & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE
                                 ELSE
                                   CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                 ENDIF
@@ -209,7 +211,9 @@ CONTAINS
                                       & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                       & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                                       & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
-                                      & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
+                                      & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT &
+                                      & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                      & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE
                                   ELSE
                                     CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                   ENDIF
@@ -234,7 +238,9 @@ CONTAINS
                                         & global_dof)==BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                                         & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                                         & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
-                                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
+                                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT &
+                                        & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE
                                     ELSE
                                       CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                     ENDIF
@@ -399,7 +405,10 @@ CONTAINS
                       INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE% & 
                         & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                         & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
-                        & .OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
+                        & .OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
+                        & BOUNDARY_CONDITION_NEUMANN_POINT &
+                        & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE
                     ELSE
                       CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -415,7 +424,9 @@ CONTAINS
                         INCLUDE_ROW=BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
                           & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
                           & BOUNDARY_CONDITION_FREE_WALL.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
-                          & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
+                          & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT &
+                          & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                          & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE
                       ELSE
                         CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                       ENDIF
@@ -438,7 +449,9 @@ CONTAINS
                             & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                             & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                             & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
-                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT
+                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT &
+                            & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         ENDIF
@@ -667,7 +680,9 @@ CONTAINS
                             & BOUNDARY_CONDITION_FREE.OR.BOUNDARY_CONDITIONS_VARIABLE% & 
                             & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                             & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
-                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT &
+                            & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                            & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE) THEN
                             NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
                             IF(MYRANK_DOF) TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS=TOTAL_NUMBER_OF_LOCAL_SOLVER_COLS+1
                             IF(rank==myrank) NUMBER_OF_LOCAL_SOLVER_COLS=NUMBER_OF_LOCAL_SOLVER_COLS+1
@@ -975,7 +990,9 @@ CONTAINS
                       IF(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE.OR. & 
                         & BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_FREE_WALL &
                         & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
-                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
+                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_POINT &
+                        & .OR.BOUNDARY_CONDITIONS_VARIABLE% & 
+                        & GLOBAL_BOUNDARY_CONDITIONS(global_dof)==BOUNDARY_CONDITION_NEUMANN_FREE) THEN
                         !DOF is not fixed so map the variable/equation dof to a new solver dof
                         NUMBER_OF_GLOBAL_SOLVER_COLS=NUMBER_OF_GLOBAL_SOLVER_COLS+1
                         !Initialise_sm

@@ -8352,7 +8352,8 @@ CONTAINS
                                             !Apply boundary conditions
                                             SELECT CASE(rhs_boundary_condition)
                                             CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL, &
-                                              & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+                                              & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+                                              & BOUNDARY_CONDITION_NEUMANN_FREE)
                                               !Get the equations RHS values
                                               CALL DISTRIBUTED_VECTOR_VALUES_GET(EQUATIONS_RHS_VECTOR,equations_row_number, &
                                                 & RHS_VALUE,ERR,ERROR,*999)
@@ -9294,7 +9295,8 @@ CONTAINS
                                             ENDDO !variable_idx
                                           ENDIF
                                         CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
-                                          & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED)
+                                          & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+                                          & BOUNDARY_CONDITION_NEUMANN_FREE)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row

@@ -744,6 +744,12 @@ CONTAINS
 !                                       VALUE_BC(COUNT_DOF)=VALUE
 !                                       DOF_NUMBER(COUNT_DOF)=global_ny
 !                                       CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_POINT
+                                  !  CASE(239,256,255,272) 
+                                  !    COUNT_DOF = COUNT_DOF+1
+                                  !    VALUE=5
+                                  !    VALUE_BC(COUNT_DOF)=VALUE
+                                  !    DOF_NUMBER(COUNT_DOF)=global_ny
+                                  !    CONDITION(COUNT_DOF)=BOUNDARY_CONDITION_NEUMANN_INTEGRATED
                                     CASE(273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289) 
                                       COUNT_DOF = COUNT_DOF+1
                                       VALUE=-1
@@ -3459,7 +3465,7 @@ CONTAINS
           DO I=1,GEOMETRIC_FIELD%decomposition%domain(1)%ptr%topology%elements%maximum_number_of_element_parameters
             element_node_identity=GEOMETRIC_FIELD%decomposition%domain(1)%ptr%topology% &
               & elements%elements(ELEMENT_NUMBER)%element_nodes(I)
-            !das muss noch geaendert werden zum richtigen INPUT_DATA3
+            !this needs to be changed even at the right INPUT_DATA3
             IF(INPUT_DATA3(element_node_identity)<0.5_DP) THEN
               !outside node
               INSIDE=.FALSE.

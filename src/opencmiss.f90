@@ -766,6 +766,7 @@ MODULE OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannPoint = BOUNDARY_CONDITION_NEUMANN_POINT
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannIntegrated = BOUNDARY_CONDITION_NEUMANN_INTEGRATED
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannFree = BOUNDARY_CONDITION_NEUMANN_FREE
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionDirichlet = BOUNDARY_CONDITION_DIRICHLET
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCauchy = BOUNDARY_CONDITION_CAUCHY
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionRobin = BOUNDARY_CONDITION_ROBIN
@@ -851,7 +852,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionNeumannIntegrated,CMISSBoundaryConditionDirichlet
   PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented
-  PUBLIC CMISSBoundaryConditionPressure,CMISSBoundaryConditionPressureIncremented
+  PUBLIC CMISSBoundaryConditionPressure,CMISSBoundaryConditionPressureIncremented,CMISSBoundaryConditionNeumannFree
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
