@@ -2752,6 +2752,8 @@ CONTAINS
   
 !     IF(SOLVER_TYPE==1) THEN !LINEAR
       IF(INPUT_TYPE==1)THEN !POISSON VECTOR SOURCE TEMPORARY
+        TIME_STEP_SIZE=0.04_DP  
+        TIME_TOLERANCE=0.00001_DP
         ENDI=SIZE(INPUT_VALUES)
 !         IF(NUMBER_OF_DIMENSIONS==3) THEN
 !           do nothing
@@ -2773,6 +2775,12 @@ CONTAINS
           ELSE IF(TIME_STEP<100) THEN
             WRITE(UVEL_FILE,'("./input/data/VEL_DATA_",I0,".dat")') TIME_STEP-1
           ENDIF
+        ELSE IF(INPUT_OPTION==3) THEN
+          IF(TIME_STEP<=10) THEN
+            WRITE(UVEL_FILE,'("./input/data/ORI_DATA_0",I0,".dat")') TIME_STEP-1
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(UVEL_FILE,'("./input/data/ORI_DATA_",I0,".dat")') TIME_STEP-1
+          ENDIF
         ENDIF
           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,UVEL_FILE,ERR,ERROR,*999)
           OPEN(UNIT=42, FILE=UVEL_FILE,STATUS='unknown') 
@@ -2790,8 +2798,9 @@ CONTAINS
         IF(INPUT_OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(INPUT_OPTION==1) THEN
-          TIME_STEP_SIZE=0.001_DP
-          NUMBER_OF_TIME_STEPS=500
+          TIME_STEP_SIZE=0.2_DP
+          NUMBER_OF_TIME_STEPS=50
+          LENGTH_SCALE=25.0_DP
           TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
           DO J=1,NUMBER_OF_TIME_STEPS
@@ -2809,8 +2818,8 @@ CONTAINS
                 READ(J,*) INPUT_VALUES(I)
               ENDDO
 ! ! TESTETSTEST
-              INPUT_VALUES=INPUT_VALUES
-              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES'
+              INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE
+              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE'
               CLOSE(J)
             ENDIF
           ENDDO
@@ -2833,6 +2842,32 @@ CONTAINS
                 READ(J,*) INPUT_VALUES(I)
                 INPUT_VALUES(I) = LENGTH_SCALE * INPUT_VALUES(I)
               ENDDO
+              CLOSE(J)
+            ENDIF
+          ENDDO
+        ELSE IF(INPUT_OPTION==3) THEN
+          TIME_STEP_SIZE=10.0_DP
+          NUMBER_OF_TIME_STEPS=500
+          LENGTH_SCALE=10.0_DP
+          TIME_TOLERANCE=0.00001_DP
+          ENDI=SIZE(INPUT_VALUES)
+          DO J=1,NUMBER_OF_TIME_STEPS
+            TIME_STEP=J
+            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
+              IF(J<10) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') J
+              ELSE IF(J<100) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
+              ELSE IF(J<1000) THEN
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
+              ENDIF
+              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
+              DO I=1,ENDI
+                READ(J,*) INPUT_VALUES(I)
+              ENDDO
+! ! TESTETSTEST
+              INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE
+              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE'
               CLOSE(J)
             ENDIF
           ENDDO
