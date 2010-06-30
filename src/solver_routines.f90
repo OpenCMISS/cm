@@ -9141,6 +9141,8 @@ CONTAINS
                                       !Calculate the Neumann integrated flux boundary conditions
                                       IF(NUMBER_OF_NEUMANN_ROWS>0) THEN
 
+!Add loop here over components
+
                                         CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
                                           & RHS_VARIABLE_TYPE,ERR,ERROR,*999)
 

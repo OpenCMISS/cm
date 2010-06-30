@@ -1906,7 +1906,6 @@ CONTAINS
                 !CASE(EQUATIONS_SET_POISSON_EQUATION_TYPE,EQUATIONS_SET_LAPLACE_EQUATION_TYPE)
 
                   IF(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_NEUMANN_BOUNDARIES>0) THEN
-                    !Condition need here for derivatives, for cubic hermite
 
                     DO id=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_NEUMANN_BOUNDARIES
                       !Iterate over components u,v,w,p
@@ -2091,6 +2090,8 @@ CONTAINS
                                       DO nf1=1,DOMAIN_FACES%NUMBER_OF_FACES
                                         DOMAIN_FACE=>DOMAIN_FACES%FACES(nf1)
                                         IF(DOMAIN_FACE%NUMBER==FACES_IN_CALC(nf).AND.DOMAIN_FACE%BOUNDARY_FACE) THEN
+                                          !Need whether dof have all been specified for face, if not disclude from calculation
+ 
                                           !Iterate over number of nodes in face
                                           DO face_local_node_index=1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES !nnf
                                             NODE=DOMAIN_FACE%NODES_IN_FACE(face_local_node_index)
@@ -2142,7 +2143,7 @@ CONTAINS
 
                                     !Use a list to collect all the dof, sort and substitute into INTEGRATION_MATRIX_MAPPING array 
                                     NULLIFY(DOFS_LIST)
-                                    CALL LIST_CREATE_START(DOFS_LIST,ERR,ERROR,*999)
+                                    CALL LIST_CREATE_START(DOFS_LIST,ERR,ERROR,*999) 
                                     CALL LIST_DATA_TYPE_SET(DOFS_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
                                     CALL LIST_INITIAL_SIZE_SET(DOFS_LIST,NUMBER_OF_FACES_CORRECTED* &
                                                                                       & MAX_NUMBER_DOFS_IN_FACE,ERR,ERROR,*999)
@@ -2548,6 +2549,8 @@ CONTAINS
                                       DO nl1=1,DOMAIN_LINES%NUMBER_OF_LINES
                                         DOMAIN_LINE=>DOMAIN_LINES%LINES(nl1)
                                         IF(DOMAIN_LINE%NUMBER==LINES_IN_CALC(nl).AND.DOMAIN_LINE%BOUNDARY_LINE) THEN
+                                          !Need whether dof have all been specified for line, if not disclude from calculation
+
                                           !Iterate over number of nodes in line
                                           DO line_local_node_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES !nnl
                                             NODE=DOMAIN_LINE%NODES_IN_LINE(line_local_node_index)
@@ -2924,7 +2927,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ng,ms,local_ny
+    INTEGER(INTG) :: ELEMENT_NUMBER,ng,ms,local_ny
     REAL(DP) :: RWG,PHIMS,PHINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -2948,6 +2951,8 @@ CONTAINS
                 IF(ASSOCIATED(DOMAIN_FACES)) THEN
                   DOMAIN_FACE=>DOMAIN_FACES%FACES(FACE_NUMBER)
                   IF(ASSOCIATED(DOMAIN_FACE)) THEN
+
+                    ELEMENT_NUMBER=DOMAIN_FACE%ELEMENT_NUMBER 
 
                     QUADRATURE_SCHEME=>DOMAIN_FACE%BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                     IF(ASSOCIATED(QUADRATURE_SCHEME)) THEN
@@ -2988,9 +2993,22 @@ CONTAINS
                             BOUNDARY_CONDITIONS_NEUMANN%FACE_INTEGRATION_MATRIX_MAPPING(ms) = local_ny
 
                           ENDDO !ms
-
                         ENDDO !ng
  
+                        !Scale factor adjustment required for handling with Cubic Hermite elements
+                        !IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                        !  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+                        !    & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                        !  DO ms=1,DOMAIN_FACE%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                        !    BOUNDARY_CONDITIONS_NEUMANN%FACE_INTEGRATION_MATRIX(ms)= &
+                        !      & BOUNDARY_CONDITIONS_NEUMANN%FACE_INTEGRATION_MATRIX(ms)* &
+                        !      & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)% & 
+                        !      & PTR%SCALE_FACTORS(ms,component_idx)* &
+                        !      & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)% &
+                        !      & PTR%SCALE_FACTORS(ns,component_idx)
+                        !  ENDDO !ms
+                        !ENDIF
+
                         NUMBER_DOFS_IN_FACE=DOMAIN_FACE%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
 
                       CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
@@ -3368,6 +3386,20 @@ CONTAINS
 
                           ENDDO !ms
                         ENDDO !ng
+
+                        !Scale factor adjustment required for handling with Cubic Hermite elements
+                        !IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
+                        !  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+                        !    & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                        !  DO ms=1,DOMAIN_LINE%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                        !    BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX(ms)= &
+                        !      & BOUNDARY_CONDITIONS_NEUMANN%LINE_INTEGRATION_MATRIX(ms)* &
+                        !      & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)% & 
+                        !      & PTR%SCALE_FACTORS(ms,component_idx)* &
+                        !      & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)% &
+                        !      & PTR%SCALE_FACTORS(ns,component_idx)
+                        !  ENDDO !ms
+                        !ENDIF
 
                         NUMBER_DOFS_IN_LINE=DOMAIN_LINE%BASIS%NUMBER_OF_ELEMENT_PARAMETERS
 
