@@ -318,9 +318,18 @@ CONTAINS
                       SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                       IF(ASSOCIATED(SOLVER)) THEN
                         !Apply incremented boundary conditions here => 
+!                         CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,LOAD_INCREMENT_LOOP%ITERATION_NUMBER, &
+!                           & LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+                        CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+
+!---tob: chrm 22/06/2010: moved load increments after the pre-solve, since in pre-solve boundary conditions / load may be updated
+                        !(Moving the load_increment_apply after pre-solve is only temporary !!)
+                        !\ToDo: Restore the original order: load_increment_apply, pre_solve, solve, post_solve
+                        !       and move update BCs / load into pre_control_loop
                         CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,LOAD_INCREMENT_LOOP%ITERATION_NUMBER, &
                           & LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
-                        CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!---toe
+
                         CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                         CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                       ELSE

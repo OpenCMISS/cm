@@ -4992,13 +4992,23 @@ CONTAINS
                     !Get the pointer to vector holding the full and current loads
                     CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                       & FULL_LOADS,ERR,ERROR,*999)
+                    !chrm 22/06/2010: 'FIELD_BOUNDARY_CONDITIONS_SET_TYPE' does not get updated with time (update_BCs)
+                    !\ToDo: How can this be achieved ???
+
+!                     write(*,*)'FULL_LOADS = ',FULL_LOADS
+
                     CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                       & CURRENT_LOADS,ERR,ERROR,*999)
+
+!                     write(*,*)'CURRENT_LOADS = ',CURRENT_LOADS
+
                     !Get full increment, calculate new load, then apply to dependent field
                     DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                       dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
                       IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                        & BOUNDARY_CONDITION_FIXED_INCREMENTED) THEN !Only increment if it's a incremented type bc
+                          & BOUNDARY_CONDITION_FIXED_INCREMENTED .OR. &
+                        & BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
+                          & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN !Only increment if it's a incremented type bc
                         FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
                         ! Apply full load if last step, or fixed BC
                         IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
@@ -5013,6 +5023,16 @@ CONTAINS
                         ENDIF
                       ENDIF
                     ENDDO !dirichlet_idx
+
+!---tob
+                    !\ToDo: What happens if the call below is issued
+                    !without actually that the dependent field has been modified in above conditional ?
+                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!---toe
+
                     !Restore the vector handles
                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                       & FULL_LOADS,ERR,ERROR,*999)

@@ -8404,7 +8404,12 @@ CONTAINS
                                                       & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_INLET.OR. &
                                                       & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &  
                                                       & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_WALL.OR. & 
-                                                      & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                                      & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL.OR. & 
+                                                      & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
+                                                      !chrm 22/06/2010: \ToDo Does 'BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED'
+                                                      !show up here as does 'BOUNDARY_CONDITION_MOVED_WALL', 
+                                                      !or does it not, since 'BOUNDARY_CONDITION_FIXED_INCREMENTED' does not
+                                                      !show up here either ???
 
                                                       UPDATE_VALUE=BOUNDARY_CONDITION_VECTOR(variable_dof)
 
@@ -9238,7 +9243,13 @@ CONTAINS
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_INLET.OR. &
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_OUTLET.OR. &  
                                                 & variable_boundary_condition==BOUNDARY_CONDITION_FIXED_WALL.OR. & 
-                                                & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                                & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL.OR. & 
+                                                & variable_boundary_condition==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
+                                                !chrm 22/06/2010: \ToDo Does 'BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED'
+                                                !show up here as does 'BOUNDARY_CONDITION_MOVED_WALL', 
+                                                !or does it not, since 'BOUNDARY_CONDITION_FIXED_INCREMENTED' does not
+                                                !show up here either ???
+
                                                 DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_idx)%PTR(variable_dof)
                                                 IF(ABS(DEPENDENT_VALUE)>=ZERO_TOLERANCE) THEN
                                                   DO equations_matrix_idx=1,LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &

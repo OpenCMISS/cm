@@ -175,6 +175,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER:: DEPENDENT_FIELD_NUMBER_OF_VARIABLES, DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
+    INTEGER:: DEPENDENT_FIELD_ELASTICITY_NUMBER_OF_COMPONENTS, DEPENDENT_FIELD_DARCY_NUMBER_OF_COMPONENTS
     INTEGER:: INDEPENDENT_FIELD_NUMBER_OF_VARIABLES, INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
     INTEGER:: NUMBER_OF_DIMENSIONS, GEOMETRIC_COMPONENT_NUMBER
     INTEGER:: MATERIAL_FIELD_NUMBER_OF_VARIABLES, MATERIAL_FIELD_NUMBER_OF_COMPONENTS
@@ -370,17 +371,24 @@ CONTAINS
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
                     & NUMBER_OF_DIMENSIONS, ERR, ERROR, *999)
-                  DEPENDENT_FIELD_NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS + 1
-                  ! \todo: 'NUMBER_OF_DIMENSIONS + 1' is only correct for incompressible;
-                  !        while for compressible there are only 'NUMBER_OF_DIMENSIONS' components
+
+                  SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                  CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)  !compressible elasticity
+                    DEPENDENT_FIELD_ELASTICITY_NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS
+                    DEPENDENT_FIELD_DARCY_NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS + 2  !(u,v,w,p,m)
+                  CASE DEFAULT  !incompressible elasticity
+                    DEPENDENT_FIELD_ELASTICITY_NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS + 1
+                    DEPENDENT_FIELD_DARCY_NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS + 1
+                  END SELECT
+
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                    & DEPENDENT_FIELD_ELASTICITY_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                    & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                    & DEPENDENT_FIELD_ELASTICITY_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE, &
-                    & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                    & DEPENDENT_FIELD_DARCY_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
-                    & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                    & DEPENDENT_FIELD_DARCY_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
 
                   SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                   CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -1008,13 +1016,9 @@ CONTAINS
                     CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                     !Create the equations mapping.
                     CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-
-!---tob
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)THEN
                       CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
                     ENDIF
-!---toe
-
                     CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                     SELECT CASE(EQUATIONS_SET%SUBTYPE)
                     CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
@@ -1156,7 +1160,7 @@ CONTAINS
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,idxdim,ki
     INTEGER(INTG) :: component_idx,xi_idx,derivative_idx
     INTEGER(INTG) MESH_COMPONENT_1, MESH_COMPONENT_2
-    INTEGER(INTG) NDOFS
+    INTEGER(INTG) NDOFS, NUMBER_OF_VEL_PRESS_COMPONENTS
     REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),PGM,PGN
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS_1, DEPENDENT_BASIS_2
@@ -1174,17 +1178,22 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME_1, QUADRATURE_SCHEME_2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: REFERENCE_GEOMETRIC_INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP):: SOURCE
-!     REAL(DP):: COORD_X, COORD_Y
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
-!     REAL(DP):: MIDPOINT_X, MIDPOINT_Y
 
-    REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3), RHO_PARAM
+    REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3), DARCY_RHO_0_F
     REAL(DP):: PERM_TENSOR_OVER_VIS(3,3), VIS_OVER_PERM_TENSOR(3,3), Jmat
     REAL(DP):: MESH_VEL(3), MESH_VEL_DERIV(3,3), MESH_VEL_DERIV_PHYS(3,3)
     REAL(DP):: X(3), ARG(3), L, FACT
+
+    REAL(DP):: DXDY(3,3), DXDXI(3,3), DYDXI(3,3), DXIDY(3,3)
+    REAL(DP):: Jxy, Jyxi
+
+    REAL(DP):: Mfact, bfact, fJxy, p0fact
+
 
 !     REAL(DP):: SOURCE_1_X(3), SOURCE_1_R, SOURCE_1_I
 !     REAL(DP):: SOURCE_2_X(3), SOURCE_2_R, SOURCE_2_I
@@ -1211,7 +1220,12 @@ CONTAINS
     DARCY%TESTCASE = 0
     DARCY%ANALYTIC = .FALSE.
 
-    RHO_PARAM = 1.0_DP  !\todo Pass this through material parameters ! ???
+    !Parameters settings for coupled elasticity Darcy INRIA model:
+    !\ToDo: ensure constants are consistent with Darcy model ! Pass this through material parameters ???
+    DARCY_RHO_0_F = 1.0E-03
+    Mfact = 2.18E05
+    bfact = 1.0_DP
+    p0fact = 0.0_DP
 
 
     CALL ENTERS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
@@ -1272,9 +1286,74 @@ CONTAINS
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
+          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+            NUMBER_OF_VEL_PRESS_COMPONENTS = FIELD_VARIABLE%NUMBER_OF_COMPONENTS - 1  !last component: mass increase
+          CASE DEFAULT
+            NUMBER_OF_VEL_PRESS_COMPONENTS = FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+          END SELECT
+
           !--- Loop over gauss points
           !    Given that also materials field is interpolated, ensure sufficient number of Gauss points !!!
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+
+
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) THEN
+              !------------------------------------------------------------------------------
+              !--- begin: Compute the Jacobian of the mapping
+
+              !--- Interpolation of Reference Geometry
+              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_INITIAL_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              REFERENCE_GEOMETRIC_INTERPOLATED_POINT => EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
+                & REFERENCE_GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
+              !--- Retrieve local map DYDXI
+              DO component_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                  derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
+                  DYDXI(component_idx,xi_idx)=REFERENCE_GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,derivative_idx) !dy/dxi (y = referential)
+                ENDDO
+              ENDDO
+
+              !--- Interpolation of (actual) Geometry and Metrics
+              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              GEOMETRIC_INTERPOLATED_POINT => EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
+                & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI, &
+                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              !--- Retrieve local map DXDXI
+              DO component_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                  derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
+                  DXDXI(component_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,derivative_idx) !dx/dxi
+                ENDDO
+              ENDDO
+
+              !--- Compute deformation gradient tensor DXDY and its Jacobian Jxy
+              CALL INVERT(DYDXI,DXIDY,Jyxi,ERR,ERROR,*999) !dy/dxi -> dxi/dy 
+              CALL MATRIX_PRODUCT(DXDXI,DXIDY,DXDY,ERR,ERROR,*999) !dx/dxi * dxi/dy = dx/dy (deformation gradient tensor, F)
+              Jxy=DETERMINANT(DXDY,ERR,ERROR)
+
+              ! fJxy = f(Jxy) of the INRIA model
+              IF( ABS(Jxy-1.0_DP) > 1.0E-10_DP ) THEN
+                fJxy = 2.0_DP * (Jxy - 1.0_DP - log(Jxy)) / (Jxy - 1.0_DP)**2.0_DP
+              ELSE
+                fJxy = 1.0_DP
+              END IF
+
+!               write(*,*)'Jxy, fJxy = ',Jxy,fJxy
+
+              IF( ABS(Jxy) < 1.0E-10_DP ) THEN
+                LOCAL_ERROR="DARCY_EQUATION_FINITE_ELEMENT_CALCULATE: Jacobian Jxy is smaller than 1.0E-10_DP."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END IF
+
+              !--- end: Compute the Jacobian of the mapping
+              !------------------------------------------------------------------------------
+            END IF
 
             !--- Interpolate geometric and mesh velocity field (if applicable)
             GEOMETRIC_INTERPOLATED_POINT => EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
@@ -1349,22 +1428,7 @@ CONTAINS
 
 
 !             !--- Material Settings ---!
-!
 !             !*** If material is variable, need to account for this in deriving the variational statement ***!
-! 
-!             !material contrast for the zoned fivespot problem
-!             !Mind, though, that the non-physical enforcement of tangential-velocity continuity
-!             !creates overshoots and undershoots about zone interfaces - in agreement with the observations
-!             !in: Hughes, Masud and Wan, Computer Methods in Applied Mechanics and Engineering (2006)
-!             MIDPOINT_X = ( DARCY%X1 + DARCY%X2 ) / 2.0_DP
-!             MIDPOINT_Y = ( DARCY%Y1 + DARCY%Y2 ) / 2.0_DP
-!             COORD_X = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(1,1)
-!             COORD_Y = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT%VALUES(2,1)
-!             IF( (COORD_X<=MIDPOINT_X .AND. COORD_Y<=MIDPOINT_Y) .OR. (COORD_X>=MIDPOINT_X .AND. COORD_Y>=MIDPOINT_Y) ) THEN
-!               PERM_OVER_VIS_PARAM = MATERIALS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
-!             ELSE
-!               PERM_OVER_VIS_PARAM = 0.01_DP * MATERIALS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
-!             END IF
 
 
             !--- Interpolate materials field
@@ -1484,7 +1548,7 @@ CONTAINS
 
                       !-------------------------------------------------------------------------------------------------------------
                       !velocity test function, velocity trial function
-                      IF(mh==nh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                      IF(mh==nh.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
 
                         SUM = 0.0_DP
 
@@ -1504,7 +1568,7 @@ CONTAINS
 
                       !-------------------------------------------------------------------------------------------------------------
                       !velocity test function, pressure trial function
-                      ELSE IF(mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                      ELSE IF(mh<NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
 
                         SUM = 0.0_DP
 
@@ -1536,7 +1600,7 @@ CONTAINS
 
                       !-------------------------------------------------------------------------------------------------------------
                       !pressure test function, velocity trial function
-                      ELSE IF(mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                      ELSE IF(mh==NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
 
                         SUM = 0.0_DP
 
@@ -1570,7 +1634,7 @@ CONTAINS
 
                       !-------------------------------------------------------------------------------------------------------------
                       !pressure test function, pressure trial function
-                      ELSE IF(mh==nh.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                      ELSE IF(mh==nh.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
 
                         SUM = 0.0_DP
 
@@ -1608,6 +1672,36 @@ CONTAINS
                           & SUM * RWG
 
                       !-------------------------------------------------------------------------------------------------------------
+                      !For the INRIA model, and: mass-increase test function, pressure trial function
+                      ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
+                        & mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+
+                        SUM = 0.0_DP
+
+                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                        PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                        SUM = SUM - PGM * PGN / (Mfact * fJxy)
+
+                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                          & SUM * RWG
+
+                      !-------------------------------------------------------------------------------------------------------------
+                      !For the INRIA model, and: mass-increase test function, mass-increase trial function
+                      ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
+                        & mh==nh.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+                        SUM = 0.0_DP
+
+                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                        PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                        SUM = SUM + PGM * PGN / DARCY_RHO_0_F
+
+                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                          & SUM * RWG
+
+                      !-------------------------------------------------------------------------------------------------------------
                       ELSE
 
                         STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = 0.0_DP
@@ -1619,13 +1713,13 @@ CONTAINS
 ! 
                       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE) THEN
                         IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                          IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                          IF(mh==nh.AND.mh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN 
                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                             PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                             !
                             SUM=0.0_DP 
                             !Calculate SUM 
-                            SUM=PGM*PGN*RHO_PARAM
+                            SUM=PGM*PGN*DARCY_RHO_0_F
                             !Calculate MATRIX
                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                               & SUM * RWG
@@ -1633,15 +1727,13 @@ CONTAINS
                         END IF
                       ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) THEN
                         IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                          IF(mh==nh.AND.mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                          IF(mh==NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                             PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                             !
                             SUM=0.0_DP 
                             !Calculate SUM 
-                            !Mfact = 2.18E05
-                            !ffact = 1.0_DP
-                            !SUM = PGM * PGN / (detJ * Mfact * ffact)
+                            SUM = PGM * PGN / (Jxy * DARCY_RHO_0_F)
                             !Calculate MATRIX
                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                               & SUM * RWG
@@ -1658,7 +1750,7 @@ CONTAINS
 
                   !-----------------------------------------------------------------------------------------------------------------
                   !velocity test function
-                  IF( mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS ) THEN
+                  IF( mh<NUMBER_OF_VEL_PRESS_COMPONENTS ) THEN
 
                     SUM = 0.0_DP
 
@@ -1681,7 +1773,7 @@ CONTAINS
 
                   !-----------------------------------------------------------------------------------------------------------------
                   !pressure test function
-                  ELSE IF( mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS ) THEN
+                  ELSE IF( mh==NUMBER_OF_VEL_PRESS_COMPONENTS ) THEN
 
                     SUM = 0.0_DP
 
@@ -1840,6 +1932,21 @@ CONTAINS
 !                     END IF
 
                     SUM = SUM + PGM * SOURCE
+
+                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+
+                  !-------------------------------------------------------------------------------------------------------------
+                  !For the INRIA model, and: mass-increase test function
+                  ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
+                    & mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+                    SUM = 0.0_DP
+
+                    PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+                    SUM = SUM - PGM * bfact * (1.0_DP - Jxy)
+
+                    SUM = SUM - PGM * p0fact / (Mfact * fJxy)
 
                     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
 
@@ -2947,6 +3054,9 @@ CONTAINS
                           DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                           IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                            write(*,*)'======================================================='
+                            write(*,*)'***           Storing reference data                ***'
+                            write(*,*)'======================================================='
                             !--- Store the initial (= reference) GEOMETRY field values
                             ALPHA = 1.0_DP
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -3089,6 +3199,9 @@ CONTAINS
                           & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                           IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                            write(*,*)'-------------------------------------------------------'
+                            write(*,*)'+++            Storing previous data                +++'
+                            write(*,*)'-------------------------------------------------------'
                             !--- Store the GEOMETRY field values of the previous time step
                             ALPHA = 1.0_DP
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -5195,12 +5308,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
   !
   !================================================================================================================================
   !
-
-
-
-
-
-
 
 
 END MODULE DARCY_EQUATIONS_ROUTINES

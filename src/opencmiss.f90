@@ -762,6 +762,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionInletWall = BOUNDARY_CONDITION_FIXED_INLET
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionOutletWall = BOUNDARY_CONDITION_FIXED_OUTLET
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWall = BOUNDARY_CONDITION_MOVED_WALL
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWallIncremented = BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFreeWall = BOUNDARY_CONDITION_FREE_WALL
 
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannPoint = BOUNDARY_CONDITION_NEUMANN_POINT
@@ -848,7 +849,7 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditionFree,CMISSBoundaryConditionFixed,CMISSBoundaryConditionMixed
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
-    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall
+    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall,CMISSBoundaryConditionMovedWallIncremented
 
   PUBLIC CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionNeumannIntegrated,CMISSBoundaryConditionDirichlet
   PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented
@@ -1987,6 +1988,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & EQUATIONS_SET_GENERALISED_GALERKIN_PROJECTION_SUBTYPE !<Generalised Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = &
     & EQUATIONS_SET_MAT_PROPERTIES_GALERKIN_PROJECTION_SUBTYPE !<Material Properties Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype = &
+    & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_GALERKIN_PROJ_SUBTYPE !<Material Properties INRIA Model Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = &
@@ -2169,7 +2172,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetPGMStokesSubtype, &
     & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype, &
     & CMISSEquationsSetStandardGalerkinProjectionSubtype,CMISSEquationsSetGeneralisedGalerkinProjectionSubtype, &
-    & CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype,CMISSEquationsSetPGMNavierStokesSubtype, &
+    & CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype,CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype, &
+    & CMISSEquationsSetPGMNavierStokesSubtype, &
     & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype
 
   PUBLIC CMISSEquationsSetFEMSolutionMethod,CMISSEquationsSetBEMSolutionMethod,CMISSEquationsSetFDSolutionMethod, &
