@@ -1496,22 +1496,12 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
 
-  !>Contains the user set values for the Neumann boundary conditions
-  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
+  !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
+  TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
     INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
     REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
     INTEGER(INTG), ALLOCATABLE :: SET_DOF_CONDITIONS(:) !<Array of user-set conditions of DOFs on boundary
     REAL(DP), ALLOCATABLE :: SET_DOF_VALUES_PREV(:) !<Array of user-set values of DOFs on boundary from previous time step
-  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
-
-  !>A buffer type to allow for an array of pointers to BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
-  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
-    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE), POINTER :: PTR !<A pointer to the Neumann boundary conditions values type
-  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
-
-  !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
-  TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
-    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE), ALLOCATABLE :: NEUMANN_BOUNDARY_IDENTIFIER(:) !<Array of identifiers for user set Neumann boundaries
     INTEGER(INTG), ALLOCATABLE :: FACES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per face, indexed by face and element_parameter, returns local_ny (dof) number. 
     REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:) !<Array for results from face basis calculation for an individual face
     INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
@@ -1536,14 +1526,12 @@ MODULE TYPES
     INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
   END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
 
- 
   !
   !================================================================================================================================
   !
   ! Equations set types
   !
 
- 
   !>Contains information on the setup information for an equations set
   TYPE EQUATIONS_SET_SETUP_TYPE
     INTEGER(INTG) :: SETUP_TYPE !<The setup type for the equations set setup \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS

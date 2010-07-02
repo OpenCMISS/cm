@@ -8919,7 +8919,7 @@ CONTAINS
       & equations_row_number,equations_row_number2,equations_set_idx,LINEAR_VARIABLE_TYPE,rhs_boundary_condition, &
       & residual_variable_type,rhs_global_dof,rhs_variable_dof,rhs_variable_type,variable_boundary_condition,solver_matrix_idx, &
       & solver_row_idx,solver_row_number,variable_dof,variable_global_dof,variable_idx,variable_type,&
-      & j,dirichlet_idx,dirichlet_row,NUMBER_OF_NEUMANN_ROWS,rhs_dof
+      & j,dirichlet_idx,dirichlet_row,NUMBER_OF_NEUMANN_ROWS,rhs_dof,component_idx
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DEPENDENT_VALUE,LINEAR_VALUE,LINEAR_VALUE_SUM,MATRIX_VALUE,RESIDUAL_VALUE,RHS_VALUE,row_coupling_coefficient, &
       & SOURCE_VALUE,VALUE,INTEGRATED_VALUE
@@ -8947,7 +8947,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,LINEAR_VARIABLE,RESIDUAL_VARIABLE,RHS_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,LINEAR_VARIABLE,RESIDUAL_VARIABLE,RHS_VARIABLE,FIELD_VARIABLE
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -9129,7 +9129,7 @@ CONTAINS
 
 
 !-----------------------------------------------------------------------------------------------------------------------
-!Routine to assemble integrated flux values - section below to be moved to BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE
+!Routine to assemble integrated flux values - section below to be moved to separate routine
 
                                       !Count the number of Neumann conditions set
                                       NUMBER_OF_NEUMANN_ROWS=0
@@ -9146,34 +9146,38 @@ CONTAINS
                                       !Calculate the Neumann integrated flux boundary conditions
                                       IF(NUMBER_OF_NEUMANN_ROWS>0) THEN
 
-!Add loop here over components
+                                        FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(RHS_VARIABLE_TYPE)%PTR
+                                        IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                          !Iterate over components u,v,w,p
+                                          DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
 
-                                        CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
-                                          & RHS_VARIABLE_TYPE,ERR,ERROR,*999)
+                                            CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
+                                              & RHS_VARIABLE_TYPE,component_idx,ERR,ERROR,*999)
+  
+                                            !Locate calculated value at dof
+                                            INTEGRATED_VALUE=0.0_DP
+                                            DO j=1,RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
+                                              & %INTEGRATED_VALUES_VECTOR_SIZE
 
-                                        !Locate calculated value at dof
-                                        INTEGRATED_VALUE=0.0_DP
-                                        DO j=1,RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS &
-                                          & %INTEGRATED_VALUES_VECTOR_SIZE
+                                              INTEGRATED_VALUE=RHS_BOUNDARY_CONDITIONS &
+                                                & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR(j)
+                                              rhs_dof=RHS_BOUNDARY_CONDITIONS &
+                                                & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR_MAPPING(j)
 
-                                          INTEGRATED_VALUE=RHS_BOUNDARY_CONDITIONS &
-                                            & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR(j)
-                                          rhs_dof=RHS_BOUNDARY_CONDITIONS &
-                                            & %NEUMANN_BOUNDARY_CONDITIONS%INTEGRATED_VALUES_VECTOR_MAPPING(j)
+                                              !Note: check whether MAPPING dofs are local or global
 
-                                          !Note: check whether MAPPING dofs are local or global
+                                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+                                                & rhs_variable_type,FIELD_VALUES_SET_TYPE, &
+                                                & rhs_dof,INTEGRATED_VALUE,ERR,ERROR,*999)
+                                            ENDDO !j
 
-                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
-                                            & rhs_variable_type,FIELD_VALUES_SET_TYPE, &
-                                            & rhs_dof,INTEGRATED_VALUE,ERR,ERROR,*999)
-                                        ENDDO !j
-
-                                        DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                          & INTEGRATED_VALUES_VECTOR_MAPPING)
-                                        DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
-                                          & INTEGRATED_VALUES_VECTOR)
+                                            DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
+                                              & INTEGRATED_VALUES_VECTOR_MAPPING)
+                                            DEALLOCATE(RHS_BOUNDARY_CONDITIONS%NEUMANN_BOUNDARY_CONDITIONS% &
+                                              & INTEGRATED_VALUES_VECTOR)
+                                          ENDDO !component_idx
+                                        ENDIF
                                       ENDIF
-
 !-------------------------------------------------------------------------------------------------------------------------
 
 
