@@ -3182,7 +3182,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSGeneratedMeshCreateFinish,CMISSGeneratedMeshCreateStart
 
-  PUBLIC CMISSGeneratedMeshDestroy
+  PUBLIC CMISSGeneratedMeshDestroy, CMISSGeneratedMeshLogicalSet
 
   PUBLIC CMISSGeneratedMeshExtentGet,CMISSGeneratedMeshExtentSet
 
@@ -27201,6 +27201,31 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSGeneratedMeshDestroyObj
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Set the possibility to have mode than one mesh component for generated meshes. 
+  SUBROUTINE CMISSGeneratedMeshLogicalSet(GeneratedMesh,AppendLinearComponent,Err)
+  
+    !Argument variables
+    TYPE(CMISSGeneratedMeshType), INTENT(IN) :: GeneratedMesh !<The generated mesh to set the extent for.
+     LOGICAL, INTENT(IN) :: AppendLinearComponent !<Logical variable that turns on two mesh components
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS(" CMISSGeneratedMeshLogicalSet",Err,ERROR,*999)
+ 
+    CALL GENERATED_MESH_LOGICAL_SET(GeneratedMesh%GENERATED_MESH,AppendLinearComponent,Err,ERROR,*999)
+
+    CALL EXITS("CMISSGeneratedMeshLogicalSet")
+    RETURN
+999 CALL ERRORS("CMISSGeneratedMeshLogicalSet",Err,ERROR)
+    CALL EXITS("CMISSGeneratedMeshLogicalSet")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE  CMISSGeneratedMeshLogicalSet
 
   !  
   !================================================================================================================================
