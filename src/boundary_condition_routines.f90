@@ -2241,7 +2241,6 @@ CONTAINS
                                                                                & SET_DOF_INTEGRATED_VALUES(nd)
 
                                     global_ny=BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING(j)
-                                    !BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN_INTEGRATED
                                   ENDIF
                                 ENDDO !nd
                               ENDDO !j
@@ -2697,7 +2696,6 @@ CONTAINS
                                                                                  & SET_DOF_INTEGRATED_VALUES(nd)
 
                                     global_ny=BOUNDARY_CONDITIONS_NEUMANN%INTEGRATED_VALUES_VECTOR_MAPPING(j)
-                                    !BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_ny)=BOUNDARY_CONDITION_NEUMANN_INTEGRATED
                                   ENDIF
                                 ENDDO !nd
                               ENDDO !j
