@@ -27210,7 +27210,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSGeneratedMeshType), INTENT(IN) :: GeneratedMesh !<The generated mesh to set the extent for.
-     LOGICAL, INTENT(IN) :: AppendLinearComponent !<Logical variable that turns on two mesh components
+    LOGICAL, INTENT(IN) :: AppendLinearComponent !<Logical variable that turns on two mesh components
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
