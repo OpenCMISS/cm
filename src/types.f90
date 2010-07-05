@@ -420,18 +420,19 @@ MODULE TYPES
     INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the cylinder mesh.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in radial, circumferential and axial directions
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
-  END TYPE GENERATED_MESH_CYLINDER_TYPE
+ END TYPE GENERATED_MESH_CYLINDER_TYPE
  
   !>Contains information of a generated ellipsoid mesh
   !>Allows only a 3D ellipsoid mesh
-  TYPE GENERATED_MESH_ELLIPSOID_TYPE
+ TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh.
     REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (centre) of lower face of ellipsoid mesh.
     REAL(DP), ALLOCATABLE :: ELLIPSOID_EXTENT(:) !<ELLIPSOID_EXTENT(nj). The size of long axis, short axis, wall thickness and cut off angle of ellipsoid.
     INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the ellipsoid mesh.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in circumferential, longitudinal and transmural directions
-    TYPE(BASIS_TYPE), POINTER :: BASIS, BASIS2 !<The pointer to the basis used in the ellipsoid mesh
-  END TYPE GENERATED_MESH_ELLIPSOID_TYPE
+    TYPE(BASIS_TYPE), POINTER :: BASIS1, BASIS2, BASIS3, BASIS4 !<The pointer to the basis used in the ellipsoid mesh
+    LOGICAL :: APPEND_LINEAR_COMPONENT=.FALSE. !<True when two mesh component are needed 
+END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
   !>Contains information on a generated mesh. \see OPENCMISS::CMISSGeneratedMeshType
   TYPE GENERATED_MESH_TYPE
