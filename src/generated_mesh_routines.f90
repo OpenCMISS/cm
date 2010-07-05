@@ -129,7 +129,7 @@ MODULE GENERATED_MESH_ROUTINES
 
   PUBLIC GENERATED_MESH_CREATE_START,GENERATED_MESH_CREATE_FINISH
 
-  PUBLIC GENERATED_MESH_DESTROY
+  PUBLIC GENERATED_MESH_DESTROY, GENERATED_MESH_LOGICAL_SET
   
   PUBLIC GENERATED_MESH_BASIS_SET,GENERATED_MESH_EXTENT_SET,GENERATED_MESH_NUMBER_OF_ELEMENTS_SET,GENERATED_MESH_ORIGIN_SET, &
     & GENERATED_MESH_TYPE_SET, GENERATED_MESH_GEOMETRIC_PARAMETERS_CALCULATE
@@ -180,7 +180,7 @@ CONTAINS
              ENDIF
           CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
              IF(ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH)) THEN
-                BASIS=>GENERATED_MESH%ELLIPSOID_MESH%BASIS
+                BASIS=>GENERATED_MESH%ELLIPSOID_MESH%BASIS1
              ELSE
                 CALL FLAG_ERROR("Generated mesh ellipsoid mesh is not associated.",ERR,ERROR,*999)
              ENDIF
@@ -269,10 +269,14 @@ CONTAINS
                 ENDIF
              CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
                 IF(ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH)) THEN 
-                   IF(.NOT.ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH%BASIS)) THEN
-                      GENERATED_MESH%ELLIPSOID_MESH%BASIS=>BASIS!ES(1)%PTR  
-                   ELSE
+                   IF(.NOT.ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH%BASIS1)) THEN
+                      GENERATED_MESH%ELLIPSOID_MESH%BASIS1=>BASIS!ES(1)%PTR  
+                   ELSEIF(.NOT.ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH%BASIS2)) THEN
                       GENERATED_MESH%ELLIPSOID_MESH%BASIS2=>BASIS!ES(2)%PTR 
+                   ELSEIF(.NOT.ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH%BASIS3)) THEN
+                      GENERATED_MESH%ELLIPSOID_MESH%BASIS3=>BASIS 
+                   ELSEIF(.NOT.ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH%BASIS4)) THEN
+                      GENERATED_MESH%ELLIPSOID_MESH%BASIS4=>BASIS 
                    ENDIF
                 ELSE
                    CALL FLAG_ERROR("Ellpsoid generated mesh is not associated.",ERR,ERROR,*999)
@@ -574,7 +578,47 @@ CONTAINS
     RETURN 1   
   END SUBROUTINE GENERATED_MESH_DESTROY
   
+ !
+  !================================================================================================================================
   !
+
+  !>Set the possibility to have mode than one mesh component. \see OPENCMISS::CMISSGeneratedLogicalSet
+  SUBROUTINE GENERATED_MESH_LOGICAL_SET(GENERATED_MESH,APPEND_LINEAR_COMPONENT,ERR,ERROR,*)
+    !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the type of  
+    LOGICAL, INTENT(IN) :: APPEND_LINEAR_COMPONENT !<Logical variable that turns on two mesh components
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("GENERATED_MESH_LOGICAL_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+       IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
+          CALL FLAG_ERROR("Generated mesh has been finished.",ERR,ERROR,*999)
+       ELSE
+          SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+          CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
+             GENERATED_MESH%ELLIPSOID_MESH%APPEND_LINEAR_COMPONENT=APPEND_LINEAR_COMPONENT
+          CASE DEFAULT
+             LOCAL_ERROR="Multiple mesh components are not imlemented for " &
+                  & //TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))//"."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+       ENDIF
+    ELSE
+       CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("GENERATED_MESH_LOGICAL_SET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_LOGICAL_SET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_LOGICAL_SET")
+    RETURN 1   
+  END SUBROUTINE GENERATED_MESH_LOGICAL_SET
+
+
+    !
   !================================================================================================================================
   !
 
@@ -1268,16 +1312,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH
-    TYPE(BASIS_TYPE), POINTER :: BASIS,BASIS2
+    TYPE(BASIS_TYPE), POINTER :: BASIS1,BASIS2
     INTEGER(INTG), ALLOCATABLE :: NUMBER_ELEMENTS_XI(:)!,NUMBER_OF_NODES_XI(:)
     TYPE(REGION_TYPE), POINTER :: REGION 
     TYPE(NODES_TYPE), POINTER :: NODES
     INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_DIMENSIONS
-    INTEGER(INTG) :: ne1,ne2,ne3,nn1,nn2,nn3,from1,from2,from3,nn,ne
+    INTEGER(INTG) :: ne1,ne2,ne3,nn1,nn2,nn3,from1,from2,from3,nn,ne,mc,components,i_dx
     INTEGER(INTG), ALLOCATABLE :: APEX_ELEMENT_NODES(:), WALL_ELEMENT_NODES(:)
-    INTEGER(INTG), ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
+    INTEGER(INTG), ALLOCATABLE :: NIDX(:,:,:),CORNER_NODES(:,:,:),EIDX(:,:,:),SAVED_CORNER_NODES(:,:,:)
     REAL(DP) :: DELTA(3),DELTAi(3)
-    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS, LINEAR_ELEMENTS
+    LOGICAL :: APPEND_LINEAR_COMPONENT
 
     CALL ENTERS("GENERATED_MESH_ELLIPSOID_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -1302,130 +1347,179 @@ CONTAINS
                       ENDIF
                       IF(SIZE(ELLIPSOID_MESH%ORIGIN)==ELLIPSOID_MESH%MESH_DIMENSION) THEN
                          IF(SIZE(ELLIPSOID_MESH%ELLIPSOID_EXTENT)==4) THEN
-                            IF(ASSOCIATED(ELLIPSOID_MESH%BASIS).AND.ASSOCIATED(ELLIPSOID_MESH%BASIS2)) THEN
-                               IF((ELLIPSOID_MESH%BASIS%NUMBER_OF_COLLAPSED_XI==0).AND. &
-                                    & (ELLIPSOID_MESH%BASIS2%NUMBER_OF_COLLAPSED_XI>0))THEN
-                                  !test for collapsed nodes and force non collapsed to wall elements and collapsed to apex elements 
-                                   BASIS=>ELLIPSOID_MESH%BASIS
-                                   BASIS2=>ELLIPSOID_MESH%BASIS2
-                                ELSE
-                                  CALL FLAG_ERROR("One non collapsed (basis) and one collapsed basis (basis2) is needed." &
-                                       &,ERR,ERROR,*999) 
+                            IF(ASSOCIATED(ELLIPSOID_MESH%BASIS1).AND.ASSOCIATED(ELLIPSOID_MESH%BASIS2)) THEN
+                               APPEND_LINEAR_COMPONENT=ELLIPSOID_MESH%APPEND_LINEAR_COMPONENT
+                               IF (APPEND_LINEAR_COMPONENT.EQV..FALSE.) THEN
+                                  components=1
+                               ELSE
+                                  components=2
+                                !  CALL MESH_NUMBER_OF_COMPONENTS_SET(GENERATED_MESH%MESH,component,ERR,ERROR,*999)
                                ENDIF
-                               ALLOCATE(NUMBER_ELEMENTS_XI(SIZE(ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI)),STAT=ERR)
-                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
-                               NUMBER_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
-                               SELECT CASE(BASIS%TYPE)
-                                  !should also test for basis2
-                               CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
-                                  IF(BASIS%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1).AND. &
-                                       & BASIS2%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1)) THEN
-                                     IF(.NOT.ALL(NUMBER_ELEMENTS_XI>0)) &
-                                          & CALL FLAG_ERROR("Must have 1 or more elements in all directions.",ERR,ERROR,*999)
-                                     IF(NUMBER_ELEMENTS_XI(2)<3) & 
-                                          & CALL FLAG_ERROR("Need >2 elements around the circumferential direction.",ERR,ERROR,*999)
-                                     !IF(.NOT.ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED))  &
-                                     !     & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented.",ERR,ERROR,*999)
-                                     !Calculate nodes and element sizes
-                                     CALL GENERATED_MESH_ELLIPSOID_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,BASIS%NUMBER_OF_NODES_XI, &
-                                          & ELLIPSOID_MESH%ELLIPSOID_EXTENT, TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS, &
-                                          & NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*999)
-                                     !Create the default node set
-                                     !TODO we finish create after the nodes are initialised?
-                                     NULLIFY(NODES)
-                                     CALL NODES_CREATE_START(REGION,TOTAL_NUMBER_OF_NODES,NODES,ERR,ERROR,*999)
-                                     !Finish the nodes creation
-                                     CALL NODES_CREATE_FINISH(NODES,ERR,ERROR,*999)
-                                     !Create the mesh
-                                     CALL MESH_CREATE_START(MESH_USER_NUMBER,GENERATED_MESH%REGION,SIZE(NUMBER_ELEMENTS_XI,1), &
-                                          & GENERATED_MESH%MESH,ERR,ERROR,*999)   
-                                     !Create the elements
-                                     CALL MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH%MESH,TOTAL_NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
-                                     NULLIFY(MESH_ELEMENTS)
-                                     CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,1,BASIS,MESH_ELEMENTS, &
-                                          ERR, ERROR,*999) 
-                                     !Set the elements for the ellipsoid mesh
-                                     ALLOCATE(WALL_ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
-                                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate wall element nodes.",ERR,ERROR,*999)
-                                      ALLOCATE(APEX_ELEMENT_NODES(BASIS2%NUMBER_OF_NODES),STAT=ERR)
-                                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate apex element nodes.",ERR,ERROR,*999) 
-                                     ! calculate element topology (nodes per each element)
-                                     ! the idea is to translate given (r,theta,z) to NIDX equivalents, which include interior nodes
-                                     ne=0
-                                     nn=0
-                                     !fromJ=global J direction counting number of first node in element in J direction  
-                                     DO ne3=1,NUMBER_ELEMENTS_XI(3)
-                                        from3=NINT(DELTA(3)*(ne3-1)/DELTAi(3)+1)
-                                        ne2=1
-                                        from2=NINT(DELTA(2)*(ne2-1)/DELTAi(2)+1) 
-                                        !apex elements
-                                        DO ne1=1,NUMBER_ELEMENTS_XI(1)
-                                           from1=NINT(DELTA(1)*(ne1-1)/DELTAi(1)+1)
-                                           nn=0
-                                           nn2=1
-                                           nn1=1
-                                           DO nn3=from3,from3+BASIS%NUMBER_OF_NODES_XI(3)-1
-                                              !central axis nodes
-                                              nn=nn+1
-                                              APEX_ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
-                                           ENDDO
-                                           ! number of nodes in an element is dependent on basis used
-                                           DO nn3=from3,from3+BASIS%NUMBER_OF_NODES_XI(3)-1
-                                              DO nn2=from2+1,from2+BASIS%NUMBER_OF_NODES_XI(2)-1
-                                                 DO nn1=from1,from1+BASIS%NUMBER_OF_NODES_XI(1)-1
-                                                    nn=nn+1
-                                                    ! circumferential loop-around
-                                                    IF(nn1>SIZE(NIDX,1)) THEN
-                                                       APEX_ELEMENT_NODES(nn)=NIDX(1,nn2,nn3)
-                                                    ELSE
-                                                       APEX_ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
-                                                    ENDIF
-                                                 ENDDO ! nn1
-                                              ENDDO ! nn2
-                                           ENDDO ! nn3
-                                           ne=ne+1
-                                           CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(ne,MESH_ELEMENTS,BASIS2,ERR,ERROR,*999)
-                                           CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS, &
-                                                APEX_ELEMENT_NODES,ERR,ERROR,*999)
-                                        ENDDO ! ne1
-                                        !wall elements
-                                        DO ne2=2,NUMBER_ELEMENTS_XI(2)
-                                           from2=NINT(DELTA(2)*(ne2-1)/DELTAi(2)+1)
+                               DO mc=1,components
+                                  IF (mc==1) THEN                                 
+                                     IF((ELLIPSOID_MESH%BASIS1%NUMBER_OF_COLLAPSED_XI==0).AND. &
+                                          & (ELLIPSOID_MESH%BASIS2%NUMBER_OF_COLLAPSED_XI>0))THEN
+                                        !test for collapsed nodes and force non collapsed to wall elements and collapsed to apex elements 
+                                        BASIS1=>ELLIPSOID_MESH%BASIS1
+                                        BASIS2=>ELLIPSOID_MESH%BASIS2
+                                     ELSE
+                                        CALL FLAG_ERROR("One non collapsed (basis) and one collapsed basis (basis2) is needed." &
+                                             &,ERR,ERROR,*999) 
+                                     ENDIF
+                                  ELSEIF (mc==2) THEN
+                                     DO i_dx=1,3
+                                        IF((ELLIPSOID_MESH%BASIS3%INTERPOLATION_XI(i_dx)==1).AND. &
+                                             & (ELLIPSOID_MESH%BASIS4%INTERPOLATION_XI(i_dx)==1))THEN
+                                        ELSE
+                                           CALL FLAG_ERROR("Only implemented for linear additional basis functions." &
+                                                &,ERR,ERROR,*999) 
+                                        ENDIF
+                                     ENDDO
+                                     IF((ELLIPSOID_MESH%BASIS1%NUMBER_OF_COLLAPSED_XI==0).AND. &
+                                          & (ELLIPSOID_MESH%BASIS2%NUMBER_OF_COLLAPSED_XI>0))THEN
+                                        !test for collapsed nodes and force non collapsed to wall elements and collapsed to apex elements 
+                                        BASIS1=>ELLIPSOID_MESH%BASIS3
+                                        BASIS2=>ELLIPSOID_MESH%BASIS4
+                                     ELSE
+                                        CALL FLAG_ERROR("One non collapsed (basis) and one collapsed basis (basis2) is needed." &
+                                             &,ERR,ERROR,*999) 
+                                     ENDIF
+                                  ELSE 
+                                     CALL FLAG_ERROR("Only implemeted for one or two mesh components." &
+                                          &,ERR,ERROR,*999)
+                                  ENDIF
+                                  IF(.NOT.ALLOCATED(NUMBER_ELEMENTS_XI)) THEN
+                                     ALLOCATE(NUMBER_ELEMENTS_XI(SIZE(ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI)),STAT=ERR)
+                                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
+                                  ENDIF
+                                     NUMBER_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
+                                  SELECT CASE(BASIS1%TYPE)
+                                     !should also test for basis2
+                                  CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)            
+                                     IF(BASIS1%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1).AND. &
+                                          & BASIS2%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1)) THEN
+                                        IF(.NOT.ALL(NUMBER_ELEMENTS_XI>0)) &
+                                             & CALL FLAG_ERROR("Must have 1 or more elements in all directions.",ERR,ERROR,*999)
+                                        IF(NUMBER_ELEMENTS_XI(1)<3) & 
+                                             & CALL FLAG_ERROR("Need >2 elements around the circumferential direction.", &
+                                             & ERR,ERROR,*999)
+                                        !IF(.NOT.ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED))  &
+                                        !     & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented.",ERR,ERROR,*999)
+                                        !Calculate nodes and element sizes
+                                        CALL GENERATED_MESH_ELLIPSOID_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,BASIS1% & 
+                                             NUMBER_OF_NODES_XI, ELLIPSOID_MESH%ELLIPSOID_EXTENT, TOTAL_NUMBER_OF_NODES, &
+                                             TOTAL_NUMBER_OF_ELEMENTS, NIDX,CORNER_NODES,EIDX,DELTA,DELTAi,ERR,ERROR,*999)
+                                        IF (mc==1) THEN
+                                           ALLOCATE(SAVED_CORNER_NODES(NUMBER_ELEMENTS_XI(1),NUMBER_ELEMENTS_XI(2)+1, &
+                                                & NUMBER_ELEMENTS_XI(3)+1),STAT=ERR)
+                                           IF(ERR/=0) CALL FLAG_ERROR("Couldn't allocate SAVED_CORNER_NODES array.",ERR,ERROR,*999)
+                                           SAVED_CORNER_NODES=CORNER_NODES
+                                        ELSE 
+                                           NIDX=SAVED_CORNER_NODES
+                                        ENDIF
+
+                                        !Create the default node set
+                                        !TODO we finish create after the nodes are initialised?
+                                        
+                                        IF (mc==1) THEN
+                                           NULLIFY(NODES)
+                                           CALL NODES_CREATE_START(REGION,TOTAL_NUMBER_OF_NODES,NODES,ERR,ERROR,*999)
+                                           !Finish the nodes creation
+                                           CALL NODES_CREATE_FINISH(NODES,ERR,ERROR,*999)
+                                           !Create the mesh
+                                           CALL MESH_CREATE_START(MESH_USER_NUMBER,GENERATED_MESH%REGION, &
+                                                & SIZE(NUMBER_ELEMENTS_XI,1), GENERATED_MESH%MESH,ERR,ERROR,*999)   
+                                           !Create the elements
+                                           CALL MESH_NUMBER_OF_COMPONENTS_SET(GENERATED_MESH%MESH,components,ERR,ERROR,*999)
+                                           CALL MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH%MESH,TOTAL_NUMBER_OF_ELEMENTS, &
+                                                & ERR,ERROR,*999)                                           
+                                        ENDIF
+                                        NULLIFY(MESH_ELEMENTS)
+                                        CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,mc,BASIS1,MESH_ELEMENTS, &
+                                             ERR, ERROR,*999) 
+                                        !Set the elements for the ellipsoid mesh
+                                        IF(ALLOCATED(WALL_ELEMENT_NODES)) DEALLOCATE(WALL_ELEMENT_NODES)
+                                        IF(ALLOCATED(APEX_ELEMENT_NODES)) DEALLOCATE(APEX_ELEMENT_NODES) 
+                                        ALLOCATE(WALL_ELEMENT_NODES(BASIS1%NUMBER_OF_NODES),STAT=ERR)
+                                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate wall element nodes.",ERR,ERROR,*999)
+                                        ALLOCATE(APEX_ELEMENT_NODES(BASIS2%NUMBER_OF_NODES),STAT=ERR)
+                                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate apex element nodes.",ERR,ERROR,*999) 
+                                        ! calculate element topology (nodes per each element)
+                                        ! the idea is to translate given (r,theta,z) to NIDX equivalents, which include interior nodes
+                                        ne=0
+                                        nn=0
+                                        !fromJ=global J direction counting number of first node in element in J direction  
+                                        DO ne3=1,NUMBER_ELEMENTS_XI(3)
+                                           from3=NINT(DELTA(3)*(ne3-1)/DELTAi(3)+1)
+                                           ne2=1
+                                           from2=NINT(DELTA(2)*(ne2-1)/DELTAi(2)+1) 
+                                           !apex elements
                                            DO ne1=1,NUMBER_ELEMENTS_XI(1)
                                               from1=NINT(DELTA(1)*(ne1-1)/DELTAi(1)+1)
                                               nn=0
                                               ! number of nodes in an element is dependent on basis used
-                                              DO nn3=from3,from3+BASIS%NUMBER_OF_NODES_XI(3)-1
-                                                 DO nn2=from2,from2+BASIS%NUMBER_OF_NODES_XI(2)-1
-                                                    DO nn1=from1,from1+BASIS%NUMBER_OF_NODES_XI(1)-1
+                                              DO nn3=from3,from3+BASIS2%NUMBER_OF_NODES_XI(3)-1
+                                                 nn2=1
+                                                 nn1=1
+                                                 !central axis nodes
+                                                 nn=nn+1
+                                                 APEX_ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
+                                                 DO nn2=from2+1,from2+BASIS2%NUMBER_OF_NODES_XI(2)-1
+                                                    DO nn1=from1,from1+BASIS2%NUMBER_OF_NODES_XI(1)-1
                                                        nn=nn+1
                                                        ! circumferential loop-around
                                                        IF(nn1>SIZE(NIDX,1)) THEN
-                                                          WALL_ELEMENT_NODES(nn)=NIDX(1,nn2,nn3)
+                                                          APEX_ELEMENT_NODES(nn)=NIDX(1,nn2,nn3)
                                                        ELSE
-                                                          WALL_ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
+                                                          APEX_ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
                                                        ENDIF
                                                     ENDDO ! nn1
                                                  ENDDO ! nn2
                                               ENDDO ! nn3
                                               ne=ne+1
+                                              CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(ne,MESH_ELEMENTS,BASIS2,ERR,ERROR,*999)
                                               CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS, &
-                                                   & WALL_ELEMENT_NODES,ERR,ERROR,*999)
+                                                   APEX_ELEMENT_NODES,ERR,ERROR,*999)
                                            ENDDO ! ne1
-                                        ENDDO ! ne2
-                                     ENDDO ! ne3
-                                     CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH_ELEMENTS,ERR,ERROR,*999)
-                                     !Finish the mesh
-                                     CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
-                                  ELSE
-                                     CALL FLAG_ERROR("The number of xi directions of the given basis does not match the size of &
-                                          &the number of elements for the mesh.",ERR,ERROR,*999)
-                                  ENDIF
-                               CASE(BASIS_SIMPLEX_TYPE)                  
-                                  CALL FLAG_ERROR("Ellipsoid meshes with simplex basis types is not implemented.",ERR,ERROR,*999)
-                               CASE DEFAULT
-                                  CALL FLAG_ERROR("Basis type is either invalid or not implemented.",ERR,ERROR,*999)
-                               END SELECT
+                                           !wall elements
+                                           DO ne2=2,NUMBER_ELEMENTS_XI(2)
+                                              from2=NINT(DELTA(2)*(ne2-1)/DELTAi(2)+1)
+                                              DO ne1=1,NUMBER_ELEMENTS_XI(1)
+                                                 from1=NINT(DELTA(1)*(ne1-1)/DELTAi(1)+1)
+                                                 nn=0
+                                                 ! number of nodes in an element is dependent on basis used
+                                                 DO nn3=from3,from3+BASIS1%NUMBER_OF_NODES_XI(3)-1
+                                                    DO nn2=from2,from2+BASIS1%NUMBER_OF_NODES_XI(2)-1
+                                                       DO nn1=from1,from1+BASIS1%NUMBER_OF_NODES_XI(1)-1
+                                                          nn=nn+1
+                                                          ! circumferential loop-around
+                                                          IF(nn1>SIZE(NIDX,1)) THEN
+                                                             WALL_ELEMENT_NODES(nn)=NIDX(1,nn2,nn3)
+                                                          ELSE
+                                                             WALL_ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
+                                                          ENDIF
+                                                       ENDDO ! nn1
+                                                    ENDDO ! nn2
+                                                 ENDDO ! nn3
+                                                 ne=ne+1
+                                                 CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS, &
+                                                      & WALL_ELEMENT_NODES,ERR,ERROR,*999)
+                                              ENDDO ! ne1
+                                           ENDDO ! ne2
+                                        ENDDO ! ne3
+                                        CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH_ELEMENTS,ERR,ERROR,*999)
+                                        !Finish the mesh
+                                     ELSE
+                                        CALL FLAG_ERROR("The number of xi directions of the given basis does not match the size of &
+                                             &the number of elements for the mesh.",ERR,ERROR,*999)
+                                     ENDIF
+                                  CASE(BASIS_SIMPLEX_TYPE)                  
+                                     CALL FLAG_ERROR("Ellipsoid meshes with simplex basis types is not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                     CALL FLAG_ERROR("Basis type is either invalid or not implemented.",ERR,ERROR,*999)
+                                  END SELECT
+                               ENDDO
+                               CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
                             ELSE
                                CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
                             ENDIF
@@ -1455,12 +1549,14 @@ CONTAINS
     ELSE
        CALL FLAG_ERROR("Generated Mesh is not associated.",ERR,ERROR,*999)
     ENDIF
-
+    
     CALL EXITS("GENERATED_MESH_ELLIPSOID_CREATE_FINISH")
     RETURN
     ! TODO invalidate other associations
 999 IF(ALLOCATED(NIDX)) DEALLOCATE(NIDX)
-    IF(ALLOCATED(EIDX)) DEALLOCATE(EIDX)
+    IF(ALLOCATED(EIDX)) DEALLOCATE(EIDX) 
+    IF(ALLOCATED(CORNER_NODES)) DEALLOCATE(CORNER_NODES)
+    IF(ALLOCATED(CORNER_NODES)) DEALLOCATE(SAVED_CORNER_NODES)
     IF(ALLOCATED(NUMBER_ELEMENTS_XI)) DEALLOCATE(NUMBER_ELEMENTS_XI)
     IF(ALLOCATED(WALL_ELEMENT_NODES)) DEALLOCATE(WALL_ELEMENT_NODES)
     IF(ALLOCATED(APEX_ELEMENT_NODES)) DEALLOCATE(APEX_ELEMENT_NODES)
@@ -1825,7 +1921,7 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ellipsoid generated mesh.",ERR,ERROR,*999)
         GENERATED_MESH%ELLIPSOID_MESH%GENERATED_MESH=>GENERATED_MESH
         GENERATED_MESH%GENERATED_TYPE=GENERATED_MESH_ELLIPSOID_MESH_TYPE
-        NULLIFY(GENERATED_MESH%ELLIPSOID_MESH%BASIS)
+        NULLIFY(GENERATED_MESH%ELLIPSOID_MESH%BASIS1)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*998)
@@ -2551,7 +2647,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     ! Local variables
-    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(BASIS_TYPE), POINTER :: BASIS1
     TYPE(DOMAIN_TYPE),POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -2561,7 +2657,7 @@ CONTAINS
     INTEGER(INTG) :: component_idx,xi_idx
     INTEGER(INTG) :: np,global_np,ny,i,j,k
     INTEGER(INTG) :: SCALING_TYPE!,NUMBER_OF_PLANAR_NODES
-    INTEGER(INTG), ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
+    INTEGER(INTG), ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:),CORNER_NODES(:,:,:)
     !INTEGER(INTG) :: node_idx(3) ! holds r,theta,z indices
     REAL(DP) :: DELTA(3),DELTAi(3),RECT_COORDS(3),t,phi,alpha,xi,nu,x,y,z
     REAL(DP) :: ELLIPSOID_EXTENT(4)
@@ -2571,10 +2667,10 @@ CONTAINS
     CALL ENTERS("GENERATED_MESH_ELLIPSOID_GEOMETRIC_PARAMETERS_CALCULATE",ERR,ERROR,*999)
     !< Ellipsoid_extent= inner long axis, inner short axis, wall thickness, top angle (from 0)
     ! calculate the total number of nodes in each xi direction
-    IF(ASSOCIATED(ELLIPSOID_MESH%BASIS)) THEN
-       BASIS=>ELLIPSOID_MESH%BASIS
+    IF(ASSOCIATED(ELLIPSOID_MESH%BASIS1)) THEN
+       BASIS1=>ELLIPSOID_MESH%BASIS1
        NUMBER_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
-       NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XI
+       NUMBER_OF_NODES_XI=BASIS1%NUMBER_OF_NODES_XI
        DO xi_idx=1,3
           TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XI(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
        ENDDO
@@ -2611,7 +2707,8 @@ CONTAINS
                 k=1
                 !inner surface
                 alpha=sqrt((ELLIPSOID_EXTENT(1))**2-(ELLIPSOID_EXTENT(2))**2)
-                xi=log(ELLIPSOID_EXTENT(1)/alpha+sqrt((ELLIPSOID_EXTENT(1)/alpha)**2+1))
+                !xi=log(ELLIPSOID_EXTENT(1)/alpha+sqrt((ELLIPSOID_EXTENT(1)/alpha)**2+1))
+                xi=acosh(ELLIPSOID_EXTENT(1)/alpha)
 
                 j=1
                 !apex node
@@ -2833,8 +2930,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     ! Local variables
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
+    TYPE(BASIS_TYPE), POINTER :: BASIS1
+    INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:),CORNER_NODES(:,:,:)
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS_XI(3) !Specified number of elements in each xi direction
     INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
     INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
@@ -2846,15 +2943,15 @@ CONTAINS
     ! let's go
     IF(ALLOCATED(ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI)) THEN
       NUMBER_OF_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
-      IF(ASSOCIATED(ELLIPSOID_MESH%BASIS)) THEN
-        BASIS=>ELLIPSOID_MESH%BASIS
+      IF(ASSOCIATED(ELLIPSOID_MESH%BASIS1)) THEN
+        BASIS1=>ELLIPSOID_MESH%BASIS1
         IF(.NOT.ALLOCATED(ELEMENTS)) THEN
           IF(.NOT.ALLOCATED(NODES)) THEN
-            NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XI
+            NUMBER_OF_NODES_XI=BASIS1%NUMBER_OF_NODES_XI
             ! build indices first (some of these are dummy arguments)
             CALL GENERATED_MESH_ELLIPSOID_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
-              & ellipsoid_mesh%ellipsoid_extent,total_number_of_nodes,total_number_of_elements,NIDX,EIDX, &
-              & delta,deltai,ERR,ERROR,*999)
+              & ellipsoid_mesh%ellipsoid_extent,total_number_of_nodes,total_number_of_elements,NIDX, &
+              CORNER_NODES,EIDX,delta,deltai,ERR,ERROR,*999)
             SELECT CASE(SURFACE_TYPE)
             CASE(GENERATED_MESH_ELLIPSOID_INNER_SURFACE)
               ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
@@ -2992,7 +3089,7 @@ CONTAINS
   !
   !>Calculate the mesh topology information for a given ellipsoid (Not to be called by user)
   SUBROUTINE GENERATED_MESH_ELLIPSOID_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,NUMBER_OF_NODES_XI,ELLIPSOID_EXTENT, &
-    & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*)
+    & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,CORNER_NODES,EIDX,DELTA,DELTAi,ERR,ERROR,*)
     ! Argument variables
     INTEGER(INTG),INTENT(IN) :: NUMBER_ELEMENTS_XI(3) !<Specified number of elements in each xi direction
     INTEGER(INTG),INTENT(IN) :: NUMBER_OF_NODES_XI(3) !<Number of nodes per element in each xi direction (basis property)
@@ -3000,6 +3097,7 @@ CONTAINS
     INTEGER(INTG),INTENT(OUT) :: TOTAL_NUMBER_OF_NODES    !<On exit, contains total number of nodes in ellipsoid mesh
     INTEGER(INTG),INTENT(OUT) :: TOTAL_NUMBER_OF_ELEMENTS !<On exit, contains total number of elements in ellipsoid mesh
     INTEGER(INTG),ALLOCATABLE,INTENT(OUT) :: NIDX(:,:,:)  !<Mapping array to find a node number for a given (r,theta,z)
+    INTEGER(INTG),ALLOCATABLE,INTENT(OUT) :: CORNER_NODES(:,:,:) ! Returns the array of corner nodes numbered
     INTEGER(INTG),ALLOCATABLE,INTENT(OUT) :: EIDX(:,:,:)  !<Mapping array to find an element number for a given (r,theta,z)
     REAL(DP),INTENT(OUT) :: DELTA(3)  !<Step sizes in each of (r,theta,z) for elements
     REAL(DP),INTENT(OUT) :: DELTAi(3) !<Step sizes in each of (r,theta,z) for node (identical to DELTA if 2 nodes per xi direction)
@@ -3007,7 +3105,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: ERROR !<The error string
 
     ! Local variables
-    INTEGER(INTG) :: xi_idx,ne1,ne2,ne3,nn1,nn2,nn3,NN,NE
+    INTEGER(INTG) :: xi_idx,ne1,ne2,ne3,nn1,nn2,nn3,tn1,tn2,tn3,NN,NE
     INTEGER(INTG) :: TOTAL_NUMBER_NODES_XI(3) ! total number of nodes in each xi direction
     
     CALL ENTERS("GENERATED_MESH_ELLIPSOID_BUILD_NODE_INDICES",ERR,ERROR,*999)
@@ -3034,20 +3132,81 @@ CONTAINS
         ! calculate NIDX first
         ALLOCATE(NIDX(TOTAL_NUMBER_NODES_XI(1),TOTAL_NUMBER_NODES_XI(2),TOTAL_NUMBER_NODES_XI(3)),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NIDX array.",ERR,ERROR,*999)
+        ALLOCATE(CORNER_NODES(NUMBER_ELEMENTS_XI(1),NUMBER_ELEMENTS_XI(2)+1,NUMBER_ELEMENTS_XI(3)+1),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NIDX array.",ERR,ERROR,*999)
+
+        !nn: node number inside element in certain direction
+        !ne: element number in certain direction
+        !tn: global node number in certain direction
+        !NN: Node counter
+        !Due to one more corner node than elements in transmural direction, first shell is taken separatly
         NN=0
-        DO nn3=1,TOTAL_NUMBER_NODES_XI(3)
-           nn2=1
-           nn1=1
-           NN=NN+1
-           NIDX(nn1,nn2,nn3)=NN
-           DO nn2=2,TOTAL_NUMBER_NODES_XI(2)
-            DO nn1=1,TOTAL_NUMBER_NODES_XI(1)
+        ne3=1 
+        nn3=1
+        !Due to one more corner node than elements in longitudinal direction, apex elements are taken separatly
+        ne2=1
+        nn2=1
+        ne1=1
+        nn1=1
+        !apex nodes
+        NN=NN+1
+        tn3=1
+        tn2=1
+        tn1=1
+        NIDX(tn1,tn2,tn3)=NN
+        CORNER_NODES(ne1,ne2,ne3)=NN
+        DO ne2=1,NUMBER_ELEMENTS_XI(2)
+           DO nn2=2,(NUMBER_OF_NODES_XI(2))
+              tn2=tn2+1
+              tn1=0
+              DO ne1=1,NUMBER_ELEMENTS_XI(1)
+                 DO nn1=1,(NUMBER_OF_NODES_XI(1)-1) 
+                    tn1=tn1+1 
+                    NN=NN+1
+                    NIDX(tn1,tn2,tn3)=NN 
+                    IF ((nn1==1).AND.(nn2==NUMBER_OF_NODES_XI(2))) THEN
+                       CORNER_NODES(ne1,ne2+1,ne3)=NN
+                    ENDIF
+                 ENDDO
+              ENDDO
+           ENDDO
+        ENDDO
+        DO ne3=1,NUMBER_ELEMENTS_XI(3)
+           DO nn3=2,NUMBER_OF_NODES_XI(3)
+              ne2=1
+              nn2=1
+              ne1=1
+              nn1=1
+              !apex nodes
               NN=NN+1
-              NIDX(nn1,nn2,nn3)=NN
-            ENDDO ! nn1
-          ENDDO ! nn2
-        ENDDO ! nn3
+              tn3=tn3+1
+              tn2=1
+              tn1=1
+              NIDX(tn1,tn2,tn3)=NN
+              IF (nn3==NUMBER_OF_NODES_XI(3)) THEN
+                 CORNER_NODES(ne1,ne2,ne3+1)=NN
+              ENDIF
+              DO ne2=1,NUMBER_ELEMENTS_XI(2)
+                 DO nn2=2,(NUMBER_OF_NODES_XI(2))
+                    tn2=tn2+1
+                    tn1=0
+                    DO ne1=1,NUMBER_ELEMENTS_XI(1)
+                       DO nn1=1,(NUMBER_OF_NODES_XI(1)-1) 
+                          tn1=tn1+1 
+                          NN=NN+1
+                          NIDX(tn1,tn2,tn3)=NN 
+                          IF ((nn1==1).AND.(nn3==NUMBER_OF_NODES_XI(3)).AND.(nn2==NUMBER_OF_NODES_XI(2))) THEN
+                             CORNER_NODES(ne1,ne2+1,ne3+1)=NN
+                          ENDIF
+                       ENDDO
+                    ENDDO
+                 ENDDO
+              ENDDO
+           ENDDO
+        ENDDO
         TOTAL_NUMBER_OF_NODES=NN
+
+ 
 
         ! now do EIDX
         ALLOCATE(EIDX(NUMBER_ELEMENTS_XI(1),NUMBER_ELEMENTS_XI(2),NUMBER_ELEMENTS_XI(3)),STAT=ERR)
@@ -3063,6 +3222,7 @@ CONTAINS
         ENDDO
         TOTAL_NUMBER_OF_ELEMENTS=NE
       
+        
       ELSE
         CALL FLAG_ERROR("NIDX array is already allocated.",ERR,ERROR,*999)
       ENDIF
