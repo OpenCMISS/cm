@@ -1925,6 +1925,14 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceDiffusionSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_SUBTYPE !<Quadratic source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionSubtype = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_SUBTYPE !<Exponential source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEDiffusionSubtype = EQUATIONS_SET_NO_SOURCE_ALE_DIFFUSION_SUBTYPE !<No source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceALEDiffusionSubtype = &
+    & EQUATIONS_SET_CONSTANT_SOURCE_ALE_DIFFUSION_SUBTYPE !<Constant source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceALEDiffusionSubtype = EQUATIONS_SET_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Linear source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceALEDiffusionSubtype = &
+    & EQUATIONS_SET_QUADRATIC_SOURCE_ALE_DIFFUSION_SUBTYPE !<Quadratic source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceALEDiffusionSubtype = &
+    & EQUATIONS_SET_EXPONENTIAL_SOURCE_ALE_DIFFUSION_SUBTYPE !<Exponential source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportDiffusionSubtype = &
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE !<Multi-compartment transport diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
@@ -1938,6 +1946,17 @@ MODULE OPENCMISS
     & EQUATIONS_SET_QUADRATIC_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEAdvectionDiffusionSubtype = & 
+    & EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceALEAdvectionDiffusionSubtype = &
+    & EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceALEAdvectionDiffusionSubtype = &
+    & EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceALEAdvectionDiffusionSubtype = &
+    & EQUATIONS_SET_QUADRATIC_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceALEAdvectionDiffusionSubtype = &
+    & EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
 INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = & 
     & EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2149,9 +2168,15 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
     & CMISSEquationsSetLinearSourceDiffusionSubtype,CMISSEquationsSetQuadraticSourceDiffusionSubtype, &
     & CMISSEquationsSetExponentialSourceDiffusionSubtype,CMISSEquationsSetMultiCompTransportDiffusionSubtype, &
+    & CMISSEquationsSetNoSourceALEDiffusionSubtype,CMISSEquationsSetConstantSourceALEDiffusionSubtype, &
+    & CMISSEquationsSetLinearSourceALEDiffusionSubtype,CMISSEquationsSetQuadraticSourceALEDiffusionSubtype, &
+    & CMISSEquationsSetExponentialSourceALEDiffusionSubtype, &
     & CMISSEquationsSetNoSourceAdvectionDiffusionSubtype, &
     & CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype,CMISSEquationsSetLinearSourceAdvectionDiffusionSubtype, &
     & CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype,CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype, &
+    & CMISSEquationsSetNoSourceALEAdvectionDiffusionSubtype, &
+    & CMISSEquationsSetConstantSourceALEAdvectionDiffusionSubtype,CMISSEquationsSetLinearSourceALEAdvectionDiffusionSubtype, &
+    & CMISSEquationsSetQuadraticSourceALEAdvectionDiffusionSubtype,CMISSEquationsSetExpSourceALEAdvectionDiffusionSubtype, &
     & CMISSEquationsSetNoSourceStaticAdvecDiffSubtype, CMISSEquationsSetConstantSourceStaticAdvecDiffSubtype, &
     & CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype, &
     & CMISSEquationsSetNoSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype, &
@@ -3908,11 +3933,22 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceDiffusionSubtype = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceDiffusionSubtype = PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE !<Linear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceDiffusionSubtype = PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE !<Nonlinear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceAdvectionDiffusionSubtype = PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceALEDiffusionSubtype = PROBLEM_NO_SOURCE_ALE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceALEDiffusionSubtype = PROBLEM_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Linear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceALEDiffusionSubtype = &
+    & PROBLEM_NONLINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Nonlinear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceAdvectionDiffusionSubtype = &
+    & PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceAdvectionDiffusionSubtype = & 
     & PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Linear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceAdvectionDiffusionSubtype = &
     & PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceALEAdvectionDiffusionSubtype = &
+    & PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceALEAdvectionDiffusionSubtype = & 
+    & PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Linear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceALEAdvectionDiffusionSubtype = &
+    & PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceStaticAdvecDiffSubtype = PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceStaticAdvecDiffSubtype = & 
@@ -4007,8 +4043,14 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemNoSourceDiffusionSubtype,CMISSProblemLinearSourceDiffusionSubtype,CMISSProblemNonlinearSourceDiffusionSubtype
 
+  PUBLIC CMISSProblemNoSourceALEDiffusionSubtype,CMISSProblemLinearSourceALEDiffusionSubtype, &
+    & CMISSProblemNonlinearSourceALEDiffusionSubtype
+
   PUBLIC CMISSProblemNoSourceAdvectionDiffusionSubtype,CMISSProblemLinearSourceAdvectionDiffusionSubtype, &
     & CMISSProblemNonlinearSourceAdvectionDiffusionSubtype
+
+  PUBLIC CMISSProblemNoSourceALEAdvectionDiffusionSubtype,CMISSProblemLinearSourceALEAdvectionDiffusionSubtype, &
+    & CMISSProblemNonlinearSourceALEAdvectionDiffusionSubtype
 
   PUBLIC CMISSProblemNoSourceStaticAdvecDiffSubtype,CMISSProblemLinearSourceStaticAdvecDiffSubtype, &
     & CMISSProblemNonlinearSourceStaticAdvecDiffSubtype
