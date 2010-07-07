@@ -1071,9 +1071,13 @@ CONTAINS
     REAL(DP), DIMENSION(1:4) :: QL
 
     REAL(DP), PARAMETER :: PERIOD = 1000 ! 1 Hz
-    REAL(DP), PARAMETER, DIMENSION(12) :: TIMES    = (/ 0, 40, 75, 140, 170, 172, 180, 250, 400, 500, 800, 1000 /) ! | simple tension curve based on GPB/NHS
-    REAL(DP), PARAMETER, DIMENSION(12) :: TENSIONS = (/ 4, 4 , 50, 90,  98,  99 , 99,  75,  20,  10,    5,  4 /)   ! / 
+    REAL(DP), PARAMETER, DIMENSION(28) :: TIMES    =    (/ 0, 20, 30, 40, 60, 80, 100, 120, 150, 160, 170, 175, 180, 190, 200,&
+    & 225, 250, 300, 333, 366, 400, 450, 500, 600, 700, 800, 900,1000 /) ! simple tension curve based on GPB/NHS: times
 
+    REAL(DP), PARAMETER, DIMENSION(28) :: TENSIONFRAC = (/ 0.0194, 0.0193, 0.0200, 0.0254, 0.0778, 0.1713, 0.2794, 0.3708,&
+    & 0.4472, 0.4578, 0.4624, 0.4627, 0.4618, 0.4567, 0.4478, 0.4121, 0.3614, 0.2326, 0.1471, 0.0920, 0.0681, 0.0526, 0.0438,&
+    & 0.0332, 0.0271, 0.0234, 0.0210, 0.0194 /) ! simple isometric tension curve based on GPB/NHS: tension/tref 
+    REAL(DP), PARAMETER :: T_REF = 100          ! reference tension
   
     CALL ENTERS("FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION",ERR,ERROR,*999)
 
@@ -1096,8 +1100,8 @@ CONTAINS
     DO WHILE (TIMES(I) <= TIME) ! find first I such that times(I) >= time
       I = I+1
     END DO
-    S    = (TIME - TIMES(I-1)) /  (TIMES(I) - TIMES(I-1)) !| linear interpolation
-    ISO_TA   = TENSIONS(I-1) * (1-S) + TENSIONS(I) * S        !/ 
+    S    = (TIME - TIMES(I-1)) /  (TIMES(I) - TIMES(I-1))                     !| linear interpolation of ta/tref
+    ISO_TA   = T_REF * (TENSIONFRAC(I-1) * (1-S) + TENSIONFRAC(I) * S)        !/ + multiply by tref
   
     CALL FINITE_ELASTICITY_FMM(TIME,DT,QL(4),LAMBDA,QL,ISO_TA,TA)
 
