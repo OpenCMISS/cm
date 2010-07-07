@@ -2690,6 +2690,7 @@ CONTAINS
        CALL FLAG_ERROR("Ellipsoid mesh does not have a basis associated.",ERR,ERROR,*999)
     ENDIF
 
+    np = 0
     ! assign to the field
     IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
        FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
