@@ -149,13 +149,57 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  SUBROUTINE FieldmlInput_GetBasisCollapse( name, collapse )
+    !Argument variables
+    CHARACTER(LEN=BUFFER_SIZE), INTENT(IN) :: name
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: collapse(:)
 
-  SUBROUTINE FieldmlInput_GetBasisInfo( fmlInfo, objectHandle, basisType, basisInterpolations, err )
+    collapse = CMISSBasisNotCollapsed
+
+    IF( SIZE( collapse ) > 0 ) THEN
+      IF( INDEX( name, "_xi1C" ) /= 0 ) THEN
+        collapse(1) = CMISSBasisXiCollapsed
+      ELSE IF( INDEX( name, "_xi10" ) /= 0 ) THEN
+        collapse(1) = CMISSBasisCollapsedAtXi0
+      ELSE IF( INDEX( name, "_xi11" ) /= 0 ) THEN
+        collapse(1) = CMISSBasisCollapsedAtXi1
+      ENDIF
+    ENDIF
+  
+    IF( SIZE( collapse ) > 1 ) THEN
+      IF( INDEX( name, "_xi2C" ) /= 0 ) THEN
+        collapse(2) = CMISSBasisXiCollapsed
+      ELSE IF( INDEX( name, "_xi20" ) /= 0 ) THEN
+        collapse(2) = CMISSBasisCollapsedAtXi0
+      ELSE IF( INDEX( name, "_xi21" ) /= 0 ) THEN
+        collapse(2) = CMISSBasisCollapsedAtXi1
+      ENDIF
+    ENDIF
+  
+    IF( SIZE( collapse ) > 2 ) THEN
+      IF( INDEX( name, "_xi3C" ) /= 0 ) THEN
+        collapse(3) = CMISSBasisXiCollapsed
+      ELSE IF( INDEX( name, "_xi30" ) /= 0 ) THEN
+        collapse(3) = CMISSBasisCollapsedAtXi0
+      ELSE IF( INDEX( name, "_xi31" ) /= 0 ) THEN
+        collapse(3) = CMISSBasisCollapsedAtXi1
+      ENDIF
+    ENDIF
+  
+  END SUBROUTINE
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FieldmlInput_GetBasisInfo( fmlInfo, objectHandle, basisType, basisInterpolations, collapse, err )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fmlInfo
     INTEGER(C_INT), INTENT(IN) :: objectHandle
     INTEGER(INTG), INTENT(OUT) :: basisType
-    INTEGER(C_INT), ALLOCATABLE, INTENT(OUT) :: basisInterpolations(:)
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: basisInterpolations(:)
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: collapse(:)
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
@@ -176,15 +220,21 @@ CONTAINS
     
     IF( INDEX( name, 'library.fem.triquadratic_lagrange') == 1 ) THEN
       CALL REALLOCATE_INT( basisInterpolations, 3, "", err, errorString, *999 )
+      CALL REALLOCATE_INT( collapse, 3, "", err, errorString, *999 )
       basisInterpolations = CMISSBasisQuadraticLagrangeInterpolation
       basisType = CMISSBasisLagrangeHermiteTPType
     ELSE IF( INDEX( name, 'library.fem.trilinear_lagrange') == 1 ) THEN
       CALL REALLOCATE_INT( basisInterpolations, 3, "", err, errorString, *999 )
+      CALL REALLOCATE_INT( collapse, 3, "", err, errorString, *999 )
       basisInterpolations = CMISSBasisLinearLagrangeInterpolation
       basisType = CMISSBasisLagrangeHermiteTPType
     ELSE
       err = FML_ERR_UNKNOWN_BASIS
       RETURN
+    ENDIF
+    
+    IF( basisType == CMISSBasisLagrangeHermiteTPType ) THEN
+      CALL FieldmlInput_GetBasisCollapse( name, collapse )
     ENDIF
     
     CALL FieldmlInput_GetBasisConnectivityInfo( fmlInfo%fmlHandle, fmlInfo%meshHandle, objectHandle, connectivityHandle, &
@@ -561,6 +611,7 @@ CONTAINS
     INTEGER(C_INT), ALLOCATABLE :: tempHandles(:)
     INTEGER(INTG) :: basisType
     INTEGER(INTG), ALLOCATABLE :: basisInterpolations(:)
+    INTEGER(INTG), ALLOCATABLE :: collapse(:)
     
     handle = Fieldml_GetNamedObject( fieldmlInfo%fmlHandle, evaluatorName//NUL )
     IF( handle == FML_INVALID_HANDLE ) THEN
@@ -568,7 +619,7 @@ CONTAINS
       RETURN
     ENDIF
     
-    CALL FieldmlInput_GetBasisInfo( fieldmlInfo, handle, basisType, basisInterpolations, err )
+    CALL FieldmlInput_GetBasisInfo( fieldmlInfo, handle, basisType, basisInterpolations, collapse, err )
     
     IF( err /= FML_ERR_NO_ERROR ) THEN
       RETURN
@@ -600,6 +651,7 @@ CONTAINS
     CALL CMISSBasisTypeSet( userNumber, basisType, err )
     CALL CMISSBasisNumberOfXiSet( userNumber, size( basisInterpolations ), err )
     CALL CMISSBasisInterpolationXiSet( userNumber, basisInterpolations, err )
+    CALL CMISSBasisCollapsedXiSet( userNumber, collapse, err)
     IF( SIZE( gaussQuadrature ) > 0 ) THEN
       CALL CMISSBasisQuadratureNumberOfGaussXiSet( userNumber, gaussQuadrature, err )
     ENDIF
@@ -607,6 +659,9 @@ CONTAINS
     
     IF( ALLOCATED( basisInterpolations ) ) THEN
       DEALLOCATE( basisInterpolations )
+    ENDIF
+    IF( ALLOCATED( collapse ) ) THEN
+      DEALLOCATE( collapse )
     ENDIF
   
   END SUBROUTINE

@@ -86,55 +86,61 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetTPBasisEvaluator( fmlhandle, xiInterpolations, evaluatorHandle, parametersHandle, err )
+  SUBROUTINE FieldmlOutput_GetTPBasisEvaluator( fmlHandle, xiInterpolations, collapseInfo, evaluatorHandle, parametersHandle, &
+    & err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: fmlhandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: xiInterpolations(:)
+    INTEGER(C_INT), INTENT(IN) :: collapseInfo(:)
     INTEGER(C_INT), INTENT(OUT) :: evaluatorHandle
     INTEGER(C_INT), INTENT(OUT) :: parametersHandle
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
     INTEGER(C_INT) :: xiCount, firstInterpolation, i
+    TYPE(VARYING_STRING) :: suffix
     
     xiCount = SIZE( xiInterpolations )
   
-    firstInterpolation = xiInterpolations(1)
-    DO i = 2, xiCount
-      IF( xiInterpolations(i) /= firstInterpolation ) THEN
+    DO i = 1, xiCount
+      IF( i == 1 ) THEN
+        firstInterpolation = xiInterpolations(i)
+      ELSE IF( xiInterpolations(i) /= firstInterpolation ) THEN
         !Do not yet support inhomogeneous TP bases
         err = FML_ERR_INVALID_OBJECT
         RETURN
       ENDIF
     ENDDO
+    
+    CALL FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err )
 
     evaluatorHandle = FML_INVALID_HANDLE
     parametersHandle = FML_INVALID_HANDLE
       
     IF( firstInterpolation == CMISSBasisQuadraticLagrangeInterpolation ) THEN
       IF( xiCount == 1 ) THEN
-        evaluatorHandle = Fieldml_GetNamedObject( fmlhandle, "library.fem.quadratic_lagrange"//NUL )
-        parametersHandle = Fieldml_GetNamedObject( fmlhandle, "library.parameters.quadratic_lagrange"//NUL )
+        evaluatorHandle = Fieldml_GetNamedObject( fmlHandle, "library.fem.quadratic_lagrange"//NUL )
+        parametersHandle = Fieldml_GetNamedObject( fmlHandle, "library.parameters.quadratic_lagrange"//NUL )
       ELSE IF( xiCount == 2 ) THEN
-        evaluatorHandle = Fieldml_GetNamedObject( fmlhandle, "library.fem.biquadratic_lagrange"//NUL )
-        parametersHandle = Fieldml_GetNamedObject( fmlhandle, "library.parameters.biquadratic_lagrange"//NUL )
+        evaluatorHandle = Fieldml_GetNamedObject( fmlHandle, "library.fem.biquadratic_lagrange"//char(suffix)//NUL )
+        parametersHandle = Fieldml_GetNamedObject( fmlHandle, "library.parameters.biquadratic_lagrange"//char(suffix)//NUL )
       ELSE IF( xiCount == 3 ) THEN
-        evaluatorHandle = Fieldml_GetNamedObject( fmlhandle, "library.fem.triquadratic_lagrange"//NUL )
-        parametersHandle = Fieldml_GetNamedObject( fmlhandle, "library.parameters.triquadratic_lagrange"//NUL )
+        evaluatorHandle = Fieldml_GetNamedObject( fmlHandle, "library.fem.triquadratic_lagrange"//char(suffix)//NUL )
+        parametersHandle = Fieldml_GetNamedObject( fmlHandle, "library.parameters.triquadratic_lagrange"//char(suffix)//NUL )
       ELSE
         !Do not yet support dimensions higher than 3.
         err = FML_ERR_INVALID_OBJECT
       ENDIF
     ELSE IF( firstInterpolation == CMISSBasisLinearLagrangeInterpolation ) THEN
       IF( xiCount == 1 ) THEN
-        evaluatorHandle = Fieldml_GetNamedObject( fmlhandle, "library.fem.linear_lagrange"//NUL )
-        parametersHandle = Fieldml_GetNamedObject( fmlhandle, "library.parameters.linear_lagrange"//NUL )
+        evaluatorHandle = Fieldml_GetNamedObject( fmlHandle, "library.fem.linear_lagrange"//NUL )
+        parametersHandle = Fieldml_GetNamedObject( fmlHandle, "library.parameters.linear_lagrange"//NUL )
       ELSE IF( xiCount == 2 ) THEN
-        evaluatorHandle = Fieldml_GetNamedObject( fmlhandle, "library.fem.bilinear_lagrange"//NUL )
-        parametersHandle = Fieldml_GetNamedObject( fmlhandle, "library.parameters.bilinear_lagrange"//NUL )
+        evaluatorHandle = Fieldml_GetNamedObject( fmlHandle, "library.fem.bilinear_lagrange"//char(suffix)//NUL )
+        parametersHandle = Fieldml_GetNamedObject( fmlHandle, "library.parameters.bilinear_lagrange"//char(suffix)//NUL )
       ELSE IF( xiCount == 3 ) THEN
-        evaluatorHandle = Fieldml_GetNamedObject( fmlhandle, "library.fem.trilinear_lagrange"//NUL )
-        parametersHandle = Fieldml_GetNamedObject( fmlhandle, "library.parameters.trilinear_lagrange"//NUL )
+        evaluatorHandle = Fieldml_GetNamedObject( fmlHandle, "library.fem.trilinear_lagrange"//char(suffix)//NUL )
+        parametersHandle = Fieldml_GetNamedObject( fmlHandle, "library.parameters.trilinear_lagrange"//char(suffix)//NUL )
       ELSE
         !Do not yet support dimensions higher than 3.
         err = FML_ERR_INVALID_OBJECT
@@ -142,8 +148,8 @@ CONTAINS
     ELSE
       err = FML_ERR_INVALID_OBJECT
     ENDIF
-
-  END SUBROUTINE FieldmlUtil_GetTPBasisEvaluator
+    
+  END SUBROUTINE FieldmlOutput_GetTPBasisEvaluator
 
   !
   !================================================================================================================================
@@ -270,7 +276,7 @@ CONTAINS
 
     !Locals
     INTEGER(C_INT) :: basisType, xiCount, dofsReferenceHandle, interpolationParametersHandle, handle, evaluatorHandle
-    INTEGER(C_INT), ALLOCATABLE :: xiInterpolations(:)
+    INTEGER(C_INT), ALLOCATABLE :: xiInterpolations(:), collapseInfo(:)
     CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: name
     INTEGER(INTG) :: length
     TYPE(VARYING_STRING) :: referenceName
@@ -281,25 +287,30 @@ CONTAINS
     
     IF( basisType == CMISSBasisLagrangeHermiteTPType ) THEN
       ALLOCATE( xiInterpolations( xiCount ) )
+      ALLOCATE( collapseInfo( xiCount ) )
       CALL CMISSBasisInterpolationXiGet( basisInfo%basisNumber, xiInterpolations, err )
-      CALL FieldmlUtil_GetTPBasisEvaluator( fieldmlInfo%fmlhandle, xiInterpolations, evaluatorHandle, &
+      CALL CMISSBasisCollapsedXiGet( basisInfo%basisNumber, collapseInfo, err )
+      
+      CALL FieldmlOutput_GetTPBasisEvaluator( fieldmlInfo%fmlHandle, xiInterpolations, collapseInfo, evaluatorHandle, &
         & interpolationParametersHandle, err )
       DEALLOCATE( xiInterpolations )
 
       CALL FieldmlOutput_GetSimpleBasisName( fieldmlInfo%fmlHandle, evaluatorHandle, name, length, err )
       
-      referenceName = baseName//name(1:length)//".parameters"
+      referenceName = baseName//name(1:length)//"_"//TRIM(NUMBER_TO_VSTRING(basisInfo%basisNumber,"*",err,errorString))// &
+        & ".parameters"
       
       handle = Fieldml_GetValueDomain( fieldmlInfo%fmlHandle, basisInfo%connectivityHandle )
       dofsReferenceHandle = Fieldml_CreateContinuousReference( fieldmlInfo%fmlHandle, char(referenceName//NUL), &
         &fieldmlInfo%nodeDofsHandle, Fieldml_GetValueDomain( fieldmlInfo%fmlHandle, fieldmlInfo%nodeDofsHandle ) )
       err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, dofsReferenceHandle, handle, basisInfo%connectivityHandle )
       
-      referenceName = baseName//name(1:length)//".evaluator"
+      referenceName = baseName//name(1:length)//"_"//TRIM(NUMBER_TO_VSTRING(basisInfo%basisNumber,"*",err,errorString))// &
+        & ".evaluator"
 
       basisInfo%referenceHandle = Fieldml_CreateContinuousReference( fieldmlInfo%fmlHandle, char(referenceName//NUL), &
         & evaluatorHandle, Fieldml_GetValueDomain( fieldmlInfo%fmlHandle, fieldmlInfo%nodeDofsHandle ) )
-      CALL FieldmlUtil_GetXiDomain( fieldmlInfo%fmlhandle, xiCount, handle, err )
+      CALL FieldmlUtil_GetXiDomain( fieldmlInfo%fmlHandle, xiCount, handle, err )
       err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, handle, fieldmlInfo%xihandle )
       err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, interpolationParametersHandle, &
         & dofsReferenceHandle )
@@ -318,10 +329,10 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_CreateLayoutParameters( fmlhandle, elementsHandle, nodesHandle, layoutHandle, componentName, &
+  SUBROUTINE FieldmlUtil_CreateLayoutParameters( fmlHandle, elementsHandle, nodesHandle, layoutHandle, componentName, &
     & connectivityInfo, err )
     !Argument variables
-    TYPE(C_PTR), INTENT(IN) :: fmlhandle
+    TYPE(C_PTR), INTENT(IN) :: fmlHandle
     INTEGER(C_INT), INTENT(IN) :: elementsHandle
     INTEGER(C_INT), INTENT(IN) :: nodesHandle
     INTEGER(C_INT), INTENT(IN) :: layoutHandle
@@ -361,7 +372,7 @@ CONTAINS
 
     !Locals
     INTEGER(C_INT) :: layoutHandle, connectivityHandle, elementCount, defaultHandle, templateHandle
-    INTEGER(INTG) :: connectivityCount, basisCount, i, j, layoutNodeCount, basisNumber, idx
+    INTEGER(INTG) :: connectivityCount, basisCount, i, j, layoutNodeCount, basisNumber, idx, length
     INTEGER(C_INT), TARGET :: dummy(0)
     INTEGER(C_INT), ALLOCATABLE, TARGET :: iBuffer(:)
     TYPE(CMISSBasisType) :: basis
@@ -369,7 +380,8 @@ CONTAINS
     TYPE(ConnectivityInfoType), ALLOCATABLE :: connectivityInfo(:), tempConnectivityInfo(:)
     TYPE(BasisInfoType), ALLOCATABLE :: basisInfo(:), tempBasisInfo(:)
     TYPE(VARYING_STRING) :: componentName
-
+    CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: fullName
+    
     elementCount = Fieldml_GetEnsembleDomainElementCount( fieldmlInfo%fmlHandle, fieldmlInfo%elementsHandle )
     
     connectivityCount = 0
@@ -416,7 +428,11 @@ CONTAINS
       ENDIF
       connectivityHandle = connectivityInfo(idx)%connectivityHandle
 
-      idx = FieldmlOutput_FindBasis( basisInfo, basisNumber )
+      IF( basisCount == 0 ) THEN
+        idx = -1
+      ELSE
+        idx = FieldmlOutput_FindBasis( basisInfo, basisNumber )
+      ENDIF
       IF( idx == -1 ) THEN
         IF( basisCount == 0 ) THEN
           ALLOCATE( basisInfo( basisCount + 1 ) )
@@ -446,13 +462,18 @@ CONTAINS
 
     DO i = 1, connectivityCount
       layoutNodeCount = Fieldml_GetEnsembleDomainElementCount( fieldmlInfo%fmlHandle, connectivityInfo(i)%layoutHandle )
-      writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, connectivityInfo(i)%connectivityHandle, 0 )
+      IF( i == 1 ) THEN
+        writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, connectivityInfo(i)%connectivityHandle, 0 )
+      ELSE
+        writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, connectivityInfo(i)%connectivityHandle, 1 )
+      ENDIF
       ALLOCATE( iBuffer( layoutNodeCount ) )
       DO j = 1, elementCount
         CALL CMISSMeshElementsBasisGet( meshElements, j, basis, err )
         CALL CMISSUserNumberGet( basis, basisNumber, err )
         CALL FieldmlUtil_GetConnectivityEnsemble( fieldmlInfo%fmlHandle, basisNumber, layoutHandle, err )
         IF( layoutHandle == connectivityInfo(i)%layoutHandle ) THEN
+          length = Fieldml_CopyObjectName( fieldmlInfo%fmlHandle, layoutHandle, fullName, BUFFER_SIZE )
           CALL CMISSMeshElementsNodesGet( meshElements, j, iBuffer, err )
         ELSE
           iBuffer = 0
@@ -464,6 +485,13 @@ CONTAINS
       err = Fieldml_SetMeshConnectivity( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, connectivityInfo(i)%connectivityHandle, &
         & connectivityInfo(i)%layoutHandle )
     ENDDO
+    
+    IF( ALLOCATED( basisInfo ) ) THEN
+      DEALLOCATE( basisInfo )
+    ENDIF
+    IF( ALLOCATED( connectivityInfo ) ) THEN
+      DEALLOCATE( connectivityInfo )
+    ENDIF
     
     fieldmlInfo%componentHandles( componentNumber ) = templateHandle
     

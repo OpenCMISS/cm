@@ -47,6 +47,7 @@ MODULE FIELDML_UTIL_ROUTINES
   USE KINDS
   USE FIELDML_API
   USE ISO_VARYING_STRING
+  USE STRINGS
   USE OPENCMISS
 
   IMPLICIT NONE
@@ -77,7 +78,8 @@ MODULE FIELDML_UTIL_ROUTINES
   PUBLIC :: FieldmlInfoType
 
   PUBLIC :: FieldmlUtil_GetConnectivityEnsemble, FieldmlUtil_GetCoordinatesDomain, FieldmlUtil_GetGenericDomain, &
-    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiDomain, FieldmlUtil_GetValueDomain, FieldmlUtil_FinalizeInfo
+    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiDomain, FieldmlUtil_GetValueDomain, FieldmlUtil_FinalizeInfo, &
+    & FieldmlUtil_GetCollapseSuffix
 
 CONTAINS
 
@@ -208,15 +210,43 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, domainHandle, err )
+  SUBROUTINE FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err )
+    !Argument variables
+    INTEGER(C_INT), INTENT(IN) :: collapseInfo(:)
+    TYPE(VARYING_STRING), INTENT(OUT) :: suffix
+    INTEGER(INTG), INTENT(OUT) :: err
+    
+    !Locals
+    INTEGER(INTG) :: i
+    
+    suffix = ""
+    DO i = 1, SIZE( collapseInfo )
+      IF( collapseInfo( i ) == CMISSBasisXiCollapsed ) THEN
+        suffix = suffix // "_xi"//TRIM(NUMBER_TO_VSTRING(i,"*",err,errorString))//"C"
+      ELSEIF( collapseInfo( i ) == CMISSBasisCollapsedAtXi0 ) THEN
+        suffix = suffix // "_xi"//TRIM(NUMBER_TO_VSTRING(i,"*",err,errorString))//"0"
+      ELSEIF( collapseInfo( i ) == CMISSBasisCollapsedAtXi1 ) THEN
+        suffix = suffix // "_xi"//TRIM(NUMBER_TO_VSTRING(i,"*",err,errorString))//"1"
+      ENDIF
+    ENDDO
+  
+  END SUBROUTINE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, collapseInfo, domainHandle, err )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fieldmlHandle
     INTEGER(C_INT), INTENT(IN) :: xiInterpolations(:)
+    INTEGER(C_INT), INTENT(IN) :: collapseInfo(:)
     INTEGER(C_INT), INTENT(OUT) :: domainHandle
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
     INTEGER(C_INT) :: xiCount, firstInterpolation, i
+    TYPE(VARYING_STRING) :: suffix
     
     xiCount = SIZE( xiInterpolations )
   
@@ -228,25 +258,28 @@ CONTAINS
         RETURN
       ENDIF
     ENDDO
+
+    CALL FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err )
+    
       
     IF( firstInterpolation == CMISSBasisQuadraticLagrangeInterpolation ) THEN
       IF( xiCount == 1 ) THEN
-        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.line.3"//C_NULL_CHAR )
+        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.line.3"//NUL )
       ELSE IF( xiCount == 2 ) THEN
-        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.square.3x3"//C_NULL_CHAR )
+        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.square.3x3"//char(suffix)//NUL )
       ELSE IF( xiCount == 3 ) THEN
-        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.cube.3x3x3"//C_NULL_CHAR )
+        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.cube.3x3x3"//char(suffix)//NUL )
       ELSE
         !Do not yet support dimensions higher than 3.
         err = FML_ERR_INVALID_OBJECT
       ENDIF
     ELSE IF( firstInterpolation == CMISSBasisLinearLagrangeInterpolation ) THEN
       IF( xiCount == 1 ) THEN
-        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.line.2"//C_NULL_CHAR )
+        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.line.2"//NUL )
       ELSE IF( xiCount == 2 ) THEN
-        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.square.2x2"//C_NULL_CHAR )
+        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.square.2x2"//char(suffix)//NUL )
       ELSE IF( xiCount == 3 ) THEN
-        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.cube.2x2x2"//C_NULL_CHAR )
+        domainHandle = Fieldml_GetNamedObject( fieldmlHandle, "library.local_nodes.cube.2x2x2"//char(suffix)//NUL )
       ELSE
         !Do not yet support dimensions higher than 3.
         err = FML_ERR_INVALID_OBJECT
@@ -270,7 +303,7 @@ CONTAINS
 
     !Locals
     INTEGER(C_INT) :: basisType, xiCount
-    INTEGER(C_INT), ALLOCATABLE :: xiInterpolations(:)
+    INTEGER(C_INT), ALLOCATABLE :: xiInterpolations(:), collapseInfo(:)
     
     domainHandle = FML_INVALID_HANDLE
     
@@ -280,10 +313,14 @@ CONTAINS
     
     IF( basisType == CMISSBasisLagrangeHermiteTPType ) THEN
       ALLOCATE( xiInterpolations( xiCount ) )
+      ALLOCATE( collapseInfo( xiCount ) )
       CALL CMISSBasisInterpolationXiGet( basisNumber, xiInterpolations, err )
-      CALL FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, domainHandle, err )
+      CALL CMISSBasisCollapsedXiGet( basisNumber, collapseInfo, err )
+      
+      CALL FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, collapseInfo, domainHandle, err )
       
       DEALLOCATE( xiInterpolations )
+      DEALLOCATE( collapseInfo )
     ELSE
       err = FML_ERR_INVALID_OBJECT
     ENDIF
