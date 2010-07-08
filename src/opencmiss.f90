@@ -1976,6 +1976,17 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype = &
     & EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEAdvectionDiffSUPGSubtype = & 
+    & EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceALEAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceALEAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadSourceALEAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_QUAD_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceALEAdvectionDiffSUPGSubtype = &
+    & EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype = & 
     & EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype = &
@@ -2181,7 +2192,11 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype, &
     & CMISSEquationsSetNoSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype, &
     & CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype, &
-    & CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype, &
+    & CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype, &
+    & CMISSEquationsSetNoSourceALEAdvectionDiffSUPGSubtype, CMISSEquationsSetConstantSourceALEAdvectionDiffSUPGSubtype, &
+    & CMISSEquationsSetLinearSourceALEAdvectionDiffSUPGSubtype, CMISSEquationsSetQuadSourceALEAdvectionDiffSUPGSubtype, &
+    & CMISSEquationsSetExpSourceALEAdvectionDiffSUPGSubtype, &
+    & CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype, &
     & CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype, CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype, &
     & CMISSEquationsSetMultiCompTransportAdvecDiffSubtype, CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype, & 
     & CMISSEquationsSetPGMStokesSubtype, &
