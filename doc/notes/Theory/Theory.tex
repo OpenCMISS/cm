@@ -2,6 +2,83 @@
 \chapter{Theory}
 \label{cha:theory}
 
+\section{Basis Functions}
+
+
+\subsection{Simplex Basis Functions}
+
+Simplex basis function and its derivatives are evaluated with respect to external $\vect{\xi}$ coordinates.
+
+For Simplex line elements there are two area coordinates which are a function of $\xi_{1}$ \ie
+\begin{align}
+  L_{1} &= 1 - \xi_{1} \\
+  L_{2} &= \xi_{1} - 1
+\end{align}
+
+The derivatives wrt to external coordinates are then given by 
+\begin{align}
+  \delby{\vect{\sbfnsymb{}}}{\xi_{1}} &= \delby{\vect{\sbfnsymb{}}}{L_{2}}-\delby{\vect{\sbfnsymb{}}}{L_{1}} \\
+  \deltwosqby{\vect{\sbfnsymb{}}}{\xi_{1}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{1}}-
+  2\deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{2}}+\deltwosqby{\vect{\sbfnsymb{}}}{L_{2}}
+\end{align}
+
+For Simplex triangle elements there are three area coordinates which are a function of $\xi_{1}$ and
+$\xi_{2}$ \ie
+\begin{align} 
+  L_{1} &= 1 - \xi_{1} \\
+  L_{2} &= 1 - \xi_{2} \\
+  L_{3} &= \xi_{1} + \xi_{2} - 1 
+\end{align}
+
+The derivatives wrt to external coordinates are then given by 
+\begin{align}
+  \delby{\vect{\sbfnsymb{}}}{\xi_{1}} &= \delby{\vect{\sbfnsymb{}}}{L_{3}}-\delby{\vect{\sbfnsymb{}}}{L_{1}} \\
+  \delby{\vect{\sbfnsymb{}}}{\xi_{2}} &= \delby{\vect{\sbfnsymb{}}}{L_{3}}-\delby{\vect{\sbfnsymb{}}}{L_{2}} \\
+  \deltwosqby{\vect{\sbfnsymb{}}}{\xi_{1}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{1}}- 
+  2\deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{3}}+\deltwosqby{\vect{\sbfnsymb{}}}{L_{3}} \\
+  \deltwosqby{\vect{\sbfnsymb{}}}{\xi_{2}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{2}}- 
+  2\deltwoby{\vect{\sbfnsymb{}}}{L_{2}}{L_{3}}+\deltwosqby{\vect{\sbfnsymb{}}}{L_{3}} \\
+  \deltwoby{\vect{\sbfnsymb{}}}{\xi_{1}}{\xi_{2}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{3}}-
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{3}}-\deltwoby{\vect{\sbfnsymb{}}}{L_{2}}{L_{3}}+
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{2}}
+\end{align}
+  
+For Simplex tetrahedral elements there are four area coordinates which are a
+function of $\xi_{1}$, $\xi_{2}$ and $\xi_{3}$ \ie
+\begin{align}
+  L_{1} &= 1 - \xi_{1} \\
+  L_{2} &= 1 - \xi_{2} \\
+  L_{3} &= 1 - \xi_{3} \\
+  L_{4} &= \xi_{1} + \xi_{2} + \xi_{3} - 1
+\end{align}
+
+The derivatives wrt to external coordinates are then given by
+\begin{align}
+  \delby{\vect{\sbfnsymb{}}}{\xi_{1}} &= \delby{\vect{\sbfnsymb{}}}{L_{4}}-\delby{\vect{\sbfnsymb{}}}{L_{1}} \\
+  \delby{\vect{\sbfnsymb{}}}{\xi_{2}} &= \delby{\vect{\sbfnsymb{}}}{L_{4}}-\delby{\vect{\sbfnsymb{}}}{L_{2}} \\
+  \delby{\vect{\sbfnsymb{}}}{\xi_{3}} &= \delby{\vect{\sbfnsymb{}}}{L_{4}}-\delby{\vect{\sbfnsymb{}}}{L_{3}} \\
+  \deltwosqby{\vect{\sbfnsymb{}}}{\xi_{1}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{1}}-
+  2\deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{4}}+\deltwosqby{\vect{\sbfnsymb{}}}{L_{4}} \\
+  \deltwosqby{\vect{\sbfnsymb{}}}{\xi_{2}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{2}}-
+  2\deltwoby{\vect{\sbfnsymb{}}}{L_{2}}{L_{4}}+\deltwosqby{\vect{\sbfnsymb{}}}{L_{4}} \\
+  \deltwosqby{\vect{\sbfnsymb{}}}{\xi_{3}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{3}}-
+  2\deltwoby{\vect{\sbfnsymb{}}}{L_{3}}{L_{4}}+\deltwosqby{\vect{\sbfnsymb{}}}{L_{4}} \\  
+  \deltwoby{\vect{\sbfnsymb{}}}{\xi_{1}}{\xi_{2}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{4}}-
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{4}}-\deltwoby{\vect{\sbfnsymb{}}}{L_{2}}{L_{4}}+
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{2}} \\
+  \deltwoby{\vect{\sbfnsymb{}}}{\xi_{1}}{\xi_{3}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{4}}-
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{4}}-\deltwoby{\vect{\sbfnsymb{}}}{L_{3}}{L_{4}}+
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{3}} \\
+  \deltwoby{\vect{\sbfnsymb{}}}{\xi_{2}}{\xi_{3}} &= \deltwosqby{\vect{\sbfnsymb{}}}{L_{4}}-
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{2}}{L_{4}}-\deltwoby{\vect{\sbfnsymb{}}}{L_{3}}{L_{4}}+
+  \deltwoby{\vect{\sbfnsymb{}}}{L_{2}}{L_{3}} \\
+  \delthreeby{\vect{\sbfnsymb{}}}{\xi_{1}}{\xi_{2}}{\xi_{3}} &= \delthreecuby{\vect{\sbfnsymb{}}}{L_{4}}-
+  \deldeltwoby{\vect{\sbfnsymb{}}}{L_{1}}{L_{4}}-\deldeltwoby{\vect{\sbfnsymb{}}}{L_{2}}{L_{4}}-
+  \deldeltwoby{\vect{\sbfnsymb{}}}{L_{3}}{L_{4}}+ \\
+  &\delthreeby{\vect{\sbfnsymb{}}}{L_{1}}{L_{2}}{L_{4}}+\delthreeby{\vect{\sbfnsymb{}}}{L_{1}}{L_{3}}{L_{4}}+
+  \delthreeby{\vect{\sbfnsymb{}}}{L_{2}}{L_{3}}{L_{4}}-\delthreeby{\vect{\sbfnsymb{}}}{L_{1}}{L_{2}}{L_{3}}
+\end{align}
+
 \section{Tensor Analysis}
 
 \subsection{Base vectors}

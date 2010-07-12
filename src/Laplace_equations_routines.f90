@@ -100,7 +100,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type
-    REAL(DP) :: VALUE,X(3)
+    REAL(DP) :: VALUE,X(3),NORMAL(3)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN

@@ -152,6 +152,56 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finialises a decomposition adjacent element information and deallocates all memory
+  SUBROUTINE DECOMPOSITION_ADJACENT_ELEMENT_FINALISE(DECOMPOSITION_ADJACENT_ELEMENT,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(DECOMPOSITION_ADJACENT_ELEMENT_TYPE) :: DECOMPOSITION_ADJACENT_ELEMENT !<The decomposition adjacent element to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_ADJACENT_ELEMENT_FINALISE",ERR,ERROR,*999)
+
+    DECOMPOSITION_ADJACENT_ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS=0
+    IF(ALLOCATED(DECOMPOSITION_ADJACENT_ELEMENT%ADJACENT_ELEMENTS)) DEALLOCATE(DECOMPOSITION_ADJACENT_ELEMENT%ADJACENT_ELEMENTS)
+       
+    CALL EXITS("DECOMPOSITION_ADJACENT_ELEMENT_FINALISE")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_ADJACENT_ELEMENT_FINALISE",ERR,ERROR)    
+    CALL EXITS("DECOMPOSITION_ADJACENT_ELEMENT_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE DECOMPOSITION_ADJACENT_ELEMENT_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+  !>Initalises a decomposition adjacent element information.
+  SUBROUTINE DECOMPOSITION_ADJACENT_ELEMENT_INITIALISE(DECOMPOSITION_ADJACENT_ELEMENT,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(DECOMPOSITION_ADJACENT_ELEMENT_TYPE) :: DECOMPOSITION_ADJACENT_ELEMENT !<The decomposition adjacent element to initialise.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DECOMPOSITION_ADJACENT_ELEMENT_INITIALISE",ERR,ERROR,*999)
+
+    DECOMPOSITION_ADJACENT_ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS=0
+       
+    CALL EXITS("DECOMPOSITION_ADJACENT_ELEMENT_INITIALISE")
+    RETURN
+999 CALL ERRORS("DECOMPOSITION_ADJACENT_ELEMENT_INITIALISE",ERR,ERROR)    
+    CALL EXITS("DECOMPOSITION_ADJACENT_ELEMENT_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE DECOMPOSITION_ADJACENT_ELEMENT_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finishes the creation of a domain decomposition on a given mesh. \see OPENCMISS::CMISSDecompositionCreateFinish
   SUBROUTINE DECOMPOSITION_CREATE_FINISH(DECOMPOSITION,ERR,ERROR,*)
 
@@ -1046,12 +1096,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: nic
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_ELEMENT_FINALISE",ERR,ERROR,*999)
 
-    IF(ALLOCATED(ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS)) DEALLOCATE(ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS)
-    IF(ALLOCATED(ELEMENT%ADJACENT_ELEMENTS)) DEALLOCATE(ELEMENT%ADJACENT_ELEMENTS)
+    IF(ALLOCATED(ELEMENT%ADJACENT_ELEMENTS)) THEN
+      DO nic=LBOUND(ELEMENT%ADJACENT_ELEMENTS,1),UBOUND(ELEMENT%ADJACENT_ELEMENTS,1)
+        CALL DECOMPOSITION_ADJACENT_ELEMENT_FINALISE(ELEMENT%ADJACENT_ELEMENTS(nic),ERR,ERROR,*999)
+      ENDDO !nic
+      DEALLOCATE(ELEMENT%ADJACENT_ELEMENTS)
+    ENDIF
     IF(ALLOCATED(ELEMENT%ELEMENT_LINES)) DEALLOCATE(ELEMENT%ELEMENT_LINES)
+    IF(ALLOCATED(ELEMENT%ELEMENT_FACES)) DEALLOCATE(ELEMENT%ELEMENT_FACES)
  
     CALL EXITS("DECOMPOSITION_TOPOLOGY_ELEMENT_FINALISE")
     RETURN
@@ -1099,14 +1155,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: j,ne,ne1,ne2,nep1,nep2,ni,nn,nn1,nn2,np,np1,np2,DUMMY_ERR,FACE_XI(2),NODE_POSITION_INDEX(3)
+    INTEGER(INTG) :: j,ne,ne1,ne2,nep1,nep2,ni,nic,nn,nn1,nn2,nn3,node_idx,np,np1,np2,DUMMY_ERR,FACE_XI(2),FACE_XIC(3), &
+      & NODE_POSITION_INDEX(4)
     INTEGER(INTG) :: xi_direction,direction_index,xi_dir_check,xi_dir_search,NUMBER_NODE_MATCHES
-    INTEGER(INTG) :: NUMBER_SURROUNDING,MAX_NUMBER_SURROUNDING,NUMBER_OF_NODES_XI(3)
-    INTEGER(INTG), POINTER :: NODE_MATCHES(:),ADJACENT_ELEMENTS(:)
-    LOGICAL :: FOUND,XI_COLLAPSED,FACE_COLLAPSED(-3:3)
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    INTEGER(INTG) :: NUMBER_SURROUNDING,NUMBER_OF_NODES_XIC(4)
+    INTEGER(INTG), ALLOCATABLE :: NODE_MATCHES(:),ADJACENT_ELEMENTS(:)
+    LOGICAL :: FOUND,XI_COLLAPSED,FACE_COLLAPSED(-3:3),SUBSET
     TYPE(LIST_TYPE), POINTER :: NODE_MATCH_LIST
-    TYPE(LIST_PTR_TYPE) :: ADJACENT_ELEMENTS_LIST(-3:3)
+    TYPE(LIST_PTR_TYPE) :: ADJACENT_ELEMENTS_LIST(-4:4)
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: DECOMPOSITION_ELEMENTS
@@ -1114,9 +1170,12 @@ CONTAINS
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
 
-    NULLIFY(NODE_MATCHES)
-    NULLIFY(ADJACENT_ELEMENTS)
+    NULLIFY(NODE_MATCH_LIST)
+    DO nic=-4,4
+      NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
+    ENDDO !nic
 
     CALL ENTERS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE",ERR,ERROR,*999)
     
@@ -1136,151 +1195,221 @@ CONTAINS
                   !Loop over the elements in the decomposition
                   DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                     BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
-                    DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
-                      NULLIFY(ADJACENT_ELEMENTS_LIST(ni)%PTR)
-                      CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(ni)%PTR,ERR,ERROR,*999)
-                      CALL LIST_DATA_TYPE_SET(ADJACENT_ELEMENTS_LIST(ni)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
-                      CALL LIST_INITIAL_SIZE_SET(ADJACENT_ELEMENTS_LIST(ni)%PTR,5,ERR,ERROR,*999)
-                      CALL LIST_CREATE_FINISH(ADJACENT_ELEMENTS_LIST(ni)%PTR,ERR,ERROR,*999)
-                    ENDDO !ni
-                    NUMBER_OF_NODES_XI=1
-                    DO ni=1,BASIS%NUMBER_OF_XI
-                      NUMBER_OF_NODES_XI(ni)=BASIS%NUMBER_OF_NODES_XI(ni)
-                    ENDDO !ni
+                    DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+                      NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
+                      CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(nic)%PTR,ERR,ERROR,*999)
+                      CALL LIST_DATA_TYPE_SET(ADJACENT_ELEMENTS_LIST(nic)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
+                      CALL LIST_INITIAL_SIZE_SET(ADJACENT_ELEMENTS_LIST(nic)%PTR,5,ERR,ERROR,*999)
+                      CALL LIST_CREATE_FINISH(ADJACENT_ELEMENTS_LIST(nic)%PTR,ERR,ERROR,*999)
+                    ENDDO !nic
+                    NUMBER_OF_NODES_XIC=1
+                    NUMBER_OF_NODES_XIC(1:BASIS%NUMBER_OF_XI_COORDINATES)= &
+                      & BASIS%NUMBER_OF_NODES_XIC(1:BASIS%NUMBER_OF_XI_COORDINATES)
                     !Place the current element in the surrounding list
                     CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(0)%PTR,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%LOCAL_NUMBER, &
                       & ERR,ERROR,*999)
-                    MAX_NUMBER_SURROUNDING=1
+                    SELECT CASE(BASIS%TYPE)
+                    CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
 !!TODO: Calculate this and set it as part of the basis type
-                    !Determine the collapsed "faces" if any
-                    NODE_POSITION_INDEX=1
-                    !Loop over the face normals of the element
-                    DO ni=1,BASIS%NUMBER_OF_XI
-                      !Determine the face xi directions that lie in this xi direction
-                      FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
-                      FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
-                      !Reset the node_position_index in this xi direction
-                      NODE_POSITION_INDEX(ni)=1
-                      !Loop over the two faces with this normal
-                      DO direction_index=-1,1,2
-                        xi_direction=direction_index*ni
-                        FACE_COLLAPSED(xi_direction)=.FALSE.
-                        DO j=1,2
-                          xi_dir_check=FACE_XI(j)
-                          IF(xi_dir_check<=BASIS%NUMBER_OF_XI) THEN
-                            xi_dir_search=FACE_XI(3-j)
-                            NODE_POSITION_INDEX(xi_dir_search)=1
-                            XI_COLLAPSED=.TRUE.
-                            DO WHILE(NODE_POSITION_INDEX(xi_dir_search)<=NUMBER_OF_NODES_XI(xi_dir_search).AND.XI_COLLAPSED)
-                              !Get the first local node along the xi check direction
-                              NODE_POSITION_INDEX(xi_dir_check)=1
-                              nn1=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
-                                & NODE_POSITION_INDEX(3),1)
-                              !Get the second local node along the xi check direction
-                              NODE_POSITION_INDEX(xi_dir_check)=2
-                              nn2=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
-                                & NODE_POSITION_INDEX(3),1)
-                              IF(nn1/=0.AND.nn2/=0) THEN
-                                IF(DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn1)/= &
-                                  & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn2)) XI_COLLAPSED=.TRUE.
-                              ENDIF
-                              NODE_POSITION_INDEX(xi_dir_search)=NODE_POSITION_INDEX(xi_dir_search)+1
-                            ENDDO !xi_dir_search
-                            IF(XI_COLLAPSED) FACE_COLLAPSED(xi_direction)=.TRUE.
+                      !Determine the collapsed "faces" if any
+                      NODE_POSITION_INDEX=1
+                      !Loop over the face normals of the element
+                      DO ni=1,BASIS%NUMBER_OF_XI
+                        !Determine the face xi directions that lie in this xi direction
+                        FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
+                        FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
+                        !Reset the node_position_index in this xi direction
+                        NODE_POSITION_INDEX(ni)=1
+                        !Loop over the two faces with this normal
+                        DO direction_index=-1,1,2
+                          xi_direction=direction_index*ni
+                          FACE_COLLAPSED(xi_direction)=.FALSE.
+                          DO j=1,2
+                            xi_dir_check=FACE_XI(j)
+                            IF(xi_dir_check<=BASIS%NUMBER_OF_XI) THEN
+                              xi_dir_search=FACE_XI(3-j)
+                              NODE_POSITION_INDEX(xi_dir_search)=1
+                              XI_COLLAPSED=.TRUE.
+                              DO WHILE(NODE_POSITION_INDEX(xi_dir_search)<=NUMBER_OF_NODES_XIC(xi_dir_search).AND.XI_COLLAPSED)
+                                !Get the first local node along the xi check direction
+                                NODE_POSITION_INDEX(xi_dir_check)=1
+                                nn1=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
+                                  & NODE_POSITION_INDEX(3),1)
+                                !Get the second local node along the xi check direction
+                                NODE_POSITION_INDEX(xi_dir_check)=2
+                                nn2=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
+                                  & NODE_POSITION_INDEX(3),1)
+                                IF(nn1/=0.AND.nn2/=0) THEN
+                                  IF(DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn1)/= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn2)) XI_COLLAPSED=.TRUE.
+                                ENDIF
+                                NODE_POSITION_INDEX(xi_dir_search)=NODE_POSITION_INDEX(xi_dir_search)+1
+                              ENDDO !xi_dir_search
+                              IF(XI_COLLAPSED) FACE_COLLAPSED(xi_direction)=.TRUE.
+                            ENDIF
+                          ENDDO !j
+                          NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XIC(ni)
+                        ENDDO !direction_index
+                      ENDDO !ni
+                      !Loop over the xi directions and calculate the surrounding elements
+                      DO ni=1,BASIS%NUMBER_OF_XI
+                        !Determine the xi directions that lie in this xi direction
+                        FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
+                        FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
+                        !Loop over the two faces
+                        DO direction_index=-1,1,2
+                          xi_direction=direction_index*ni                  
+                          !Find nodes in the element on the appropriate face/line/point
+                          NULLIFY(NODE_MATCH_LIST)
+                          CALL LIST_CREATE_START(NODE_MATCH_LIST,ERR,ERROR,*999)
+                          CALL LIST_DATA_TYPE_SET(NODE_MATCH_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
+                          CALL LIST_INITIAL_SIZE_SET(NODE_MATCH_LIST,16,ERR,ERROR,*999)
+                          CALL LIST_CREATE_FINISH(NODE_MATCH_LIST,ERR,ERROR,*999)
+                          IF(direction_index==-1) THEN
+                            NODE_POSITION_INDEX(ni)=1
+                          ELSE
+                            NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XIC(ni)
                           ENDIF
-                        ENDDO !j
-                        NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XI(ni)
-                      ENDDO !direction_index
-                    ENDDO !ni
-                    !Loop over the xi directions and calculate the surrounding elements
-                    DO ni=1,BASIS%NUMBER_OF_XI
-                      !Determine the xi directions that lie in this xi direction
-                      FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
-                      FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
-                      !Loop over the two faces
-                      DO direction_index=-1,1,2
-                        xi_direction=direction_index*ni                  
+                          !If the face is collapsed then don't look in this xi direction. The exception is if the opposite face is
+                          !also collapsed. This may indicate that we have a funny element in non-rc coordinates that goes around the
+                          !central axis back to itself
+                          IF(FACE_COLLAPSED(xi_direction).AND..NOT.FACE_COLLAPSED(-xi_direction)) THEN
+                            !Do nothing - the match lists are already empty
+                          ELSE
+                            !Find the nodes to match and add them to the node match list
+                            DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1))
+                              NODE_POSITION_INDEX(FACE_XI(1))=nn1
+                              DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2))
+                                NODE_POSITION_INDEX(FACE_XI(2))=nn2
+                                nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
+                                  & NODE_POSITION_INDEX(3),1)
+                                IF(nn/=0) THEN
+                                  np=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
+                                  CALL LIST_ITEM_ADD(NODE_MATCH_LIST,np,ERR,ERROR,*999)
+                                ENDIF
+                              ENDDO !nn2
+                            ENDDO !nn1
+                          ENDIF
+                          CALL LIST_REMOVE_DUPLICATES(NODE_MATCH_LIST,ERR,ERROR,*999)
+                          CALL LIST_DETACH_AND_DESTROY(NODE_MATCH_LIST,NUMBER_NODE_MATCHES,NODE_MATCHES,ERR,ERROR,*999)
+                          NUMBER_SURROUNDING=0
+                          IF(NUMBER_NODE_MATCHES>0) THEN
+                            !Find list of elements surrounding those nodes
+                            np1=NODE_MATCHES(1)
+                            DO nep1=1,DOMAIN_NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
+                              ne1=DOMAIN_NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
+                              IF(ne1/=ne) THEN !Don't want the current element
+                                FOUND=.FALSE.
+                                nn2=2
+                                DO WHILE(nn2<=NUMBER_NODE_MATCHES.AND..NOT.FOUND)
+                                  np2=NODE_MATCHES(nn2)
+                                  nep2=1
+                                  DO WHILE(nep2<=DOMAIN_NODES%NODES(np2)%NUMBER_OF_SURROUNDING_ELEMENTS.AND..NOT.FOUND)
+                                    ne2=DOMAIN_NODES%NODES(np2)%SURROUNDING_ELEMENTS(nep2)
+                                    IF(ne1==ne2) THEN
+                                      FOUND=.TRUE.
+                                    ELSE
+                                      nep2=nep2+1
+                                    ENDIF
+                                  ENDDO !nep2
+                                  nn2=nn2+1
+                                ENDDO !nn2
+                                IF(FOUND) THEN
+                                  CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(xi_direction)%PTR,ne1,ERR,ERROR,*999)
+                                  NUMBER_SURROUNDING=NUMBER_SURROUNDING+1
+                                ENDIF
+                              ENDIF
+                            ENDDO !nep1
+                          ENDIF
+                          IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
+                        ENDDO !direction_index
+                      ENDDO !ni
+                    CASE(BASIS_SIMPLEX_TYPE)
+                      !Loop over the xi coordinates and calculate the surrounding elements
+                      DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES
+                        !Find the other coordinates of the face/line/point
+                        FACE_XIC(1)=OTHER_XI_DIRECTIONS4(nic,1)
+                        FACE_XIC(2)=OTHER_XI_DIRECTIONS4(nic,2)
+                        FACE_XIC(3)=OTHER_XI_DIRECTIONS4(nic,3)
                         !Find nodes in the element on the appropriate face/line/point
                         NULLIFY(NODE_MATCH_LIST)
                         CALL LIST_CREATE_START(NODE_MATCH_LIST,ERR,ERROR,*999)
                         CALL LIST_DATA_TYPE_SET(NODE_MATCH_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
                         CALL LIST_INITIAL_SIZE_SET(NODE_MATCH_LIST,16,ERR,ERROR,*999)
                         CALL LIST_CREATE_FINISH(NODE_MATCH_LIST,ERR,ERROR,*999)
-                        IF(direction_index==-1) THEN
-                          NODE_POSITION_INDEX(ni)=1
-                        ELSE
-                          NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XI(ni)
-                        ENDIF
-                        !If the face is collapsed then don't look in this xi direction. The exception is if the opposite face is
-                        !also collapsed. This may indicate that we have a funny element in non-rc coordinates that goes around the
-                        !central axis back to itself
-                        IF(FACE_COLLAPSED(xi_direction).AND..NOT.FACE_COLLAPSED(-xi_direction)) THEN
-                          !Do nothing - the match lists are already empty
-                        ELSE
-                          !Find the nodes to match and add them to the node match list
-                          DO nn1=1,NUMBER_OF_NODES_XI(FACE_XI(1))
-                            NODE_POSITION_INDEX(FACE_XI(1))=nn1
-                            DO nn2=1,NUMBER_OF_NODES_XI(FACE_XI(2))
-                              NODE_POSITION_INDEX(FACE_XI(2))=nn2
+                        NODE_POSITION_INDEX(nic)=1 !Furtherest away from node with the nic'th coordinate
+                        !Find the nodes to match and add them to the node match list
+                        DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XIC(1))
+                          NODE_POSITION_INDEX(FACE_XIC(1))=nn1
+                          DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XIC(2))
+                            NODE_POSITION_INDEX(FACE_XIC(2))=nn2
+                            DO nn3=1,NUMBER_OF_NODES_XIC(FACE_XIC(3))
+                              NODE_POSITION_INDEX(FACE_XIC(3))=nn3
                               nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
-                                & NODE_POSITION_INDEX(3),1)
+                                & NODE_POSITION_INDEX(3),NODE_POSITION_INDEX(4))
                               IF(nn/=0) THEN
                                 np=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                 CALL LIST_ITEM_ADD(NODE_MATCH_LIST,np,ERR,ERROR,*999)
                               ENDIF
-                            ENDDO !nn2
-                          ENDDO !nn1
-                        ENDIF
+                            ENDDO !nn3
+                          ENDDO !nn2
+                        ENDDO !nn1
                         CALL LIST_REMOVE_DUPLICATES(NODE_MATCH_LIST,ERR,ERROR,*999)
                         CALL LIST_DETACH_AND_DESTROY(NODE_MATCH_LIST,NUMBER_NODE_MATCHES,NODE_MATCHES,ERR,ERROR,*999)
-                        NUMBER_SURROUNDING=0
                         IF(NUMBER_NODE_MATCHES>0) THEN
                           !Find list of elements surrounding those nodes
-                          np1=NODE_MATCHES(1)
-                          DO nep1=1,DOMAIN_NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
-                            ne1=DOMAIN_NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
-                            IF(ne1/=ne) THEN !Don't want the current element
-                              FOUND=.FALSE.
-                              nn2=2
-                              DO WHILE(nn2<=NUMBER_NODE_MATCHES.AND..NOT.FOUND)
-                                np2=NODE_MATCHES(nn2)
-                                nep2=1
-                                DO WHILE(nep2<=DOMAIN_NODES%NODES(np2)%NUMBER_OF_SURROUNDING_ELEMENTS.AND..NOT.FOUND)
-                                  ne2=DOMAIN_NODES%NODES(np2)%SURROUNDING_ELEMENTS(nep2)
-                                  IF(ne1==ne2) THEN
-                                    FOUND=.TRUE.
-                                  ELSE
-                                    nep2=nep2+1
-                                  ENDIF
-                                ENDDO !nep2
-                                nn2=nn2+1
-                              ENDDO !nn2
-                              IF(FOUND) THEN
-                                CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(xi_direction)%PTR,ne1,ERR,ERROR,*999)
-                                NUMBER_SURROUNDING=NUMBER_SURROUNDING+1
+                          DO node_idx=1,NUMBER_NODE_MATCHES
+                            np1=NODE_MATCHES(node_idx)
+                            DO nep1=1,DOMAIN_NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
+                              ne1=DOMAIN_NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
+                              IF(ne1/=ne) THEN !Don't want the current element
+                                ! grab the nodes list for current and this surrouding elements
+                                ! current face : NODE_MATCHES
+                                ! candidate elem : TOPOLOGY%ELEMENTS%ELEMENTS(ne1)%MESH_ELEMENT_NODES 
+                                ! if all of current face belongs to the candidate element, we will have found the neighbour
+                                CALL LIST_SUBSET_OF(NODE_MATCHES(1:NUMBER_NODE_MATCHES),DOMAIN_ELEMENTS%ELEMENTS(ne1)% &
+                                  & ELEMENT_NODES,SUBSET,ERR,ERROR,*999)
+                                IF(SUBSET) THEN
+                                  CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(nic)%PTR,ne1,ERR,ERROR,*999)
+                                ENDIF
                               ENDIF
-                            ENDIF
-                          ENDDO !nep1
+                            ENDDO !nep1
+                          ENDDO !node_idx
                         ENDIF
-                        IF(ASSOCIATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
-                        IF(NUMBER_SURROUNDING>MAX_NUMBER_SURROUNDING) MAX_NUMBER_SURROUNDING=NUMBER_SURROUNDING
-                      ENDDO !direction_index
-                    ENDDO !ni
+                        IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
+                      ENDDO !nic
+                    CASE(BASIS_SERENDIPITY_TYPE)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(BASIS_AUXILLIARY_TYPE)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(BASIS_B_SPLINE_TP_TYPE)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE(BASIS_EXTENDED_LAGRANGE_TP_TYPE)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The basis type of "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))// &
+                        & " is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                     
+                    END SELECT
                     !Set the surrounding elements for this element
-                    ALLOCATE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%NUMBER_OF_ADJACENT_ELEMENTS( &
-                      & -BASIS%NUMBER_OF_XI:BASIS%NUMBER_OF_XI),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of surrounding elements.",ERR,ERROR,*999)
-                    ALLOCATE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(MAX_NUMBER_SURROUNDING, &
-                      & -BASIS%NUMBER_OF_XI:BASIS%NUMBER_OF_XI),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate surrounding elements.",ERR,ERROR,*999)
-                    DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
-                      CALL LIST_DETACH_AND_DESTROY(ADJACENT_ELEMENTS_LIST(ni)%PTR,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)% &
-                        & NUMBER_OF_ADJACENT_ELEMENTS(ni),ADJACENT_ELEMENTS,ERR,ERROR,*999)
-                      DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(1:DECOMPOSITION_ELEMENTS%ELEMENTS(ne)% &
-                        & NUMBER_OF_ADJACENT_ELEMENTS(ni),ni)=ADJACENT_ELEMENTS(1:DECOMPOSITION_ELEMENTS% &
-                        & ELEMENTS(ne)%NUMBER_OF_ADJACENT_ELEMENTS(ni))
-                      IF(ASSOCIATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
-                    ENDDO !ni            
+                    ALLOCATE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(-BASIS%NUMBER_OF_XI_COORDINATES: &
+                      BASIS%NUMBER_OF_XI_COORDINATES),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent elements.",ERR,ERROR,*999)
+                    DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+                      CALL DECOMPOSITION_ADJACENT_ELEMENT_INITIALISE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic), &
+                        & ERR,ERROR,*999)
+                      CALL LIST_DETACH_AND_DESTROY(ADJACENT_ELEMENTS_LIST(nic)%PTR,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)% &
+                        & ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS,ADJACENT_ELEMENTS,ERR,ERROR,*999)
+                      ALLOCATE(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%ADJACENT_ELEMENTS( &
+                        DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element adjacent elements.",ERR,ERROR,*999)
+                      DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%ADJACENT_ELEMENTS(1: &
+                        & DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS)= &
+                        ADJACENT_ELEMENTS(1:DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS)
+                      IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
+                    ENDDO !nic
                   ENDDO !ne           
                 ELSE
                   CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
@@ -1309,26 +1438,29 @@ CONTAINS
         & TOTAL_NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
       DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
         BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Local element number = ",ne,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of xi directions = ",BASIS%NUMBER_OF_XI,ERR,ERROR,*999)
-        DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Xi direction = ",ni,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Local element number : ",ne,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of xi coordinates = ",BASIS%NUMBER_OF_XI_COORDINATES, &
+          & ERR,ERROR,*999)
+        DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Xi coordinate : ",nic,ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of adjacent elements = ", &
-            & DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%NUMBER_OF_ADJACENT_ELEMENTS(ni),ERR,ERROR,*999)
-          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)% &
-            & NUMBER_OF_ADJACENT_ELEMENTS(ni),8,8,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(:,ni), &
-            & '("        Adjacent elements =",8(X,I6))','(30x,8(X,I6))',ERR,ERROR,*999)
-        ENDDO !ni
+            & DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS,ERR,ERROR,*999)
+          IF(DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS>0) THEN
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)% &
+              & ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS,8,8,DECOMPOSITION_ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)% &
+              & ADJACENT_ELEMENTS,'("        Adjacent elements :",8(X,I6))','(30x,8(X,I6))',ERR,ERROR,*999)
+          ENDIF
+        ENDDO !nic
       ENDDO !ne
     ENDIF
     
     CALL EXITS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE")
     RETURN
-999 IF(ASSOCIATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
-    IF(ASSOCIATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
+999 IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
+    IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
     IF(ASSOCIATED(NODE_MATCH_LIST)) CALL LIST_DESTROY(NODE_MATCH_LIST,DUMMY_ERR,DUMMY_ERROR,*998)
-998 DO ni=-3,3
-      IF(ASSOCIATED(ADJACENT_ELEMENTS_LIST(ni)%PTR)) CALL LIST_DESTROY(ADJACENT_ELEMENTS_LIST(ni)%PTR,DUMMY_ERR,DUMMY_ERROR,*997)
+998 DO nic=-4,4
+      IF(ASSOCIATED(ADJACENT_ELEMENTS_LIST(nic)%PTR)) CALL LIST_DESTROY(ADJACENT_ELEMENTS_LIST(nic)%PTR,DUMMY_ERR,DUMMY_ERROR,*997)
     ENDDO !ni
 997 CALL ERRORS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE",ERR,ERROR)
     CALL EXITS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE")
@@ -1396,7 +1528,6 @@ CONTAINS
                               & BOUNDARY_ELEMENT
                           ENDDO !ne
                           !Calculate the elements surrounding the elements in the decomposition topology
-                          !CALL DECOMPOSITION_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
                           CALL DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
                         ELSE
                           CALL FLAG_ERROR("Mesh elements is not associated.",ERR,ERROR,*999)
@@ -3124,8 +3255,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,no_adjacent_element,adjacent_element,domain_no,domain_idx,ne,nn,np,NUMBER_OF_DOMAINS, &
       & NUMBER_OF_ADJACENT_ELEMENTS,my_computational_node_number,component_idx
-    INTEGER(INTG), ALLOCATABLE :: LOCAL_ELEMENT_NUMBERS(:)
-    INTEGER(INTG), POINTER :: DOMAINS(:),ADJACENT_ELEMENTS(:)
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:),DOMAINS(:),LOCAL_ELEMENT_NUMBERS(:)
     TYPE(LIST_TYPE), POINTER :: ADJACENT_DOMAINS_LIST
     TYPE(LIST_PTR_TYPE), ALLOCATABLE :: ADJACENT_ELEMENTS_LIST(:)
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -3134,9 +3264,6 @@ CONTAINS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    NULLIFY(DOMAINS)
-    NULLIFY(ADJACENT_ELEMENTS)
-    
     CALL ENTERS("DOMAIN_MAPPINGS_ELEMENTS_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DOMAIN)) THEN
@@ -3232,7 +3359,7 @@ CONTAINS
                     & ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(adjacent_element)%NUMBER_OF_DOMAINS)= &
                     & DOMAIN_LOCAL_GHOST
                 ENDDO !no_adjacent_element
-                IF(ASSOCIATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
+                IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
               ENDDO !domain_idx
               
               DEALLOCATE(ADJACENT_ELEMENTS_LIST)
@@ -3327,8 +3454,8 @@ CONTAINS
     
     CALL EXITS("DOMAIN_MAPPINGS_ELEMENTS_CALCULATE")
     RETURN
-999 IF(ASSOCIATED(DOMAINS)) DEALLOCATE(DOMAINS)
-    IF(ASSOCIATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)    
+999 IF(ALLOCATED(DOMAINS)) DEALLOCATE(DOMAINS)
+    IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)    
     IF(ASSOCIATED(DOMAIN%MAPPINGS%ELEMENTS)) CALL DOMAIN_MAPPINGS_ELEMENTS_FINALISE(DOMAIN%MAPPINGS,DUMMY_ERR,DUMMY_ERROR,*998)
 998 CALL ERRORS("DOMAIN_MAPPINGS_ELEMENTS_CALCULATE",ERR,ERROR)
     CALL EXITS("DOMAIN_MAPPINGS_ELEMENTS_CALCULATE")
@@ -3495,7 +3622,7 @@ CONTAINS
       & NUMBER_OF_GHOST_NODES,my_computational_node_number,number_computational_nodes,component_idx
     INTEGER(INTG), ALLOCATABLE :: LOCAL_NODE_NUMBERS(:),LOCAL_DOF_NUMBERS(:),NODE_COUNT(:),NUMBER_INTERNAL_NODES(:), &
       & NUMBER_BOUNDARY_NODES(:)
-    INTEGER(INTG), POINTER :: DOMAINS(:),ALL_DOMAINS(:),GHOST_NODES(:)
+    INTEGER(INTG), ALLOCATABLE :: DOMAINS(:),ALL_DOMAINS(:),GHOST_NODES(:)
     LOGICAL :: BOUNDARY_DOMAIN
     TYPE(LIST_TYPE), POINTER :: ADJACENT_DOMAINS_LIST,ALL_ADJACENT_DOMAINS_LIST
     TYPE(LIST_PTR_TYPE), ALLOCATABLE :: GHOST_NODES_LIST(:)
@@ -3507,10 +3634,6 @@ CONTAINS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOFS_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
 
-    NULLIFY(DOMAINS)
-    NULLIFY(ALL_DOMAINS)
-    NULLIFY(GHOST_NODES)
-    
     CALL ENTERS("DOMAIN_MAPPINGS_NODES_DOFS_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DOMAIN)) THEN
@@ -3948,9 +4071,9 @@ CONTAINS
     
     CALL EXITS("DOMAIN_MAPPINGS_NODES_DOFS_CALCULATE")
     RETURN
-999 IF(ASSOCIATED(DOMAINS)) DEALLOCATE(DOMAINS)
-    IF(ASSOCIATED(ALL_DOMAINS)) DEALLOCATE(ALL_DOMAINS)
-    IF(ASSOCIATED(GHOST_NODES)) DEALLOCATE(GHOST_NODES)
+999 IF(ALLOCATED(DOMAINS)) DEALLOCATE(DOMAINS)
+    IF(ALLOCATED(ALL_DOMAINS)) DEALLOCATE(ALL_DOMAINS)
+    IF(ALLOCATED(GHOST_NODES)) DEALLOCATE(GHOST_NODES)
     IF(ALLOCATED(NUMBER_INTERNAL_NODES)) DEALLOCATE(NUMBER_INTERNAL_NODES)
     IF(ALLOCATED(NUMBER_BOUNDARY_NODES)) DEALLOCATE(NUMBER_BOUNDARY_NODES)
     IF(ASSOCIATED(DOMAIN%MAPPINGS%NODES)) CALL DOMAIN_MAPPINGS_NODES_FINALISE(DOMAIN%MAPPINGS,DUMMY_ERR,DUMMY_ERROR,*998)
@@ -5013,6 +5136,56 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finialises the mesh adjacent elements information and deallocates all memory
+  SUBROUTINE MESH_ADJACENT_ELEMENT_FINALISE(MESH_ADJACENT_ELEMENT,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(MESH_ADJACENT_ELEMENT_TYPE) :: MESH_ADJACENT_ELEMENT !<The mesh adjacent element to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("MESH_ADJACENT_ELEMENT_FINALISE",ERR,ERROR,*999)
+
+    MESH_ADJACENT_ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS=0
+    IF(ALLOCATED(MESH_ADJACENT_ELEMENT%ADJACENT_ELEMENTS)) DEALLOCATE(MESH_ADJACENT_ELEMENT%ADJACENT_ELEMENTS)
+       
+    CALL EXITS("MESH_ADJACENT_ELEMENT_FINALISE")
+    RETURN
+999 CALL ERRORS("MESH_ADJACENT_ELEMENT_FINALISE",ERR,ERROR)    
+    CALL EXITS("MESH_ADJACENT_ELEMENT_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE MESH_ADJACENT_ELEMENT_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+  !>Initalises the mesh adjacent elements information.
+  SUBROUTINE MESH_ADJACENT_ELEMENT_INITIALISE(MESH_ADJACENT_ELEMENT,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(MESH_ADJACENT_ELEMENT_TYPE) :: MESH_ADJACENT_ELEMENT !<The mesh adjacent element to initialise.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("MESH_ADJACENT_ELEMENT_INITIALISE",ERR,ERROR,*999)
+
+    MESH_ADJACENT_ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS=0
+       
+    CALL EXITS("MESH_ADJACENT_ELEMENT_INITIALISE")
+    RETURN
+999 CALL ERRORS("MESH_ADJACENT_ELEMENT_INITIALISE",ERR,ERROR)    
+    CALL EXITS("MESH_ADJACENT_ELEMENT_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE MESH_ADJACENT_ELEMENT_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finishes the process of creating a mesh. \see OPENCMISS::CMISSMeshCreateFinish
   SUBROUTINE MESH_CREATE_FINISH(MESH,ERR,ERROR,*)
 
@@ -5498,8 +5671,6 @@ CONTAINS
       MESH%NUMBER_OF_EMBEDDED_MESHES=0
       NULLIFY(MESH%EMBEDDED_MESHES)
       MESH%NUMBER_OF_ELEMENTS=0
-      MESH%NUMBER_OF_FACES=0
-      MESH%NUMBER_OF_LINES=0
       NULLIFY(MESH%TOPOLOGY)
       NULLIFY(MESH%DECOMPOSITIONS)
     ENDIF
@@ -5763,8 +5934,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,MATCH_INDEX,ni,nn,node_idx,XI_DIRECTION
+    INTEGER(INTG) :: element_idx,MATCH_INDEX,nic,local_node_idx,node_idx,XI_DIRECTION
     TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("MESH_TOPOLOGY_BOUNDARY_CALCULATE",ERR,ERROR,*999)
 
@@ -5774,28 +5946,58 @@ CONTAINS
         IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
           DO element_idx=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
             BASIS=>TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%BASIS
-            DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
-              IF(ni/=0) THEN
-                IF(TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%NUMBER_OF_ADJACENT_ELEMENTS(ni)==0) THEN
-                  TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%BOUNDARY_ELEMENT=.TRUE.
-                  !! \todo fix for Simplex elements
-                  IF(ni<0) THEN
-                    XI_DIRECTION=-ni
-                    MATCH_INDEX=1
-                  ELSE
-                    XI_DIRECTION=ni
-                    MATCH_INDEX=BASIS%NUMBER_OF_NODES_XI(ni)
+            SELECT CASE(BASIS%TYPE)
+            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+              DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+                IF(nic/=0) THEN
+                  IF(TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS==0) THEN
+                    TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%BOUNDARY_ELEMENT=.TRUE.
+                    IF(nic<0) THEN
+                      XI_DIRECTION=-nic
+                      MATCH_INDEX=1
+                    ELSE
+                      XI_DIRECTION=nic
+                      MATCH_INDEX=BASIS%NUMBER_OF_NODES_XIC(nic)
+                    ENDIF                    
+                    DO local_node_idx=1,BASIS%NUMBER_OF_NODES
+                      IF(BASIS%NODE_POSITION_INDEX(local_node_idx,XI_DIRECTION)==MATCH_INDEX) THEN
+                        node_idx=TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%MESH_ELEMENT_NODES(local_node_idx)
+                        TOPOLOGY%NODES%NODES(node_idx)%BOUNDARY_NODE=.TRUE.
+                      ENDIF
+                    ENDDO !nn
                   ENDIF
-
-                  DO nn=1,BASIS%NUMBER_OF_NODES
-                    IF(BASIS%NODE_POSITION_INDEX(nn,XI_DIRECTION)==MATCH_INDEX) THEN
-                      node_idx=TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%MESH_ELEMENT_NODES(nn)
+                ENDIF
+              ENDDO !nic            
+            CASE(BASIS_SIMPLEX_TYPE)
+              TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%BOUNDARY_ELEMENT=.FALSE.
+              DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES
+                TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%BOUNDARY_ELEMENT=TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)% &
+                  & BOUNDARY_ELEMENT.OR.TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%ADJACENT_ELEMENTS(nic)% &
+                  & NUMBER_OF_ADJACENT_ELEMENTS==0
+                IF(TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS==0) THEN
+                  DO local_node_idx=1,BASIS%NUMBER_OF_NODES
+                    IF(BASIS%NODE_POSITION_INDEX(local_node_idx,nic)==1) THEN
+                      node_idx=TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%MESH_ELEMENT_NODES(local_node_idx)
                       TOPOLOGY%NODES%NODES(node_idx)%BOUNDARY_NODE=.TRUE.
                     ENDIF
-                  ENDDO !nn
+                  ENDDO !local_node_idx
                 ENDIF
-              ENDIF
-            ENDDO !ni            
+              ENDDO !nic
+            CASE(BASIS_SERENDIPITY_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_AUXILLIARY_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_B_SPLINE_TP_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_EXTENDED_LAGRANGE_TP_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The basis type of "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))// &
+                & " is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           ENDDO !element_idx
         ELSE
           CALL FLAG_ERROR("Topology elements is not associated.",ERR,ERROR,*999)
@@ -5805,6 +6007,25 @@ CONTAINS
       ENDIF
     ELSE
       CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    IF(DIAGNOSTICS1) THEN
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Boundary elements:",ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of elements = ",TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS, &
+        ERR,ERROR,*999)
+      DO element_idx=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Element : ",element_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Boundary element = ",TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)% &
+          & BOUNDARY_ELEMENT,ERR,ERROR,*999)        
+      ENDDO !element_idx
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Boundary nodes:",ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of nodes = ",TOPOLOGY%NODES%NUMBER_OF_NODES, &
+        ERR,ERROR,*999)
+      DO node_idx=1,TOPOLOGY%NODES%NUMBER_OF_NODES
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Node : ",node_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Boundary node = ",TOPOLOGY%NODES%NODES(node_idx)% &
+          & BOUNDARY_NODE,ERR,ERROR,*999)        
+      ENDDO !element_idx            
     ENDIF
  
     CALL EXITS("MESH_TOPOLOGY_BOUNDARY_CALCULATE")
@@ -6120,14 +6341,19 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: nic
 
     CALL ENTERS("MESH_TOPOLOGY_ELEMENT_FINALISE",ERR,ERROR,*999)
 
     IF(ALLOCATED(ELEMENT%USER_ELEMENT_NODES)) DEALLOCATE(ELEMENT%USER_ELEMENT_NODES)
     IF(ALLOCATED(ELEMENT%GLOBAL_ELEMENT_NODES)) DEALLOCATE(ELEMENT%GLOBAL_ELEMENT_NODES)
     IF(ALLOCATED(ELEMENT%MESH_ELEMENT_NODES)) DEALLOCATE(ELEMENT%MESH_ELEMENT_NODES)
-    IF(ALLOCATED(ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS)) DEALLOCATE(ELEMENT%NUMBER_OF_ADJACENT_ELEMENTS)
-    IF(ALLOCATED(ELEMENT%ADJACENT_ELEMENTS)) DEALLOCATE(ELEMENT%ADJACENT_ELEMENTS)
+    IF(ALLOCATED(ELEMENT%ADJACENT_ELEMENTS)) THEN
+      DO nic=LBOUND(ELEMENT%ADJACENT_ELEMENTS,1),UBOUND(ELEMENT%ADJACENT_ELEMENTS,1)
+        CALL MESH_ADJACENT_ELEMENT_FINALISE(ELEMENT%ADJACENT_ELEMENTS(nic),ERR,ERROR,*999)
+      ENDDO !nic
+      DEALLOCATE(ELEMENT%ADJACENT_ELEMENTS)
+    ENDIF
   
     CALL EXITS("MESH_TOPOLOGY_ELEMENT_FINALISE")
     RETURN
@@ -6523,19 +6749,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: j,ne,ne1,nep1,ni,nn,nn1,nn2,np,np1,DUMMY_ERR,FACE_XI(2),NODE_POSITION_INDEX(3)
+    INTEGER(INTG) :: j,ne,ne1,nep1,ni,nic,nn,nn1,nn2,nn3,node_idx,np,np1,DUMMY_ERR,FACE_XI(2),FACE_XIC(3),NODE_POSITION_INDEX(4)
     INTEGER(INTG) :: xi_direction,direction_index,xi_dir_check,xi_dir_search,NUMBER_NODE_MATCHES
-    INTEGER(INTG) :: NUMBER_SURROUNDING,MAX_NUMBER_SURROUNDING,NUMBER_OF_NODES_XI(3)
-    INTEGER(INTG), POINTER :: NODE_MATCHES(:),ADJACENT_ELEMENTS(:)
+    INTEGER(INTG) :: NUMBER_SURROUNDING,NUMBER_OF_NODES_XIC(4)
+    INTEGER(INTG), ALLOCATABLE :: NODE_MATCHES(:),ADJACENT_ELEMENTS(:)
     LOGICAL :: XI_COLLAPSED,FACE_COLLAPSED(-3:3),SUBSET
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
     TYPE(LIST_TYPE), POINTER :: NODE_MATCH_LIST
-    TYPE(LIST_PTR_TYPE) :: ADJACENT_ELEMENTS_LIST(-3:3)
+    TYPE(LIST_PTR_TYPE) :: ADJACENT_ELEMENTS_LIST(-4:4)
     TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
 
-    NULLIFY(NODE_MATCHES)
-    NULLIFY(BASIS)
-
+    NULLIFY(NODE_MATCH_LIST)
+    DO nic=-4,4
+      NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
+    ENDDO !nic
+    
     CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(TOPOLOGY)) THEN
@@ -6544,170 +6772,243 @@ CONTAINS
           !Loop over the global elements in the mesh
           DO ne=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS            
             BASIS=>TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
-            DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
-              NULLIFY(ADJACENT_ELEMENTS_LIST(ni)%PTR)
-              CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(ni)%PTR,ERR,ERROR,*999)
-              CALL LIST_DATA_TYPE_SET(ADJACENT_ELEMENTS_LIST(ni)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
-              CALL LIST_INITIAL_SIZE_SET(ADJACENT_ELEMENTS_LIST(ni)%PTR,5,ERR,ERROR,*999)
-              CALL LIST_CREATE_FINISH(ADJACENT_ELEMENTS_LIST(ni)%PTR,ERR,ERROR,*999)
+            DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+              NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
+              CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(nic)%PTR,ERR,ERROR,*999)
+              CALL LIST_DATA_TYPE_SET(ADJACENT_ELEMENTS_LIST(nic)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
+              CALL LIST_INITIAL_SIZE_SET(ADJACENT_ELEMENTS_LIST(nic)%PTR,5,ERR,ERROR,*999)
+              CALL LIST_CREATE_FINISH(ADJACENT_ELEMENTS_LIST(nic)%PTR,ERR,ERROR,*999)
             ENDDO !ni
-            NUMBER_OF_NODES_XI=1
-            NUMBER_OF_NODES_XI(1:BASIS%NUMBER_OF_XI)=BASIS%NUMBER_OF_NODES_XI(1:BASIS%NUMBER_OF_XI)
+            NUMBER_OF_NODES_XIC=1
+            NUMBER_OF_NODES_XIC(1:BASIS%NUMBER_OF_XI_COORDINATES)=BASIS%NUMBER_OF_NODES_XIC(1:BASIS%NUMBER_OF_XI_COORDINATES)
             !Place the current element in the surrounding list
             CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(0)%PTR,TOPOLOGY%ELEMENTS%ELEMENTS(ne)%GLOBAL_NUMBER,ERR,ERROR,*999)
-            MAX_NUMBER_SURROUNDING=1
-            !Determine the collapsed "faces" if any
-            NODE_POSITION_INDEX=1
-            !Loop over the face normals of the element
-            DO ni=1,BASIS%NUMBER_OF_XI
-              !Determine the xi directions that lie in this xi direction
-              FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
-              FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
-              !Reset the node_position_index in this xi direction
-              NODE_POSITION_INDEX(ni)=1
-              !Loop over the two faces with this normal
-              DO direction_index=-1,1,2
-                xi_direction=direction_index*ni
-                FACE_COLLAPSED(xi_direction)=.FALSE.
-                DO j=1,2
-                  xi_dir_check=FACE_XI(j)
-                  IF(xi_dir_check<=BASIS%NUMBER_OF_XI) THEN
-                    xi_dir_search=FACE_XI(3-j)
-                    NODE_POSITION_INDEX(xi_dir_search)=1
-                    XI_COLLAPSED=.TRUE.
-                    DO WHILE(NODE_POSITION_INDEX(xi_dir_search)<=NUMBER_OF_NODES_XI(xi_dir_search).AND.XI_COLLAPSED)
-                      !Get the first local node along the xi check direction
-                      NODE_POSITION_INDEX(xi_dir_check)=1
-                      nn1=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),NODE_POSITION_INDEX(3),1)
-                      !Get the second local node along the xi check direction
-                      NODE_POSITION_INDEX(xi_dir_check)=2
-                      nn2=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),NODE_POSITION_INDEX(3),1)
-                      IF(nn1/=0.AND.nn2/=0) THEN
-                        IF(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn1)/= &
-                          & TOPOLOGY%ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn2)) XI_COLLAPSED=.TRUE.
-                      ENDIF
-                      NODE_POSITION_INDEX(xi_dir_search)=NODE_POSITION_INDEX(xi_dir_search)+1
-                    ENDDO !xi_dir_search
-                    IF(XI_COLLAPSED) FACE_COLLAPSED(xi_direction)=.TRUE.
+            SELECT CASE(BASIS%TYPE)
+            CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+              !Determine the collapsed "faces" if any
+              NODE_POSITION_INDEX=1
+              !Loop over the face normals of the element
+              DO ni=1,BASIS%NUMBER_OF_XI
+                !Determine the xi directions that lie in this xi direction
+                FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
+                FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
+                !Reset the node_position_index in this xi direction
+                NODE_POSITION_INDEX(ni)=1
+                !Loop over the two faces with this normal
+                DO direction_index=-1,1,2
+                  xi_direction=direction_index*ni
+                  FACE_COLLAPSED(xi_direction)=.FALSE.
+                  DO j=1,2
+                    xi_dir_check=FACE_XI(j)
+                    IF(xi_dir_check<=BASIS%NUMBER_OF_XI) THEN
+                      xi_dir_search=FACE_XI(3-j)
+                      NODE_POSITION_INDEX(xi_dir_search)=1
+                      XI_COLLAPSED=.TRUE.
+                      DO WHILE(NODE_POSITION_INDEX(xi_dir_search)<=NUMBER_OF_NODES_XIC(xi_dir_search).AND.XI_COLLAPSED)
+                        !Get the first local node along the xi check direction
+                        NODE_POSITION_INDEX(xi_dir_check)=1
+                        nn1=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),NODE_POSITION_INDEX(3),1)
+                        !Get the second local node along the xi check direction
+                        NODE_POSITION_INDEX(xi_dir_check)=2
+                        nn2=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),NODE_POSITION_INDEX(3),1)
+                        IF(nn1/=0.AND.nn2/=0) THEN
+                          IF(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn1)/= &
+                            & TOPOLOGY%ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn2)) XI_COLLAPSED=.TRUE.
+                        ENDIF
+                        NODE_POSITION_INDEX(xi_dir_search)=NODE_POSITION_INDEX(xi_dir_search)+1
+                      ENDDO !xi_dir_search
+                      IF(XI_COLLAPSED) FACE_COLLAPSED(xi_direction)=.TRUE.
+                    ENDIF
+                  ENDDO !j
+                  NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XIC(ni)
+                ENDDO !direction_index
+              ENDDO !ni
+              !Loop over the xi directions and calculate the surrounding elements
+              DO ni=1,BASIS%NUMBER_OF_XI
+                !Determine the xi directions that lie in this xi direction
+                FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
+                FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
+                !Loop over the two faces                
+                DO direction_index=-1,1,2
+                  xi_direction=direction_index*ni                  
+                  !Find nodes in the element on the appropriate face/line/point
+                  NULLIFY(NODE_MATCH_LIST)
+                  CALL LIST_CREATE_START(NODE_MATCH_LIST,ERR,ERROR,*999)
+                  CALL LIST_DATA_TYPE_SET(NODE_MATCH_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
+                  CALL LIST_INITIAL_SIZE_SET(NODE_MATCH_LIST,16,ERR,ERROR,*999)
+                  CALL LIST_CREATE_FINISH(NODE_MATCH_LIST,ERR,ERROR,*999)
+                  IF(direction_index==-1) THEN
+                    NODE_POSITION_INDEX(ni)=1
+                  ELSE
+                    NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XIC(ni)
                   ENDIF
-                ENDDO !j
-                NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XI(ni)
-              ENDDO !direction_index
-            ENDDO !ni
-            !Loop over the xi directions and calculate the surrounding elements
-            DO ni=1,BASIS%NUMBER_OF_XI
-              !Determine the xi directions that lie in this xi direction
-              FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
-              FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
-              !Loop over the two faces
-
-              DO direction_index=-1,1,2
-                xi_direction=direction_index*ni                  
+                  !If the face is collapsed then don't look in this xi direction. The exception is if the opposite face is also
+                  !collpased. This may indicate that we have a funny element in non-rc coordinates that goes around the central
+                  !axis back to itself
+                  IF(FACE_COLLAPSED(xi_direction).AND..NOT.FACE_COLLAPSED(-xi_direction)) THEN
+                    !Do nothing - the match lists are already empty
+                  ELSE
+                    !Find the nodes to match and add them to the node match list
+                    DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1))
+                      NODE_POSITION_INDEX(FACE_XI(1))=nn1
+                      DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2))
+                        NODE_POSITION_INDEX(FACE_XI(2))=nn2
+                        nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),NODE_POSITION_INDEX(3),1)
+                        IF(nn/=0) THEN
+                          np=TOPOLOGY%ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn)
+                          CALL LIST_ITEM_ADD(NODE_MATCH_LIST,np,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO !nn2
+                    ENDDO !nn1
+                  ENDIF
+                  CALL LIST_REMOVE_DUPLICATES(NODE_MATCH_LIST,ERR,ERROR,*999)
+                  CALL LIST_DETACH_AND_DESTROY(NODE_MATCH_LIST,NUMBER_NODE_MATCHES,NODE_MATCHES,ERR,ERROR,*999)
+                  NUMBER_SURROUNDING=0
+                  IF(NUMBER_NODE_MATCHES>0) THEN
+                    !Find list of elements surrounding those nodes
+                    np1=NODE_MATCHES(1)
+                    DO nep1=1,TOPOLOGY%NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
+                      ne1=TOPOLOGY%NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
+                      IF(ne1/=ne) THEN !Don't want the current element
+                        ! grab the nodes list for current and this surrouding elements
+                        ! current face : NODE_MATCHES
+                        ! candidate elem : TOPOLOGY%ELEMENTS%ELEMENTS(ne1)%MESH_ELEMENT_NODES ! should this be GLOBAL_ELEMENT_NODES?
+                        ! if all of current face belongs to the candidate element, we will have found the neighbour
+                        CALL LIST_SUBSET_OF(NODE_MATCHES(1:NUMBER_NODE_MATCHES),TOPOLOGY%ELEMENTS%ELEMENTS(ne1)% &
+                          & MESH_ELEMENT_NODES,SUBSET,ERR,ERROR,*999)
+                        IF(SUBSET) THEN
+                          CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(xi_direction)%PTR,ne1,ERR,ERROR,*999)
+                          NUMBER_SURROUNDING=NUMBER_SURROUNDING+1
+                        ENDIF
+                      ENDIF
+                    ENDDO !nep1
+                  ENDIF
+                  IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
+                ENDDO !direction_index
+              ENDDO !ni
+            CASE(BASIS_SIMPLEX_TYPE)
+              !Loop over the xi coordinates and calculate the surrounding elements
+              DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES
+                !Find the other coordinates of the face/line/point
+                FACE_XIC(1)=OTHER_XI_DIRECTIONS4(nic,1)
+                FACE_XIC(2)=OTHER_XI_DIRECTIONS4(nic,2)
+                FACE_XIC(3)=OTHER_XI_DIRECTIONS4(nic,3)
                 !Find nodes in the element on the appropriate face/line/point
                 NULLIFY(NODE_MATCH_LIST)
                 CALL LIST_CREATE_START(NODE_MATCH_LIST,ERR,ERROR,*999)
                 CALL LIST_DATA_TYPE_SET(NODE_MATCH_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
                 CALL LIST_INITIAL_SIZE_SET(NODE_MATCH_LIST,16,ERR,ERROR,*999)
                 CALL LIST_CREATE_FINISH(NODE_MATCH_LIST,ERR,ERROR,*999)
-                IF(direction_index==-1) THEN
-                  NODE_POSITION_INDEX(ni)=1
-                ELSE
-                  NODE_POSITION_INDEX(ni)=NUMBER_OF_NODES_XI(ni)
-                ENDIF
-                !If the face is collapsed then don't look in this xi direction. The exception is if the opposite face is also
-                !collpased. This may indicate that we have a funny element in non-rc coordinates that goes around the central
-                !axis back to itself
-                IF(FACE_COLLAPSED(xi_direction).AND..NOT.FACE_COLLAPSED(-xi_direction)) THEN
-                  !Do nothing - the match lists are already empty
-                ELSE
-                  !Find the nodes to match and add them to the node match list
-                  DO nn1=1,NUMBER_OF_NODES_XI(FACE_XI(1))
-                    NODE_POSITION_INDEX(FACE_XI(1))=nn1
-                    DO nn2=1,NUMBER_OF_NODES_XI(FACE_XI(2))
-                      NODE_POSITION_INDEX(FACE_XI(2))=nn2
-                      nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),NODE_POSITION_INDEX(3),1)
+                NODE_POSITION_INDEX(nic)=1 !Furtherest away from node with the nic'th coordinate
+                !Find the nodes to match and add them to the node match list
+                DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XIC(1))
+                  NODE_POSITION_INDEX(FACE_XIC(1))=nn1
+                  DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XIC(2))
+                    NODE_POSITION_INDEX(FACE_XIC(2))=nn2
+                    DO nn3=1,NUMBER_OF_NODES_XIC(FACE_XIC(3))
+                      NODE_POSITION_INDEX(FACE_XIC(3))=nn3
+                      nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),NODE_POSITION_INDEX(3), &
+                        NODE_POSITION_INDEX(4))
                       IF(nn/=0) THEN
                         np=TOPOLOGY%ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn)
                         CALL LIST_ITEM_ADD(NODE_MATCH_LIST,np,ERR,ERROR,*999)
                       ENDIF
-                    ENDDO !nn2
-                  ENDDO !nn1
-                ENDIF
+                    ENDDO !nn3
+                  ENDDO !nn2
+                ENDDO !nn1
                 CALL LIST_REMOVE_DUPLICATES(NODE_MATCH_LIST,ERR,ERROR,*999)
                 CALL LIST_DETACH_AND_DESTROY(NODE_MATCH_LIST,NUMBER_NODE_MATCHES,NODE_MATCHES,ERR,ERROR,*999)
-                NUMBER_SURROUNDING=0
                 IF(NUMBER_NODE_MATCHES>0) THEN
                   !Find list of elements surrounding those nodes
-                  np1=NODE_MATCHES(1)
-                  DO nep1=1,TOPOLOGY%NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
-                    ne1=TOPOLOGY%NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
-                    IF(ne1/=ne) THEN !Don't want the current element
-                      ! grab the nodes list for current and this surrouding elements
-                      ! current face : NODE_MATCHES
-                      ! candidate element : TOPOLOGY%ELEMENTS%ELEMENTS(ne1)%MESH_ELEMENT_NODES ! should this be GLOBAL_ELEMENT_NODES?
-                      ! if all of current face belongs to the candidate element, we will have found the neighbour
-                      CALL LIST_SUBSET_OF(NODE_MATCHES,TOPOLOGY%ELEMENTS%ELEMENTS(ne1)%MESH_ELEMENT_NODES, &
-                           & SUBSET,ERR,ERROR,*999)
-                      IF(SUBSET) THEN
-                        CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(xi_direction)%PTR,ne1,ERR,ERROR,*999)
-                        NUMBER_SURROUNDING=NUMBER_SURROUNDING+1
+                  DO node_idx=1,NUMBER_NODE_MATCHES
+                    np1=NODE_MATCHES(node_idx)
+                    DO nep1=1,TOPOLOGY%NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
+                      ne1=TOPOLOGY%NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
+                      IF(ne1/=ne) THEN !Don't want the current element
+                        ! grab the nodes list for current and this surrouding elements
+                        ! current face : NODE_MATCHES
+                        ! candidate elem : TOPOLOGY%ELEMENTS%ELEMENTS(ne1)%MESH_ELEMENT_NODES 
+                        ! if all of current face belongs to the candidate element, we will have found the neighbour
+                        CALL LIST_SUBSET_OF(NODE_MATCHES(1:NUMBER_NODE_MATCHES),TOPOLOGY%ELEMENTS%ELEMENTS(ne1)% &
+                          & MESH_ELEMENT_NODES,SUBSET,ERR,ERROR,*999)
+                        IF(SUBSET) THEN
+                          CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(nic)%PTR,ne1,ERR,ERROR,*999)
+                        ENDIF
                       ENDIF
-                    ENDIF
-                  ENDDO !nep1
+                    ENDDO !nep1
+                  ENDDO !node_idx
                 ENDIF
-                IF(ASSOCIATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
-                IF(NUMBER_SURROUNDING>MAX_NUMBER_SURROUNDING) MAX_NUMBER_SURROUNDING=NUMBER_SURROUNDING
-              ENDDO !direction_index
-            ENDDO !ni
+                IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
+              ENDDO !nic
+            CASE(BASIS_SERENDIPITY_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_AUXILLIARY_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_B_SPLINE_TP_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE(BASIS_EXTENDED_LAGRANGE_TP_TYPE)
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="The basis type of "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))// &
+                & " is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
             !Set the surrounding elements for this element
-            ALLOCATE(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%NUMBER_OF_ADJACENT_ELEMENTS(-BASIS%NUMBER_OF_XI: &
-              & BASIS%NUMBER_OF_XI),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of surrounding elements",ERR,ERROR,*999)
-            ALLOCATE(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(MAX_NUMBER_SURROUNDING, &
-              & -BASIS%NUMBER_OF_XI:BASIS%NUMBER_OF_XI),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate surrounding elements",ERR,ERROR,*999)
-            DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
-              CALL LIST_DETACH_AND_DESTROY(ADJACENT_ELEMENTS_LIST(ni)%PTR,TOPOLOGY%ELEMENTS%ELEMENTS(ne)% &
-                & NUMBER_OF_ADJACENT_ELEMENTS(ni),ADJACENT_ELEMENTS,ERR,ERROR,*999)
-              TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(1:TOPOLOGY%ELEMENTS%ELEMENTS(ne)% &
-                & NUMBER_OF_ADJACENT_ELEMENTS(ni),ni) = ADJACENT_ELEMENTS(1:TOPOLOGY%ELEMENTS% &
-                & ELEMENTS(ne)%NUMBER_OF_ADJACENT_ELEMENTS(ni))
-              IF(ASSOCIATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
-            ENDDO !ni            
+            ALLOCATE(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(-BASIS%NUMBER_OF_XI_COORDINATES: &
+              & BASIS%NUMBER_OF_XI_COORDINATES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent elements.",ERR,ERROR,*999)
+            DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+              CALL MESH_ADJACENT_ELEMENT_INITIALISE(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic),ERR,ERROR,*999)
+              CALL LIST_REMOVE_DUPLICATES(ADJACENT_ELEMENTS_LIST(nic)%PTR,ERR,ERROR,*999)
+              CALL LIST_DETACH_AND_DESTROY(ADJACENT_ELEMENTS_LIST(nic)%PTR,TOPOLOGY%ELEMENTS%ELEMENTS(ne)% &
+                & ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS,ADJACENT_ELEMENTS,ERR,ERROR,*999)
+              ALLOCATE(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%ADJACENT_ELEMENTS(TOPOLOGY%ELEMENTS%ELEMENTS(ne)% &
+                ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element adjacent elements.",ERR,ERROR,*999)
+              TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%ADJACENT_ELEMENTS(1:TOPOLOGY%ELEMENTS%ELEMENTS(ne)% &
+                ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS) = ADJACENT_ELEMENTS(1:TOPOLOGY%ELEMENTS% &
+                & ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS)
+              IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
+            ENDDO !nic
           ENDDO !ne           
         ELSE
-          CALL FLAG_ERROR("Mesh topology elements is not associated",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Mesh topology elements is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Mesh topology nodes is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Mesh topology nodes is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Mesh topology is not allocated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Mesh topology is not allocated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of elements = ",TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
       DO ne=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
         BASIS=>TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Global element number = ",ne,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of xi directions = ",BASIS%NUMBER_OF_XI,ERR,ERROR,*999)
-        DO ni=-BASIS%NUMBER_OF_XI,BASIS%NUMBER_OF_XI
-          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Xi direction = ",ni,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Global element number : ",ne,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of xi coordinates = ",BASIS%NUMBER_OF_XI_COORDINATES, &
+          & ERR,ERROR,*999)
+        DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Xi coordinate : ",nic,ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of adjacent elements = ", &
-            & TOPOLOGY%ELEMENTS%ELEMENTS(ne)%NUMBER_OF_ADJACENT_ELEMENTS(ni),ERR,ERROR,*999)
-          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,TOPOLOGY%ELEMENTS%ELEMENTS(ne)% &
-            & NUMBER_OF_ADJACENT_ELEMENTS(ni),8,8,TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(:,ni), &
-            & '("        Adjacent elements =",8(X,I8))','(30x,8(X,I8))',ERR,ERROR,*999)
-        ENDDO !ni
+            & TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS,ERR,ERROR,*999)
+          IF(TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS>0) THEN
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,TOPOLOGY%ELEMENTS%ELEMENTS(ne)% &
+              & ADJACENT_ELEMENTS(nic)%NUMBER_OF_ADJACENT_ELEMENTS,8,8,TOPOLOGY%ELEMENTS%ELEMENTS(ne)%ADJACENT_ELEMENTS(nic)% &
+              & ADJACENT_ELEMENTS,'("        Adjacent elements :",8(X,I8))','(30x,8(X,I8))',ERR,ERROR,*999)
+          ENDIF
+        ENDDO !nic
       ENDDO !ne
     ENDIF
     CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE")
     RETURN
-999 IF(ASSOCIATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
-    IF(ASSOCIATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
+999 IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
+    IF(ALLOCATED(ADJACENT_ELEMENTS)) DEALLOCATE(ADJACENT_ELEMENTS)
     IF(ASSOCIATED(NODE_MATCH_LIST)) CALL LIST_DESTROY(NODE_MATCH_LIST,DUMMY_ERR,DUMMY_ERROR,*998)
-998 DO ni=-3,3
-      IF(ASSOCIATED(ADJACENT_ELEMENTS_LIST(ni)%PTR)) CALL LIST_DESTROY(ADJACENT_ELEMENTS_LIST(ni)%PTR,DUMMY_ERR,DUMMY_ERROR,*997)
+998 DO nic=-4,4
+      IF(ASSOCIATED(ADJACENT_ELEMENTS_LIST(nic)%PTR)) CALL LIST_DESTROY(ADJACENT_ELEMENTS_LIST(nic)%PTR,DUMMY_ERR,DUMMY_ERROR,*997)
     ENDDO !ni
 997 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE",ERR,ERROR)
     CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE")
@@ -7367,7 +7668,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: elem_idx,global_deriv,MAX_NUMBER_OF_DERIVATIVES,ne,nk,nn,np,NUMBER_OF_DERIVATIVES
-    INTEGER(INTG), POINTER :: DERIVATIVES(:)
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES(:)
     LOGICAL :: FOUND
     TYPE(LIST_TYPE), POINTER :: NODE_DERIVATIVE_LIST
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
@@ -7468,7 +7769,7 @@ CONTAINS
     
     CALL EXITS("MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE")
     RETURN
-999 IF(ASSOCIATED(DERIVATIVES)) DEALLOCATE(DERIVATIVES)
+999 IF(ALLOCATED(DERIVATIVES)) DEALLOCATE(DERIVATIVES)
     IF(ASSOCIATED(NODE_DERIVATIVE_LIST)) CALL LIST_DESTROY(NODE_DERIVATIVE_LIST,ERR,ERROR,*998)
 998 CALL ERRORS("MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE",ERR,ERROR)
     CALL EXITS("MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE")

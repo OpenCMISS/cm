@@ -473,7 +473,16 @@
     }} % e.g. \delnby{u}{x} => del^2 u / del x^2
 \newcommand{\delthreeby}[4]{\ensuremath{ %
     \dfrac{ \del^{3} #1}{\del #2 \del #3 \del #4} %
-    }} % e.g. \delthreeby{u}{x}{y}{z} => del^2 u / del x del y del z
+    }} % e.g. \delthreeby{u}{x}{y}{z} => del^3 u / del x del y del z
+\newcommand{\delthreecuby}[2]{\ensuremath{ %
+    \dfrac{ \del^{3} #1}{\del #2^{3}} %
+    }} % e.g. \delthreecuby{u}{x} => del^3 u / del x^3
+\newcommand{\deldeltwoby}[3]{\ensuremath{ %
+    \dfrac{ \del^{3} #1}{\del #2 \del #3^{2}} %
+    }} % e.g. \deldeltwoby{u}{x}{y} => del^3 u / del x del y^2
+\newcommand{\deltwodelby}[3]{\ensuremath{ %
+    \dfrac{ \del^{3} #1}{\del #2^{2} \del #3} %
+    }} % e.g. \deltwodelby{u}{x}{y} => del^3 u / del x^2 del y
 \newcommand{\delnby}[3]{\ensuremath{ %
     \dfrac{\del #1}{\del #2} %
     }} % e.g. \delnby{3}{u}{v} => del^3 u / del v^3
@@ -555,6 +564,12 @@
 \newcommand{\lbfn}[2]{\ensuremath{ %
     \fnof{\lbfnsymb{#1}}{#2} %
     }} % \lbfn{n}{xi} => Lagrange basis function at node n evaluated at xi
+\newcommand{\sbfnsymb}[1]{\ensuremath{ %
+    N_{#1} %
+  }} % Simplex basis function symbol
+\newcommand{\sbfn}[2]{\ensuremath{ %
+    \fnof{\sbfnsymb{#1}}{#2} %
+    }} % \sbfn{n}{xi} => Simplex basis function at node n evaluated at xi
 \newcommand{\gbfnsymb}[2]{\ensuremath{ %
     \psi_{#1}^{#2} %
     }} % Generic basis function symbol

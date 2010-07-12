@@ -1268,7 +1268,7 @@ CONTAINS
               TOTAL_NUMBER_OF_NODES_XI=1
               NUMBER_OF_ELEMENTS_XI=1
               DO ni=1,BASIS%NUMBER_OF_XI
-                TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+ &
+                TOTAL_NUMBER_OF_NODES_XI(ni)=(BASIS%NUMBER_OF_NODES_XIC(ni)-2)*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+ &
                   REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
                 TOTAL_NUMBER_OF_NODES=TOTAL_NUMBER_OF_NODES*TOTAL_NUMBER_OF_NODES_XI(ni)
                 GRID_NUMBER_OF_ELEMENTS=GRID_NUMBER_OF_ELEMENTS*REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)
@@ -1324,35 +1324,35 @@ CONTAINS
                       IF(BASIS%NUMBER_OF_XI<2.OR.ne2<=NUMBER_OF_ELEMENTS_XI(2)) THEN
                         IF(ne1<=NUMBER_OF_ELEMENTS_XI(1)) THEN
                           grid_ne=ne1
-                          np=1+(ne1-1)*(BASIS%NUMBER_OF_NODES_XI(1)-1)
+                          np=1+(ne1-1)*(BASIS%NUMBER_OF_NODES_XIC(1)-1)
                           IF(BASIS%NUMBER_OF_XI>1) THEN
                             grid_ne=grid_ne+(ne2-1)*NUMBER_OF_ELEMENTS_XI(1)
-                            np=np+(ne2-1)*TOTAL_NUMBER_OF_NODES_XI(1)*(BASIS%NUMBER_OF_NODES_XI(2)-1)
+                            np=np+(ne2-1)*TOTAL_NUMBER_OF_NODES_XI(1)*(BASIS%NUMBER_OF_NODES_XIC(2)-1)
                             IF(BASIS%NUMBER_OF_XI>2) THEN
                               grid_ne=grid_ne+(ne3-1)*NUMBER_OF_ELEMENTS_XI(1)*NUMBER_OF_ELEMENTS_XI(2)
                               np=np+(ne3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)* &
-                                & (BASIS%NUMBER_OF_NODES_XI(3)-1)
+                                & (BASIS%NUMBER_OF_NODES_XIC(3)-1)
                             ENDIF
                           ENDIF
                           IF(BASIS%TYPE==BASIS_LAGRANGE_HERMITE_TP_TYPE) THEN
                             !Lagrange Hermite TP elements
                             ne=grid_ne
                             nn=0
-                            DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
+                            DO nn1=1,BASIS%NUMBER_OF_NODES_XIC(1)
                               nn=nn+1
                               ELEMENT_NODES(nn)=np+(nn1-1)                              
                             ENDDO !nn1
                             IF(BASIS%NUMBER_OF_XI>1) THEN
-                              DO nn2=2,BASIS%NUMBER_OF_NODES_XI(2)
-                                DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
+                              DO nn2=2,BASIS%NUMBER_OF_NODES_XIC(2)
+                                DO nn1=1,BASIS%NUMBER_OF_NODES_XIC(1)
                                   nn=nn+1
                                   ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)
                                 ENDDO !nn1
                               ENDDO !nn2
                               IF(BASIS%NUMBER_OF_XI>2) THEN
-                                DO nn3=2,BASIS%NUMBER_OF_NODES_XI(3)
-                                  DO nn2=1,BASIS%NUMBER_OF_NODES_XI(2)
-                                    DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
+                                DO nn3=2,BASIS%NUMBER_OF_NODES_XIC(3)
+                                  DO nn2=1,BASIS%NUMBER_OF_NODES_XIC(2)
+                                    DO nn1=1,BASIS%NUMBER_OF_NODES_XIC(1)
                                       nn=nn+1
                                       ELEMENT_NODES(nn)=np+(nn1-1)+(nn2-1)*TOTAL_NUMBER_OF_NODES_XI(1)+ &
                                         & (nn3-1)*TOTAL_NUMBER_OF_NODES_XI(1)*TOTAL_NUMBER_OF_NODES_XI(2)
@@ -1369,7 +1369,7 @@ CONTAINS
                               !Line element
                               ne=grid_ne
                               nn=0
-                              DO nn1=1,BASIS%NUMBER_OF_NODES_XI(1)
+                              DO nn1=1,BASIS%NUMBER_OF_NODES_XIC(1)
                                 nn=nn+1
                                 ELEMENT_NODES(nn)=np+(nn1-1)                              
                               ENDDO !nn1
@@ -1438,6 +1438,7 @@ CONTAINS
                                 ELEMENT_NODES(8)=np+2+2*TOTAL_NUMBER_OF_NODES_XI(1)
                                 ELEMENT_NODES(9)=np+1+TOTAL_NUMBER_OF_NODES_XI(1)
                                 ELEMENT_NODES(10)=np+1+2*TOTAL_NUMBER_OF_NODES_XI(1)
+                                CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS,ELEMENT_NODES,ERR,ERROR,*999)
                               CASE DEFAULT
                                 LOCAL_ERROR="The simplex basis interpolation order of "// &
                                   & TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(1),"*",ERR,ERROR))// &
@@ -1746,7 +1747,7 @@ CONTAINS
                                   & TOTAL_NUMBER_OF_NODES_XI(2)
                                 ELEMENT_NODES(19)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                   & TOTAL_NUMBER_OF_NODES_XI(2)
-                                ELEMENT_NODES(20)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+2*TOTAL_NUMBER_OF_NODES_XI(1)* &
+                                ELEMENT_NODES(20)=np+2+TOTAL_NUMBER_OF_NODES_XI(1)+3*TOTAL_NUMBER_OF_NODES_XI(1)* &
                                   & TOTAL_NUMBER_OF_NODES_XI(2)
                                 CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS,ELEMENT_NODES,ERR,ERROR,*999)
                                 !Fifth sub-element
@@ -1948,7 +1949,7 @@ CONTAINS
                           IF(.NOT.ALL(BASIS%COLLAPSED_XI==BASIS_NOT_COLLAPSED))  &
                             & CALL FLAG_ERROR("Degenerate (collapsed) basis not implemented.",ERR,ERROR,*999)
                           !Calculate nodes and element sizes
-                          CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,BASIS%NUMBER_OF_NODES_XI, &
+                          CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,BASIS%NUMBER_OF_NODES_XIC, &
                             & CYLINDER_MESH%CYLINDER_EXTENT, TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS, &
                             & NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*999)
                           !Create the default node set
@@ -1978,9 +1979,9 @@ CONTAINS
                                 from1=NINT(DELTA(1)*(ne1-1)/DELTAi(1)+1)
                                 nn=0
                                 ! number of nodes in an element is dependent on basis used
-                                DO nn3=from3,from3+BASIS%NUMBER_OF_NODES_XI(3)-1
-                                  DO nn2=from2,from2+BASIS%NUMBER_OF_NODES_XI(2)-1
-                                    DO nn1=from1,from1+BASIS%NUMBER_OF_NODES_XI(1)-1
+                                DO nn3=from3,from3+BASIS%NUMBER_OF_NODES_XIC(3)-1
+                                  DO nn2=from2,from2+BASIS%NUMBER_OF_NODES_XIC(2)-1
+                                    DO nn1=from1,from1+BASIS%NUMBER_OF_NODES_XIC(1)-1
                                       nn=nn+1
                                       ! compensate for circumferential loop-around
                                       IF(nn2>SIZE(NIDX,2)) THEN
@@ -2672,7 +2673,7 @@ CONTAINS
           DELTA_COORD=0.0_DP
           TOTAL_NUMBER_OF_NODES_XI=1
           DO ni=1,REGULAR_MESH%MESH_DIMENSION
-            TOTAL_NUMBER_OF_NODES_XI(ni)=(REGULAR_MESH%BASIS%NUMBER_OF_NODES_XI(ni)-2)*REGULAR_MESH% &
+            TOTAL_NUMBER_OF_NODES_XI(ni)=(REGULAR_MESH%BASIS%NUMBER_OF_NODES_XIC(ni)-2)*REGULAR_MESH% &
               & NUMBER_OF_ELEMENTS_XI(ni)+REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
           ENDDO !ni
           DO ni=1,REGULAR_MESH%MESH_DIMENSION          
@@ -2806,7 +2807,7 @@ CONTAINS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: FIELD_VARIABLE_COMPONENT
-    INTEGER(INTG) :: NUMBER_ELEMENTS_XI(3),NUMBER_OF_NODES_XI(3)
+    INTEGER(INTG) :: NUMBER_ELEMENTS_XI(3),NUMBER_OF_NODES_XIC(3)
     INTEGER(INTG) :: TOTAL_NUMBER_NODES_XI(3),INTERPOLATION_TYPES(3)
     INTEGER(INTG) :: component_idx,xi_idx
     INTEGER(INTG) :: np,global_np,ny,nk
@@ -2823,9 +2824,9 @@ CONTAINS
     IF(ASSOCIATED(CYLINDER_MESH%BASIS)) THEN
       BASIS=>CYLINDER_MESH%BASIS
       NUMBER_ELEMENTS_XI=CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI
-      NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XI
+      NUMBER_OF_NODES_XIC=BASIS%NUMBER_OF_NODES_XIC
       DO xi_idx=1,3
-        TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XI(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
+        TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XIC(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
       ENDDO
       TOTAL_NUMBER_NODES_XI(2)=TOTAL_NUMBER_NODES_XI(2)-1 ! theta loops around so slightly different
       ! calculate DELTAi now
@@ -2834,7 +2835,7 @@ CONTAINS
       DELTA(2)=TWOPI/NUMBER_ELEMENTS_XI(2)
       DELTA(3)=CYLINDER_EXTENT(3)/NUMBER_ELEMENTS_XI(3)
       DO xi_idx=1,3
-        DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XI(xi_idx)-1)
+        DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XIC(xi_idx)-1)
       ENDDO
     ELSE
       CALL FLAG_ERROR("Cylinder mesh does not have a basis associated.",ERR,ERROR,*999)
@@ -2978,7 +2979,7 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS_XI(3) !Specified number of elements in each xi direction
-    INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
+    INTEGER(INTG) :: NUMBER_OF_NODES_XIC(3) ! Number of nodes per element in each xi direction (basis property)
     INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
     REAL(DP) :: delta(3),deltai(3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -2992,9 +2993,9 @@ CONTAINS
         BASIS=>CYLINDER_MESH%BASIS
         IF(.NOT.ALLOCATED(ELEMENTS)) THEN
           IF(.NOT.ALLOCATED(NODES)) THEN
-            NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XI
+            NUMBER_OF_NODES_XIC=BASIS%NUMBER_OF_NODES_XIC
             ! build indices first (some of these are dummy arguments)
-            CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
+            CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XIC, &
               & cylinder_mesh%cylinder_extent,total_number_of_nodes,total_number_of_elements,NIDX,EIDX, &
               & delta,deltai,ERR,ERROR,*999)
             SELECT CASE(SURFACE_TYPE)
@@ -3055,11 +3056,11 @@ CONTAINS
   ! 
 
   !>Calculates the mesh topology information for a given cylinder (Not to be called by user)
-  SUBROUTINE GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,NUMBER_OF_NODES_XI,CYLINDER_EXTENT, &
+  SUBROUTINE GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,NUMBER_OF_NODES_XIC,CYLINDER_EXTENT, &
     & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*)
     ! Argument variables
     INTEGER(INTG),INTENT(IN) :: NUMBER_ELEMENTS_XI(3) !<Specified number of elements in each xi direction
-    INTEGER(INTG),INTENT(IN) :: NUMBER_OF_NODES_XI(3) !<Number of nodes per element in each xi direction (basis property)
+    INTEGER(INTG),INTENT(IN) :: NUMBER_OF_NODES_XIC(3) !<Number of nodes per element in each xi direction (basis property)
     REAL(DP),INTENT(IN) :: CYLINDER_EXTENT(3)         !<inner & outer radii and height of cylinder
     INTEGER(INTG),INTENT(OUT) :: TOTAL_NUMBER_OF_NODES    !<On exit, contains total number of nodes in cylinder mesh
     INTEGER(INTG),INTENT(OUT) :: TOTAL_NUMBER_OF_ELEMENTS !<On exit, contains total number of elements in cylinder mesh
@@ -3085,12 +3086,12 @@ CONTAINS
         DELTA(2)=TWOPI/NUMBER_ELEMENTS_XI(2)
         DELTA(3)=CYLINDER_EXTENT(3)/NUMBER_ELEMENTS_XI(3)
         DO xi_idx=1,3
-          DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XI(xi_idx)-1)
+          DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XIC(xi_idx)-1)
         ENDDO
 
         ! calculate total elements and nodes
         DO xi_idx=1,3
-          TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XI(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
+          TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XIC(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
         ENDDO
         TOTAL_NUMBER_NODES_XI(2)=TOTAL_NUMBER_NODES_XI(2)-1 ! theta loops around so slightly different
         TOTAL_NUMBER_OF_ELEMENTS=PRODUCT(NUMBER_ELEMENTS_XI)

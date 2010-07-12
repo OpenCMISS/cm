@@ -131,10 +131,9 @@ CONTAINS
       & NUMBER_OF_INTERFACE_VARIABLES,NUMBER_OF_GLOBAL_SOLVER_DOFS,NUMBER_OF_GLOBAL_SOLVER_ROWS, &
       & NUMBER_OF_LINEAR_EQUATIONS_MATRICES,NUMBER_OF_LOCAL_SOLVER_DOFS,NUMBER_OF_LOCAL_SOLVER_ROWS,NUMBER_OF_RANK_COLS, &
       & NUMBER_OF_RANK_ROWS,NUMBER_OF_VARIABLES,rank,rank_idx,row_idx,ROW_LIST_ITEM(3),ROW_RANK,solver_global_dof, &
-      & solver_local_dof,solver_matrix_idx,solver_total_local_dof,solver_variable_idx,solver_variable_idx2, &
-      & TOTAL_LOCAL_DOFS_OFFSET,TOTAL_NUMBER_OF_LOCAL_SOLVER_DOFS,variable_idx,VARIABLE_LIST_ITEM(3),variable_position_idx, &
-      & variable_type
-    INTEGER(INTG), POINTER :: EQUATIONS_SET_VARIABLES(:,:),EQUATIONS_VARIABLES(:,:),INTERFACE_EQUATIONS_LIST(:,:), &
+      & solver_local_dof,solver_matrix_idx,solver_variable_idx,TOTAL_NUMBER_OF_LOCAL_SOLVER_DOFS,variable_idx, &
+      & VARIABLE_LIST_ITEM(3),variable_position_idx,variable_type
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_SET_VARIABLES(:,:),EQUATIONS_VARIABLES(:,:),INTERFACE_EQUATIONS_LIST(:,:), &
       & INTERFACE_VARIABLES(:,:),RANK_GLOBAL_ROWS_LIST(:,:),RANK_GLOBAL_COLS_LIST(:,:)
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_VARIABLE_GLOBAL_SOLVER_DOFS(:),NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS(:), &
       & TOTAL_NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS(:),SUB_MATRIX_INFORMATION(:,:,:),VARIABLE_TYPES(:)
@@ -219,7 +218,6 @@ CONTAINS
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%SOLVER_MAPPING=>SOLVER_MAPPING
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS=>EQUATIONS
                 !Set up list of interface conditions affecting this equations set
-                NULLIFY(INTERFACE_EQUATIONS_LIST)
                 CALL LIST_DETACH_AND_DESTROY(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES(equations_set_idx)%PTR, &
                   & NUMBER_OF_INTERFACES,INTERFACE_EQUATIONS_LIST,ERR,ERROR,*999)
                 ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -247,7 +245,7 @@ CONTAINS
                     CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDDO !interface_condition_idx
-                IF(ASSOCIATED(INTERFACE_EQUATIONS_LIST)) DEALLOCATE(INTERFACE_EQUATIONS_LIST)
+                IF(ALLOCATED(INTERFACE_EQUATIONS_LIST)) DEALLOCATE(INTERFACE_EQUATIONS_LIST)
               ELSE
                 CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -256,7 +254,6 @@ CONTAINS
             ENDIF
           ENDDO !equations_set_idx
           DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
-            NULLIFY(INTERFACE_EQUATIONS_LIST)
             CALL LIST_DETACH_AND_DESTROY(INTERFACE_EQUATIONS_LISTS(interface_condition_idx)%PTR,NUMBER_OF_EQUATIONS_SETS, &
               INTERFACE_EQUATIONS_LIST,ERR,ERROR,*999)
             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
@@ -281,7 +278,7 @@ CONTAINS
                 CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !equations_idx
-            IF(ASSOCIATED(INTERFACE_EQUATIONS_LIST)) DEALLOCATE(INTERFACE_EQUATIONS_LIST)
+            IF(ALLOCATED(INTERFACE_EQUATIONS_LIST)) DEALLOCATE(INTERFACE_EQUATIONS_LIST)
           ENDDO !interface_condition_idx
           !
           !--- Row mappings ---
@@ -684,7 +681,6 @@ CONTAINS
               equations_idx=equations_idx+1
 
               !Get rows list
-              NULLIFY(RANK_GLOBAL_ROWS_LIST)
               CALL LIST_SORT(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,ERR,ERROR,*999)
               CALL LIST_DETACH_AND_DESTROY(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,NUMBER_OF_RANK_ROWS, &
                 & RANK_GLOBAL_ROWS_LIST,ERR,ERROR,*999)
@@ -808,13 +804,12 @@ CONTAINS
                   ENDIF !rank==my rank
                 ENDIF !include row
               ENDDO !global_row_idx
-              IF(ASSOCIATED(RANK_GLOBAL_ROWS_LIST)) DEALLOCATE(RANK_GLOBAL_ROWS_LIST)
+              IF(ALLOCATED(RANK_GLOBAL_ROWS_LIST)) DEALLOCATE(RANK_GLOBAL_ROWS_LIST)
             ENDDO !equations_set_idx
             DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
               equations_idx=equations_idx+1
 
               !Get rows list
-              NULLIFY(RANK_GLOBAL_ROWS_LIST)
               CALL LIST_SORT(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,ERR,ERROR,*999)
               CALL LIST_DETACH_AND_DESTROY(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,NUMBER_OF_RANK_ROWS, &
                 & RANK_GLOBAL_ROWS_LIST,ERR,ERROR,*999)
@@ -887,7 +882,7 @@ CONTAINS
                   ENDIF
                 ENDIF
               ENDDO !global_row_idx
-              IF(ASSOCIATED(RANK_GLOBAL_ROWS_LIST)) DEALLOCATE(RANK_GLOBAL_ROWS_LIST)              
+              IF(ALLOCATED(RANK_GLOBAL_ROWS_LIST)) DEALLOCATE(RANK_GLOBAL_ROWS_LIST)              
             ENDDO !interface_condition_idx            
           ENDDO !rank
           CALL DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE(ROW_DOMAIN_MAPPING,ERR,ERROR,*999)
@@ -953,7 +948,7 @@ CONTAINS
                 CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
-            IF(ASSOCIATED(EQUATIONS_VARIABLES)) DEALLOCATE(EQUATIONS_VARIABLES)
+            IF(ALLOCATED(EQUATIONS_VARIABLES)) DEALLOCATE(EQUATIONS_VARIABLES)
             DO variable_idx=1,NUMBER_OF_INTERFACE_VARIABLES
               solver_variable_idx=solver_variable_idx+1
               CALL SOLVER_MAPPING_VARIABLE_INITIALISE(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)% &
@@ -990,7 +985,7 @@ CONTAINS
                 CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
-            IF(ASSOCIATED(INTERFACE_VARIABLES)) DEALLOCATE(INTERFACE_VARIABLES)
+            IF(ALLOCATED(INTERFACE_VARIABLES)) DEALLOCATE(INTERFACE_VARIABLES)
             
             !Initialise solver column to equations sets mapping array
             CALL SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_INITIALISE(SOLVER_MAPPING% &
@@ -1244,7 +1239,7 @@ CONTAINS
                   CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
-              IF(ASSOCIATED(EQUATIONS_SET_VARIABLES)) DEALLOCATE(EQUATIONS_SET_VARIABLES)
+              IF(ALLOCATED(EQUATIONS_SET_VARIABLES)) DEALLOCATE(EQUATIONS_SET_VARIABLES)
             ENDDO !equations_set_idx
             DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
               equations_idx=equations_idx+1
@@ -1934,6 +1929,8 @@ CONTAINS
             ENDDO !solver_variable_idx
             
             NUMBER_OF_GLOBAL_SOLVER_DOFS=0
+            solver_global_dof=0
+            solver_local_dof=0
             DO dof_type=1,2
               DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
                 
@@ -1950,7 +1947,6 @@ CONTAINS
                     solver_local_dof=LOCAL_DOFS_OFFSET
                     
                     !Get columns list
-                    NULLIFY(RANK_GLOBAL_COLS_LIST)
                     CALL LIST_SORT(RANK_GLOBAL_COLS_LISTS(dof_type,equations_idx,solver_variable_idx,rank)%PTR,ERR,ERROR,*999)
                     CALL LIST_DETACH_AND_DESTROY(RANK_GLOBAL_COLS_LISTS(dof_type,equations_idx,solver_variable_idx,rank)%PTR, &
                       & NUMBER_OF_RANK_COLS,RANK_GLOBAL_COLS_LIST,ERR,ERROR,*999)
@@ -2522,7 +2518,7 @@ CONTAINS
                       END SELECT
                       VARIABLE_RANK_PROCESSED(solver_variable_idx,rank)=.TRUE.
                     ENDIF !Number of rank columns > 0
-                    IF(ASSOCIATED(RANK_GLOBAL_COLS_LIST)) DEALLOCATE(RANK_GLOBAL_COLS_LIST)              
+                    IF(ALLOCATED(RANK_GLOBAL_COLS_LIST)) DEALLOCATE(RANK_GLOBAL_COLS_LIST)              
                   ENDDO !equation_idx
                   
                 ENDDO !solver_variable_idx

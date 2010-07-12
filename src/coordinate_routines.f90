@@ -3775,7 +3775,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: derivative_idx,xi_idx
+    INTEGER(INTG) :: derivative_idx
     REAL(DP) :: ANGLE,DXDNUR(2,2),DXDXI(2,2),R(2,2),MAGNITUDE
 
     CALL ENTERS("COORDINATE_MATERIAL_COORDINATE_SYSTEM_CALCULATE_2D",ERR,ERROR,*999)
@@ -3786,10 +3786,10 @@ CONTAINS
 
     !First calculate reference material CS
     !reference material direction 1.
-    DXDNUR(:,1) = (/DXDXI(1,1),DXDXI(2,1)/)
+    DXDNUR(:,1) = [ DXDXI(1,1),DXDXI(2,1) ]
 
     ! Compute (normalised) vector orthogonal to material direction 1 to form material direction 2
-    DXDNUR(:,2) = (/-1*DXDNUR(2,1),DXDNUR(1,1)/)
+    DXDNUR(:,2) = [ -1*DXDNUR(2,1),DXDNUR(1,1) ]
 
     MAGNITUDE = L2NORM(DXDNUR(:,1))
     DXDNUR(1,1) = DXDNUR(1,1)/MAGNITUDE
@@ -3800,9 +3800,9 @@ CONTAINS
 
     ANGLE = FIBRE_INTERPOLATED_POINT%VALUES(1,1)
 
-    ! Rotate by multiply with rotation matrix
-    R(:,1) = (/cos(ANGLE),-sin(ANGLE)/)
-    R(:,2) = (/sin(ANGLE),cos(ANGLE)/)
+    !Rotate by multiply with rotation matrix
+    R(:,1) = [ COS(ANGLE),-SIN(ANGLE) ]
+    R(:,2) = [ SIN(ANGLE),COS(ANGLE) ]
 
     CALL MATRIX_PRODUCT(R,DXDNUR,DXDNU,ERR,ERROR,*999)
 

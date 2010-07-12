@@ -113,12 +113,12 @@ MODULE TYPES
     INTEGER(INTG) :: KEY_DIMENSION !<The key dimension number i.e., the dimension index used for indexing and sorting
     INTEGER(INTG) :: SORT_ORDER !<The ordering to be used when sorting the list \see LISTS_SortingOrder
     INTEGER(INTG) :: SORT_METHOD !<The sorting method to be used when sorting the list \see LISTS_SortingMethod
-    INTEGER(INTG), POINTER :: LIST_INTG(:) !<A pointer to the integer data (dimension = 1) for integer lists. 
-    INTEGER(INTG), POINTER :: LIST_INTG2(:,:) !<A pointer to the integer data (dimension > 1) for integer lists. 
-    REAL(SP), POINTER :: LIST_SP(:) !<A pointer to the single precision data (dimension = 1)for single precision real lists. 
-    REAL(SP), POINTER :: LIST_SP2(:,:) !<A pointer to the single precision data (dimension > 1) for single precision real lists. 
-    REAL(DP), POINTER :: LIST_DP(:) !<A pointer to the double precision data (dimension = 1)for double precision real lists. 
-    REAL(DP), POINTER :: LIST_DP2(:,:) !<A pointer to the double precision data (dimension > 1) for double precision real lists. 
+    INTEGER(INTG), ALLOCATABLE :: LIST_INTG(:) !<The integer data (dimension = 1) for integer lists. 
+    INTEGER(INTG), ALLOCATABLE :: LIST_INTG2(:,:) !<The integer data (dimension > 1) for integer lists. 
+    REAL(SP), ALLOCATABLE :: LIST_SP(:) !<The single precision data (dimension = 1)for single precision real lists. 
+    REAL(SP), ALLOCATABLE :: LIST_SP2(:,:) !<The single precision data (dimension > 1) for single precision real lists. 
+    REAL(DP), ALLOCATABLE :: LIST_DP(:) !<The double precision data (dimension = 1)for double precision real lists. 
+    REAL(DP), ALLOCATABLE :: LIST_DP2(:,:) !<The double precision data (dimension > 1) for double precision real lists. 
   END TYPE LIST_TYPE
     
   !
@@ -188,7 +188,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_PARTIAL_DERIVATIVES !<The number of paratial derivatives for the basis. Old CMISS name NUT(nbf)
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of local nodes in the basis. Old CMISS name NNT(nbf)
 !!TODO: 
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_XI(:) !<NUMBER_OF_NODES_XI(ni). The number of local nodes in the ni'th direction in the basis. Old CMISS name IBT(2,ni,nb). \todo CHANGE TO NUMBER_OF_NODES_XIC i.e., xi coordinate index not xi???
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_XIC(:) !<NUMBER_OF_NODES_XIC(nic). The number of local nodes in the nic'th coordinate in the basis. Old CMISS name IBT(2,ni,nb).
     INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS  !<The number of element parameters in the basis. Old CMISS name NST(nbf). 
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives at any node in the basis. Old CMISS name NKT(0,nbf)
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DERIVATIVES(:) !<NUMBER_OF_DERIVATIVES(nn). The number of derivatives at the nn'th node in the basis. Old CMISS name NKT(nn,nbf).
@@ -211,6 +211,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnl,nae). The derivative numbers (nk) for the nnl'th face node in the nae'th local face for the basis.
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_XI_NORMAL(:) !<LOCAL_XI_NORMAL(nae). The Xi direction that is normal to either the nae'th local line for bases with 2 xi directions or the nae'th local face for bases with 3 xi directions. For bases with 1 xi direction the array is not allocated. Note: Normals are always outward.
     !Sub-basis information
     TYPE(BASIS_PTR_TYPE), POINTER :: LINE_BASES(:) !<LINE_BASES(nae). The pointer to the basis for the nae'th line for the basis.
     TYPE(BASIS_PTR_TYPE), POINTER :: FACE_BASES(:) !<FACE_BASES(naf). The pointer to the basis for the naf'th face for the basis.
@@ -335,6 +336,12 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of dofs in the mesh.
   END TYPE MESH_DOFS_TYPE
 
+  !Contains information on the mesh adjacent elements for a xi coordinate
+  TYPE MESH_ADJACENT_ELEMENT_TYPE
+    INTEGER(INTG) :: NUMBER_OF_ADJACENT_ELEMENTS !<The number of adjacent elements for the xi coordinate
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<The global element numbers of the elements adjacent to this element for the xi coordinate
+  END TYPE MESH_ADJACENT_ELEMENT_TYPE
+  
   !>Contains the information for an element in a mesh.
   TYPE MESH_ELEMENT_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global element number in the mesh.
@@ -343,8 +350,9 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: MESH_ELEMENT_NODES(:) !<MESH_ELEMENT_NODES(nn). The mesh node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ELEMENT_NODES(:) !<GLOBAL_ELEMENT_NODES(nn). The global node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
     INTEGER(INTG), ALLOCATABLE :: USER_ELEMENT_NODES(:) !<USER_ELEMENT_NODES(nn). The user node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne)
+    TYPE(MESH_ADJACENT_ELEMENT_TYPE), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<ADJACENT_ELEMENTS(-nic:nic). The adjacent elements information in the nic'th xi coordinate direction. Note that -nic gives the adjacent element before the element in the nic'th direction and +nic gives the adjacent element after the element in the nic'th direction. The ni=0 index will give the information on the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    !INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    !INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne)
     LOGICAL :: BOUNDARY_ELEMENT !<Is .TRUE. if the mesh element is on the boundary of a mesh, .FALSE. if not.
   END TYPE MESH_ELEMENT_TYPE
 
@@ -408,9 +416,7 @@ MODULE TYPES
     TYPE(MESH_TYPE), POINTER :: EMBEDDING_MESH !<If this mesh is embedded the pointer to the mesh that this mesh is embedded in. IF the mesh is not embedded the pointer is NULL.
     INTEGER(INTG) :: NUMBER_OF_EMBEDDED_MESHES !<The number of meshes that are embedded in this mesh.
     TYPE(MESH_PTR_TYPE), POINTER :: EMBEDDED_MESHES(:) !<EMBEDDED_MESHES(mesh_idx). A pointer to the mesh_idx'th mesh that is embedded in this mesh.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements in the mesh.
-    INTEGER(INTG) :: NUMBER_OF_FACES !<The number of faces in the mesh.
-    INTEGER(INTG) :: NUMBER_OF_LINES !<The number of lines in the mesh.
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS
     TYPE(MESH_TOPOLOGY_PTR_TYPE), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
     TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
   END TYPE MESH_TYPE
@@ -860,13 +866,20 @@ MODULE TYPES
     TYPE(DECOMPOSITION_FACE_TYPE), ALLOCATABLE :: FACES(:) !<FACES(nl). The pointer to the array of topology information for the faces of this decomposition. FACES(nl) contains the topological information for the nl'th local face of the decomposition.
   END TYPE DECOMPOSITION_FACES_TYPE
 
+  !Contains information on the decomposition adjacent elements for a xi coordinate
+  TYPE DECOMPOSITION_ADJACENT_ELEMENT_TYPE
+    INTEGER(INTG) :: NUMBER_OF_ADJACENT_ELEMENTS !<The number of adjacent elements for the xi coordinate
+    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<The local element numbers of the elements adjacent to this element for the xi coordinate
+  END TYPE DECOMPOSITION_ADJACENT_ELEMENT_TYPE
+  
   !>Contains the information for an element in a decomposition.
   TYPE DECOMPOSITION_ELEMENT_TYPE
     INTEGER(INTG) :: LOCAL_NUMBER !<The local element number in the decomposition.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global element number in the mesh of the local element number in the decomposition.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the element.
-    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
-    INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    TYPE(DECOMPOSITION_ADJACENT_ELEMENT_TYPE), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<ADJACENT_ELEMENTS(-nic:nic). The adjacent elements information in the nic'th xi coordinate direction. Note that -nic gives the adjacent element before the element in the nic'th direction and +nic gives the adjacent element after the element in the nic'th direction. The ni=0 index will give the information on the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    !INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    !INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nae). The local decomposition line number corresponding to the nae'th local line of the element. Old CMISS name NLL(nae,ne). 
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nae). The local decomposition face number corresponding to the nae'th local face of the element. Old CMISS name NLL(nae,ne). 
     LOGICAL :: BOUNDARY_ELEMENT !<Is .TRUE. if the element is on the boundary of the mesh for the domain, .FALSE. if not.
@@ -1515,7 +1528,7 @@ MODULE TYPES
   !> Contains information on indices of non-zero elements with associated dirichlet conditions
   !> Indices stored in compressed column format without a values array
   TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
-    INTEGER(INTG), POINTER :: SPARSE_ROW_INDICES(:) !<SPARSE_ROW_INDICES(SPARSE_COLUMN_INDICES(column_idx)). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
+    INTEGER(INTG), ALLOCATABLE :: SPARSE_ROW_INDICES(:) !<SPARSE_ROW_INDICES(SPARSE_COLUMN_INDICES(column_idx)). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
     INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
 

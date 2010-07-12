@@ -1932,7 +1932,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) ng, mh, mhs, mi, ms, nh, nhs, ni, ns, nhc, mhc, dir
+    INTEGER(INTG) ng, mh, mhs, ms, nh, nhs, ns, nhc, mhc, dir
     REAL(DP) :: XI(3)
     REAL(DP) :: RWG, PGMSI, PGNSI
     INTEGER(INTG) :: MID
@@ -2131,7 +2131,6 @@ CONTAINS
       & (ELEMENT_NUMBER,DOMAIN_NUMBER)%XI,1))
     !Local Variables
     INTEGER(INTG) :: ms
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("INTERFACE_TRANSFORM_GPT",ERR,ERROR,*999)
     

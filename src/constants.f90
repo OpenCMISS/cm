@@ -215,7 +215,7 @@ MODULE CONSTANTS
   !>@}
   
   INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX(23,4) = RESHAPE( &
-    & (/ NO_PART_DERIV,FIRST_PART_DERIV,SECOND_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV, &
+    & [ NO_PART_DERIV,FIRST_PART_DERIV,SECOND_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV, &
     &    FIRST_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV,FIRST_PART_DERIV,NO_PART_DERIV, &
     &    FIRST_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV,FIRST_PART_DERIV,NO_PART_DERIV, &
     &    NO_PART_DERIV,FIRST_PART_DERIV,FIRST_PART_DERIV,NO_PART_DERIV,FIRST_PART_DERIV, &
@@ -234,29 +234,31 @@ MODULE CONSTANTS
     &    NO_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV, &
     &    NO_PART_DERIV,FIRST_PART_DERIV,SECOND_PART_DERIV,FIRST_PART_DERIV,FIRST_PART_DERIV, &
     &    FIRST_PART_DERIV,FIRST_PART_DERIV,FIRST_PART_DERIV,FIRST_PART_DERIV,SECOND_PART_DERIV, &
-    &    SECOND_PART_DERIV,SECOND_PART_DERIV,THIRD_PART_DERIV /), (/23,4/)) !<Partial derivative index map. PARTIAL_DERIVATIVE_INDEX(idx,nic) gives the order of the partial derivative in the ni(c)'th direction for the idx'th partial derivative value.
+    &    SECOND_PART_DERIV,SECOND_PART_DERIV,THIRD_PART_DERIV ], [23,4]) !<Partial derivative index map. PARTIAL_DERIVATIVE_INDEX(idx,nic) gives the order of the partial derivative in the ni(c)'th direction for the idx'th partial derivative value.
 
-  INTEGER(INTG) :: PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(4) = (/ PART_DERIV_S1,PART_DERIV_S2,PART_DERIV_S3,PART_DERIV_S4 /) !<PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(nic) gives the partial derivative index for the first derivative in the ni(c)'th direction
+  INTEGER(INTG) :: PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(4) = [ PART_DERIV_S1,PART_DERIV_S2,PART_DERIV_S3,PART_DERIV_S4 ] !<PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(nic) gives the partial derivative index for the first derivative in the ni(c)'th direction
   
-  INTEGER(INTG) :: PARTIAL_DERIVATIVE_SECOND_DERIVATIVE_MAP(4) = (/ PART_DERIV_S1_S1,PART_DERIV_S2_S2,PART_DERIV_S3_S3, &
-    & PART_DERIV_S4_S4 /) !<PARTIAL_DERIVATIVE_SECOND_DERIVATIVE_MAP(nic) gives the partial derivative index for the second derivative in the ni(c)'th direction
+  INTEGER(INTG) :: PARTIAL_DERIVATIVE_SECOND_DERIVATIVE_MAP(4) = [ PART_DERIV_S1_S1,PART_DERIV_S2_S2,PART_DERIV_S3_S3, &
+    & PART_DERIV_S4_S4 ] !<PARTIAL_DERIVATIVE_SECOND_DERIVATIVE_MAP(nic) gives the partial derivative index for the second derivative in the ni(c)'th direction
 
-  INTEGER(INTG) :: PARTIAL_DERIVATIVE_MAXIMUM_MAP(4) = (/ PART_DERIV_S1_S1,PART_DERIV_S1_S2,PART_DERIV_S1_S2_S3, &
-    & PART_DERIV_S4_S4_S4 /) !<PARTIAL_DERIVATIVE_MAXIMUM_MAP(nic) gives the maximum of partial derivative index for the the ni(c)'th direction
+  INTEGER(INTG) :: PARTIAL_DERIVATIVE_MAXIMUM_MAP(4) = [ PART_DERIV_S1_S1,PART_DERIV_S1_S2,PART_DERIV_S1_S2_S3, &
+    & PART_DERIV_S4_S4_S4 ] !<PARTIAL_DERIVATIVE_MAXIMUM_MAP(nic) gives the maximum of partial derivative index for the the ni(c)'th direction
 
-  INTEGER(INTG) :: PARTIAL_DERIVATIVE_GLOBAL_DERIVATIVE_MAP(20) = (/ NO_GLOBAL_DERIV,GLOBAL_DERIV_S1,0,GLOBAL_DERIV_S2,0, &
-    & GLOBAL_DERIV_S1_S2,GLOBAL_DERIV_S3,0,GLOBAL_DERIV_S1_S3,GLOBAL_DERIV_S2_S3,GLOBAL_DERIV_S1_S2_S3,0,0,0,0,0,0,0,0,0 /) !<PARTIAL_DERIVATIVE_GLOBAL_DERIVATIVE_MAP(nu) gives the global derivative index for the the nu'th partial derivative. If no global derivative exists the map is zero
+  INTEGER(INTG) :: PARTIAL_DERIVATIVE_GLOBAL_DERIVATIVE_MAP(20) = [ NO_GLOBAL_DERIV,GLOBAL_DERIV_S1,0,GLOBAL_DERIV_S2,0, &
+    & GLOBAL_DERIV_S1_S2,GLOBAL_DERIV_S3,0,GLOBAL_DERIV_S1_S3,GLOBAL_DERIV_S2_S3,GLOBAL_DERIV_S1_S2_S3,0,0,0,0,0,0,0,0,0 ] !<PARTIAL_DERIVATIVE_GLOBAL_DERIVATIVE_MAP(nu) gives the global derivative index for the the nu'th partial derivative. If no global derivative exists the map is zero
 
-  INTEGER(INTG) :: GLOBAL_DERIVATIVE_PARTIAL_DERIVATIVE_MAP(8) = (/ NO_PART_DERIV,PART_DERIV_S1,PART_DERIV_S2,PART_DERIV_S1_S2, &
-    & PART_DERIV_S3,PART_DERIV_S1_S3,PART_DERIV_S2_S3,PART_DERIV_S1_S2_S3/) !<GLOBAL_DERIVATIVE_PARTIAL_DERIVATIVE_MAP(nk) gives the partial derivative index for the the nk'th global derivative.
+  INTEGER(INTG) :: GLOBAL_DERIVATIVE_PARTIAL_DERIVATIVE_MAP(8) = [ NO_PART_DERIV,PART_DERIV_S1,PART_DERIV_S2,PART_DERIV_S1_S2, &
+    & PART_DERIV_S3,PART_DERIV_S1_S3,PART_DERIV_S2_S3,PART_DERIV_S1_S2_S3] !<GLOBAL_DERIVATIVE_PARTIAL_DERIVATIVE_MAP(nk) gives the partial derivative index for the the nk'th global derivative.
 
   !>
-  INTEGER(INTG) :: GLOBAL_DERIVATIVE_MAXIMUM_MAP(3) = (/ GLOBAL_DERIV_S1,GLOBAL_DERIV_S1_S2,GLOBAL_DERIV_S1_S2_S3 /) !<GLOBAL_DERIVATIVE_MAXIMUM_MAP(ni) gives the maximum of global derivative index for the the ni'th direction
+  INTEGER(INTG) :: GLOBAL_DERIVATIVE_MAXIMUM_MAP(3) = [ GLOBAL_DERIV_S1,GLOBAL_DERIV_S1_S2,GLOBAL_DERIV_S1_S2_S3 ] !<GLOBAL_DERIVATIVE_MAXIMUM_MAP(ni) gives the maximum of global derivative index for the the ni'th direction
   
   !Other xi directions
   !>
-  INTEGER(INTG) :: OTHER_XI_DIRECTIONS2(2) = (/ 2,1 /) !<OTHER_XI_DIRECTIONS2(ni) gives the other xi direction for direction ni for a two dimensional element
+  INTEGER(INTG) :: OTHER_XI_DIRECTIONS2(2) = [ 2,1 ] !<OTHER_XI_DIRECTIONS2(ni) gives the other xi direction for direction ni for a two dimensional element
   !>
-  INTEGER(INTG) :: OTHER_XI_DIRECTIONS3(3,3,2) = RESHAPE((/ 1,2,3,2,1,1,3,3,2,0,3,2,3,0,1,2,1,0 /),(/3,3,2/)) !<OTHER_XI_DIRECTIONS3(ni,nii,type) gives the other xi directions for direction ni for a three dimensional element. When type=1 then the nii index gives the other two xi directions (for nii=2,3) and when type=2 then ni and nii are used to give the third xi direction.
+  INTEGER(INTG) :: OTHER_XI_DIRECTIONS3(3,3,2) = RESHAPE([ 1,2,3,2,1,1,3,3,2,0,3,2,3,0,1,2,1,0 ],[3,3,2]) !<OTHER_XI_DIRECTIONS3(ni,nii,type) gives the other xi directions for direction ni for a three dimensional element. When type=1 then the nii index gives the other two xi directions (for nii=2,3) and when type=2 then ni and nii are used to give the third xi direction.
+
+  INTEGER(INTG) :: OTHER_XI_DIRECTIONS4(4,3) = RESHAPE([ 2,3,4,1,3,4,1,2,4,1,2,3 ],[4,3]) !<OTHER_XI_DIRECTIONS4(nic,nii) gives the other xi coordinates for coordinate nic for a simplex element.
   
 END MODULE CONSTANTS

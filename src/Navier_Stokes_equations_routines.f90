@@ -2861,7 +2861,7 @@ CONTAINS
 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: equations_row_number,variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
-    INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xi(3)
+    INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
     REAL(DP) :: X(3)
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:), GEOMETRIC_PARAMETERS(:)
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
@@ -2923,39 +2923,39 @@ CONTAINS
                                                 & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                                               en_idx=0
                                               XI_COORDINATES=0.0_DP
-                                              number_of_nodes_xi(1)=DOMAIN%topology%elements%elements(element_idx)% &
-                                                & basis%number_of_nodes_xi(1)
-                                              number_of_nodes_xi(2)=DOMAIN%topology%elements%elements(element_idx)% & 
-                                                & basis%number_of_nodes_xi(2)
+                                              number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)% &
+                                                & basis%number_of_nodes_xic(1)
+                                              number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)% & 
+                                                & basis%number_of_nodes_xic(2)
                                               IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                                number_of_nodes_xi(3)=DOMAIN%topology%elements%elements(element_idx)%basis% &
-                                                  & number_of_nodes_xi(3)
+                                                number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis% &
+                                                  & number_of_nodes_xic(3)
                                               ELSE
-                                                number_of_nodes_xi(3)=1
+                                                number_of_nodes_xic(3)=1
                                               ENDIF
 
                                               IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
                                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
                                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.) THEN
-                                                  DO K=1,number_of_nodes_xi(3)
-                                                    DO J=1,number_of_nodes_xi(2)
-                                                      DO I=1,number_of_nodes_xi(1)
+                                                  DO K=1,number_of_nodes_xic(3)
+                                                    DO J=1,number_of_nodes_xic(2)
+                                                      DO I=1,number_of_nodes_xic(1)
                                                         en_idx=en_idx+1
                                                         IF(DOMAIN%topology%elements%elements(element_idx)% & 
                                                           & element_nodes(en_idx)==node_idx) EXIT
-                                                        XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xi(1)-1))
+                                                        XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
                                                       ENDDO
                                                       IF(DOMAIN%topology%elements%elements(element_idx)% &
                                                         & element_nodes(en_idx)==node_idx) EXIT
                                                         XI_COORDINATES(1)=0.0_DP
-                                                        XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xi(2)-1))
+                                                        XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
                                                     ENDDO
                                                     IF(DOMAIN%topology%elements%elements(element_idx)% & 
                                                       & element_nodes(en_idx)==node_idx) EXIT
                                                     XI_COORDINATES(1)=0.0_DP
                                                     XI_COORDINATES(2)=0.0_DP
-                                                    IF(number_of_nodes_xi(3)/=1) THEN
-                                                      XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xi(3)-1))
+                                                    IF(number_of_nodes_xic(3)/=1) THEN
+                                                      XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
                                                     ENDIF
                                                   ENDDO
                                                   CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
@@ -3781,7 +3781,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,I,J,K
-    INTEGER(INTG) :: number_of_nodes_xi(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX
+    INTEGER(INTG) :: number_of_nodes_xic(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX
     REAL(DP) :: VALUE,X(3),MU_PARAM,L,XI_COORDINATES(3),RHO_PARAM
     REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2),  T_COORDINATES(20,3),CURRENT_TIME
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
@@ -3883,12 +3883,12 @@ CONTAINS
 
                             en_idx=0
                             XI_COORDINATES=0.0_DP
-                            number_of_nodes_xi(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xi(1)
-                            number_of_nodes_xi(2)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xi(2)
+                            number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)
+                            number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(2)
                             IF(NUMBER_OF_DIMENSIONS==3) THEN
-                              number_of_nodes_xi(3)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xi(3)
+                              number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(3)
                             ELSE
-                              number_of_nodes_xi(3)=1
+                              number_of_nodes_xic(3)=1
                             ENDIF
 
                             IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
@@ -3898,22 +3898,22 @@ CONTAINS
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
 
-                              DO K=1,number_of_nodes_xi(3)
-                                DO J=1,number_of_nodes_xi(2)
-                                  DO I=1,number_of_nodes_xi(1)
+                              DO K=1,number_of_nodes_xic(3)
+                                DO J=1,number_of_nodes_xic(2)
+                                  DO I=1,number_of_nodes_xic(1)
                                     en_idx=en_idx+1
                                     IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                    XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xi(1)-1))
+                                    XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
                                   ENDDO
                                     IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
                                     XI_COORDINATES(1)=0.0_DP
-                                    XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xi(2)-1))
+                                    XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
                                 ENDDO
                                 IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
                                 XI_COORDINATES(1)=0.0_DP
                                 XI_COORDINATES(2)=0.0_DP
-                                IF(number_of_nodes_xi(3)/=1) THEN
-                                  XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xi(3)-1))
+                                IF(number_of_nodes_xic(3)/=1) THEN
+                                  XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
                                 ENDIF
                               ENDDO
                               CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &

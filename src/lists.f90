@@ -232,7 +232,7 @@ CONTAINS
   SUBROUTINE LIST_CREATE_FINISH(LIST,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to finish
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list to finish
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local Variables
@@ -300,7 +300,7 @@ CONTAINS
   SUBROUTINE LIST_CREATE_START(LIST,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<On exit, pointer to the list to create. Must not be associated on entry.
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<On exit, pointer to the list to create. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local Variables
@@ -324,7 +324,7 @@ CONTAINS
   SUBROUTINE LIST_DATA_DIMENSION_SET(LIST,DATA_DIMENSION,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list 
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list 
     INTEGER(INTG), INTENT(IN) :: DATA_DIMENSION !<The data dimension of the list to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -364,7 +364,7 @@ CONTAINS
   SUBROUTINE LIST_DATA_TYPE_SET(LIST,DATA_TYPE,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list 
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list 
     INTEGER(INTG), INTENT(IN) :: DATA_TYPE !<The data type of the list to set \see LISTS_DataType,LISTS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -408,7 +408,7 @@ CONTAINS
   SUBROUTINE LIST_DESTROY(LIST,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to destroy
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list to destroy
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -436,7 +436,7 @@ CONTAINS
   SUBROUTINE LIST_FINALISE(LIST,ERR,ERROR,*)    
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to finalise
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -444,12 +444,12 @@ CONTAINS
     CALL ENTERS("LIST_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
-      IF(ASSOCIATED(LIST%LIST_INTG)) DEALLOCATE(LIST%LIST_INTG)
-      IF(ASSOCIATED(LIST%LIST_INTG2)) DEALLOCATE(LIST%LIST_INTG2)
-      IF(ASSOCIATED(LIST%LIST_SP)) DEALLOCATE(LIST%LIST_SP)
-      IF(ASSOCIATED(LIST%LIST_SP2)) DEALLOCATE(LIST%LIST_SP2)
-      IF(ASSOCIATED(LIST%LIST_DP)) DEALLOCATE(LIST%LIST_DP)
-      IF(ASSOCIATED(LIST%LIST_DP2)) DEALLOCATE(LIST%LIST_DP2)
+      IF(ALLOCATED(LIST%LIST_INTG)) DEALLOCATE(LIST%LIST_INTG)
+      IF(ALLOCATED(LIST%LIST_INTG2)) DEALLOCATE(LIST%LIST_INTG2)
+      IF(ALLOCATED(LIST%LIST_SP)) DEALLOCATE(LIST%LIST_SP)
+      IF(ALLOCATED(LIST%LIST_SP2)) DEALLOCATE(LIST%LIST_SP2)
+      IF(ALLOCATED(LIST%LIST_DP)) DEALLOCATE(LIST%LIST_DP)
+      IF(ALLOCATED(LIST%LIST_DP2)) DEALLOCATE(LIST%LIST_DP2)
       DEALLOCATE(LIST)
     ENDIF
 
@@ -468,7 +468,7 @@ CONTAINS
   SUBROUTINE LIST_INITIALISE(LIST,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list to initialise. Must not be associated on entry.
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list to initialise. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -491,12 +491,6 @@ CONTAINS
       LIST%KEY_DIMENSION=1
       LIST%SORT_ORDER=LIST_SORT_ASCENDING_TYPE
       LIST%SORT_METHOD=LIST_HEAP_SORT_METHOD
-      NULLIFY(LIST%LIST_INTG)
-      NULLIFY(LIST%LIST_INTG2)
-      NULLIFY(LIST%LIST_SP)
-      NULLIFY(LIST%LIST_SP2)
-      NULLIFY(LIST%LIST_DP)
-      NULLIFY(LIST%LIST_DP2)
     ENDIF
 
     CALL EXITS("LIST_INITIALISE")
@@ -515,7 +509,7 @@ CONTAINS
   SUBROUTINE LIST_INITIAL_SIZE_SET(LIST,INITIAL_SIZE,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: INITIAL_SIZE !<The initial size of the list to set. Must be greater than zero.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -554,17 +548,15 @@ CONTAINS
   !>Adds an item to the end of an integer list of data dimension 1. 
   SUBROUTINE LIST_ITEM_ADD_INTG1(LIST,ITEM,ERR,ERROR,*)
    !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: ITEM !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NEW_SIZE
-    INTEGER(INTG), POINTER :: NEW_LIST(:)
+    INTEGER(INTG), ALLOCATABLE :: NEW_LIST(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    NULLIFY(NEW_LIST)
-    
     CALL ENTERS("LIST_ITEM_ADD_INTG1",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
@@ -576,10 +568,9 @@ CONTAINS
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
-              NEW_LIST=0
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST)
-              IF(ASSOCIATED(LIST%LIST_INTG)) DEALLOCATE(LIST%LIST_INTG)
-              LIST%LIST_INTG=>NEW_LIST
+              IF(ALLOCATED(LIST%LIST_INTG)) DEALLOCATE(LIST%LIST_INTG)
+              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_INTG)
               LIST%SIZE=NEW_SIZE
             ENDIF
             LIST%LIST_INTG(LIST%NUMBER_IN_LIST+1)=ITEM
@@ -603,7 +594,7 @@ CONTAINS
     
     CALL EXITS("LIST_ITEM_ADD_INTG1")
     RETURN
-999 IF(ASSOCIATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
+999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
     CALL ERRORS("LIST_ITEM_ADD_INTG1",ERR,ERROR)
     CALL EXITS("LIST_ITEM_ADD_INTG1")
     RETURN 1
@@ -616,17 +607,15 @@ CONTAINS
   !>Adds an item to the end of an integer list of data dimension > 1. 
   SUBROUTINE LIST_ITEM_ADD_INTG2(LIST,ITEM,ERR,ERROR,*)
    !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: ITEM(:) !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NEW_SIZE
-    INTEGER(INTG), POINTER :: NEW_LIST(:,:)
+    INTEGER(INTG), ALLOCATABLE :: NEW_LIST(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    NULLIFY(NEW_LIST)
-    
     CALL ENTERS("LIST_ITEM_ADD_INTG2",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
@@ -638,10 +627,9 @@ CONTAINS
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
-              NEW_LIST=0
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_INTG2(:,1:LIST%NUMBER_IN_LIST)
-              IF(ASSOCIATED(LIST%LIST_INTG2)) DEALLOCATE(LIST%LIST_INTG2)
-              LIST%LIST_INTG2=>NEW_LIST
+              IF(ALLOCATED(LIST%LIST_INTG2)) DEALLOCATE(LIST%LIST_INTG2)
+              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_INTG2)
               LIST%SIZE=NEW_SIZE
             ENDIF
             LIST%LIST_INTG2(:,LIST%NUMBER_IN_LIST+1)=ITEM
@@ -666,7 +654,7 @@ CONTAINS
     
     CALL EXITS("LIST_ITEM_ADD_INTG2")
     RETURN
-999 IF(ASSOCIATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
+999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
     CALL ERRORS("LIST_ITEM_ADD_INTG2",ERR,ERROR)
     CALL EXITS("LIST_ITEM_ADD_INTG2")
     RETURN 1
@@ -681,16 +669,14 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_SP1(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     REAL(SP), INTENT(IN) :: ITEM !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NEW_SIZE
-    REAL(SP), POINTER :: NEW_LIST(:)
+    REAL(SP), ALLOCATABLE :: NEW_LIST(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    NULLIFY(NEW_LIST)
     
     CALL ENTERS("LIST_ITEM_ADD_SP1",ERR,ERROR,*999)
 
@@ -704,8 +690,8 @@ CONTAINS
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_SP(1:LIST%NUMBER_IN_LIST)
-              IF(ASSOCIATED(LIST%LIST_SP)) DEALLOCATE(LIST%LIST_SP)
-              LIST%LIST_SP=>NEW_LIST
+              IF(ALLOCATED(LIST%LIST_SP)) DEALLOCATE(LIST%LIST_SP)
+              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_SP)
               LIST%SIZE=NEW_SIZE
             ENDIF
             LIST%LIST_SP(LIST%NUMBER_IN_LIST+1)=ITEM
@@ -727,7 +713,7 @@ CONTAINS
     ENDIF
     CALL EXITS("LIST_ITEM_ADD_SP1")
     RETURN
-999 IF(ASSOCIATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
+999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
     CALL ERRORS("LIST_ITEM_ADD_SP1",ERR,ERROR)
     CALL EXITS("LIST_ITEM_ADD_SP1")
     RETURN 1
@@ -741,16 +727,14 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_SP2(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     REAL(SP), INTENT(IN) :: ITEM(:) !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NEW_SIZE
-    REAL(SP), POINTER :: NEW_LIST(:,:)
+    REAL(SP), ALLOCATABLE :: NEW_LIST(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    NULLIFY(NEW_LIST)
     
     CALL ENTERS("LIST_ITEM_ADD_SP2",ERR,ERROR,*999)
 
@@ -764,8 +748,8 @@ CONTAINS
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_SP2(:,1:LIST%NUMBER_IN_LIST)
-              IF(ASSOCIATED(LIST%LIST_SP2)) DEALLOCATE(LIST%LIST_SP2)
-              LIST%LIST_SP2=>NEW_LIST
+              IF(ALLOCATED(LIST%LIST_SP2)) DEALLOCATE(LIST%LIST_SP2)
+              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_SP2)
               LIST%SIZE=NEW_SIZE
             ENDIF
             LIST%LIST_SP2(:,LIST%NUMBER_IN_LIST+1)=ITEM
@@ -789,7 +773,7 @@ CONTAINS
     ENDIF
     CALL EXITS("LIST_ITEM_ADD_SP2")
     RETURN
-999 IF(ASSOCIATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
+999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
     CALL ERRORS("LIST_ITEM_ADD_SP2",ERR,ERROR)
     CALL EXITS("LIST_ITEM_ADD_SP2")
     RETURN 1
@@ -803,17 +787,15 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_DP1(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     REAL(DP), INTENT(IN) :: ITEM !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NEW_SIZE
-    REAL(DP), POINTER :: NEW_LIST(:)
+    REAL(DP), ALLOCATABLE :: NEW_LIST(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    NULLIFY(NEW_LIST)
-    
     CALL ENTERS("LIST_ITEM_ADD_DP1",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
@@ -826,8 +808,8 @@ CONTAINS
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_DP(1:LIST%NUMBER_IN_LIST)
-              IF(ASSOCIATED(LIST%LIST_DP)) DEALLOCATE(LIST%LIST_DP)
-              LIST%LIST_DP=>NEW_LIST
+              IF(ALLOCATED(LIST%LIST_DP)) DEALLOCATE(LIST%LIST_DP)
+              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_DP)
               LIST%SIZE=NEW_SIZE
             ENDIF
             LIST%LIST_DP(LIST%NUMBER_IN_LIST+1)=ITEM
@@ -850,7 +832,7 @@ CONTAINS
     ENDIF
     CALL EXITS("LIST_ITEM_ADD_DP1")
     RETURN
-999 IF(ASSOCIATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
+999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
     CALL ERRORS("LIST_ITEM_ADD_DP1",ERR,ERROR)
     CALL EXITS("LIST_ITEM_ADD_DP1")
     RETURN 1
@@ -864,17 +846,15 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_DP2(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     REAL(DP), INTENT(IN) :: ITEM(:) !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: NEW_SIZE
-    REAL(DP), POINTER :: NEW_LIST(:,:)
+    REAL(DP), ALLOCATABLE :: NEW_LIST(:,:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    NULLIFY(NEW_LIST)
-    
     CALL ENTERS("LIST_ITEM_ADD_DP2",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LIST)) THEN
@@ -887,8 +867,8 @@ CONTAINS
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_DP2(:,1:LIST%NUMBER_IN_LIST)
-              IF(ASSOCIATED(LIST%LIST_DP2)) DEALLOCATE(LIST%LIST_DP2)
-              LIST%LIST_DP2=>NEW_LIST
+              IF(ALLOCATED(LIST%LIST_DP2)) DEALLOCATE(LIST%LIST_DP2)
+              CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_DP2)
               LIST%SIZE=NEW_SIZE
             ENDIF
             LIST%LIST_DP2(:,LIST%NUMBER_IN_LIST+1)=ITEM
@@ -912,7 +892,7 @@ CONTAINS
     ENDIF
     CALL EXITS("LIST_ITEM_ADD_DP2")
     RETURN
-999 IF(ASSOCIATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
+999 IF(ALLOCATED(NEW_LIST)) DEALLOCATE(NEW_LIST)
     CALL ERRORS("LIST_ITEM_ADD_DP2",ERR,ERROR)
     CALL EXITS("LIST_ITEM_ADD_DP2")
     RETURN 1
@@ -926,7 +906,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_GET_INTG1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
     INTEGER(INTG), INTENT(OUT) :: ITEM !<On exit, the item at the specified position
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -980,7 +960,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_GET_INTG2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
     INTEGER(INTG), INTENT(OUT) :: ITEM(:) !<On exit, the item at the specified position
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1035,7 +1015,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_GET_SP1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
     REAL(SP), INTENT(OUT) :: ITEM !<On exit, the item at the specified position.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1089,7 +1069,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_GET_SP2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
     REAL(SP), INTENT(OUT) :: ITEM(:) !<On exit, the item at the specified position
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1144,7 +1124,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_GET_DP1(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
     REAL(DP), INTENT(OUT) :: ITEM !<On exit, the item at the specified position.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1198,7 +1178,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_GET_DP2(LIST,LIST_ITEM,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position of the item to get
     REAL(DP), INTENT(OUT) :: ITEM(:) !<On exit, the item at the specified position
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1253,7 +1233,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_IN_LIST_INTG1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: ITEM !<The item to find.
     INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1299,7 +1279,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_IN_LIST_INTG2(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: ITEM(:) !<The item to find.
     INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1347,7 +1327,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_IN_LIST_SP1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
     !Argument Variables    
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     REAL(SP), INTENT(IN) :: ITEM !<The item to find.
     INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.     
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code    
@@ -1394,7 +1374,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_IN_LIST_SP2(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
     !Argument Variables    
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     REAL(SP), INTENT(IN) :: ITEM(:) !<The item to find.
     INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.     
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code    
@@ -1442,7 +1422,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_IN_LIST_DP1(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     REAL(DP), INTENT(IN) :: ITEM  !<The item to find.
     INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1489,7 +1469,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_IN_LIST_DP2(LIST,ITEM,LIST_ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     REAL(DP), INTENT(IN) :: ITEM(:)  !<The item to find.
     INTEGER(INTG), INTENT(OUT) :: LIST_ITEM !<On exit, the position of the item in the list. If the item does not exist then the value of 0 is returned.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1536,7 +1516,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_DELETE(LIST,LIST_ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(IN) :: LIST_ITEM !<The position in the list to delete.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1607,7 +1587,7 @@ CONTAINS
   SUBROUTINE LIST_KEY_DIMENSION_SET(LIST,KEY_DIMENSION,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: KEY_DIMENSION !<The key dimension to set. Must be greater than zero and <= the data dimension.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1644,7 +1624,7 @@ CONTAINS
   SUBROUTINE LIST_NUMBER_OF_ITEMS_GET(LIST,NUMBER_OF_ITEMS,ERR,ERROR,*)
       
     !Argument variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<A pointer to the list 
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list 
     INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_ITEMS !<On exit, the current number of items in the list
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1673,15 +1653,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Detaches the list values from an integer list of data dimension 1 and returns them as a pointer to a array of base type
-  !>before destroying the list. The LIST_VALUES pointer must not be associated on entry. It is up to the user to then deallocate
+  !>Detaches the list values from an integer list of data dimension 1 and returns them as an array of base type
+  !>before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user to then deallocate
   !>the returned list memory.
   SUBROUTINE LIST_DETACH_AND_DESTROY_INTG1(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    INTEGER(INTG), POINTER :: LIST_VALUES(:) !<On exit, a pointer to the detached list. Must not be associated on entry.
+    INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:) !<On exit, the detached list. Must not be allocated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1691,16 +1671,14 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        IF(ASSOCIATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is associated",ERR,ERROR,*999)
+        IF(ALLOCATED(LIST_VALUES)) THEN
+          CALL FLAG_ERROR("List values is allocated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_INTG_TYPE) THEN
             IF(LIST%DATA_DIMENSION==1) THEN
               NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
               !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              LIST_VALUES=>LIST%LIST_INTG
-              LIST%NUMBER_IN_LIST=0
-              NULLIFY(LIST%LIST_INTG)
+              CALL MOVE_ALLOC(LIST%LIST_INTG,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
@@ -1709,15 +1687,15 @@ CONTAINS
             ENDIF
           ELSE
             LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
-              & " does not match the integer type of the supplied list values item"
+              & " does not match the integer type of the supplied list values item."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished",ERR,ERROR,*999)
+        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("LIST_DETACH_AND_DESTROY_INTG1")
@@ -1731,15 +1709,15 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Detaches the list values from an integer list of data dimension > 1 and returns them as a pointer to a array of base type
-  !>before destroying the list. The LIST_VALUES pointer must not be associated on entry. It is up to the user to then deallocate
+  !>Detaches the list values from an integer list of data dimension > 1 and returns them as an array of base type
+  !>before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user to then deallocate
   !>the returned list memory.
   SUBROUTINE LIST_DETACH_AND_DESTROY_INTG2(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    INTEGER(INTG), POINTER :: LIST_VALUES(:,:) !<On exit, a pointer to the detached list. Must not be associated on entry.
+    INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:,:) !<On exit, the detached list. Must not be allocated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1749,16 +1727,14 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        IF(ASSOCIATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
+        IF(ALLOCATED(LIST_VALUES)) THEN
+          CALL FLAG_ERROR("List values is allocated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_INTG_TYPE) THEN
             IF(LIST%DATA_DIMENSION>1) THEN
               NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
               !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              LIST_VALUES=>LIST%LIST_INTG2
-              LIST%NUMBER_IN_LIST=0
-              NULLIFY(LIST%LIST_INTG2)
+              CALL MOVE_ALLOC(LIST%LIST_INTG2,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
@@ -1788,15 +1764,15 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Detaches the list values from a single precision real list of data dimension 1 and returns them as a pointer to a array
-  !>of base type before destroying the list. The LIST_VALUES pointer must not be associated on entry. It is up to the user to
+  !>Detaches the list values from a single precision real list of data dimension 1 and returns them as an array
+  !>of base type before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user to
   !>then deallocate the returned list memory.
   SUBROUTINE LIST_DETACH_AND_DESTROY_SP1(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    REAL(SP), POINTER :: LIST_VALUES(:) !<On exit, a pointer to the detached list. Must not be associated on entry.
+    REAL(SP), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:) !<On exit, the detached list. Must not be allocated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1806,16 +1782,14 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        IF(ASSOCIATED(LIST_VALUES)) THEN
+        IF(ALLOCATED(LIST_VALUES)) THEN
           CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_SP_TYPE) THEN
             IF(LIST%DATA_DIMENSION==1) THEN
               NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
               !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              LIST_VALUES=>LIST%LIST_SP
-              LIST%NUMBER_IN_LIST=0
-              NULLIFY(LIST%LIST_SP)
+              CALL MOVE_ALLOC(LIST%LIST_SP,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
@@ -1845,15 +1819,15 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Detaches the list values from a single precision real list of data dimension > 1 and returns them as a pointer to a array
-  !>of base type before destroying the list. The LIST_VALUES pointer must not be associated on entry. It is up to the user to
+  !>Detaches the list values from a single precision real list of data dimension > 1 and returns them as an array
+  !>of base type before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user to
   !>then deallocate the returned list memory.
   SUBROUTINE LIST_DETACH_AND_DESTROY_SP2(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    REAL(SP), POINTER :: LIST_VALUES(:,:) !<On exit, a pointer to the detached list. Must not be associated on entry.
+    REAL(SP), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:,:) !<On exit, the detached list. Must not be allocated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1863,16 +1837,14 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        IF(ASSOCIATED(LIST_VALUES)) THEN
+        IF(ALLOCATED(LIST_VALUES)) THEN
           CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_SP_TYPE) THEN
             IF(LIST%DATA_DIMENSION>1) THEN
               NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
               !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              LIST_VALUES=>LIST%LIST_SP2
-              LIST%NUMBER_IN_LIST=0
-              NULLIFY(LIST%LIST_SP2)
+              CALL MOVE_ALLOC(LIST%LIST_SP2,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
@@ -1902,15 +1874,15 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Detaches the list values from a double precision real list of data dimension 1 and returns them as a pointer to a array
-  !>of base type before destroying the list. The LIST_VALUES pointer must not be associated on entry. It is up to the user
+  !>Detaches the list values from a double precision real list of data dimension 1 and returns them as an array
+  !>of base type before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user
   !>to then deallocate the returned list memory.
   SUBROUTINE LIST_DETACH_AND_DESTROY_DP1(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    REAL(DP), POINTER :: LIST_VALUES(:) !<On exit, a pointer to the detached list. Must not be associated on entry.
+    REAL(DP), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:) !<On exit, the detached list. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1920,16 +1892,14 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        IF(ASSOCIATED(LIST_VALUES)) THEN
+        IF(ALLOCATED(LIST_VALUES)) THEN
           CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_DP_TYPE) THEN
             IF(LIST%DATA_DIMENSION==1) THEN
               NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
               !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              LIST_VALUES=>LIST%LIST_DP
-              LIST%NUMBER_IN_LIST=0
-              NULLIFY(LIST%LIST_DP)
+              CALL MOVE_ALLOC(LIST%LIST_DP,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
@@ -1960,15 +1930,15 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Detaches the list values from a double precision real list of data dimension > 1 and returns them as a pointer to a array
-  !>of base type before destroying the list. The LIST_VALUES pointer must not be associated on entry. It is up to the user
+  !>Detaches the list values from a double precision real list of data dimension > 1 and returns them as an array
+  !>of base type before destroying the list. The LIST_VALUES array must not be allocated on entry. It is up to the user
   !>to then deallocate the returned list memory.
   SUBROUTINE LIST_DETACH_AND_DESTROY_DP2(LIST,NUMBER_IN_LIST,LIST_VALUES,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: NUMBER_IN_LIST !<On exit, the number in the list that has been detached.
-    REAL(DP), POINTER :: LIST_VALUES(:,:) !<On exit, a pointer to the detached list. Must not be associated on entry.
+    REAL(DP), ALLOCATABLE, INTENT(INOUT) :: LIST_VALUES(:,:) !<On exit, the detached list. Must not be allocated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1978,16 +1948,14 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        IF(ASSOCIATED(LIST_VALUES)) THEN
+        IF(ALLOCATED(LIST_VALUES)) THEN
           CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_DP_TYPE) THEN
             IF(LIST%DATA_DIMENSION>1) THEN
               NUMBER_IN_LIST=LIST%NUMBER_IN_LIST
               !Note this will return more memory as the list will be bigger. Maybe copy to an array the correct size?
-              LIST_VALUES=>LIST%LIST_DP2
-              LIST%NUMBER_IN_LIST=0
-              NULLIFY(LIST%LIST_DP2)
+              CALL MOVE_ALLOC(LIST%LIST_DP2,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
@@ -2021,7 +1989,7 @@ CONTAINS
   SUBROUTINE LIST_REMOVE_DUPLICATES(LIST,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2436,7 +2404,7 @@ CONTAINS
   SUBROUTINE LIST_SORT_LIST(LIST,ERR,ERROR,*)
   
     !Argument variables
-    TYPE(LIST_TYPE), POINTER :: LIST !<The list to sort
+    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
@@ -3637,9 +3605,9 @@ CONTAINS
     ! Local variables
     INTEGER(INTG) :: SIZE_SHORTER,SIZE_LONGER
     INTEGER(INTG) :: I,J,START,NUMBER_OF_MATCHES
-    INTEGER(INTG),POINTER :: LONGER(:),SHORTER(:)
-    INTEGER(INTG),ALLOCATABLE :: MATCHES(:)
-    INTEGER(INTG),ALLOCATABLE :: LONG_ARRAY(:),SHORT_ARRAY(:)   !<copies, if needed
+    INTEGER(INTG), POINTER :: LONGER(:),SHORTER(:)
+    INTEGER(INTG), ALLOCATABLE :: MATCHES(:)
+    INTEGER(INTG), ALLOCATABLE :: LONG_ARRAY(:),SHORT_ARRAY(:)   !<copies, if needed
     
     CALL ENTERS("LIST_INTERSECTION_INTG_ARRAY",ERR,ERROR,*999)
 
@@ -3648,7 +3616,7 @@ CONTAINS
 
     IF(ALLOCATED(C)) THEN
       ! theoretically this cannot happen?
-      CALL FLAG_ERROR("Output array is already allocated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Output array is already allocated.",ERR,ERROR,*999)
     ELSE
       ! start finding the intersection
       NULLIFY(LONGER)
@@ -3731,7 +3699,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR  !<The error string
     ! Logical variables
     INTEGER(INTG) :: SIZE_A,SIZE_B,I,J,START,SIZE_REDUCE
-    INTEGER(INTG),ALLOCATABLE :: A_SORTED(:),B_SORTED(:)
+    INTEGER(INTG), ALLOCATABLE :: A_SORTED(:),B_SORTED(:)
 
     CALL ENTERS("LISTS_SUBSET_OF_INTG_ARRAY",ERR,ERROR,*999)
 
@@ -3741,6 +3709,7 @@ CONTAINS
     
     ! some easy tests
     IF(SIZE_A>SIZE_B) THEN
+      CALL EXITS("LISTS_SUBSET_OF_INTG_ARRAY")
       RETURN
     ENDIF
 
@@ -3763,6 +3732,7 @@ CONTAINS
           IF(A(I)==B(J)) THEN
             EXIT
           ELSEIF(J==SIZE_B) THEN
+            CALL EXITS("LISTS_SUBSET_OF_INTG_ARRAY")
             RETURN
           ENDIF
         ENDDO
@@ -3783,6 +3753,7 @@ CONTAINS
             EXIT
           ELSEIF(A(I)<B(J)) THEN
             DEALLOCATE(A_SORTED,B_SORTED)
+            CALL EXITS("LISTS_SUBSET_OF_INTG_ARRAY")
             RETURN
           ENDIF
         ENDDO
