@@ -68,6 +68,7 @@ MODULE FIELDML_INPUT_ROUTINES
 
   TYPE(VARYING_STRING) :: errorString
 
+
   !Interfaces
 
   INTERFACE
@@ -710,6 +711,7 @@ CONTAINS
     INTEGER(INTG) :: componentCount, elementCount, knownBasisCount, maxBasisNodesCount, basisNodesCount
     INTEGER(INTG) :: elementNumber, knownBasisNumber
     TYPE(C_PTR), ALLOCATABLE :: connectivityReaders(:)
+    TYPE(C_PTR) :: tPtr
     
     err = FML_ERR_NO_ERROR
 
@@ -775,7 +777,9 @@ CONTAINS
       CALL CMISSMeshElementsBasisSet( regionNumber, meshNumber, componentNumber, elementNumber, basisNumber, err )
       
       DO knownBasisNumber = 1, knownBasisCount
-        err = Fieldml_ReadIntSlice( fieldmlInfo%fmlHandle, connectivityReaders(knownBasisNumber), C_LOC(dummy), &
+        !BUGFIX Intel compiler will explode if we don't use a temporary variable
+        tPtr = connectivityReaders(knownBasisNumber)
+        err = Fieldml_ReadIntSlice( fieldmlInfo%fmlHandle, tPtr, C_LOC(dummy), &
           & C_LOC(nodesBuffer) )
         IF( fieldmlInfo%basisHandles(knownBasisNumber) == basisReferenceHandle ) THEN
           CALL CMISSMeshElementsNodesSet( regionNumber, meshNumber, componentNumber, elementNumber, &
@@ -786,7 +790,9 @@ CONTAINS
     END DO
     
     DO knownBasisNumber = 1, knownBasisCount
-      err = Fieldml_CloseReader( fieldmlInfo%fmlHandle, connectivityReaders(knownBasisNumber) )
+      !BUGFIX Intel compiler will explode if we don't use a temporary variable
+      tPtr = connectivityReaders(knownBasisNumber)
+      err = Fieldml_CloseReader( fieldmlInfo%fmlHandle, tPtr )
     ENDDO
     
     DEALLOCATE( nodesBuffer )
