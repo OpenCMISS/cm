@@ -797,6 +797,8 @@ $(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
 
 $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME).f90
 
+run : main
+	$(EXECUTABLE)
 
 # ----------------------------------------------------------------------------
 #
