@@ -1193,7 +1193,6 @@ CONTAINS
               IF(ASSOCIATED(DOMAIN_NODES)) THEN
                 DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                 IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
-                  ALLOCATE(SURROUNDING_ELEMENTS_LIST(DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
                   !Loop over the elements in the decomposition
                   DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                   !%%%% first we initialize lists that are required to find the adjacent elements list
@@ -6772,7 +6771,6 @@ CONTAINS
     IF(ASSOCIATED(TOPOLOGY)) THEN
       IF(ASSOCIATED(TOPOLOGY%NODES)) THEN
         IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
-          ALLOCATE(SURROUNDING_ELEMENTS_LIST(TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS),STAT=ERR)
           !Loop over the global elements in the mesh         
           DO ne=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
           !%%%% first we initialize lists that are required to find the adjacent elements list
