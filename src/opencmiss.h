@@ -184,10 +184,20 @@ static int CMISSBasisNotCollapsed = 4;
  * > \see OPENCMISS::BoundaryConditions,OPENCMISS
  * >@{
  */
-static int CMISSBoundaryConditionNotFixed = 0;
+static int CMISSBoundaryConditionFree = 0;
 static int CMISSBoundaryConditionFixed = 1;
+static int CMISSBoundaryConditionNeumannPoint = 8;
+static int CMISSBoundaryConditionNeumannIntegrated = 9;
+static int CMISSBoundaryConditionDirichlet = 10;
+static int CMISSBoundaryConditionCauchy = 11;
+static int CMISSBoundaryConditionRobin = 12;
 static int CMISSBoundaryConditionMixed = 7;
+static int CMISSBoundaryConditionFixedIncremented = 13;
+static int CMISSBoundaryConditionPressure = 14;
+static int CMISSBoundaryConditionPressureIncremented = 15;
 /* Temporary boundary flags (to be removed when general boundary object becomes available!) */
+static int CMISSBoundaryConditionOutletWall = 3;
+static int CMISSBoundaryConditionFreeWall = 6;
 static int CMISSBoundaryConditionFixedWall = 4;
 static int CMISSBoundaryConditionInletWall = 2;
 static int CMISSBoundaryConditionMovedWall = 5;
@@ -474,18 +484,29 @@ static int CMISSEquationsSetQuadraticSourcePoissonSubtype = 3;
 static int CMISSEquationsSetExponentialSourcePoissonSubtype = 4;
 static int CMISSEquationsSetStokesPoissonSubtype = 5;
 static int CMISSEquationsSetNavierStokesPoissonSubtype = 6;
-static int CMISSEquationsSetNoSourceHelmholtzSubtype = 1;
+static int CMISSEquationsSetStandardHelmholtzSubtype = 2;
+static int CMISSEquationsSetGeneralisedHelmholtzSubtype = 3;
 static int CMISSEquationsSetNoSourceDiffusionSubtype = 1;
 static int CMISSEquationsSetConstantSourceDiffusionSubtype = 2;
 static int CMISSEquationsSetLinearSourceDiffusionSubtype = 3;
 static int CMISSEquationsSetQuadraticSourceDiffusionSubtype = 4;
 static int CMISSEquationsSetExponentialSourceDiffusionSubtype = 5;
-static int CMISSEquationsSetMultiCompTransportDiffusionSubtype = 6;
+static int CMISSEquationsSetNoSourceALEDiffusionSubtype = 6;
+static int CMISSEquationsSetConstantSourceALEDiffusionSubtype = 7;
+static int CMISSEquationsSetLinearSourceALEDiffusionSubtype = 8;
+static int CMISSEquationsSetQuadraticSourceALEDiffusionSubtype = 9;
+static int CMISSEquationsSetExponentialSourceALEDiffusionSubtype = 10;
+static int CMISSEquationsSetMultiCompTransportDiffusionSubtype = 11;
 static int CMISSEquationsSetNoSourceAdvectionDiffusionSubtype = 1;
 static int CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype = 2;
 static int CMISSEquationsSetLinearSourceAdvectionDiffusionSubtype = 3;
 static int CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype = 4;
 static int CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype = 5;
+static int CMISSEquationsSetNoSourceALEAdvectionDiffusionSubtype = 21;
+static int CMISSEquationsSetConstantSourceALEAdvectionDiffusionSubtype = 22;
+static int CMISSEquationsSetLinearSourceALEAdvectionDiffusionSubtype = 23;
+static int CMISSEquationsSetQuadraticSourceALEAdvectionDiffusionSubtype = 24;
+static int CMISSEquationsSetExpSourceALEAdvectionDiffusionSubtype = 25;
 static int CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = 6;
 static int CMISSEquationsSetConstantSourceStaticAdvecDiffSubtype = 7;
 static int CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype = 8;
@@ -494,6 +515,11 @@ static int CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype = 10;
 static int CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype = 11;
 static int CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype = 12;
 static int CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype = 13;
+static int CMISSEquationsSetNoSourceALEAdvectionDiffSUPGSubtype = 29;
+static int CMISSEquationsSetConstantSourceALEAdvectionDiffSUPGSubtype = 30;
+static int CMISSEquationsSetLinearSourceALEAdvectionDiffSUPGSubtype = 31;
+static int CMISSEquationsSetQuadSourceALEAdvectionDiffSUPGSubtype = 32;
+static int CMISSEquationsSetExpSourceALEAdvectionDiffSUPGSubtype = 33;
 static int CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype = 14;
 static int CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype = 15;
 static int CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype = 16;
@@ -538,6 +564,14 @@ static int CMISSEquationsSetLaplaceEquationTwoDim1 = 1;
 static int CMISSEquationsSetLaplaceEquationTwoDim2 = 2;
 static int CMISSEquationsSetLaplaceEquationThreeDim1 = 3;
 static int CMISSEquationsSetLaplaceEquationThreeDim2 = 4;
+/*
+ * >@}
+ * > \addtogroup OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Helmholtz
+ * > \brief The analytic function types for a Helmholtz equation
+ * > \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+ * >@{
+ */
+static int CMISSEquationsSetHelmholtzEquationTwoDim1 = 1;
 /*
  * >@}
  * > \addtogroup OPENCMISS_PoissonAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poisson
@@ -899,23 +933,32 @@ static int CMISSProblemStandardLaplaceSubtype = 1;
 static int CMISSProblemGeneralisedLaplaceSubtype = 2;
 static int CMISSProblemLinearSourcePoissonSubtype = 1;
 static int CMISSProblemNonlinearSourcePoissonSubtype = 2;
-static int CMISSProblemNoSourceHelmholtzSubtype = 1;
+static int CMISSProblemStandardHelmholtzSubtype = 2;
+static int CMISSProblemGeneralisedHelmholtzSubtype = 3;
 static int CMISSProblemNoSourceDiffusionSubtype = 1;
 static int CMISSProblemLinearSourceDiffusionSubtype = 2;
 static int CMISSProblemNonlinearSourceDiffusionSubtype = 3;
+static int CMISSProblemNoSourceALEDiffusionSubtype = 4;
+static int CMISSProblemLinearSourceALEDiffusionSubtype = 5;
+static int CMISSProblemNonlinearSourceALEDiffusionSubtype = 6;
 static int CMISSProblemNoSourceAdvectionDiffusionSubtype = 1;
 static int CMISSProblemLinearSourceAdvectionDiffusionSubtype = 2;
 static int CMISSProblemNonlinearSourceAdvectionDiffusionSubtype = 3;
-static int CMISSProblemNoSourceStaticAdvecDiffSubtype = 4;
-static int CMISSProblemLinearSourceStaticAdvecDiffSubtype = 5;
-static int CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = 6;
+static int CMISSProblemNoSourceALEAdvectionDiffusionSubtype = 4;
+static int CMISSProblemLinearSourceALEAdvectionDiffusionSubtype = 5;
+static int CMISSProblemNonlinearSourceALEAdvectionDiffusionSubtype = 6;
+static int CMISSProblemNoSourceStaticAdvecDiffSubtype = 7;
+static int CMISSProblemLinearSourceStaticAdvecDiffSubtype = 8;
+static int CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = 9;
 static int CMISSProblemStandardGalerkinProjectionSubtype = 1;
 static int CMISSProblemGeneralisedGalerkinProjectionSubtype = 2;
 static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
+static int CMISSProblemCoupledSourceALEDiffusionAdvecDiffusionSubtype = 122;
 static int CMISSProblemStandardMultiCompartmentTransportSubtype = 131;
+static int CMISSProblemStandardALEMultiCompartmentTransportSubtype = 132;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes

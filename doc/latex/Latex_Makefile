@@ -113,6 +113,9 @@ $(MAINFILE).pdf :	$(MAINFILE).ps
 $(MAINFILE)_2.pdf :	$(MAINFILE)_2.ps
 	$(PS2PDF) $(PS2PDF_OPTS) $(MAINFILE)_2.ps $@ 
 
+$(MAINFILE)_range.pdf :	range.ps
+	$(PS2PDF) $(PS2PDF_OPTS) range.ps $@ 
+
 $(MAINFILE).ps :	$(MAINFILE).dvi
 	$(DVIPS) $(DVIPS_OPTS) -o $@ $(MAINFILE)
 
@@ -137,6 +140,8 @@ help :
 	@echo "     quick       - Always latex the document quickly (i.e. no rerun)."
 	@echo "     pdf         - Generate the pdf version of the document."
 	@echo "     pdf2        - Generate the 2 page landscape pdf version of the document."
+	@echo "     pdf_range FIRST=# LAST=# - Generate the pdf version of only"
+	@echo "                    the pages in the range FIRST-LAST."
 	@echo "     pics        - Make sure the .pstex versions of the figures and "
 	@echo "                    the plots are up to date."
 	@echo "     pics_clean  - Clean the figures and plots."
@@ -192,11 +197,16 @@ pdf :	$(MAINFILE).pdf
 
 pdf2 :	$(MAINFILE)_2.pdf
 
+pdf_range :	$(MAINFILE)_range.pdf
+
 ps :	$(MAINFILE).ps
 
 ps2:	$(MAINFILE)_2.ps
 
 ps_range :	$(MAINFILE).dvi
+	$(DVIPS) $(DVIPS_OPTS) -p $(FIRST) -l $(LAST) -o range.ps $(MAINFILE)
+
+range.ps :	$(MAINFILE).dvi
 	$(DVIPS) $(DVIPS_OPTS) -p $(FIRST) -l $(LAST) -o range.ps $(MAINFILE)
 
 print :	$(MAINFILE).ps

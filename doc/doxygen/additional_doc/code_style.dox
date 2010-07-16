@@ -1,27 +1,35 @@
 /*!
 \page code_style Coding Style
-This is an attempt to document the programming "style" for use with openCMISS.
+This is an attempt to document the programming "style" for use with OpenCMISS.
 - Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.
 - All dynamic arrays should be ALLOCATABLE rather than POINTER unless full pointer functionality is required.
 - A double space should be used for an indent. Tabs should not be used to indent code.
+- Use the UNIX standard for specifying end of line characters rather than the windows standard.
 - All unused variables should be removed before committing code.
 - All pointers should be checked to see if they are ASSOCIATED before de-referencing them.
 - Use fully spelt out variable names unless abbreviations are required to avoid maximum identifier length problems.
+- Use lower case for loop variables.
 - If there is just a single statement following an IF clause use the inline form of the IF statement and do not use THEN and ENDIF.
 - There should be a space before the first continuation character and a space after the second continuation character when continuing lines.
-- Use standard loop variable names e.g., nn, component_idx, when looping rather than temporary variable names.
+- Use standard loop variable names e.g., local_node_idx, component_idx, when looping rather than temporary variable names.
 - When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented", ... statement for the cases that are not yet implemented.
+- All error messages should be a proper sentance (with a full stop).
+- Error messages should try to provide information on what variables are out of range and what the values are. 
+- Do not put in temporary write statements. Use diagnostics. 
+- As OpenCMISS is an output then all output should be able to be turned off.
+- All memory allocations should check to see if the allocation was successful and flag an error if not.
+- All locally allocated variables should be deallocated on the exit from a routine under error conditions.
 - Use a !================... line between subroutines and functions
 - For dummy array arguments the dimension qualifier should be with the array name i.e., use INTEGER(INTG) :: FRED(N) rather than INTEGER(INTG), DIMENSION(N) :: FRED.
 - Code should be no more than 132 characters in a line. Use continuation &'s if need be. Add the space before/after each & to distinguish with the complete line.
 - No need to allocate local arrays if the size of array is known. 
   e.g. REAL(DP), ALLOCATABLE :: VALUE_BUFFER(:) and then ALLOCATE(VALUE_BUFFER(5),STAT=ERR)
   can be replaced with REAL(DP)::VALUE_BUFFER(5)
-- Use node hierarchy consistently in subroutine calls. i.e., derivative_number,node_number,component_number,variable_number instead of reverse order.
+- Use node hierarchy consistently in subroutine calls. i.e., version_number,derivative_number,node_number,component_number,variable_number instead of reverse order.
 - Input arguments should be checked in a subroutine before being used.
-- No space between IF and condition i.e. IF( rather than IF (. Similarily END IF should be ENDIF etc.
+- No space between IF and condition i.e. IF( rather than IF (. 
+- END IF should be ENDIF, ELSEIF should be ELSE IF and END DO should be ENDDO.
 - Don't comment out code changes with dates and initials. The code management system stores all changes and who changed what.
-- Use Fortran 2003 standard for get the arguments to a program than the non-standard GET_ARG
 - Get routines
   - Use subroutines instead of function.
   - Return the result to the memory supplied by calling program. (i.e. using INTENT(OUT)::A(:) etc)
@@ -35,4 +43,16 @@ The following styles are required by IBM Fortran Compiler:
 - In IF/WHILE statement, if it checks whether a logical value is true or false, 
   use IF(SOMEVALUE) or IF(.NOT.SOMEVALUE) instead of IF(SOMEVALUE==.TRUE.) or IF(SOMEVALUE==.FALSE.)
 - For the complete array assignment, use A=B instead of A(:)=B(:)     
+
+Allowed Fortran features:
+- All of the features from the Fortran 95 standard.
+- In addition the following features from the Fortran 2003 standard:
+  - C interoperability.
+  - Access to the computing environment.
+  - ISO TR 15581 allocatable enhancements.
+  - [] array constructors should be used instead of /( )/.
+  - Pointer intents should be specified
+  - MOVE_ALLOC
+- In addition the following features from the Fortran 2008 standard:
+  - None.
 */

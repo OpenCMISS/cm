@@ -55,7 +55,7 @@ ifndef OPENCMISSEXTRAS_ROOT
   EXTERNAL_CM_ROOT := $(CURDIR)/../../opencmissextras/cm/external
   EXTERNAL_CELLML_ROOT := $(CURDIR)/../../opencmissextras/cellml
 else
-EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
+  EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
   EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
 endif
 
@@ -704,7 +704,7 @@ endif
 CELLML_LIBRARIES =#
 CELLML_LIB_PATH =#
 ifeq ($(USECELLML),true)
-  CELLML_LIBRARIES += -loccellml -lrdf -lxml2
+  CELLML_LIBRARIES += -loccellml -lxml2
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
     CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )

@@ -240,7 +240,8 @@ CONTAINS
         !VERSION_STRING=VERSION_STRING//" )"
         
         WRITE(*,'(A)') CHAR(VERSION_STRING)
-      ENDIF
+
+     ENDIF
     ENDIF
     
     RETURN

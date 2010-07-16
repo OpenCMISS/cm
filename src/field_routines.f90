@@ -177,9 +177,10 @@ MODULE FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_INPUT_DATA1_SET_TYPE=22 !<The parameter set corresponding to a input field \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_INPUT_DATA2_SET_TYPE=23 !<The parameter set corresponding to a input field \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_INPUT_DATA3_SET_TYPE=24 !<The parameter set corresponding to a input field \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
-
-
-
+  INTEGER(INTG), PARAMETER :: FIELD_PRESSURE_VALUES_SET_TYPE=25 !<The parameter set corresponding to the surface pressure values (at time T+DT). \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_PREVIOUS_PRESSURE_SET_TYPE=26 !<The parameter set corresponding to the previous surface pressure values (at previous increment step). \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES 
+  INTEGER(INTG), PARAMETER :: FIELD_RELATIVE_VELOCITY_SET_TYPE=27 !<The parameter set corresponding to the relative velocity values for ALE \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE=28 !<The parameter set corresponding to the NEGATIVE mesh velocity values for ALE \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   !>@}
 
   !> \addtogroup FIELD_ROUTINES_ScalingTypes FIELD_ROUTINES::ScalingTypes
@@ -457,7 +458,8 @@ MODULE FIELD_ROUTINES
     & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE, &
     & FIELD_PREDICTED_VELOCITY_SET_TYPE,FIELD_PREDICTED_ACCELERATION_SET_TYPE,FIELD_RESIDUAL_SET_TYPE, & 
     & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,FIELD_BOUNDARY_SET_TYPE, &
-    & FIELD_INPUT_DATA1_SET_TYPE, FIELD_INPUT_DATA2_SET_TYPE, FIELD_INPUT_DATA3_SET_TYPE
+    & FIELD_INPUT_DATA1_SET_TYPE, FIELD_INPUT_DATA2_SET_TYPE, FIELD_INPUT_DATA3_SET_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE, &
+    & FIELD_PREVIOUS_PRESSURE_SET_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE, FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE
 
 
   PUBLIC FIELD_NO_SCALING,FIELD_UNIT_SCALING,FIELD_ARC_LENGTH_SCALING,FIELD_HARMONIC_MEAN_SCALING,FIELD_ARITHMETIC_MEAN_SCALING
@@ -1803,15 +1805,16 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       SELECT CASE(FIELD%CREATE_VALUES_CACHE%INTERPOLATION_TYPE(COMPONENT_NUMBER,VARIABLE_TYPE))
-                      CASE(FIELD_CONSTANT_INTERPOLATION)
-                        LOCAL_ERROR="Can not set a mesh component for field component number "// &
-                          & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                          & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                          & " which has constant interpolation."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! Should set anyway in case user changes interpolation(?) Needed by finite elasticity / material field - Sander  
+!                      CASE(FIELD_CONSTANT_INTERPOLATION)
+!                        LOCAL_ERROR="Can not set a mesh component for field component number "// &
+!                          & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+!                          & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+!                          & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+!                          & " which has constant interpolation."
+!                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       CASE(FIELD_ELEMENT_BASED_INTERPOLATION,FIELD_NODE_BASED_INTERPOLATION,FIELD_GRID_POINT_BASED_INTERPOLATION, &
-                        & FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                        & FIELD_GAUSS_POINT_BASED_INTERPOLATION, FIELD_CONSTANT_INTERPOLATION)
                         IF(MESH_COMPONENT_NUMBER>0.AND.MESH_COMPONENT_NUMBER<=MESH%NUMBER_OF_COMPONENTS) THEN
                           FIELD%CREATE_VALUES_CACHE%MESH_COMPONENT_NUMBER(COMPONENT_NUMBER,VARIABLE_TYPE)=MESH_COMPONENT_NUMBER
                         ELSE
@@ -9421,7 +9424,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: elem_idx,deriv_idx,local_ny,node_idx,VALUE_INTG
+    INTEGER(INTG) :: elem_idx,deriv_idx,local_ny,node_idx,VALUE_INTG,gp_idx
     INTEGER(INTG), POINTER :: FROM_PARAMETER_DATA_INTG(:)
     REAL(SP) :: VALUE_SP
     REAL(SP), POINTER :: FROM_PARAMETER_DATA_SP(:)
@@ -9658,7 +9661,40 @@ CONTAINS
                                 CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                                   CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
                                 CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                                  CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
+                                ! gp based. dp only. 
+                                  FROM_DOMAIN_TOPOLOGY=>FROM_DOMAIN%TOPOLOGY
+                                  IF(ASSOCIATED(FROM_DOMAIN_TOPOLOGY)) THEN
+                                    FROM_DOMAIN_ELEMENTS=>FROM_DOMAIN_TOPOLOGY%ELEMENTS
+                                    IF(ASSOCIATED(FROM_DOMAIN_ELEMENTS)) THEN
+                                      SELECT CASE(FROM_FIELD_VARIABLE%DATA_TYPE)
+                                      CASE(FIELD_DP_TYPE)
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
+                                          & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
+                                        DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                                          DO gp_idx=1,size(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%&                                                  & GAUSS_POINT_PARAM2DOF_MAP,1)
+                                            local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP(gp_idx,elem_idx)
+                                            VALUE_DP=FROM_PARAMETER_DATA_DP(local_ny)
+                                            local_ny=TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                            &COMPONENTS(TO_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                              & GAUSS_POINT_PARAM2DOF_MAP(gp_idx,elem_idx)
+                                            CALL DISTRIBUTED_VECTOR_VALUES_SET(TO_FIELD%VARIABLE_TYPE_MAP(TO_VARIABLE_TYPE)%PTR%&
+                                            & PARAMETER_SETS%SET_TYPE(TO_PARAMETER_SET_TYPE)%PTR%PARAMETERS,local_ny,VALUE_DP,&
+                                            & ERR,ERROR,*999)
+                                          ENDDO !gp_idx
+                                        ENDDO !elem_idx
+                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(FROM_FIELD,FROM_VARIABLE_TYPE, &
+                                          & FROM_PARAMETER_SET_TYPE,FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
+                                      CASE DEFAULT
+                                        CALL FLAG_ERROR("Invalid data type or not implemented.",ERR,ERROR,*999)
+                                      END SELECT
+                                    ELSE
+                                      CALL FLAG_ERROR("From domain topology elements is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("From domain topology is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ! / gp based
                                 CASE DEFAULT
                                   LOCAL_ERROR="The from field variable component interpolation type of "// &
                                     & TRIM(NUMBER_TO_VSTRING(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)% &

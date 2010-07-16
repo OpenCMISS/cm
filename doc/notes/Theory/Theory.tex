@@ -81,6 +81,8 @@ The derivatives wrt to external coordinates are then given by
 
 \section{Tensor Analysis}
 
+\subsection{Summation Notation}
+
 \subsection{Base vectors}
 
 Now, if we have a contravariant vector, $\vect{v}$ we can write
@@ -293,6 +295,11 @@ The Laplacian of a scalar using covariant derivatives is
 \end{equation}
 where $g$ is the determinant of the covariant metric tensor $g_{ij}$.
 
+The Laplacian of a vector using covariant derivatives is
+\begin{equation}
+  \laplacian{\vect{\phi}}=\text{grad }\pbrac{\text{div }\vect{\phi}}-\text{curl } \pbrac{\text{curl }\vect{\phi}}==\mixedderiv{\vect{\phi}}{i}{i}
+\end{equation}
+
 \subsection{Coordinate Systems}
 
 \subsubsection{Rectangular Cartesian}
@@ -330,7 +337,7 @@ The Christoffel symbols are all zero \ie $\christoffel{i}{j}{k}=0$.
 The base vectors with respect to the global coordinate system are
 \begin{equation}
   \vect{g}_{i}=\begin{bmatrix} 
-    r\cos\theta\vect{i}_{1} + r\sin\theta\vect{i}_{2} \\ 
+    r\sin\theta\cos\phi\vect{i}_{1} + r\sin\theta\sin\phi\vect{i}_{2}  - r\cos\theta\vect{i}_{3} \\ 
     -r\sin\theta\vect{i}_{1}+ r\cos\theta\vect{i}_{2} \\
     \vect{i}_{3} 
   \end{bmatrix}

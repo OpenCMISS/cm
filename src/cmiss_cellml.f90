@@ -338,7 +338,7 @@ CONTAINS
     IF(CELLML%CELLML_FINISHED) THEN
       !Clear any existing model definitions
       IF(ASSOCIATED(CELLML%MODELS%MODELS)) THEN
-        !> \todo Add in models...
+        !> \todo Add in removal of models...
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment not yet finished, unable to create models.",ERR,ERROR,*999)

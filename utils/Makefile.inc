@@ -62,6 +62,9 @@ LIB_ARCH_DIR = $(INSTRUCTION)-$(ABI)-$(OPERATING_SYSTEM)
 
 ifeq ($(SYSNAME),Linux)
   OPERATING_SYSTEM := linux
+  ifeq ($(ABI),32)
+    MACHNAME := i686 #For cross-compiling
+  endif
   ifeq ($(filter-out i%86,$(MACHNAME)),)
     INSTRUCTION := i686
   endif

@@ -2561,7 +2561,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ni
+    INTEGER(INTG) :: ni, na
 
     CALL ENTERS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
 
@@ -2593,7 +2593,63 @@ CONTAINS
              CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
        END SELECT
     ENDDO !ni
-
+    
+!!$    DO ni=1,BASIS%NUMBER_OF_XI
+!!$       DO na=1,BASIS%NUMBER_OF_XI
+!!$          IF(BASIS%COLLAPSED_XI(ni)==BASIS_XI_COLLAPSED) THEN
+!!$             IF(BASIS%COLLAPSED_XI(na)==BASIS_COLLAPSED_AT_XI0.OR.BASIS%COLLAPSED_XI(na)==BASIS_COLLAPSED_AT_XI1) THEN
+!!$                SELECT CASE(BASIS%INTERPOLATION_XI(ni))
+!!$                CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
+!!$                   SELECT CASE(BASIS%INTERPOLATION_XI(na))
+!!$                   CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-2
+!!$                      num_node=num_node-2
+!!$                   CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-3
+!!$                      num_node=num_node-3
+!!$                   CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-4
+!!$                      num_node=num_node-4
+!!$                   CASE DEFAULT
+!!$                      CALL FLAG_ERROR &
+!!$                           & ( "Hermite interpolation is not working for output routine for collapsed nodes", ERR, ERROR, *999 )
+!!$                   END SELECT
+!!$                CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
+!!$                   SELECT CASE(BASIS%INTERPOLATION_XI(na))
+!!$                   CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-3
+!!$                      num_node=num_node-3
+!!$                   CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-6
+!!$                      num_node=num_node-6
+!!$                   CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-9
+!!$                      num_node=num_node-9
+!!$                   CASE DEFAULT
+!!$                      CALL FLAG_ERROR &
+!!$                           & ( "Hermite interpolation is not working for output routine for collapsed nodes", ERR, ERROR, *999 )
+!!$                   END SELECT
+!!$                CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
+!!$                   SELECT CASE(BASIS%INTERPOLATION_XI(na))
+!!$                   CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-4
+!!$                      num_node=num_node-4
+!!$                   CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-8
+!!$                      num_node=num_node-8
+!!$                   CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
+!!$                      num_scl=num_scl-12
+!!$                      num_node=num_node-12
+!!$                   CASE DEFAULT
+!!$                      CALL FLAG_ERROR &
+!!$                           & ( "Hermite interpolation is not working for output routine for collapsed nodes", ERR, ERROR, *999 )
+!!$                   END SELECT
+!!$                END SELECT
+!!$             ENDIF
+!!$          ENDIF
+!!$       ENDDO
+!!$    ENDDO
+    
     CALL EXITS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS")
     RETURN
 999 CALL ERRORS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS",ERR,ERROR)
@@ -2654,9 +2710,10 @@ CONTAINS
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
+    INTEGER(INTG), DIMENSION(4,4,4,1) :: NODE_POSITION_INDEX
     INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
-    INTEGER(INTG) :: nn, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
-    INTEGER(INTG) :: local_number, isNodal
+    INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES,dim !NUM_OF_NODES
+    INTEGER(INTG) :: local_number, isNodal, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES 
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SWITCH
 
@@ -2688,7 +2745,7 @@ CONTAINS
        componentDomain=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%DOMAIN
        !get the domain index for this variable component according to my own computional node number
        local_number = FindMyLocalDomainNumber( componentDomain%MAPPINGS%ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number ),&
-         & my_computational_node_number )
+            & my_computational_node_number )
        GROUP_LOCAL_NUMBER(comp_idx)=local_number
        !use local domain information find the out the maximum number of derivatives
        DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
@@ -2699,38 +2756,38 @@ CONTAINS
           MAX_NODE_ELEMENT => DOMAIN_ELEMENTS%ELEMENTS(local_number)
           MAX_NUM_NODES=BASIS%NUMBER_OF_NODES
        ENDIF
-       IF(.NOT.BASIS%DEGENERATE)  THEN
-          IF(comp_idx == 1) THEN
-             NUM_OF_SCALING_FACTOR_SETS = NUM_OF_SCALING_FACTOR_SETS + 1
+       !IF(.NOT.BASIS%DEGENERATE)  THEN
+       IF(comp_idx == 1) THEN
+          NUM_OF_SCALING_FACTOR_SETS = NUM_OF_SCALING_FACTOR_SETS + 1
+          listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
+          LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
+       ELSE
+          SWITCH=.FALSE.
+          DO scaleIndex1=1, NUM_OF_SCALING_FACTOR_SETS
+             IF( BASIS%GLOBAL_NUMBER == listScaleBases( scaleIndex1 )%PTR%GLOBAL_NUMBER ) THEN
+                SWITCH=.TRUE.
+                LIST_COMP_SCALE(comp_idx)=scaleIndex1
+                EXIT
+             ENDIF
+          ENDDO !scaleIndex1
+          IF(.NOT.SWITCH) THEN
+             NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
              listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
              LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
-          ELSE
-             SWITCH=.FALSE.
-             DO scaleIndex1=1, NUM_OF_SCALING_FACTOR_SETS
-                IF( BASIS%GLOBAL_NUMBER == listScaleBases( scaleIndex1 )%PTR%GLOBAL_NUMBER ) THEN
-                   SWITCH=.TRUE.
-                   LIST_COMP_SCALE(comp_idx)=scaleIndex1
-                   EXIT
-                ENDIF
-             ENDDO !scaleIndex1
-             IF(.NOT.SWITCH) THEN
-                NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
-                listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
-                LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
-             ENDIF
           ENDIF
-       ENDIF !BASIS%DEGENERATE=.FALSE.
+       ENDIF
+       !ENDIF !BASIS%DEGENERATE=.FALSE.
     ENDDO !comp_idx
     !!Allocate the memory for group of field components
     CALL REALLOCATE( GROUP_VARIABLES, NUM_OF_VARIABLES, &
-      & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
+         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     !!Allocate the memory for group of maximum number of derivatives
     CALL REALLOCATE( GROUP_SCALE_FACTORS, NUM_OF_SCALING_FACTOR_SETS, &
-      & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
+         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     CALL REALLOCATE( GROUP_NODE, NUM_OF_SCALING_FACTOR_SETS, &
-      & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
+         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     !fill information into the group of fields and variables
     NULLIFY(variable_ptr)
@@ -2745,183 +2802,523 @@ CONTAINS
     ENDDO  !comp_idx
 
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
-      BASIS => listScaleBases( scaleIndex )%PTR
-      IF(.NOT.ASSOCIATED(BASIS)) THEN
-        CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
-      ENDIF
+       BASIS => listScaleBases( scaleIndex )%PTR
+       IF(.NOT.ASSOCIATED(BASIS)) THEN
+          CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+       ENDIF
 
-      SELECT CASE( BASIS%TYPE )
-        CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
+       SELECT CASE( BASIS%TYPE )
+       CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
           CALL FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
-        CASE( BASIS_SIMPLEX_TYPE )
+       CASE( BASIS_SIMPLEX_TYPE )
           CALL FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
-        CASE DEFAULT
+       CASE DEFAULT
           CALL FLAG_ERROR("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
-            &ERR,ERROR,*999)
-      END SELECT
+               &ERR,ERROR,*999)
+       END SELECT
 
-      GROUP_SCALE_FACTORS(scaleIndex)=num_scl !numer of scale factors in scale factor set
-      GROUP_NODE(scaleIndex)=num_node !numer of nodes in scale factor set
+       GROUP_SCALE_FACTORS(scaleIndex)=num_scl !numer of scale factors in scale factor set
+       GROUP_NODE(scaleIndex)=num_node !numer of nodes in scale factor set
     ENDDO !scaleIndex
 
     !write out the scale factor set information
     ERR = FieldExport_ScalingFactorCount( sessionHandle, NUM_OF_SCALING_FACTOR_SETS )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
-      basis => listScaleBases( scaleIndex )%PTR
-      SELECT CASE( basis%TYPE )
-        CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE, BASIS_SIMPLEX_TYPE )
-!!TEMP
+       basis => listScaleBases( scaleIndex )%PTR
+       SELECT CASE( basis%TYPE )
+       CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE, BASIS_SIMPLEX_TYPE )
+          !!TEMP
           !ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(basis%INTERPOLATION_XI) );
-!!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+          !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
           INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
           ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI) );
           IF( ERR /= 0 ) THEN
-            CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
+             CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
           ENDIF
-        CASE DEFAULT
+       CASE DEFAULT
           CALL FLAG_ERROR( "Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE, "*" , ERR, ERROR ))//" is not implemented",&
-            &ERR,ERROR, *999)
-      END SELECT
+               &ERR,ERROR, *999)
+       END SELECT
     ENDDO !scaleIndex
 
     ERR = FieldExport_NodeCount( sessionHandle, MAX_NUM_NODES )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     ERR = FieldExport_FieldCount( sessionHandle, NUM_OF_VARIABLES )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     !write out the nodal header
     var_idx=0
     NULLIFY(variable_ptr)
     DO comp_idx=1,elementalInfoSet%NUMBER_OF_COMPONENTS
-    
-      component => elementalInfoSet%COMPONENTS(comp_idx)%PTR
-    
-      !grouping field variables and components together
-      IF(.NOT.ASSOCIATED(variable_ptr,TARGET=component%FIELD_VARIABLE)) THEN !different variables
-        var_idx=var_idx+1
-        variable_ptr=>component%FIELD_VARIABLE
-        !write out the field information
 
-        IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
-          & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-          NULLIFY(COORDINATE_SYSTEM)
-          CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-          ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, COORDINATE_SYSTEM%TYPE, &
-            & GROUP_VARIABLES(var_idx) )
-        ELSE
-          ERR = FieldExport_Variable( sessionHandle, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
-            & GROUP_VARIABLES(var_idx) )
-        ENDIF
+       component => elementalInfoSet%COMPONENTS(comp_idx)%PTR
 
-        IF( ERR /= 0 ) THEN
-          CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
-        ENDIF
-      ENDIF
+       !grouping field variables and components together
+       IF(.NOT.ASSOCIATED(variable_ptr,TARGET=component%FIELD_VARIABLE)) THEN !different variables
+          var_idx=var_idx+1
+          variable_ptr=>component%FIELD_VARIABLE
+          !write out the field information
 
-      componentDomain=>component%DOMAIN
-      DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
-      BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
-      
-      IF( component%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
-        isNodal = 1
-      ELSE
-        isNodal = 0
-      ENDIF
+          IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+               & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+             NULLIFY(COORDINATE_SYSTEM)
+             CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+             ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, COORDINATE_SYSTEM%TYPE, &
+                  & GROUP_VARIABLES(var_idx) )
+          ELSE
+             ERR = FieldExport_Variable( sessionHandle, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
+                  & GROUP_VARIABLES(var_idx) )
+          ENDIF
 
-      IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
-        & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-!!TEMP
-        !ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
-        !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
-!!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+          IF( ERR /= 0 ) THEN
+             CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+          ENDIF
+       ENDIF
+
+       componentDomain=>component%DOMAIN
+       DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
+       BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
+
+       IF( component%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
+          isNodal = 1
+       ELSE
+          isNodal = 0
+       ENDIF
+
+       IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+            & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+          !!TEMP
+          !ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+          !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+          !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
           INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
           NULLIFY(COORDINATE_SYSTEM)
           CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
           ERR = FieldExport_CoordinateComponent( sessionHandle, COORDINATE_SYSTEM%TYPE, &
-            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
-        ELSE
-!!TEMP
-        !ERR = FieldExport_Component( sessionHandle, &
-        !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
-!!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
-        ERR = FieldExport_Component( sessionHandle, &
-          & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
-      ENDIF
-      IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
-      ENDIF
+               & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
+       ELSE
+          !!TEMP
+          !ERR = FieldExport_Component( sessionHandle, &
+          !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+          !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
+          ERR = FieldExport_Component( sessionHandle, &
+               & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
+       ENDIF
+       IF(ERR/=0) THEN
+          CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+       ENDIF
 
-      IF( isNodal == 0 ) THEN
-        ERR = FieldExport_ElementGridSize( sessionHandle, basis%NUMBER_OF_XI )
-      ELSE
-        IF(.NOT.BASIS%DEGENERATE) THEN
+       IF( isNodal == 0 ) THEN
+          ERR = FieldExport_ElementGridSize( sessionHandle, basis%NUMBER_OF_XI )
+       ELSE
+          ! IF(.NOT.BASIS%DEGENERATE) THEN
           IF(LIST_COMP_SCALE(comp_idx)==1) THEN
-            scaleIndex=0
+             scaleIndex=0
           ELSE
-            scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
+             scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
           ENDIF
 
-!!TEMP
-        ! ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
-        ! & C_LOC( DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES ), scaleIndex )
-!!Copy element derivatives etc. to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-!!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-!!In order to correctly index the supplied array, the API needs to know in advance the dimensions of the array.
-!!To avoid having to pass in an extra 'size' parameter, we unroll the 2d derivative index array into a vector.
+          !!TEMP
+          ! ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
+          ! & C_LOC( DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES ), scaleIndex )
+          !!Copy element derivatives etc. to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+          !!In order to correctly index the supplied array, the API needs to know in advance the dimensions of the array.
+          !!To avoid having to pass in an extra 'size' parameter, we unroll the 2d derivative index array into a vector.
           derivativeIndex = 1
-
-          DO nn=1,BASIS%NUMBER_OF_NODES
-            NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
-            DO mm=1,NUMBER_OF_DERIVATIVES(nn)
-              ELEMENT_DERIVATIVES(derivativeIndex) = &
-                & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(mm,nn)
-              derivativeIndex = derivativeIndex + 1
-            ENDDO !mm
-          ENDDO !nn
-
-          !Find the local-node index in the element's total node list.
-          !TODO This assumes nested subsets of nodes, and will therefore break on, e.g., mixed quad and cubic interpolation
-          DO nn = 1, BASIS%NUMBER_OF_NODES
-            DO mm = 1, MAX_NODE_ELEMENT%BASIS%NUMBER_OF_NODES
-              IF( DOMAIN_ELEMENTS%ELEMENTS( local_number )%ELEMENT_NODES( nn ) == &
-                & MAX_NODE_ELEMENT%ELEMENT_NODES( mm ) ) THEN
-                NODE_INDEXES( nn ) = mm
-                EXIT
-              ENDIF
-            ENDDO !mm
-          ENDDO !nn
+          nn=0
+          NODE_NUMBER=0
+          
+          ! For elements with collapsed nodes, the node indexes need to be changed
+          IF (BASIS%NUMBER_OF_COLLAPSED_XI>0) THEN
+!!$             IF((.NOT.BASIS%COLLAPSED_XI(1).OR.BASIS%COLLAPSED_XI(2).OR.BASIS%COLLAPSED_XI(3)==BASIS_NOT_COLLAPSED)) THEN
+!!$                CALL FLAG_ERROR("Pyramide elements output is not implemented",&
+!!$                     &ERR,ERROR,*999) 
+             
+             NODE_NUMBER_COUNTER=0
+             NodesX=BASIS%INTERPOLATION_XI(1)+1
+             NodesY=BASIS%INTERPOLATION_XI(2)+1
+             NodesZ=BASIS%INTERPOLATION_XI(3)+1
 
 
-          IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == FIELD_NO_SCALING ) THEN
-            !Overloading the scaleIndex parameter is something of a hack.
-            ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), -1 )
-          ELSE
-            ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), scaleIndex )
+             !The following if-sentences goes through all possible wedge formed elements and renumber the nodes in order to 
+             !attach the node_index and the number of derivatives to the numbering corresponding to not collapsed elements  
+             IF(BASIS%COLLAPSED_XI(1)==BASIS_XI_COLLAPSED) THEN
+                IF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI0) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (ny==1) THEN
+                               NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+nz
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI1) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                             IF (ny==NodesY) THEN
+                               NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+NodesX*(NodesY-1)+nz
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER) 
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI0) THEN
+                    DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (nz==1) THEN
+                               NODE_NUMBER_COLLAPSED=ny
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI1) THEN
+                    DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (nz==NodesZ) THEN
+                               NODE_NUMBER_COLLAPSED=(NodesZ-1)*(NodesY*NodesX)+ny
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ENDIF
+             ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_XI_COLLAPSED) THEN
+                IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI0) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (ny==1) THEN
+                               NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+nz
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI1) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (ny==NodesY) THEN
+                               NODE_NUMBER=(nz-1)*NodesX*(NodesY-1)+nz+NodesX-1
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO                 
+                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI0) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (nz==1) THEN
+                               NODE_NUMBER_COLLAPSED=nx
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO          
+                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI1) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (nz==NodesZ) THEN
+                               NODE_NUMBER_COLLAPSED=(NodesZ-1)*NodesY*NodesX+nx
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ENDIF
+             ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_XI_COLLAPSED) THEN
+                IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI0) THEN
+                    DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (nx==1) THEN
+                               NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI1) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (nx==NodesX) THEN
+                                NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny+NodesX-1
+                                NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI0) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (ny==1) THEN
+                               NODE_NUMBER_COLLAPSED=nx
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER 
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI1) THEN
+                   DO nz=1,NodesZ
+                      DO ny=1,NodesY
+                         DO nx=1,NodesX
+                            nn=nn+1
+                            IF (ny==NodesY) THEN
+                               NODE_NUMBER_COLLAPSED=NodesX*(NodesY-1)+nx
+                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                            ELSE
+                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                               ELSE
+                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                               ENDIF 
+                               NODE_NUMBER=NODE_NUMBER_COUNTER
+                            ENDIF
+                            NODE_INDEXES(nn)=NODE_NUMBER
+                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                               ELEMENT_DERIVATIVES(nn)= &
+                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                            ENDDO
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ENDIF
+             ENDIF
+             !NODE_NUMBER_COUNTER has counted up to the highest number of nodes in the element
+             NUMBER_OF_ELEMENT_NODES=nn
+             !   ENDIF
+          ELSE !Not collapsed nodes
+             DO nn=1,BASIS%NUMBER_OF_NODES
+                NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
+                DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+                   ELEMENT_DERIVATIVES(derivativeIndex) = &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(mm,nn)
+                   derivativeIndex = derivativeIndex + 1
+                ENDDO !mm
+             ENDDO !nn
+
+             !Find the local-node index in the element's total node list.
+             !TODO This assumes nested subsets of nodes, and will therefore break on, e.g., mixed quad and cubic interpolation
+             DO nn = 1, BASIS%NUMBER_OF_NODES
+                DO mm = 1, MAX_NODE_ELEMENT%BASIS%NUMBER_OF_NODES
+                   IF( DOMAIN_ELEMENTS%ELEMENTS( local_number )%ELEMENT_NODES( nn ) == &
+                        & MAX_NODE_ELEMENT%ELEMENT_NODES( mm ) ) THEN
+                      NODE_INDEXES( nn ) = mm
+                      EXIT
+                   ENDIF
+                ENDDO !mm
+             ENDDO !nn
+             NUMBER_OF_ELEMENT_NODES= BASIS%NUMBER_OF_NODES
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
-        ENDIF
-      ENDIF
-      
-      IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
-      ENDIF
-      
+          
+          IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == FIELD_NO_SCALING ) THEN
+             !Overloading the scaleIndex parameter is something of a hack.
+             ERR = FieldExport_NodeScaleIndexes( sessionHandle,  NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+                  & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), -1 )
+          ELSE
+             ERR = FieldExport_NodeScaleIndexes( sessionHandle, NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+                  & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), scaleIndex )
+          ENDIF
+          ! ELSE
+          !   CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
+          ! ENDIF
+       ENDIF
+
+       IF(ERR/=0) THEN
+          CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+       ENDIF
+
     ENDDO !comp_idx
 
     !release temporary memory
@@ -2955,7 +3352,7 @@ CONTAINS
 
     !Local variables
     INTEGER(INTG) :: scaleIndex, componentIndex, localNumber, scaleFactorCount, nodeIndex
-    INTEGER(INTG) :: nodeNumber, derivativeIndex, nk, ny2, firstScaleSet
+    INTEGER(INTG) :: nodeNumber, derivativeIndex, nk, ny2, firstScaleSet, nx, ny, nz, NodesX, NodesY, NodesZ
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: domainElements
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
@@ -3013,7 +3410,20 @@ CONTAINS
             ENDDO !derivativeIndex
           ENDDO !nodeIndex
         ELSE
-          CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
+           !This is just a hack, forcing to write out the correct number of scale factors equal to one!!!!
+           NodesX=BASIS%INTERPOLATION_XI(1)+1
+           NodesY=BASIS%INTERPOLATION_XI(2)+1
+           NodesZ=BASIS%INTERPOLATION_XI(3)+1
+           CALL REALLOCATE( scaleBuffer, (NodesX*NodesY*NodesZ), &
+                & "Could not allocate scale buffer in IO", ERR, ERROR, *999 )
+           DO nz=1,NodesZ
+              DO ny=1,NodesY
+                 DO nx=1,NodesX
+                    scaleFactorCount=scaleFactorCOUNT+1
+                    scaleBuffer( scaleFactorCount ) = 1
+                 ENDDO
+              ENDDO
+           ENDDO
         ENDIF
         
         NULLIFY( SCALE_FACTORS )

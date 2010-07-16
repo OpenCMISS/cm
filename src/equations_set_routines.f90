@@ -1315,8 +1315,9 @@ CONTAINS
                                               rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
                                                 & rhs_global_dof)
                                               SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
-                                                                                                & BOUNDARY_CONDITION_NEUMANN)
+                                              CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
+                                                   & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+                                                   & BOUNDARY_CONDITION_NEUMANN_FREE)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix
                                                 DO equations_column_idx=1,COLUMN_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
@@ -1364,8 +1365,9 @@ CONTAINS
                                               rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
                                                 & rhs_global_dof)
                                               SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_NOT_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
-                                                                                                & BOUNDARY_CONDITION_NEUMANN)
+                                              CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
+                                                   & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+                                                   & BOUNDARY_CONDITION_NEUMANN_FREE)
                                                 !Back substitute
                                                 !Loop over the local columns of the equations matrix
                                                 DO equations_column_idx=ROW_INDICES(equations_row_number), &
@@ -4960,6 +4962,8 @@ CONTAINS
     REAL(DP) :: FULL_LOAD, CURRENT_LOAD, NEW_LOAD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+    CALL ENTERS("EQUATIONS_SET_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
+
     NULLIFY(BOUNDARY_CONDITIONS)
     NULLIFY(DEPENDENT_FIELD)
     NULLIFY(DEPENDENT_VARIABLE)
@@ -4976,6 +4980,7 @@ CONTAINS
         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
           IF(ALLOCATED(DEPENDENT_FIELD%VARIABLES)) THEN
             !Loop over the variables associated with this equations set
+            !\todo: Looping over all field variables is not safe when volume-coupled problem is solved. Look at matrix and rhs mapping instead?
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLES(variable_idx)
               variable_type=DEPENDENT_VARIABLE%VARIABLE_TYPE
@@ -4987,13 +4992,23 @@ CONTAINS
                     !Get the pointer to vector holding the full and current loads
                     CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                       & FULL_LOADS,ERR,ERROR,*999)
+                    !chrm 22/06/2010: 'FIELD_BOUNDARY_CONDITIONS_SET_TYPE' does not get updated with time (update_BCs)
+                    !\ToDo: How can this be achieved ???
+
+!                     write(*,*)'FULL_LOADS = ',FULL_LOADS
+
                     CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                       & CURRENT_LOADS,ERR,ERROR,*999)
+
+!                     write(*,*)'CURRENT_LOADS = ',CURRENT_LOADS
+
                     !Get full increment, calculate new load, then apply to dependent field
                     DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                       dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
                       IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                        & BOUNDARY_CONDITION_FIXED_INCREMENTED_TYPE) THEN !Only increment if it's a incremented type bc
+                          & BOUNDARY_CONDITION_FIXED_INCREMENTED .OR. &
+                        & BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
+                          & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN !Only increment if it's a incremented type bc
                         FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
                         ! Apply full load if last step, or fixed BC
                         IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
@@ -5008,6 +5023,16 @@ CONTAINS
                         ENDIF
                       ENDIF
                     ENDDO !dirichlet_idx
+
+!---tob
+                    !\ToDo: What happens if the call below is issued
+                    !without actually that the dependent field has been modified in above conditional ?
+                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!---toe
+
                     !Restore the vector handles
                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
                       & FULL_LOADS,ERR,ERROR,*999)
@@ -5020,9 +5045,7 @@ CONTAINS
                   ENDIF
                 ENDIF
               ELSE
-                LOCAL_ERROR="Boundary condition variable type "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                  & " is not associated for the corresponding field variable."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ! do nothing
               ENDIF
             ENDDO !variable_idx
           ELSE

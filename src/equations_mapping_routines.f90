@@ -1166,7 +1166,8 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER=2
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER=3
                     ENDIF
-                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
+                    !EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=0
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
@@ -2392,13 +2393,18 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1) THEN
-                      LOCAL_ERROR="The specified number of linear matrices of "// &
-                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
-                        & " is invalid. For dynamic linear problems with a equations set RHS the number "// &
-                        & "must be between >= 1."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
+!chrm 16/06/2010
+!Commenting out the conditional below,
+!since for dynamic problems it is perfectly valid to have zero
+!linear matrices provided that one has dynamic matrices.
+!\ToDo: Will this remain commented out, or shall we introduce a conditional ???
+!                     IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1) THEN
+!                       LOCAL_ERROR="The specified number of linear matrices of "// &
+!                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
+!                         & " is invalid. For dynamic linear problems with a equations set RHS the number "// &
+!                         & "must be between >= 1."
+!                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                     ENDIF
                   ENDIF
                 CASE(EQUATIONS_NONLINEAR)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)

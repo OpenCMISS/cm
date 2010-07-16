@@ -1176,9 +1176,10 @@ CONTAINS
     DO nic=-4,4
       NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
     ENDDO !nic
-
-    CALL ENTERS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE",ERR,ERROR,*999)
     
+    CALL ENTERS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE",ERR,ERROR,*999)
+
+
     IF(ASSOCIATED(TOPOLOGY)) THEN
       DECOMPOSITION=>TOPOLOGY%DECOMPOSITION
       IF(ASSOCIATED(DECOMPOSITION)) THEN
@@ -1192,8 +1193,10 @@ CONTAINS
               IF(ASSOCIATED(DOMAIN_NODES)) THEN
                 DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                 IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                  ALLOCATE(SURROUNDING_ELEMENTS_LIST(DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
                   !Loop over the elements in the decomposition
                   DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                  !%%%% first we initialize lists that are required to find the adjacent elements list
                     BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
                     DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
                       NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
@@ -1453,7 +1456,7 @@ CONTAINS
         ENDDO !nic
       ENDDO !ne
     ENDIF
-    
+
     CALL EXITS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE")
     RETURN
 999 IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
@@ -2164,6 +2167,7 @@ CONTAINS
         ENDIF
       ELSE
         CALL FLAG_ERROR("Topology lines is not associated.",ERR,ERROR,*999)
+
       ENDIF
     ELSE
       CALL FLAG_ERROR("Topology is not associated.",ERR,ERROR,*999)
@@ -3172,6 +3176,7 @@ CONTAINS
     CALL EXITS("DOMAIN_INITIALISE")
     RETURN 1
   END SUBROUTINE DOMAIN_INITIALISE
+
   
   !
   !================================================================================================================================
@@ -4706,7 +4711,6 @@ CONTAINS
 
     LINE%NUMBER=0
     NULLIFY(LINE%BASIS)
-    LINE%BOUNDARY_LINE=.FALSE.
     
     CALL EXITS("DOMAIN_TOPOLOGY_LINE_INITIALISE")
     RETURN
@@ -4830,7 +4834,6 @@ CONTAINS
 
     FACE%NUMBER=0
     NULLIFY(FACE%BASIS)
-    FACE%BOUNDARY_FACE=.FALSE.
     
     CALL EXITS("DOMAIN_TOPOLOGY_FACE_INITIALISE")
     RETURN
@@ -5981,6 +5984,7 @@ CONTAINS
                       TOPOLOGY%NODES%NODES(node_idx)%BOUNDARY_NODE=.TRUE.
                     ENDIF
                   ENDDO !local_node_idx
+                  
                 ENDIF
               ENDDO !nic
             CASE(BASIS_SERENDIPITY_TYPE)
@@ -6463,7 +6467,7 @@ CONTAINS
     CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(ELEMENTS)) THEN
-      IF(ELEMENTS%ELEMENTS_FINISHED) THEN
+      IF(.NOT.ELEMENTS%ELEMENTS_FINISHED) THEN
         CALL FLAG_ERROR("Elements have been finished",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
@@ -6584,8 +6588,8 @@ CONTAINS
     CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(ELEMENTS)) THEN
-      IF(ELEMENTS%ELEMENTS_FINISHED) THEN
-        CALL FLAG_ERROR("Elements have been finished",ERR,ERROR,*999)
+      IF(.NOT.ELEMENTS%ELEMENTS_FINISHED) THEN
+        CALL FLAG_ERROR("Elements have not been finished",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
           IF(SIZE(USER_ELEMENT_NODES,1)>=SIZE(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODES,1)) THEN
@@ -6740,8 +6744,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-  !>Calculates the element numbers surrounding an element in a mesh topology.
+ !>Calculates the element numbers surrounding an element in a mesh topology.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
     !Argument variables
@@ -6769,8 +6772,10 @@ CONTAINS
     IF(ASSOCIATED(TOPOLOGY)) THEN
       IF(ASSOCIATED(TOPOLOGY%NODES)) THEN
         IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
-          !Loop over the global elements in the mesh
-          DO ne=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS            
+          ALLOCATE(SURROUNDING_ELEMENTS_LIST(TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS),STAT=ERR)
+          !Loop over the global elements in the mesh         
+          DO ne=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+          !%%%% first we initialize lists that are required to find the adjacent elements list
             BASIS=>TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
             DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
               NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
@@ -7167,6 +7172,7 @@ CONTAINS
 999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET",ERR,ERROR)    
     CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET")
     RETURN 1
+
    
   END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET
 
@@ -7182,6 +7188,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the element to set
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set the user number for \todo This should be the first parameter.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: GLOBAL_ELEMENT_NUMBER,INSERT_STATUS

@@ -52,12 +52,11 @@
 
 ifndef OPENCMISSEXTRAS_ROOT
   OPENCMISSEXTRAS_ROOT := ../../opencmissextras
-  EXTERNAL_CM_ROOT := $(CURDIR)/../../opencmissextras/cm/external
-  EXTERNAL_CELLML_ROOT := $(CURDIR)/../../opencmissextras/cellml
-else
-  EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
-  EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
 endif
+
+EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
+EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
+EXTERNAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
 
 ifndef GLOBAL_ROOT
   $(error GLOBAL_ROOT is not setup)
@@ -74,6 +73,10 @@ endif
 
 ifndef USECELLML
   USECELLML := false
+endif
+
+ifndef USEFIELDML
+  USEFIELDML := false
 endif
 
 ifeq ($(MPI),mpich2)
@@ -93,7 +96,11 @@ else
     ifeq ($(MPI),openmpi)
       MPI := openmpi
     else
-      $(error unknown MPI type - $(MPI))
+      ifeq ($(MPI),poe)
+        MPI := poe
+      else
+        $(error unknown MPI type - $(MPI))
+      endif
     endif
   endif
 endif
@@ -136,13 +143,16 @@ EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
   EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
+  EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
+    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
   else# windows
     EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   endif
 endif
 
@@ -505,9 +515,10 @@ ifeq ($(call olist_args,test),)
 endif
 
 #TAO
-TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
+TAO_LIBRARIES =#
 TAO_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
   TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -518,9 +529,10 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+PETSC_LIBRARIES =#
 PETSC_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
   PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
   ifeq ($(ABI),64)
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
@@ -533,6 +545,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm  -lXm -lXt -lX11 
     PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
   else# windows
@@ -541,9 +554,10 @@ else
 endif
 
 #SUNDIALS
-SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
+SUNDIALS_LIBRARIES =#
 SUNDIALS_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
   SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -554,9 +568,10 @@ else
 endif
 
 #HYPRE
-HYPRE_LIBRARIES = -lHYPRE
+HYPRE_LIBRARIES =#
 HYPRE_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  HYPRE_LIBRARIES = -lHYPRE
   HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -567,9 +582,10 @@ else
 endif
 
 #MUMPS
-MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
+MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
   MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -580,9 +596,10 @@ else
 endif
 
 #ScaLAPACK
-SCALAPACK_LIBRARIES = -lscalapack 
+SCALAPACK_LIBRARIES =#
 SCALAPACK_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SCALAPACK_LIBRARIES = -lscalapack 
   SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -593,9 +610,10 @@ else
 endif
 
 #BLACS
-BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77 
+BLACS_LIBRARIES =#
 BLACS_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77 
   BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
@@ -639,6 +657,25 @@ ifeq ($(USECELLML),true)
     else# windows
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
          CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+    endif
+  endif
+endif
+
+#FIELDML
+FIELDML_LIBRARIES =#
+FIELDML_LIB_PATH =#
+ifeq ($(USEFIELDML),true)
+  FIELDML_LIBRARIES += -lfieldml -lxml2
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+    FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+      FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
+    else# windows
+      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+      FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
     endif
   endif
 endif
@@ -714,6 +751,12 @@ ifeq ($(USECELLML),true)
   EXTERNAL_LIB_PATH += $(CELLML_LIB_PATH)
 endif
 
+ifeq ($(USEFIELDML),true)
+  EXTERNAL_LIBRARIES += $(FIELDML_LIBRARIES)
+  EXTERNAL_LIB_PATH += $(FIELDML_LIB_PATH)
+  EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
+endif
+
 FPPFLAGS += $(OPENCMISS_INCLUDE_PATH) $(EXTERNAL_INCLUDE_PATH)
 
 ELFLAGS += $(EXTERNAL_LIB_PATH)
@@ -754,6 +797,8 @@ $(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
 
 $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME).f90
 
+run : main
+	$(EXECUTABLE)
 
 # ----------------------------------------------------------------------------
 #

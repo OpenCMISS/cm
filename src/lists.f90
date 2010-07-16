@@ -1989,7 +1989,7 @@ CONTAINS
   SUBROUTINE LIST_REMOVE_DUPLICATES(LIST,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The pointer to the list
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2404,7 +2404,7 @@ CONTAINS
   SUBROUTINE LIST_SORT_LIST(LIST,ERR,ERROR,*)
   
     !Argument variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<The list to sort
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<The list to sort
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables

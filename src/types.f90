@@ -262,9 +262,11 @@ MODULE TYPES
     TYPE(VARYING_STRING) :: LABEL !<A string label for the data point.
     REAL(DP), ALLOCATABLE :: VALUES(:) !Values of the data point specifying the spatial position in the region, has the size of region dimension the data point belongs to.
     REAL(DP), ALLOCATABLE :: WEIGHTS(:) !<Weights of the data point, has the size of region dimension the data point belongs to.
-    INTEGER(INTG) :: PROJECTION_COMPUTATIONAL_NODE_NUMBER !<The corresponding computational node of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    !INTEGER(INTG) :: PROJECTION_COMPUTATIONAL_NODE_NUMBER !<The corresponding computational node of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
     REAL(DP) :: PROJECTION_DISTANCE !<The distances between the data point and the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
     INTEGER(INTG) :: PROJECTION_ELEMENT_NUMBER !<The element of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
+    INTEGER(INTG) :: PROJECTION_ELEMENT_FACE_NUMBER !<The element face of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE is chosen    
+    INTEGER(INTG) :: PROJECTION_ELEMENT_LINE_NUMBER !<The element line of the mesh the data point projects onto. Assigned only if DATA_POINTS_PROJECTED is .TRUE. and DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE is chosen
     INTEGER(INTG) :: PROJECTION_EXIT_TAG !<The exit tage of the data projection. \See DATA_PROJECTION_ROUTINES. Assigned only if DATA_POINTS_PROJECTED is .TRUE. 
     REAL(DP), ALLOCATABLE :: PROJECTION_XI(:) !<The xi coordinate of the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
   END TYPE DATA_POINT_TYPE
@@ -461,7 +463,19 @@ MODULE TYPES
     INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the cylinder mesh.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in radial, circumferential and axial directions
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
-  END TYPE GENERATED_MESH_CYLINDER_TYPE
+ END TYPE GENERATED_MESH_CYLINDER_TYPE
+ 
+  !>Contains information of a generated ellipsoid mesh
+  !>Allows only a 3D ellipsoid mesh
+ TYPE GENERATED_MESH_ELLIPSOID_TYPE
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh.
+    REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(nj). The position of the origin (centre) of lower face of ellipsoid mesh.
+    REAL(DP), ALLOCATABLE :: ELLIPSOID_EXTENT(:) !<ELLIPSOID_EXTENT(nj). The size of long axis, short axis, wall thickness and cut off angle of ellipsoid.
+    INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the ellipsoid mesh.
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in circumferential, longitudinal and transmural directions
+    TYPE(BASIS_TYPE), POINTER :: BASIS1, BASIS2, BASIS3, BASIS4 !<The pointer to the basis used in the ellipsoid mesh
+    LOGICAL :: APPEND_LINEAR_COMPONENT=.FALSE. !<True when two mesh component are needed 
+END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
   !>Contains information on a generated mesh. \see OPENCMISS::CMISSGeneratedMeshType
   TYPE GENERATED_MESH_TYPE
@@ -474,7 +488,8 @@ MODULE TYPES
     INTEGER(INTG) :: GENERATED_TYPE !<The type of the generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the regular generated mesh information if the generated mesh is a regular mesh, NULL if not.
     TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH !<A pointer to the cylinder generate mesh information if the generated mesh is a cylinder mesh, NULL if not.
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that has been generated.
+     TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH !<A pointer to the ellipsoid generate mesh information if the generated mesh is a ellipsoid mesh, NULL if not.
+     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that has been generated.
   END TYPE GENERATED_MESH_TYPE
   
   !>A buffer type to allow for an array of pointers to a GENERATED_MESH_TYPE.
@@ -1532,26 +1547,26 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: SPARSE_COLUMN_INDICES(:) !<SPARSE_COLUMN_INDICES(column_idx). Between SPARSE_COLUMN_INDICES(column_idx) and SPARSE_COLUMN_INDICES(column_idx+1)-1 are the row indices of non-zero elements of the 'column_idx'th column
   END TYPE BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
 
-  !>Contains the user set values for the Neumann boundary conditions
-  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
-    INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
-    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
-  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
-
-  !>A buffer type to allow for an array of pointers to BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE
-  TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
-    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_TYPE), POINTER :: PTR !<A pointer to the Neumann boundary conditions values type
-  END TYPE BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE
-
   !>Contains the arrays and mapping arrays used to calculate the Neumann boundary conditions
   TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
-    TYPE(BOUNDARY_CONDITIONS_NEUMANN_VALUES_PTR_TYPE), ALLOCATABLE :: NEUMANN_BOUNDARY_IDENTIFIER(:) !<Array of identifiers for user set Neumann boundaries
+    INTEGER(INTG), ALLOCATABLE :: SET_DOF(:) !<Array of user-set DOFs on boundary
+    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES(:) !<Array of user-set values of DOFs on boundary
+    INTEGER(INTG), ALLOCATABLE :: SET_DOF_CONDITIONS(:) !<Array of user-set conditions of DOFs on boundary
+    REAL(DP), ALLOCATABLE :: SET_DOF_VALUES_PREV(:) !<Array of user-set values of DOFs on boundary from previous time step
     INTEGER(INTG), ALLOCATABLE :: FACES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per face, indexed by face and element_parameter, returns local_ny (dof) number. 
     REAL(DP), ALLOCATABLE :: FACE_INTEGRATION_MATRIX(:) !<Array for results from face basis calculation for an individual face
     INTEGER(INTG), ALLOCATABLE :: FACE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: FACE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from face basis calculation for an individual face
+    INTEGER(INTG), ALLOCATABLE :: FACE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_STIFFNESS_MATRIX
+    REAL(DP), ALLOCATABLE :: FACE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from face basis calculation for an individual face
+    INTEGER(INTG), ALLOCATABLE :: FACE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of FACE_NONLINEAR_MATRIX
     INTEGER(INTG), ALLOCATABLE :: LINES_ELEMENT_PARAM_2_LOCAL_DOF(:,:) !<The array for local_ny to element_parameter number per line, indexed by line and element_parameter, returns local_ny (dof) number. 
     REAL(DP), ALLOCATABLE :: LINE_INTEGRATION_MATRIX(:) !<Array for results from line basis calculation for an individual line
     INTEGER(INTG), ALLOCATABLE :: LINE_INTEGRATION_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_INTEGRATION_MATRIX
+    REAL(DP), ALLOCATABLE :: LINE_STIFFNESS_MATRIX(:) !<Array for stiffness matrix results from line basis calculation for an individual line
+    INTEGER(INTG), ALLOCATABLE :: LINE_STIFFNESS_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_STIFFNESS_MATRIX
+    REAL(DP), ALLOCATABLE :: LINE_NONLINEAR_MATRIX(:) !<Array for nonlinear term matrix results from line basis calculation for an individual line
+    INTEGER(INTG), ALLOCATABLE :: LINE_NONLINEAR_MATRIX_MAPPING(:) !<Mapping array of domain nodes to X and Y axis of LINE_NONLINEAR_MATRIX
     REAL(DP), ALLOCATABLE :: INTEGRATION_MATRIX(:,:) !<The INTEGRATION_MATRIX - array for conglomeration of FACE_INTEGRATION_MATRIX, the 'A' matrix
     INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_X(:) !<Mapping array of domain nodes to X axis of INTEGRATION_MATRIX
     INTEGER(INTG), ALLOCATABLE :: INTEGRATION_MATRIX_MAPPING_Y(:) !<Mapping array of domain nodes to Y axis of INTEGRATION_MATRIX
@@ -1559,18 +1574,15 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: POINT_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes in POINT_VALUES_VECTOR
     REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR(:) !<Vector for the storage of the integrated values, the 'b' vector of Ax=b 
     INTEGER(INTG), ALLOCATABLE :: INTEGRATED_VALUES_VECTOR_MAPPING(:) !<Mapping array of domain nodes and components in INTEGRATED_VALUES_VECTOR
-    !REAL(DP), ALLOCATABLE :: INTEGRATED_VALUES(:) !<Vector for storing values from INTEGRATED_VALUES_VECTOR indexed by dof number
     INTEGER(INTG) :: INTEGRATED_VALUES_VECTOR_SIZE !<Size of INTEGRATED_VALUES_VECTOR
   END TYPE BOUNDARY_CONDITIONS_NEUMANN_TYPE
 
- 
   !
   !================================================================================================================================
   !
   ! Equations set types
   !
 
- 
   !>Contains information on the setup information for an equations set
   TYPE EQUATIONS_SET_SETUP_TYPE
     INTEGER(INTG) :: SETUP_TYPE !<The setup type for the equations set setup \see EQUATIONS_SET_CONSTANTS_SetupTypes,EQUATIONS_SET_CONSTANTS

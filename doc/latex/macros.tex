@@ -292,9 +292,15 @@
 %
 \newcommand{\abs}[1]{\brac{|}{#1}{|}} % absolute value
 \newcommand{\bbrac}[1]{\brac{\{}{#1}{\}}} % Braces { bracket
-\newcommand{\christoffel}[3]{\ensuremath{ %
+\newcommand{\christoffel}[3]{\christoffel2{#1}{#2}{#3}} % Christoffel symbol
+                                % (defaults to Christoffel symbol of the
+                                % second kind)
+\newcommand{\christoffel1}[3]{\ensuremath{ %
+    \Gamma_{#1#2#3}
+    }} % Christoffel symbol of the first kind e.g. \christoffel{i}{j}{k} => Gamma_{ijk}
+\newcommand{\christoffel2}[3]{\ensuremath{ %
     \Gamma_{#1#2}^{#3}
-    }} % Christoffel symbol e.g. \christoffel{i}{j}{k} => Gamma_{ij}^[k}
+    }} % Christoffel symbol of the second kinde.g. \christoffel{i}{j}{k} => Gamma_{ij}^[k}
 \newcommand{\covarderiv}[2]{\ensuremath{ %
     \brac{.}{#1}{|}_{#2}
     }} % covariant derivative e.g. \covarderiv{i}{j} => i | _{j}
@@ -429,6 +435,9 @@
 % cpb 19/9/96 Changing from \mathbf to \boldsymbol to allow bold greek tensors
 %\newcommand{\tensor}[1]{\ensuremath{\mathbf{#1}}} % tensor
 \newcommand{\tensor}[1]{\ensuremath{\boldsymbol{#1}}} % tensor
+\newcommand{\covartensor}[3]{\ensuremath{{#1}_{#2#3}}} % covariant tensor
+\newcommand{\contratensor}[3]{\ensuremath{{#1}^{#2#3}}} % contravariant tensor
+\newcommand{\mixedtensor}[3]{\ensuremath{{#1}_{#2}^{#3}}} % mixed tensor
 \newcommand{\ttento}[1]{\ensuremath{ %
     \times \tento{#1} %
     }\xspace} % e.g. \ttento{5} => times ten the power of 5
