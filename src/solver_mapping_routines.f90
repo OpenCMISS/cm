@@ -1963,9 +1963,6 @@ CONTAINS
                   
                   DO equations_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
                     
-                    solver_global_dof=GLOBAL_DOFS_OFFSET
-                    solver_local_dof=LOCAL_DOFS_OFFSET
-                    
                     !Get columns list
                     CALL LIST_SORT(RANK_GLOBAL_COLS_LISTS(dof_type,equations_idx,solver_variable_idx,rank)%PTR,ERR,ERROR,*999)
                     CALL LIST_DETACH_AND_DESTROY(RANK_GLOBAL_COLS_LISTS(dof_type,equations_idx,solver_variable_idx,rank)%PTR, &
@@ -1973,6 +1970,9 @@ CONTAINS
                     
                     IF(NUMBER_OF_RANK_COLS>0) THEN
 
+                      solver_global_dof=GLOBAL_DOFS_OFFSET
+                      solver_local_dof=LOCAL_DOFS_OFFSET
+                    
                       equation_type=SUB_MATRIX_INFORMATION(1,equations_idx,solver_variable_idx)
                       SELECT CASE(equation_type)
                       CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
