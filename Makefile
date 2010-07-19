@@ -733,12 +733,16 @@ else
     FIELDML_OBJECT = #
 endif
 
-ifeq ($(COMPILER),intel)
-    WRAPPER_OBJECT = #   
+ifeq ($(COMPILER),intel) # TODO: temporarily disable intel build for opencmiss.f90 and etc.
+    FIELDML_OBJECT = #
+    MOD_INCLUDE := #
+    MOD_SOURCE_INC := #
+    MOD_FIELDML_TARGET := #
+    WRAPPER_OBJECTS = #   
 else
-    WRAPPER_OBJECT =  \
-      $(OBJECT_DIR)/opencmiss.o \
-      $(OBJECT_DIR)/opencmiss_c.o
+    WRAPPER_OBJECTS =  \
+    $(OBJECT_DIR)/opencmiss.o \
+    $(OBJECT_DIR)/opencmiss_c.o
 endif
 
 OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
@@ -807,8 +811,6 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/opencmiss.o \
-	$(OBJECT_DIR)/opencmiss_c.o \
 	$(OBJECT_DIR)/Poisson_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/problem_routines.o \
@@ -825,7 +827,8 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
-	$(FIELDML_OBJECT)
+	$(FIELDML_OBJECT) \
+	$(WRAPPER_OBJECT)
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
