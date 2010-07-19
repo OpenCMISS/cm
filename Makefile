@@ -733,6 +733,14 @@ else
     FIELDML_OBJECT = #
 endif
 
+ifeq ($(COMPILER),intel)
+    WRAPPER_OBJECT = #   
+else
+    WRAPPER_OBJECT =  \
+      $(OBJECT_DIR)/opencmiss.o \
+      $(OBJECT_DIR)/opencmiss_c.o
+endif
+
 OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
