@@ -828,7 +828,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
 	$(FIELDML_OBJECT) \
-	$(WRAPPER_OBJECT)
+	$(WRAPPER_OBJECTS)
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
