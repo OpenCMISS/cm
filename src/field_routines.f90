@@ -108,13 +108,35 @@ MODULE FIELD_ROUTINES
   !> \see FIELD_ROUTINES,OPENCMISS_FieldVariableTypes
   !> \todo sort out variable access routines so that you are always accessing by variable type rather than variable number.
   !>@{
-  INTEGER(INTG), PARAMETER :: FIELD_NUMBER_OF_VARIABLE_TYPES=6 !<Number of different field variable types possible \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES 
+  INTEGER(INTG), PARAMETER :: FIELD_NUMBER_OF_VARIABLE_TYPES=28 !<Number of different field variable types possible \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES 
   INTEGER(INTG), PARAMETER :: FIELD_U_VARIABLE_TYPE=1 !<Standard variable type i.e., u \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_DELUDELN_VARIABLE_TYPE=2 !<Normal derivative variable type i.e., du/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_DELUDELT_VARIABLE_TYPE=3 !<First time derivative variable type i.e., du/dt \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_DEL2UDELT2_VARIABLE_TYPE=4 !<Second type derivative variable type i.e., d^2u/dt^2 \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_V_VARIABLE_TYPE=5 !<Second standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
-  INTEGER(INTG), PARAMETER :: FIELD_DELVDELN_VARIABLE_TYPE=6 !<Second normal variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELVDELN_VARIABLE_TYPE=6 !<Second normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELVDELT_VARIABLE_TYPE=7 !<First time derivative variable type i.e., du/dt \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DEL2VDELT2_VARIABLE_TYPE=8 !<Second type derivative variable type i.e., d^2u/dt^2 \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U1_VARIABLE_TYPE=10 !<Third standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU1DELN_VARIABLE_TYPE=11 !<Third normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U2_VARIABLE_TYPE=12 !<Fourth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU2DELN_VARIABLE_TYPE=13 !<Fourth normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U3_VARIABLE_TYPE=14 !<Fifth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU3DELN_VARIABLE_TYPE=15 !<Fifth normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U4_VARIABLE_TYPE=16 !<Sixth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU4DELN_VARIABLE_TYPE=17 !<Sixth normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U5_VARIABLE_TYPE=18 !<Seventh standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU5DELN_VARIABLE_TYPE=19 !<Seventh normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U6_VARIABLE_TYPE=20 !<Eighth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU6DELN_VARIABLE_TYPE=21 !<Eighth normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U7_VARIABLE_TYPE=22 !<Ninth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU7DELN_VARIABLE_TYPE=23 !<Ninth normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U8_VARIABLE_TYPE=24 !<Tenth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU8DELN_VARIABLE_TYPE=25 !<Tenth normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U9_VARIABLE_TYPE=26 !<Eleventh standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU9DELN_VARIABLE_TYPE=27 !<Eleventh normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_U10_VARIABLE_TYPE=28 !<Twelfth standard variable type i.e., v \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_DELU10DELN_VARIABLE_TYPE=29 !<Twelfth normal derivative variable type i.e., dv/dn \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
   !>@}
   
   !> \addtogroup FIELD_ROUTINES_DofTypes FIELD_ROUTINES::DofTypes
@@ -2091,7 +2113,8 @@ CONTAINS
             & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
-      ELSE
+      ELSE
+
         LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" has not been finished."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
@@ -9671,7 +9694,8 @@ CONTAINS
                                         CALL FIELD_PARAMETER_SET_DATA_GET(FROM_FIELD,FROM_VARIABLE_TYPE,FROM_PARAMETER_SET_TYPE, &
                                           & FROM_PARAMETER_DATA_DP,ERR,ERROR,*999)
                                         DO elem_idx=1,FROM_DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                                          DO gp_idx=1,size(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%&                                                  & GAUSS_POINT_PARAM2DOF_MAP,1)
+                                          DO gp_idx=1,size(FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%&
+                                                  & GAUSS_POINT_PARAM2DOF_MAP,1)
                                             local_ny=FROM_FIELD_VARIABLE%COMPONENTS(FROM_COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                               & GAUSS_POINT_PARAM2DOF_MAP(gp_idx,elem_idx)
                                             VALUE_DP=FROM_PARAMETER_DATA_DP(local_ny)
