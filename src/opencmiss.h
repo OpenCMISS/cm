@@ -703,6 +703,29 @@ static int CMISSFieldDelUDelTVariableType = 3;
 static int CMISSFieldDel2UDelT2VariableType = 4;
 static int CMISSFieldVVariableType = 5;
 static int CMISSFieldDelVDelNVariableType = 6;
+static int CMISSFieldDelVDelTVariableType = 7;
+static int CMISSFieldDel2VDelT2VariableType = 8;
+static int CMISSFieldU1VariableType = 10;
+static int CMISSFieldDelU1DelNVariableType = 11;
+static int CMISSFieldU2VariableType = 12;
+static int CMISSFieldDelU2DelNVariableType = 13;
+static int CMISSFieldU3VariableType = 14;
+static int CMISSFieldDelU3DelNVariableType = 15; 
+static int CMISSFieldU4VariableType = 16;
+static int CMISSFieldDelU4DelNVariableType = 17;
+static int CMISSFieldU5VariableType = 18;
+static int CMISSFieldDelU5DelNVariableType = 19;
+static int CMISSFieldU6VariableType = 20;
+static int CMISSFieldDelU6DelNVariableType = 21;
+static int CMISSFieldU7VariableType = 22;
+static int CMISSFieldDelU7DelNVariableType = 23;
+static int CMISSFieldU8VariableType = 24;
+static int CMISSFieldDelU8DelNVariableType = 25;
+static int CMISSFieldU9VariableType = 26;
+static int CMISSFieldDelU9DelNVariableType = 27;
+static int CMISSFieldU10VariableType = 28;
+static int CMISSFieldDelU10DelNVariableType = 29;
+
 /*
  * >@}
  * > \addtogroup OPENCMISS_FieldDataTypes OPENCMISS::Field::DataTypes

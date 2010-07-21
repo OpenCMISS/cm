@@ -6285,8 +6285,8 @@ CONTAINS
           ENDIF
         ENDIF
       ELSE
-        LOCAL_ERROR="The speficied mesh component number of "//TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT_NUMBER,"*",ERR,ERROR))// &
-          & "is invalid. The component number must be between 1 and "// &
+        LOCAL_ERROR="The specified mesh component number of "//TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT_NUMBER,"*",ERR,ERROR))// &
+          & " is invalid. The component number must be between 1 and "// &
           & TRIM(NUMBER_TO_VSTRING(MESH%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
       ENDIF
@@ -6399,7 +6399,7 @@ CONTAINS
           ENDIF
         ENDIF
       ELSE
-        LOCAL_ERROR="The speficied mesh component number of "//TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT_NUMBER,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The specified mesh component number of "//TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT_NUMBER,"*",ERR,ERROR))// &
           & "is invalid. The component number must be between 1 and "// &
           & TRIM(NUMBER_TO_VSTRING(MESH%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
