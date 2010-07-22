@@ -97,7 +97,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution method for a finite elasticity Darcy equation type of a multi physics equations set class.
+  !>Sets/changes the solution method for a diffusion-diffusion equation type of a multi physics equations set class.
   SUBROUTINE DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
