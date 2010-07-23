@@ -767,6 +767,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/elasticity_routines.o \
 	$(OBJECT_DIR)/electromechanics_routines.o \
+        $(OBJECT_DIR)/electrophysiology_cell_routines.o \
 	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
@@ -798,6 +799,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/mesh_routines.o \
+	$(OBJECT_DIR)/monodomain_equations_routines.o \
 	$(OBJECT_DIR)/multi_compartment_transport_routines.o \
 	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
@@ -1106,6 +1108,7 @@ $(OBJECT_DIR)/Darcy_equations_routines.o	:	$(SOURCE_DIR)/Darcy_equations_routine
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
+
 $(OBJECT_DIR)/fieldml_input_routines.o: $(SOURCE_DIR)/fieldml_input_routines.f90 \
 #	$(OBJECT_DIR)/fieldml_api.o \
 	$(OBJECT_DIR)/fieldml_util_routines.o \
@@ -1294,6 +1297,13 @@ $(OBJECT_DIR)/electromechanics_routines.o	:	$(SOURCE_DIR)/electromechanics_routi
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/electrophysiology_cell_routines.o	:	$(SOURCE_DIR)/electrophysiology_cell_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/equations_routines.o	:	$(SOURCE_DIR)/equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
@@ -1352,6 +1362,7 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(SOURCE_DIR)/equations_set_routines.f9
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/monodomain_equations_routines.o \
 	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
@@ -1707,6 +1718,31 @@ $(OBJECT_DIR)/mesh_routines.o	:	$(SOURCE_DIR)/mesh_routines.f90 \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/monodomain_equations_routines.o    :       $(SOURCE_DIR)/monodomain_equations_routines.f90 \
+        $(OBJECT_DIR)/base_routines.o \
+        $(OBJECT_DIR)/basis_routines.o \
+        $(OBJECT_DIR)/boundary_condition_routines.o \
+        $(OBJECT_DIR)/constants.o \
+        $(OBJECT_DIR)/control_loop_routines.o \
+        $(OBJECT_DIR)/distributed_matrix_vector.o \
+        $(OBJECT_DIR)/domain_mappings.o \
+        $(OBJECT_DIR)/electrophysiology_cell_routines.o \
+        $(OBJECT_DIR)/equations_routines.o \
+        $(OBJECT_DIR)/equations_mapping_routines.o \
+        $(OBJECT_DIR)/equations_matrices_routines.o \
+        $(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/Galerkin_projection_routines.o \
+        $(OBJECT_DIR)/field_routines.o \
+        $(OBJECT_DIR)/input_output.o \
+        $(OBJECT_DIR)/iso_varying_string.o \
+        $(OBJECT_DIR)/kinds.o \
+        $(OBJECT_DIR)/matrix_vector.o \
+        $(OBJECT_DIR)/problem_constants.o \
+        $(OBJECT_DIR)/strings.o \
+        $(OBJECT_DIR)/solver_routines.o \
+        $(OBJECT_DIR)/timer_f.o \
+        $(OBJECT_DIR)/types.o
+
 $(OBJECT_DIR)/multi_compartment_transport_routines.o	:	$(SOURCE_DIR)/multi_compartment_transport_routines.f90 \
 	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1860,6 +1896,7 @@ $(OBJECT_DIR)/problem_routines.o	:	$(SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/interface_conditions_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/monodomain_equations_routines.o \
 	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/solver_routines.o \

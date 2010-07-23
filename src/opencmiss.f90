@@ -1867,6 +1867,9 @@ MODULE OPENCMISS
     & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity Navier Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionDiffusionType = EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionAdvectionDiffusionType = EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainSSEquationType = &
+    & EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation equations Strang Splitting set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSubtypes OPENCMISS::EquationsSet::Subtypes
   !> \brief Equations set subtypes.
@@ -2005,6 +2008,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = & 
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE !<Multi-component transport advection-diffusion equations set using SUPG scheme \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainBuenoOrovioSubtype= EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFirstBidomainSubtype = EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE !<First bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetSecondBidomainSubtype = EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE !<Second bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardGalerkinProjectionSubtype = &
@@ -2155,7 +2160,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetAdvectionDiffusionEquationType, &
     & CMISSEquationsSetReactionDiffusionEquationType,CMISSEquationsSetBiharmonicEquationType, &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType, &
-    & CMISSEquationsSetGalerkinProjectionEquationType
+    & CMISSEquationsSetGalerkinProjectionEquationType,CMISSEquationsSetMonodomainSSEquationType
 
   PUBLIC CMISSEquationsSetFiniteElasticityDarcyType, &
     & CMISSEquationsSetFiniteElasticityStokesType, CMISSEquationsSetFiniteElasticityNavierStokesType, &
@@ -2205,7 +2210,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype, CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype, &
     & CMISSEquationsSetMultiCompTransportAdvecDiffSubtype, CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype, & 
     & CMISSEquationsSetPGMStokesSubtype, &
-    & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype, &
+    & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype,CMISSEquationsSetMonodomainBuenoOrovioSubtype,&
     & CMISSEquationsSetStandardGalerkinProjectionSubtype,CMISSEquationsSetGeneralisedGalerkinProjectionSubtype, &
     & CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype,CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype, &
     & CMISSEquationsSetPGMNavierStokesSubtype, &
@@ -3965,6 +3970,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionDiffusionType = PROBLEM_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionAdvectionDiffusionType = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMultiCompartmentTransportType = PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE !<Multi-compartment transport problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplittingEquationType = &
+    & PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
   !> \brief Problem Subtypes.
@@ -4042,6 +4049,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE !<Standard multi-compartment transport problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainBuenoOrovioSubtype = PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
 
   !>@}
@@ -4101,7 +4109,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSProblemStandardDarcySubtype,CMISSProblemQuasistaticDarcySubtype,CMISSProblemALEDarcySubtype, &
     & CMISSProblemTransientDarcySubtype,CMISSProblemPGMDarcySubtype,CMISSProblemPGMTransientDarcySubtype
 
-  PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype
+  PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype,CMISSProblemMonodomainStrangSplittingEquationType
 
   PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype,CMISSProblemStokesPoissonSubtype, &
     & CMISSProblemNavierStokesPoissonSubtype
@@ -4124,6 +4132,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSProblemStandardGalerkinProjectionSubtype,CMISSProblemGeneralisedGalerkinProjectionSubtype, &
     & CMISSProblemMatPropertiesGalerkinProjectionSubtype
+  
+  PUBLIC CMISSProblemMonodomainBuenoOrovioSubtype
 
   PUBLIC CMISSProblemControlSimpleType,CMISSProblemControlFixedLoopType,CMISSProblemControlTimeLoopType, &
     & CMISSProblemControlWhileLoopType,CMISSProblemControlLoadIncrementLoopType 
