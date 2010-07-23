@@ -5508,7 +5508,76 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             CASE(SOLVER_SUPERLU_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              !Call SuperLU_DIST through PETSc
+              IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+                SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                  IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
+                    & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  !Create the solver matrices and vectors
+                  NULLIFY(SOLVER_MATRICES)
+                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
+                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                  CASE(SOLVER_SPARSE_MATRICES)
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                  CASE(SOLVER_FULL_MATRICES)
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                      & ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+
+              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              
+              !Set any further KSP options from the command line options
+              CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              !Set the solver matrix to be the KSP matrix
+              IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
+                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
+                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                  IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
+                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                      & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR == 3 )
+                    !Set the KSP type to preonly
+                    CALL PETSC_KSPSETTYPE(LINEAR_DIRECT_SOLVER%KSP,PETSC_KSPPREONLY,ERR,ERROR,*999)
+                    !Get the pre-conditioner
+                    CALL PETSC_KSPGETPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
+                    !Set the PC type to LU
+                    CALL PETSC_PCSETTYPE(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
+                    !Set the PC factorisation package to SuperLU_DIST
+                    CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
+                      & ERR,ERROR,*999)
+#endif
+                  ELSE
+                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The given number of solver matrices of "// &
+                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & " is invalid. There should only be one solver matrix for a linear direct solver."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
             CASE(SOLVER_SPOOLES_LIBRARY)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(SOLVER_UMFPACK_LIBRARY)
@@ -5696,7 +5765,8 @@ CONTAINS
           DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_MUMPS_LIBRARY
           DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE(SOLVER_SUPERLU_LIBRARY)
-          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+          DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_SUPERLU_LIBRARY
+          DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE(SOLVER_SPOOLES_LIBRARY)
           CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
         CASE(SOLVER_LUSOL_LIBRARY)
@@ -5757,7 +5827,9 @@ CONTAINS
         CALL PETSC_PCFINALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
         CALL PETSC_KSPFINALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE(SOLVER_SUPERLU_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        !Call SuperLU through PETSc
+        CALL PETSC_PCFINALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+        CALL PETSC_KSPFINALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE(SOLVER_SPOOLES_LIBRARY)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_UMFPACK_LIBRARY)
@@ -5955,7 +6027,33 @@ CONTAINS
                               CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE(SOLVER_SUPERLU_LIBRARY)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Call SuperLU through PETSc
+                            IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
+                              IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
+                                IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
+                                  IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
+                                    IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
+                                    ELSE
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
+                                    ENDIF
+                                    !Solve the linear system
+                                    CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
+                                      & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
+                                  ELSE
+                                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                   CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                            ENDIF
                           CASE(SOLVER_SPOOLES_LIBRARY)
                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                           CASE(SOLVER_UMFPACK_LIBRARY)

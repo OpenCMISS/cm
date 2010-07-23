@@ -50,14 +50,16 @@ MODULE CMISS_PETSC_TYPES
   PRIVATE
 
 #include "include/finclude/petsc.h"
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 1 )
 #include "include/finclude/petscis.h"
 #include "include/finclude/petscksp.h"
 #include "include/finclude/petscmat.h"
 #include "include/finclude/petscpc.h"
 #include "include/finclude/petscsnes.h"
-#include "include/finclude/petscts.h"
 #include "include/finclude/petscvec.h"
 #include "include/finclude/petscviewer.h"
+#endif
+#include "include/finclude/petscts.h"
 
   !Module parameters
   

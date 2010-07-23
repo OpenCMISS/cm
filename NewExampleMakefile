@@ -253,13 +253,10 @@ ifeq ($(OPERATING_SYSTEM),linux)
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
-    C_FLGS += -pipe
+    C_FLGS += -pipe -m$(ABI)
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGC_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# not i686 nor ia64
-      C_FLGS += -m$(ABI)
-    endif
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         C_FLGS += -march=nocona
@@ -277,7 +274,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   endif
   ifeq ($(CC),icc)
     # Turn on all warnings
-    C_FLGS += -Wall
+    C_FLGS += -Wall -m$(ABI)
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -327,7 +324,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   ifeq ($(FC),gfortran)
     #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input
+    F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input
     # Restrict line length to 132
     F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
@@ -335,10 +332,6 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
-      F_FLGS += -m$(ABI)
-      ELFLAGS += -m$(ABI)
-    endif
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         F_FLGS += -march=nocona
@@ -354,23 +347,20 @@ ifeq ($(OPERATING_SYSTEM),linux)
       F_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
       ELFLAGS += -pg
     endif
+    ELFLAGS += -m$(ABI)
   endif
   ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -std=f2003
-    DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
-      F_FLGS += -m$(ABI)
-      ELFLAGS += -m$(ABI)
-    endif
+    F_FLAGS += -m$(ABI) -fno-second-underscore -Wall -std=f2003
     DBGF_FLGS += -O0 -fbounds-check
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    ELFLAGS += -m$(ABI)
     #$(error g95 not implemented)
   endif
   ifeq ($(FC),ifort)
     # turn on preprocessing,
     # turn on warnings,
     # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all 
+    F_FLGS += -cpp -warn all -m$(ABI)
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -406,7 +396,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
       endif
     endif
 #    MP_FLGS = -openmp
-    ELFLAGS += -nofor_main -traceback
+    ELFLAGS += -nofor_main -m$(ABI) -traceback
   endif
   ifeq ($(filter-out xlf%,$(FC)),)# xlf* fortran compiler
     F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90
@@ -434,7 +424,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   # from the use of this file.
 
   # (With dynamic version, should copy libgcc_s.so.N if copying libstdc++.so.N)
-  ELFLAGS += -static-libgcc
+  #ELFLAGS += -static-libgcc
 
   # Use the BSD timers
   CPPFLAGS += -DBSD_TIMERS
@@ -532,7 +522,12 @@ endif
 PETSC_LIBRARIES =#
 PETSC_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+  PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
+  ifeq (,$(PETSC_TSLIB))
+    PETSC_LIBRARIES = -lpetsc -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl #Prob newer version of PETSc which has rolled all the libraries into one.
+  else
+    PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl
+  endif
   PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
   ifeq ($(ABI),64)
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
@@ -545,7 +540,12 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm  -lXm -lXt -lX11 
+    PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
+    ifeq (,$(PETSC_TSLIB))
+      PETSC_LIBRARIES = -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
+    else
+      PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+    endif
     PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
   else# windows
@@ -578,6 +578,21 @@ else
     HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
   else# windows
     HYPRE_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#SuperLU_DIST
+SUPERLU_LIBRARIES =#
+SUPERLU_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SUPERLU_LIBRARIES = -lsuperlu_dist
+  SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  SUPERLU_LIBRARIES = -lsuperlu_dist
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    SUPERLU_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
 endif
 
@@ -742,8 +757,8 @@ endif
 OPENCMISS_LIBRARY = $(LIBRARY)
 OPENCMISS_INCLUDE_PATH = $(addprefix -I, $(INC_DIR) )
 
-EXTERNAL_LIBRARIES = $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH = $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
+EXTERNAL_LIBRARIES = $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
+EXTERNAL_LIB_PATH = $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
 EXTERNAL_INCLUDE_PATH = $(strip $(MPI_INCLUDE_PATH) )
 
 ifeq ($(USECELLML),true)

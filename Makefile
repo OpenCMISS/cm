@@ -242,13 +242,10 @@ ifeq ($(OPERATING_SYSTEM),linux)
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
-    C_FLGS += -pipe
+    C_FLGS += -pipe -m$(ABI)
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGC_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# not i686 nor ia64
-      C_FLGS += -m$(ABI)
-    endif
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         C_FLGS += -march=nocona
@@ -266,7 +263,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   endif
   ifeq ($(CC),icc)
     # Turn on all warnings
-    C_FLGS += -Wall
+    C_FLGS += -Wall -m$(ABI)
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -323,7 +320,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   ifeq ($(FC),gfortran)
     #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input
+    F_FLGS += -pipe  -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input
     # Restrict line length to 132
     F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
@@ -331,10 +328,6 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
-      F_FLGS += -m$(ABI)
-      ELFLAGS += -m$(ABI)
-    endif
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         F_FLGS += -march=nocona
@@ -350,23 +343,21 @@ ifeq ($(OPERATING_SYSTEM),linux)
       F_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
       ELFLAGS += -pg
     endif
+    ELFLAGS += -m$(ABI)
   endif
   ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -std=f2003
+    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003
     DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
-      F_FLGS += -m$(ABI)
-      ELFLAGS += -m$(ABI)
-    endif
     DBGF_FLGS += -O0 -fbounds-check
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    ELFLAGS += -m$(ABI)
     #$(error g95 not implemented)
   endif
   ifeq ($(FC),ifort)
     # turn on preprocessing,
     # turn on warnings,
     # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all 
+    F_FLGS += -cpp -warn all -m$(ABI)
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -402,7 +393,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
       endif
     endif
 #    MP_FLGS = -openmp
-    ELFLAGS += -nofor_main -traceback
+    ELFLAGS += -nofor_main -m$(ABI) -traceback
   endif
   ifeq ($(filter-out xlf%,$(FC)),)# xlf* fortran compiler
     F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90

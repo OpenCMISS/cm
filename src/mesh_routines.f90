@@ -1179,7 +1179,6 @@ CONTAINS
     
     CALL ENTERS("DECOMP_TOPOLOGY_ELEM_ADJACENT_ELEM_CALCULATE",ERR,ERROR,*999)
 
-
     IF(ASSOCIATED(TOPOLOGY)) THEN
       DECOMPOSITION=>TOPOLOGY%DECOMPOSITION
       IF(ASSOCIATED(DECOMPOSITION)) THEN
@@ -1195,7 +1194,6 @@ CONTAINS
                 IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
                   !Loop over the elements in the decomposition
                   DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                  !%%%% first we initialize lists that are required to find the adjacent elements list
                     BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
                     DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
                       NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)

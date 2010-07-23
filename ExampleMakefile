@@ -441,7 +441,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   # from the use of this file.
 
   # (With dynamic version, should copy libgcc_s.so.N if copying libstdc++.so.N)
-  ELFLAGS += -static-libgcc
+  #ELFLAGS += -static-libgcc
 
   # Use the BSD timers
   CPPFLAGS += -DBSD_TIMERS
@@ -549,7 +549,12 @@ else
 endif
 
 #PETSc
-PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
+if (,$(PETSC_TSLIB))
+  PETSC_LIBRARIES = -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
+else
+  PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
+endif
 PETSC_LIB_PATH =#
 PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
@@ -711,10 +716,10 @@ ifeq ($(USECELLML),true)
   else
     ifeq ($(OPERATING_SYSTEM),aix)# AIX
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
-    	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
     else# windows
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
-    	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
   endif
 endif
 endif
