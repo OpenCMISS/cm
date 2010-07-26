@@ -767,7 +767,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/elasticity_routines.o \
 	$(OBJECT_DIR)/electromechanics_routines.o \
-        $(OBJECT_DIR)/electrophysiology_cell_routines.o \
+  $(OBJECT_DIR)/electrophysiology_cell_routines.o \
 	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
@@ -804,6 +804,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
+	$(WRAPPER_OBJECTS) \
 	$(OBJECT_DIR)/Poisson_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/problem_routines.o \
@@ -820,8 +821,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
-	$(FIELDML_OBJECT) \
-	$(WRAPPER_OBJECTS)
+	$(FIELDML_OBJECT) 
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
