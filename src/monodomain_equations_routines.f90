@@ -333,6 +333,8 @@ CONTAINS
           DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
           RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
 
+          IF(.NOT.(STIFFNESS_MATRIX%UPDATE_MATRIX.OR.DAMPING_MATRIX%UPDATE_MATRIX.OR.RHS_VECTOR%UPDATE_VECTOR)) RETURN ! no updates -> return immediately
+ 
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
           DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
           FIELD_VARIABLE=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
@@ -1340,13 +1342,19 @@ CONTAINS
         CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & 1, INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 1,ERR,ERROR,*999) ! dependent -> independent
 
-       NN =   INDEPENDENT_FIELD%decomposition%domain(1)%ptr%topology%nodes%number_of_nodes
+        NN =   INDEPENDENT_FIELD%decomposition%domain(1)%ptr%topology%nodes%number_of_nodes
 
 !       WRITE(*,*) 'BEFORE CELL MODEL INTG'
 !       DO I=1,8
 !         call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999)
 !         WRITE(*,*) 'V(',I,')=',tmp1
 !       END DO
+
+        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,1,1,tmp0,err,error,*999)
+        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,NN,1,tmp1,err,error,*999)
+        WRITE(*,*) 'BEFORE CELL INTG:',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME-CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT,'->',&
+        & CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, &
+        & 'V(1) = ', TMP0, 'V(',NN,') = ', TMP1
 
 
         SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
