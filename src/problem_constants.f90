@@ -177,6 +177,7 @@ MODULE PROBLEM_CONSTANTS
 
   !Monodomain Strang splitting type : specific cell models
    INTEGER(INTG), PARAMETER :: PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE=1
+   INTEGER(INTG), PARAMETER :: PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE=2
 
   !Modal class
   !  Galerkin projection
