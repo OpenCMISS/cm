@@ -75,17 +75,13 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SETUP
-
   PUBLIC NAVIER_STOKES_PROBLEM_SUBTYPE_SET
   PUBLIC NAVIER_STOKES_PROBLEM_SETUP
-
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
   PUBLIC NAVIER_STOKES_POST_SOLVE
   PUBLIC NAVIER_STOKES_PRE_SOLVE
   PUBLIC NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS
-
-
 
 CONTAINS 
 
@@ -244,26 +240,14 @@ CONTAINS
     NULLIFY(BOUNDARY_CONDITIONS)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! NAVIER_STOKES SUBTYPES !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
-
           SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
-              
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! SOLUTION METHOD !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
             CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
@@ -288,11 +272,7 @@ CONTAINS
                     & " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! GEOMETRY FIELD !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            !Define geometric field 
             CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
@@ -304,11 +284,7 @@ CONTAINS
                     & " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! DEPENDENT FIELD !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            !Define dependent field
             CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
@@ -354,14 +330,12 @@ CONTAINS
                           & FIELD_DP_TYPE,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-
                         !calculate number of components with one component for each dimension and one for pressure
                         DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
                         CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                           & FIELD_U_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                           & FIELD_DELUDELN_VARIABLE_TYPE,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-
                         CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                           & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                         !Default to the geometric interpolation setup
@@ -371,8 +345,6 @@ CONTAINS
                           CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                             & FIELD_DELUDELN_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                         END DO
-
-
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                           !Specify fem solution method
                           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -387,7 +359,6 @@ CONTAINS
                             CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
                               & ERR,ERROR,*999)
                             !Other solutions not defined yet
-
                           CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -425,14 +396,12 @@ CONTAINS
                           & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                           & DEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
                               & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                               & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-
                           CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
@@ -449,7 +418,6 @@ CONTAINS
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDIF
-
                     !Specify finish action
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                       IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
@@ -469,11 +437,7 @@ CONTAINS
                     & " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !!! INDEPENDENT FIELD FOR ALE & PGM!!!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+            !Define independent field
             CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
               CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
@@ -525,7 +489,6 @@ CONTAINS
                           CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
                             & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                         END DO
-
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                           !Specify fem solution method
                           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -543,7 +506,6 @@ CONTAINS
                               & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT 
-
                       ELSE
                         !Check the user specified field
                         CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
@@ -555,12 +517,10 @@ CONTAINS
                         CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-   
                         !calculate number of components with one component for each dimension and one for pressure
                         INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS
                         CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                           & INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-   
                         SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -574,7 +534,6 @@ CONTAINS
                         END SELECT
 
                       ENDIF    
- 
                     !Specify finish action
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                       IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
@@ -586,7 +545,6 @@ CONTAINS
                         CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_BOUNDARY_SET_TYPE,ERR,ERROR,*999)
                       ENDIF
-        
                     CASE DEFAULT
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                       & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -599,13 +557,8 @@ CONTAINS
                     & " is invalid for a Navier-Stokes equation."
                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !!! ANALYTC TYPE FOR STATIC NAVIER-STOKES !!!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+            !Define analytic field  
             CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
-
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
@@ -693,21 +646,15 @@ CONTAINS
                       & " is invalid for a Navier-Stokes equation."
                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
-                
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          !!! MATERIALS FIELD !!!
-          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              
+            !Define materials field
             CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-      
                   !variable X with has Y components, here Y represents viscosity only
                   MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
                   MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
-
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     !Specify start action
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -770,7 +717,6 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
                       END IF
-
                     !Specify start action
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                       EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -791,32 +737,25 @@ CONTAINS
                           ELSE
                             CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
                           ENDIF
-
                     CASE DEFAULT
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*", & 
                         & ERR,ERROR))//" for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*", & 
                         & ERR,ERROR))//" is invalid for Navier-Stokes equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
-
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! SOURCE TYPE !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            !Define source field
             CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, & 
                   & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-                !TO DO: INCLUDE GRAVITY AS SOURCE TYPE
-
+!\todo: Think about gravity
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
                       !Do nothing
@@ -829,18 +768,13 @@ CONTAINS
                         & ERR,ERROR))//" is invalid for a Navier-Stokes fluid."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
-
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     &  " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     &  " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! EQUATIONS_TYPE !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            !Equations type 
             CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
@@ -1080,11 +1014,7 @@ CONTAINS
                     & " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! BOUNDARY CONDITIONS TYPE !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            !Define boundary conditions type
             CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
@@ -1117,22 +1047,11 @@ CONTAINS
                     & " is invalid for a Navier-Stokes equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! CASE DEFAULT !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
             CASE DEFAULT
               LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a Navier-Stokes fluid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! THE END !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         CASE DEFAULT
           LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
             & " does not equal a Navier-Stokes fluid subtype."
@@ -1240,11 +1159,7 @@ CONTAINS
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%SUBTYPE)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+        !All steady state cases of Navier-Stokes
         CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
           SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
             CASE(PROBLEM_SETUP_INITIAL_TYPE)
@@ -1335,11 +1250,7 @@ CONTAINS
                 & " is invalid for a Navier-Stokes fluid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+        !Transient cases and moving mesh
         CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
           SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
             CASE(PROBLEM_SETUP_INITIAL_TYPE)
@@ -1436,11 +1347,7 @@ CONTAINS
                 & " is invalid for a transient Navier-Stokes fluid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+        !Quasi-static Navier-Stokes
         CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
           SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
             CASE(PROBLEM_SETUP_INITIAL_TYPE)
@@ -1532,11 +1439,7 @@ CONTAINS
                 & " is invalid for a quasistatic Navier-Stokes fluid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!! PROBLEM_ALE_STOKES_SUBTYPE !!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+        !Navier-Stokes ALE cases
         CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
           SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
             CASE(PROBLEM_SETUP_INITIAL_TYPE)
@@ -1638,8 +1541,6 @@ CONTAINS
                   CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
                   !Finish the solver equations creation
                   CALL SOLVER_EQUATIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*999)             
-
-
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -1651,11 +1552,6 @@ CONTAINS
                 & " is invalid for a ALE Navier-Stokes fluid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! DEFAULT !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         CASE DEFAULT
           LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a Navier-Stokes equation type of a fluid mechanics problem class."
@@ -1694,15 +1590,12 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
 !    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
-
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX, DAMPING_MATRIX
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -1710,8 +1603,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: xv,out
 !    LOGICAL :: GRADIENT_TRANSPOSE
-
 !    REAL(DP) :: test(89,89),test2(89,89),scaling,square
+
+!\todo: Check whether or not too much time is spent with the different matrix types
+
     REAL(DP) :: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
     REAL(DP) :: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
     REAL(DP) :: ALE_MATRIX(256,256) ! "A"rbitrary "L"agrangian "E"ulerian Matrix - maximum size allocated
@@ -1720,13 +1615,10 @@ CONTAINS
     REAL(DP) :: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
     REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
     REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
-    
     REAL(DP) :: U_VALUE(3),W_VALUE(3)
     REAL(DP) :: U_DERIV(3,3)
-
     
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
-
     out=0
     AG_MATRIX=0.0_DP
     AL_MATRIX=0.0_DP
@@ -1736,9 +1628,10 @@ CONTAINS
     CT_MATRIX=0.0_DP
     RH_VECTOR=0.0_DP
     NL_VECTOR=0.0_DP
+!\todo: Set X and L through user input instead (or default)
     X=0.0_DP
     L=10.0_DP
-
+!\todo: Check whether or not the update flags work properly
     UPDATE_STIFFNESS_MATRIX=.FALSE.
     UPDATE_DAMPING_MATRIX=.FALSE.
     UPDATE_RHS_VECTOR=.FALSE.
@@ -1751,11 +1644,7 @@ CONTAINS
         CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
           & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! SET POINTERS !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+          !Set general and specific pointers
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
           GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
           MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
@@ -1767,7 +1656,6 @@ CONTAINS
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
             CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
               & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
@@ -1805,7 +1693,6 @@ CONTAINS
               INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
               INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
                 & PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-
               DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
               STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
               DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
@@ -1828,18 +1715,13 @@ CONTAINS
                 & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! LOOP OVER GAUSS POINTS !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+          !Loop over Gauss points
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
@@ -1849,7 +1731,6 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
@@ -1862,16 +1743,11 @@ CONTAINS
             ELSE
               W_VALUE=0.0_DP
             END IF
-
             !Define MU_PARAM, viscosity=1
             MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
             !Define RHO_PARAM, density=2
             RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! CALCULATE PARTIAL MATRICES !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            !Start with matrix calculations
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
@@ -1902,11 +1778,8 @@ CONTAINS
                       ! &GAUSS_WEIGHTS(ng)                        
                       DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=nhs+1
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! PRECONDITIONS !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+                        !Calculate some general values
+!\todo: Use direct reference instead and check the time spent in here
                         DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
                           DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                             DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
@@ -1917,11 +1790,7 @@ CONTAINS
                         END DO !ni
                         PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                         PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! A LAPLACE ONLY !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+                        !Laplace only matrix
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
                           !LAPLACE TYPE 
                           IF(nh==mh) THEN 
@@ -1938,11 +1807,7 @@ CONTAINS
                             AL_MATRIX(mhs,nhs)=AL_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
                         END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! A STANDARD !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+                        !General matrix
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
                           !GRADIENT TRANSPOSE TYPE
                           IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE) THEN 
@@ -1960,35 +1825,26 @@ CONTAINS
                             END IF
                           END IF
                         END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! ALE CONTRIBUTION !!! 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                          !This part must be either here or within the nonlinear vector
-                          !To be proved that there is no difference
-                          IF(UPDATE_STIFFNESS_MATRIX) THEN
-                            !GRADIENT TRANSPOSE TYPE
-                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. & 
-                              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN 
-                              IF(nh==mh) THEN 
-                                SUM=0.0_DP
-                                !Calculate SUM 
-                                DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                  DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                    SUM=SUM-RHO_PARAM*W_VALUE(mi)*DPHINS_DXI(ni)*DXI_DX(ni,mi)*PHIMS
-                                  ENDDO !ni
-                                ENDDO !mi
-                                !Calculate MATRIX
-                                ALE_MATRIX(mhs,nhs)=ALE_MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
+                        !Contribution through ALE
+!\todo: This part must be either here or within the nonlinear vector
+                        IF(UPDATE_STIFFNESS_MATRIX) THEN
+                          !GRADIENT TRANSPOSE TYPE
+                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. & 
+                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN 
+                            IF(nh==mh) THEN 
+                              SUM=0.0_DP
+                              !Calculate SUM 
+                              DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                  SUM=SUM-RHO_PARAM*W_VALUE(mi)*DPHINS_DXI(ni)*DXI_DX(ni,mi)*PHIMS
+                                ENDDO !ni
+                              ENDDO !mi
+                              !Calculate MATRIX
+                              ALE_MATRIX(mhs,nhs)=ALE_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
                           END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! B TRANSPOSE !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+                        END IF
+                        !Pressure contribution (B transpose)
                         IF(UPDATE_STIFFNESS_MATRIX) THEN
                           !LAPLACE TYPE 
                           IF(nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
@@ -2001,11 +1857,7 @@ CONTAINS
                             BT_MATRIX(mhs,nhs)=BT_MATRIX(mhs,nhs)+SUM*JGW
                           END IF
                         END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! M !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+                        !Damping matrix
                         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
                           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
                           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
@@ -2019,21 +1871,12 @@ CONTAINS
                             END IF
                           END IF
                         END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! NO RIGHT HAND SIDE FOR THIS CASE
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
                       ENDDO !ns    
                     ENDDO !nh
                   ENDIF
                 ENDDO !ms
               ENDDO !mh
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          ! RIGHT HAND SIDE FOR ANALYTIC SOLUTION
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+              !Analytic RHS vector
               IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
                 IF(UPDATE_RHS_VECTOR) THEN
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -2045,7 +1888,6 @@ CONTAINS
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3) THEN
-
                       mhs=0
                       DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                         MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -2059,7 +1901,6 @@ CONTAINS
                           PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           !note mh value derivative 
                           SUM=0.0_DP 
-
                           X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
                           X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
                           IF(DEPENDENT_BASIS1%NUMBER_OF_XI==3) THEN
@@ -2105,14 +1946,6 @@ CONTAINS
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5) & 
                            & THEN
                             !do nothing
-! ! xxxxxx
-!                             IF(mh==1) THEN 
-!                               !Calculate SUM 
-!                               SUM=PHIMS*(2.0_DP*SIN(X(1))*COS(X(2)))*MU_PARAM
-!                             ELSE IF(mh==2) THEN
-!                               !Calculate SUM 
-!                               SUM=PHIMS*(-2.0_DP*COS(X(1))*SIN(X(2)))*MU_PARAM
-!                             ENDIF
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== & 
                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
                             IF(mh==1) THEN 
@@ -2160,7 +1993,6 @@ CONTAINS
                                 & (-1.0_DP+COS(2.0_DP*PI*X(2)/L)**2)/L)
                             ENDIF
                           ENDIF
-
                           !Calculate RH VECTOR
                           RH_VECTOR(mhs)=RH_VECTOR(mhs)+SUM*JGW
                         ENDDO !ms
@@ -2168,20 +2000,10 @@ CONTAINS
                     ELSE
                       RH_VECTOR(mhs)=0.0_DP
                     ENDIF                 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! GO TO ASSEMBLY !!! 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
                   ENDIF
                 ENDIF                                                                     
               ENDIF                                      
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! CALCULATE NONLINEAR VECTOR !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+              !Calculate nonlinear vector
               IF(UPDATE_NONLINEAR_RESIDUAL) THEN
                 U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
                 U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
@@ -2204,10 +2026,8 @@ CONTAINS
                   U_DERIV(1,3)=0.0_DP
                   U_DERIV(2,3)=0.0_DP
                 END IF
-
                 !Here W_VALUES must be ZERO if ALE part of linear matrix
                 W_VALUE=0.0_DP
-
                 mhs=0
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -2216,19 +2036,16 @@ CONTAINS
                   QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                   JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                     & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
-
                   DXI_DX=0.0_DP
                   DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                     DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                       DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,ni)
                     END DO
                   END DO
-
                   DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                     !note mh value derivative 
-
                     SUM=0.0_DP
                     !Calculate SUM 
                     DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
@@ -2237,40 +2054,23 @@ CONTAINS
                        & (U_VALUE(2)-W_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
                        & (U_VALUE(3)-W_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
                     ENDDO !ni
-
                     NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! GO TO ASSEMBLY !!! 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
                   ENDDO !ms
                 ENDDO !mh
               ENDIF
             ENDIF
           ENDDO !ng
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! ASSEMBLE STIFFNESS AND VECTORS !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+          !Assemble partial matrices in final matrix
           mhs_min=mhs
           mhs_max=nhs
           nhs_min=mhs
           nhs_max=nhs
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! ASSEMBLE STIFFNESS & DAMPING MATRIX !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-
             IF(STIFFNESS_MATRIX%FIRST_ASSEMBLY) THEN
               IF(UPDATE_STIFFNESS_MATRIX) THEN
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=(AL_MATRIX(1:mhs_min,1:nhs_min)+ &
@@ -2285,7 +2085,6 @@ CONTAINS
               ENDIF
             ENDIF
           ENDIF
-
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR.&
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
@@ -2293,30 +2092,16 @@ CONTAINS
               DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=MT_MATRIX(1:mhs_min,1:nhs_min)
             END IF
           END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! RIGHT HAND SIDE VECTOR !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+          !Assemble RHS vector
           IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
             IF(UPDATE_RHS_VECTOR) THEN
               RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1:mhs_max)=RH_VECTOR(1:mhs_max)
             ENDIF
-
           ENDIF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! NONLINEAR VECTOR !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+          !Assemble non-linear vector
           IF(UPDATE_NONLINEAR_RESIDUAL) THEN
             NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1:mhs_max)=NL_VECTOR(1:mhs_max)
           END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! DEFAULT !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         CASE DEFAULT
           LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a Navier-Stokes equation type of a classical field equations set class."
@@ -2354,17 +2139,14 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
-
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX !, DAMPING_MATRIX
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
@@ -2374,11 +2156,9 @@ CONTAINS
 
     LOGICAL :: UPDATE_JACOBIAN_MATRIX
 
-
     !REAL(DP) :: test(89,89),test2(89,89),scaling,square
     REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
     REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
-    
     REAL(DP) :: U_VALUE(3),W_VALUE(3)
     REAL(DP) :: U_DERIV(3,3)
 
@@ -2387,6 +2167,8 @@ CONTAINS
     J1_MATRIX=0.0_DP
     J2_MATRIX=0.0_DP
 
+!\todo: Check whether or not update flags work properly and how much time is spent in each section
+
     UPDATE_JACOBIAN_MATRIX=.FALSE.
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -2394,15 +2176,10 @@ CONTAINS
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
-
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! SET POINTERS !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+            !Set some general and case-specific pointers
             DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
             GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
             MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
@@ -2414,7 +2191,6 @@ CONTAINS
             QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
 !            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
             EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-
             SELECT CASE(EQUATIONS_SET%SUBTYPE)
               CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
                 & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
@@ -2447,7 +2223,6 @@ CONTAINS
                 INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
                 INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
                   & PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-
                 NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
  !              DEPENDENT_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
  !              GEOMETRIC_VARIABLE=>GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
@@ -2467,18 +2242,13 @@ CONTAINS
                   & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! LOOP OVER GAUSS POINTS !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
- 
+            !Loop over all Gauss points 
             DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
  !               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
@@ -2489,7 +2259,6 @@ CONTAINS
                 & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
                 CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
@@ -2502,7 +2271,6 @@ CONTAINS
               ELSE
                 W_VALUE=0.0_DP
               END IF
-
               !Define MU_PARAM, viscosity=1
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               !Define RHO_PARAM, density=2
@@ -2513,7 +2281,6 @@ CONTAINS
               U_DERIV(1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S2)
               U_DERIV(2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S1)
               U_DERIV(2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S2)
- 
               IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
                 U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
                 U_DERIV(3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S1)
@@ -2529,14 +2296,9 @@ CONTAINS
                 U_DERIV(1,3)=0.0_DP
                 U_DERIV(2,3)=0.0_DP
               END IF
- 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !!! CALCULATE PARTIAL MATRICES !!!
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+              !Start with calculation of partial matrices
               !Here W_VALUES must be ZERO if ALE part of linear matrix
               W_VALUE=0.0_DP
-
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
@@ -2545,7 +2307,6 @@ CONTAINS
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
                 !Loop over field components
                 mhs=0
- 
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
@@ -2566,14 +2327,10 @@ CONTAINS
                           &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                         ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
                         ! &GAUSS_WEIGHTS(ng)                        
- 
                         DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
                           nhs=nhs+1
- 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              !!! PRECONDITIONS !!!
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+                          !Calculate some general values needed below
+!\todo: Check how much time is spent here 
                           DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
                             DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                               DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
@@ -2584,23 +2341,15 @@ CONTAINS
                           END DO !ni
                             PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                             PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
- 
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              !!! J1 ONLY !!!
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
                           SUM=0.0_DP
                           IF(UPDATE_JACOBIAN_MATRIX) THEN
+                            !Calculate J1 only
                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                               SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
                             ENDDO 
                             !Calculate MATRIX  
                             J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-
-             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-              !!! J2 ONLY !!!
-              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+                            !Calculate J2 only
                             IF(nh==mh) THEN 
                               SUM=0.0_DP
                               !Calculate SUM 
@@ -2616,43 +2365,27 @@ CONTAINS
                         ENDDO !ns    
                       ENDDO !nh
                     ENDIF
-                      !!! GO TO MATRIX ASSEMBLY !!!
                   ENDDO !ms
                 ENDDO !mh
               END IF
             ENDDO !ng
- 
- 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!! ASSEMBLE STIFFNESS AND VECTORS !!!
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+             !Assemble matrices and vectors 
             mhs_min=mhs
             mhs_max=nhs
             nhs_min=mhs
             nhs_max=nhs
- 
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
- 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        !!! JACOBIAN MATRIX !!!
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- 
+              !Assemble Jacobian matrix first
               IF(UPDATE_JACOBIAN_MATRIX) THEN
                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
                   & J2_MATRIX(1:mhs_min,1:nhs_min)
               END IF
             ENDIF
- 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- !!! DEFAULT !!!
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
           CASE DEFAULT
             LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
@@ -2671,7 +2404,6 @@ CONTAINS
     CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
-
 
   !
   !================================================================================================================================
@@ -2859,6 +2591,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
 
+!\todo: Reduce number of variable used
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: equations_row_number,variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
@@ -2870,8 +2603,6 @@ CONTAINS
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
-!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT 
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
@@ -2934,7 +2665,7 @@ CONTAINS
                                               ELSE
                                                 number_of_nodes_xic(3)=1
                                               ENDIF
-
+!\todo: Improve determination of XI coordinates
                                               IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
                                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
                                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.) THEN
@@ -2966,7 +2697,6 @@ CONTAINS
                                               DO dim_idx=1,NUMBER_OF_DIMENSIONS
                                                 X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
                                               ENDDO !dim_idx
-
                                               !Loop over the derivatives
                                               DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                                 ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
@@ -3012,7 +2742,6 @@ CONTAINS
                                 ELSE
                                   CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
                                 ENDIF
-
                                ENDDO !variable_idx
                                CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,& 
                                 & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
@@ -3071,7 +2800,7 @@ CONTAINS
                              & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                          END IF
                        END DO
-!This part should be read in out of a file eventually
+!\todo: This part should be read in out of a file eventually
                      ELSE
                        CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                      END IF
@@ -3107,7 +2836,6 @@ CONTAINS
                         BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
                           & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
                         IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-
                           CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                             & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                           NULLIFY(MESH_VELOCITY_VALUES)
@@ -3116,11 +2844,9 @@ CONTAINS
                           NULLIFY(BOUNDARY_VALUES)
                           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                             & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-
                           CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
                             & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                             & CURRENT_TIME)
-
                           DO equations_row_number=1,EQUATIONS%EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                             DISPLACEMENT_VALUE=0.0_DP
                             BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
@@ -3171,7 +2897,6 @@ CONTAINS
                         BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
                           & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
                         IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-
                           CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                             & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                           NULLIFY(BOUNDARY_VALUES)
@@ -3180,7 +2905,6 @@ CONTAINS
                           CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
                             & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_MOVED_WALL,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                             & CURRENT_TIME)
-
                           DO equations_row_number=1,EQUATIONS%EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                             BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                               & GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)
@@ -3190,7 +2914,7 @@ CONTAINS
                                 & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
                             END IF
                           END DO
-!This part should be read in out of a file eventually
+!\todo: This part should be read in out of a file eventually
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         END IF
@@ -3210,7 +2934,6 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-
               !Pre solve for the dynamic solver
               ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
@@ -3234,7 +2957,6 @@ CONTAINS
                           NULLIFY(BOUNDARY_VALUES)
                           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                             & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-
                           CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
                             & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                             & CURRENT_TIME)
@@ -3298,6 +3020,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
   !>Update mesh velocity and move mesh for ALE Navier-Stokes problem
   SUBROUTINE NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
@@ -3316,18 +3039,16 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+!\todo: Reduce number of variables used
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA
     REAL(DP), POINTER :: MESH_DISPLACEMENT_VALUES(:)
     INTEGER(INTG) :: I,NUMBER_OF_DIMENSIONS_LAPLACE
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS_ALE_NAVIER_STOKES,GEOMETRIC_MESH_COMPONENT,equations_row_number,INPUT_TYPE,INPUT_OPTION
 
-
     CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
-!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
       NULLIFY(SOLVER_LAPLACE)
       NULLIFY(SOLVER_ALE_NAVIER_STOKES)
 
@@ -3353,11 +3074,10 @@ CONTAINS
                     ELSE
                       CALL FLAG_ERROR("ALE Navier-Stokes equations set is not associated.",ERR,ERROR,*999)
                     END IF
-
                     !Get the data
                     CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_ALE_NAVIER_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                       & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS_ALE_NAVIER_STOKES,ERR,ERROR,*999)
-
+!\todo: Introduce user calls instead of hard-coding 42/1
                     !Copy input to Navier-Stokes' independent field
                     INPUT_TYPE=42
                     INPUT_OPTION=1
@@ -3376,8 +3096,7 @@ CONTAINS
                 ELSE
                   CALL FLAG_ERROR("ALE Navier-Stokes solver equations are not associated.",ERR,ERROR,*999)
                 END IF
- 
-                !Use calculated values to update mesh
+                 !Use calculated values to update mesh
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET_ALE_NAVIER_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                   & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
 !                 CALL FIELD_PARAMETER_SET_DATA_GET(INDEPENDENT_FIELD_ALE_NAVIER_STOKES,FIELD_U_VARIABLE_TYPE, & 
@@ -3402,7 +3121,6 @@ CONTAINS
                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET_ALE_NAVIER_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-
                 !Now use displacement values to calculate velocity values
                 TIME_INCREMENT=CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT
                 ALPHA=1.0_DP/TIME_INCREMENT
@@ -3415,7 +3133,6 @@ CONTAINS
               !Update mesh within the dynamic solver
               IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
                 IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
-
                   !Get the dependent field for the three component Laplace problem
                   CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,1,SOLVER_LAPLACE,ERR,ERROR,*999)
                   SOLVER_EQUATIONS_LAPLACE=>SOLVER_LAPLACE%SOLVER_EQUATIONS
@@ -3431,14 +3148,12 @@ CONTAINS
 
                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_LAPLACE%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                         & NUMBER_OF_DIMENSIONS_LAPLACE,ERR,ERROR,*999)
-
                     ELSE
                       CALL FLAG_ERROR("Laplace solver mapping is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
                     CALL FLAG_ERROR("Laplace solver equations are not associated.",ERR,ERROR,*999)
                   END IF
-
                   !Get the independent field for the ALE Navier-Stokes problem
                   CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_ALE_NAVIER_STOKES,ERR,ERROR,*999)
                   SOLVER_EQUATIONS_ALE_NAVIER_STOKES=>SOLVER_ALE_NAVIER_STOKES%SOLVER_EQUATIONS
@@ -3451,17 +3166,14 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("ALE Navier-Stokes equations set is not associated.",ERR,ERROR,*999)
                       END IF
-
                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_ALE_NAVIER_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                         & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS_ALE_NAVIER_STOKES,ERR,ERROR,*999)
-
                     ELSE
                       CALL FLAG_ERROR("ALE Navier-Stokes solver mapping is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
                     CALL FLAG_ERROR("ALE Navier-Stokes solver equations are not associated.",ERR,ERROR,*999)
                   END IF
- 
                   !Copy result from Laplace mesh movement to Navier-Stokes' independent field
                   IF(NUMBER_OF_DIMENSIONS_ALE_NAVIER_STOKES==NUMBER_OF_DIMENSIONS_LAPLACE) THEN
                     DO I=1,NUMBER_OF_DIMENSIONS_ALE_NAVIER_STOKES
@@ -3472,7 +3184,6 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Dimension of Laplace and ALE Navier-Stokes equations set is not consistent.",ERR,ERROR,*999)
                   END IF
-
                   !Use calculated values to update mesh
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET_ALE_NAVIER_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                     & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
@@ -3498,7 +3209,6 @@ CONTAINS
                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET_ALE_NAVIER_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-
                   !Now use displacement values to calculate velocity values
                   TIME_INCREMENT=CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT
                   ALPHA=1.0_DP/TIME_INCREMENT
@@ -3534,6 +3244,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
   !>Update mesh parameters for three component Laplace problem
   SUBROUTINE NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
@@ -3549,7 +3260,6 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     INTEGER(INTG) :: equations_row_number
     REAL(DP), POINTER :: MESH_STIFF_VALUES(:)
@@ -3587,7 +3297,6 @@ CONTAINS
                           DO equations_row_number=1,EQUATIONS%EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                             !Calculation of K values dependent on current mesh topology
                             MESH_STIFF_VALUES(equations_row_number)=1.0_DP
-
                             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
                               & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
                               & MESH_STIFF_VALUES(equations_row_number),ERR,ERROR,*999)
@@ -3631,7 +3340,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS
 
-
   !
   !================================================================================================================================
   !
@@ -3649,10 +3357,8 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER,NUMBER_OF_DIMENSIONS
-
     LOGICAL :: EXPORT_FIELD
     TYPE(VARYING_STRING) :: METHOD!,FILE
     CHARACTER(14) :: FILE
@@ -3661,8 +3367,6 @@ CONTAINS
     CALL ENTERS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
-!       write(*,*)'CURRENT_TIME = ',CURRENT_TIME
-!       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
@@ -3697,10 +3401,8 @@ CONTAINS
                   !Make sure the equations sets are up to date
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-
                     CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
                     OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
-
                     IF(OUTPUT_ITERATION_NUMBER/=0) THEN
                       IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
                         IF(CURRENT_LOOP_ITERATION<10) THEN
@@ -3727,12 +3429,7 @@ CONTAINS
                             CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                             IF(NUMBER_OF_DIMENSIONS==3) THEN
-!test encas output
-!test encas output
-!test encas output
-!test encas output
-!test encas output
-!test encas output
+!\todo: Allow user to choose whether or not ENCAS ouput is activated (default = NO)
                               EXPORT_FIELD=.FALSE.
                               IF(EXPORT_FIELD) THEN
                                 CALL FLUID_MECHANICS_IO_WRITE_ENCAS(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
@@ -3743,7 +3440,6 @@ CONTAINS
                             ENDIF
                           ENDIF
                         ENDIF 
-
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                           IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5) THEN
@@ -3801,13 +3497,14 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
 !     TYPE(VARYING_STRING) :: LOCAL_ERROR    
-
     !Temp variables
     INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
 
 
     CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
  
+!\todo: Use user-defined or default values for material parameters
+
     BOUND_COUNT=0
     MU_PARAM=1.0_DP !!!!!
     RHO_PARAM=1.0_DP !!!!!
@@ -3815,15 +3512,11 @@ CONTAINS
     XI_COORDINATES(3)=0.0_DP
     BOUNDARY_TOLERANCE=0.00000001_DP
     BOUNDARY_X=0.0_DP
-
-
     number_of_element_nodes=0
     temp_local_node_number=0
     temp_local_ny=0
     temp_node_number=0
     velocity_DOF_check=0
-
-
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
@@ -3834,10 +3527,8 @@ CONTAINS
             NULLIFY(INTERPOLATED_POINT) 
             CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
-
-      
             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-
+!\todo: Check if adjacent element calculation works for simplex elements now and then switch to boundary flag instead
             IF(NUMBER_OF_DIMENSIONS==2) THEN
               BOUNDARY_X(1,1)=0.0_DP
               BOUNDARY_X(1,2)=10.0_DP
@@ -3858,8 +3549,6 @@ CONTAINS
               BOUNDARY_X(3,1)=-5.0_DP
               BOUNDARY_X(3,2)=5.0_DP
             ENDIF
-
-
             NULLIFY(GEOMETRIC_VARIABLE)
             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
             NULLIFY(GEOMETRIC_PARAMETERS)
@@ -3882,14 +3571,11 @@ CONTAINS
                         IF(ASSOCIATED(DOMAIN_NODES)) THEN
                           !Loop over the local nodes excluding the ghosts.
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-
                             element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
                             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
                               & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-
 !                             DO I=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
 !                               IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(I)=node_idx THEN
-
                             en_idx=0
                             XI_COORDINATES=0.0_DP
                             number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)
@@ -3899,14 +3585,12 @@ CONTAINS
                             ELSE
                               number_of_nodes_xic(3)=1
                             ENDIF
-
                             IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
-
                               DO K=1,number_of_nodes_xic(3)
                                 DO J=1,number_of_nodes_xic(2)
                                   DO I=1,number_of_nodes_xic(1)
@@ -3928,6 +3612,7 @@ CONTAINS
                               CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
                                 & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                             ELSE
+!\todo: this part can be removed as soon as adjacent element calculation for simplex is working and tested
                               IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
                                 T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
                                 T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
@@ -3990,11 +3675,9 @@ CONTAINS
                                 T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
                                 T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
                               ENDIF
-
                               DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
                                 IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
                               ENDDO
-
                               IF(NUMBER_OF_DIMENSIONS==2) THEN
                                 CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
                                   & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
@@ -4003,51 +3686,37 @@ CONTAINS
                                   & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                               ENDIF 
                             ENDIF
-
                             X=0.0_DP
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
                               X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
                             ENDDO !dim_idx
-
-! ! !                             !!TODO \todo We should interpolate the geometric field here and the node position.
-! ! !                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-! ! !                               local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
-! ! !                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-! ! !                             ENDDO !dim_idx
                             !Loop over the derivatives
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-
                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
                               CURRENT_TIME=0.0_DP
                               CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,variable_type, & 
                                 & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
-
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                               IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-
-
-                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                                  !If we are a boundary node then set the analytic value on the boundary
-                                  IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                  BOUND_COUNT=BOUND_COUNT+1
-                                  ENDIF
-                                ELSE
-                                  IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                      & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                  ENDIF
-                                ENDIF
-
-
-
-
+!\todo: This is the part that is needed as soon as adjacent element calculation works
+! ! ! !                                 IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+! ! ! !                                   !If we are a boundary node then set the analytic value on the boundary
+! ! ! !                                   IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+! ! ! !                                     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+! ! ! !                                       & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+! ! ! !                                   BOUND_COUNT=BOUND_COUNT+1
+! ! ! !                                   ENDIF
+! ! ! !                                 ELSE
+! ! ! !                                   IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+! ! ! !                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+! ! ! !                                       & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+! ! ! !                                   ENDIF
+! ! ! !                                 ENDIF
                                 !If we are a boundary node then set the analytic value on the boundary
                                 IF(NUMBER_OF_DIMENSIONS==2) THEN
                                   IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
@@ -4063,18 +3732,14 @@ CONTAINS
                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE) &
                                         & THEN
-! Commented out for testing purposes
                                           CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                             & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                           BOUND_COUNT=BOUND_COUNT+1
                                       ENDIF
-
                                       ENDIF
-
                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==6.OR. &
                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==10) THEN
-
                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
                                         & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND.&
@@ -4092,7 +3757,6 @@ CONTAINS
                                     ENDIF
                                   ENDIF
                                     IF(component_idx<=NUMBER_OF_DIMENSIONS+1) THEN
-! ! !  commented out for testing only
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                         & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                     ENDIF
@@ -4108,7 +3772,7 @@ CONTAINS
                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                     BOUND_COUNT=BOUND_COUNT+1
-!Apply boundary conditions check for pressure nodes
+                                    !Apply boundary conditions check for pressure nodes
                                     ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==10.OR. &
@@ -4145,7 +3809,6 @@ CONTAINS
                                     ENDIF
                                   ELSE
                                     IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-! ! !  commented out for testing only
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                         & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                     ENDIF
@@ -4183,7 +3846,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
             CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-
             CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
           ELSE
@@ -4229,18 +3891,15 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
     CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR,*999)
 
-
+!\todo: Use user-defined or default material parameters instead
     MU_PARAM=1.0_DP !!!!!
     RHO_PARAM=1.0_DP !!!!!
     L=10.0_DP
-
     INTERNAL_TIME=CURRENT_TIME
-
-
      SELECT CASE(ANALYTIC_FUNCTION_TYPE)
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-!POLYNOM
+           !Polynomial function
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4297,7 +3956,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-!EXPONENTIAL
+           !Exponential function
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4365,7 +4024,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-!SINUS/COSINUS
+           !Sine and cosine function
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4433,10 +4092,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
          ENDIF
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-!TAYLOR GREEN VORTEX SOLUTION
-
-! WRITE(*,*)'CURRENT_TIME',CURRENT_TIME
-
+           !Taylor-Green vortex solution
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
                RHO_PARAM=1000.0_DP
@@ -4508,7 +4164,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
          ENDIF
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-!POLYNOM
+           !Polynomial function
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4569,7 +4225,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
          ENDIF
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-!EXPONENTIAL
+           !Exponential function
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4642,10 +4298,9 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
-
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-!SINUS/COSINUS
+           !Sine/cosine function
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4737,9 +4392,4 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
   !================================================================================================================================
   !
 
-
 END MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
-
-  !
-  !================================================================================================================================
-  !   
