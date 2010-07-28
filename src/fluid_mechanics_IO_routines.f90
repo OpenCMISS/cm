@@ -1481,8 +1481,8 @@ CONTAINS
               & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   &
           & .OR. (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
               & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-              & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STOKES_POISSON_SUBTYPE) &
-                & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE))) THEN
+              & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
+                & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
 !             & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
@@ -1511,8 +1511,9 @@ CONTAINS
     END IF
 
     !This is for Poisson-Flow problems only
-    IF(NumberOfVariableComponents==1)NumberOfVariableComponents=4
+    IF(NumberOfVariableComponents==1)NumberOfVariableComponents=NumberOfDimensions+1
     IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=2
+    IF(NumberOfMaterialComponents==4)NumberOfMaterialComponents=2
 
 
     NumberOfFieldComponent(1)=NumberOfDimensions
@@ -1690,8 +1691,8 @@ CONTAINS
               & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   &
         & .OR. (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
             & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-            & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STOKES_POISSON_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NAVIER_STOKES_POISSON_SUBTYPE))) THEN
+            & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
         WRITE(14,'("    ", es25.16 )')NodePValue(I)
       END IF
 
@@ -2770,7 +2771,7 @@ CONTAINS
     REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE
     REAL(DP) :: LENGTH_SCALE
 
-    INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J, TIME_STEP
+    INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J, TIME_STEP,K
     CHARACTER(35) :: INPUT_FILE
     CHARACTER(29) :: UVEL_FILE
 
@@ -2827,9 +2828,9 @@ CONTAINS
         IF(INPUT_OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(INPUT_OPTION==1) THEN
-          TIME_STEP_SIZE=0.2_DP
-          NUMBER_OF_TIME_STEPS=50
-          LENGTH_SCALE=25.0_DP
+          TIME_STEP_SIZE=0.1_DP
+          NUMBER_OF_TIME_STEPS=10
+          LENGTH_SCALE=1.0_DP
           TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
           DO J=1,NUMBER_OF_TIME_STEPS
@@ -2875,20 +2876,26 @@ CONTAINS
             ENDIF
           ENDDO
         ELSE IF(INPUT_OPTION==3) THEN
-          TIME_STEP_SIZE=10.0_DP
-          NUMBER_OF_TIME_STEPS=500
-          LENGTH_SCALE=10.0_DP
+          TIME_STEP_SIZE=0.01_DP
+          NUMBER_OF_TIME_STEPS=1000
+          LENGTH_SCALE=100.0_DP
           TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
           DO J=1,NUMBER_OF_TIME_STEPS
             TIME_STEP=J
             IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
               IF(J<10) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') J
+                K=J
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') K
               ELSE IF(J<100) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
+                K=J
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') K
+              ELSE IF(J<500) THEN
+                K=J
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') K
               ELSE IF(J<1000) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
+                K=J-1000
+                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') K
               ENDIF
               OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
               DO I=1,ENDI
