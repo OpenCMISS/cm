@@ -163,6 +163,7 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: LIBRARY_LAPACK_TYPE=9 !<LAPACK library type \see CONSTANTS_LibraryTypes,CONSTANTS
   INTEGER(INTG), PARAMETER :: LIBRARY_TAO_TYPE=10 !<TAO library type \see CONSTANTS_LibraryTypes,CONSTANTS
   INTEGER(INTG), PARAMETER :: LIBRARY_HYPRE_TYPE=11 !<Hypre library type \see CONSTANTS_LibraryTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: LIBRARY_PASTIX_TYPE=12 !<PaStiX library type \see CONSTANTS_LibraryTypes,CONSTANTS
   !>@}
 
   !> \addtogroup CONSTANTS_PartialDerivativeConstants CONSTANTS::PartialDerivativeConstants

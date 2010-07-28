@@ -581,6 +581,36 @@ else
   endif
 endif
 
+#PaStiX
+PASTIX_LIBRARIES =#
+PASTIX_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  PASTIX_LIBRARIES = -lpastix
+  PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  PASTIX_LIBRARIES = -lpastix
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    PASTIX_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#Scotch
+SCOTCH_LIBRARIES =#
+SCOTCH_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SCOTCH_LIBRARIES = -lptscotch -lptscotcherr -lptscotcherrexit -lscotch -lscotcherr -lscotcherrexit
+  SCOTCH_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  SCOTCH_LIBRARIES = -lptscotch -lptscotchexit -lptscotcherrexit -lptscotchparmetis
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    SCOTCH_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    SCOTCH_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
 #SuperLU_DIST
 SUPERLU_LIBRARIES =#
 SUPERLU_LIB_PATH =#
@@ -757,8 +787,8 @@ endif
 OPENCMISS_LIBRARY = $(LIBRARY)
 OPENCMISS_INCLUDE_PATH = $(addprefix -I, $(INC_DIR) )
 
-EXTERNAL_LIBRARIES = $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH = $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
+EXTERNAL_LIBRARIES = $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
+EXTERNAL_LIB_PATH = $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
 EXTERNAL_INCLUDE_PATH = $(strip $(MPI_INCLUDE_PATH) )
 
 ifeq ($(USECELLML),true)
@@ -805,6 +835,10 @@ $(EXE_DIR) :
 $(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
 	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
 
+$(OPENCMISS_LIBRARY) :
+	( cd $(GLOBAL_ROOT); $(MAKE) )
+
+
 # Place the list of dependencies for the objects here.
 #
 # ----------------------------------------------------------------------------
@@ -814,6 +848,13 @@ $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME
 
 run : main
 	$(EXECUTABLE)
+
+callgrindrun : main
+	valgrind --tool=callgrind $(EXECUTABLE)
+
+massifrun : main
+	valgrind --tool=massif $(EXECUTABLE)
+
 
 # ----------------------------------------------------------------------------
 #

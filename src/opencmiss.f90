@@ -4407,6 +4407,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSSolverLAPACKLibrary = SOLVER_LAPACK_LIBRARY !<LAPACK solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverTAOLibrary = SOLVER_TAO_LIBRARY !<TAO solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverHypreLibrary = SOLVER_HYPRE_LIBRARY !<Hypre solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverPaStiXLibrary = SOLVER_PASTIX_LIBRARY !<PaStiX solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_LinearSolverTypes OPENCMISS::Solver::LinearSolverTypes
   !> \brief The types of linear solvers.
