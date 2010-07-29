@@ -153,31 +153,38 @@ contains
 
   ! integrates all cell models
   subroutine bueno_orovio_integrate(cells,materials,t0,t1,err,error,*)
-    type(field_type), intent(inout), pointer :: cells, materials
-    real(dp), intent(in)    :: t0, t1
+    type(field_type), intent(inout), pointer :: cells, materials !<Independent field storing the cell data, and material field component 1 the activation flags
+    real(dp), intent(in)    :: t0, t1 !<Integrate from time t0 to t1 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     integer, parameter :: celldim = 4
     real(dp), dimension(1:celldim) :: y, dydt
     real(dp) :: t, dt, activ
+    real(dp), dimension(:), pointer :: celldata, activdata
 
     integer(intg) :: ncells, i, d, nodeno
     type(domain_ptr_type), pointer :: domain
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: CELLS_VARIABLE, ACTIV_VARIABLE
 
     call enters('bueno_orovio_integrate',err,error,*999)
 
-    domain=>cells%decomposition%domain(1)  ! ?
+    domain=>cells%decomposition%domain(1)
     ncells = domain%ptr%topology%nodes%number_of_nodes ! local
+
+    CELLS_VARIABLE=>cells%VARIABLE_TYPE_MAP(field_u_variable_type)%PTR
+    ACTIV_VARIABLE=>materials%VARIABLE_TYPE_MAP(field_u_variable_type)%PTR
+
+    CALL FIELD_PARAMETER_SET_DATA_GET(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_DATA_GET(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
     do i=1,ncells
       !   field ->   y
       do d=1,celldim
-        nodeno = domain%ptr%topology%nodes%nodes(i)%global_number
-        call field_parameter_set_get_node(cells,field_u_variable_type,field_values_set_type,1,nodeno,d,y(d),err,error,*999)
+        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
       end do
-      call field_parameter_set_get_node(materials,field_u_variable_type,field_values_set_type,1,nodeno,1,activ,err,error,*999)
-
+      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+      
       t = t0
       do while (t < t1 - 1e-6)
         ! integrate one cell, one time step. 
@@ -191,9 +198,13 @@ contains
       end do
       !   y -> field  
       do d=1,celldim
-        call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
+ !       call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
+        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
       end do
     end do
+    CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_DATA_RESTORE(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
+
 
     call exits('bueno_orovio_integrate')
     return
@@ -351,31 +362,42 @@ contains
 
   ! integrates all cell models
   subroutine tentusscher06_integrate(cells,materials,t0,t1,err,error,*)
-    type(field_type), intent(inout), pointer :: cells, materials
-    real(dp), intent(in)    :: t0, t1
+    type(field_type), intent(inout), pointer :: cells, materials !<Independent field storing the cell data, and material field component 1 the activation flags
+    real(dp), intent(in)    :: t0, t1 !<Integrate from time t0 to t1 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     integer, parameter :: celldim = 19
     real(dp), dimension(1:celldim) :: y, dydt
     real(dp) :: t, dt, activ, m_inf, d_inf, m_inf0, d_inf0
+    real(dp), dimension(:), pointer :: celldata, activdata
 
     integer(intg) :: ncells, i, d, nodeno
     type(domain_ptr_type), pointer :: domain
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: CELLS_VARIABLE, ACTIV_VARIABLE
 
     call enters('tentusscher06_integrate',err,error,*999)
 
-    domain=>cells%decomposition%domain(1)  ! ?
+    domain=>cells%decomposition%domain(1)
     ncells = domain%ptr%topology%nodes%number_of_nodes ! local
+
+    CELLS_VARIABLE=>cells%VARIABLE_TYPE_MAP(field_u_variable_type)%PTR
+    ACTIV_VARIABLE=>materials%VARIABLE_TYPE_MAP(field_u_variable_type)%PTR
+
+    CALL FIELD_PARAMETER_SET_DATA_GET(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_DATA_GET(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
     do i=1,ncells
       !   field ->   y
       do d=1,celldim
-        nodeno = domain%ptr%topology%nodes%nodes(i)%global_number
-        call field_parameter_set_get_node(cells,field_u_variable_type,field_values_set_type,1,nodeno,d,y(d),err,error,*999)
+!        nodeno = domain%ptr%topology%nodes%nodes(i)%global_number
+!        call field_parameter_set_get_node(cells,field_u_variable_type,field_values_set_type,1,nodeno,d,y(d),err,error,*999)
+        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
       end do
-      call field_parameter_set_get_node(materials,field_u_variable_type,field_values_set_type,1,nodeno,1,activ,err,error,*999)
-
+      ! field_parameter_set_get_node(materials,field_u_variable_type,field_values_set_type,1,nodeno,1,activ,err,error,*999)
+      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+      
+  
       t = t0
       do while (t < t1 - 1e-6)
         ! integrate one cell, one time step. 
@@ -407,9 +429,12 @@ contains
       end do
       !   y -> field  
       do d=1,celldim
-        call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
+ !       call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
+        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
       end do
     end do
+    CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_DATA_RESTORE(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
     call exits('tentusscher06_integrate')
     return

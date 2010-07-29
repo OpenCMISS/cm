@@ -393,15 +393,15 @@ CONTAINS
                         ENDDO !nj
                         STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
                       ENDIF
-                      IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                        DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
-                          & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
-                          & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*RWG
-                      ENDIF
+
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
+                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                  DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)+ &
+                  & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG 
+                ENDIF
               ENDDO !ms
             ENDDO !mh
           IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP 
@@ -747,6 +747,9 @@ CONTAINS
          
               CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
                    &NUM_COMP,ERR,ERROR,*999)
+            !  crash?
+            !  CALL FIELD_DOF_ORDER_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
+            !  &  FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER,ERR,ERROR,*999) ! dofs continuous, so first + (x-1) is x'th component index
 
               !Default to the geometric interpolation setup
               CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -820,9 +823,10 @@ CONTAINS
                  !Set the number of materials components
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_MATERIALS_COMPONENTS,ERR,ERROR,*999)
-                !Default the k materials components to the geometric interpolation setup with constant interpolation
+
+                ! 1st = activation = node based, 2 3 4 diffusion constants
                 CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & component_idx+1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  & 1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
 
                 DO component_idx=1,NUMBER_OF_DIMENSIONS
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -1379,17 +1383,12 @@ CONTAINS
         & CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, &
         & 'V(1) = ', TMP0, 'V(',NN,') = ', TMP1
     
-!       DO I=1,8
-!         call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999)
-!         WRITE(*,*) 'V(',I,')=',tmp1
-!       END DO
-
-       ! TODO: better detection. This fails when some tissue is repolarizating
-       DO I=1,NN
-         call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999)
-         IF(tmp1 < 0) EXIT
-       END DO
-       IF(I==NN+1) WRITE(*,*) 'FULLY ACTIVATED @ ', CONTROL_LOOP%TIME_LOOP%CURRENT_TIME
+       ! euHeart BENCHMARK
+!       IF(TMP1 > 0) THEN
+!         WRITE(*,*) 'LAST ACTIVATION @ ', CONTROL_LOOP%TIME_LOOP%CURRENT_TIME
+!         WRITE(*,*) 'exiting...'
+!         call exit(0) 
+!       END IF
 
  
       CASE DEFAULT
