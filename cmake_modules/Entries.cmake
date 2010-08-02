@@ -1,102 +1,32 @@
 IF(${OPERATING_SYSTEM} MATCHES linux)# Linux
-  SET(MACHINE_ENTRY machine_constants_linux)
+  SET(MACHINE_ENTRY ${SOURCE_DIR}/machine_constants_linux.f90)
 ELSEIF(${OPERATING_SYSTEM} MATCHES aix)#AIX
-    SET(MACHINE_ENTRY machine_constants_aix)
+    SET(MACHINE_ENTRY ${SOURCE_DIR}/machine_constants_aix.f90)
 ELSE(${OPERATING_SYSTEM} MATCHES linux)# windows
-    SET(MACHINE_ENTRY machine_constants_win32)
+    SET(MACHINE_ENTRY ${SOURCE_DIR}/machine_constants_windows.f90)
 ENDIF(${OPERATING_SYSTEM} MATCHES linux)
 
+FILE(GLOB MACHINE_EXCLUDES "${SOURCE_DIR}" "${SOURCE_DIR}/machine_constants_*.f90")
+LIST(REMOVE_ITEM MACHINE_EXCLUDES ${MACHINE_ENTRY})
+
 IF(${USECELLML} MATCHES true)
-     SET(CELLML_ENTRY  cmiss_cellml)
+  SET(CELLML_ENTRY  ${SOURCE_DIR}/cmiss_cellml.f90)
 ELSE(${USECELLML} MATCHES true)
-     SET(CELLML_ENTRY  cmiss_cellml_dummy)
+  SET(CELLML_ENTRY  ${SOURCE_DIR}/cmiss_cellml_dummy.f90)
 ENDIF(${USECELLML} MATCHES true)
 
+FILE(GLOB CELLML_EXCLUDES "${SOURCE_DIR}" "${SOURCE_DIR}/cmiss_cellml*.f90")
+LIST(REMOVE_ITEM CELLML_EXCLUDES ${CELLML_ENTRY})
 
+FILE(GLOB FIELDML_EXCLUDES "${SOURCE_DIR}" "${SOURCE_DIR}/fieldml_*.f90")
 
-SET(OPENCMISS_ENTRIES 
-  advection_diffusion_equation_routines 
-  analytic_analysis_routines
-  base_routines
-  basis_routines
-  bioelectric_routines
-  biodomain_equation_routines
-  boundary_condition_routines
-  blas
-  classical_field_routines
-  cmiss
-  cmiss_mpi
-  cmiss_parmetis
-  cmiss_petsc
-  cmiss_petsc_types
-  computational_environment
-  constants
-  control_loop_routines
-  coordinate_routines
-  Darcy_equations_routines
-  data_point_routines
-  data_projection_routines
-  diffusion_advection_diffusion_routines
-  diffusion_diffusion_routines
-  diffusion_equation_routines
-  distributed_matrix_vector
-  distributed_matrix_vector_IO
-  domain_mappings
-  elasticity_routines
-  electromechanics_routines
-  equations_routines
-  equations_mapping_routines
-  equations_matrices_routines
-  equations_set_constants
-  equations_set_routines
-  field_routines
-  field_IO_routines
-  finite_elasticity_Darcy_routines
-  finite_elasticity_routines
-  fluid_mechanics_routines
-  fluid_mechanics_IO_routines
-  FieldExport.c
-  Galerkin_projection_routines
-  generated_mesh_routines
-  Helmholtz_equations_routines
-  history_routines
-  input_output
-  interface_routines
-  interface_conditions_constants
-  interface_conditions_routines
-  interface_equations_routines
-  interface_mapping_routines
-  interface_matrices_routines
-  iso_varying_string
-  kinds
-  Laplace_equations_routines
-  linear_elasticity_routines
-  lists
-  maths
-  matrix_vector
-  mesh_routines
-  multi_compartment_transport_routines
-  multi_physics_routines
-  Navier_Stokes_equations_routines
-  node_routines
-  opencmiss
-  opencmiss_c
-  Poisson_equations_routines
-  problem_constants
-  problem_routines
-  region_routines
-  Stokes_equations_routines
-  solver_routines
-  solver_mapping_routines
-  solver_matrices_routines
-  sorting
-  Stokes_equations_routines
-  strings
-  test_framework_routines
-  timer_c.c
-  timer_f
-  trees
-  types
-  ${MACHINE_ENTRY} 
-  ${CELLML_ENTRY}
+SET(EXCLUDED_ROUTINES 
+  ${SOURCE_DIR}/Helmholtz_TEMPLATE_equations_routines.f90
+  ${SOURCE_DIR}/binary_file_f.f90
+  ${SOURCE_DIR}/finite_element_routines.f90
 )
+LIST(APPEND EXCLUDED_ROUTINES ${MACHINE_EXCLUDES})
+LIST(APPEND EXCLUDED_ROUTINES ${CELLML_EXCLUDES})
+IF(NOT ${USEFIELDML} MATCHES true)
+  LIST(APPEND EXCLUDED_ROUTINES ${FIELDML_EXCLUDES})
+ENDIF(NOT ${USEFIELDML} MATCHES true)
