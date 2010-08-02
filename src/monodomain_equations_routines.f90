@@ -399,7 +399,6 @@ CONTAINS
               ENDDO
             ENDDO
 
-
             !Loop over field components
             mhs=0          
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -453,17 +452,16 @@ CONTAINS
                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
                       ENDIF
-                      IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                        DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
-                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
-                      ENDIF
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
 
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)* &
                   & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
+                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                   DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                     & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
+                ENDIF
               ENDDO !ms
             ENDDO !mh
           ENDIF
@@ -478,8 +476,6 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
-    
-
  
     CALL EXITS("MONODOMAIN_EQUATION_FINITE_ELEMENT_CALCULATE")
     RETURN
@@ -777,10 +773,6 @@ CONTAINS
             !  crash?
             !  CALL FIELD_DOF_ORDER_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
             !  &  FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER,ERR,ERROR,*999) ! dofs continuous, so first + (x-1) is x'th component index
-
-            !  CALL FIELD_DOF_ORDER_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
-            !  &  FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER,ERR,ERROR,*999) ! dofs continuous, so first + (x-1) is x'th component index
-
 
               !Default to the geometric interpolation setup
               CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -1341,7 +1333,7 @@ CONTAINS
 
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, MATERIAL_FIELD,  INDEPENDENT_FIELD
     REAL(DP) :: TMP0, TMP1
-    INTEGER(INTG) :: NN
+    INTEGER(INTG) :: NN, I
 
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
@@ -1415,6 +1407,11 @@ CONTAINS
         WRITE(*,*) 'INTEGRATED CELL MODELS',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME-CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT,'->',&
         & CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, &
         & 'V(1) = ', TMP0, 'V(',NN,') = ', TMP1
+
+!        DO I=1,NN,100
+!          call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999) 
+!          write(*,*) 'V(',I,')=',tmp1
+!        ENDDO
     
        ! euHeart BENCHMARK
        IF(TMP1 > 0) THEN
