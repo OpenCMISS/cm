@@ -5644,8 +5644,12 @@ CONTAINS
                     CALL PETSC_KSPGETPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
                     !Set the PC type to LU
                     CALL PETSC_PCSETTYPE(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
+#if ( PETSC_VERSION_MINOR >= 1 )                    
                     !Set the PC factorisation package to PaStiX
                     CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PASTIX,ERR,ERROR,*999)
+#else
+                    CALL FLAG_ERROR("PaStiX not available in this version of PETSc.",ERR,ERROR,*999)
+#endif
 #endif
                   ELSE
                     CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
