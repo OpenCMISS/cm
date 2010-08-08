@@ -4905,7 +4905,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverLinearType,CMISSSolverNonlinearType,CMISSSolverDynamicType,CMISSSolverDAEType,CMISSSolverEigenproblemType, &
     & CMISSSolverOptimiserType
 
-  PUBLIC CMISSSolverCMISSLibrary,CMISSSolverPETScLibrary,CMISSSolverMUMPSLibrary
+  PUBLIC CMISSSolverCMISSLibrary,CMISSSolverPETScLibrary,CMISSSolverMUMPSLibrary,CMISSSolverSuperLULibrary, &
+    & CMISSSolverSpoolesLULibrary,CMISSSolverUMFPACKLibrary,CMISSSolverLUSOLLibrary,CMISSSolverESSLLibrary, &
+    & CMISSSolverLAPACKLibrary,CMISSSolverTAOLibrary,CMISSSolverHypreLibrary,CMISSSolverPaStiXLibrary
 
   PUBLIC CMISSSolverLinearDirectSolveType,CMISSSolverLinearIterativeSolveType
 
