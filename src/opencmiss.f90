@@ -3326,6 +3326,22 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSInterfaceDestroyObj
   END INTERFACE !CMISSInterfaceDestroy
 
+  !>Returns the label of an interface. 
+  INTERFACE CMISSInterfaceLabelGet
+    MODULE PROCEDURE CMISSInterfaceLabelGetCNumber
+    MODULE PROCEDURE CMISSInterfaceLabelGetCObj
+    MODULE PROCEDURE CMISSInterfaceLabelGetVSNumber
+    MODULE PROCEDURE CMISSInterfaceLabelGetVSObj
+  END INTERFACE !CMISSInterfaceLabelGet
+    
+  !>Sets/changes the label of an interface. 
+  INTERFACE CMISSInterfaceLabelSet
+    MODULE PROCEDURE CMISSInterfaceLabelSetCNumber
+    MODULE PROCEDURE CMISSInterfaceLabelSetCObj
+    MODULE PROCEDURE CMISSInterfaceLabelSetVSNumber
+    MODULE PROCEDURE CMISSInterfaceLabelSetVSObj
+  END INTERFACE !CMISSInterfaceLabelSet
+
   !>Finishes the creation of an interface meshes connectivity. \see OPENCMISS::CMISSInterfaceMeshConnectivityCreateStart
   INTERFACE CMISSInterfaceMeshConnectivityCreateFinish
     MODULE PROCEDURE CMISSInterfaceMeshConnectivityCreateFinishNumber
@@ -3367,6 +3383,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSInterfaceCreateFinish,CMISSInterfaceCreateStart
   
   PUBLIC CMISSInterfaceDestroy
+
+  PUBLIC CMISSInterfaceLabelGet,CMISSInterfaceLabelSet
   
   PUBLIC CMISSInterfaceMeshConnectivityCreateFinish,CMISSInterfaceMeshConnectivityCreateStart
   
@@ -3872,10 +3890,10 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   END INTERFACE !CMISSNodesDestroy
 
   !>Returns the number of nodes
-  INTERFACE CMISSNumberOfNodesGet
-    MODULE PROCEDURE CMISSNumberOfNodesGetNumber
-    MODULE PROCEDURE CMISSNumberOfNodesGetObj
-  END INTERFACE !CMISSNumberOfNodesGet
+  INTERFACE CMISSNodesNumberOfNodesGet
+    MODULE PROCEDURE CMISSNodesNumberOfNodesGetNumber
+    MODULE PROCEDURE CMISSNodesNumberOfNodesGetObj
+  END INTERFACE !CMISSNodesNumberOfNodesGet
 
   !>Returns the label for a node identified by a given global number. \todo should this be a user number?
   INTERFACE CMISSNodesLabelGet
@@ -3909,7 +3927,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSNodesDestroy
 
-  PUBLIC CMISSNumberOfNodesGet
+  PUBLIC CMISSNodesNumberOfNodesGet
 
   PUBLIC CMISSNodesLabelGet,CMISSNodesLabelSet
 
@@ -4362,6 +4380,11 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSRegionLabelSetVSObj
   END INTERFACE !CMISSRegionLabelSet
 
+  !>Returns the nodes for a region.
+  INTERFACE CMISSRegionNodesGet
+    MODULE PROCEDURE CMISSRegionNodesGetObj
+  END INTERFACE !CMISSRegionNodesGet
+
   PUBLIC CMISSRegionCoordinateSystemGet,CMISSRegionCoordinateSystemSet
 
   PUBLIC CMISSRegionCreateFinish,CMISSRegionCreateStart
@@ -4369,6 +4392,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSRegionDestroy
 
   PUBLIC CMISSRegionLabelGet,CMISSRegionLabelSet
+
+  PUBLIC CMISSRegionNodesGet
   
 !!==================================================================================================================================
 !!
@@ -5041,12 +5066,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 !!
 !!==================================================================================================================================
 
-  !>Sets/changes the label of a region.
+  !>Returns the user number of an object.
   INTERFACE CMISSUserNumberGet
     MODULE PROCEDURE CMISSUserNumberGetRegion
     MODULE PROCEDURE CMISSUserNumberGetMesh
     MODULE PROCEDURE CMISSUserNumberGetBasis
-  END INTERFACE !CMISSRegionLabelSet
+  END INTERFACE !CMISSUserNumberGet
 
   PUBLIC CMISSUserNumberGet
  
@@ -28295,6 +28320,298 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
+
+  !>Returns the character string label for an interface identified by an user number.
+  SUBROUTINE CMISSInterfaceLabelGetCNumber(ParentRegionUserNumber,InterfaceUserNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ParentRegionUserNumber !<The user number of the parent region containing the interface to get the label for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the region label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceLabelGetCNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN      
+        CALL INTERFACE_LABEL_GET(INTERFACE,Label,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on a parent region with a user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceLabelGetCNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelGetCNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelGetCNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelGetCNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the character string label for an interface identified by an object.
+  SUBROUTINE CMISSInterfaceLabelGetCObj(Interface,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the region label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceLabelGetCObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_LABEL_GET(Interface%INTERFACE,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceLabelGetCObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelGetCObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelGetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelGetCObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the varying string label for an interface identified by an user number.
+  SUBROUTINE CMISSInterfaceLabelGetVSNumber(ParentRegionUserNumber,InterfaceUserNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ParentRegionUserNumber !<The user number of the parent region containing the interface to get the label for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the region label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceLabelGetVSNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN      
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN      
+        CALL INTERFACE_LABEL_GET(INTERFACE,Label,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on a parent region with a user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceLabelGetVSNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelGetVSNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelGetVSNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelGetVSNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the varying string label for an interface identified by an object.
+  SUBROUTINE CMISSInterfaceLabelGetVSObj(INTERFACE,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the interface label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceLabelGetVSObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_LABEL_GET(Interface%INTERFACE,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceLabelGetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelGetVSObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelGetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelGetVSObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the character string label for an interface identified by an user number.
+  SUBROUTINE CMISSInterfaceLabelSetCNumber(ParentRegionUserNumber,InterfaceUserNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ParentRegionUserNumber !<The user number of the parent region containing the interface to set the label for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The interface label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceLabelSetCNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN      
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN      
+        CALL INTERFACE_LABEL_SET(INTERFACE,Label,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on a parent region with a user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceLabelSetCNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelSetCNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelSetCNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelSetCNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the character string label for an interface identified by an object.
+  SUBROUTINE CMISSInterfaceLabelSetCObj(INTERFACE,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The interface label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceLabelSetCObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_LABEL_SET(Interface%INTERFACE,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceLabelSetCObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelSetCObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelSetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelSetCObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the varying string label for an interface identified by an user number.
+  SUBROUTINE CMISSInterfaceLabelSetVSNumber(ParentRegionUserNumber,InterfaceUserNumber,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ParentRegionUserNumber !<The user number of the parent region containing the interface to set the label for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The interface label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceLabelSetVSNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PARENT_REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,PARENT_REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(PARENT_REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,PARENT_REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN      
+        CALL INTERFACE_LABEL_SET(INTERFACE,CHAR(Label),Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on a parent region with a user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceLabelStVSNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelSetVSNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelSetVSNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelSetVSNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes string label for an interface identified by an object.
+  SUBROUTINE CMISSInterfaceLabelSetVSObj(INTERFACE,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The interface label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceLabelSetVSObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_LABEL_SET(Interface%INTERFACE,CHAR(Label),Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceLabelSetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceLabelSetVSObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceLabelSetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceLabelSetVSObj
+
+  !  
+  !================================================================================================================================
+  !  
  
   !>Adds a mesh to be coupled in an interface identified by a user number.
   SUBROUTINE CMISSInterfaceMeshAddNumber(InterfaceRegionUserNumber,InterfaceUserNumber,MeshRegionUserNumber, &
@@ -33075,72 +33392,66 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Returns the number of nodes
-  SUBROUTINE CMISSNumberOfNodesGetNumber(regionUserNumber,numberOfNodes,err)
+  !>Returns the number of nodes 
+  SUBROUTINE CMISSNodesNumberOfNodesGetNumber(RegionUserNumber,NumberOfNodes,Err)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the nodes to get node count for.
-    INTEGER(INTG), INTENT(OUT) :: numberOfNodes !<The number of nodes
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the nodes to get node count for.
+    INTEGER(INTG), INTENT(OUT) :: NumberOfNodes !<On return, the number of nodes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-    TYPE(NODES_TYPE), POINTER :: nodes
-    TYPE(REGION_TYPE), POINTER :: region
-    TYPE(VARYING_STRING) :: localError
+    TYPE(NODES_TYPE), POINTER :: NODES
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("CMISSNumberOfNodesGetNumber",err,ERROR,*999)
+    CALL ENTERS("CMISSNodesNumberOfNodesGetNumber",Err,ERROR,*999)
 
-    NULLIFY(region)
-    NULLIFY(nodes)
-    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,ERROR,*999)
-    IF(.NOT.ASSOCIATED(region)) THEN
-      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,ERROR))// &
+    NULLIFY(REGION)
+    NULLIFY(NODES)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_NODES_GET(REGION,NODES,Err,ERROR,*999)
+      CALL NODES_NUMBER_OF_NODES_GET(NODES,NumberOfNodes,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
-      CALL FLAG_ERROR(localError,err,ERROR,*999)
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
-
-    CALL REGION_NODES_GET(region,nodes,err,ERROR,*999)
-
-    numberOfNodes = nodes%NUMBER_OF_NODES
-
-    CALL EXITS("CMISSNumberOfNodesGetNumber")
+ 
+    CALL EXITS("CMISSNodesNumberOfNodesGetNumber")
     RETURN
-999 CALL ERRORS("CMISSNumberOfNodesGetNumber",Err,ERROR)
-    CALL EXITS("CMISSNumberOfNodesGetNumber")
+999 CALL ERRORS("CMISSNodesNumberOfNodesGetNumber",Err,ERROR)
+    CALL EXITS("CMISSNodesNumberOfNodesGetNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
-
-  END SUBROUTINE CMISSNumberOfNodesGetNumber
+    
+  END SUBROUTINE CMISSNodesNumberOfNodesGetNumber
 
   !
   !================================================================================================================================
   !
 
   !>Returns the number of nodes
-  SUBROUTINE CMISSNumberOfNodesGetObj(regionObj,numberOfNodes,err)
+  SUBROUTINE CMISSNodesNumberOfNodesGetObj(Nodes,NumberOfNodes,Err)
 
     !Argument variables
-    TYPE(CMISSRegionType), INTENT(IN) :: regionObj !<The region containing the nodes to get node count for.
-    INTEGER(INTG), INTENT(OUT) :: numberOfNodes !<The number of nodes
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(CMISSNodesType), INTENT(IN) :: Nodes !<The nodes get node count for.
+    INTEGER(INTG), INTENT(OUT) :: NumberOfNodes !<The number of nodes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-    TYPE(NODES_TYPE), POINTER :: nodes
+ 
+    CALL ENTERS("CMISSNodesNumberOfNodesGetObj",err,ERROR,*999)
 
-    CALL ENTERS("CMISSNumberOfNodesGetObj",err,ERROR,*999)
+    CALL NODES_NUMBER_OF_NODES_GET(Nodes%NODES,NumberOfNodes,Err,ERROR,*999)
 
-    NULLIFY(nodes)
-
-    CALL REGION_NODES_GET(regionObj%REGION,nodes,err,ERROR,*999)
-
-    numberOfNodes = nodes%NUMBER_OF_NODES
-
-    CALL EXITS("CMISSNumberOfNodesGetObj")
+    CALL EXITS("CMISSNodesNumberOfNodesGetObj")
     RETURN
-999 CALL ERRORS("CMISSNumberOfNodesGetObj",Err,ERROR)
-    CALL EXITS("CMISSNumberOfNodesGetObj")
+999 CALL ERRORS("CMISSNodesNumberOfNodesGetObj",Err,ERROR)
+    CALL EXITS("CMISSNodesNumberOfNodesGetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
 
-  END SUBROUTINE CMISSNumberOfNodesGetObj
+  END SUBROUTINE CMISSNodesNumberOfNodesGetObj
 
   !
   !================================================================================================================================
@@ -35507,6 +35818,32 @@ CONTAINS
     
   END SUBROUTINE CMISSRegionLabelSetVSObj
 
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the nodes for a region identified by an object.
+  SUBROUTINE CMISSRegionNodesGetObj(Region,Nodes,Err)
+  
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the nodes for.
+    TYPE(CMISSNodesType), INTENT(OUT) :: Nodes !<On return, the regions nodes.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSRegionNodesGetObj",Err,ERROR,*999)
+ 
+    CALL REGION_NODES_GET(Region%REGION,Nodes%NODES,Err,ERROR,*999)
+
+    CALL EXITS("CMISSRegionNodesGetObj")
+    RETURN
+999 CALL ERRORS("CMISSRegionNodesGetObj",Err,ERROR)
+    CALL EXITS("CMISSRegionNodesGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSRegionNodesGetObj
+  
 !!==================================================================================================================================
 !!
 !! SOLVER_ROUTINES

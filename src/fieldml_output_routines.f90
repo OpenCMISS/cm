@@ -888,6 +888,7 @@ CONTAINS
     INTEGER(INTG) :: componentCount, i, nodeCount, elementCount
     INTEGER(C_INT) :: real1DHandle, xiHandle
     TYPE(CMISSMeshElementsType) :: meshElements
+    TYPE(CMISSNodesType) :: Nodes
 
     CALL ENTERS( "FieldmlOutput_InitializeInfo", err, errorString, *999 )
     
@@ -895,8 +896,10 @@ CONTAINS
     IF( C_ASSOCIATED( fieldmlInfo%fmlHandle ) ) THEN
       CALL FieldmlUtil_CheckError( "Cannot create fieldml handle", err, errorString, *999 )
     ENDIF
-    
-    CALL CMISSNumberOfNodesGet( Region, nodeCount, err )
+
+    CALL CMISSNodesTypeInitialise( Nodes, err )
+    CALL CMISSRegionNodesGet( Region, Nodes, err )
+    CALL CMISSNodesNumberOfNodesGet( Nodes, nodeCount, err )
     CALL FieldmlUtil_CheckError( "Region does not have any nodes", err, errorString, *999 )
 
     fieldmlInfo%nodesHandle = Fieldml_CreateEnsembleDomain( fieldmlInfo%fmlHandle, baseName//".nodes"//NUL, FML_INVALID_HANDLE )

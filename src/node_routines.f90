@@ -92,6 +92,8 @@ MODULE NODE_ROUTINES
   PUBLIC NODES_CREATE_FINISH,NODES_CREATE_START,NODES_DESTROY
 
   PUBLIC NODES_LABEL_GET,NODES_LABEL_SET
+
+  PUBLIC NODES_NUMBER_OF_NODES_GET
   
   PUBLIC NODES_USER_NUMBER_GET,NODES_USER_NUMBER_SET
 
@@ -708,6 +710,40 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE NODES_LABEL_SET_VS
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of nodes. \see OPENCMISS::CMISSNodesNumberOfNodesGet
+  SUBROUTINE NODES_NUMBER_OF_NODES_GET(NODES,NUMBER_OF_NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to get the number of nodes for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("NODES_NUMBER_OF_NODES_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        NUMBER_OF_NODES=NODES%NUMBER_OF_NODES
+      ELSE
+        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_NUMBER_OF_NODES_GET")
+    RETURN
+999 CALL ERRORS("NODES_NUMBER_OF_NODES_GET",ERR,ERROR)    
+    CALL EXITS("NODES_NUMBER_OF_NODES_GET")
+    RETURN 1
+   
+  END SUBROUTINE NODES_NUMBER_OF_NODES_GET
         
   !
   !================================================================================================================================

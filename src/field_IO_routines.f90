@@ -3537,7 +3537,7 @@ CONTAINS
     DOMAIN_ELEMENTS=>component%DOMAIN%TOPOLOGY%ELEMENTS
     BASIS => DOMAIN_ELEMENTS%ELEMENTS( 1 )%BASIS
 
-    ERR = FieldExport_MeshDimensions( sessionHandle, NUM_DIM, BASIS%TYPE  )
+    ERR = FieldExport_MeshDimensions( sessionHandle, BASIS%NUMBER_OF_XI, BASIS%TYPE  )
     IF(ERR/=0) THEN
         CALL FLAG_ERROR( "Cannot write mesh dimensions to file", ERR, ERROR,*999 )
     ENDIF
