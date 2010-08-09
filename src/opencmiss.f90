@@ -3639,11 +3639,11 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSDecompositionCreateFinishObj
   END INTERFACE !CMISSDecompositionCreateFinish
 
-  !>Start the creation of a domain decomposition for a given mesh. \see OPENCMISS::CMISSDecompositionCreateFinish 
+  !>Start the creation of a domain decomposition for a given mesh. \see OPENCMISS::CMISSDecompositionCreateStart
   INTERFACE CMISSDecompositionCreateStart
     MODULE PROCEDURE CMISSDecompositionCreateStartNumber
     MODULE PROCEDURE CMISSDecompositionCreateStartObj
-  END INTERFACE !CMISSDecompositionCreateFinish
+  END INTERFACE !CMISSDecompositionCreateStart
 
   !>Destroys a domain decomposition.
   INTERFACE CMISSDecompositionDestroy
@@ -3705,6 +3705,18 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSDecompositionTypeSetObj
   END INTERFACE !CMISSDecompositionTypeSet
 
+  !>Sets/changes whether lines should be calculated for the decomposition.
+  INTERFACE CMISSDecompositionCalculateLinesSet
+    MODULE PROCEDURE CMISSDecompositionCalculateLinesSetNumber
+    MODULE PROCEDURE CMISSDecompositionCalculateLinesSetObj
+  END INTERFACE !CMISSDecompositionCalculateLinesSet
+
+  !>Sets/changes whether faces should be calculated for the decomposition.
+  INTERFACE CMISSDecompositionCalculateFacesSet
+    MODULE PROCEDURE CMISSDecompositionCalculateFacesSetNumber
+    MODULE PROCEDURE CMISSDecompositionCalculateFacesSetObj
+  END INTERFACE !CMISSDecompositionCalculateFacesSet
+
   !>Finishes the creation of a mesh. \see OPENCMISS::CMISSMeshCreateStart
   INTERFACE CMISSMeshCreateFinish
     MODULE PROCEDURE CMISSMeshCreateFinishNumber
@@ -3746,6 +3758,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSMeshNumberOfElementsSetNumber
     MODULE PROCEDURE CMISSMeshNumberOfElementsSetObj
   END INTERFACE !CMISSMeshNumberOfElementsSet
+
+  !>Sets/changes the surrounding elements calculate flag for the mesh. 
+  INTERFACE CMISSMeshSurroundingElementsCalculateSet
+    MODULE PROCEDURE CMISSMeshSurroundingElementsCalculateSetNumber
+    MODULE PROCEDURE CMISSMeshSurroundingElementsCalculateSetObj
+  END INTERFACE !CMISSMeshSurroundingElementsCalculateSet
 
   !>Returns the basis for an element in a mesh. 
   INTERFACE CMISSMeshElementsBasisGet
@@ -3856,6 +3874,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSMeshNodeExists,CMISSMeshElementExists
   
   PUBLIC CMISSDecompositionNodeDomainGet
+
+  PUBLIC CMISSMeshSurroundingElementsCalculateSet
+
 
 !!==================================================================================================================================
 !!
@@ -31677,6 +31698,172 @@ CONTAINS
   !================================================================================================================================
   !  
 
+  !>Sets whether lines should be calculated
+  SUBROUTINE CMISSDecompositionCalculateLinesSetNumber(RegionUserNumber,MeshUserNumber,&
+                                                     & DecompositionUserNumber,CalculateLinesFlag,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh.
+    INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<The user number of the decomposition to set the calculate lines flag for.
+    LOGICAL, INTENT(IN) :: CalculateLinesFlag !<Boolean to determine whether to set lines to be calculated.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDecompositionCalculateLinesSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(DECOMPOSITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL DECOMPOSITION_USER_NUMBER_FIND(DecompositionUserNumber,MESH,DECOMPOSITION,Err,ERROR,*999)
+        IF(ASSOCIATED(DECOMPOSITION)) THEN
+          CALL DECOMPOSITION_CALCULATE_LINES_SET(DECOMPOSITION,CalculateLinesFlag,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="A decomposition with an user number of "//TRIM(NUMBER_TO_VSTRING(DecompositionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDecompositionCalculateLinesSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDecompositionCalculateLinesSetNumber",Err,ERROR)
+    CALL EXITS("CMISSDecompositionCalculateLinesSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDecompositionCalculateLinesSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets whether lines should be calculated
+  SUBROUTINE CMISSDecompositionCalculateLinesSetObj(Decomposition,CalculateLinesFlag,Err)
+  
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: Decomposition !<The decomposition to set the calculate lines flag for.
+    LOGICAL, INTENT(IN) :: CalculateLinesFlag !<Boolean to determine whether to set lines to be calculated.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDecompositionCalculateLinesSetObj",Err,ERROR,*999)
+ 
+    CALL DECOMPOSITION_CALCULATE_LINES_SET(Decomposition%DECOMPOSITION,CalculateLinesFlag,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDecompositionCalculateLinesSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecompositionCalculateLinesSetObj",Err,ERROR)
+    CALL EXITS("CMISSDecompositionCalculateLinesSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDecompositionCalculateLinesSetObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets whether faces should be calculated
+  SUBROUTINE CMISSDecompositionCalculateFacesSetNumber(RegionUserNumber,MeshUserNumber, &
+                                                     & DecompositionUserNumber,CalculateFacesFlag,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh.
+    INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<The user number of the decomposition to set the decomposition type for.
+    LOGICAL, INTENT(IN) :: CalculateFacesFlag !<Boolean to determine whether to set faces to be calculated.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSDecompositionCalculateFacesSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(DECOMPOSITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL DECOMPOSITION_USER_NUMBER_FIND(DecompositionUserNumber,MESH,DECOMPOSITION,Err,ERROR,*999)
+        IF(ASSOCIATED(DECOMPOSITION)) THEN
+          CALL DECOMPOSITION_CALCULATE_FACES_SET(DECOMPOSITION,CalculateFacesFlag,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="A decomposition with an user number of "//TRIM(NUMBER_TO_VSTRING(DecompositionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSDecompositionCalculateFacesSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDecompositionCalculateFacesSetNumber",Err,ERROR)
+    CALL EXITS("CMISSDecompositionCalculateFacesSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDecompositionCalculateFacesSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets whether faces should be calculated
+  SUBROUTINE CMISSDecompositionCalculateFacesSetObj(Decomposition,CalculateFacesFlag,Err)
+  
+    !Argument variables
+    TYPE(CMISSDecompositionType), INTENT(IN) :: Decomposition !<The decomposition to set the calculate faces flag for.
+    LOGICAL, INTENT(IN) :: CalculateFacesFlag !<Boolean to determine whether to set faces to be calculated.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDecompositionCalculateFacesSetObj",Err,ERROR,*999)
+ 
+    CALL DECOMPOSITION_CALCULATE_FACES_SET(Decomposition%DECOMPOSITION,CalculateFacesFlag,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDecompositionCalculateFacesSetObj")
+    RETURN
+999 CALL ERRORS("CMISSDecompositionCalculateFacesSetObj",Err,ERROR)
+    CALL EXITS("CMISSDecompositionCalculateFacesSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDecompositionCalculateFacesSetObj
+
+  !  
+  !================================================================================================================================
+  !  
+
   !>Returns the domain for a given node in a decomposition identified by a user number.
   SUBROUTINE CMISSDecompositionNodeDomainGetNumber(RegionUserNumber,MeshUserNumber,DecompositionUserNumber, &
     & NodeUserNumber,MeshComponentNumber,Domain,Err)
@@ -32130,7 +32317,79 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
+
+  !>Sets/changes the surrounding elements calculate flag.
+  SUBROUTINE CMISSMeshSurroundingElementsCalculateSetNumber(RegionUserNumber,MeshUserNumber,SurroundingElementsCalculateFlag,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to set the surrounding elements calculate flag for.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to set the surrounding elements calculate flag for.
+    LOGICAL, INTENT(IN) :: SurroundingElementsCalculateFlag !<Boolean flag to determine whether to calculate surrounding elements.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSMeshSurroundingElementsCalculateSetNumber",Err,ERROR,*999)
  
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL MESH_SURROUNDING_ELEMENTS_CALCULATE_SET(MESH,SurroundingElementsCalculateFlag,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshSurroundingElementsCalculateSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshSurroundingElementsCalculateSetNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshSurroundingElementsCalculateSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshSurroundingElementsCalculateSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the surrounding elements calculate flag.
+  SUBROUTINE CMISSMeshSurroundingElementsCalculateSetObj(Mesh,SurroundingElementsCalculateFlag,Err)
+  
+    !Argument variables
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to set the surrounding elements calculate flag for.
+    LOGICAL, INTENT(IN) :: SurroundingElementsCalculateFlag !<Boolean flag to determine whether to calculate surrounding elements.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSMeshSurroundingElementsCalculateSetObj",Err,ERROR,*999)
+ 
+    CALL MESH_SURROUNDING_ELEMENTS_CALCULATE_SET(Mesh%MESH,SurroundingElementsCalculateFlag,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshSurroundingElementsCalculateSetObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshSurroundingElementsCalculateSetObj",Err,ERROR)
+    CALL EXITS("CMISSMeshSurroundingElementsCalculateSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshSurroundingElementsCalculateSetObj
+  
+  !  
+  !================================================================================================================================
+  !  
+
   !>Returns the number of elements in a mesh identified by a user number.
   SUBROUTINE CMISSMeshNumberOfElementsGetNumber(RegionUserNumber,MeshUserNumber,NumberOfElements,Err)
   
@@ -40966,7 +41225,6 @@ CONTAINS
     CHARACTER (LEN=10)  :: INPUT_FILE_FORMAT
     CHARACTER (LEN=12)  :: MATERIAL_BEHAVIOUR
     INTEGER(INTG) :: Err
-    TYPE(VARYING_STRING) :: Error
     
     CALL PRE_PROCESS_INFORMATION(MATERIAL_BEHAVIOUR,INPUT_FILE_NAME,INPUT_FILE_FORMAT,TOTAL_NUMBER_OF_NODES,&
 &INPUT_TYPE_FOR_SEED_VALUE,INPUT_TYPE_FOR_SPEED_FUNCTION,SPEED_FUNCTION_ALONG_EIGEN_VECTOR,INPUT_TYPE_FOR_CONDUCTIVITY,&
@@ -41014,7 +41272,6 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: RAW_INDEX(:)    
     REAL(DP), ALLOCATABLE :: SEED_VALUE(:)
     INTEGER(INTG), ALLOCATABLE :: TRACE_NODE(:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_NUMBER(:)
     CHARACTER (LEN=10), ALLOCATABLE :: STATUS_MASK(:)
     
     

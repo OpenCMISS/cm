@@ -7677,8 +7677,12 @@ CONTAINS
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
         IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
-          CALL FIELD_GEOMETRIC_PARAMETERS_LINE_LENGTHS_CALCULATE(FIELD,ERR,ERROR,*999)
+          IF(FIELD%DECOMPOSITION%CALCULATE_LINES) THEN
+            CALL FIELD_GEOMETRIC_PARAMETERS_LINE_LENGTHS_CALCULATE(FIELD,ERR,ERROR,*999)
+          ENDIF
+! AB        IF(FIELD%DECOMPOSITION%CALCULATE_FACES) THEN
 ! AB          CALL FIELD_GEOMETRIC_PARAMETERS_FACE_AREAS_CALCULATE(FIELD,ERR,ERROR,*999) !Temporary commented out
+! AB        ENDIF
         ELSE
           LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -7759,15 +7763,19 @@ CONTAINS
         !Field is a geometric field
         ALLOCATE(FIELD%GEOMETRIC_FIELD_PARAMETERS,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric field parameters.",ERR,ERROR,*999)
-        FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_LINES=FIELD%DECOMPOSITION%TOPOLOGY%LINES%NUMBER_OF_LINES
+        IF(FIELD%DECOMPOSITION%CALCULATE_LINES) THEN
+          FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_LINES=FIELD%DECOMPOSITION%TOPOLOGY%LINES%NUMBER_OF_LINES
+          ALLOCATE(FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_LINES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate lengths.",ERR,ERROR,*999)
+          FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS=0.0_DP
+        ENDIF
+! AB      IF(FIELD%DECOMPOSITION%CALCULATE_FACES) THEN
 ! AB        FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_AREAS=FIELD%DECOMPOSITION%TOPOLOGY%FACES%NUMBER_OF_FACES  !Temporary commented out
-        FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_VOLUMES=0
-        ALLOCATE(FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_LINES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate lengths.",ERR,ERROR,*999)
-        FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS=0.0_DP
 ! AB        ALLOCATE(FIELD%GEOMETRIC_FIELD_PARAMETERS%AREAS(FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_AREAS),STAT=ERR) !Temporary commented out
 ! AB        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate areas.",ERR,ERROR,*999) !Temporary commented out
 ! AB        FIELD%GEOMETRIC_FIELD_PARAMETERS%AREAS=0.0_DP !Temporary commented out
+! AB      ENDIF
+        FIELD%GEOMETRIC_FIELD_PARAMETERS%NUMBER_OF_VOLUMES=0
 
         !The field is a geometric field so it must use itself initiallly
         ALLOCATE(FIELD%GEOMETRIC_FIELD_PARAMETERS%FIELDS_USING(1),STAT=ERR)
@@ -20476,8 +20484,10 @@ CONTAINS
               MESH_COMPONENT_NUMBER=FIELD_SCALING%MESH_COMPONENT_NUMBER
               DOMAIN=>FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR
               DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-              DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
-              DECOMPOSITION_LINES=>FIELD%DECOMPOSITION%TOPOLOGY%LINES
+              IF(FIELD%DECOMPOSITION%CALCULATE_LINES) THEN
+                DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
+                DECOMPOSITION_LINES=>FIELD%DECOMPOSITION%TOPOLOGY%LINES
+              ENDIF
               NULLIFY(SCALE_FACTORS)
               CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_SCALING%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)
               DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
@@ -20496,47 +20506,49 @@ CONTAINS
                       ni=3
                     ENDIF
                     !Find a line of the correct Xi direction going through this node
-                    FOUND=.FALSE.
-                    DO nlp=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
-                      nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nlp)
-                      IF(DECOMPOSITION_LINES%LINES(nl)%XI_DIRECTION==ni) THEN
-                        FOUND=.TRUE.
-                        EXIT
-                      ENDIF
-                    ENDDO !nnl
-                    IF(FOUND) THEN
-                      IF(DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)==np) THEN !Current node at the beginning of the line
-                        nl2=DECOMPOSITION_LINES%LINES(nl)%ADJACENT_LINES(0)
-                      ELSE !Current node at the end of the line
-                        nl2=DECOMPOSITION_LINES%LINES(nl)%ADJACENT_LINES(1)
-                      ENDIF
-                      IF(nl2==0) THEN
-                        LENGTH1=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl)
-                        MEAN_LENGTH=LENGTH1
+                    IF(FIELD%DECOMPOSITION%CALCULATE_LINES) THEN
+                      FOUND=.FALSE.
+                      DO nlp=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
+                        nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nlp)
+                        IF(DECOMPOSITION_LINES%LINES(nl)%XI_DIRECTION==ni) THEN
+                          FOUND=.TRUE.
+                          EXIT
+                        ENDIF
+                      ENDDO !nnl
+                      IF(FOUND) THEN
+                        IF(DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)==np) THEN !Current node at the beginning of the line
+                          nl2=DECOMPOSITION_LINES%LINES(nl)%ADJACENT_LINES(0)
+                        ELSE !Current node at the end of the line
+                          nl2=DECOMPOSITION_LINES%LINES(nl)%ADJACENT_LINES(1)
+                        ENDIF
+                        IF(nl2==0) THEN
+                          LENGTH1=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl)
+                          MEAN_LENGTH=LENGTH1
+                        ELSE
+                          LENGTH1=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl)
+                          LENGTH2=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl2)
+                          SELECT CASE(FIELD_SCALINGS%SCALING_TYPE)
+                          CASE(FIELD_ARITHMETIC_MEAN_SCALING)
+                            MEAN_LENGTH=(LENGTH1+LENGTH2)/2.0_DP
+                          CASE(FIELD_HARMONIC_MEAN_SCALING)
+                            TEMP=LENGTH1*LENGTH2
+                            IF(ABS(TEMP)>ZERO_TOLERANCE) THEN
+                              MEAN_LENGTH=2.0_DP*TEMP/(LENGTH1+LENGTH2)
+                            ELSE
+                              MEAN_LENGTH=0.0_DP
+                            ENDIF
+                          CASE DEFAULT
+                            LOCAL_ERROR="The scaling type of "// &
+                              & TRIM(NUMBER_TO_VSTRING(FIELD_SCALINGS%SCALING_TYPE,"*",ERR,ERROR))//" is invalid."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          END SELECT
+                        ENDIF
+                        CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,ny,MEAN_LENGTH,ERR,ERROR,*999)
                       ELSE
-                        LENGTH1=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl)
-                        LENGTH2=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl2)
-                        SELECT CASE(FIELD_SCALINGS%SCALING_TYPE)
-                        CASE(FIELD_ARITHMETIC_MEAN_SCALING)
-                          MEAN_LENGTH=(LENGTH1+LENGTH2)/2.0_DP
-                        CASE(FIELD_HARMONIC_MEAN_SCALING)
-                          TEMP=LENGTH1*LENGTH2
-                          IF(ABS(TEMP)>ZERO_TOLERANCE) THEN
-                            MEAN_LENGTH=2.0_DP*TEMP/(LENGTH1+LENGTH2)
-                          ELSE
-                            MEAN_LENGTH=0.0_DP
-                          ENDIF
-                        CASE DEFAULT
-                          LOCAL_ERROR="The scaling type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(FIELD_SCALINGS%SCALING_TYPE,"*",ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT
+                        LOCAL_ERROR="Could not find a line in the Xi "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))// &
+                          & " direction going through node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
-                      CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,ny,MEAN_LENGTH,ERR,ERROR,*999)
-                    ELSE
-                      LOCAL_ERROR="Could not find a line in the Xi "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))// &
-                        & " direction going through node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   CASE(PART_DERIV_S1_S2,PART_DERIV_S1_S3,PART_DERIV_S2_S3,PART_DERIV_S1_S2_S3)
                     IF(nu==PART_DERIV_S1_S2) THEN
