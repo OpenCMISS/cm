@@ -75,7 +75,8 @@ MODULE MULTI_PHYSICS_ROUTINES
   PUBLIC MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET,MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE, &
     & MULTI_PHYSICS_EQUATIONS_SET_SETUP,MULTI_PHYSICS_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET,MULTI_PHYSICS_PROBLEM_SETUP, &
-    & MULTI_PHYSICS_POST_SOLVE, MULTI_PHYSICS_PRE_SOLVE
+    & MULTI_PHYSICS_POST_SOLVE,MULTI_PHYSICS_PRE_SOLVE,MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP, &
+    & MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP
   
 CONTAINS
 
@@ -570,7 +571,7 @@ CONTAINS
 
   !
   !================================================================================================================================
-
+  !
 
   !>Sets up the output type for a multi physics problem class.
   SUBROUTINE MULTI_PHYSICS_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
@@ -617,6 +618,99 @@ CONTAINS
 
   !
   !================================================================================================================================
+  !
+
+  !>Executes before each loop of a control loop, ie before each time step for a time loop
+  SUBROUTINE MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
+        CALL ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+      CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
+        !do nothing
+      CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
+        !do nothing
+      CASE(PROBLEM_DIFFUSION_DIFFUSION_TYPE)
+        !do nothing
+      CASE(PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
+        !do nothing
+      CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
+        !do nothing
+      CASE DEFAULT
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a multi physics problem class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP")
+    RETURN
+999 CALL ERRORS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
+    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP")
+    RETURN 1
+  END SUBROUTINE MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Executes after each loop of a control loop, ie after each time step for a time loop
+  SUBROUTINE MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
+        CALL ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+      CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
+        !do nothing
+      CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
+        !do nothing
+      CASE(PROBLEM_DIFFUSION_DIFFUSION_TYPE)
+        !do nothing
+      CASE(PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
+        !do nothing
+      CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
+        !do nothing
+      CASE DEFAULT
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a multi physics problem class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP")
+    RETURN
+999 CALL ERRORS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
+    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP")
+    RETURN 1
+  END SUBROUTINE MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP
+
+  !
+  !================================================================================================================================
+  !
 
 END MODULE MULTI_PHYSICS_ROUTINES
 

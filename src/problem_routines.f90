@@ -148,6 +148,7 @@ CONTAINS
         CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
           SIMPLE_LOOP=>CONTROL_LOOP%SIMPLE_LOOP
           IF(ASSOCIATED(SIMPLE_LOOP)) THEN
+            CALL PROBLEM_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
             IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
               !If there are no sub loops then solve.
               SOLVERS=>CONTROL_LOOP%SOLVERS
@@ -187,6 +188,7 @@ CONTAINS
                 CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
               ENDDO !loop_idx
             ENDIF
+            CALL PROBLEM_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
           ELSE
             CALL FLAG_ERROR("Control loop simple loop is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -196,6 +198,7 @@ CONTAINS
             DO iteration_idx=FIXED_LOOP%START_ITERATION,FIXED_LOOP&
               &%STOP_ITERATION,FIXED_LOOP%ITERATION_INCREMENT
               FIXED_LOOP%ITERATION_NUMBER=iteration_idx
+              CALL PROBLEM_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops then solve
                 SOLVERS=>CONTROL_LOOP%SOLVERS
@@ -221,6 +224,7 @@ CONTAINS
                   CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
+              CALL PROBLEM_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
             ENDDO !iteration_idx
           ELSE
             CALL FLAG_ERROR("Control loop fixed loop is not associated.",ERR,ERROR,*999)
@@ -233,6 +237,7 @@ CONTAINS
             TIME_LOOP%ITERATION_NUMBER=0
             DO WHILE(TIME_LOOP%CURRENT_TIME<=TIME_LOOP%STOP_TIME)
               TIME_LOOP%ITERATION_NUMBER=TIME_LOOP%ITERATION_NUMBER+1
+              CALL PROBLEM_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops then solve.
                 SOLVERS=>CONTROL_LOOP%SOLVERS
@@ -258,6 +263,7 @@ CONTAINS
                   CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
+              CALL PROBLEM_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
               TIME_LOOP%CURRENT_TIME=TIME_LOOP%CURRENT_TIME+TIME_LOOP&
                 &%TIME_INCREMENT
             ENDDO !time loop
@@ -271,6 +277,7 @@ CONTAINS
             DO WHILE(WHILE_LOOP%CONTINUE_LOOP.AND.WHILE_LOOP%ITERATION_NUMBER &
               & <WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS)
               WHILE_LOOP%ITERATION_NUMBER=WHILE_LOOP%ITERATION_NUMBER+1
+              CALL PROBLEM_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops then solve
                 SOLVERS=>CONTROL_LOOP%SOLVERS
@@ -296,6 +303,7 @@ CONTAINS
                   CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
+              CALL PROBLEM_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
             ENDDO !while loop
           ELSE
             CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
@@ -311,6 +319,7 @@ CONTAINS
               ! fixed number of steps
               DO WHILE(LOAD_INCREMENT_LOOP%ITERATION_NUMBER<LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS)
                 LOAD_INCREMENT_LOOP%ITERATION_NUMBER=LOAD_INCREMENT_LOOP%ITERATION_NUMBER+1
+                CALL PROBLEM_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
                 IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                   !If there are no sub loops then solve
                   SOLVERS=>CONTROL_LOOP%SOLVERS
@@ -319,18 +328,9 @@ CONTAINS
                       SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
                       IF(ASSOCIATED(SOLVER)) THEN
                         !Apply incremented boundary conditions here => 
-!                         CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,LOAD_INCREMENT_LOOP%ITERATION_NUMBER, &
-!                           & LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
-                        CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-
-!---tob: chrm 22/06/2010: moved load increments after the pre-solve, since in pre-solve boundary conditions / load may be updated
-                        !(Moving the load_increment_apply after pre-solve is only temporary !!)
-                        !\ToDo: Restore the original order: load_increment_apply, pre_solve, solve, post_solve
-                        !       and move update BCs / load into pre_control_loop
                         CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,LOAD_INCREMENT_LOOP%ITERATION_NUMBER, &
                           & LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
-!---toe
-
+                        CALL PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                         CALL PROBLEM_SOLVER_EQUATIONS_SOLVE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
                         CALL PROBLEM_SOLVER_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                       ELSE
@@ -347,6 +347,7 @@ CONTAINS
                     CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                   ENDDO !loop_idx
                 ENDIF
+                CALL PROBLEM_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
               ENDDO !while loop
             ENDIF
           ELSE
@@ -1334,6 +1335,108 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Executes before each loop of a control loop, ie before each time step for a time loop
+  SUBROUTINE PROBLEM_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("PROBLEM_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+        SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+          CASE(PROBLEM_ELASTICITY_CLASS)
+            CALL ELASTICITY_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE(PROBLEM_BIOELECTRICS_CLASS)
+            !do nothing
+          CASE(PROBLEM_FLUID_MECHANICS_CLASS)
+            CALL FLUID_MECHANICS_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
+            !do nothing
+          CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
+            !do nothing
+          CASE(PROBLEM_MODAL_CLASS)
+            !do nothing
+          CASE(PROBLEM_MULTI_PHYSICS_CLASS)
+            CALL MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" &
+            & is not valid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("PROBLEM_CONTROL_LOOP_PRE_LOOP")
+    RETURN
+999 CALL ERRORS("PROBLEM_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
+    CALL EXITS("PROBLEM_CONTROL_LOOP_PRE_LOOP")
+    RETURN 1
+  END SUBROUTINE PROBLEM_CONTROL_LOOP_PRE_LOOP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Executes after each loop of a control loop, ie after each time step for a time loop
+  SUBROUTINE PROBLEM_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("PROBLEM_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+        SELECT CASE(CONTROL_LOOP%PROBLEM%CLASS)
+          CASE(PROBLEM_ELASTICITY_CLASS)
+            !do nothing
+          CASE(PROBLEM_BIOELECTRICS_CLASS)
+            !do nothing
+          CASE(PROBLEM_FLUID_MECHANICS_CLASS)
+            CALL FLUID_MECHANICS_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE(PROBLEM_ELECTROMAGNETICS_CLASS)
+            !do nothing
+          CASE(PROBLEM_CLASSICAL_FIELD_CLASS)
+            !do nothing
+          CASE(PROBLEM_MODAL_CLASS)
+            !do nothing
+          CASE(PROBLEM_MULTI_PHYSICS_CLASS)
+            CALL MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="Problem class "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%CLASS,"*",ERR,ERROR))//" &
+            & is not valid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("PROBLEM_CONTROL_LOOP_POST_LOOP")
+    RETURN
+999 CALL ERRORS("PROBLEM_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
+    CALL EXITS("PROBLEM_CONTROL_LOOP_POST_LOOP")
+    RETURN 1
+  END SUBROUTINE PROBLEM_CONTROL_LOOP_POST_LOOP
+
+  !
+  !================================================================================================================================
+  !
+
   !>Executes pre solver routines for a problem.
   SUBROUTINE PROBLEM_SOLVER_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
@@ -1536,9 +1639,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
+    INTEGER(INTG) :: equations_set_idx,loop_idx
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_TIME_LOOP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -1561,15 +1664,22 @@ CONTAINS
                 !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
                 !Assemble the equations for linear problems
                 CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
-              ENDDO !equations_set_idx          
+              ENDDO !equations_set_idx
               !Get current control loop times
-!               CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-!chrm 17/06/2010: Extension to subloops; \ToDo: Check whether this works for all possible cases
-              IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-                CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-              ELSE IF(CONTROL_LOOP%CONTROL_LOOP_LEVEL>1) THEN
-                CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP%PARENT_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-              ENDIF
+              !Control loop may be a sub loop below a time loop, so iterate up
+              !through loops checking for the time loop
+              CONTROL_TIME_LOOP=>CONTROL_LOOP
+              DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
+                IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+                  CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+                  EXIT
+                ENDIF
+                IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
+                  CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
+                ELSE
+                  CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO
               !Set the solver time
               CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Solve for the next time i.e., current time + time increment
@@ -1614,9 +1724,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
+    INTEGER(INTG) :: equations_set_idx,loop_idx
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_TIME_LOOP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -1644,7 +1754,18 @@ CONTAINS
                 ENDIF
               ENDDO !equations_set_idx
               !Get current control loop times
-              CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+              CONTROL_TIME_LOOP=>CONTROL_LOOP
+              DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
+                IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+                  CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+                  EXIT
+                ENDIF
+                IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
+                  CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
+                ELSE
+                  CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO
               !Set the solver time
               CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Solve for the next time i.e., current time + time increment
