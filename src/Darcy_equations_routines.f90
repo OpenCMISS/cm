@@ -3134,7 +3134,7 @@ CONTAINS
                           ! do nothing ???
                         CASE(EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE)
                           ! do nothing ???
-                        CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
+                        CASE(EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE)
                           ! do nothing ???
                         CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
                           & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
