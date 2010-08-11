@@ -322,7 +322,7 @@ CONTAINS
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
-          parameter_set_idx = 3  ! of shared dependent variable field
+!          parameter_set_idx = 3  ! of shared dependent variable field
         END SELECT
       END SELECT
     END SELECT
@@ -549,15 +549,15 @@ CONTAINS
           & materials%materials_field%variables(1)%COMPONENTS(1)%INTERPOLATION_TYPE 
 
         IF(MATERIAL_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION)THEN
-          NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+          NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-          NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+          NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
           IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
             IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
               IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
               & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
-                NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                NodeKappaValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
                   & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
               END IF
             END IF
@@ -739,7 +739,7 @@ CONTAINS
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
-          parameter_set_idx = 3  ! of shared dependent variable field
+!          parameter_set_idx = 3  ! of shared dependent variable field
         END SELECT
       END SELECT
     END SELECT
@@ -1363,7 +1363,7 @@ CONTAINS
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
-          parameter_set_idx = 3  ! of shared dependent variable field
+!          parameter_set_idx = 3  ! of shared dependent variable field
         END SELECT
       END SELECT
     END SELECT

@@ -986,6 +986,12 @@ CONTAINS
         DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(5,NO_PART_DERIV) 
         DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
 
+        !This modification sets it back to Mooney-Rivlin:
+        PIOLA_TENSOR=PIOLA_TENSOR-2.0_DP*C(3)*(I3-SQRT(I3))*AZU
+
+        !This modification adjusts for the modified Ciarlet-Geymonat expression: Eq.(28) of the INRIA paper
+        PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
+
         Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
         IF( ABS(Jznu) < 1.0E-10_DP ) THEN
           CALL FLAG_ERROR("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR: ABS(Jznu) < 1.0E-10_DP",ERR,ERROR,*999)
@@ -993,6 +999,7 @@ CONTAINS
 
         ! ffact = f(Jznu)  and  dfdJfact = f'(Jznu)  of the INRIA model
         IF( ABS(Jznu-1.0_DP) > 1.0E-10_DP ) THEN
+          !Eq.(21) of the INRIA paper
           ffact = 2.0_DP * (Jznu - 1.0_DP - log(Jznu)) / (Jznu - 1.0_DP)**2.0_DP
           dfdJfact = ( 2.0_DP * (1.0_DP - 1.0_DP/Jznu) * (Jznu - 1.0_DP)**2.0_DP &
                        & - 4.0_DP * (Jznu - 1.0_DP - log(Jznu)) * (Jznu - 1.0_DP) ) / (Jznu - 1.0_DP)**4.0_DP
@@ -1001,6 +1008,7 @@ CONTAINS
           !dfdJfact = ???
         END IF
 
+        !Eq.(13) of the INRIA paper
         PIOLA_TENSOR = PIOLA_TENSOR - Mfact * bfact * DARCY_VOL_INCREASE * (ffact + (Jznu - 1.0_DP) * dfdJfact) * Jznu * AZU &
           & + 0.5_DP * Mfact * DARCY_VOL_INCREASE**2.0_DP * dfdJfact * Jznu * AZU
       END IF
@@ -1717,6 +1725,8 @@ CONTAINS
                  & FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
               CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                  & FIELD_RELATIVE_VELOCITY_SET_TYPE,ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                 & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &

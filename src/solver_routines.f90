@@ -13296,9 +13296,17 @@ CONTAINS
                       ENDDO !solver_dof_idx
                       !Restore the solver dof data
                       CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
+!---tob
                       !Now store FIELD_PREVIOUS_VALUES_SET_TYPE so that state before changing BC is available
-                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                        & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                      !chrm 06/07/2010: defer this call to control loop
+                      !                 and exercise it only upon convergence of all systems involved
+                      !                 (although then we cannot store state before changing BC)
+                      !                 This call takes place here inside 'solver_matrix_idx' loop,
+                      !                 but outside of 'solver_dof_idx' loop.
+                      !For now, let us temporarily comment it out.
+!                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                         & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+!---toe
                       !Start the transfer of the field dofs
                       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR

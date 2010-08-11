@@ -89,11 +89,14 @@ MODULE DARCY_EQUATIONS_ROUTINES
   PUBLIC DARCY_EQUATION_POST_SOLVE
   PUBLIC DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA
 
+  PUBLIC DARCY_EQUATION_UPDATE_PREVIOUS_VALUES
   PUBLIC DARCY_CONTROL_TIME_LOOP_PRE_LOOP
   PUBLIC DARCY_CONTROL_TIME_LOOP_POST_LOOP
 
   INTEGER(INTG) :: SOLVER_NUMBER_SOLID,SOLVER_NUMBER_MAT_PROPERTIES,SOLVER_NUMBER_DARCY
   INTEGER(INTG) :: SOLVER_INDEX_SOLID,SOLVER_INDEX_MAT_PROPERTIES,SOLVER_INDEX_DARCY
+  
+  REAL(DP) :: RESIDUAL_NORM_0
   
   LOGICAL :: idebug1, idebug2, idebug3
 
@@ -1394,6 +1397,14 @@ CONTAINS
               MESH_VEL_DERIV(:,:) = 0.0_DP
             END SELECT
 
+
+!==========================================================================================
+            !***  Try w-formulation  ***!
+            MESH_VEL(:) = 0.0_DP
+            MESH_VEL_DERIV(:,:) = 0.0_DP
+!==========================================================================================
+
+
             IF(DIAGNOSTICS1) THEN
               IF(idebug3) THEN
                 MESH_VEL_DERIV_PHYS(:,:) = 0.0_DP
@@ -1446,6 +1457,14 @@ CONTAINS
               !porosity gradient wrt. element coordinates xi
               GRAD_POROSITY(xi_idx) = MATERIALS_INTERPOLATED_POINT%VALUES(1,derivative_idx)
             ENDDO
+
+
+!==========================================================================================
+            !***  Try w-formulation  ***!
+            POROSITY = 1.0_DP
+            GRAD_POROSITY(:) = 0.0_DP
+!==========================================================================================
+
 
             PERM_OVER_VIS_PARAM = MATERIALS_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
 !---tob:
@@ -3047,8 +3066,7 @@ CONTAINS
         CALL SOLVERS_SOLVER_GET(CONTROL_LOOP_DARCY%SOLVERS,2,SOLVER_DARCY,ERR,ERROR,*999)
     END SELECT
 
-    !Routine not committed yet
-    !CALL DARCY_EQUATION_UPDATE_PREVIOUS_VALUES(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
+    CALL DARCY_EQUATION_UPDATE_PREVIOUS_VALUES(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
 
     CALL EXITS("DARCY_CONTROL_TIME_LOOP_POST_LOOP")
     RETURN
@@ -3415,17 +3433,18 @@ CONTAINS
                             TOTAL_NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
                               & TOTAL_NUMBER_OF_DOFS
 
-                            !--- Second, update geometric field
-                            DO dof_number=1,TOTAL_NUMBER_OF_DOFS
-                              CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, & 
-                                & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
-                                & MESH_DISPLACEMENT_VALUES(dof_number), &
-                                & ERR,ERROR,*999)
-                            END DO
-                            CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD, &
-                              & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(GEOMETRIC_FIELD, &
-                              & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                            !!!   DEFER THIS TO: DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT   !!!
+!                            !--- Second, update geometric field
+!                            DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+!                              CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, & 
+!                                & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
+!                                & MESH_DISPLACEMENT_VALUES(dof_number), &
+!                                & ERR,ERROR,*999)
+!                            END DO
+!                            CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD, &
+!                              & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(GEOMETRIC_FIELD, &
+!                              & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
 
                             !--- Third, use displacement values to calculate velocity values
                             ALPHA=1.0_DP/TIME_INCREMENT
@@ -3507,6 +3526,7 @@ CONTAINS
     REAL(DP), POINTER :: INITIAL_VALUES(:)
     REAL(DP), POINTER :: DUMMY_VALUES1(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    REAL(DP) :: PRESSURE
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE
@@ -3613,11 +3633,23 @@ CONTAINS
                                             & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
                                             & INITIAL_VALUES(dof_number),ERR,ERROR,*999)
                                           !--- Add the velocity of the moving boundary on top of the initial boundary condition
-                                          CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                          !! === If we solve in terms of Darcy flow vector, then do not add mesh velocity === !!
+                                          !! === The BC is kept to the initial BC, for instance: null-flux                === !!
+!                                          CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD, & 
+!                                            & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
+!                                            & MESH_VELOCITY_VALUES(dof_number),ERR,ERROR,*999)
+!                                            ! dependent field      ( V_u, V_v, V_w, P_p )
+!                                            ! MESH_VELOCITY_VALUES ( V_u, V_v, V_w )
+
+                                        ELSE IF( BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED .AND. &
+                                          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE ) THEN
+                                          !\ToDo: Check component number; this way we can also apply it to velocity
+                                          !--- Set the time-dependent pressure BC
+                                          PRESSURE = INITIAL_VALUES(dof_number) * (1.0_DP - exp(- CURRENT_TIME**2.0_DP / 0.25_DP))
+
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
                                             & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
-                                            & MESH_VELOCITY_VALUES(dof_number),ERR,ERROR,*999)
-                                            ! dependent field      ( V_u, V_v, V_w, P_p )
-                                            ! MESH_VELOCITY_VALUES ( V_u, V_v, V_w )
+                                            & PRESSURE,ERR,ERROR,*999)
                                         ELSE
                                           ! do nothing ???
                                         END IF
@@ -3906,7 +3938,7 @@ CONTAINS
             CASE(PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
-                CALL DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!                 CALL DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 CALL DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               END IF
             CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
@@ -3951,12 +3983,13 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_TIME_LOOP !<A pointer to the control time loop.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: SUBITERATION_LOOP !<A pointer to the subiteration loop.
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(VARYING_STRING) :: METHOD !,FILE
     CHARACTER(14) :: FILE
     CHARACTER(14) :: OUTPUT_FILE
     LOGICAL :: EXPORT_FIELD
-    INTEGER(INTG) :: CURRENT_LOOP_ITERATION
+    INTEGER(INTG) :: CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
     INTEGER(INTG) :: OUTPUT_ITERATION_NUMBER
     INTEGER(INTG) :: equations_set_idx,loop_idx
 
@@ -4014,6 +4047,10 @@ CONTAINS
                         OUTPUT_ITERATION_NUMBER=0
                       ENDIF
                     ENDDO
+                    IF(CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN
+                      SUBITERATION_LOOP=>CONTROL_LOOP%PARENT_LOOP
+                      SUBITERATION_NUMBER=SUBITERATION_LOOP%WHILE_LOOP%ITERATION_NUMBER
+                    ENDIF
 
                     IF(OUTPUT_ITERATION_NUMBER/=0) THEN
                       IF(CONTROL_TIME_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
@@ -4042,6 +4079,26 @@ CONTAINS
 !                               & ERR,ERROR,*999)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy all fields exported ...",ERR,ERROR,*999)
                           ENDIF
+                        ENDIF 
+                      ENDIF 
+                    ENDIF
+
+                    !Subiteration intermediate solutions / iterates output:
+                    IF(CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN  !subiteration exists
+                      IF(CURRENT_LOOP_ITERATION<10) THEN
+                        IF(SUBITERATION_NUMBER<10) THEN
+                          WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                        ELSE IF(SUBITERATION_NUMBER<100) THEN
+                          WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                        END IF
+                        FILE=OUTPUT_FILE
+                        METHOD="FORTRAN"
+                        EXPORT_FIELD=.FALSE.
+                        IF(EXPORT_FIELD) THEN          
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
+                          CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                            & ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                         ENDIF 
                       ENDIF 
                     ENDIF
@@ -5170,11 +5227,26 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                     & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,dof_number, & 
                     & SOLUTION_VALUES_SOLID(dof_number), &
                     & ERR,ERROR,*999)
+
+!---tob: !!! Why not directly do the mesh update here ??? !!!
+                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(GEOMETRIC_FIELD_DARCY, & 
+                    & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
+                    & SOLUTION_VALUES_SOLID(dof_number), &
+                    & ERR,ERROR,*999)
+!---toe
+
                 END DO
                 CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD_DARCY, &
                   & FIELD_U_VARIABLE_TYPE, FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(GEOMETRIC_FIELD_DARCY, &
                   & FIELD_U_VARIABLE_TYPE, FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+!---tob
+                CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD_DARCY, &
+                  & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(GEOMETRIC_FIELD_DARCY, &
+                  & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!---toe
+
                 ! Write 'FIELD_MESH_DISPLACEMENT_SET_TYPE'
                 IF(DIAGNOSTICS3) THEN
                   NULLIFY( DUMMY_VALUES2 )
@@ -5422,5 +5494,666 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
   !
   !================================================================================================================================
   !
+
+  !>Update previous values for Darcy equation
+  SUBROUTINE DARCY_EQUATION_UPDATE_PREVIOUS_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, GEOMETRIC_FIELD
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+
+    REAL(DP), POINTER :: INITIAL_VALUES(:)
+    REAL(DP), POINTER :: DUMMY_VALUES1(:)
+
+    INTEGER(INTG) :: FIELD_VAR_TYPE,DYNAMIC_VARIABLE_TYPE
+    INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE
+    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+    INTEGER(INTG) :: NDOFS_TO_PRINT
+
+    INTEGER(INTG) :: solver_matrix_idx,solver_dof_idx,equations_set_idx
+
+
+    CALL ENTERS("DARCY_EQUATION_UPDATE_PREVIOUS_VALUES",ERR,ERROR,*999)
+
+    !note that the control loop will be the time control loop, even if there is a subloop below this
+    !containing the Darcy solver
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
+          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              CASE(PROBLEM_STANDARD_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_DARCY_SUBTYPE,PROBLEM_TRANSIENT_DARCY_SUBTYPE, &
+                & PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
+                & PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE)
+                ! do nothing ???
+              CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                    IF(ASSOCIATED(EQUATIONS)) THEN
+                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                          CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE,EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+                            ! do nothing ???
+                          CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update FIELD_PREVIOUS_VALUES_SET_TYPE ... ",ERR,ERROR,*999)
+                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                              EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+!---tob
+                                SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                                CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
+                                  & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+                                FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                                ! '1' associated with linear matrix
+                                CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                                END SELECT
+!---toe
+                                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                  FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+
+
+!---tob
+                                  write(*,*)'Now updating FIELD_PREVIOUS_VALUES_SET_TYPE ...'
+
+                                  solver_matrix_idx = 1
+                                  solver_dof_idx = 1
+                                  equations_set_idx = 1
+
+                                  DEPENDENT_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                                    & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_set_idx)%PTR
+! 
+                                  DYNAMIC_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
+
+                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                    & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+!---toe
+
+
+
+!                                   CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, & 
+!                                     & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, & 
+!                                     & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+                                ELSE
+                                  CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
+                            END IF
+                          CASE DEFAULT
+                            LOCAL_ERROR="Equations set subtype " &
+                              & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                              & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      ELSE
+                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    END IF                
+                  ELSE
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+              CASE DEFAULT
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                  & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          ! do nothing ???
+!           CALL FLAG_ERROR("PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS may only be carried out for SOLVER%GLOBAL_NUMBER = SOLVER_NUMBER_DARCY", &
+!             & ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("DARCY_EQUATION_UPDATE_PREVIOUS_VALUES")
+    RETURN
+999 CALL ERRORS("DARCY_EQUATION_UPDATE_PREVIOUS_VALUES",ERR,ERROR)
+    CALL EXITS("DARCY_EQUATION_UPDATE_PREVIOUS_VALUES")
+    RETURN 1
+  END SUBROUTINE DARCY_EQUATION_UPDATE_PREVIOUS_VALUES
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Store solution of previous subiteration iterate
+  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP) :: ALPHA
+    INTEGER(INTG) :: FIELD_VAR_TYPE
+
+
+    CALL ENTERS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE",ERR,ERROR,*999)
+
+    NULLIFY(DEPENDENT_FIELD)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(SOLVER_MAPPING)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(EQUATIONS_MAPPING)
+    NULLIFY(FIELD_VARIABLE)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
+          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              CASE(PROBLEM_STANDARD_DARCY_SUBTYPE)
+                ! do nothing ???
+              CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE)
+                ! do nothing ???
+              CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
+                & PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE, &
+                & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                        CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE)
+                          ! do nothing ???
+                        CASE(EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE)
+                          ! do nothing ???
+                        CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+                          & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                          DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+
+                          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                            write(*,*)'-------------------------------------------------------'
+                            write(*,*)'+++     Storing previous subiteration iterate       +++'
+                            write(*,*)'-------------------------------------------------------'
+                            !--- Store the DEPENDENT field values of the previous subiteration iterate
+                            EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                            IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                              CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+                              FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                              ! '1' associated with linear matrix
+                              CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                                FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                              END SELECT
+                              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                                ALPHA = 1.0_DP
+                                CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                  & FIELD_VALUES_SET_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
+                              ELSE
+                                CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        CASE DEFAULT
+                          LOCAL_ERROR="Equations set subtype " &
+                            & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                            & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                ENDIF
+              CASE DEFAULT
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                  & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          ! do nothing ???
+!           CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE may only be carried out for SOLVER%GLOBAL_NUMBER = SOLVER_NUMBER_DARCY", &
+!             & ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+
+    CALL EXITS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE")
+    RETURN
+999 CALL ERRORS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE",ERR,ERROR)
+    CALL EXITS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE")
+    RETURN 1
+  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Monitor convergence of the Darcy solution
+  SUBROUTINE DARCY_EQUATION_MONITOR_CONVERGENCE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: FILENAME
+
+    REAL(DP), POINTER :: ITERATION_VALUES_N(:),ITERATION_VALUES_N1(:)
+    REAL(DP) :: RESIDUAL_NORM
+
+    REAL(DP), PARAMETER :: RESIDUAL_TOLERANCE=1.0E-5_DP
+
+    INTEGER(INTG) :: FIELD_VAR_TYPE
+    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+
+
+    CALL ENTERS("DARCY_EQUATION_MONITOR_CONVERGENCE",ERR,ERROR,*999)
+
+    NULLIFY(DEPENDENT_FIELD)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(SOLVER_MAPPING)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(EQUATIONS)
+    NULLIFY(EQUATIONS_MAPPING)
+    NULLIFY(FIELD_VARIABLE)
+
+    FILENAME="./output/Darcy.conv"
+    OPEN(UNIT=23, FILE=CHAR(FILENAME),STATUS='unknown',ACCESS='append')
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
+          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              CASE(PROBLEM_STANDARD_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_DARCY_SUBTYPE,PROBLEM_TRANSIENT_DARCY_SUBTYPE, &
+                & PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
+                & PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE)
+                ! do nothing ???
+              CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                    IF(ASSOCIATED(EQUATIONS)) THEN
+                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                          CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE,EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+                            ! do nothing ???
+                          CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy monitor convergence ... ",ERR,ERROR,*999)
+                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                              EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                                SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                                CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                                  ! '1' associated with linear matrix
+                                CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                                END SELECT
+                                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                  FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+
+                                  !iter 1
+                                  NULLIFY(ITERATION_VALUES_N)
+                                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ITERATION_VALUES_N,ERR,ERROR,*999)
+
+                                  !iter 2
+                                  NULLIFY(ITERATION_VALUES_N1)
+                                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
+
+                                  RESIDUAL_NORM = 0.0_DP
+                                  TOTAL_NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR% &
+                                    & TOTAL_NUMBER_OF_DOFS
+                                  DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                    RESIDUAL_NORM = RESIDUAL_NORM + &
+                                      & ( ITERATION_VALUES_N1(dof_number) - ITERATION_VALUES_N(dof_number) )**2.0_DP
+                                  END DO
+                                  RESIDUAL_NORM = SQRT(RESIDUAL_NORM / TOTAL_NUMBER_OF_DOFS)
+
+                                  IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
+
+                                    IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER==1) THEN
+                                      RESIDUAL_NORM_0 = RESIDUAL_NORM
+                                      WRITE(23,*) 'RESIDUAL_NORM_0 = ',RESIDUAL_NORM_0
+                                      write(*,*)'-------------------------------------------------------'
+                                      write(*,*)'+++     RESIDUAL_NORM_0 =        +++',RESIDUAL_NORM_0
+                                      write(*,*)'-------------------------------------------------------'
+                                    ELSE
+                                      write(*,*)'-------------------------------------------------------'
+                                      write(*,*)'+++     RESIDUAL_NORM   =        +++',RESIDUAL_NORM
+                                      write(*,*)'+++     RESIDUAL_NORM_0 =        +++',RESIDUAL_NORM_0
+                                      write(*,*)'+++     R / (R_0 + 1)   =        +++',RESIDUAL_NORM / (RESIDUAL_NORM_0+1.0_DP)
+                                      write(*,*)'-------------------------------------------------------'
+
+                                      !End subiteration loop if residual is small relative to residual in first step
+                                      !Add 1.0 for the case where the original residual is very small too
+                                      IF((RESIDUAL_NORM/(RESIDUAL_NORM_0+1.0_DP))<=RESIDUAL_TOLERANCE) THEN
+                                        CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP=.FALSE.
+                                      ELSE IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER== &
+                                          & CONTROL_LOOP%WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS) THEN
+                                        CALL FLAG_WARNING("Subiterations between solid and fluid "// &
+                                            & "equations did not converge.",ERR,ERROR,*999)
+                                      ENDIF
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("DARCY_EQUATION_MONITOR_CONVERGENCE must be called "// &
+                                        & "with a while control loop",ERR,ERROR,*999)
+                                  ENDIF
+
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ITERATION_VALUES_N,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
+
+                                ELSE
+                                  CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                            END IF
+                          CASE DEFAULT
+                            LOCAL_ERROR="Equations set subtype " &
+                              & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                              & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      ELSE
+                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    END IF                
+                  ELSE
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+              CASE DEFAULT
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                  & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          ! do nothing ???
+!           CALL FLAG_ERROR("PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS may only be carried out for SOLVER%GLOBAL_NUMBER = SOLVER_NUMBER_DARCY", &
+!             & ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CLOSE(23)
+
+    CALL EXITS("DARCY_EQUATION_MONITOR_CONVERGENCE")
+    RETURN
+999 CALL ERRORS("DARCY_EQUATION_MONITOR_CONVERGENCE",ERR,ERROR)
+    CALL EXITS("DARCY_EQUATION_MONITOR_CONVERGENCE")
+    RETURN 1
+  END SUBROUTINE DARCY_EQUATION_MONITOR_CONVERGENCE
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Accelerate convergence of the Darcy solution
+  SUBROUTINE DARCY_EQUATION_ACCELERATE_CONVERGENCE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP), POINTER :: ITERATION_VALUES_N(:),ITERATION_VALUES_N1(:)
+    REAL(DP) :: RESIDUAL_NORM,AITKEN_PARAM,ACCELERATED_VALUE
+
+    INTEGER(INTG) :: FIELD_VAR_TYPE
+    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+
+
+    CALL ENTERS("DARCY_EQUATION_ACCELERATE_CONVERGENCE",ERR,ERROR,*999)
+
+    NULLIFY(DEPENDENT_FIELD)
+    NULLIFY(SOLVER_EQUATIONS)
+    NULLIFY(SOLVER_MAPPING)
+    NULLIFY(EQUATIONS_SET)
+    NULLIFY(EQUATIONS)
+    NULLIFY(EQUATIONS_MAPPING)
+    NULLIFY(FIELD_VARIABLE)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
+          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+              CASE(PROBLEM_STANDARD_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_DARCY_SUBTYPE,PROBLEM_TRANSIENT_DARCY_SUBTYPE, &
+                & PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
+                & PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE)
+                ! do nothing ???
+              CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                    IF(ASSOCIATED(EQUATIONS)) THEN
+                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                          CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE,EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE)
+                            ! do nothing ???
+                          CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy accelerate convergence ... ",ERR,ERROR,*999)
+                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                              EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                                SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                                CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
+                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                                  ! '1' associated with linear matrix
+                                CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                                END SELECT
+                                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                  FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+
+                                  !iter 1
+                                  NULLIFY(ITERATION_VALUES_N)
+                                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ITERATION_VALUES_N,ERR,ERROR,*999)
+
+                                  !iter 2
+                                  NULLIFY(ITERATION_VALUES_N1)
+                                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
+
+                                  RESIDUAL_NORM = 0.0_DP
+                                  TOTAL_NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR% &
+                                    & TOTAL_NUMBER_OF_DOFS
+
+                                  DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                    RESIDUAL_NORM = RESIDUAL_NORM + &
+                                      & ( ITERATION_VALUES_N1(dof_number) - ITERATION_VALUES_N(dof_number) )**2.0_DP
+                                  END DO
+                                  RESIDUAL_NORM = SQRT(RESIDUAL_NORM / TOTAL_NUMBER_OF_DOFS)
+
+                                  AITKEN_PARAM = 0.5_DP  !\ToDo Devise better way of determining optimal Aitken parameter
+
+                                  IF( CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER>2 )THEN
+                                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy accelerate convergence ... ",ERR,ERROR,*999)
+                                    DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                      ACCELERATED_VALUE = AITKEN_PARAM * ITERATION_VALUES_N1(dof_number) &
+                                        & + (1.0_DP - AITKEN_PARAM) * ITERATION_VALUES_N(dof_number)
+                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                        & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
+                                        & ACCELERATED_VALUE,ERR,ERROR,*999)
+                                    END DO
+                                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                      & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                                      & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                  END IF
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ITERATION_VALUES_N,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                    & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
+
+                                ELSE
+                                  CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                            END IF
+                          CASE DEFAULT
+                            LOCAL_ERROR="Equations set subtype " &
+                              & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                              & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      ELSE
+                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    END IF                
+                  ELSE
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+              CASE DEFAULT
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                  & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          ! do nothing ???
+!           CALL FLAG_ERROR("PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS may only be carried out for SOLVER%GLOBAL_NUMBER = SOLVER_NUMBER_DARCY", &
+!             & ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("DARCY_EQUATION_ACCELERATE_CONVERGENCE")
+    RETURN
+999 CALL ERRORS("DARCY_EQUATION_ACCELERATE_CONVERGENCE",ERR,ERROR)
+    CALL EXITS("DARCY_EQUATION_ACCELERATE_CONVERGENCE")
+    RETURN 1
+  END SUBROUTINE DARCY_EQUATION_ACCELERATE_CONVERGENCE
+
+  !
+  !================================================================================================================================
+  !
+
+
 
 END MODULE DARCY_EQUATIONS_ROUTINES
