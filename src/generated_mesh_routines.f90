@@ -3138,16 +3138,20 @@ CONTAINS
 
   !>Updates the geometric field parameters from the initial nodal positions of the regular mesh. Any derivative values for the nodes are calculated from an average straight line approximation.
   SUBROUTINE GENERATED_MESH_REGULAR_GEOMETRIC_PARAMETERS_CALCULATE(REGULAR_MESH,FIELD,ERR,ERROR,*)
-    ! Argument variables
+    !Argument variables
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the regular mesh object
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to update the geometric parameters for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
-    ! Local variables
-    INTEGER(INTG) :: component_idx,global_np,global_np1,global_np2,nk,nk1,nk2,nl,nnl,np,np1,np2,ni,ny,&
-      & DERIVATIVES_NUMBER_OF_LINES(8), TOTAL_NUMBER_OF_NODES_XI(3),node_idx(3),node_idx2(3)
-    REAL(DP) :: DELTA(8),DELTA_COORD(3,3),MY_ORIGIN(3),MY_EXTENT(3),VALUE
+    !Local variables
+    INTEGER(INTG) :: component_idx,component_idx2,derivative_idx,derivative1,derivative2, &
+      & DERIVATIVES_NUMBER_OF_LINES(MAXIMUM_GLOBAL_DERIV_NUMBER),dof,global_node,global_node1, &
+      & global_node2,line,local_line_idx,node_idx,node1,node2,node_position_idx(3),node_position_idx2(3), &
+      & partial_derivative,TOTAL_NUMBER_OF_NODES_XI(3),xi_idx
+    REAL(DP) :: DELTA(MAXIMUM_GLOBAL_DERIV_NUMBER),DELTA_COORD(3,3),LENGTH,MY_ORIGIN(3),MY_EXTENT(3),VALUE,VECTOR(3)
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    LOGICAL :: HAVE_DERIVATIVES
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
@@ -3170,88 +3174,91 @@ CONTAINS
           MY_EXTENT(1:REGULAR_MESH%COORDINATE_DIMENSION)=REGULAR_MESH%MAXIMUM_EXTENT(1:REGULAR_MESH%COORDINATE_DIMENSION)
           DELTA_COORD=0.0_DP
           TOTAL_NUMBER_OF_NODES_XI=1
-          DO ni=1,REGULAR_MESH%MESH_DIMENSION
-            TOTAL_NUMBER_OF_NODES_XI(ni)=(REGULAR_MESH%BASIS%NUMBER_OF_NODES_XIC(ni)-2)*REGULAR_MESH% &
-              & NUMBER_OF_ELEMENTS_XI(ni)+REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1
-          ENDDO !ni
-          DO ni=1,REGULAR_MESH%MESH_DIMENSION          
-            DELTA_COORD(1:REGULAR_MESH%COORDINATE_DIMENSION,ni)= &
-              & REGULAR_MESH%BASE_VECTORS(1:REGULAR_MESH%COORDINATE_DIMENSION,ni)/REAL(TOTAL_NUMBER_OF_NODES_XI(ni)-1,DP)
-          ENDDO !ni
+          DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
+            TOTAL_NUMBER_OF_NODES_XI(xi_idx)=(REGULAR_MESH%BASIS%NUMBER_OF_NODES_XIC(xi_idx)-2)*REGULAR_MESH% &
+              & NUMBER_OF_ELEMENTS_XI(xi_idx)+REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(xi_idx)+1
+          ENDDO !xi_idx
+          DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION          
+            DELTA_COORD(1:REGULAR_MESH%COORDINATE_DIMENSION,xi_idx)= &
+              & REGULAR_MESH%BASE_VECTORS(1:REGULAR_MESH%COORDINATE_DIMENSION,xi_idx)/ &
+              & REAL(TOTAL_NUMBER_OF_NODES_XI(xi_idx)-1,DP)
+          ENDDO !xi_idx
           IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
             FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
             IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+              HAVE_DERIVATIVES=.FALSE.
               DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                 FIELD_VARIABLE_COMPONENT=>FIELD_VARIABLE%COMPONENTS(component_idx)
                 IF(FIELD_VARIABLE_COMPONENT%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                  ! update geometric parameters in this computational domain only
+                  !Update geometric parameters in this computational domain only
                   DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
                   DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
                   DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
-                  DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
-                    global_np=DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER
-                    node_idx(3)=(global_np-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
-                    node_idx(2)=MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
+                  DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                    global_node=DOMAIN_NODES%NODES(node_idx)%GLOBAL_NUMBER
+                    node_position_idx(3)=(global_node-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
+                    node_position_idx(2)=MOD(global_node-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
                       & TOTAL_NUMBER_OF_NODES_XI(1)+1
-                    node_idx(1)=MOD(MOD(global_np-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
+                    node_position_idx(1)=MOD(MOD(global_node-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
                       & TOTAL_NUMBER_OF_NODES_XI(1))+1
-                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np)
+                    dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
                     VALUE=0.0_DP
-                    DO ni=1,REGULAR_MESH%MESH_DIMENSION
-                      VALUE=VALUE+REAL(node_idx(ni)-1,DP)*DELTA_COORD(component_idx,ni)
-                    ENDDO !ni
+                    DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
+                      VALUE=VALUE+REAL(node_position_idx(xi_idx)-1,DP)*DELTA_COORD(component_idx,xi_idx)
+                    ENDDO !xi_idx
                     VALUE=MY_ORIGIN(component_idx)+VALUE
-                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ny,VALUE, &
+                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof,VALUE, &
                       & ERR,ERROR,*999)
                     !Calculate derivatives
-                    IF(DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES>1) THEN
+                    IF(DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES>1) THEN
+                      HAVE_DERIVATIVES=.TRUE.
                       DERIVATIVES_NUMBER_OF_LINES=0
                       DELTA=0.0_DP
-                      DO nnl=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
-                        nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nnl)
-                        np1=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)
-                        global_np1=DOMAIN_NODES%NODES(np1)%GLOBAL_NUMBER
-                        np2=DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                        global_np2=DOMAIN_NODES%NODES(np2)%GLOBAL_NUMBER
-                        nk1=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,1)
-                        nk2=DOMAIN_LINES%LINES(nl)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(nl)%BASIS%NUMBER_OF_NODES)
-                        IF(np1==np) THEN
-                          node_idx2(3)=(global_np2-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
-                          node_idx2(2)=MOD(global_np2-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
-                            & TOTAL_NUMBER_OF_NODES_XI(1)+1
-                          node_idx2(1)=MOD(MOD(global_np2-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
-                            & TOTAL_NUMBER_OF_NODES_XI(1))+1
-                        ELSE
-                          node_idx2(3)=(global_np1-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
-                          node_idx2(2)=MOD(global_np1-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
-                            & TOTAL_NUMBER_OF_NODES_XI(1)+1
-                          node_idx2(1)=MOD(MOD(global_np1-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
-                            & TOTAL_NUMBER_OF_NODES_XI(1))+1
-                        ENDIF
+                      DO local_line_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_LINES
+                        line=DOMAIN_NODES%NODES(node_idx)%NODE_LINES(local_line_idx)
+                        node1=DOMAIN_LINES%LINES(line)%NODES_IN_LINE(1)
+                        global_node1=DOMAIN_NODES%NODES(node1)%GLOBAL_NUMBER
+                        node2=DOMAIN_LINES%LINES(line)%NODES_IN_LINE(DOMAIN_LINES%LINES(line)%BASIS%NUMBER_OF_NODES)
+                        global_node2=DOMAIN_NODES%NODES(node2)%GLOBAL_NUMBER
+                        derivative1=DOMAIN_LINES%LINES(line)%DERIVATIVES_IN_LINE(2,1)
+                        derivative2=DOMAIN_LINES%LINES(line)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(line)%BASIS%NUMBER_OF_NODES)
                         VALUE=0.0_DP
-                        DO ni=1,REGULAR_MESH%MESH_DIMENSION
-                          VALUE=VALUE+REAL(node_idx(ni)-node_idx2(ni),DP)*DELTA_COORD(component_idx,ni)
-                        ENDDO !ni
-                        IF(np1==np) THEN
-                          DERIVATIVES_NUMBER_OF_LINES(nk1)=DERIVATIVES_NUMBER_OF_LINES(nk1)+1
-                          DELTA(nk1)=DELTA(nk1)+VALUE
-                        ELSE IF(np2==np) THEN
-                          DERIVATIVES_NUMBER_OF_LINES(nk2)=DERIVATIVES_NUMBER_OF_LINES(nk2)+1
-                          DELTA(nk2)=DELTA(nk2)+VALUE
+                        IF(node1==node_idx) THEN
+                          node_position_idx2(3)=(global_node2-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          node_position_idx2(2)=MOD(global_node2-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
+                            & TOTAL_NUMBER_OF_NODES_XI(1)+1
+                          node_position_idx2(1)=MOD(MOD(global_node2-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
+                            & TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
+                            VALUE=VALUE+REAL(node_position_idx2(xi_idx)-node_position_idx(xi_idx),DP)* &
+                              & DELTA_COORD(component_idx,xi_idx)
+                          ENDDO !xi_idx
+                          DERIVATIVES_NUMBER_OF_LINES(derivative1)=DERIVATIVES_NUMBER_OF_LINES(derivative1)+1
+                          DELTA(derivative1)=DELTA(derivative1)+VALUE
                         ELSE
-                          !Error???
+                          node_position_idx2(3)=(global_node1-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          node_position_idx2(2)=MOD(global_node1-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
+                            & TOTAL_NUMBER_OF_NODES_XI(1)+1
+                          node_position_idx2(1)=MOD(MOD(global_node1-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
+                            & TOTAL_NUMBER_OF_NODES_XI(1))+1
+                          DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
+                            VALUE=VALUE+REAL(node_position_idx(xi_idx)-node_position_idx2(xi_idx),DP)* &
+                              & DELTA_COORD(component_idx,xi_idx)
+                          ENDDO !xi_idx
+                          DERIVATIVES_NUMBER_OF_LINES(derivative2)=DERIVATIVES_NUMBER_OF_LINES(derivative2)+1
+                          DELTA(derivative2)=DELTA(derivative2)+VALUE
                         ENDIF
-                      ENDDO !nnl
-                      DO nk=1,8
-                        IF(DERIVATIVES_NUMBER_OF_LINES(nk)>0) THEN
-                          DELTA(nk)=DELTA(nk)/REAL(DERIVATIVES_NUMBER_OF_LINES(nk),DP)
-                          ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np)
+                      ENDDO !local_line_idx
+                      DO derivative_idx=1,MAXIMUM_GLOBAL_DERIV_NUMBER
+                        IF(DERIVATIVES_NUMBER_OF_LINES(derivative_idx)>0) THEN
+                          DELTA(derivative_idx)=DELTA(derivative_idx)/REAL(DERIVATIVES_NUMBER_OF_LINES(derivative_idx),DP)
+                          dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative_idx,node_idx)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                            & ny,DELTA(nk),ERR,ERROR,*999)
+                            & dof,DELTA(derivative_idx),ERR,ERROR,*999)
                         ENDIF
-                      ENDDO !nk
+                      ENDDO !derivative_idx
                     ENDIF
-                  ENDDO !np
+                  ENDDO !node_idx
                 ELSE
                   LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))// &
                     & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
@@ -3259,6 +3266,46 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !component_idx
+              IF(HAVE_DERIVATIVES) THEN
+                !Normalise the arclength derivative vectors.
+                NULLIFY(GEOMETRIC_PARAMETERS)
+                CALL FIELD_PARAMETER_SET_DATA_GET(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+                  & ERR,ERROR,*999)
+!!TODO: Don't loop over all components somehow????
+                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                  DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                  DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
+                  DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                    DO derivative_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                      partial_derivative=DOMAIN_NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX(derivative_idx)
+                      IF(partial_derivative==PART_DERIV_S1.OR.partial_derivative==PART_DERIV_S2.OR. &
+                        & partial_derivative==PART_DERIV_S3) THEN
+                        LENGTH=0.0_DP
+                        VECTOR=0.0_DP
+                        DO component_idx2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                          dof=FIELD_VARIABLE%COMPONENTS(component_idx2)%PARAM_TO_DOF_MAP% &
+                            & NODE_PARAM2DOF_MAP(derivative_idx,node_idx)
+                          VECTOR(component_idx2)=GEOMETRIC_PARAMETERS(dof)
+                          LENGTH=LENGTH+VECTOR(component_idx2)**2
+                        ENDDO !component_idx2
+                        LENGTH=SQRT(LENGTH)
+                        IF(LENGTH>ZERO_TOLERANCE) THEN
+                          VECTOR=VECTOR/LENGTH
+                          DO component_idx2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                            dof=FIELD_VARIABLE%COMPONENTS(component_idx2)%PARAM_TO_DOF_MAP% &
+                              & NODE_PARAM2DOF_MAP(derivative_idx,node_idx)
+                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof, &
+                              & VECTOR(component_idx2),ERR,ERROR,*999)
+                          ENDDO !component_idx2
+                        ENDIF
+                      ENDIF
+                    ENDDO !derivative_idx
+                  ENDDO !node_idx
+                ENDDO !component_idx
+                CALL FIELD_PARAMETER_SET_DATA_RESTORE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+                  & ERR,ERROR,*999)
+              ENDIF
 !!TODO: do boundary nodes first then start the update to overlap computation and computation.
               CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
               CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)

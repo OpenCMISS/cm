@@ -205,6 +205,7 @@ MODULE CONSTANTS
   !> \brief Global derivative constant identifiers
   !> \see CONSTANTS
   !>@{ 
+  INTEGER(INTG), PARAMETER :: MAXIMUM_GLOBAL_DERIV_NUMBER=8 !<The maximum global derivative number
   INTEGER(INTG), PARAMETER :: NO_GLOBAL_DERIV=1 !<No global derivative i.e., u \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S1=2 !<First global derivative in the s1 direction i.e., du/ds1 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S2=3 !<First global derivative in the s2 direction i.e., du/ds2 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
