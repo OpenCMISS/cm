@@ -770,9 +770,8 @@ CONTAINS
          
               CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
                    &NUM_COMP,ERR,ERROR,*999)
-            !  crash?
-            !  CALL FIELD_DOF_ORDER_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
-            !  &  FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER,ERR,ERROR,*999) ! dofs continuous, so first + (x-1) is x'th component index
+              CALL FIELD_DOF_ORDER_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
+              &  FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER,ERR,ERROR,*999) ! dofs continuous, so first + (x-1) is x'th component index
 
               !Default to the geometric interpolation setup
               CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -862,6 +861,10 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & component_idx+3,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 ENDDO !component_idx
+
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & NUMBER_OF_MATERIALS_COMPONENTS,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+
                   !Default the field scaling to that of the geometric field
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
@@ -1331,9 +1334,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, MATERIAL_FIELD,  INDEPENDENT_FIELD
-    REAL(DP) :: TMP0, TMP1
-    INTEGER(INTG) :: NN, I
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, MATERIAL_FIELD,  INDEPENDENT_FIELD, GEOMETRIC_FIELD
 
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
@@ -1359,8 +1360,9 @@ CONTAINS
         DAMPING_MATRIX%UPDATE_MATRIX   = .FALSE.
         RHS_VECTOR%UPDATE_VECTOR       = .FALSE.
 
-
        ! integrate   cell models
+        GEOMETRIC_FIELD => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
+                           & EQUATIONS_SETS(1)%PTR%GEOMETRY%GEOMETRIC_FIELD
         DEPENDENT_FIELD => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
                            & EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
         MATERIAL_FIELD  => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
@@ -1370,21 +1372,6 @@ CONTAINS
 
         CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & 1, INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 1,ERR,ERROR,*999) ! dependent -> independent
-
-        NN =   INDEPENDENT_FIELD%decomposition%domain(1)%ptr%topology%nodes%number_of_nodes
-
-!       WRITE(*,*) 'BEFORE CELL MODEL INTG'
-!       DO I=1,8
-!         call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999)
-!         WRITE(*,*) 'V(',I,')=',tmp1
-!       END DO
-
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,1,1,tmp0,err,error,*999)
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,NN,1,tmp1,err,error,*999)
-        WRITE(*,*) 'BEFORE CELL INTG:',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME-CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT,'->',&
-        & CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, &
-        & 'V(1) = ', TMP0, 'V(',NN,') = ', TMP1
-
 
         SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
         CASE(PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE)
@@ -1399,28 +1386,6 @@ CONTAINS
           CALL FLAG_ERROR("Invalid cell model subtype",ERR,ERROR,*999)
         END SELECT
 
-
-
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,1,1,tmp0,err,error,*999)
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,NN,1,tmp1,err,error,*999)
-
-        WRITE(*,*) 'INTEGRATED CELL MODELS',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME-CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT,'->',&
-        & CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, &
-        & 'V(1) = ', TMP0, 'V(',NN,') = ', TMP1
-
-!        DO I=1,NN,100
-!          call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999) 
-!          write(*,*) 'V(',I,')=',tmp1
-!        ENDDO
-    
-       ! euHeart BENCHMARK
-       IF(TMP1 > 0) THEN
-         WRITE(*,*) 'LAST ACTIVATION @ ', CONTROL_LOOP%TIME_LOOP%CURRENT_TIME
-         WRITE(*,*) 'exiting...'
-         call exit(0) 
-       END IF
-
- 
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a monodomain problem class."

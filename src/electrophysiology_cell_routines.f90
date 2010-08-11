@@ -368,7 +368,8 @@ contains
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     integer, parameter :: celldim = 19
-    real(dp), dimension(1:celldim) :: y, dydt
+    real(dp), dimension(1:celldim) :: dydt
+    real(dp), dimension(:), pointer :: y
     real(dp) :: t, dt, activ, m_inf, d_inf, m_inf0, d_inf0
     real(dp), dimension(:), pointer :: celldata, activdata
 
@@ -388,12 +389,14 @@ contains
     CALL FIELD_PARAMETER_SET_DATA_GET(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
     do i=1,ncells
+      d = CELLS_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)
+      y => celldata(d:d+celldim-1)
       !   field ->   y
-      do d=1,celldim
+  !    do d=1,celldim
 !        nodeno = domain%ptr%topology%nodes%nodes(i)%global_number
 !        call field_parameter_set_get_node(cells,field_u_variable_type,field_values_set_type,1,nodeno,d,y(d),err,error,*999)
-        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
-      end do
+ !       y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+ !     end do
       ! field_parameter_set_get_node(materials,field_u_variable_type,field_values_set_type,1,nodeno,1,activ,err,error,*999)
       activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
       
@@ -428,10 +431,10 @@ contains
         t = t + dt
       end do
       !   y -> field  
-      do d=1,celldim
+      !do d=1,celldim
  !       call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
-        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
-      end do
+     !   celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
+    !  end do
     end do
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
