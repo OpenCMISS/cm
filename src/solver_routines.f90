@@ -13303,10 +13303,14 @@ CONTAINS
                       !                 (although then we cannot store state before changing BC)
                       !                 This call takes place here inside 'solver_matrix_idx' loop,
                       !                 but outside of 'solver_dof_idx' loop.
-                      !For now, let us temporarily comment it out.
-!                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                         & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
 !---toe
+                      !Disabling this call causes other dynamic problems to fail, but is required for
+                      !the subiterations for coupled elasticity Darcy.
+                      !Re-enable the call for now but will need to find a solution to this.
+                      !Could check solver%solvers%control_loop%loop_type but shouldn't really be checking the control
+                      !loop in solver routines, maybe this should be done post time loop for all problem classes/types?
+                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                         & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                       !Start the transfer of the field dofs
                       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                         EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
