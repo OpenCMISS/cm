@@ -3983,7 +3983,6 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_TIME_LOOP !<A pointer to the control time loop.
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: SUBITERATION_LOOP !<A pointer to the subiteration loop.
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(VARYING_STRING) :: METHOD !,FILE
     CHARACTER(14) :: FILE
@@ -4047,9 +4046,8 @@ CONTAINS
                         OUTPUT_ITERATION_NUMBER=0
                       ENDIF
                     ENDDO
-                    IF(CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN
-                      SUBITERATION_LOOP=>CONTROL_LOOP%PARENT_LOOP
-                      SUBITERATION_NUMBER=SUBITERATION_LOOP%WHILE_LOOP%ITERATION_NUMBER
+                    IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
+                      SUBITERATION_NUMBER=CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER
                     ENDIF
 
                     IF(OUTPUT_ITERATION_NUMBER/=0) THEN
@@ -4084,7 +4082,7 @@ CONTAINS
                     ENDIF
 
                     !Subiteration intermediate solutions / iterates output:
-                    IF(CONTROL_LOOP%CONTROL_LOOP_LEVEL==3) THEN  !subiteration exists
+                    IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
                       IF(CURRENT_LOOP_ITERATION<10) THEN
                         IF(SUBITERATION_NUMBER<10) THEN
                           WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
@@ -4093,14 +4091,14 @@ CONTAINS
                         END IF
                         FILE=OUTPUT_FILE
                         METHOD="FORTRAN"
-                        EXPORT_FIELD=.FALSE.
-                        IF(EXPORT_FIELD) THEN          
+                        EXPORT_FIELD=.TRUE.
+                        IF(EXPORT_FIELD) THEN
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
                           CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                             & ERR,ERROR,*999)
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                        ENDIF 
-                      ENDIF 
+                        ENDIF
+                      ENDIF
                     ENDIF
                   ENDDO
                 ENDIF
