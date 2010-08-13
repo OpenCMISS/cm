@@ -3433,18 +3433,24 @@ CONTAINS
                             TOTAL_NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
                               & TOTAL_NUMBER_OF_DOFS
 
-!                            !!!   DEFER THIS TO: DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT   !!!
-!                            !--- Second, update geometric field
-!                            DO dof_number=1,TOTAL_NUMBER_OF_DOFS
-!                              CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, & 
-!                                & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
-!                                & MESH_DISPLACEMENT_VALUES(dof_number), &
-!                                & ERR,ERROR,*999)
-!                            END DO
-!                            CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD, &
-!                              & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-!                            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(GEOMETRIC_FIELD, &
-!                              & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                            IF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE &
+                                & .OR. CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE) THEN
+                              !--- Don't update geometric field here, this is done in
+                              !    darcy_equation_pre_solve_get_solid_displacement for these problems, but
+                              !    needs to be made consistent between the different problem types
+                            ELSE
+                              !--- Second, update geometric field
+                              DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, & 
+                                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
+                                  & MESH_DISPLACEMENT_VALUES(dof_number), &
+                                  & ERR,ERROR,*999)
+                              END DO
+                              CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD, &
+                                & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(GEOMETRIC_FIELD, &
+                                & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                            ENDIF
 
                             !--- Third, use displacement values to calculate velocity values
                             ALPHA=1.0_DP/TIME_INCREMENT
