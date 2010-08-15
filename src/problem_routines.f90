@@ -112,7 +112,6 @@ MODULE PROBLEM_ROUTINES
   PUBLIC PROBLEM_USER_NUMBER_FIND
   PUBLIC PROBLEM_SOLVER_LOAD_INCREMENT_APPLY
 
-  
 CONTAINS
 
   !
@@ -1421,6 +1420,10 @@ CONTAINS
             & is not valid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
+        !For all time loops, update the previous values
+        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+          CALL PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE(CONTROL_LOOP,ERR,ERROR,*999)
+        ENDIF
       ELSE
         CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -2534,6 +2537,64 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !>Updates the dependent variables from the solver solution for all dynamic solvers under the time control loop
+  RECURSIVE SUBROUTINE PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer the time control loop to update the variables from
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer the solvers to update the variables from
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to update the variables from
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2 !<A pointer the sub control loop
+    INTEGER(INTG) :: solver_idx,loop_idx
+
+    NULLIFY(SOLVER)
+
+    CALL ENTERS("PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
+        !If there are no sub loops then get the solvers for this loop.
+        SOLVERS=>CONTROL_LOOP%SOLVERS
+        IF(ASSOCIATED(SOLVERS)) THEN
+          DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
+            SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
+            SELECT CASE(SOLVER%SOLVE_TYPE)
+            CASE(SOLVER_DYNAMIC_TYPE)
+              CALL SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE(SOLVER,ERR,ERROR,*999)
+            CASE DEFAULT
+              ! do nothing
+            END SELECT
+          ENDDO !solver_idx
+        ELSE
+          CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        !If there are sub loops then recursively update variables for those loops
+        DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
+          CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
+          CALL PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE(CONTROL_LOOP2,ERR,ERROR,*999)
+        ENDDO !loop_idx
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE")
+    RETURN
+999 CALL ERRORS("PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE",ERR,ERROR)
+    CALL EXITS("PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE")
+    RETURN 1
+
+  END SUBROUTINE PROBLEM_CONTROL_LOOP_PREVIOUS_VALUES_UPDATE
+
+  !
+  !================================================================================================================================
+  !
+
   
 END MODULE PROBLEM_ROUTINES
 

@@ -649,7 +649,7 @@ CONTAINS
         CASE(PROBLEM_NAVIER_STOKES_EQUATION_TYPE)
           !do nothing
         CASE(PROBLEM_DARCY_EQUATION_TYPE)
-          CALL DARCY_CONTROL_TIME_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          !do nothing
         CASE DEFAULT
           LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
             & " is not valid for a fluid mechanics problem class."
