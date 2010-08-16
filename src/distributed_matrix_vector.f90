@@ -1902,6 +1902,13 @@ CONTAINS
               PETSC_MATRIX%NUMBER_NON_ZEROS=PETSC_MATRIX%M*PETSC_MATRIX%N
               PETSC_MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=PETSC_MATRIX%N
               PETSC_MATRIX%DATA_SIZE=PETSC_MATRIX%NUMBER_NON_ZEROS            
+              !Set up the Local to Global mappings
+              ALLOCATE(PETSC_MATRIX%GLOBAL_ROW_NUMBERS(PETSC_MATRIX%M),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global row numbers for PETSc distributed matrix.",ERR,ERROR,*999)
+              DO i=1,PETSC_MATRIX%M
+                PETSC_MATRIX%GLOBAL_ROW_NUMBERS(i)=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(i)-1 !PETSc uses 0 based indexing
+              ENDDO !i
+              !Set up the matrix
               ALLOCATE(PETSC_MATRIX%DATA_DP(PETSC_MATRIX%DATA_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate PETSc matrix data.",ERR,ERROR,*999)
               CALL PETSC_MATCREATEMPIDENSE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,PETSC_MATRIX%M,PETSC_MATRIX%N, &
@@ -1910,6 +1917,13 @@ CONTAINS
               PETSC_MATRIX%NUMBER_NON_ZEROS=PETSC_MATRIX%M
               PETSC_MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=1
               PETSC_MATRIX%DATA_SIZE=PETSC_MATRIX%NUMBER_NON_ZEROS
+              !Set up the Local to Global mappings
+              ALLOCATE(PETSC_MATRIX%GLOBAL_ROW_NUMBERS(PETSC_MATRIX%M),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global row numbers for PETSc distributed matrix.",ERR,ERROR,*999)
+              DO i=1,PETSC_MATRIX%M
+                PETSC_MATRIX%GLOBAL_ROW_NUMBERS(i)=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(i)-1 !PETSc uses 0 based indexing
+              ENDDO !i
+              !Set up the matrix
               ALLOCATE(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(PETSC_MATRIX%N),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate diagonal number of non zeros.",ERR,ERROR,*999)
               ALLOCATE(PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS(PETSC_MATRIX%N),STAT=ERR)
@@ -1955,12 +1969,6 @@ CONTAINS
                 & " is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
-            !Set up the Local to Global mappings
-            ALLOCATE(PETSC_MATRIX%GLOBAL_ROW_NUMBERS(PETSC_MATRIX%M),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global row numbers for PETSc distributed matrix.",ERR,ERROR,*999)
-            DO i=1,PETSC_MATRIX%M
-              PETSC_MATRIX%GLOBAL_ROW_NUMBERS(i)=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(i)-1 !PETSc uses 0 based indexing
-            ENDDO !i
           ELSE
             CALL FLAG_ERROR("PETSc matrix distributed matrix column domain mapping is not associated.",ERR,ERROR,*999)
           ENDIF
