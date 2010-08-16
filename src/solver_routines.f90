@@ -8633,16 +8633,9 @@ CONTAINS
                                                                   & DIRICHLET_DOF_INDICES(dirichlet_idx)== &
                                                                   & equations_column_number) EXIT
                                                               ENDDO
-                                                              SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
-                                                                & DIRICHLET_BOUNDARY_CONDITIONS%DYNAMIC_SPARSITY_INDICES( &
-                                                                & equations_matrix_idx)%PTR
-                                                              IF(ASSOCIATED(SPARSITY_INDICES)) THEN
-                                                                DO equations_row_number2=SPARSITY_INDICES% &                               
-                                                                  & SPARSE_COLUMN_INDICES(dirichlet_idx), &
-                                                                  & SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
-                                                                  & dirichlet_idx+1)-1
-                                                                  dirichlet_row=SPARSITY_INDICES%SPARSE_ROW_INDICES( &
-                                                                    & equations_row_number2)
+                                                              SELECT CASE(EQUATIONS_MATRIX%STORAGE_TYPE)
+                                                              CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                                                                DO dirichlet_row=1,EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
                                                                   CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX% &
                                                                     & MATRIX,dirichlet_row,equations_column_number, &
                                                                     & MATRIX_VALUE,ERR,ERROR,*999)
@@ -8669,11 +8662,91 @@ CONTAINS
                                                                         & solver_row_number,VALUE,ERR,ERROR,*999)
                                                                     ENDDO !solver_row_idx
                                                                   ENDIF
-                                                                ENDDO !equations_row_number2
-                                                              ELSE
-                                                                CALL FLAG_ERROR("Sparsity indices are not associated.", &
-                                                                  & ERR,ERROR,*999)
-                                                              ENDIF
+                                                                ENDDO !dirichlet_row
+                                                              CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                                                                dirichlet_row=equations_column_number
+                                                                CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX% &
+                                                                  & MATRIX,dirichlet_row,equations_column_number, &
+                                                                  & MATRIX_VALUE,ERR,ERROR,*999)
+                                                                IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
+                                                                  DO solver_row_idx=1,SOLVER_MAPPING% &
+                                                                    & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% & 
+                                                                    & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                    & dirichlet_row)%NUMBER_OF_SOLVER_ROWS
+                                                                    solver_row_number=SOLVER_MAPPING% &
+                                                                      & EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                      & equations_set_idx)% &
+                                                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                      & dirichlet_row)%SOLVER_ROWS(solver_row_idx)
+                                                                    row_coupling_coefficient=SOLVER_MAPPING% &
+                                                                      & EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                      & equations_set_idx)% &
+                                                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                      & dirichlet_row)%COUPLING_COEFFICIENTS( &
+                                                                      & solver_row_idx)
+                                                                    VALUE=-1.0_DP*MATRIX_VALUE*UPDATE_VALUE* &
+                                                                      & row_coupling_coefficient
+                                                                    CALL DISTRIBUTED_VECTOR_VALUES_ADD( &
+                                                                      & SOLVER_RHS_VECTOR, &
+                                                                      & solver_row_number,VALUE,ERR,ERROR,*999)
+                                                                  ENDDO !solver_row_idx
+                                                                ENDIF
+                                                              CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                              CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                              CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                                                SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                                  & DIRICHLET_BOUNDARY_CONDITIONS%DYNAMIC_SPARSITY_INDICES( &
+                                                                  & equations_matrix_idx)%PTR
+                                                                IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                                                  DO equations_row_number2=SPARSITY_INDICES% & 
+                                                                    & SPARSE_COLUMN_INDICES(dirichlet_idx), &
+                                                                    & SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
+                                                                    & dirichlet_idx+1)-1
+                                                                    dirichlet_row=SPARSITY_INDICES%SPARSE_ROW_INDICES( &
+                                                                      & equations_row_number2)
+                                                                    CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX% &
+                                                                      & MATRIX,dirichlet_row,equations_column_number, &
+                                                                      & MATRIX_VALUE,ERR,ERROR,*999)
+                                                                    IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
+                                                                      DO solver_row_idx=1,SOLVER_MAPPING% &
+                                                                        & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% & 
+                                                                        & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                        & dirichlet_row)%NUMBER_OF_SOLVER_ROWS
+                                                                        solver_row_number=SOLVER_MAPPING% &
+                                                                          & EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                          & equations_set_idx)% &
+                                                                          & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                          & dirichlet_row)%SOLVER_ROWS(solver_row_idx)
+                                                                        row_coupling_coefficient=SOLVER_MAPPING% &
+                                                                          & EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                          & equations_set_idx)% &
+                                                                          & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                          & dirichlet_row)%COUPLING_COEFFICIENTS( &
+                                                                          & solver_row_idx)
+                                                                        VALUE=-1.0_DP*MATRIX_VALUE*UPDATE_VALUE* &
+                                                                          & row_coupling_coefficient
+                                                                        CALL DISTRIBUTED_VECTOR_VALUES_ADD( &
+                                                                          & SOLVER_RHS_VECTOR, &
+                                                                          & solver_row_number,VALUE,ERR,ERROR,*999)
+                                                                      ENDDO !solver_row_idx
+                                                                    ENDIF
+                                                                  ENDDO !equations_row_number2
+                                                                ELSE
+                                                                  CALL FLAG_ERROR("Sparsity indices are not associated.", &
+                                                                    & ERR,ERROR,*999)
+                                                                ENDIF
+                                                              CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                              CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                              CASE DEFAULT
+                                                                LOCAL_ERROR="The storage type of "// &
+                                                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MATRIX%STORAGE_TYPE,"*", &
+                                                                  & ERR,ERROR))//" is invalid."
+                                                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                              END SELECT
                                                             ENDIF
                                                           ELSE
                                                             CALL FLAG_ERROR("Dirichlet boundary conditions is &
@@ -9439,14 +9512,9 @@ CONTAINS
                                                           IF(DEPENDENT_BOUNDARY_CONDITIONS%DIRICHLET_BOUNDARY_CONDITIONS% &
                                                             & DIRICHLET_DOF_INDICES(dirichlet_idx)==equations_column_number) EXIT
                                                         ENDDO
-                                                        SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
-                                                          & DIRICHLET_BOUNDARY_CONDITIONS%LINEAR_SPARSITY_INDICES( &
-                                                          & equations_matrix_idx)%PTR
-                                                        IF(ASSOCIATED(SPARSITY_INDICES)) THEN
-                                                          DO equations_row_number2=SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
-                                                            & dirichlet_idx),SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
-                                                            & dirichlet_idx+1)-1
-                                                            dirichlet_row=SPARSITY_INDICES%SPARSE_ROW_INDICES(equations_row_number2)
+                                                        SELECT CASE(EQUATIONS_MATRIX%STORAGE_TYPE)
+                                                        CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                                                          DO dirichlet_row=1,EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
                                                             CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX, &
                                                               & dirichlet_row,equations_column_number,MATRIX_VALUE,ERR,ERROR,*999)
                                                             IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
@@ -9465,10 +9533,74 @@ CONTAINS
                                                                   & solver_row_number,VALUE,ERR,ERROR,*999)
                                                               ENDDO !solver_row_idx
                                                             ENDIF
-                                                          ENDDO !equations_row_number2
-                                                        ELSE
-                                                          CALL FLAG_ERROR("Sparsity indices are not associated.",ERR,ERROR,*999)
-                                                        ENDIF
+                                                          ENDDO !dirichlet_row
+                                                        CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                                                          dirichlet_row=equations_column_number
+                                                          CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX, &
+                                                            & dirichlet_row,equations_column_number,MATRIX_VALUE,ERR,ERROR,*999)
+                                                          IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
+                                                            DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                              & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                              & dirichlet_row)%NUMBER_OF_SOLVER_ROWS
+                                                              solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                & dirichlet_row)%SOLVER_ROWS(solver_row_idx)
+                                                              row_coupling_coefficient=SOLVER_MAPPING% &
+                                                                & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(dirichlet_row)% &
+                                                                & COUPLING_COEFFICIENTS(solver_row_idx)
+                                                              VALUE=-1.0_DP*MATRIX_VALUE*DEPENDENT_VALUE*row_coupling_coefficient
+                                                              CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR, &
+                                                                & solver_row_number,VALUE,ERR,ERROR,*999)
+                                                            ENDDO !solver_row_idx
+                                                          ENDIF
+                                                        CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                        CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                        CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                                          SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
+                                                            & DIRICHLET_BOUNDARY_CONDITIONS%LINEAR_SPARSITY_INDICES( &
+                                                            & equations_matrix_idx)%PTR
+                                                          IF(ASSOCIATED(SPARSITY_INDICES)) THEN
+                                                            DO equations_row_number2=SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
+                                                              & dirichlet_idx),SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
+                                                              & dirichlet_idx+1)-1
+                                                              dirichlet_row=SPARSITY_INDICES%SPARSE_ROW_INDICES( &
+                                                                & equations_row_number2)
+                                                              CALL DISTRIBUTED_MATRIX_VALUES_GET(EQUATIONS_MATRIX%MATRIX, &
+                                                                & dirichlet_row,equations_column_number,MATRIX_VALUE,ERR,ERROR,*999)
+                                                              IF(ABS(MATRIX_VALUE)>=ZERO_TOLERANCE) THEN
+                                                                DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                  & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                  & dirichlet_row)%NUMBER_OF_SOLVER_ROWS
+                                                                  solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                                                    & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
+                                                                    & dirichlet_row)%SOLVER_ROWS(solver_row_idx)
+                                                                  row_coupling_coefficient=SOLVER_MAPPING% &
+                                                                    & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                                                    & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(dirichlet_row)% &
+                                                                    & COUPLING_COEFFICIENTS(solver_row_idx)
+                                                                  VALUE=-1.0_DP*MATRIX_VALUE*DEPENDENT_VALUE* &
+                                                                    & row_coupling_coefficient
+                                                                  CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RHS_VECTOR, &
+                                                                    & solver_row_number,VALUE,ERR,ERROR,*999)
+                                                                ENDDO !solver_row_idx
+                                                              ENDIF
+                                                            ENDDO !equations_row_number2
+                                                          ELSE
+                                                            CALL FLAG_ERROR("Sparsity indices are not associated.",ERR,ERROR,*999)
+                                                          ENDIF
+                                                        CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                        CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                        CASE DEFAULT
+                                                          LOCAL_ERROR="The storage type of "// &
+                                                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MATRIX%STORAGE_TYPE,"*", &
+                                                            & ERR,ERROR))//" is invalid."
+                                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                        END SELECT
                                                       ENDIF
                                                     ELSE
                                                       CALL FLAG_ERROR("Dirichlet boundary conditions is not associated.",ERR, &

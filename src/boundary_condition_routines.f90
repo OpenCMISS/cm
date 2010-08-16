@@ -245,13 +245,13 @@ CONTAINS
                                 IF(ASSOCIATED(EQUATION_MATRIX)) THEN
                                   SELECT CASE(STORAGE_TYPE)
                                   CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for block storage",ERR,ERROR,*999)
+                                    !Do nothing
                                   CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for diagonal storage",ERR,ERROR,*999)
+                                    !Do nothing
                                   CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for column major storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for column major storage.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for row major storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for row major storage.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                     ! Get Sparsity pattern, number of non zeros, number of rows
                                     CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATION_MATRIX%MATRIX,ROW_INDICES, &
@@ -299,13 +299,13 @@ CONTAINS
                                       CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                         & ERR,ERROR,*999)
                                     ELSE
-                                      LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix"
+                                      LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for compressed column storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for compressed column storage.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for row column storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for row column storage.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR)) &
                                       //" is invalid."
@@ -326,13 +326,13 @@ CONTAINS
                                 IF(ASSOCIATED(EQUATION_MATRIX)) THEN
                                   SELECT CASE(STORAGE_TYPE)
                                   CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for block storage",ERR,ERROR,*999)
+                                    !Do nothing
                                   CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for diagonal storage",ERR,ERROR,*999)
+                                    !Do nothing
                                   CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for column major storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for column major storage.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for row major storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for row major storage.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                     ! Get Sparsity pattern, number of non zeros, number of rows
                                     CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATION_MATRIX%MATRIX,ROW_INDICES, &
@@ -380,13 +380,13 @@ CONTAINS
                                       CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                         & ERR,ERROR,*999)
                                     ELSE
-                                      LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix"
+                                      LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for compressed column storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for compressed column storage.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented for row column storage",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Not implemented for row column storage.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR)) &
                                       //" is invalid."
@@ -398,11 +398,11 @@ CONTAINS
                               ENDDO
                             ENDIF
                           ELSE
-                            LOCAL_ERROR="Equations Matrices is not associated for these Equations "
+                            LOCAL_ERROR="Equations Matrices is not associated for these Equations."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          LOCAL_ERROR="Equations is not associated for this Equations Set "
+                          LOCAL_ERROR="Equations is not associated for this Equations Set."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
