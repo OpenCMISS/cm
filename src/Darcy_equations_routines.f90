@@ -1191,6 +1191,8 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME_1, QUADRATURE_SCHEME_2
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: REFERENCE_GEOMETRIC_INTERPOLATED_POINT
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: ELASTICITY_DEPENDENT_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: ELASTICITY_DEPENDENT_INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP):: SOURCE
@@ -1200,6 +1202,7 @@ CONTAINS
     REAL(DP):: PERM_TENSOR_OVER_VIS(3,3), VIS_OVER_PERM_TENSOR(3,3), Jmat
     REAL(DP):: MESH_VEL(3), MESH_VEL_DERIV(3,3), MESH_VEL_DERIV_PHYS(3,3)
     REAL(DP):: X(3), ARG(3), L, FACT
+    REAL(DP):: LM_PRESSURE,GRAD_LM_PRESSURE(3)
 
     REAL(DP):: DXDY(3,3), DXDXI(3,3), DYDXI(3,3), DXIDY(3,3)
     REAL(DP):: Jxy, Jyxi
@@ -1241,6 +1244,10 @@ CONTAINS
 
 
     CALL ENTERS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+
+    !\Todo: Nullify all pointers used !!!
+    NULLIFY(ELASTICITY_DEPENDENT_INTERPOLATION_PARAMETERS)
+    NULLIFY(ELASTICITY_DEPENDENT_INTERPOLATED_POINT)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -1287,7 +1294,6 @@ CONTAINS
             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
           END SELECT
 
-
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
           DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
@@ -1299,6 +1305,15 @@ CONTAINS
             & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+            ELASTICITY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+              & ELASTICITY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            ELASTICITY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+          ENDIF
 
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
@@ -1312,7 +1327,8 @@ CONTAINS
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
 
 
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
+                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
               !------------------------------------------------------------------------------
               !--- begin: Compute the Jacobian of the mapping
 
@@ -1379,7 +1395,8 @@ CONTAINS
             !--- Set mesh velocity and derivative
             SELECT CASE(EQUATIONS_SET%SUBTYPE)
             CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-              & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+              & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
+              & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
               !--- Calculate 'GEOMETRIC_INTERP_PARAMETERS' from 'FIELD_MESH_VELOCITY_SET_TYPE'
               !\todo: Flipping 'GEOMETRIC_INTERP_PARAMETERS' back and forth is wasteful inside Gauss point loop -
               !   Bypass this by either accomodating mesh_velocity in independent_field or setting up additional interp_parameters
@@ -1538,6 +1555,18 @@ CONTAINS
             P_SINK_PARAM = DARCY%P_SINK
 
 
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
+                & ELASTICITY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
+              LM_PRESSURE = ELASTICITY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
+              DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
+                !gradient wrt. element coordinates xi
+                GRAD_LM_PRESSURE(xi_idx) = ELASTICITY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,derivative_idx)
+              ENDDO
+            ENDIF
+
+
 !             RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
 
             !Loop over element rows
@@ -1575,200 +1604,272 @@ CONTAINS
                     DO ns=1,DEPENDENT_BASIS_2%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
 
-                      !-------------------------------------------------------------------------------------------------------------
-                      !velocity test function, velocity trial function
-                      IF(mh==nh.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+                      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                      !====================================================================================================
+                      !  i n c o m p r e s s i b l e   e l a s t i c i t y   d r i v e n   D a r c y   :   M A T R I C E S
+                      CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+                        !-------------------------------------------------------------------------------------------------------------
+                        !velocity test function, velocity trial function
+                        IF(mh==nh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
 
-                        SUM = 0.0_DP
+                          SUM = 0.0_DP
 
-                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                        PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-                        SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
-                        !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
-                        !within this conditional: mh==nh anyway
-
-                        IF( STABILIZED ) THEN
-                          SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
-                        END IF
-
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
-                          & SUM * RWG
-
-                      !-------------------------------------------------------------------------------------------------------------
-                      !velocity test function, pressure trial function
-                      ELSE IF(mh<NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
-
-                        SUM = 0.0_DP
-
-                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                        PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-                        DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                          PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                        ENDDO !mi
-
-                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                        ENDDO !ni
-
-                        DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                          SUM = SUM - PGMSI(mi) * PGN * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,mh)
-                        ENDDO !mi
-
-                        IF( STABILIZED ) THEN
-                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM - 0.5_DP * PGM * PGNSI(ni) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mh)
-                          ENDDO !ni
-                        END IF
-
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + & 
-                          & SUM * RWG
-
-                      !-------------------------------------------------------------------------------------------------------------
-                      !pressure test function, velocity trial function
-                      ELSE IF(mh==NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
-
-                        SUM = 0.0_DP
-
-                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                        PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-                        DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                          PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                        ENDDO !mi
-
-                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                        ENDDO !ni
-
-                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                          SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                        ENDDO !ni
-
-                        IF( STABILIZED ) THEN
-                          DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                            SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * PGN * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,nh)
-                          ENDDO !mi
-                        END IF
-
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
-                          & SUM * RWG
-
-                      !-------------------------------------------------------------------------------------------------------------
-                      !pressure test function, pressure trial function
-                      ELSE IF(mh==nh.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
-
-                        SUM = 0.0_DP
-
-                        DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                          PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                        ENDDO !mi
-
-                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                        ENDDO !ni
-
-                        IF( STABILIZED ) THEN
-                          DO idxdim =1,DEPENDENT_BASIS_1%NUMBER_OF_XI !number space dimension equiv. number of xi
-                            DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                              DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                                SUM = SUM + 0.5_DP * PERM_TENSOR_OVER_VIS( idxdim, idxdim ) * PGMSI(mi) * PGNSI(ni) * &
-                                  & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
-                                  & DXI_DX(mi,idxdim) * EQUATIONS%INTERPOLATION% &
-                                  & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,idxdim)
-                              ENDDO !ni
-                            ENDDO !mi
-                          ENDDO !idxdim
-                        END IF
-
-                        IF( DARCY%TESTCASE == 3 ) THEN
-                          !This forms part of the pressure-dependent source term,
-                          !thus it enters the LHS
                           PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                          SUM = SUM + BETA_PARAM * PGM * PGN
-                        END IF
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
+                          !within this conditional: mh==nh anyway
 
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
-                          & SUM * RWG
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+                        !-------------------------------------------------------------------------------------------------------------
+                        !mass-increase test function, velocity trial function
+                        ELSE IF(mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
 
-                      !-------------------------------------------------------------------------------------------------------------
-                      !For the INRIA model, and: mass-increase test function, pressure trial function
-                      ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
-                        & mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+                          SUM = 0.0_DP
 
-                        SUM = 0.0_DP
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                        PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                          DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                            PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                          ENDDO !mi
 
-                        SUM = SUM - PGM * PGN / (Mfact * fJxy)
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          ENDDO !ni
 
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
-                          & SUM * RWG
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
+                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
+                          ENDDO !ni
 
-                      !-------------------------------------------------------------------------------------------------------------
-                      !For the INRIA model, and: mass-increase test function, mass-increase trial function
-                      ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
-                        & mh==nh.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
-
-                        SUM = 0.0_DP
-
-                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                        PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-                        SUM = SUM + PGM * PGN / DARCY_RHO_0_F
-
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
-                          & SUM * RWG
-
-                      !-------------------------------------------------------------------------------------------------------------
-                      ELSE
-
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = 0.0_DP
-
-                      ENDIF
-
-                !===================================================================================================================
-                !DAMPING_MATRIX
-! 
-                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE) THEN
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+                        ENDIF
+                        !=====================================================================================================================
+                        !DAMPING_MATRIX
                         IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                          IF(mh==nh.AND.mh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN 
+                          !MASS-INCREASE test function, mass-increase trial function
+                          IF(mh==nh.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                             PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                            !
-                            SUM=0.0_DP 
-                            !Calculate SUM 
-                            SUM=PGM*PGN*DARCY_RHO_0_F
-                            !Calculate MATRIX
-                            DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
-                              & SUM * RWG
-                          END IF
-                        END IF
-                      ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) THEN
-                        IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                          IF(mh==NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
-                            PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                            PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                            !
-                            SUM=0.0_DP 
-                            !Calculate SUM 
+
+                            SUM = 0.0_DP 
+
+                            !It seems that this term actually needs to be integrated in the reference configuration !?
                             SUM = PGM * PGN / (Jxy * DARCY_RHO_0_F)
-                            !Calculate MATRIX
+
                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                               & SUM * RWG
                           END IF
                         END IF
-                      END IF
+
+                      !=================================================================================
+                      !    d e f a u l t   :   M A T R I C E S
+                      CASE DEFAULT
+                        !-------------------------------------------------------------------------------------------------------------
+                        !velocity test function, velocity trial function
+                        IF(mh==nh.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
+                          !within this conditional: mh==nh anyway
+
+                          IF( STABILIZED ) THEN
+                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          END IF
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+
+                        !-------------------------------------------------------------------------------------------------------------
+                        !velocity test function, pressure trial function
+                        ELSE IF(mh<NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                            PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                          ENDDO !mi
+
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          ENDDO !ni
+
+                          DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                            SUM = SUM - PGMSI(mi) * PGN * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,mh)
+                          ENDDO !mi
+
+                          IF( STABILIZED ) THEN
+                            DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                              SUM = SUM - 0.5_DP * PGM * PGNSI(ni) * &
+                                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mh)
+                            ENDDO !ni
+                          END IF
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + & 
+                            & SUM * RWG
+
+                        !-------------------------------------------------------------------------------------------------------------
+                        !pressure test function, velocity trial function
+                        ELSE IF(mh==NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                            PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                          ENDDO !mi
+
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          ENDDO !ni
+
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
+                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
+                          ENDDO !ni
+
+                          IF( STABILIZED ) THEN
+                            DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                              SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * PGN * &
+                                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,nh)
+                            ENDDO !mi
+                          END IF
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+
+                        !-------------------------------------------------------------------------------------------------------------
+                        !pressure test function, pressure trial function
+                        ELSE IF(mh==nh.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                            PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                          ENDDO !mi
+
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          ENDDO !ni
+
+                          IF( STABILIZED ) THEN
+                            DO idxdim =1,DEPENDENT_BASIS_1%NUMBER_OF_XI !number space dimension equiv. number of xi
+                              DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                                DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                                  SUM = SUM + 0.5_DP * PERM_TENSOR_OVER_VIS( idxdim, idxdim ) * PGMSI(mi) * PGNSI(ni) * &
+                                    & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                                    & DXI_DX(mi,idxdim) * EQUATIONS%INTERPOLATION% &
+                                    & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,idxdim)
+                                ENDDO !ni
+                              ENDDO !mi
+                            ENDDO !idxdim
+                          END IF
+
+                          IF( DARCY%TESTCASE == 3 ) THEN
+                            !This forms part of the pressure-dependent source term,
+                            !thus it enters the LHS
+                            PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                            PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                            SUM = SUM + BETA_PARAM * PGM * PGN
+                          END IF
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+
+                        !-------------------------------------------------------------------------------------------------------------
+                        !For the INRIA model, and: mass-increase test function, pressure trial function
+                        ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
+                          & mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh==NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          SUM = SUM - PGM * PGN / (Mfact * fJxy)
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+
+                        !-------------------------------------------------------------------------------------------------------------
+                        !For the INRIA model, and: mass-increase test function, mass-increase trial function
+                        ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
+                          & mh==nh.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          SUM = SUM + PGM * PGN / DARCY_RHO_0_F
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+
+                        !-------------------------------------------------------------------------------------------------------------
+                        ELSE
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = 0.0_DP
+
+                        ENDIF
+
+                        !=====================================================================================================================
+                        ! DAMPING_MATRIX
+
+                        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE) THEN
+                          IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                            IF(mh==nh.AND.mh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN 
+                              PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                              PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                              SUM = 0.0_DP 
+
+                              SUM = PGM*PGN*DARCY_RHO_0_F
+
+                              DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                                & SUM * RWG
+                            END IF
+                          END IF
+                        ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) THEN
+                          IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                            !pressure test function, mass-increase trial function
+                            IF(mh==NUMBER_OF_VEL_PRESS_COMPONENTS.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                              PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                              PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                              SUM = 0.0_DP 
+
+                              SUM = PGM * PGN / (Jxy * DARCY_RHO_0_F)
+
+                              DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                                & SUM * RWG
+                            END IF
+                          END IF
+                        END IF
+
+                      END SELECT
+                      !   e n d   s e l e c t   EQUATIONS_SET%SUBTYPE
+                      !=================================================================================
 
                     ENDDO !ns
                   ENDDO !nh
@@ -1777,42 +1878,41 @@ CONTAINS
                 !RHS_VECTOR
                 IF(RHS_VECTOR%UPDATE_VECTOR) THEN
 
-                  !-----------------------------------------------------------------------------------------------------------------
-                  !velocity test function
-                  IF( mh<NUMBER_OF_VEL_PRESS_COMPONENTS ) THEN
+                  SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                  !==========================================================================================
+                  !  i n c o m p r e s s i b l e   e l a s t i c i t y   d r i v e n   D a r c y   :   R H S
+                  CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
 
-                    SUM = 0.0_DP
+                    !-----------------------------------------------------------------------------------------------------------------
+                    !velocity test function
+                    IF( mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS ) THEN
 
-                    !Terms arising from the moving mesh with mesh velocity given
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
-                      PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                      SUM = 0.0_DP
 
+                      PGM = QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+                      !Term arising from the moving mesh with mesh velocity given
                       DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
                         SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                        IF( STABILIZED ) THEN
-                          SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                        END IF
                       ENDDO
-                    END IF
 
-                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+                      !Term arising from the pressure / Lagrange Multiplier of elasticity (given):
+                      DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                        SUM = SUM - PGM * GRAD_LM_PRESSURE(mi) * &
+                          & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,mh)
+                      ENDDO !mi
 
-                  !-----------------------------------------------------------------------------------------------------------------
-                  !pressure test function
-                  ELSE IF( mh==NUMBER_OF_VEL_PRESS_COMPONENTS ) THEN
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
 
-                    SUM = 0.0_DP
+                    !-----------------------------------------------------------------------------------------------------------------
+                    !mass-increase test function
+                    ELSE IF( mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS ) THEN
 
-                    PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                      SUM = 0.0_DP
 
-                    !Terms arising from the moving mesh with mesh velocity given
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-                      & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
+                      PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+                      !Terms arising from the moving mesh with mesh velocity given
 !                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
                       DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
                         PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
@@ -1821,170 +1921,236 @@ CONTAINS
                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
                           SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                          IF( STABILIZED ) THEN
-                            SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * MESH_VEL( ni ) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,ni)
-                          END IF
                         ENDDO !ni
                       ENDDO !mi
+
+                      SOURCE = 0.0_DP
+
+                      SUM = SUM + PGM * SOURCE
+
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+
+                    ELSE
+
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = 0.0_DP
+
                     END IF
+                    !-------------------------------------------------------------------------------------------------------------
 
-                    SOURCE = 0.0_DP
-!                     IF( DARCY%TESTCASE == 3 ) THEN
-!                       SOURCE = BETA_PARAM * P_SINK_PARAM
-!                     ELSE IF( DARCY%TESTCASE == 5 .OR. DARCY%TESTCASE == 6 ) THEN
-!                       !Distribution of sources (arteries) and sinks (veins) for the C U B E
-!                       X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-!                       X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-!                       X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
+                  !=================================================================================
+                  !    d e f a u l t   :   R H S
+                  CASE DEFAULT
+                    !-----------------------------------------------------------------------------------------------------------------
+                    !velocity test function
+                    IF( mh<NUMBER_OF_VEL_PRESS_COMPONENTS ) THEN
+
+                      SUM = 0.0_DP
+
+                      !Terms arising from the moving mesh with mesh velocity given
+                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
+                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
+                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
+                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
+                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+                        DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
+                          IF( STABILIZED ) THEN
+                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
+                          END IF
+                        ENDDO
+                      END IF
+
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+
+                    !-----------------------------------------------------------------------------------------------------------------
+                    !pressure test function
+                    ELSE IF( mh==NUMBER_OF_VEL_PRESS_COMPONENTS ) THEN
+
+                      SUM = 0.0_DP
+
+                      PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+                      !Terms arising from the moving mesh with mesh velocity given
+                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
+                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
+                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
+                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
+!                         DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                        DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                          PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
+                            SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
+                            IF( STABILIZED ) THEN
+                              SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * MESH_VEL( ni ) * &
+                                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,ni)
+                            END IF
+                          ENDDO !ni
+                        ENDDO !mi
+                      END IF
+
+                      SOURCE = 0.0_DP
+!                       IF( DARCY%TESTCASE == 3 ) THEN
+!                         SOURCE = BETA_PARAM * P_SINK_PARAM
+!                       ELSE IF( DARCY%TESTCASE == 5 .OR. DARCY%TESTCASE == 6 ) THEN
+!                         !Distribution of sources (arteries) and sinks (veins) for the C U B E
+!                         X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
+!                         X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
+!                         X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
 ! 
-!                       SOURCE_1_X = (/-0.4_DP,-0.9_DP,-0.4_DP/)
-!                       SOURCE_1_R = 0.3_DP
-!                       SOURCE_1_I = -20.0_DP
-!                       !
-!                       SOURCE_2_X = (/0.9_DP,0.4_DP,-0.4_DP/)
-!                       SOURCE_2_R = 0.3_DP
-!                       SOURCE_2_I = 10.0_DP
-!                       !
-!                       SOURCE_3_X = (/0.4_DP,0.4_DP,0.9_DP/)
-!                       SOURCE_3_R = 0.3_DP
-!                       SOURCE_3_I = 10.0_DP
+!                         SOURCE_1_X = (/-0.4_DP,-0.9_DP,-0.4_DP/)
+!                         SOURCE_1_R = 0.3_DP
+!                         SOURCE_1_I = -20.0_DP
+!                         !
+!                         SOURCE_2_X = (/0.9_DP,0.4_DP,-0.4_DP/)
+!                         SOURCE_2_R = 0.3_DP
+!                         SOURCE_2_I = 10.0_DP
+!                         !
+!                         SOURCE_3_X = (/0.4_DP,0.4_DP,0.9_DP/)
+!                         SOURCE_3_R = 0.3_DP
+!                         SOURCE_3_I = 10.0_DP
 ! 
-!                       IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
-!                         & <=SOURCE_1_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_1_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
-!                         & <=SOURCE_2_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_2_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
-!                         & <=SOURCE_3_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_3_I
-!                       END IF
-!                     ELSE IF( DARCY%TESTCASE == 10 .OR. DARCY%TESTCASE == 11 ) THEN
-!                       !Distribution of sources (arteries) and sinks (veins) for the L E F T   V E N T R I C L E
-!                       X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-!                       X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-!                       X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
+!                         IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
+!                           & <=SOURCE_1_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_1_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
+!                           & <=SOURCE_2_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_2_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
+!                           & <=SOURCE_3_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_3_I
+!                         END IF
+!                       ELSE IF( DARCY%TESTCASE == 10 .OR. DARCY%TESTCASE == 11 ) THEN
+!                         !Distribution of sources (arteries) and sinks (veins) for the L E F T   V E N T R I C L E
+!                         X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
+!                         X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
+!                         X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
 ! 
-!                       LENGTH_SCALE = 1000.0_DP
+!                         LENGTH_SCALE = 1000.0_DP
 ! 
-!                       ! Top: 2592, 2634, 3441
-!                       !
-!                       !Node 2592 (top, 7o' clock):
-!                       SOURCE_1_X = (/0.12469570000000001, 0.15406560000000000, 9.50000000000000011E-002/) * LENGTH_SCALE
-!                       SOURCE_1_R = 0.03_DP * LENGTH_SCALE
-!                       SOURCE_1_I = 0.0_DP 
-!                       !
-!                       !Node 2634 (top, 5o' clock):
-!                       SOURCE_2_X = (/0.12138850000000000, 0.19423494999999996, 9.50000000000000011E-002/) * LENGTH_SCALE
-!                       SOURCE_2_R = 0.03_DP * LENGTH_SCALE
-!                       SOURCE_2_I = 0.0_DP
-!                       !
-!                       !Node 3441 (top, 11o'clock): 
-!                       SOURCE_3_X = (/9.34197299999999925E-002, 0.15824404999999997, 9.50000000000000011E-002/) * LENGTH_SCALE
-!                       SOURCE_3_R = 0.03_DP * LENGTH_SCALE
-!                       SOURCE_3_I = 0.0_DP 
+!                         ! Top: 2592, 2634, 3441
+!                         !
+!                         !Node 2592 (top, 7o' clock):
+!                         SOURCE_1_X = (/0.12469570000000001, 0.15406560000000000, 9.50000000000000011E-002/) * LENGTH_SCALE
+!                         SOURCE_1_R = 0.03_DP * LENGTH_SCALE
+!                         SOURCE_1_I = 0.0_DP 
+!                         !
+!                         !Node 2634 (top, 5o' clock):
+!                         SOURCE_2_X = (/0.12138850000000000, 0.19423494999999996, 9.50000000000000011E-002/) * LENGTH_SCALE
+!                         SOURCE_2_R = 0.03_DP * LENGTH_SCALE
+!                         SOURCE_2_I = 0.0_DP
+!                         !
+!                         !Node 3441 (top, 11o'clock): 
+!                         SOURCE_3_X = (/9.34197299999999925E-002, 0.15824404999999997, 9.50000000000000011E-002/) * LENGTH_SCALE
+!                         SOURCE_3_R = 0.03_DP * LENGTH_SCALE
+!                         SOURCE_3_I = 0.0_DP 
 ! 
-!                       !Bottom: 2283, 2405, 2486
-!                       !
-!                       !Node 2283 (bottom, 8o'clock):
-!                       SOURCE_4_X = (/0.11039010350099999, 0.15022144345490002, 1.96579095723937516E-002/) * LENGTH_SCALE
-!                       SOURCE_4_R = 0.1_DP * LENGTH_SCALE
-!                       SOURCE_4_I = +0.01_DP
-!                       !
-!                       !Node 2405 (bottom):
-!                       SOURCE_5_X = (/0.11705838437500005, 0.15714326562500008, 9.13646035937500968E-003/) * LENGTH_SCALE
-!                       SOURCE_5_R = 0.1_DP * LENGTH_SCALE
-!                       SOURCE_5_I = +0.01_DP
-!                       !
-!                       !Node 2486 (bottom):
-!                       SOURCE_6_X = (/0.10104060500000001, 0.17055360000000000, 8.67250500000000049E-003/) * LENGTH_SCALE
-!                       SOURCE_6_R = 0.1_DP * LENGTH_SCALE
-!                       SOURCE_6_I = +0.01_DP
+!                         !Bottom: 2283, 2405, 2486
+!                         !
+!                         !Node 2283 (bottom, 8o'clock):
+!                         SOURCE_4_X = (/0.11039010350099999, 0.15022144345490002, 1.96579095723937516E-002/) * LENGTH_SCALE
+!                         SOURCE_4_R = 0.1_DP * LENGTH_SCALE
+!                         SOURCE_4_I = +0.01_DP
+!                         !
+!                         !Node 2405 (bottom):
+!                         SOURCE_5_X = (/0.11705838437500005, 0.15714326562500008, 9.13646035937500968E-003/) * LENGTH_SCALE
+!                         SOURCE_5_R = 0.1_DP * LENGTH_SCALE
+!                         SOURCE_5_I = +0.01_DP
+!                         !
+!                         !Node 2486 (bottom):
+!                         SOURCE_6_X = (/0.10104060500000001, 0.17055360000000000, 8.67250500000000049E-003/) * LENGTH_SCALE
+!                         SOURCE_6_R = 0.1_DP * LENGTH_SCALE
+!                         SOURCE_6_I = +0.01_DP
 ! 
-!                       !Middle: 2701, 3537
-!                       !
-!                       !Node 2701 (middle):
-!                       SOURCE_7_X = (/8.38758450000000044E-002, 0.18070105000000000, 4.93491049999999973E-002/) * LENGTH_SCALE
-!                       SOURCE_7_R = 0.015_DP * LENGTH_SCALE
-!                       SOURCE_7_I = +0.1_DP
-!                       !
-!                       !Node 3537 (middle):
-!                       SOURCE_8_X = (/0.11467114375000002, 0.15206807187500018, 5.08069359375000404E-002/) * LENGTH_SCALE
-!                       SOURCE_8_R = 0.015_DP * LENGTH_SCALE
-!                       SOURCE_8_I = -0.13_DP
+!                         !Middle: 2701, 3537
+!                         !
+!                         !Node 2701 (middle):
+!                         SOURCE_7_X = (/8.38758450000000044E-002, 0.18070105000000000, 4.93491049999999973E-002/) * LENGTH_SCALE
+!                         SOURCE_7_R = 0.015_DP * LENGTH_SCALE
+!                         SOURCE_7_I = +0.1_DP
+!                         !
+!                         !Node 3537 (middle):
+!                         SOURCE_8_X = (/0.11467114375000002, 0.15206807187500018, 5.08069359375000404E-002/) * LENGTH_SCALE
+!                         SOURCE_8_R = 0.015_DP * LENGTH_SCALE
+!                         SOURCE_8_I = -0.13_DP
 ! 
 ! 
-!                       IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
-!                         & <=SOURCE_1_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_1_I
+!                         IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
+!                           & <=SOURCE_1_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_1_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
+!                           & <=SOURCE_2_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_2_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
+!                           & <=SOURCE_3_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_3_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_4_X(1))**2.0_DP + (X(2)-SOURCE_4_X(2))**2.0_DP + (X(3)-SOURCE_4_X(3))**2.0_DP &
+!                           & <=SOURCE_4_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_4_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_5_X(1))**2.0_DP + (X(2)-SOURCE_5_X(2))**2.0_DP + (X(3)-SOURCE_5_X(3))**2.0_DP &
+!                           & <=SOURCE_5_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_5_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_6_X(1))**2.0_DP + (X(2)-SOURCE_6_X(2))**2.0_DP + (X(3)-SOURCE_6_X(3))**2.0_DP &
+!                           & <=SOURCE_6_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_6_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_7_X(1))**2.0_DP + (X(2)-SOURCE_7_X(2))**2.0_DP + (X(3)-SOURCE_7_X(3))**2.0_DP &
+!                           & <=SOURCE_7_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_7_I
+!                         END IF
+!                         !
+!                         IF( (X(1)-SOURCE_8_X(1))**2.0_DP + (X(2)-SOURCE_8_X(2))**2.0_DP + (X(3)-SOURCE_8_X(3))**2.0_DP &
+!                           & <=SOURCE_8_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_8_I
+!                         END IF
 !                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
-!                         & <=SOURCE_2_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_2_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
-!                         & <=SOURCE_3_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_3_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_4_X(1))**2.0_DP + (X(2)-SOURCE_4_X(2))**2.0_DP + (X(3)-SOURCE_4_X(3))**2.0_DP &
-!                         & <=SOURCE_4_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_4_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_5_X(1))**2.0_DP + (X(2)-SOURCE_5_X(2))**2.0_DP + (X(3)-SOURCE_5_X(3))**2.0_DP &
-!                         & <=SOURCE_5_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_5_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_6_X(1))**2.0_DP + (X(2)-SOURCE_6_X(2))**2.0_DP + (X(3)-SOURCE_6_X(3))**2.0_DP &
-!                         & <=SOURCE_6_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_6_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_7_X(1))**2.0_DP + (X(2)-SOURCE_7_X(2))**2.0_DP + (X(3)-SOURCE_7_X(3))**2.0_DP &
-!                         & <=SOURCE_7_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_7_I
-!                       END IF
-!                       !
-!                       IF( (X(1)-SOURCE_8_X(1))**2.0_DP + (X(2)-SOURCE_8_X(2))**2.0_DP + (X(3)-SOURCE_8_X(3))**2.0_DP &
-!                         & <=SOURCE_8_R**2.0_DP ) THEN
-!                         SOURCE = SOURCE_8_I
-!                       END IF
-!                     END IF
 
-                    SUM = SUM + PGM * SOURCE
+                      SUM = SUM + PGM * SOURCE
 
-                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
 
-                  !-------------------------------------------------------------------------------------------------------------
-                  !For the INRIA model, and: mass-increase test function
-                  ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
-                    & mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                    !-------------------------------------------------------------------------------------------------------------
+                    !For the INRIA model, and: mass-increase test function
+                    ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.AND. &
+                      & mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
 
-                    SUM = 0.0_DP
+                      SUM = 0.0_DP
 
-                    PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                      PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
-                    SUM = SUM - PGM * bfact * (1.0_DP - Jxy)
+                      SUM = SUM - PGM * bfact * (1.0_DP - Jxy)
 
-                    SUM = SUM - PGM * p0fact / (Mfact * fJxy)
+                      SUM = SUM - PGM * p0fact / (Mfact * fJxy)
 
-                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
 
-                  ELSE
+                    ELSE
 
-                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = 0.0_DP
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = 0.0_DP
 
-                  END IF
-                  !-------------------------------------------------------------------------------------------------------------
+                    END IF
+                    !-------------------------------------------------------------------------------------------------------------
+                  END SELECT
+                  !   e n d   s e l e c t   EQUATIONS_SET%SUBTYPE
+                  !=================================================================================
 
                 END IF
               ENDDO !ms
@@ -5738,6 +5904,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                             & "equations did not converge.",ERR,ERROR,*999)
                                       ENDIF
                                     ENDIF
+                                    WRITE(23,*) RESIDUAL_NORM / RESIDUAL_NORM_0
                                   ELSE
                                     CALL FLAG_ERROR("DARCY_EQUATION_MONITOR_CONVERGENCE must be called "// &
                                         & "with a while control loop",ERR,ERROR,*999)

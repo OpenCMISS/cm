@@ -394,7 +394,7 @@ CONTAINS
 !               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(5,NO_PART_DERIV) 
 !               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
             ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
-              DARCY_RHO_0_F=1.0e3_DP
+              DARCY_RHO_0_F=1.0E-03 !rather pass it through shared material field
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
             ENDIF
@@ -872,8 +872,7 @@ CONTAINS
 
     SELECT CASE(EQUATIONS_SET_SUBTYPE)
     CASE(EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE,EQUATIONS_SET_MEMBRANE_SUBTYPE,EQUATIONS_SET_NO_SUBTYPE, &
-      & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-      & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) !use mooney rivlin law just while testing setup
+      & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
       !Form of constitutive model is:
       ! W=c1*(I1-3)+c2*(I2-3)+p*(I3-1)
       !Also assumed I3 = det(AZL) = 1.0
@@ -982,6 +981,7 @@ CONTAINS
       C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
       C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
       C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+
       PIOLA_TENSOR(1,1)=C(1)+C(2)*(AZL(2,2)+AZL(3,3))
       PIOLA_TENSOR(1,2)=C(2)*(-AZL(2,1))
       PIOLA_TENSOR(1,3)=C(2)*(-AZL(3,1))   
@@ -1030,6 +1030,61 @@ CONTAINS
         PIOLA_TENSOR = PIOLA_TENSOR - Mfact * bfact * DARCY_VOL_INCREASE * (ffact + (Jznu - 1.0_DP) * dfdJfact) * Jznu * AZU &
           & + 0.5_DP * Mfact * DARCY_VOL_INCREASE**2.0_DP * dfdJfact * Jznu * AZU
       END IF
+
+    CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+      !Form of constitutive model is:
+      ! W=c1*(I1-3)+c2*(I2-3)+c3*(J-1)^2   (this is actually nearly incompressible)
+      !However, implementation says: PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(I3-SQRT(I3))*AZU
+      C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
+      C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
+!       C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+
+      PIOLA_TENSOR(1,1)=C(1)+C(2)*(AZL(2,2)+AZL(3,3))
+      PIOLA_TENSOR(1,2)=C(2)*(-AZL(2,1))
+      PIOLA_TENSOR(1,3)=C(2)*(-AZL(3,1))   
+      PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
+      PIOLA_TENSOR(2,2)=C(1)+C(2)*(AZL(3,3)+AZL(1,1))
+      PIOLA_TENSOR(2,3)=C(2)*(-AZL(3,2))     
+      PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
+      PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
+      PIOLA_TENSOR(3,3)=C(1)+C(2)*(AZL(1,1)+AZL(2,2))
+!       PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(I3-SQRT(I3))*AZU
+      PIOLA_TENSOR=PIOLA_TENSOR*2.0_DP
+
+      !Parameters settings for coupled INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY model:
+      !\ToDo: ensure constants are consistent with Darcy model ! Pass through material parameters ???
+      DARCY_RHO_0_F = 1.0E-03
+      Mfact = 2.18E05
+      bfact = 1.0_DP
+
+      DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
+      DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
+
+!       !This modification sets it back to Mooney-Rivlin:
+!       PIOLA_TENSOR=PIOLA_TENSOR-2.0_DP*C(3)*(I3-SQRT(I3))*AZU
+
+!       !This modification adjusts for the modified Ciarlet-Geymonat expression: Eq.(28) of the INRIA paper
+!       PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
+
+      Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
+      IF( ABS(Jznu) < 1.0E-10_DP ) THEN
+        CALL FLAG_ERROR("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR: ABS(Jznu) < 1.0E-10_DP",ERR,ERROR,*999)
+      END IF
+
+      ! ffact = f(Jznu)  and  dfdJfact = f'(Jznu)  of the INRIA model
+      IF( ABS(Jznu-1.0_DP) > 1.0E-10_DP ) THEN
+        !Eq.(21) of the INRIA paper
+        ffact = 2.0_DP * (Jznu - 1.0_DP - log(Jznu)) / (Jznu - 1.0_DP)**2.0_DP
+        dfdJfact = ( 2.0_DP * (1.0_DP - 1.0_DP/Jznu) * (Jznu - 1.0_DP)**2.0_DP &
+                     & - 4.0_DP * (Jznu - 1.0_DP - log(Jznu)) * (Jznu - 1.0_DP) ) / (Jznu - 1.0_DP)**4.0_DP
+      ELSE
+        ffact = 1.0_DP
+        !dfdJfact = ???
+      END IF
+
+      !Eq.(13) of the INRIA paper
+      PIOLA_TENSOR = PIOLA_TENSOR - Mfact * bfact * DARCY_VOL_INCREASE * (ffact + (Jznu - 1.0_DP) * dfdJfact) * Jznu * AZU &
+        & + 0.5_DP * Mfact * DARCY_VOL_INCREASE**2.0_DP * dfdJfact * Jznu * AZU
 
     CASE (EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE) ! added by Thomas 2010-04-13
       !Form of the constitutive model is:
