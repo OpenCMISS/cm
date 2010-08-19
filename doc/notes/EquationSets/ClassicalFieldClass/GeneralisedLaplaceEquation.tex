@@ -1,0 +1,198 @@
+\subsection{Generalised Laplace Equation}
+
+\subsubsection{Governing equations:}
+The generalised Laplace's equation on a domain, $\Omega$, can be stated as
+\begin{equation}
+  \diverg{\pbrac{\tensor{\sigma}\grad\phi}}=0
+  \label{eqn:Laplacesequation}
+\end{equation}
+where $\phi$ is the potential throughout the domain and $\tensor{\sigma}$ is
+the conductivity tensor throughout the domain. Note that 
+$\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $\laplacian{\phi}=0$
+
+\subsubsection{Weak formulation:}
+The corresponding weak form of the equation \eqnref{eqn:Laplacesequation} is
+\begin{equation}
+  \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\grad\phi}}w}{\Omega}=0
+  \label{eqn:Laplaceweakform}
+\end{equation}
+
+Applying Green's theorm to \eqnref{eqn:Laplaceweakform} gives
+\begin{equation}
+  \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\grad\phi}}w}{\Omega}= 
+  \gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w}}{\Omega}-
+  \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}}w}{\Gamma}
+  =0
+\end{equation}
+or
+\begin{equation}
+  \gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w}}{\Omega}=
+  \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}w}}{\Gamma}
+  \label{eqn:Laplaceweightedresidualform}
+\end{equation}
+
+\subsubsection{Tensor notation:}
+If we now consider the integrand of the left hand side of
+\eqnref{eqn:Laplaceweightedresidualform} in tensorial form with covariant
+derivatives then
+\begin{equation}
+  \tensor{\sigma}\grad\phi = \sigma^{i}_{j}\covarderiv{\phi}{i}
+\end{equation}
+and
+\begin{equation}
+  \grad w = \covarderiv{w}{i}
+\end{equation}
+
+Now, both the above equations represent vectors that are covariant and therefore we must convert the
+first equation to a contravariant vector by multiplying by the contravariant
+metric tensor so that we can take the dot product. The final tensorial form is
+\begin{equation}
+  \dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
+\end{equation}
+and thus \eqnref{eqn:Laplaceweightedresidualform} becomes
+\begin{equation}
+  \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}=
+  \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}w}}{\Gamma}
+  \label{eqn:Laplaceweightedresidualtensorform}
+\end{equation}
+
+\subsubsection{Finite element formulation:}
+We can now discretise the domain into finite elements \ie $\Omega=
+\displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$, the left hand side of
+\eqnref{eqn:Laplaceweightedresidualtensorform} becomes
+\begin{equation}
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
+\end{equation}
+
+Now as we only know $\tensor{\sigma}^{*}$, the conductivity in the
+$\vect{\nu}$ (fibre) coordinate system rather than $\tensor{\sigma}$, the
+conductivity in the $\vect{x}$ (geometric) coordinate system we must transform the mixed
+tensor ${\sigma^{*}}^{a}_{b}$ from $\vect{\nu}$ to $\vect{x}$
+\begin{equation}
+  \sigma^{i}_{j}=\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}
+\end{equation}
+
+The left hand side of \eqnref{eqn:Laplaceweightedresidualtensorform} becomes
+\begin{equation}
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
+\end{equation}
+
+The next step is to approximate the dependent variable, $\phi$, using basis
+functions. To simplify this for different types of basis functions an
+\emph{interpolation notation} is adopted. This
+interpolation is such that $\gbfn{\alpha}{u}{\vect{\xi}}$ are the appropriate
+basis functions for the type of element (\eg \bicubicherm, Hermite-sector,
+\etc) and dimension of the problem (one, two or \threedal). For example if
+$\vect{\xi}=\bbrac{\xi}$ and the element is a cubic Hermite element then
+$\gbfn{\alpha}{u}{\vect{\xi}}$ are the cubic Hermite basis functions where
+$\alpha$ ranges from $1$ to $2$ and $u$ ranges from $0$ to $1$. If, however,
+$\vect{\xi}=\bbrac{\xione,\xitwo}$ and the element is a \bicubicherm element
+then $\alpha$ ranges from $1$ to $4$, $u$ ranges from $0$ to $3$ and
+$\gbfn{\alpha}{u}{\vect{\xi}}$ is the appropriate basis function for the nodal
+variable $\nodedof{\phi}{\alpha}{u}$. The nodal variables are defined as
+follows: $\nodedof{\phi}{\alpha}{0}=\nodept{\phi}{\alpha}$,
+$\nodedof{\phi}{\alpha}{1}=\delby{\nodept{\phi}{\alpha}}{s_{1}}$,
+$\nodedof{\phi}{\alpha}{2}=\delby{\nodept{\phi}{\alpha}}{s_{2}}$,
+$\nodedof{\phi}{\alpha}{3}=\deltwoby{\nodept{\phi}{\alpha}}{s_{1}}{s_{2}}$,
+\etc Hence for the \bicubicherm element the interpolation function
+$\gbfn{2}{3}{\vect{\xi}}$ multiplies the nodal variable
+$\phi^{2}_{,3}=\deltwoby{\phi^{2}}{s_{1}}{s_{2}}$ and thus the
+interpolation function is $\chbfn{2}{1}{\xione}\chbfn{1}{1}{\xitwo}$.  The
+scale factors for the Hermite interpolation are handled by the introduction of
+an interpolation scale factor $\gsf{\alpha}{u}$ defined as follows:
+$\gsf{\alpha}{0}=1$, $\gsf{\alpha}{1}=\nsftwo{\alpha}{1}$, $\gsf{\alpha}{2}=
+\nsftwo{\alpha}{2}$, $\gsf{\alpha}{3}=\nsftwo{\alpha}{1}\nsftwo{\alpha}{2}$,
+\etc For Lagrangian basis functions the interpolation scale factors are all
+one. The general form of the interpolation notation for $\phi$ is then
+\begin{equation}
+  \fnof{\phi}{\vect{\xi}}=\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}
+  {\alpha}{u}\gsf{(\alpha)}{(u)}
+  \label{eqn:phiinterpolation}
+\end{equation}
+
+\subsubsection{Spatio-temporal integration:}
+When dealing with integrals a similar interpolation notation is adopted in
+that $d\vect{\xi}$ is the appropriate infinitesimal for the dimension of the
+problem. The limits of the integral are also written in bold font and indicate
+the appropriate number of integrals for the dimension of the problem.  For
+example if $\vect{\xi}=\bbrac{\xione,\xitwo}$ then
+$\gint{\vect{0}}{\vect{1}}{x}
+{\vect{\xi}}=\giint{0}{1}{0}{1}{x}{\xione}{\xitwo}$, but if $\vect{\xi}=
+\bbrac{\xione,\xitwo,\xithree}$ then $\gint{\vect{0}}{\vect{1}}{x}
+{\vect{\xi}}=\dintl{0}{1}\!\dintl{0}{1}\!\dintl{0}{1}\,x\,d\xione d\xitwo
+d\xithree$.
+
+In order to adopt the interpolation notation above we need to transform from
+$\vect{x}$ to $\vect{\xi}$ coordinates. To do this we note that the
+contravarient tensor
+$G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}$ in
+$\vect{x}$ space becomes
+$\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}$
+in $\vect{\xi}$ space. Similarily using the covariant vector transformation
+rule we have
+\begin{equation}
+  \covarderiv{\phi}{r}=\delby{\phi}{\xi^{r}}=\delby{x_{i}}{\xi^{r}}\covarderiv{\phi}{i}\quad\therefore\quad\covarderiv{\phi}{i}=\delby{\xi^{r}}{x_{i}}\delby{\phi}{\xi^{r}}
+\end{equation}
+and
+\begin{equation}
+  \covarderiv{w}{s}=\delby{w}{\xi^{s}}=\delby{x_{k}}{\xi^{s}}\covarderiv{w}{k}\quad\therefore\quad\covarderiv{w}{k}=\delby{\xi^{s}}{x_{k}}\delby{w}{\xi^{s}}
+\end{equation}
+
+Now, using an interpolated dependent variable and a Galerkin finite element
+approach (where the weighting functions are chosen to be the interpolating
+basis functions \ie $w=\gbfn{\beta}{v}{\vect{\xi}}$) yields
+\begin{equation}
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}
+    \delby{\xi^{r}}{x_{i}}\delby{\pbrac{\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}}}{\xi^{r}}
+    \delby{\xi^{s}}{x_{k}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+where $\fnof{\matr{J}}{\vect{\xi}}$ is the \emph{Jacobian} of the
+transformation from the integration $\vect{x}$ to $\vect{\xi}$ coordinates.
+
+
+Taking the fixed nodal degrees-of-freedom and scale factors outside the integral we have
+\begin{equation}
+  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}
+  \gint{\vect{0}}{\vect{1}}{\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}
+    \delby{\xi^{r}}{x_{i}}\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
+    \delby{\xi^{s}}{x_{k}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+  \label{eqn:elementalfemlhs1}
+\end{equation}
+or
+\begin{equation}
+  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}
+  \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+  \label{eqn:elementalfemlhs2}
+\end{equation}
+where
+\begin{equation}
+  \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}\delby{\xi^{r}}{x_{i}}\delby{\xi^{s}}{x_{k}}
+\end{equation}
+
+If $G^{jk}=\kronecker{j}{k}$ then $j=k$ and we have
+\begin{equation}
+  \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{j}}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}\delby{\xi^{r}}{x_{i}}\delby{\xi^{s}}{x_{j}}
+\end{equation}
+
+
+
+The \emph{contravariant metric tensor} from $\vect{x}$ to $\vect{\xi}$ coordinates defined by
+\begin{equation}
+  g^{rs}=\delby{\xi^{r}}{x_{i}}\delby{\xi^{s}}{x_{i}}
+  \label{eqn:contrametrictensor}
+\end{equation}
+
+\subsubsection{Coded OpenCMISS formulation:}
+Finally, we use the Gaussian quadrature rule, usually stated as a weighted sum of function values at specified Gauss points within the domain of integration. An $n$-point Gaussian quadrature rule yields an exact result for polynomials of degree $2n-1$ or less by a suitable choice of the points $x_i$ and weights $g_i$ for $i = 1,...,n$. Consequently, the formulation implemented can be derived from Equation (\ref{eqn:elementalfemlhs2}) as: 
+\begin{equation}
+  \boxed{
+  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}
+  \dsum_{i=1}^{n}
+  \left(\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
+  \delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}\abs{\fnof{\matr{J}}{\vect{\xi}}}
+  \right)(x_i)g_i
+  }
+\end{equation}

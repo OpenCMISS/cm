@@ -1,0 +1,118 @@
+\subsection{Pressure Poisson Equation}
+
+The Navier-Stokes equation can be written as
+\begin{equation}
+  \rho\pbrac{\delby{\vect{u}}{t}-\dotprod{\vect{u}}{\gradient{\vect{u}}}}=-\grad{p}+\mu\diverg{\gradient{\vect{u}}}
+  \label{eqn:NavierStokes}
+\end{equation}
+
+Rearranging for $\grad{p}$ gives
+\begin{equation}
+  \grad{p}=\mu\diverg{\gradient{\vect{u}}}-\rho\pbrac{\delby{\vect{u}}{t}-\dotprod{\vect{u}}{\gradient{\vect{u}}}}  
+\end{equation}
+or
+\begin{equation}
+  \gradient{p}=\vect{b}
+  \label{eqn:NavierStokesPressureForm}
+\end{equation}
+where
+\begin{equation}
+  \vect{b}=\mu\diverg{\gradient{\vect{u}}}-\rho\pbrac{\delby{\vect{u}}{t}-\dotprod{\vect{u}}{\gradient{\vect{u}}}}
+\end{equation}
+
+Note that from \eqnref{eqn:NavierStokesPressureForm} we can write
+\begin{equation} 
+  \dotprod{\gradient{p}}{\normal}=\dotprod{\vect{b}}{\normal}
+  \label{eqn:NavierStokesPressureFormNormal}
+\end{equation}
+
+Taking the divergence of both sides of \eqnref{eqn:NavierStokesPressureForm} gives
+\begin{equation}
+  \diverg{\gradient{p}}=\diverg{\vect{b}}
+  \label{eqn:PressurePoisson}
+\end{equation}
+
+The corresponding weak form of \eqnref{eqn:PressurePoisson} is
+\begin{equation}
+  \gint{\Omega}{}{\diverg{\gradient{p}}w}{\Omega}=\gint{\Omega}{}{\diverg{\vect{b}}w}{\Omega}
+  \label{eqn:PressurePoissonWeakForm}
+\end{equation}
+
+Now the divergence theorm states that
+\begin{equation}
+  \gint{\Omega}{}{\diverg{\tensor{F}}}{\Omega}=\gint{\Gamma}{}{\dotprod{\tensor{F}}{\normal}}{\Gamma}
+  \label{eqn:DivergenceTheorm}
+\end{equation}
+
+Applying the divergence theorm where $\tensor{F}=g\vect{f}$ gives
+\begin{equation}
+  \gint{\Omega}{}{\pbrac{\dotprod{\vect{f}}{\gradient{g}}+g\diverg{\vect{f}}}}{\Omega}=\gint{\Gamma}{}{g\dotprod{\vect{f}}{\normal}}{\Gamma}
+  \label{eqn:DivergenceTheormScalarVector}
+\end{equation}
+
+Note that when $\vect{f}=\gradient{f}$ is used in
+\eqnref{eqn:DivergenceTheormScalarVector} you get Green's identity \ie
+\begin{equation}
+  \gint{\Omega}{}{\pbrac{\dotprod{\gradient{f}}{\gradient{g}}+g\diverg{\gradient{f}}}}{\Omega}=\gint{\Gamma}{}{g\dotprod{\gradient{f}}{\normal}}{\Gamma}
+  \label{eqn:GreensIdentity1}
+\end{equation}
+
+Now if we apply \eqnref{eqn:GreensIdentity1} to the left hand side of
+\eqnref{eqn:PressurePoissonWeakForm} we get
+\begin{equation}
+  \gint{\Omega}{}{\diverg{\gradient{p}}w}{\Omega}=\gint{\Gamma}{}{\dotprod{\gradient{p}}{\normal}w}{\Gamma}-
+  \gint{\Omega}{}{\dotprod{\gradient{p}}{\gradient{w}}}{\Omega}
+\end{equation}
+or from \eqnref{eqn:NavierStokesPressureFormNormal}
+\begin{equation}
+  \gint{\Omega}{}{\diverg{\gradient{p}}w}{\Omega}=\gint{\Gamma}{}{\dotprod{\vect{b}}{\normal}w}{\Gamma}-
+  \gint{\Omega}{}{\dotprod{\gradient{p}}{\gradient{w}}}{\Omega}
+  \label{eqn:PressurePoissonWeakFormLHS}
+\end{equation}
+
+Now if we apply \eqnref{eqn:DivergenceTheormScalarVector} to the right hand
+side of \eqnref{eqn:PressurePoissonWeakForm} we get
+\begin{equation}
+  \gint{\Omega}{}{\diverg{\vect{b}}w}{\Omega}=\gint{\Gamma}{}{\dotprod{\vect{b}}{\normal}w}{\Gamma}-
+  \gint{\Omega}{}{\dotprod{\vect{b}}{\gradient{w}}}{\Omega}
+  \label{eqn:PressurePoissonWeakFormRHS}
+\end{equation}
+
+Substituting \eqnref{eqn:PressurePoissonWeakFormLHS} and
+\eqnref{eqn:PressurePoissonWeakFormRHS} into
+\eqnref{eqn:PressurePoissonWeakForm} gives
+\begin{equation}
+  \gint{\Gamma}{}{\dotprod{\vect{b}}{\normal}w}{\Gamma}-
+  \gint{\Omega}{}{\dotprod{\gradient{p}}{\gradient{w}}}{\Omega}=\gint{\Gamma}{}{\dotprod{\vect{b}}{\normal}w}{\Gamma}-
+  \gint{\Omega}{}{\dotprod{\vect{b}}{\gradient{w}}}{\Omega}
+\end{equation} 
+or
+\begin{equation}
+  \gint{\Omega}{}{\dotprod{\gradient{p}}{\gradient{w}}}{\Omega}=\gint{\Omega}{}{\dotprod{\vect{b}}{\gradient{w}}}{\Omega}
+  \label{eqn:PressurePoissonFinalWeakForm}
+\end{equation}
+
+Now, using a standard Galerkin Finite Element approach
+\eqnref{eqn:PressurePoissonFinalWeakForm} can be written in the following form
+ \begin{equation}
+   \matr{K}_{p}\vect{p}=\vect{s}
+  \label{eqn:PressurePoissonFinalWeakForm}
+\end{equation}
+where $\matr{K}_{p}$ is the pressure stiffness matrix, $\vect{p}$ the vector of unknown
+pressure DOFs and $\vect{s}$ the source vector. 
+
+Note that you can write
+$\vect{s}$ in terms of $\matr{K}_{u}$ the velocity
+stiffness matrix, $\matr{M}$ the mass matrix, $\vect{u}$ the vector of know
+velocity DOFs and $\fnof{\vect{h}}{\vect{u}}$ the nonlinear Navier-Stokes
+vector.
+
+Note that $\matr{K}_{P}$ is most likely signular and therefore you will need to
+set a reference pressure Dirichlet condition somewhere and measure the
+pressures relative to this boundary condition value.
+
+Note that this formulation removes all the nasty Neumann conditions in favour
+of a Dirichlet condition. It also removes the surface integrals in favour of
+volume integrals!
+
+\newpage 

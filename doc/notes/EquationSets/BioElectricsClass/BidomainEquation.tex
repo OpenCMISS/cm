@@ -1,0 +1,75 @@
+\subsection{Bidomain Equation}
+
+The bidomain model can be thought of as two co-existant intra and extrcelluar
+spaces. The potential in the intracellular space is denoted as
+$\phi_{i}$ and the potential in the extracellular space is denoted as
+$\phi_{e}$. The intra and extracellular potentials are related through the
+transmembrane voltage, $V_{m}$, i.e.,
+
+\begin{equation}
+  V_{m}=\phi_{i}-\phi_{e}
+  \label{eqn:transmembranevoltage}
+\end{equation} 
+
+The bidomain equations are
+
+\begin{align}
+  A_{m}C_{m}\delby{V_{m}}{t}-\diverg{\pbrac{\tensor{\sigma}_{i}\grad{V_{m}}}}&=\diverg{\pbrac{\tensor{\sigma}_{i}\grad{\phi_{e}}}}-A_{m}\pbrac{I_{ion}-I_{m}}+i_{i} \label{eqn:biodomain1}
+  \\
+  \diverg{\pbrac{\pbrac{\tensor{\sigma}_{e}+\tensor{\sigma}_{i}}\grad{\phi_{e}}}}&=-\diverg{\pbrac{\tensor{\sigma}_{i}\grad{V_{m}}}}-i_{i}+i_{e}
+  \label{eqn:bidomain2}
+\end{align}
+
+where $A_{m}$ is the surface to volume ratio for the cell, $C_{m}$ is
+the specific membrance capacitance, $\tensor{\sigma}_{i}$ is the intracellular
+conductivity tensor, $\tensor{\sigma}_{e}$ is the extracellular
+conductivity tensor, $I_{ion}$ is the ionic current, $I_{m}$ is the
+transmembrane current
+
+\subsubsection{Operator splitting}
+
+Consider the initial value problem
+\begin{align}
+  \dby{u}{t}&=\pbrac{L_{1}+L_{2}}u \\
+  \fnof{u}{0}&=u_{0}
+\end{align}
+where $L_{1}$ and $L_{2}$ are some operators.
+
+For Gudunov splitting we first solve
+\begin{align}
+  \dby{v}{t}&=L_{1}v \\
+  \fnof{v}{0}&=u_{0}
+\end{align}
+for $t\in\sqbrac{0,\Delta t}$ to give $\fnof{v}{\Delta t}$. Next we solve
+\begin{align}
+  \dby{w}{t}&=L_{2}w \\
+  \fnof{w}{0}&=\fnof{v}{\Delta t}
+\end{align}
+for $t\in\sqbrac{0,\Delta t}$ to give $\fnof{w}{\Delta t}$. We now set
+\begin{equation}
+\fnof{\tilde{u}}{\Delta t}=\fnof{w}{\Delta t}
+\end{equation}
+where $\tilde{u}$ is a approximate solution to the orginal initial value
+problem.
+
+For Strang splitting we first solve
+\begin{align}
+  \dby{v}{t}&=L_{1}v \\
+  \fnof{v}{0}&=u_{0}
+\end{align}
+for $t\in\sqbrac{0,\frac{\Delta t}{2}}$ to give $\fnof{v}{\frac{\Delta t}{2}}$. Next we solve
+\begin{align}
+  \dby{w}{t}&=L_{2}w \\
+  \fnof{w}{0}&=\fnof{v}{\frac{\Delta t}{2}}
+\end{align}
+for $t\in\sqbrac{0,\Delta t}$ to give $\fnof{w}{\Delta t}$. Next we solve
+\begin{align}
+  \dby{v}{t}&=L_{1}v \\
+  \fnof{v}{\frac{\Delta t}{2}}&=\fnof{w}{\Delta t}
+\end{align}
+for $t\in\sqbrac{\frac{\Delta t}{2},\Delta t}$ to give $\fnof{v}{\Delta t}$.We now set
+\begin{equation}
+\fnof{\tilde{u}}{\Delta t}=\fnof{v}{\Delta t}
+\end{equation}
+where $\tilde{u}$ is a approximate solution to the orginal initial value
+problem. 
