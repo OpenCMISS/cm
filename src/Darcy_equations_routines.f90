@@ -50,6 +50,7 @@ MODULE DARCY_EQUATIONS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES
+  USE COMP_ENVIRONMENT
   USE COORDINATE_ROUTINES  
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
@@ -3503,7 +3504,7 @@ CONTAINS
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA
     REAL(DP), POINTER :: MESH_DISPLACEMENT_VALUES(:)
 
-    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS,NDOFS_TO_PRINT,loop_idx
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,NDOFS_TO_PRINT,loop_idx
 
     CALL ENTERS("DARCY_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
 
@@ -3567,8 +3568,7 @@ CONTAINS
                                 & ERR,ERROR,*999)
                             ENDIF
 
-                            TOTAL_NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
-                              & TOTAL_NUMBER_OF_DOFS
+                            NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%NUMBER_OF_DOFS
 
                             IF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE &
                                 & .OR. CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE) THEN
@@ -3577,7 +3577,7 @@ CONTAINS
                               !    needs to be made consistent between the different problem types
                             ELSE
                               !--- Second, update geometric field
-                              DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                              DO dof_number=1,NUMBER_OF_DOFS
                                 CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, & 
                                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
                                   & MESH_DISPLACEMENT_VALUES(dof_number), &
@@ -3673,7 +3673,7 @@ CONTAINS
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE
-    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS,loop_idx
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
     INTEGER(INTG) :: NDOFS_TO_PRINT
 
 !     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -3768,9 +3768,8 @@ CONTAINS
                                           & '(" DEPENDENT_FIELD,FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE (before) = ",4(X,E13.6))', &
                                           & '4(4(X,E13.6))',ERR,ERROR,*999)
                                       ENDIF
-                                      TOTAL_NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR% &
-                                        & TOTAL_NUMBER_OF_DOFS
-                                      DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                      NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
+                                      DO dof_number=1,NUMBER_OF_DOFS
                                         BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                                           & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
@@ -5121,7 +5120,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA
 
 !     INTEGER(INTG) :: NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_FINITE_ELASTICITY,NUMBER_OF_COMPONENTS_GEOMETRIC_FIELD_DARCY
-    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,TOTAL_NUMBER_OF_DOFS,NDOFS_TO_PRINT,dof_number,loop_idx
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_DOFS,NDOFS_TO_PRINT,dof_number,loop_idx
     INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION
 
 
@@ -5365,8 +5364,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                 ENDIF
 
                 !--- Third: FIELD_MESH_DISPLACEMENT_SET_TYPE += Deformed absolute position of solid
-                TOTAL_NUMBER_OF_DOFS = GEOMETRIC_FIELD_DARCY%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%TOTAL_NUMBER_OF_DOFS
-                DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                NUMBER_OF_DOFS = GEOMETRIC_FIELD_DARCY%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%NUMBER_OF_DOFS
+                DO dof_number=1,NUMBER_OF_DOFS
                   ! assumes fluid-geometry and solid-dependent mesh are identical \todo: introduce check
                   CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD_DARCY, & 
                     & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,dof_number, & 
@@ -5456,7 +5455,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     REAL(DP), POINTER :: DUMMY_VALUES1(:)
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS
     INTEGER(INTG) :: NDOFS_TO_PRINT
 
 
@@ -5557,9 +5556,9 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
                                   !-------------------------------------------------------------------------------------------------
                                   ! 3.) Finalise field relative velocity
-                                  TOTAL_NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
-                                    & TOTAL_NUMBER_OF_DOFS  ! number of geometric dofs = number of (u,v,w) dofs
-                                  DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                  NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%NUMBER_OF_DOFS
+                                  ! number of geometric dofs = number of (u,v,w) dofs
+                                  DO dof_number=1,NUMBER_OF_DOFS
                                     ! Subtract mesh velocity values
                                     !--- Subtract the velocity of the moving mesh from the fluid velocity
                                     CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD, & 
@@ -5793,7 +5792,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(VARYING_STRING) :: FILENAME
+    CHARACTER(25) :: FILENAME
+    TYPE(VARYING_STRING) :: FILEPATH
 
     REAL(DP), POINTER :: ITERATION_VALUES_N(:),ITERATION_VALUES_N1(:)
     REAL(DP) :: RESIDUAL_NORM
@@ -5801,7 +5801,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     REAL(DP), PARAMETER :: RESIDUAL_TOLERANCE=1.0E-5_DP
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS
+    INTEGER(INTG) :: COMPUTATIONAL_NODE_NUMBER
 
 
     CALL ENTERS("DARCY_EQUATION_MONITOR_CONVERGENCE",ERR,ERROR,*999)
@@ -5814,8 +5815,10 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     NULLIFY(EQUATIONS_MAPPING)
     NULLIFY(FIELD_VARIABLE)
 
-    FILENAME="./output/Darcy.conv"
-    OPEN(UNIT=23, FILE=CHAR(FILENAME),STATUS='unknown',ACCESS='append')
+    COMPUTATIONAL_NODE_NUMBER=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+    WRITE(FILENAME,'("Darcy_",I3.3,".conv")') COMPUTATIONAL_NODE_NUMBER
+    FILEPATH = "./output/"//FILENAME
+    OPEN(UNIT=23, FILE=CHAR(FILEPATH),STATUS='unknown',ACCESS='append')
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
@@ -5869,13 +5872,12 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                     & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
 
                                   RESIDUAL_NORM = 0.0_DP
-                                  TOTAL_NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR% &
-                                    & TOTAL_NUMBER_OF_DOFS
-                                  DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                  NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
+                                  DO dof_number=1,NUMBER_OF_DOFS
                                     RESIDUAL_NORM = RESIDUAL_NORM + &
                                       & ( ITERATION_VALUES_N1(dof_number) - ITERATION_VALUES_N(dof_number) )**2.0_DP
                                   END DO
-                                  RESIDUAL_NORM = SQRT(RESIDUAL_NORM / TOTAL_NUMBER_OF_DOFS)
+                                  RESIDUAL_NORM = SQRT(RESIDUAL_NORM / NUMBER_OF_DOFS)
 
                                   IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
 
@@ -5997,7 +5999,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     REAL(DP) :: RESIDUAL_NORM,AITKEN_PARAM,ACCELERATED_VALUE
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS
 
 
     CALL ENTERS("DARCY_EQUATION_ACCELERATE_CONVERGENCE",ERR,ERROR,*999)
@@ -6062,20 +6064,19 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                     & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
 
                                   RESIDUAL_NORM = 0.0_DP
-                                  TOTAL_NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR% &
-                                    & TOTAL_NUMBER_OF_DOFS
+                                  NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
 
-                                  DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                  DO dof_number=1,NUMBER_OF_DOFS
                                     RESIDUAL_NORM = RESIDUAL_NORM + &
                                       & ( ITERATION_VALUES_N1(dof_number) - ITERATION_VALUES_N(dof_number) )**2.0_DP
                                   END DO
-                                  RESIDUAL_NORM = SQRT(RESIDUAL_NORM / TOTAL_NUMBER_OF_DOFS)
+                                  RESIDUAL_NORM = SQRT(RESIDUAL_NORM / NUMBER_OF_DOFS)
 
                                   AITKEN_PARAM = 0.5_DP  !\ToDo Devise better way of determining optimal Aitken parameter
 
                                   IF( CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER>2 )THEN
                                     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy accelerate convergence ... ",ERR,ERROR,*999)
-                                    DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                    DO dof_number=1,NUMBER_OF_DOFS
                                       ACCELERATED_VALUE = AITKEN_PARAM * ITERATION_VALUES_N1(dof_number) &
                                         & + (1.0_DP - AITKEN_PARAM) * ITERATION_VALUES_N(dof_number)
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 

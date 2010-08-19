@@ -3105,7 +3105,7 @@ CONTAINS
     REAL(DP), POINTER :: DUMMY_VALUES1(:)
 
     INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE
-    INTEGER(INTG) :: dof_number,TOTAL_NUMBER_OF_DOFS
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,GEOMETRY_NUMBER_OF_DOFS,DEPENDENT_NUMBER_OF_DOFS
     INTEGER(INTG) :: NDOFS_TO_PRINT
     INTEGER(INTG) :: loop_idx
 
@@ -3183,9 +3183,9 @@ CONTAINS
                                     CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                                       & FIELD_VALUES_SET_TYPE,GEOMETRIC_FIELD_VALUES,ERR,ERROR,*999)
 
-                                    TOTAL_NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
-                                      & TOTAL_NUMBER_OF_DOFS
-                                    DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                    GEOMETRY_NUMBER_OF_DOFS=GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
+                                        & PTR%NUMBER_OF_DOFS
+                                    DO dof_number=1,GEOMETRY_NUMBER_OF_DOFS
                                       BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                                         & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
                                       IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
@@ -3203,7 +3203,9 @@ CONTAINS
                                     CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                                       & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_POSITION_VALUES,ERR,ERROR,*999)
 
-                                    DO dof_number=1,TOTAL_NUMBER_OF_DOFS
+                                    DEPENDENT_NUMBER_OF_DOFS=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
+                                        & PTR%NUMBER_OF_DOFS
+                                    DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
                                       BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                                         & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
                                       IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
