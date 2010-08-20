@@ -2099,7 +2099,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
   END TYPE LINEAR_DIRECT_SOLVER_TYPE
 
-  !>Contains information for a direct linear solver
+  !>Contains information for an iterative linear solver
   TYPE LINEAR_ITERATIVE_SOLVER_TYPE
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linear solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
