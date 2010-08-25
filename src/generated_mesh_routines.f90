@@ -145,7 +145,7 @@ MODULE GENERATED_MESH_ROUTINES
   PUBLIC GENERATED_MESH_REGION_GET
   
   PUBLIC GENERATED_MESH_USER_NUMBER_FIND
-
+ ! PUBLIC GENERATED_MESH_SURFACE_GET
   PUBLIC GENERATED_MESH_CYLINDER_SURFACES_GET,GENERATED_MESH_ELLIPSOID_SURFACES_GET
   
 CONTAINS
@@ -777,7 +777,7 @@ CONTAINS
           CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
              GENERATED_MESH%ELLIPSOID_MESH%APPEND_LINEAR_COMPONENT=APPEND_LINEAR_COMPONENT
           CASE DEFAULT
-             LOCAL_ERROR="Multiple mesh components is not implemented for " &
+             LOCAL_ERROR="Multiple mesh components are not imlemented for " &
                   & //TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))//"."
              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -849,8 +849,7 @@ CONTAINS
 999 CALL ERRORS("GENERATED_MESH_EXTENT_GET",ERR,ERROR)
     CALL EXITS("GENERATED_MESH_EXTENT_GET")
     RETURN   
-  END SUBROUTINE GENERATED_MESH_EXTENT_GET
-  
+  END SUBROUTINE GENERATED_MESH_EXTENT_GET  
   !
   !================================================================================================================================
   !
@@ -871,64 +870,79 @@ CONTAINS
     CALL ENTERS("GENERATED_MESH_EXTENT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(GENERATED_MESH)) THEN
-      IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
-        CALL FLAG_ERROR("Generated mesh has been finished.",ERR,ERROR,*999)
-      ELSE
-        NULLIFY(COORDINATE_SYSTEM)
-        CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
-        CALL COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,COORDINATE_DIMENSION,ERR,ERROR,*999)
-        IF(SIZE(EXTENT,1)==COORDINATE_DIMENSION) THEN
+       IF(GENERATED_MESH%GENERATED_MESH_FINISHED) THEN
+          CALL FLAG_ERROR("Generated mesh has been finished.",ERR,ERROR,*999)
+       ELSE
+          NULLIFY(COORDINATE_SYSTEM)
+          CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
+          CALL COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,COORDINATE_DIMENSION,ERR,ERROR,*999)
           SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
           CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-            IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
-              IF(L2NORM(EXTENT)>ZERO_TOLERANCE) THEN
-                IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)) DEALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)
-                ALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT(COORDINATE_DIMENSION),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
-                GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT=EXTENT
-              ELSE
-                CALL FLAG_ERROR("The norm of the mesh extent is zero.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
-            ENDIF
+             IF(SIZE(EXTENT,1)==COORDINATE_DIMENSION) THEN
+                IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
+                   IF(L2NORM(EXTENT)>ZERO_TOLERANCE) THEN
+                      IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)) &
+                           & DEALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT)
+                      ALLOCATE(GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT(COORDINATE_DIMENSION),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
+                      GENERATED_MESH%REGULAR_MESH%MAXIMUM_EXTENT=EXTENT
+                   ELSE
+                      CALL FLAG_ERROR("The norm of the mesh extent is zero.",ERR,ERROR,*999)
+                   ENDIF
+                ELSE
+                   CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
+                ENDIF
+             ELSE
+                LOCAL_ERROR="The extent size of "//TRIM(NUMBER_TO_VSTRING(SIZE(EXTENT,1),"*",ERR,ERROR))// &
+                     & " is invalid. The extent size must match the coordinate system dimension of "// &
+                     & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             ENDIF
           CASE(GENERATED_MESH_POLAR_MESH_TYPE)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
-            IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
-              ALLOCATE(GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT(SIZE(EXTENT)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
-              GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT=EXTENT 
-            ELSE
-              CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
-            ENDIF
-         CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
-           IF(ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH)) THEN 
-             ALLOCATE(GENERATED_MESH%ELLIPSOID_MESH%ELLIPSOID_EXTENT(SIZE(EXTENT)),STAT=ERR)
-             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
-            GENERATED_MESH%ELLIPSOID_MESH%ELLIPSOID_EXTENT=EXTENT 
-           ELSE
-             CALL FLAG_ERROR("Ellipsoid generated mesh is not associated.",ERR,ERROR,*999)
-           ENDIF
-         CASE DEFAULT
-            LOCAL_ERROR="The generated mesh mesh type of "// &
-              & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
-              & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             IF(SIZE(EXTENT,1)==COORDINATE_DIMENSION) THEN
+                IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN 
+                   ALLOCATE(GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT(SIZE(EXTENT)),STAT=ERR)
+                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
+                   GENERATED_MESH%CYLINDER_MESH%CYLINDER_EXTENT=EXTENT 
+                ELSE
+                   CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
+                ENDIF
+             ELSE
+                LOCAL_ERROR="The extent size of "//TRIM(NUMBER_TO_VSTRING(SIZE(EXTENT,1),"*",ERR,ERROR))// &
+                     & " is invalid. The extent size must match the coordinate system dimension of "// &
+                     & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             ENDIF
+          CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE) 
+             IF((SIZE(EXTENT,1)-1)==COORDINATE_DIMENSION) THEN
+                IF(ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH)) THEN 
+                   ALLOCATE(GENERATED_MESH%ELLIPSOID_MESH%ELLIPSOID_EXTENT(SIZE(EXTENT)),STAT=ERR)
+                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate maximum extent.",ERR,ERROR,*999)
+                   GENERATED_MESH%ELLIPSOID_MESH%ELLIPSOID_EXTENT=EXTENT 
+                ELSE
+                   CALL FLAG_ERROR("Ellipsoid generated mesh is not associated.",ERR,ERROR,*999)
+                ENDIF
+             ELSE
+                LOCAL_ERROR="The extent size of "//TRIM(NUMBER_TO_VSTRING(SIZE(EXTENT,1),"*",ERR,ERROR))// &
+                     & " is invalid. The extent size must be equal one plus the coordinate system dimension of "// &
+                     & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             ENDIF
+          CASE DEFAULT
+             LOCAL_ERROR="The generated mesh mesh type of "// &
+                  & TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
-        ELSE
-          LOCAL_ERROR="The extent size of "//TRIM(NUMBER_TO_VSTRING(SIZE(EXTENT,1),"*",ERR,ERROR))// &
-            & " is invalid. The extent size must match the coordinate system dimension of "// &
-            & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-      ENDIF
+       ENDIF
     ELSE
-      CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
+       CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*999)
     ENDIF
- 
+    
     CALL EXITS("GENERATED_MESH_EXTENT_SET")
     RETURN
 999 CALL ERRORS("GENERATED_MESH_EXTENT_SET",ERR,ERROR)
@@ -936,6 +950,65 @@ CONTAINS
     RETURN 1   
   END SUBROUTINE GENERATED_MESH_EXTENT_SET
 
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Get one of the surfaces of a generated mesh. \see OPENCMISS::CMISSGeneratedMeshSurfaceGet
+  SUBROUTINE GENERATED_MESH_SURFACE_GET(GENERATED_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*)
+
+   !Argument variables
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to get the type of
+    INTEGER(INTG), INTENT(IN) :: SURFACE_TYPE !<The surface you are interested in
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: SURFACE_NODES (:) !<The nodes on the specified surface
+    INTEGER(INTG), INTENT(OUT) :: NORMAL_XI !<The normal outward pointing xi direction 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH
+    TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG), ALLOCATABLE :: NODES(:)
+    
+
+    CALL ENTERS("GENERATED_MESH_SURFACE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(GENERATED_MESH)) THEN
+       SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+       CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+       CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+       CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+       CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
+          CYLINDER_MESH=>GENERATED_MESH%CYLINDER_MESH
+          CALL GENERATED_MESH_CYLINDER_SURFACES_GET(CYLINDER_MESH,SURFACE_TYPE,NODES,NORMAL_XI,ERR,ERROR,*999) 
+          ALLOCATE(SURFACE_NODES(SIZE(NODES,1)),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999) 
+          SURFACE_NODES=NODES
+       CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
+          ELLIPSOID_MESH=>GENERATED_MESH%ELLIPSOID_MESH
+          CALL GENERATED_MESH_ELLIPSOID_SURFACES_GET(ELLIPSOID_MESH,SURFACE_TYPE,NODES,NORMAL_XI,ERR,ERROR,*999)
+          ALLOCATE(SURFACE_NODES(SIZE(NODES,1)),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999) 
+          SURFACE_NODES=NODES
+       CASE DEFAULT
+          LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+               & " is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Generated mesh is not associated",ERR,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("GENERATED_MESH_SURFACE_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_SURFACE_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_SURFACE_GET")
+    RETURN   
+  END SUBROUTINE GENERATED_MESH_SURFACE_GET  
   !
   !================================================================================================================================
   !
@@ -2664,9 +2737,6 @@ CONTAINS
         GENERATED_MESH%ELLIPSOID_MESH%GENERATED_MESH=>GENERATED_MESH
         GENERATED_MESH%GENERATED_TYPE=GENERATED_MESH_ELLIPSOID_MESH_TYPE
         NULLIFY(GENERATED_MESH%ELLIPSOID_MESH%BASIS1)
-        NULLIFY(GENERATED_MESH%ELLIPSOID_MESH%BASIS2)
-        NULLIFY(GENERATED_MESH%ELLIPSOID_MESH%BASIS3)
-        NULLIFY(GENERATED_MESH%ELLIPSOID_MESH%BASIS4)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Generated mesh is not associated.",ERR,ERROR,*998)
@@ -3559,7 +3629,6 @@ CONTAINS
        CALL FLAG_ERROR("Ellipsoid mesh does not have a basis associated.",ERR,ERROR,*999)
     ENDIF
 
-    np = 0
     ! assign to the field
     IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
        FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
@@ -3704,85 +3773,95 @@ CONTAINS
   !
   !================================================================================================================================
   ! 
-
+  
   !>Provides an easy way to grab surfaces for boundary condition assignment
-  SUBROUTINE GENERATED_MESH_CYLINDER_SURFACES_GET(CYLINDER_MESH,SURFACE_TYPE,ELEMENTS,NODES,ERR,ERROR,*)
+  SUBROUTINE GENERATED_MESH_CYLINDER_SURFACES_GET(CYLINDER_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*)
     ! Argument variables
     TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH !<A pointer to the cylinder mesh object
     INTEGER(INTG), INTENT(IN) :: SURFACE_TYPE !<A constant identifying the type of surface to get \see GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces,GENERATED_MESH_ROUTINES
-    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: ELEMENTS(:,:) !<On exit, contains the list of elements owning the surface (global numbers?)
-    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: NODES(:,:) !<On exit, contains the list of nodes belonging to the surface
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: SURFACE_NODES(:) !<On exit, contains the list of nodes belonging to the surface
+    INTEGER(INTG), INTENT(OUT) :: NORMAL_XI !<On exit, contains the xi direction of the outward pointing normal of the surface 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     ! Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS_XI(3) !Specified number of elements in each xi direction
-    INTEGER(INTG) :: NUMBER_OF_NODES_XIC(3) ! Number of nodes per element in each xi direction (basis property)
+    INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
     INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
     REAL(DP) :: delta(3),deltai(3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+    INTEGER(INTG) :: node_counter,i, j, k
+
     CALL ENTERS("GENERATED_MESH_CYLINDER_SURFACES_GET",ERR,ERROR,*999)
 
     ! let's go
     IF(ALLOCATED(CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI)) THEN
-      NUMBER_OF_ELEMENTS_XI=CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI
-      IF(ASSOCIATED(CYLINDER_MESH%BASIS)) THEN
-        BASIS=>CYLINDER_MESH%BASIS
-        IF(.NOT.ALLOCATED(ELEMENTS)) THEN
-          IF(.NOT.ALLOCATED(NODES)) THEN
-            NUMBER_OF_NODES_XIC=BASIS%NUMBER_OF_NODES_XIC
-            ! build indices first (some of these are dummy arguments)
-            CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XIC, &
-              & cylinder_mesh%cylinder_extent,total_number_of_nodes,total_number_of_elements,NIDX,EIDX, &
-              & delta,deltai,ERR,ERROR,*999)
-            SELECT CASE(SURFACE_TYPE)
-            CASE(GENERATED_MESH_CYLINDER_INNER_SURFACE)
-              ALLOCATE(NODES(SIZE(NIDX,2),SIZE(NIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-              ALLOCATE(ELEMENTS(SIZE(EIDX,2),SIZE(EIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
-              NODES=NIDX(1,:,:)
-              ELEMENTS=EIDX(1,:,:)
-            CASE(GENERATED_MESH_CYLINDER_OUTER_SURFACE)
-              ALLOCATE(NODES(SIZE(NIDX,2),SIZE(NIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-              ALLOCATE(ELEMENTS(SIZE(EIDX,2),SIZE(EIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
-              NODES=NIDX(SIZE(NIDX,1),:,:)
-              ELEMENTS=EIDX(SIZE(EIDX,1),:,:)
-            CASE(GENERATED_MESH_CYLINDER_TOP_SURFACE)
-              ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-              ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
-              NODES=NIDX(:,:,SIZE(NIDX,3))
-              ELEMENTS=EIDX(:,:,SIZE(EIDX,3))
-            CASE(GENERATED_MESH_CYLINDER_BOTTOM_SURFACE)
-              ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-              ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
-              NODES=NIDX(:,:,1)
-              ELEMENTS=EIDX(:,:,1)
-            CASE DEFAULT
-              LOCAL_ERROR="The specified surface type of "//TRIM(NUMBER_TO_VSTRING(SURFACE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+       NUMBER_OF_ELEMENTS_XI=CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI
+       IF(ASSOCIATED(CYLINDER_MESH%BASIS)) THEN
+          BASIS=>CYLINDER_MESH%BASIS
+          IF(.NOT.ALLOCATED(SURFACE_NODES)) THEN
+             NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XIC
+             ! build indices first (some of these are dummy arguments)
+             CALL GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
+                  & cylinder_mesh%cylinder_extent,total_number_of_nodes,total_number_of_elements,NIDX,EIDX, &
+                  & delta,deltai,ERR,ERROR,*999)
+             node_counter=0
+             SELECT CASE(SURFACE_TYPE)
+             CASE(GENERATED_MESH_CYLINDER_INNER_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,2))*(SIZE(NIDX,3))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO k=1,SIZE(NIDX,3)
+                   DO j=1,SIZE(NIDX,2) 
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(1,j,k)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=-1
+             CASE(GENERATED_MESH_CYLINDER_OUTER_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,2))*(SIZE(NIDX,3))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO k=1,SIZE(NIDX,3)
+                   DO j=1,SIZE(NIDX,2) 
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(SIZE(NIDX,1),j,k)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=1           
+             CASE(GENERATED_MESH_CYLINDER_TOP_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,2)
+                   DO i=1,SIZE(NIDX,1) 
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(i,j,SIZE(NIDX,3))
+                   ENDDO
+                ENDDO
+                NORMAL_XI=3 
+             CASE(GENERATED_MESH_CYLINDER_BOTTOM_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,2)
+                   DO i=1,SIZE(NIDX,1) 
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(i,j,1)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=-3
+             CASE DEFAULT
+                LOCAL_ERROR="The specified surface type of "//TRIM(NUMBER_TO_VSTRING(SURFACE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             END SELECT
           ELSE
-            CALL FLAG_ERROR("Output NODES array is already allocated.",ERR,ERROR,*999)
+             CALL FLAG_ERROR("Output SURFACE_NODES array is already allocated.",ERR,ERROR,*999)
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("Output ELEMENTS array is already allocated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Cylinder mesh object does not have a basis associated.",ERR,ERROR,*999)
-      ENDIF
+       ELSE
+          CALL FLAG_ERROR("Cylinder mesh object does not have a basis associated.",ERR,ERROR,*999)
+       ENDIF
     ELSE
-      CALL FLAG_ERROR("Cylinder mesh object does not have number of elements property specified.",ERR,ERROR,*999)
+       CALL FLAG_ERROR("Cylinder mesh object does not have number of elements property specified.",ERR,ERROR,*999)
     ENDIF
-    
+
     CALL EXITS("GENERATED_MESH_CYLINDER_SURFACES_GET")
     RETURN
 999 CALL ERRORS("GENERATED_MESH_CYLINDER_SURFACES_GET",ERR,ERROR)
@@ -3792,78 +3871,102 @@ CONTAINS
   !
   !================================================================================================================================
   ! 
-
+  
   !>Provides an easy way to grab surfaces for boundary condition assignment
-  SUBROUTINE GENERATED_MESH_ELLIPSOID_SURFACES_GET(ELLIPSOID_MESH,SURFACE_TYPE,ELEMENTS,NODES,ERR,ERROR,*)
+  SUBROUTINE GENERATED_MESH_ELLIPSOID_SURFACES_GET(ELLIPSOID_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*)
     ! Argument variables
     TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH !<A pointer to the ellipsoid mesh object
     INTEGER(INTG), INTENT(IN) :: SURFACE_TYPE !<A constant identifying the type of surface to get \see GENERATED_MESH_ROUTINES_GeneratedMeshEllipsoidSurfaces,GENERATED_MESH_ROUTINES
-    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: ELEMENTS(:,:) !<On exit, contains the list of elements owning the surface (global numbers?)
-    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: NODES(:,:) !<On exit, contains the list of nodes belonging to the surface
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: SURFACE_NODES(:) !<On exit, contains the list of nodes belonging to the surface
+    INTEGER(INTG), INTENT(OUT) :: NORMAL_XI !<On exit, contains the xi direction of the outward pointing normal of the surface 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     ! Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS1
     INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:),CORNER_NODES(:,:,:)
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS_XI(3) !Specified number of elements in each xi direction
-    INTEGER(INTG) :: NUMBER_OF_NODES_XIC(3) ! Number of nodes per element in each xi direction (basis property)
+    INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
     INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
     REAL(DP) :: delta(3),deltai(3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+    INTEGER(INTG) :: node_counter,i, j, k
+
     CALL ENTERS("GENERATED_MESH_ELLIPSOID_SURFACES_GET",ERR,ERROR,*999)
 
     ! let's go
     IF(ALLOCATED(ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI)) THEN
-      NUMBER_OF_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
-      IF(ASSOCIATED(ELLIPSOID_MESH%BASIS1)) THEN
-        BASIS1=>ELLIPSOID_MESH%BASIS1
-        IF(.NOT.ALLOCATED(ELEMENTS)) THEN
-          IF(.NOT.ALLOCATED(NODES)) THEN
-            NUMBER_OF_NODES_XIC=BASIS1%NUMBER_OF_NODES_XIC
-            ! build indices first (some of these are dummy arguments)
-            CALL GENERATED_MESH_ELLIPSOID_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XIC, &
-              & ellipsoid_mesh%ellipsoid_extent,total_number_of_nodes,total_number_of_elements,NIDX, &
-              CORNER_NODES,EIDX,delta,deltai,ERR,ERROR,*999)
-            SELECT CASE(SURFACE_TYPE)
-            CASE(GENERATED_MESH_ELLIPSOID_INNER_SURFACE)
-              ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-              ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
-              NODES=NIDX(:,:,1)
-              ELEMENTS=EIDX(:,:,1)
-            CASE(GENERATED_MESH_ELLIPSOID_OUTER_SURFACE)
-              ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-              ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,2)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
-              NODES=NIDX(:,:,SIZE(NIDX,3))
-              ELEMENTS=EIDX(:,:,SIZE(EIDX,3))
-            CASE(GENERATED_MESH_ELLIPSOID_TOP_SURFACE)
-              ALLOCATE(NODES(SIZE(NIDX,1),SIZE(NIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-              ALLOCATE(ELEMENTS(SIZE(EIDX,1),SIZE(EIDX,3)),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ELEMENTS array.",ERR,ERROR,*999)
-              NODES=NIDX(:,SIZE(NIDX,2),:)
-              ELEMENTS=EIDX(:,SIZE(EIDX,2),:)
-           CASE DEFAULT
-              LOCAL_ERROR="The specified surface type of "//TRIM(NUMBER_TO_VSTRING(SURFACE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
+       NUMBER_OF_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
+       IF(ASSOCIATED(ELLIPSOID_MESH%BASIS1)) THEN
+          BASIS1=>ELLIPSOID_MESH%BASIS1
+
+          IF(.NOT.ALLOCATED(SURFACE_NODES)) THEN
+             NUMBER_OF_NODES_XI=BASIS1%NUMBER_OF_NODES_XIC
+             ! build indices first (some of these are dummy arguments)
+             CALL GENERATED_MESH_ELLIPSOID_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
+                  & ellipsoid_mesh%ellipsoid_extent,total_number_of_nodes,total_number_of_elements,NIDX, &
+                  CORNER_NODES,EIDX,delta,deltai,ERR,ERROR,*999)
+             node_counter=0
+
+             SELECT CASE(SURFACE_TYPE)
+
+             CASE(GENERATED_MESH_ELLIPSOID_INNER_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,2)
+                   DO i=1, SIZE(NIDX,1)
+                      node_counter=node_counter+1
+                      IF (NIDX(i,j,1)/=0) THEN
+                         SURFACE_NODES(node_counter)=NIDX(i,j,1)
+                      ELSE
+                         node_counter=node_counter-1 
+                      ENDIF
+                   ENDDO
+                ENDDO
+                NORMAL_XI=-3
+
+             CASE(GENERATED_MESH_ELLIPSOID_OUTER_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,2)
+                   DO i=1, SIZE(NIDX,1)
+                      node_counter=node_counter+1
+                      IF (NIDX(i,j,SIZE(NIDX,3))/=0) THEN
+                         SURFACE_NODES=NIDX(i,j,SIZE(NIDX,3))
+                      ELSE
+                         node_counter=node_counter-1 
+                      ENDIF
+                   ENDDO
+                ENDDO
+                NORMAL_XI=3
+
+             CASE(GENERATED_MESH_ELLIPSOID_TOP_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,3))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO k=1,SIZE(NIDX,3)
+                   DO i=1, SIZE(NIDX,1)
+                      node_counter=node_counter+1
+                      IF (NIDX(i,SIZE(NIDX,2),k)/=0) THEN
+                         SURFACE_NODES=NIDX(i,SIZE(NIDX,2),k)
+                      ELSE
+                         node_counter=node_counter-1 
+                      ENDIF
+                   ENDDO
+                ENDDO
+                NORMAL_XI=2
+             CASE DEFAULT
+                LOCAL_ERROR="The specified surface type of "//TRIM(NUMBER_TO_VSTRING(SURFACE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             END SELECT
           ELSE
-            CALL FLAG_ERROR("Output NODES array is already allocated.",ERR,ERROR,*999)
+             CALL FLAG_ERROR("Output NODES array is already allocated.",ERR,ERROR,*999)
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("Output ELEMENTS array is already allocated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Ellipsoid mesh object does not have a basis associated.",ERR,ERROR,*999)
-      ENDIF
+       ELSE
+          CALL FLAG_ERROR("Ellipsoid mesh object does not have a basis associated.",ERR,ERROR,*999)
+       ENDIF
     ELSE
-      CALL FLAG_ERROR("Ellipsoid mesh object does not have number of elements property specified.",ERR,ERROR,*999)
+       CALL FLAG_ERROR("Ellipsoid mesh object does not have number of elements property specified.",ERR,ERROR,*999)
     ENDIF
-    
+
     CALL EXITS("GENERATED_MESH_ELLIPSOID_SURFACES_GET")
     RETURN
 999 CALL ERRORS("GENERATED_MESH_ELLIPSOID_SURFACES_GET",ERR,ERROR)
