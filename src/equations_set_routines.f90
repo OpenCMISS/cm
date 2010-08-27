@@ -1825,9 +1825,17 @@ CONTAINS
                       NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
                       NEW_EQUATIONS_SET%REGION=>REGION
                       !Default to a standardised Laplace.
+                      !
+                      !Set to multi-compartment diffusion
                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_TYPE
                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE
+                      !
+                      !Set to multi-compartment Darcy
+                      NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
+                      NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DARCY_EQUATION_TYPE
+                      NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE
+                      !
                       NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
                       !Initialise the setup
                       write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
