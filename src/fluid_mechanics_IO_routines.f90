@@ -1786,10 +1786,10 @@ CONTAINS
 
       WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
       WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
-      WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
-      WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
-      WRITE(14,'("    ", es25.16 )')NodeEValue(I)
-      WRITE(14,'("    ", es25.16 )')NodeSIGMAValue(I)
+! ! !       WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
+! ! !       WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
+! ! !       WRITE(14,'("    ", es25.16 )')NodeEValue(I)
+! ! !       WRITE(14,'("    ", es25.16 )')NodeSIGMAValue(I)
 
       IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
         IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
