@@ -1831,10 +1831,10 @@ CONTAINS
                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_TYPE
                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE
                       !
-                      !Set to multi-compartment Darcy
-                      NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-                      NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DARCY_EQUATION_TYPE
-                      NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE
+!                       !Set to multi-compartment Darcy
+!                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
+!                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DARCY_EQUATION_TYPE
+!                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE
                       !
                       NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
                       !Initialise the setup
