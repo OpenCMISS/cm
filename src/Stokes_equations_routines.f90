@@ -2102,7 +2102,7 @@ CONTAINS
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
-    INTEGER(INTG) :: equations_row_number,variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
+    INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
     REAL(DP) :: X(3)
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:), GEOMETRIC_PARAMETERS(:)
@@ -2308,20 +2308,47 @@ CONTAINS
                           CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
                             & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                             & CURRENT_TIME)
-                          DO equations_row_number=1,EQUATIONS%EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                            DISPLACEMENT_VALUE=0.0_DP
-                            BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                              & GLOBAL_BOUNDARY_CONDITIONS(equations_row_number)
-                            IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
-                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
-                                & MESH_VELOCITY_VALUES(equations_row_number),ERR,ERROR,*999)
-                            ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,equations_row_number, & 
-                                & BOUNDARY_VALUES(equations_row_number),ERR,ERROR,*999)
-                            END IF
-                          END DO
+!                           DO equations_row_number=1,EQUATIONS%EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+
+! xxxxxxxxxxxxxxxxxxxxxx
+
+                          DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                            variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                            FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                              DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                                IF(ASSOCIATED(DOMAIN)) THEN
+                                  IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                    DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                    IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                      !Loop over the local nodes excluding the ghosts.
+                                      DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                        DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                          local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                            & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+! xxxxxxxxxxxxxxxxxxxxxxxxx
+
+                                          DISPLACEMENT_VALUE=0.0_DP
+                                          BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                            & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                          IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                              & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
+                                          ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                              & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
+                                          END IF
+                                        ENDDO !deriv_idx
+                                      ENDDO !node_idx
+                                    ENDIF
+                                  ENDIF
+                                ENDIF
+                              ENDDO !component_idx
+                            ENDIF
+                          ENDDO !variable_idx
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         END IF
