@@ -3133,7 +3133,8 @@ CONTAINS
                   EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                     IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 .OR. &
-                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5) THEN
+                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 .OR. &
+                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
                       IF(ASSOCIATED(EQUATIONS_SET)) THEN
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                           DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
@@ -3184,7 +3185,10 @@ CONTAINS
 !\todo: Improve determination of XI coordinates
                                               IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
                                                 & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
-                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.) THEN
+                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
+                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
+                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
+                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==64.) THEN
                                                   DO K=1,number_of_nodes_xic(3)
                                                     DO J=1,number_of_nodes_xic(2)
                                                       DO I=1,number_of_nodes_xic(1)
@@ -4282,7 +4286,8 @@ CONTAINS
                         ENDIF 
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                           IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
-                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5) THEN
+                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5.OR. &
+                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
                             CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
                           ENDIF
                         ENDIF
@@ -4414,8 +4419,6 @@ CONTAINS
                             element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
                             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
                               & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-!                             DO I=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
-!                               IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(I)=node_idx THEN
                             en_idx=0
                             XI_COORDINATES=0.0_DP
                             number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)
@@ -4425,6 +4428,7 @@ CONTAINS
                             ELSE
                               number_of_nodes_xic(3)=1
                             ENDIF
+!\todo: Use boundary flag
                             IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
@@ -4452,7 +4456,7 @@ CONTAINS
                               CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
                                 & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                             ELSE
-!\todo: this part can be removed as soon as adjacent element calculation for simplex is working and tested
+!\todo: Use boundary flag
                               IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
                                 T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
                                 T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
@@ -4530,6 +4534,7 @@ CONTAINS
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
                               X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
                             ENDDO !dim_idx
+
                             !Loop over the derivatives
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
@@ -4543,117 +4548,120 @@ CONTAINS
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                               IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-!\todo: This is the part that is needed as soon as adjacent element calculation works
-! ! ! !                                 IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-! ! ! !                                   !If we are a boundary node then set the analytic value on the boundary
-! ! ! !                                   IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-! ! ! !                                     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-! ! ! !                                       & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-! ! ! !                                   BOUND_COUNT=BOUND_COUNT+1
-! ! ! !                                   ENDIF
-! ! ! !                                 ELSE
-! ! ! !                                   IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-! ! ! !                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-! ! ! !                                       & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-! ! ! !                                   ENDIF
-! ! ! !                                 ENDIF
-                                !If we are a boundary node then set the analytic value on the boundary
-                                IF(NUMBER_OF_DIMENSIONS==2) THEN
-                                  IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) THEN
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                        & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                    BOUND_COUNT=BOUND_COUNT+1
-                                    ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
-                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-                                      IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE) &
-                                        & THEN
-                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                            & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                          BOUND_COUNT=BOUND_COUNT+1
-                                      ENDIF
-                                      ENDIF
-                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==6.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==10) THEN
-                                      IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND.&
-                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
-                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
-                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
-                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) &
-                                        & THEN
-                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                            & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                          BOUND_COUNT=BOUND_COUNT+1
-                                      ENDIF
-                                      ENDIF
-                                    ENDIF
+! \todo: This part should work even for simplex elements as soon as adjacent element calculation has been fixed
+                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                  !If we are a boundary node then set the analytic value on the boundary
+                                  IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                  BOUND_COUNT=BOUND_COUNT+1
                                   ENDIF
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS+1) THEN
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                    ENDIF
-!                                   ENDIF
-                                ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                  IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                        & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                    BOUND_COUNT=BOUND_COUNT+1
-                                    !Apply boundary conditions check for pressure nodes
-                                    ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
-                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==10.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                      IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
-                                         CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                           & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                         BOUND_COUNT=BOUND_COUNT+1
-                                      ENDIF
-                                      ENDIF
-                                    ENDIF
-                                  ELSE
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                    ENDIF
+                                ELSE
+                                  IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                      & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                   ENDIF
                                 ENDIF
+! \todo: Use boundary node flag
+! ! !                                 !If we are a boundary node then set the analytic value on the boundary
+! ! !                                 IF(NUMBER_OF_DIMENSIONS==2) THEN
+! ! !                                   IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) THEN
+! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+! ! !                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+! ! !                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+! ! !                                     BOUND_COUNT=BOUND_COUNT+1
+! ! !                                     !Apply boundary conditions check for pressure nodes
+! ! !                                     ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
+! ! !                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
+! ! !                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE) &
+! ! !                                         & THEN
+! ! !                                            ! Commented out for testing purposes
+! ! !                                           CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+! ! !                                             & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+! ! !                                           BOUND_COUNT=BOUND_COUNT+1
+! ! !                                       ENDIF
+! ! !                                       ENDIF
+! ! ! !\todo: Again, ...
+! ! !                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
+! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==6.OR. &
+! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==10) THEN
+! ! !                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                         & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND.&
+! ! !                                         & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                         & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
+! ! !                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                         & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
+! ! !                                         & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) &
+! ! !                                         & THEN
+! ! !                                           CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+! ! !                                             & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+! ! !                                           BOUND_COUNT=BOUND_COUNT+1
+! ! !                                       ENDIF
+! ! !                                       ENDIF
+! ! !                                     ENDIF
+! ! !                                   ENDIF
+! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS+1) THEN
+! ! !                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+! ! !                                         & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+! ! !                                     ENDIF
+! ! !                                 ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+! ! !                                   IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                     & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
+! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+! ! !                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+! ! !                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+! ! !                                     BOUND_COUNT=BOUND_COUNT+1
+! ! !                                     !Apply boundary conditions check for pressure nodes
+! ! !                                     ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
+! ! !                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
+! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==10.OR. &
+! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+! ! !                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
+! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
+! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
+! ! !                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+! ! !                                            & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+! ! !                                          BOUND_COUNT=BOUND_COUNT+1
+! ! !                                       ENDIF
+! ! !                                       ENDIF
+! ! !                                     ENDIF
+! ! !                                   ELSE
+! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS+1) THEN
+! ! !                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+! ! !                                         & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+! ! !                                     ENDIF
+! ! !                                   ENDIF
+! ! !                                 ENDIF
                               ENDIF
                             ENDDO !deriv_idx
                           ENDDO !node_idx
@@ -4669,7 +4677,7 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
                   ENDIF
-WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT  
+WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT 
                 ENDDO !component_idx
                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
                   & ERR,ERROR,*999)
