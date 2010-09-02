@@ -400,7 +400,7 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSEquationsSetCreateFinishCNum, CMISSEquationsSetCreateFinishCPtr
 
-! PUBLIC CMISSEquationsSetCreateStartCNum, CMISSEquationsSetCreateStartCPtr
+ PUBLIC CMISSEquationsSetCreateStartCNum, CMISSEquationsSetCreateStartCPtr
 
  PUBLIC CMISSEquationsSetDestroyCNum, CMISSEquationsSetDestroyCPtr
 
@@ -9549,7 +9549,81 @@ CONTAINS
   !================================================================================================================================
   !
 
-! 
+  !>Start the creation of an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetCreateStartCNum(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber,&
+    & EquationsSetFieldUserNumber) BIND(C, NAME = "CMISSEquationsSetCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of an equations set on for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: GeomFibreFieldUserNumber !<The user number of the Geometric/Fibre field for the equations set for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field for the equations set for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCNum !<Error Code.
+    !Local variable
+
+    CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber, &
+      & EquationsSetFieldUserNumber,CMISSEquationsSetCreateStartCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start the creation of an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetCreateStartCPtr(EquationsSetUserNumber,RegionPtr,GeomFibreFieldPtr, &
+    & EquationsSetFieldUserNumber, EquationsSetFieldFieldPtr, EquationsSetPtr) BIND(C, NAME = &
+    & "CMISSEquationsSetCreateStart")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr !<C pointer to the region to create the equations set on.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: GeomFibreFieldPtr !<C pointer to the Geometric/Fibre field for the creation of the equations set.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field to be create for the equations set for C.
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetFieldFieldPtr !<C pointer to the equations set field for the equations set.
+    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the created equations set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSRegionType), POINTER :: Region
+    TYPE(CMISSFieldType), POINTER :: GeomFibreField
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSFieldType), POINTER :: EquationsSetFieldField
+
+    CMISSEquationsSetCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      CALL C_F_POINTER(RegionPtr,Region)
+      IF(ASSOCIATED(Region)) THEN
+        IF(C_ASSOCIATED(GeomFibreFieldPtr)) THEN
+          CALL C_F_POINTER(GeomFibreFieldPtr, GeomFibreField)
+          IF(ASSOCIATED(GeomFibreField)) THEN
+            CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,Region,GeomFibreField, EquationsSetFieldUserNumber, &
+              & EquationsSetFieldField, EquationsSet, &
+              & CMISSEquationsSetCreateStartCPtr)
+            IF(ASSOCIATED(EquationsSet)) THEN
+              EquationsSetPtr = C_LOC(EquationsSet)
+            ELSE
+              CMISSEquationsSetCreateStartCPtr = CMISSPointerIsNULL
+            ENDIF
+          ELSE
+            CMISSEquationsSetCreateStartCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSEquationsSetCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSEquationsSetCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetCreateStartCPtr
 
   !
   !================================================================================================================================
