@@ -1714,17 +1714,18 @@ CONTAINS
 !   SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
 
   SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET_FIELD_USER_NUMBER,&
-    & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,ERR,ERROR,*)
+    & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the equations set
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to create the equations set on
     TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD !<A pointer to the either the geometry or, if appropriate, the fibre field for the equation set
-
     INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_FIELD_USER_NUMBER !<The user number of the equations set field
     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<On return, a pointer to the equations set field
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<On return, a pointer to the equations set
-
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_CLASS !<The equations set class to set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_TYPE_ !<The equations set type to set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equations set subtype to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1825,11 +1826,42 @@ CONTAINS
                       NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
                       NEW_EQUATIONS_SET%REGION=>REGION
                       !Default to a standardised Laplace.
+                      SELECT CASE(EQUATIONS_SET_CLASS)
+                      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+                        CALL ELASTICITY_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE&
+                          & ,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+                        CALL FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+                        CALL CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
+                        IF(EQUATIONS_SET_TYPE_ == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
+                          CALL MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                        ELSE
+                          CALL BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                        END IF
+                      CASE(EQUATIONS_SET_MODAL_CLASS)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+                        CALL MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_CLASS,"*",&
+                          & ERR,ERROR))//" is not valid."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
+       
                       !
                       !Set to multi-compartment diffusion
-                      NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
-                      NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_TYPE
-                      NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE
+!                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
+!                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_TYPE
+!                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE
                       !
 !                       !Set to multi-compartment Darcy
 !                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
@@ -1850,6 +1882,7 @@ CONTAINS
                       write (*,*) EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER
                       !Start equations set specific setup
                       CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+                      CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
                       !Set up the equations set geometric fields
                       CALL EQUATIONS_SET_GEOMETRY_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
                       IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN

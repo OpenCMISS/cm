@@ -2384,14 +2384,20 @@ CMISSError CMISSEquationsSetCreateFinish(CMISSEquationsSetType *EquationsSet);
 CMISSError CMISSEquationsSetCreateStartNum(const int EquationsSetUserNumber,
 		const int RegionUserNumber,
 		const int GeomFibreFieldUserNumber,
-		const int EquationsSetFieldUserNumber);
+		const int EquationsSetFieldUserNumber,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype);
 
 CMISSError CMISSEquationsSetCreateStart(const int EquationsSetUserNumber,
 		const CMISSRegionType Region,
 		const CMISSFieldType GeomFibreField,
 		const int EquationsSetFieldUserNumber,
 		CMISSFieldType *EquationsSetFieldField,
-		CMISSEquationsSetType *EquationsSet);
+		CMISSEquationsSetType *EquationsSet,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype);
 
 CMISSError CMISSEquationsSetDestroyNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
@@ -7096,14 +7102,20 @@ CMISSError CMISSEquationsSetCreateFinish(const CMISSEquationsSetType EquationsSe
 CMISSError CMISSEquationsSetCreateStartNum(const int EquationsSetUserNumber,
 		const int RegionUserNumber,
 		const int GeomFibreFieldUserNumber,
-		const int EquationsSetFieldUserNumber);
+		const int EquationsSetFieldUserNumber,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype);
 
 CMISSError CMISSEquationsSetCreateStart(const int EquationsSetUserNumber,
 		const CMISSRegionType Region,
 		const CMISSFieldType GeomFibreField,
 		const int EquationsSetFieldUserNumber,
 		CMISSFieldType *EquationsSetFieldField,
-		CMISSEquationsSetType *EquationsSet);
+		CMISSEquationsSetType *EquationsSet,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype);
 
 CMISSError CMISSEquationsSetDestroyNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);

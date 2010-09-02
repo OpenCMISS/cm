@@ -17884,13 +17884,16 @@ CONTAINS
 
   !>Start the creation of an equations set identified by a user number.
   SUBROUTINE CMISSEquationsSetCreateStartNumber(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber,&
-               & EquationsSetFieldUserNumber,Err)
+               & EquationsSetFieldUserNumber,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created.
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of an equations set on.
     INTEGER(INTG), INTENT(IN) :: GeomFibreFieldUserNumber !<The user number of the Geometric/Fibre field for the equations set.
     INTEGER(INTG), INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field
+    INTEGER(INTG), INTENT(IN) :: EquationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
+    INTEGER(INTG), INTENT(IN) :: EquationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
+    INTEGER(INTG), INTENT(IN) :: EquationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
@@ -17918,7 +17921,7 @@ CONTAINS
 
       IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
         CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,REGION,GEOM_FIBRE_FIELD,EquationsSetFieldUserNumber,&
-          & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,Err,ERROR,*999)
+          & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(GeomFibreFieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -17944,7 +17947,7 @@ CONTAINS
 
   !>Start the creation of an equations set identified by an object.
   SUBROUTINE CMISSEquationsSetCreateStartObj(EquationsSetUserNumber,Region,GeomFibreField,EquationsSetFieldUserNumber,& 
-              & EquationsSetFieldField,EquationsSet,Err)
+              & EquationsSetFieldField,EquationsSet,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created.
@@ -17953,6 +17956,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field
     TYPE(CMISSFieldType), INTENT(OUT) :: EquationsSetFieldField !<On return, a pointer to the equations set field
     TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<On return, the created equations set.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
+    INTEGER(INTG), INTENT(IN) :: EquationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
+    INTEGER(INTG), INTENT(IN) :: EquationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
  
@@ -17964,7 +17970,7 @@ CONTAINS
  
     CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,Region%REGION,GeomFibreField%FIELD, & 
       & EquationsSetFieldUserNumber, EquationsSetFieldField%FIELD, EquationsSet%EQUATIONS_SET, &
-      & Err,ERROR,*999)
+      & EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err,ERROR,*999)
     
     CALL EXITS("CMISSEquationsSetCreateStartObj")
     RETURN
