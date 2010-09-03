@@ -1881,6 +1881,9 @@ CONTAINS
 !--- toe 1
                       write (*,*) EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER
                       !Start equations set specific setup
+                      !In this function call we create the 'EQUATIONS_SET_FIELD_FIELD'
+                      !  within the 'NEW_EQUATIONS_SET' structure, but we lose this member
+                      !  once we leave ...
                       CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
                       CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
                       !Set up the equations set geometric fields
