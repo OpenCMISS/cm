@@ -9551,8 +9551,8 @@ CONTAINS
 
   !>Start the creation of an equations set identified by a user number for C.
   FUNCTION CMISSEquationsSetCreateStartCNum(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber,&
-    & EquationsSetFieldUserNumber,EquationsSetClass,EquationsSetType,&
-    & EquationsSetSubtype) BIND(C, NAME = "CMISSEquationsSetCreateStartNum")
+    & EquationsSetClass,EquationsSetType,&
+    & EquationsSetSubtype,EquationsSetFieldUserNumber) BIND(C, NAME = "CMISSEquationsSetCreateStartNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created for C.
@@ -9567,7 +9567,7 @@ CONTAINS
     !Local variable
 
     CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber, &
-      & EquationsSetClass,EquationsSetType,EquationsSetSubType,EquationsSetFieldUserNumber,CMISSEquationsSetCreateStartCNum)
+      & EquationsSetType,EquationsSetSubType,EquationsSetFieldUserNumber,EquationsSetClass,CMISSEquationsSetCreateStartCNum)
 
     RETURN
 
@@ -9579,9 +9579,9 @@ CONTAINS
 
   !>Start the creation of an equations set identified by an object for C.
   FUNCTION CMISSEquationsSetCreateStartCPtr(EquationsSetUserNumber,RegionPtr,GeomFibreFieldPtr, &
-    & EquationsSetFieldUserNumber, EquationsSetFieldFieldPtr, EquationsSetPtr,&
-    & EquationsSetClass,EquationsSetType,EquationsSetSubtype) BIND(C, NAME = &
-    & "CMISSEquationsSetCreateStart")
+    & EquationsSetClass,EquationsSetType,EquationsSetSubtype,&
+    & EquationsSetFieldUserNumber, EquationsSetFieldFieldPtr, EquationsSetPtr&
+    & ) BIND(C, NAME ="CMISSEquationsSetCreateStart")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created for C.
@@ -9608,9 +9608,10 @@ CONTAINS
         IF(C_ASSOCIATED(GeomFibreFieldPtr)) THEN
           CALL C_F_POINTER(GeomFibreFieldPtr, GeomFibreField)
           IF(ASSOCIATED(GeomFibreField)) THEN
-            CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,Region,GeomFibreField, EquationsSetFieldUserNumber, &
-              & EquationsSetFieldField, EquationsSet,EquationsSetClass,EquationsSetType, &
-              & EquationsSetSubType,CMISSEquationsSetCreateStartCPtr)
+            CALL CMISSEquationsSetCreateStart(EquationsSetUserNumber,Region,GeomFibreField, &
+              & EquationsSetClass,EquationsSetType, &
+              & EquationsSetSubType,EquationsSetFieldUserNumber, &
+              & EquationsSetFieldField, EquationsSet,CMISSEquationsSetCreateStartCPtr)
             IF(ASSOCIATED(EquationsSet)) THEN
               EquationsSetPtr = C_LOC(EquationsSet)
             ELSE

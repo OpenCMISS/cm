@@ -17884,7 +17884,7 @@ CONTAINS
 
   !>Start the creation of an equations set identified by a user number.
   SUBROUTINE CMISSEquationsSetCreateStartNumber(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber,&
-               & EquationsSetFieldUserNumber,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err)
+               & EquationsSetClass,EquationsSetType,EquationsSetSubtype,EquationsSetFieldUserNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created.
@@ -17920,8 +17920,9 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(EquationsSetFieldUserNumber,REGION,EQUATIONS_SET_FIELD_FIELD,Err,ERROR,*999)
 
       IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
-        CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,REGION,GEOM_FIBRE_FIELD,EquationsSetFieldUserNumber,&
-          & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err,ERROR,*999)
+        CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,REGION,GEOM_FIBRE_FIELD,&
+          & EquationsSetClass,EquationsSetType,EquationsSetSubtype,EquationsSetFieldUserNumber,&
+          & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(GeomFibreFieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -17946,8 +17947,9 @@ CONTAINS
   !  
 
   !>Start the creation of an equations set identified by an object.
-  SUBROUTINE CMISSEquationsSetCreateStartObj(EquationsSetUserNumber,Region,GeomFibreField,EquationsSetFieldUserNumber,& 
-              & EquationsSetFieldField,EquationsSet,EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err)
+  SUBROUTINE CMISSEquationsSetCreateStartObj(EquationsSetUserNumber,Region,GeomFibreField,&
+              & EquationsSetClass,EquationsSetType,EquationsSetSubtype,EquationsSetFieldUserNumber,& 
+              & EquationsSetFieldField,EquationsSet,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created.
@@ -17968,9 +17970,10 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('Equations Set Create')
 #endif
  
-    CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,Region%REGION,GeomFibreField%FIELD, & 
+    CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,Region%REGION,GeomFibreField%FIELD, &
+      & EquationsSetClass,EquationsSetType,EquationsSetSubtype,& 
       & EquationsSetFieldUserNumber, EquationsSetFieldField%FIELD, EquationsSet%EQUATIONS_SET, &
-      & EquationsSetClass,EquationsSetType,EquationsSetSubtype,Err,ERROR,*999)
+      & Err,ERROR,*999)
     
     CALL EXITS("CMISSEquationsSetCreateStartObj")
     RETURN
