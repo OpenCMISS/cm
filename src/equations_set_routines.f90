@@ -1882,9 +1882,6 @@ CONTAINS
 !--- toe 1
                       write (*,*) EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER
                       !Start equations set specific setup
-                      !In this function call we create the 'EQUATIONS_SET_FIELD_FIELD'
-                      !  within the 'NEW_EQUATIONS_SET' structure, but we lose this member
-                      !  once we leave ...
                       CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
                       CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
                       !Set up the equations set geometric fields
@@ -1919,7 +1916,6 @@ CONTAINS
                       EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
                       !Set pointers: ASK_CHRIS
                       IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN            
-!                         EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                         EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                       ELSE
                         EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET_FIELD_FIELD
