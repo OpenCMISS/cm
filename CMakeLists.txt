@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8)
 
-project (OpenCMISS Fortran C) 
+project (OpenCMISS C Fortran) 
 
 #################Define OPENCMISS_ROOT & OPENCMISSEXTRAS_ROOT##################
 
