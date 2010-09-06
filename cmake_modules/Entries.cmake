@@ -24,9 +24,7 @@ SET(EXCLUDED_ROUTINES
   ${SOURCE_DIR}/Helmholtz_TEMPLATE_equations_routines.f90
   ${SOURCE_DIR}/binary_file_f.f90
   ${SOURCE_DIR}/finite_element_routines.f90
-  ${SOURCE_DIR}/timer_c.c
   ${SOURCE_DIR}/binary_file_c.c
-  ${SOURCE_DIR}/FieldExport.c
 )
 LIST(APPEND EXCLUDED_ROUTINES ${MACHINE_EXCLUDES})
 LIST(APPEND EXCLUDED_ROUTINES ${CELLML_EXCLUDES})
