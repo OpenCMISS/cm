@@ -89,12 +89,12 @@ MODULE FIELD_IO_ROUTINES
 
   !Module types
 
-  !>field variable compoment type pointer for IO
+  !>field variable component type pointer for IO
   TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: PTR !< pointer field variable component
   END TYPE MESH_ELEMENTS_TYPE_PTR_TYPE
 
-  !>field variable compoment type pointer for IO
+  !>field variable component type pointer for IO
   TYPE FIELD_VARIABLE_COMPONENT_PTR_TYPE
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: PTR !< pointer field variable component
   END TYPE FIELD_VARIABLE_COMPONENT_PTR_TYPE
