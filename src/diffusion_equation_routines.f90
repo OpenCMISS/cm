@@ -683,8 +683,6 @@ CONTAINS
                & EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE, &
                & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE, &
                & EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE)
-!=== tob: Create the equations set field for multi-compartment Darcy
-
               SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
               CASE(EQUATIONS_SET_SETUP_START_ACTION)
 
@@ -712,7 +710,6 @@ CONTAINS
                 ELSE
                   !Do nothing
                 ENDIF
-!=== toe
               CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                 ! do nothing
               CASE DEFAULT
