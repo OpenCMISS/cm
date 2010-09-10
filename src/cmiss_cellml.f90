@@ -369,6 +369,7 @@ CONTAINS
     CALL ENTERS("CELLML_MODELS_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CELLML)) THEN
+      !> \todo Add in calls to validate the model?
     ELSE
       CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -417,7 +418,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The unique identifier for this model within the given CellML environment object.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object into which we want to import the specified model.
-    CHARACTER(LEN=*) :: URI !<The (absolute? relative?) URI of the model to import. This should be a fully qualified URI which resolves to either a CellML XML model element or locates CellML simulation metadata (OpenCMISS CellML related metadata?). In the case of simulation metadata, the model will be completely defined from the metadata. If a bare model is found then the default simulation parameters are used? or the user is prompted for more data? or an error is flagged?
+    CHARACTER(LEN=*) :: URI !<The (absolute? relative?) URI of the model to import. As per tracker item 2013 comment 8 the URI should now simply point to a CellML document. Can use a relative URL which will be interpreted relative to the CWD of the executed application.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
@@ -428,33 +429,9 @@ CONTAINS
 
     CALL ENTERS("CELLML_MODEL_IMPORT_C",ERR,ERROR,*999)
     
-    !WRITE(*,*) 'user_number = ',MODEL_USER_NUMBER
-    !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"URI :",ERR,ERROR,*999)
-    !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,URI,ERR,ERROR,*999)
-
     C_URI_L = LEN_TRIM(URI)
     WRITE(C_URI,'(A,A)') URI(1:C_URI_L),C_NULL_CHAR
-    
     CELLML_MODEL = CREATE_CELLML_MODEL_DEFINITION(C_URI)
-    
-    ! the default value should be not to save
-    CODE = CELLML_MODEL_DEFINITION_GET_SAVE_TEMP_FILES(CELLML_MODEL)
-    WRITE(*,*) 'F Current save state: ',CODE
-
-    ! Make sure we save the generated files
-    CALL CELLML_MODEL_DEFINITION_SET_SAVE_TEMP_FILES(CELLML_MODEL,1)
-    CODE = CELLML_MODEL_DEFINITION_GET_SAVE_TEMP_FILES(CELLML_MODEL)
-    WRITE(*,*) 'F Current save state: ',CODE
-
-    ! instantiate the CellML model
-    CODE = CELLML_MODEL_DEFINITION_INSTANTIATE(CELLML_MODEL)
-    IF (CODE.EQ.0) THEN
-       WRITE(*,*) 'F Instantiated the model with no error'
-    ELSE
-       WRITE(*,*) 'F There were errors instantiating the model'
-    END IF
-    
-    CALL DESTROY_CELLML_MODEL_DEFINITION(CELLML_MODEL)
 
     CALL EXITS("CELLML_MODEL_IMPORT_C")
     RETURN
@@ -475,7 +452,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The unique identifier for this model within the given CellML environment object.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object into which we want to import the specified model.
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The (absolute? relative?) URI of the model to import. This should be a fully qualified URI which resolves to either a CellML XML model element or locates CellML simulation metadata (OpenCMISS CellML related metadata?). In the case of simulation metadata, the model will be completely defined from the metadata. If a bare model is found then the default simulation parameters are used? or the user is prompted for more data? or an error is flagged?
+    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The (absolute? relative?) URI of the model to import. As per tracker item 2013 comment 8 the URI should now simply point to a CellML document. Can use a relative URL which will be interpreted relative to the CWD of the executed application.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
@@ -486,34 +463,8 @@ CONTAINS
 
     CALL ENTERS("CELLML_MODEL_IMPORT_VS",ERR,ERROR,*999)
     
-    !WRITE(*,*) 'user_number = ',MODEL_USER_NUMBER
-    !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"URI :",ERR,ERROR,*999)
-    !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,URI,ERR,ERROR,*999)
-
-    C_URI_L = LEN_TRIM(URI)
-    WRITE(C_URI,'(A,A)') CHAR(EXTRACT(URI,1,C_URI_L)),C_NULL_CHAR
+    CALL CELLML_MODEL_IMPORT(MODEL_USER_NUMBER,CELLML,CHAR(URI),ERR,ERROR,*999)
     
-    CELLML_MODEL = CREATE_CELLML_MODEL_DEFINITION(C_URI)
-    
-    ! the default value should be not to save
-    CODE = CELLML_MODEL_DEFINITION_GET_SAVE_TEMP_FILES(CELLML_MODEL)
-    WRITE(*,*) 'F Current save state: ',CODE
-
-    ! Make sure we save the generated files
-    CALL CELLML_MODEL_DEFINITION_SET_SAVE_TEMP_FILES(CELLML_MODEL,1)
-    CODE = CELLML_MODEL_DEFINITION_GET_SAVE_TEMP_FILES(CELLML_MODEL)
-    WRITE(*,*) 'F Current save state: ',CODE
-
-    ! instantiate the CellML model
-    CODE = CELLML_MODEL_DEFINITION_INSTANTIATE(CELLML_MODEL)
-    IF (CODE.EQ.0) THEN
-       WRITE(*,*) 'F Instantiated the model with no error'
-    ELSE
-       WRITE(*,*) 'F There were errors instantiating the model'
-    END IF
-    
-    CALL DESTROY_CELLML_MODEL_DEFINITION(CELLML_MODEL)
-
     CALL EXITS("CELLML_MODEL_IMPORT_VS")
     RETURN
 999 CALL ERRORS("CELLML_MODEL_IMPORT_VS",ERR,ERROR)
