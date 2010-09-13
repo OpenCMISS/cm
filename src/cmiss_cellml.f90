@@ -121,7 +121,7 @@ MODULE CMISS_CELLML
 
   PUBLIC CELLML_GENERATE
 
-  PUBLIC CELLML_USER_NUMBER_FIND
+  PUBLIC CELLML_USER_NUMBER_FIND,CELLML_MODEL_USER_NUMBER_FIND
 
   PUBLIC CELLML_ENVIRONMENTS_FINALISE,CELLML_ENVIRONMENTS_INITIALISE
   
@@ -369,7 +369,11 @@ CONTAINS
     CALL ENTERS("CELLML_MODELS_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CELLML)) THEN
-      !> \todo Add in calls to validate the model?
+        IF (ASSOCIATED(CELLML%MODELS) .AND. ASSOCIATED(CELLML%MODELS%MODELS) .AND. (CELLML%MODELS%NUMBER_OF_MODELS .GT. 0)) THEN
+            !> \todo Add in calls to validate the model?
+        ELSE
+            CALL FLAG_ERROR("CellML models is not associated or empty.",ERR,ERROR,*999)
+        ENDIF
     ELSE
       CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -422,16 +426,49 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER (C_INT) CODE
-    TYPE(C_PTR) :: CELLML_MODEL
+    INTEGER(INTG) :: cellml_idx
+    TYPE(CELLML_MODEL_TYPE), POINTER :: NEW_MODEL
+    TYPE(CELLML_MODEL_PTR_TYPE), POINTER :: NEW_MODELS(:)
+    !INTEGER (C_INT) CODE
+    !TYPE(C_PTR) :: CELLML_MODEL
     CHARACTER(256) :: C_URI
     INTEGER(INTG) :: C_URI_L
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CELLML_MODEL_IMPORT_C",ERR,ERROR,*999)
-    
-    C_URI_L = LEN_TRIM(URI)
-    WRITE(C_URI,'(A,A)') URI(1:C_URI_L),C_NULL_CHAR
-    CELLML_MODEL = CREATE_CELLML_MODEL_DEFINITION(C_URI)
+
+    NULLIFY(NEW_MODEL)
+
+    IF (ASSOCIATED(CELLML)) THEN
+        CALL CELLML_MODEL_USER_NUMBER_FIND(MODEL_USER_NUMBER,CELLML,NEW_MODEL,ERR,ERROR,*999)
+        IF(ASSOCIATED(NEW_MODEL)) THEN
+            LOCAL_ERROR="CellML environment number "//TRIM(NUMBER_TO_VSTRING(MODEL_USER_NUMBER,"*",ERR,ERROR))// &
+            & " has already been created."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ELSE
+	        !Allocate new CellML model
+	        ALLOCATE(NEW_MODEL,STAT=ERR)
+	        IF (ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML model.",ERR,ERROR,*999)
+	        !set up new model object
+	        C_URI_L = LEN_TRIM(URI)
+	        WRITE(C_URI,'(A,A)') URI(1:C_URI_L),C_NULL_CHAR
+	        NEW_MODEL%PTR = CREATE_CELLML_MODEL_DEFINITION(C_URI)
+	        NEW_MODEL%USER_NUMBER = MODEL_USER_NUMBER
+	        NEW_MODEL%GLOBAL_NUMBER = CELLML%MODELS%NUMBER_OF_MODELS + 1
+	        ! Add model to this CellML environment's list of models
+	        ALLOCATE(NEW_MODELS(CELLML%MODELS%NUMBER_OF_MODELS+1),STAT=ERR)
+	        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML models array.",ERR,ERROR,*999)
+	        DO cellml_idx=1,CELLML%MODELS%NUMBER_OF_MODELS
+	            NEW_MODELS(cellml_idx)%PTR=>CELLML%MODELS%MODELS(cellml_idx)%PTR
+	        ENDDO !cellml_idx
+	        NEW_MODELS(CELLML%MODELS%NUMBER_OF_MODELS+1)%PTR=>NEW_MODEL
+	        IF(ASSOCIATED(CELLML%MODELS%MODELS)) DEALLOCATE(CELLML%MODELS%MODELS)
+	        CELLML%MODELS%MODELS => NEW_MODELS
+	        CELLML%MODELS%NUMBER_OF_MODELS = CELLML%MODELS%NUMBER_OF_MODELS+1
+        ENDIF
+    ELSE
+        CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+    ENDIF
 
     CALL EXITS("CELLML_MODEL_IMPORT_C")
     RETURN
@@ -456,10 +493,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER (C_INT) CODE
-    TYPE(C_PTR) :: CELLML_MODEL
-    CHARACTER(256) :: C_URI
-    INTEGER(INTG) :: C_URI_L
 
     CALL ENTERS("CELLML_MODEL_IMPORT_VS",ERR,ERROR,*999)
     
@@ -1048,6 +1081,40 @@ CONTAINS
     CALL EXITS("CELLML_USER_NUMBER_FIND")
     RETURN 1
   END SUBROUTINE CELLML_USER_NUMBER_FIND
+
+  !>Finds and returns in CELLML a pointer to the CellML model identified by USER_NUMBER. If no CellML environment with that USER_NUMBER exists CELLML is left nullified.
+  SUBROUTINE CELLML_MODEL_USER_NUMBER_FIND(USER_NUMBER,CELLML,CELLML_MODEL,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to find.
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment in which to search for the specified user number.
+    TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL !<On return a pointer to the CellML model with the given user number within the given CellML environment. If no CellML model with that user number exists then the pointer is returned as NULL. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: cellml_idx
+
+    CALL ENTERS("CELLML_MODEL_USER_NUMBER_FIND",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_MODEL)) THEN
+      CALL FLAG_ERROR("CellML model is already associated.",ERR,ERROR,*999)
+    ELSE
+      cellml_idx=1
+      DO WHILE(cellml_idx<=CELLML%MODELS%NUMBER_OF_MODELS.AND..NOT.ASSOCIATED(CELLML_MODEL))
+        IF(CELLML%MODELS%MODELS(cellml_idx)%PTR%USER_NUMBER==USER_NUMBER) THEN
+          CELLML_MODEL=>CELLML%MODELS%MODELS(cellml_idx)%PTR
+        ELSE
+          cellml_idx=cellml_idx+1
+        ENDIF
+      ENDDO
+    ENDIF
+
+    CALL EXITS("CELLML_MODEL_USER_NUMBER_FIND")
+    RETURN
+999 CALL ERRORS("CELLML_MODEL_USER_NUMBER_FIND",ERR,ERROR)
+    CALL EXITS("CELLML_MODEL_USER_NUMBER_FIND")
+    RETURN 1
+  END SUBROUTINE CELLML_MODEL_USER_NUMBER_FIND
 
   !
   !=================================================================================================================================
