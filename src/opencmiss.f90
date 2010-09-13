@@ -1663,11 +1663,29 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjectionStartingXiSetObj
   END INTERFACE !CMISSDataProjectionStartingXiSet
   
+  PUBLIC CMISSDataProjectionBoundaryLinesProjectionType,CMISSDataProjectionBoundaryFacesProjectionType
+  
+  PUBLIC CMISSDataProjectionAllElementsProjectionType
+  
+  PUBLIC CMISSDataProjectionAbsoluteToleranceGet,CMISSDataProjectionAbsoluteToleranceSet
+  
   PUBLIC CMISSDataProjectionCreateFinish,CMISSDataProjectionCreateStart
 
   PUBLIC CMISSDataProjectionDestroy
   
-  PUBLIC CMISSDataProjectionEvaluate 
+  PUBLIC CMISSDataProjectionEvaluate
+  
+  PUBLIC CMISSDataProjectionMaximumIterationUpdateGet,CMISSDataProjectionMaximumIterationUpdateSet
+  
+  PUBLIC CMISSDataProjectionMaximumNumberOfIterationsGet,CMISSDataProjectionMaximumNumberOfIterationsSet
+
+  PUBLIC CMISSDataProjectionNumberOfClosestElementsGet,CMISSDataProjectionNumberOfClosestElementsSet
+
+  PUBLIC CMISSDataProjectionProjectionTypeGet,CMISSDataProjectionProjectionTypeSet
+
+  PUBLIC CMISSDataProjectionRelativeToleranceGet,CMISSDataProjectionRelativeToleranceSet
+
+  PUBLIC CMISSDataProjectionStartingXiGet,CMISSDataProjectionStartingXiSet
 
 !!==================================================================================================================================
 !!
