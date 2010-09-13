@@ -112,7 +112,7 @@ MODULE CMISS_CELLML
 
   PUBLIC CELLML_GENERATE
 
-  PUBLIC CELLML_USER_NUMBER_FIND
+  PUBLIC CELLML_USER_NUMBER_FIND,CELLML_MODEL_USER_NUMBER_FIND
 
   PUBLIC CELLML_ENVIRONMENTS_FINALISE,CELLML_ENVIRONMENTS_INITIALISE
   
@@ -820,6 +820,29 @@ CONTAINS
     CALL EXITS("CELLML_USER_NUMBER_FIND")
     RETURN 1
   END SUBROUTINE CELLML_USER_NUMBER_FIND
+
+  !>Finds and returns in CELLML a pointer to the CellML model identified by USER_NUMBER. If no CellML environment with that USER_NUMBER exists CELLML is left nullified.
+  SUBROUTINE CELLML_MODEL_USER_NUMBER_FIND(USER_NUMBER,CELLML,CELLML_MODEL,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to find.
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment in which to search for the specified user number.
+    TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL !<On return a pointer to the CellML model with the given user number within the given CellML environment. If no CellML model with that user number exists then the pointer is returned as NULL. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    !INTEGER(INTG) :: cellml_idx
+
+    CALL ENTERS("CELLML_MODEL_USER_NUMBER_FIND",ERR,ERROR,*999)
+
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+    CALL EXITS("CELLML_MODEL_USER_NUMBER_FIND")
+    RETURN
+999 CALL ERRORS("CELLML_MODEL_USER_NUMBER_FIND",ERR,ERROR)
+    CALL EXITS("CELLML_MODEL_USER_NUMBER_FIND")
+    RETURN 1
+  END SUBROUTINE CELLML_MODEL_USER_NUMBER_FIND
 
   !
   !=================================================================================================================================
