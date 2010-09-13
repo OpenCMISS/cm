@@ -3607,7 +3607,8 @@ CONTAINS
                               ENDDO !component_idx
                             ENDIF
                           ENDDO !variable_idx
-
+                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
 !\todo: This part should be read in out of a file eventually
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
@@ -3643,9 +3644,9 @@ CONTAINS
                         BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
                           & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
                         IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                          NULLIFY(MESH_VELOCITY_VALUES)
                           CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                             & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                          NULLIFY(MESH_VELOCITY_VALUES)
                           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                             & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
                           NULLIFY(BOUNDARY_VALUES)
@@ -3689,6 +3690,10 @@ CONTAINS
                               ENDDO !component_idx
                             ENDIF
                           ENDDO !variable_idx
+                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                            & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
                         ELSE
                           CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         END IF
@@ -3887,7 +3892,6 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Laplace equations set is not associated.",ERR,ERROR,*999)
                       END IF
-
                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_LAPLACE%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                         & NUMBER_OF_DIMENSIONS_LAPLACE,ERR,ERROR,*999)
                     ELSE
@@ -3965,7 +3969,9 @@ CONTAINS
                       ENDDO !variable_idx
                     ELSE
                       CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
-                    END IF
+                    ENDIF
+                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(INDEPENDENT_FIELD_ALE_NAVIER_STOKES,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
                   END IF
@@ -4008,7 +4014,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
   !>Update mesh parameters for three component Laplace problem
   SUBROUTINE NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
@@ -4100,7 +4105,9 @@ CONTAINS
                       END IF
                     ELSE
                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                    END IF
+                    ENDIF
+                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & FIELD_VALUES_SET_TYPE,MESH_STIFF_VALUES,ERR,ERROR,*999)                     
                   ELSE
                     CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   END IF

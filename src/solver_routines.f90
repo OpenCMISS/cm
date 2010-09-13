@@ -3428,7 +3428,7 @@ CONTAINS
 ! ! !                                 RESIDUAL_DOMAIN_MAPPING=>RESIDUAL_VARIABLE%DOMAIN_MAPPING
                                   RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
                                   !Loop over the rows in the equations set
-                                  DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+                                  DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
 ! ! !                                     IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
 ! ! !                                       & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
 ! ! !                                       & NUMBER_OF_SOLVER_ROWS>0) THEN
@@ -8959,7 +8959,7 @@ CONTAINS
                                       RESIDUAL_DOMAIN_MAPPING=>RESIDUAL_VARIABLE%DOMAIN_MAPPING
                                       RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
                                       !Loop over the rows in the equations set
-                                      DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+                                      DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                         IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                           & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                           & NUMBER_OF_SOLVER_ROWS>0) THEN
@@ -9845,7 +9845,7 @@ CONTAINS
                                   RESIDUAL_DOMAIN_MAPPING=>RESIDUAL_VARIABLE%DOMAIN_MAPPING
                                   RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
                                   !Loop over the rows in the equations set
-                                  DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+                                  DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                     IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                       & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                       & NUMBER_OF_SOLVER_ROWS>0) THEN
