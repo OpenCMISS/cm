@@ -1,7 +1,7 @@
 !> \file
-!> $Id: data_projection_routines.f90 660 2009-09-17 04:05:21Z chrispbradley $
-!> \author Chris Bradley
-!> \brief This module handles all data projection routines.
+!> $Id: data_projection_routines.f90 $
+!> \author Tim Wu
+!> \brief This module handles all data projection routines
 !>
 !> \section LICENSE
 !>
@@ -25,7 +25,7 @@
 !> of Oxford are Copyright (C) 2007 by the University of Auckland and
 !> the University of Oxford. All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): Chris Bradley, Kumar Mithraratne, Prasad Babarenda Gamage
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -155,13 +155,13 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        CALL FLAG_ERROR("Data projection have been finished.",ERR,ERROR,*999)
+      ELSE      
         IF(ABSOLUTE_TOLERANCE>=0) THEN
           DATA_PROJECTION%ABSOLUTE_TOLERANCE=ABSOLUTE_TOLERANCE
         ELSE
           CALL FLAG_ERROR("Data projection absolute tolerance must be a positive real number.",ERR,ERROR,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -589,14 +589,13 @@ CONTAINS
                     DATA_POINTS%DATA_PROJECTION%GEOMETRIC_FIELD=>GEOMETRIC_FIELD
                     DATA_POINTS%DATA_PROJECTION%COORDINATE_SYSTEM_DIMENSIONS=DATA_POINTS_REGION_DIMENSIONS
                     DATA_POINTS%DATA_PROJECTION%MAXIMUM_ITERATION_UPDATE=0.5_DP
-                    DATA_POINTS%DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS=25
-                    DATA_POINTS%DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=2
+                    DATA_POINTS%DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS=25                   
                     !Default always project to boundaries faces/lines when mesh dimension is equal to region dimension. If mesh dimension is less, project to all elements                
-                    IF(GEOMETRIC_FIELD%DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS<DATA_POINTS_REGION_DIMENSIONS) THEN
+                    IF(GEOMETRIC_FIELD%DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS<DATA_POINTS_REGION_DIMENSIONS) THEN !mesh dimension < data dimension
                       DATA_POINTS%DATA_PROJECTION%NUMBER_OF_XI=GEOMETRIC_FIELD%DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS
                       DATA_POINTS%DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
                     ELSE
-                      SELECT CASE(GEOMETRIC_FIELD%DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS)
+                      SELECT CASE(GEOMETRIC_FIELD%DECOMPOSITION%MESH%NUMBER_OF_DIMENSIONS) !mesh dimension = data dimension
                         CASE (2) 
                           DATA_POINTS%DATA_PROJECTION%NUMBER_OF_XI=1
                           DATA_POINTS%DATA_PROJECTION%PROJECTION_TYPE=DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE
@@ -607,6 +606,16 @@ CONTAINS
                           CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
                         END SELECT
                     ENDIF
+                    SELECT CASE(DATA_POINTS%DATA_PROJECTION%NUMBER_OF_XI) !mesh dimension = data dimension
+                      CASE (1)
+                        DATA_POINTS%DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=2
+                      CASE (2)
+                        DATA_POINTS%DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=4  
+                      CASE (3)
+                        DATA_POINTS%DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=8
+                      CASE DEFAULT
+                        CALL FLAG_ERROR("Mesh dimensions out of bond [1,3].",ERR,ERROR,*999)
+                    END SELECT 
                     ALLOCATE(DATA_POINTS%DATA_PROJECTION%STARTING_XI(DATA_POINTS%DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data projection starting xi.",ERR,ERROR,*999)
                     DO ni=1,DATA_POINTS%DATA_PROJECTION%NUMBER_OF_XI
@@ -1179,13 +1188,13 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        CALL FLAG_ERROR("Data projection have been finished.",ERR,ERROR,*999)
+      ELSE
         IF((MAXIMUM_ITERATION_UPDATE>=0.1).AND.(MAXIMUM_ITERATION_UPDATE<=1)) THEN
           DATA_PROJECTION%MAXIMUM_ITERATION_UPDATE=MAXIMUM_ITERATION_UPDATE
         ELSE
           CALL FLAG_ERROR("Data projection maximum iteration update must be between 0.1 and 1.",ERR,ERROR,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -1217,7 +1226,7 @@ CONTAINS
     CALL ENTERS("DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
-      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+      IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN      
         MAXIMUM_NUMBER_OF_ITERATIONS=DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS       
       ELSE
         CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
@@ -1252,13 +1261,13 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        CALL FLAG_ERROR("Data projection have been finished.",ERR,ERROR,*999)
+      ELSE      
         IF(MAXIMUM_NUMBER_OF_ITERATIONS>=1) THEN
           DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_NUMBER_OF_ITERATIONS
         ELSE
           CALL FLAG_ERROR("Data projection maximum number of iterations must be at least 1.",ERR,ERROR,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -2371,13 +2380,13 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        CALL FLAG_ERROR("Data projection have been finished.",ERR,ERROR,*999)
+      ELSE
         IF(NUMBER_OF_CLOSEST_ELEMENTS>=1) THEN
           DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS=NUMBER_OF_CLOSEST_ELEMENTS
         ELSE
           CALL FLAG_ERROR("Data projection number of closest elements must be at least 1.",ERR,ERROR,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -2444,6 +2453,8 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        CALL FLAG_ERROR("Data projection have been finished.",ERR,ERROR,*999)
+      ELSE      
         SELECT CASE(PROJECTION_TYPE)
           CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE)
             DATA_PROJECTION%PROJECTION_TYPE=PROJECTION_TYPE
@@ -2473,8 +2484,6 @@ CONTAINS
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data projection starting xi.",ERR,ERROR,*999)
             DATA_PROJECTION%STARTING_XI=STARTING_XI
           ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -2539,13 +2548,13 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        CALL FLAG_ERROR("Data projection have been finished.",ERR,ERROR,*999)
+      ELSE      
         IF(RELATIVE_TOLERANCE>=0) THEN
           DATA_PROJECTION%RELATIVE_TOLERANCE=RELATIVE_TOLERANCE
         ELSE
           CALL FLAG_ERROR("Data projection relative tolerance must be a positive real number.",ERR,ERROR,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
@@ -2616,6 +2625,8 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
+        CALL FLAG_ERROR("Data projection have been finished.",ERR,ERROR,*999)
+      ELSE      
         IF(SIZE(STARTING_XI,1)==SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
           VALID_INPUT=.TRUE.
           DO ni=1,SIZE(STARTING_XI,1)
@@ -2629,8 +2640,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Data projection starting xi dimension mismatch.",ERR,ERROR,*999)
         ENDIF
-      ELSE
-        CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)

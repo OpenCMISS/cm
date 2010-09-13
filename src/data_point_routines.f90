@@ -1,6 +1,6 @@
 !> \file
-!> $Id: data_point_routines.f90 660 2009-09-17 04:05:21Z chrispbradley $
-!> \author Chris Bradley
+!> $Id: data_point_routines.f90 $
+!> \author Tim Wu
 !> \brief This module handles all data point routines.
 !>
 !> \section LICENSE
@@ -25,7 +25,7 @@
 !> of Oxford are Copyright (C) 2007 by the University of Auckland and
 !> the University of Oxford. All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): Chris Bradley
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
