@@ -11,5 +11,7 @@ IF(EXISTS ${MUMPS_DIR}/include/mumps_compat.h)
   FILE(GLOB MUMPS_LIBRARIES RELATIVE "${MUMPS_DIR}/lib" "${MUMPS_DIR}/lib/libmumps*.a")
 ELSE(EXISTS ${MUMPS_DIR}/include/mumps_compat.h)
   SET(MUMPS_FOUND NO)
-  message(FATAL_ERROR "Cannot find MUMPS!")
 ENDIF(EXISTS ${MUMPS_DIR}/include/mumps_compat.h)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(MUMPS DEFAULT_MSG MUMPS_LIBRARIES MUMPS_INCLUDES)

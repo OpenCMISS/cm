@@ -12,5 +12,7 @@ IF(EXISTS ${SCALAPACK_DIR}/lib/libscalapack.a)
   FILE(GLOB SCALAPACK_LIBRARIES RELATIVE "${SCALAPACK_DIR}/lib" "${SCALAPACK_DIR}/lib/libscalapack*.a")
 ELSE(EXISTS ${SCALAPACK_DIR}/lib/libscalapack.a)
   SET(SCALAPACK_FOUND NO)
-  message(FATAL_ERROR "Cannot find SCALAPACK!")
 ENDIF(EXISTS ${SCALAPACK_DIR}/lib/libscalapack.a)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(SCALAPACK DEFAULT_MSG SCALAPACK_LIBRARIES SCALAPACK_INCLUDES)
