@@ -3429,9 +3429,9 @@ CONTAINS
                                   RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
                                   !Loop over the rows in the equations set
                                   DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-! ! !                                     IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-! ! !                                       & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-! ! !                                       & NUMBER_OF_SOLVER_ROWS>0) THEN
+                                    IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                      & NUMBER_OF_SOLVER_ROWS>0) THEN
                                       !Get the equations residual contribution
                                       CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
                                         & RESIDUAL_VALUE,ERR,ERROR,*999)
@@ -3440,7 +3440,7 @@ CONTAINS
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                         & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,residual_variable_dof,RESIDUAL_VALUE, &
                                         & ERR,ERROR,*999)
-! ! !                                     ENDIF
+                                    ENDIF
                                   ENDDO
                                 ELSE
                                   CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
