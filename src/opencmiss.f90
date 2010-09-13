@@ -3404,7 +3404,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   !Module parameters
 
-  !> \addtogroup OPENCMISS_InterfaceConditionConstants OPENCMISS::InterfaceConditinos::Constants
+  !> \addtogroup OPENCMISS_InterfaceConditionConstants OPENCMISS::InterfaceConditions::Constants
   !> \brief Interface conditions constants.
   !>@{
   !> \addtogroup OPENCMISS_InterfaceConditionMethods OPENCMISS::InterfaceConditions::Methods
