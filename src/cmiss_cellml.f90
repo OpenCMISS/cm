@@ -140,13 +140,15 @@ CONTAINS
     !Local variables
     
     CALL ENTERS("CELLML_DESTROY",ERR,ERROR,*999)
-    
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML)) THEN
       CALL CELLML_FINALISE(CELLML,ERR,ERROR,*999)
     ELSE
       CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
     END IF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_DESTROY")
     RETURN
 999 CALL ERRORS("CELLML_DESTROY",ERR,ERROR)
@@ -177,7 +179,7 @@ CONTAINS
     NULLIFY(NEW_CELLML)
 
     CALL ENTERS("CELLML_CREATE_START",ERR,ERROR,*999)
-    
+#ifdef USECELLML
     IF(ASSOCIATED(FIELD)) THEN
       IF(ASSOCIATED(CELLML)) THEN
         CALL FLAG_ERROR("CellML is already associated.",ERR,ERROR,*999)
@@ -222,7 +224,9 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Source field is not associated.",ERR,ERROR,*998)
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_CREATE_START")
     RETURN
 999 IF(ASSOCIATED(NEW_CELLML)) CALL CELLML_DESTROY(NEW_CELLML,ERR,ERROR,*998)
@@ -246,7 +250,7 @@ CONTAINS
     !Local variables
 
     CALL ENTERS("CELLML_CREATE_FINISH",ERR,ERROR,*999)
-    
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML)) THEN
       IF(ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
         !Insert this CellML environment into the source field, deleting any existing CellML environment
@@ -259,7 +263,9 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_CREATE_FINISH")
     RETURN
 999 CALL ERRORS("CELLML_CREATE_FINISH",ERR,ERROR)
@@ -280,7 +286,7 @@ CONTAINS
     !Local variables
     
     CALL ENTERS("CELLML_FINALISE",ERR,ERROR,*999)
-    
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML)) THEN
       IF(ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
         IF(ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) NULLIFY(CELLML%SOURCE_FIELD%CELLML)
@@ -288,7 +294,9 @@ CONTAINS
       IF(ASSOCIATED(CELLML%MODELS)) CALL CELLML_MODELS_FINALISE(CELLML%MODELS,ERR,ERROR,*999)
       DEALLOCATE(CELLML)
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_FINALISE")
     RETURN
 999 CALL ERRORS("CELLML_FINALISE",ERR,ERROR)
@@ -307,12 +315,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    
     CALL ENTERS("CELLML_INITIALISE",ERR,ERROR,*999)
-    
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML)) THEN
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_INITIALISE")
     RETURN
 999 CALL ERRORS("CELLML_INITIALISE",ERR,ERROR)
@@ -334,7 +343,7 @@ CONTAINS
     !Local variables
 
     CALL ENTERS("CELLML_MODELS_CREATE_START",ERR,ERROR,*999)
-
+#ifdef USECELLML
     IF(CELLML%CELLML_FINISHED) THEN
       !Clear any existing model definitions
       IF(ASSOCIATED(CELLML%MODELS%MODELS)) THEN
@@ -343,7 +352,9 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("CellML environment not yet finished, unable to create models.",ERR,ERROR,*999)
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_MODELS_CREATE_START")
     RETURN
 999 CALL ERRORS("CELLML_MODELS_CREATE_START",ERR,ERROR)
@@ -367,7 +378,7 @@ CONTAINS
     !Local variables
 
     CALL ENTERS("CELLML_MODELS_CREATE_FINISH",ERR,ERROR,*999)
-
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML)) THEN
         IF (ASSOCIATED(CELLML%MODELS) .AND. ASSOCIATED(CELLML%MODELS%MODELS) .AND. (CELLML%MODELS%NUMBER_OF_MODELS .GT. 0)) THEN
             !> \todo Add in calls to validate the model?
@@ -377,7 +388,9 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_MODELS_CREATE_FINISH")
     RETURN
 999 CALL ERRORS("CELLML_MODELS_CREATE_FINISH",ERR,ERROR)
@@ -398,11 +411,13 @@ CONTAINS
     !Local variables
     
     CALL ENTERS("CELLML_MODELS_FINALISE",ERR,ERROR,*999)
-    
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML_MODELS)) THEN
 
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_MODELS_FINALISE")
     RETURN
 999 CALL ERRORS("CELLML_MODELS_FINALISE",ERR,ERROR)
@@ -436,7 +451,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CELLML_MODEL_IMPORT_C",ERR,ERROR,*999)
-
+#ifdef USECELLML
     NULLIFY(NEW_MODEL)
 
     IF (ASSOCIATED(CELLML)) THEN
@@ -446,30 +461,32 @@ CONTAINS
             & " has already been created."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ELSE
-	        !Allocate new CellML model
-	        ALLOCATE(NEW_MODEL,STAT=ERR)
-	        IF (ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML model.",ERR,ERROR,*999)
-	        !set up new model object
-	        C_URI_L = LEN_TRIM(URI)
-	        WRITE(C_URI,'(A,A)') URI(1:C_URI_L),C_NULL_CHAR
-	        NEW_MODEL%PTR = CREATE_CELLML_MODEL_DEFINITION(C_URI)
-	        NEW_MODEL%USER_NUMBER = MODEL_USER_NUMBER
-	        NEW_MODEL%GLOBAL_NUMBER = CELLML%MODELS%NUMBER_OF_MODELS + 1
-	        ! Add model to this CellML environment's list of models
-	        ALLOCATE(NEW_MODELS(CELLML%MODELS%NUMBER_OF_MODELS+1),STAT=ERR)
-	        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML models array.",ERR,ERROR,*999)
-	        DO cellml_idx=1,CELLML%MODELS%NUMBER_OF_MODELS
-	            NEW_MODELS(cellml_idx)%PTR=>CELLML%MODELS%MODELS(cellml_idx)%PTR
-	        ENDDO !cellml_idx
-	        NEW_MODELS(CELLML%MODELS%NUMBER_OF_MODELS+1)%PTR=>NEW_MODEL
-	        IF(ASSOCIATED(CELLML%MODELS%MODELS)) DEALLOCATE(CELLML%MODELS%MODELS)
-	        CELLML%MODELS%MODELS => NEW_MODELS
-	        CELLML%MODELS%NUMBER_OF_MODELS = CELLML%MODELS%NUMBER_OF_MODELS+1
+            !Allocate new CellML model
+            ALLOCATE(NEW_MODEL,STAT=ERR)
+            IF (ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML model.",ERR,ERROR,*999)
+            !set up new model object
+            C_URI_L = LEN_TRIM(URI)
+            WRITE(C_URI,'(A,A)') URI(1:C_URI_L),C_NULL_CHAR
+            NEW_MODEL%PTR = CREATE_CELLML_MODEL_DEFINITION(C_URI)
+            NEW_MODEL%USER_NUMBER = MODEL_USER_NUMBER
+            NEW_MODEL%GLOBAL_NUMBER = CELLML%MODELS%NUMBER_OF_MODELS + 1
+            ! Add model to this CellML environment's list of models
+            ALLOCATE(NEW_MODELS(CELLML%MODELS%NUMBER_OF_MODELS+1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML models array.",ERR,ERROR,*999)
+            DO cellml_idx=1,CELLML%MODELS%NUMBER_OF_MODELS
+                NEW_MODELS(cellml_idx)%PTR=>CELLML%MODELS%MODELS(cellml_idx)%PTR
+            ENDDO !cellml_idx
+            NEW_MODELS(CELLML%MODELS%NUMBER_OF_MODELS+1)%PTR=>NEW_MODEL
+            IF(ASSOCIATED(CELLML%MODELS%MODELS)) DEALLOCATE(CELLML%MODELS%MODELS)
+            CELLML%MODELS%MODELS => NEW_MODELS
+            CELLML%MODELS%NUMBER_OF_MODELS = CELLML%MODELS%NUMBER_OF_MODELS+1
         ENDIF
     ELSE
         CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
     ENDIF
-
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_MODEL_IMPORT_C")
     RETURN
 999 CALL ERRORS("CELLML_MODEL_IMPORT_C",ERR,ERROR)
@@ -495,9 +512,11 @@ CONTAINS
     !Local variables
 
     CALL ENTERS("CELLML_MODEL_IMPORT_VS",ERR,ERROR,*999)
-    
+#ifdef USECELLML
     CALL CELLML_MODEL_IMPORT(MODEL_USER_NUMBER,CELLML,CHAR(URI),ERR,ERROR,*999)
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_MODEL_IMPORT_VS")
     RETURN
 999 CALL ERRORS("CELLML_MODEL_IMPORT_VS",ERR,ERROR)
@@ -1061,7 +1080,7 @@ CONTAINS
     INTEGER(INTG) :: cellml_idx
 
     CALL ENTERS("CELLML_USER_NUMBER_FIND",ERR,ERROR,*999)
-
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML)) THEN
       CALL FLAG_ERROR("CellML is already associated.",ERR,ERROR,*999)
     ELSE
@@ -1074,7 +1093,9 @@ CONTAINS
         ENDIF
       ENDDO
     ENDIF
-    
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_USER_NUMBER_FIND")
     RETURN
 999 CALL ERRORS("CELLML_USER_NUMBER_FIND",ERR,ERROR)
@@ -1095,7 +1116,7 @@ CONTAINS
     INTEGER(INTG) :: cellml_idx
 
     CALL ENTERS("CELLML_MODEL_USER_NUMBER_FIND",ERR,ERROR,*999)
-
+#ifdef USECELLML
     IF(ASSOCIATED(CELLML_MODEL)) THEN
       CALL FLAG_ERROR("CellML model is already associated.",ERR,ERROR,*999)
     ELSE
@@ -1108,7 +1129,9 @@ CONTAINS
         ENDIF
       ENDDO
     ENDIF
-
+#else
+    CALL FLAG_ERROR("CellML dummy routine. Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     CALL EXITS("CELLML_MODEL_USER_NUMBER_FIND")
     RETURN
 999 CALL ERRORS("CELLML_MODEL_USER_NUMBER_FIND",ERR,ERROR)
