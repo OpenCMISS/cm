@@ -48,6 +48,7 @@ MODULE CMISS_CELLML
 
   !Module imports
   USE BASE_ROUTINES
+  USE FIELD_ROUTINES
   USE ISO_VARYING_STRING
   USE INPUT_OUTPUT
   USE KINDS
@@ -344,6 +345,7 @@ CONTAINS
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
+        NULLIFY(CELLML%MODELS_FIELD)
     ENDIF
 
 #else
@@ -600,10 +602,93 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(REGION_TYPE), POINTER :: REGION,MODELS_FIELD_REGION
+    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
  
     CALL ENTERS("CELLML_MODELS_FIELD_CREATE_START",ERR,ERROR,*999)
 
+#ifdef USECELLML
 
+    IF(ASSOCIATED(CELLML) .AND. ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
+      IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+        CALL FLAG_ERROR("The CellML environment models field is already associated",ERR,ERROR,*999)
+      ELSE
+        REGION=>CELLML%SOURCE_FIELD%REGION
+        IF(ASSOCIATED(REGION)) THEN
+          IF(ASSOCIATED(FIELD)) THEN
+            !Check the materials field has been finished
+            IF(FIELD%FIELD_FINISHED) THEN
+              !Check the user numbers match
+              IF(MODEL_FIELD_USER_NUMBER/=FIELD%USER_NUMBER) THEN
+                LOCAL_ERROR="The specified models field user number of "// &
+                  & TRIM(NUMBER_TO_VSTRING(MODEL_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                  & " does not match the user number of the specified models field of "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+              MODELS_FIELD_REGION=>FIELD%REGION
+              IF(ASSOCIATED(MODELS_FIELD_REGION)) THEN
+                !Check the field is defined on the same region as the source field
+                IF(MODELS_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                  LOCAL_ERROR="Invalid region setup. The specified models field has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(MODELS_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                    & " and the specified source field has been created on region number "// &
+                    & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+                !Check the specified models field has the same decomposition as the source field
+                  IF(.NOT.ASSOCIATED(CELLML%SOURCE_FIELD%DECOMPOSITION,FIELD%DECOMPOSITION)) THEN
+                    CALL FLAG_ERROR("The specified models field does not have the same decomposition as the source "// &
+                      & "field for the specified CellML environment.",ERR,ERROR,*999)
+                  ENDIF
+              ELSE
+                CALL FLAG_ERROR("The specified models field region is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The specified models field has not been finished.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            !Check the user number has not already been used for a field in this region.
+            NULLIFY(FIELD)
+            CALL FIELD_USER_NUMBER_FIND(MODEL_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+            IF(ASSOCIATED(FIELD)) THEN
+              LOCAL_ERROR="The specified models field user number of "// &
+                & TRIM(NUMBER_TO_VSTRING(MODEL_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                & "has already been used to create a field on region number "// &
+                & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+          !Initialise the environment models field
+          IF(.NOT. ASSOCIATED(FIELD)) THEN
+            ! need to create a new models field from scratch
+            NULLIFY(FIELD)
+            CALL FIELD_CREATE_START(MODEL_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+            CALL FIELD_LABEL_SET(FIELD,"CellMLModelsField",ERR,ERROR,*999)
+            CALL FIELD_TYPE_SET(FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+            CALL FIELD_MESH_DECOMPOSITION_SET(FIELD,CELLML%SOURCE_FIELD%DECOMPOSITION,ERR,ERROR,*999)
+            CALL FIELD_GEOMETRIC_FIELD_SET(FIELD,CELLML%SOURCE_FIELD%GEOMETRIC_FIELD,ERR,ERROR,*999)
+            CALL FIELD_NUMBER_OF_VARIABLES_SET(FIELD,1,ERR,ERROR,*999)
+            CALL FIELD_VARIABLE_LABEL_SET(FIELD,FIELD_U_VARIABLE_TYPE,"ModelMap",ERR,ERROR,*999)
+            CALL FIELD_NUMBER_OF_COMPONENTS_SET(FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
+            CALL FIELD_COMPONENT_LABEL_SET(FIELD,FIELD_U_VARIABLE_TYPE,1,"ModelUserNumber",ERR,ERROR,*999)
+            CALL FIELD_COMPONENT_MESH_COMPONENT_SET(FIELD,FIELD_U_VARIABLE_TYPE,1,1,ERR,ERROR,*999)
+            CALL FIELD_CREATE_FINISH(FIELD,ERR,ERROR,*999)
+          ENDIF
+          ! save the specified models field
+          CELLML%MODELS_FIELD => FIELD
+        ELSE
+          CALL FLAG_ERROR("CellML environment source field region is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML environment is not associated",ERR,ERROR,*999)
+    ENDIF
+
+#else
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
     
     CALL EXITS("CELLML_MODELS_FIELD_CREATE_START")
     RETURN
@@ -626,7 +711,7 @@ CONTAINS
     !Local variables
 
     CALL ENTERS("CELLML_MODELS_FIELD_CREATE_FINISH",ERR,ERROR,*999)
-    
+    ! nothing to do?
     CALL EXITS("CELLML_MODELS_FIELD_CREATE_FINISH")
     RETURN
 999 CALL ERRORS("CELLML_MODELS_FIELD_CREATE_FINISH",ERR,ERROR)

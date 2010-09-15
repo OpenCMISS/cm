@@ -2688,6 +2688,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
      LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
      TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD !<The source field for this CellML environment
      TYPE(CELLML_MODELS_TYPE), POINTER :: MODELS !< A pointer to the models for this environment
+     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD !<The models field for this CellML environment. Maps models in this environment to DOFs in the source_field.
   END TYPE CELLML_TYPE
 
   !> A buffer type to allow for an array of pointers to a CELLML_TYPE.
