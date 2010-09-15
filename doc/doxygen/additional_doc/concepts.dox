@@ -303,8 +303,8 @@ Equations has the following attributes:
 .
 \page problems Problems
 A problem has a number of solutions (each with their solver) inside a problem control loop. 
-Problem associated with region via solution which maps to equations sets and hence links to region. 
-Multiple problems can be in the same region, or multiple regions can woek to solve one problem.     
+Problem is associated with region via solution which maps to equations sets and hence links to region. 
+Multiple problems can be in the same region, or multiple regions can work to solve one problem.     
 
 Problem has the following attributes:
 - User number
