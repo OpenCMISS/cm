@@ -3190,6 +3190,23 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !>@}
   !>@}
 
+  !> \addtogroup OPENCMISS_GeneratedMeshConstants OPENCMISS::GeneratedMesh::Constants
+  !> \brief Generated mesh constants.
+  !>@{
+  !> \addtogroup OPENCMISS_GeneratedMeshSurfaceTypes OPENCMISS::GeneratedMesh::SurfaceTypes 
+  !> \brief Generated mesh surface types.
+  !> \see OPENCMISS::GeneratedMesh,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderInnerSurfaceType = GENERATED_MESH_CYLINDER_INNER_SURFACE !<Cylinder inner surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderOuterSurfaceType = GENERATED_MESH_CYLINDER_OUTER_SURFACE !<Cylinder outer surface. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderTopSurfaceType = GENERATED_MESH_CYLINDER_TOP_SURFACE !<Cylinder top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderBottomSurfaceType = GENERATED_MESH_CYLINDER_BOTTOM_SURFACE !<Cylinder bottom surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidInnerSurfaceType = GENERATED_MESH_ELLIPSOID_INNER_SURFACE !<Ellipsoid inner surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidOuterSurfaceType = GENERATED_MESH_ELLIPSOID_OUTER_SURFACE !<Ellipsoid outer surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidTopSurfaceType = GENERATED_MESH_ELLIPSOID_TOP_SURFACE !<Ellipsoid top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  !>@}
+  !>@}
+
   !Module types
 
   !Module variables
@@ -3287,9 +3304,23 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSGeneratedMeshGeometricParametersCalculateObj
   END INTERFACE !CMISSGeneratedMeshGeometricParametersCalculate
 
+  !>Returns a list of nodes belonging to a surface of given type
+  INTERFACE CMISSGeneratedMeshSurfaceGet
+    MODULE PROCEDURE CMISSGeneratedMeshSurfaceGetNumber
+    MODULE PROCEDURE CMISSGeneratedMeshSurfaceGetObj
+  END INTERFACE
+
   PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
  
   PUBLIC CMISSGeneratedMeshCylinderMeshType, CMISSGeneratedMeshEllipsoidMeshType 
+
+  PUBLIC CMISSGeneratedMeshCylinderInnerSurfaceType,CMISSGeneratedMeshCylinderOuterSurfaceType
+  
+  PUBLIC CMISSGeneratedMeshCylinderTopSurfaceType, CMISSGeneratedMeshCylinderBottomSurfaceType
+
+  PUBLIC CMISSGeneratedMeshEllipsoidInnerSurfaceType, CMISSGeneratedMeshEllipsoidOuterSurfaceType
+
+  PUBLIC CMISSGeneratedMeshEllipsoidTopSurfaceType
   
   PUBLIC CMISSGeneratedMeshBasisGet,CMISSGeneratedMeshBasisSet
 
@@ -3308,6 +3339,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSGeneratedMeshTypeGet,CMISSGeneratedMeshTypeSet
 
   PUBLIC CMISSGeneratedMeshGeometricParametersCalculate
+
+  PUBLIC CMISSGeneratedMeshSurfaceGet
   
   
 !!==================================================================================================================================
@@ -28151,6 +28184,81 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSGeneratedMeshGeometricParametersCalculateObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns a list of the nodes belonging to a surface, and their normal xi direction, of a generated mesh identified by an object.
+  SUBROUTINE CMISSGeneratedMeshSurfaceGetNumber(RegionUserNumber,GeneratedMeshUserNumber,SurfaceType,SurfaceNodes,NormalXi,Err)
+    
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh.
+    INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber  !<Guess what this is.
+    INTEGER(INTG), INTENT(IN) :: SurfaceType !<The type of surface to be extracted.
+    INTEGER(INTG), INTENT(OUT), ALLOCATABLE :: SurfaceNodes(:) !<The list of nodes on the surface to be returned.
+    INTEGER(INTG), INTENT(OUT) :: NormalXi !<index of the xi direction that is normal to the surface.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSGeneratedMeshSurfaceGetNumber",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(GENERATED_MESH)
+
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN    
+      CALL GENERATED_MESH_USER_NUMBER_FIND(GeneratedMeshUserNumber,REGION,GENERATED_MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(GENERATED_MESH)) THEN
+          CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,SurfaceType,SurfaceNodes,NormalXi,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A generated mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(GeneratedMeshUserNumber,"*",Err,ERROR))// &
+            & " does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSGeneratedMeshSurfaceGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSGeneratedMeshSurfaceGetNumber",Err,ERROR)
+    CALL EXITS("CMISSGeneratedMeshSurfaceGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+  END SUBROUTINE CMISSGeneratedMeshSurfaceGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns a list of the nodes belonging to a surface, and their normal xi direction, of a generated mesh identified by an object.
+  SUBROUTINE CMISSGeneratedMeshSurfaceGetObj(GeneratedMesh,SurfaceType,SurfaceNodes,NormalXi,Err)
+    
+    !Argument variables
+    TYPE(CMISSGeneratedMeshType), INTENT(IN) :: GeneratedMesh !<The generated mesh from which to extract surface nodes.
+    INTEGER(INTG), INTENT(IN) :: SurfaceType !<The type of surface to be extracted .
+    INTEGER(INTG), INTENT(OUT), ALLOCATABLE :: SurfaceNodes(:) !<The list of nodes on the surface to be returned.
+    INTEGER(INTG), INTENT(OUT) :: NormalXi !<index of the xi direction that is normal to the surface.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    CALL ENTERS("CMISSGeneratedMeshSurfaceGetObj",Err,ERROR,*999)
+
+    CALL GENERATED_MESH_SURFACE_GET(GeneratedMesh%GENERATED_MESH,SurfaceType,SurfaceNodes,NormalXi,Err,ERROR,*999)
+
+    CALL EXITS("CMISSGeneratedMeshSurfaceGetObj")
+    RETURN
+999 CALL ERRORS("CMISSGeneratedMeshSurfaceGetObj",Err,ERROR)
+    CALL EXITS("CMISSGeneratedMeshSurfaceGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+  END SUBROUTINE CMISSGeneratedMeshSurfaceGetObj
+
 
 !!==================================================================================================================================
 !!
