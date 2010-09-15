@@ -3196,7 +3196,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the DOF order type for a field variable. Note: for contiguous coponent DOF ordering all the components of the field variable must have the same interpolation type.
+  !>Sets/changes the DOF order type for a field variable. Note: for contiguous component DOF ordering all the components of the field variable must have the same interpolation type.
   SUBROUTINE FIELD_DOF_ORDER_TYPE_SET(FIELD,VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -13372,7 +13372,12 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL DISTRIBUTED_VECTOR_CREATE_FINISH(NEW_PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_DP,ERR,ERROR,*999)
+              SELECT CASE(FIELD_VARIABLE%DATA_TYPE)
+              CASE(FIELD_INTG_TYPE)
+                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0_INTG,ERR,ERROR,*999)
+              CASE(FIELD_DP_TYPE)
+                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NEW_PARAMETER_SET%PARAMETERS,0.0_DP,ERR,ERROR,*999)
+              END SELECT
               !Add the new parameter set to the list of parameter sets
               ALLOCATE(NEW_PARAMETER_SETS(FIELD_VARIABLE%PARAMETER_SETS%NUMBER_OF_PARAMETER_SETS+1),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new parameter sets.",ERR,ERROR,*999)

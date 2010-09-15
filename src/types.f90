@@ -1642,6 +1642,13 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD !<A pointer to the analytic field for the equations set if one is defined. If no source is defined the pointer is NULL.
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
+  TYPE EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    LOGICAL :: EQUATIONS_SET_FIELD_FINISHED !<Is .TRUE. if the equations set field for the equations set has finished being created, .FALSE. if not.
+    LOGICAL :: EQUATIONS_SET_FIELD_AUTO_CREATED !<Is .TRUE. if the equations set field has been auto created, .FALSE. if not.
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field for the equations set.
+  END TYPE EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE
+
   !>Contains information on an equations set. \see OPENCMISS::CMISSEquationsSetType
   TYPE EQUATIONS_SET_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user identifying number of the equations set
@@ -1664,6 +1671,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !A pointer to the equations information for the equations set
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the equations set.
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE) :: EQUATIONS_SET_FIELD !<A pointer to the equations set field for the equations set.
   END TYPE EQUATIONS_SET_TYPE
   
   !>A buffer type to allow for an array of pointers to a EQUATIONS_SET_TYPE \see TYPES::EQUATIONS_SET_TYPE

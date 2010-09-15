@@ -1711,13 +1711,21 @@ CONTAINS
   !>- ANALYTIC
   !>- FIXED_CONDITIONS 
   !>- EQUATIONS 
-  SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
+!   SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
+
+  SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,&
+    & EQUATIONS_SET_SUBTYPE,EQUATIONS_SET_FIELD_USER_NUMBER,EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the equations set
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to create the equations set on
-    TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD !<A pointer to the either the geometry or, in appropriate, the fibre field for the equation set
+    TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD !<A pointer to the either the geometry or, if appropriate, the fibre field for the equation set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_FIELD_USER_NUMBER !<The user number of the equations set field
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<On return, a pointer to the equations set field
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<On return, a pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_CLASS !<The equations set class to set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_TYPE_ !<The equations set type to set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equations set subtype to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1725,13 +1733,18 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: NEW_EQUATIONS_SET
     TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: NEW_EQUATIONS_SETS(:)
     TYPE(EQUATIONS_SET_SETUP_TYPE) :: EQUATIONS_SET_SETUP_INFO
-    TYPE(REGION_TYPE), POINTER :: GEOM_FIBRE_FIELD_REGION
+    TYPE(REGION_TYPE), POINTER :: GEOM_FIBRE_FIELD_REGION,EQUATIONS_SET_FIELD_REGION
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
- 
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+
     NULLIFY(NEW_EQUATIONS_SET)
     NULLIFY(NEW_EQUATIONS_SETS)
+    NULLIFY(EQUATIONS_EQUATIONS_SET_FIELD)
 
     CALL ENTERS("EQUATIONS_SET_CREATE_START",ERR,ERROR,*997)
+
+    !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN
@@ -1748,52 +1761,166 @@ CONTAINS
                 GEOM_FIBRE_FIELD_REGION=>GEOM_FIBRE_FIELD%REGION
                 IF(ASSOCIATED(GEOM_FIBRE_FIELD_REGION)) THEN
                   IF(GEOM_FIBRE_FIELD_REGION%USER_NUMBER==REGION%USER_NUMBER) THEN
-                    !Initalise equations set
-                    CALL EQUATIONS_SET_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
-                    !Set default equations set values
-                    NEW_EQUATIONS_SET%USER_NUMBER=USER_NUMBER
-                    NEW_EQUATIONS_SET%GLOBAL_NUMBER=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
-                    NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
-                    NEW_EQUATIONS_SET%REGION=>REGION
-                    !Default to a standardised Laplace.
-                    NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
-                    NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_LAPLACE_EQUATION_TYPE
-                    NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE
-                    NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
-                    !Initialise the setup
-                    CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-                    EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
-                    EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-                    !Start equations set specific setup
-                    CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-                    !Set up the equations set geometric fields
-                    CALL EQUATIONS_SET_GEOMETRY_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
-                    IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
-                      NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD
-                      NULLIFY(NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD)
-                    ELSE
-                      NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD%GEOMETRIC_FIELD
-                      NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD=>GEOM_FIBRE_FIELD
-                    ENDIF
-                    EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_GEOMETRY_TYPE
-                    EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-                    EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=GEOM_FIBRE_FIELD%USER_NUMBER
-                    EQUATIONS_SET_SETUP_INFO%FIELD=>GEOM_FIBRE_FIELD
-                    !Set up equations set specific geometry
-                    CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-                    !Finalise the setup
-                    CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
-                    !Add new equations set into list of equations set in the region
-                    ALLOCATE(NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
-                    DO equations_set_idx=1,REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS
-                      NEW_EQUATIONS_SETS(equations_set_idx)%PTR=>REGION%EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
-                    ENDDO !equations_set_idx
-                    NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1)%PTR=>NEW_EQUATIONS_SET
-                    IF(ASSOCIATED(REGION%EQUATIONS_SETS%EQUATIONS_SETS)) DEALLOCATE(REGION%EQUATIONS_SETS%EQUATIONS_SETS)
-                    REGION%EQUATIONS_SETS%EQUATIONS_SETS=>NEW_EQUATIONS_SETS
-                    REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
-                    EQUATIONS_SET=>NEW_EQUATIONS_SET
+!=== tob 2
+                      IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+                        !Check the equations set field has been finished
+                        IF(EQUATIONS_SET_FIELD_FIELD%FIELD_FINISHED.eqv..TRUE.) THEN
+                          !Check the user numbers match
+                          IF(EQUATIONS_SET_FIELD_USER_NUMBER/=EQUATIONS_SET_FIELD_FIELD%USER_NUMBER) THEN
+                            LOCAL_ERROR="The specified equations set field user number of "// &
+                              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                              & " does not match the user number of the specified equations set field of "// &
+                              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ENDIF
+                          EQUATIONS_SET_FIELD_REGION=>EQUATIONS_SET_FIELD_FIELD%REGION
+                          IF(ASSOCIATED(EQUATIONS_SET_FIELD_REGION)) THEN                
+                            !Check the field is defined on the same region as the equations set
+                            IF(EQUATIONS_SET_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                              LOCAL_ERROR="Invalid region setup. The specified equations set field was created on region no. "// &
+                                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                                & " and the specified equations set has been created on region number "// &
+                                & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                            !Check the specified equations set field has the same decomposition as the geometric field
+                            IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
+                              IF(.NOT.ASSOCIATED(GEOM_FIBRE_FIELD%DECOMPOSITION,EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION)) THEN
+                                CALL FLAG_ERROR("The specified equations set field does not have the same decomposition "// &
+                                  & "as the geometric field for the specified equations set.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("The geom. field is not associated for the specified equations set.",ERR,ERROR,*999)
+                            ENDIF
+                              
+                          ELSE
+                            CALL FLAG_ERROR("The specified equations set field region is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("The specified equations set field has not been finished.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        !Check the user number has not already been used for a field in this region.
+                        NULLIFY(FIELD)
+                        CALL FIELD_USER_NUMBER_FIND(EQUATIONS_SET_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+                        IF(ASSOCIATED(FIELD)) THEN
+                          LOCAL_ERROR="The specified equations set field user number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                            & "has already been used to create a field on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ENDIF
+                      !Initialise the equations set materials
+!                       CALL EQUATIONS_SET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+!                        WRITE(*,'(A)') "equations set initialise called"
+!                       IF(.NOT.ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+!                         EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.TRUE.
+!                       ENDIF
+!--- tob 1            
+                      !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
+                      !Initalise equations set
+                      CALL EQUATIONS_SET_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
+                      !Set default equations set values
+                      NEW_EQUATIONS_SET%USER_NUMBER=USER_NUMBER
+                      NEW_EQUATIONS_SET%GLOBAL_NUMBER=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
+                      NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
+                      NEW_EQUATIONS_SET%REGION=>REGION
+                      !Default to a standardised Laplace.
+                      SELECT CASE(EQUATIONS_SET_CLASS)
+                      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+                        CALL ELASTICITY_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE&
+                          & ,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+                        CALL FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+                        CALL CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
+                        IF(EQUATIONS_SET_TYPE_ == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
+                          CALL MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                        ELSE
+                          CALL BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                        END IF
+                      CASE(EQUATIONS_SET_MODAL_CLASS)
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+                        CALL MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
+                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_CLASS,"*",&
+                          & ERR,ERROR))//" is not valid."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
+       
+                      !
+                      !Set to multi-compartment diffusion
+!                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
+!                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_TYPE
+!                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE
+                      !
+!                       !Set to multi-compartment Darcy
+!                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
+!                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DARCY_EQUATION_TYPE
+!                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE
+                      !
+                      NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
+                      !Initialise the setup
+                      !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
+                      CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+                      EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
+                      EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+                      !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
+                      !Here, we get a pointer to the equations_set_field; default is null
+                      EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=EQUATIONS_SET_FIELD_USER_NUMBER
+                      EQUATIONS_SET_SETUP_INFO%FIELD=>EQUATIONS_SET_FIELD_FIELD
+!--- toe 1
+                      !write (*,*) EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER
+                      !Start equations set specific setup
+                      CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+                      CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+                      !Set up the equations set geometric fields
+                      CALL EQUATIONS_SET_GEOMETRY_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
+                      IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
+                        NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD
+                        NULLIFY(NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD)
+                      ELSE
+                        NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD%GEOMETRIC_FIELD
+                        NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD=>GEOM_FIBRE_FIELD
+                      ENDIF
+                      EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_GEOMETRY_TYPE
+                      EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+                      EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=GEOM_FIBRE_FIELD%USER_NUMBER
+                      EQUATIONS_SET_SETUP_INFO%FIELD=>GEOM_FIBRE_FIELD
+                      !Set up equations set specific geometry
+                      CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+                      !Finalise the setup
+                      CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+                      !Add new equations set into list of equations set in the region
+                      ALLOCATE(NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
+                      DO equations_set_idx=1,REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS
+                        NEW_EQUATIONS_SETS(equations_set_idx)%PTR=>REGION%EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
+                      ENDDO !equations_set_idx
+                      NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1)%PTR=>NEW_EQUATIONS_SET
+                      IF(ASSOCIATED(REGION%EQUATIONS_SETS%EQUATIONS_SETS)) DEALLOCATE(REGION%EQUATIONS_SETS%EQUATIONS_SETS)
+                      REGION%EQUATIONS_SETS%EQUATIONS_SETS=>NEW_EQUATIONS_SETS
+                      REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
+                      EQUATIONS_SET=>NEW_EQUATIONS_SET
+!---
+                      EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+                      !Set pointers: ASK_CHRIS
+                      IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN            
+                        EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                      ELSE
+                        EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET_FIELD_FIELD
+                      ENDIF
+!===toe 2
                   ELSE
                     LOCAL_ERROR="The geometric field region and the specified region do not match. "// &
                       & "The geometric field was created on region number "// &
@@ -2003,6 +2130,7 @@ CONTAINS
       CALL EQUATIONS_SET_MATERIALS_FINALISE(EQUATIONS_SET%MATERIALS,ERR,ERROR,*999)
       CALL EQUATIONS_SET_SOURCE_FINALISE(EQUATIONS_SET%SOURCE,ERR,ERROR,*999)
       CALL EQUATIONS_SET_ANALYTIC_FINALISE(EQUATIONS_SET%ANALYTIC,ERR,ERROR,*999)
+      CALL EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD,ERR,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) CALL EQUATIONS_DESTROY(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET%BOUNDARY_CONDITIONS)) CALL BOUNDARY_CONDITIONS_DESTROY(EQUATIONS_SET%BOUNDARY_CONDITIONS, &
         & ERR,ERROR,*999)
@@ -2725,13 +2853,14 @@ CONTAINS
       EQUATIONS_SET%SOLUTION_METHOD=0
       CALL EQUATIONS_SET_GEOMETRY_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
       CALL EQUATIONS_SET_DEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+      CALL EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
       NULLIFY(EQUATIONS_SET%INDEPENDENT)
       NULLIFY(EQUATIONS_SET%MATERIALS)
       NULLIFY(EQUATIONS_SET%SOURCE)
       NULLIFY(EQUATIONS_SET%ANALYTIC)
       NULLIFY(EQUATIONS_SET%EQUATIONS)
       NULLIFY(EQUATIONS_SET%BOUNDARY_CONDITIONS)
-     ENDIF
+    ENDIF
        
     CALL EXITS("EQUATIONS_SET_INITIALISE")
     RETURN
@@ -3310,6 +3439,64 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  !>Finalises the dependent variables for an equation set and deallocates all memory.
+  SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE(EQUATIONS_SET_FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE) :: EQUATIONS_SET_FIELD !<The pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE",ERR,ERROR,*999)
+
+    NULLIFY(EQUATIONS_SET_FIELD%EQUATIONS_SET)
+    EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FINISHED=.FALSE.
+    EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.FALSE.
+    NULLIFY(EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD)
+    
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE
+  
+  !
+  !================================================================================================================================
+  !
+  !>Initialises the equations set field for a equations set.
+  SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the dependent field for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET=>EQUATIONS_SET
+      EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FINISHED=.FALSE.
+      EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.TRUE.
+      NULLIFY(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD)
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+
 
   !>Sets up the specifices for an equation set.
   SUBROUTINE EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*)
@@ -4930,7 +5117,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("EQUATIONS_SET_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_SETS_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN

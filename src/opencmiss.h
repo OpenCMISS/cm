@@ -2381,13 +2381,22 @@ CMISSError CMISSEquationsSetCreateFinishNum(const int RegionUserNumber,
 
 CMISSError CMISSEquationsSetCreateFinish(CMISSEquationsSetType *EquationsSet);
 
-CMISSError CMISSEquationsSetCreateStartNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
-		const int GeomFibreFieldUserNumber);
+CMISSError CMISSEquationsSetCreateStartNum(const int EquationsSetUserNumber,
+		const int RegionUserNumber,
+		const int GeomFibreFieldUserNumber,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype,
+		const int EquationsSetFieldUserNumber);
 
 CMISSError CMISSEquationsSetCreateStart(const int EquationsSetUserNumber,
 		const CMISSRegionType Region,
 		const CMISSFieldType GeomFibreField,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype,
+		const int EquationsSetFieldUserNumber,
+		CMISSFieldType *EquationsSetFieldField,
 		CMISSEquationsSetType *EquationsSet);
 
 CMISSError CMISSEquationsSetDestroyNum(const int RegionUserNumber,
@@ -7090,13 +7099,22 @@ CMISSError CMISSEquationsSetCreateFinishNum(const int RegionUserNumber,
 
 CMISSError CMISSEquationsSetCreateFinish(const CMISSEquationsSetType EquationsSet);
 
-CMISSError CMISSEquationsSetCreateStartNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
-		const int GeomFibreFieldUserNumber);
+CMISSError CMISSEquationsSetCreateStartNum(const int EquationsSetUserNumber,
+		const int RegionUserNumber,
+		const int GeomFibreFieldUserNumber,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype
+		const int EquationsSetFieldUserNumber);
 
 CMISSError CMISSEquationsSetCreateStart(const int EquationsSetUserNumber,
 		const CMISSRegionType Region,
 		const CMISSFieldType GeomFibreField,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype,
+		const int EquationsSetFieldUserNumber,
+		CMISSFieldType *EquationsSetFieldField,
 		CMISSEquationsSetType *EquationsSet);
 
 CMISSError CMISSEquationsSetDestroyNum(const int RegionUserNumber,

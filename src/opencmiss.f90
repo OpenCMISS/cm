@@ -1914,6 +1914,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE !<Incompressible version for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityDarcyInriaModelSubtype= &
     & EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE !<INRIA Model for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype= &
+    & EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE !<Multi Compartment Darcy INRIA Model coupled with finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype= &
     & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE !< Incompressible finite elasticity with Darcy flow driven by solid hydrostatic pressure \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMembraneSubtype = EQUATIONS_SET_MEMBRANE_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -1937,6 +1939,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetALEDarcySubtype = EQUATIONS_SET_ALE_DARCY_SUBTYPE !<ALE Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientDarcySubtype = EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE !<Transient Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientALEDarcySubtype = EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE !<Transient ALE Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompartmentDarcySubtype = EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE !<Multi Compartment Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2194,7 +2197,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSetMooneyRivlinSubtype,CMISSEquationsSetIsotropicExponentialSubtype,CMISSEquationsSetActiveContractionSubtype,&
     & CMISSEquationsSetTransverseIsotropicExponentialSubtype, CMISSEquationsSetOrthotropicMaterialCostaSubtype, &
     & CMISSEquationsSetCompressibleFiniteElasticitySubtype,CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype, &
-    & CMISSEquationsSetElasticityDarcyInriaModelSubtype,CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype, &
+    & CMISSEquationsSetElasticityDarcyInriaModelSubtype,CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype, &
+    & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype, &
     & CMISSEquationsSetMembraneSubtype, CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
@@ -2203,7 +2207,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & CMISSEquationsSet1DTransientNavierStokesSubtype, &
     & CMISSEquationsSetOptimisedNavierStokesSubtype,CMISSEquationsSetStandardDarcySubtype, &
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype,CMISSEquationsSetTransientDarcySubtype, &
-    & CMISSEquationsSetTransientALEDarcySubtype,CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
+    & CMISSEquationsSetTransientALEDarcySubtype,CMISSEquationsSetMultiCompartmentDarcySubtype, &
+    & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
     & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
     & CMISSEquationsSetLinearPressurePoissonSubtype, CMISSEquationsSetNonlinearPressurePoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
@@ -17929,14 +17934,20 @@ CONTAINS
   !  
 
   !>Start the creation of an equations set identified by a user number.
-  SUBROUTINE CMISSEquationsSetCreateStartNumber(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber,Err)
+  SUBROUTINE CMISSEquationsSetCreateStartNumber(EquationsSetUserNumber,RegionUserNumber,GeomFibreFieldUserNumber,&
+               & EquationsSetClass,EquationsSetType,EquationsSetSubtype,EquationsSetFieldUserNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created.
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of an equations set on.
     INTEGER(INTG), INTENT(IN) :: GeomFibreFieldUserNumber !<The user number of the Geometric/Fibre field for the equations set.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field
+    INTEGER(INTG), INTENT(IN) :: EquationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
+    INTEGER(INTG), INTENT(IN) :: EquationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
+    INTEGER(INTG), INTENT(IN) :: EquationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
@@ -17951,11 +17962,18 @@ CONTAINS
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
     NULLIFY(GEOM_FIBRE_FIELD)
+    NULLIFY(EQUATIONS_SET_FIELD_FIELD)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(GeomFibreFieldUserNumber,REGION,GEOM_FIBRE_FIELD,Err,ERROR,*999)
+ 
+!!!!!!!!!!!!ALSO A FIELD USER NUMBER FIND FOR EQUATIONS SET FIELD?
+      CALL FIELD_USER_NUMBER_FIND(EquationsSetFieldUserNumber,REGION,EQUATIONS_SET_FIELD_FIELD,Err,ERROR,*999)
+
       IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
-        CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,Err,ERROR,*999)
+        CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,REGION,GEOM_FIBRE_FIELD,&
+          & EquationsSetClass,EquationsSetType,EquationsSetSubtype,EquationsSetFieldUserNumber,&
+          & EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(GeomFibreFieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -17980,13 +17998,20 @@ CONTAINS
   !  
 
   !>Start the creation of an equations set identified by an object.
-  SUBROUTINE CMISSEquationsSetCreateStartObj(EquationsSetUserNumber,Region,GeomFibreField,EquationsSet,Err)
+  SUBROUTINE CMISSEquationsSetCreateStartObj(EquationsSetUserNumber,Region,GeomFibreField,&
+              & EquationsSetClass,EquationsSetType,EquationsSetSubtype,EquationsSetFieldUserNumber,& 
+              & EquationsSetFieldField,EquationsSet,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to be created.
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to create the equations set on.
     TYPE(CMISSFieldType), INTENT(IN) :: GeomFibreField !<The Geometric/Fibre field for the creation of the equations set.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field
+    TYPE(CMISSFieldType), INTENT(OUT) :: EquationsSetFieldField !<On return, a pointer to the equations set field
     TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<On return, the created equations set.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
+    INTEGER(INTG), INTENT(IN) :: EquationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
+    INTEGER(INTG), INTENT(IN) :: EquationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
  
@@ -17996,7 +18021,9 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('Equations Set Create')
 #endif
  
-    CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,Region%REGION,GeomFibreField%FIELD,EquationsSet%EQUATIONS_SET, &
+    CALL EQUATIONS_SET_CREATE_START(EquationsSetUserNumber,Region%REGION,GeomFibreField%FIELD, &
+      & EquationsSetClass,EquationsSetType,EquationsSetSubtype,& 
+      & EquationsSetFieldUserNumber, EquationsSetFieldField%FIELD, EquationsSet%EQUATIONS_SET, &
       & Err,ERROR,*999)
     
     CALL EXITS("CMISSEquationsSetCreateStartObj")

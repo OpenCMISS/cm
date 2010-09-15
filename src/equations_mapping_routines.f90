@@ -888,7 +888,7 @@ CONTAINS
     !Argument variables
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: matrix_idx
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -1004,7 +1004,7 @@ CONTAINS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equation to create the equations mapping from.
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<On return, a pointer to the equations mapping. This must not be associated on entry
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("EQUATIONS_MAPPING_CREATE_START",ERR,ERROR,*999)
@@ -2349,12 +2349,11 @@ CONTAINS
                 SELECT CASE(EQUATIONS%LINEARITY)
                 CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0) THEN                  
-                    IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1.OR. &
-                      & NUMBER_OF_LINEAR_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN  ! <<>>  not sure that this check will work
+                    IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1) THEN
                       LOCAL_ERROR="The specified number of linear matrices of "// &
                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
                         & " is invalid. For non-dynamic linear problems without a equations set RHS the number must be "// &
-                        & "between >= 1 and <= "//TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
+                        & ">= 1."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
@@ -2362,7 +2361,7 @@ CONTAINS
                       LOCAL_ERROR="The specified number of linear matrices of "// &
                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
                         & " is invalid. For non-dynamic linear problems with a equations set RHS the number "// &
-                        & "must be between >= 1."
+                        & "must be >= 1."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDIF
@@ -2393,18 +2392,13 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-!chrm 16/06/2010
-!Commenting out the conditional below,
-!since for dynamic problems it is perfectly valid to have zero
-!linear matrices provided that one has dynamic matrices.
-!\ToDo: Will this remain commented out, or shall we introduce a conditional ???
-!                     IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1) THEN
-!                       LOCAL_ERROR="The specified number of linear matrices of "// &
-!                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
-!                         & " is invalid. For dynamic linear problems with a equations set RHS the number "// &
-!                         & "must be between >= 1."
-!                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!                     ENDIF
+                    IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<0) THEN
+                      LOCAL_ERROR="The specified number of linear matrices of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
+                        & " is invalid. For dynamic linear problems with a equations set RHS the number "// &
+                        & "must be >= 0."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
                 CASE(EQUATIONS_NONLINEAR)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
