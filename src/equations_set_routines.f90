@@ -1826,38 +1826,9 @@ CONTAINS
                       NEW_EQUATIONS_SET%GLOBAL_NUMBER=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
                       NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
                       NEW_EQUATIONS_SET%REGION=>REGION
-                      !Default to a standardised Laplace.
-                      SELECT CASE(EQUATIONS_SET_CLASS)
-                      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
-                        CALL ELASTICITY_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE&
-                          & ,ERR,ERROR,*999)
-                      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                        CALL FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
-                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
-                      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-                        CALL CLASSICAL_FIELD_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
-                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
-                      CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-                        IF(EQUATIONS_SET_TYPE_ == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
-                          CALL MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
-                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
-                        ELSE
-                          CALL BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
-                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
-                        END IF
-                      CASE(EQUATIONS_SET_MODAL_CLASS)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
-                        CALL MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_TYPE_,&
-                          & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
-                      CASE DEFAULT
-                        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_CLASS,"*",&
-                          & ERR,ERROR))//" is not valid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-       
+                      !Set the equations set class, type and subtype
+                      CALL EQUATIONS_SET_SPECIFICATION_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_, &
+                        & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)      
                       !
                       !Set to multi-compartment diffusion
 !                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
