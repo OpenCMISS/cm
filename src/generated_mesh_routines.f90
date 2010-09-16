@@ -3913,9 +3913,13 @@ CONTAINS
              SELECT CASE(SURFACE_TYPE)
 
              CASE(GENERATED_MESH_ELLIPSOID_INNER_SURFACE)
-                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2)-1)+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-                DO j=1,SIZE(NIDX,2)
+                j=1
+                i=1
+                node_counter=node_counter+1
+                SURFACE_NODES(node_counter)=NIDX(i,j,1)
+                DO j=2,SIZE(NIDX,2)
                    DO i=1, SIZE(NIDX,1)
                       node_counter=node_counter+1
                       IF (NIDX(i,j,1)/=0) THEN
@@ -3928,13 +3932,17 @@ CONTAINS
                 NORMAL_XI=-3
 
              CASE(GENERATED_MESH_ELLIPSOID_OUTER_SURFACE)
-                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2)-1)+1),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
-                DO j=1,SIZE(NIDX,2)
+                j=1
+                i=1
+                node_counter=node_counter+1
+                SURFACE_NODES(node_counter)=NIDX(i,j,SIZE(NIDX,3))
+                DO j=2,SIZE(NIDX,2)
                    DO i=1, SIZE(NIDX,1)
                       node_counter=node_counter+1
                       IF (NIDX(i,j,SIZE(NIDX,3))/=0) THEN
-                         SURFACE_NODES=NIDX(i,j,SIZE(NIDX,3))
+                         SURFACE_NODES(node_counter)=NIDX(i,j,SIZE(NIDX,3))
                       ELSE
                          node_counter=node_counter-1 
                       ENDIF
@@ -3949,7 +3957,7 @@ CONTAINS
                    DO i=1, SIZE(NIDX,1)
                       node_counter=node_counter+1
                       IF (NIDX(i,SIZE(NIDX,2),k)/=0) THEN
-                         SURFACE_NODES=NIDX(i,SIZE(NIDX,2),k)
+                         SURFACE_NODES(node_counter)=NIDX(i,SIZE(NIDX,2),k)
                       ELSE
                          node_counter=node_counter-1 
                       ENDIF
