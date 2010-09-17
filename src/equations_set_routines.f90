@@ -1744,8 +1744,6 @@ CONTAINS
 
     CALL ENTERS("EQUATIONS_SET_CREATE_START",ERR,ERROR,*997)
 
-    !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
-
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN
         CALL EQUATIONS_SET_USER_NUMBER_FIND(USER_NUMBER,REGION,NEW_EQUATIONS_SET,ERR,ERROR,*997)
@@ -1761,7 +1759,6 @@ CONTAINS
                 GEOM_FIBRE_FIELD_REGION=>GEOM_FIBRE_FIELD%REGION
                 IF(ASSOCIATED(GEOM_FIBRE_FIELD_REGION)) THEN
                   IF(GEOM_FIBRE_FIELD_REGION%USER_NUMBER==REGION%USER_NUMBER) THEN
-!=== tob 2
                       IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
                         !Check the equations set field has been finished
                         IF(EQUATIONS_SET_FIELD_FIELD%FIELD_FINISHED.eqv..TRUE.) THEN
@@ -1818,7 +1815,6 @@ CONTAINS
 !                         EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.TRUE.
 !                       ENDIF
 !--- tob 1            
-                      !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
                       !Initalise equations set
                       CALL EQUATIONS_SET_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
                       !Set default equations set values
@@ -1829,29 +1825,14 @@ CONTAINS
                       !Set the equations set class, type and subtype
                       CALL EQUATIONS_SET_SPECIFICATION_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_, &
                         & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)      
-                      !
-                      !Set to multi-compartment diffusion
-!                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
-!                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_TYPE
-!                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE
-                      !
-!                       !Set to multi-compartment Darcy
-!                       NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-!                       NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_DARCY_EQUATION_TYPE
-!                       NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE
-                      !
                       NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
                       !Initialise the setup
-                      !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
                       CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
                       EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
                       EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-                      !write (*,*) EQUATIONS_SET_FIELD_USER_NUMBER
                       !Here, we get a pointer to the equations_set_field; default is null
                       EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=EQUATIONS_SET_FIELD_USER_NUMBER
                       EQUATIONS_SET_SETUP_INFO%FIELD=>EQUATIONS_SET_FIELD_FIELD
-!--- toe 1
-                      !write (*,*) EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER
                       !Start equations set specific setup
                       CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
                       CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
@@ -1883,7 +1864,6 @@ CONTAINS
                       REGION%EQUATIONS_SETS%EQUATIONS_SETS=>NEW_EQUATIONS_SETS
                       REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
                       EQUATIONS_SET=>NEW_EQUATIONS_SET
-!---
                       EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
                       !Set pointers: ASK_CHRIS
                       IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN            
@@ -1891,7 +1871,6 @@ CONTAINS
                       ELSE
                         EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET_FIELD_FIELD
                       ENDIF
-!===toe 2
                   ELSE
                     LOCAL_ERROR="The geometric field region and the specified region do not match. "// &
                       & "The geometric field was created on region number "// &
@@ -4973,13 +4952,13 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         !Initialise the setup
-        CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-        EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
-        EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-        !Peform the initial equations set setup
-        CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-        !Finalise the setup
-        CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+!         CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+!         EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
+!         EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+!         !Peform the initial equations set setup
+!         CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+!         !Finalise the setup
+!         CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
       ENDIF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
