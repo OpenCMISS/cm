@@ -168,12 +168,11 @@ CONTAINS
   !
 
   !>Set up the CellML environment in the given field.
-  !! For a given field, create a CellML environment that will be used to define the value of that field in openCMISS. This will likely simply create and initialise an empty CellML environment object with the specified unique identifier number and associate it with the field? Also set some flag to indicate the CellML environment object is in the process of being created and should not yet be used.
-  !! \todo Not sure it makes sense to ever have more than one CellML environment for a given source field, so the user number is not needed?
-  SUBROUTINE CELLML_CREATE_START(CELLML_USER_NUMBER,FIELD,CELLML,ERR,ERROR,*)
+  !! For a given region, create a CellML environment that will be used to define CellML models in openCMISS. This will simply create and initialise an empty CellML environment object in the specified region with the specified unique identifier number. Also set some flag to indicate the CellML environment object is in the process of being created and should not yet be used.
+  !! \todo Should be passing in a region? or leave that for the field mapping?
+  SUBROUTINE CELLML_CREATE_START(CELLML_USER_NUMBER,CELLML,ERR,ERROR,*)
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CELLML_USER_NUMBER !<Not sure what the purpose of this is? I guess to give the created CellML environment object a unique identifier? Perhaps if the same identifier is specified then an existing CellML environment would be reused/reinitialised for the given source field...
-    TYPE(FIELD_TYPE), POINTER :: FIELD !<The (source) field to set up this CellML environment for. Should be USER_NUMBER instead?
+    INTEGER(INTG), INTENT(IN) :: CELLML_USER_NUMBER !<The user specified ID for this CellML environment.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The newly created CellML environment object.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -189,50 +188,45 @@ CONTAINS
 
 #ifdef USECELLML
 
-    IF(ASSOCIATED(FIELD)) THEN
-      IF(ASSOCIATED(CELLML)) THEN
-        CALL FLAG_ERROR("CellML is already associated.",ERR,ERROR,*999)
-      ELSE
-        NULLIFY(CELLML)
-        CALL CELLML_USER_NUMBER_FIND(CELLML_USER_NUMBER,CELLML,ERR,ERROR,*999)
-        IF(ASSOCIATED(CELLML)) THEN
-          LOCAL_ERROR="CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML_USER_NUMBER,"*",ERR,ERROR))// &
-            & " has already been created."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ELSE
-          !Allocate new cellml
-          ALLOCATE(NEW_CELLML,STAT=ERR)
-          IF (ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environment.",ERR,ERROR,*999)
-          !Initialise cellml
-          CALL CELLML_INITIALISE(NEW_CELLML,ERR,ERROR,*999)
-          !Set cellml defaults
-          NEW_CELLML%USER_NUMBER = CELLML_USER_NUMBER
-          NEW_CELLML%GLOBAL_NUMBER = CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1
-          NEW_CELLML%SOURCE_FIELD => FIELD
-          NEW_CELLML%ENVIRONMENTS => CELLML_ENVIRONMENTS
-          NEW_CELLML%CELLML_FINISHED = .FALSE.
-          NULLIFY(NEW_CELLML%MODELS)
-          ALLOCATE(NEW_CELLML%MODELS,STAT=ERR)
-          IF (ERR/=0) CALL FLAG_ERROR("CellML environment models could not be allocated.",ERR,ERROR,*999)
-          NEW_CELLML%MODELS%NUMBER_OF_MODELS = 0
-          NULLIFY(NEW_CELLML%MODELS%MODELS)
-          NEW_CELLML%MODELS%CELLML => NEW_CELLML
-          !Add cellml to the list of cellml environments
-          ALLOCATE(NEW_CELLML_ENVIRONMENTS(CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environments.",ERR,ERROR,*999)
-          DO cellml_idx=1,CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS
-            NEW_CELLML_ENVIRONMENTS(cellml_idx)%PTR=>CELLML_ENVIRONMENTS%ENVIRONMENTS(cellml_idx)%PTR
-          ENDDO !cellml_idx
-          NEW_CELLML_ENVIRONMENTS(CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1)%PTR=>NEW_CELLML
-          IF(ASSOCIATED(CELLML_ENVIRONMENTS%ENVIRONMENTS)) DEALLOCATE(CELLML_ENVIRONMENTS%ENVIRONMENTS)
-          CELLML_ENVIRONMENTS%ENVIRONMENTS=>NEW_CELLML_ENVIRONMENTS
-          CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS=CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1
-          CELLML=>NEW_CELLML
-        ENDIF
-      ENDIF
+  IF(ASSOCIATED(CELLML)) THEN
+    CALL FLAG_ERROR("CellML is already associated.",ERR,ERROR,*999)
+  ELSE
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CELLML_USER_NUMBER,CELLML,ERR,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      LOCAL_ERROR="CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML_USER_NUMBER,"*",ERR,ERROR))// &
+        & " has already been created."
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Source field is not associated.",ERR,ERROR,*998)
+      !Allocate new cellml
+      ALLOCATE(NEW_CELLML,STAT=ERR)
+      IF (ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environment.",ERR,ERROR,*999)
+      !Initialise cellml
+      CALL CELLML_INITIALISE(NEW_CELLML,ERR,ERROR,*999)
+      !Set cellml defaults
+      NEW_CELLML%USER_NUMBER = CELLML_USER_NUMBER
+      NEW_CELLML%GLOBAL_NUMBER = CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1
+      NEW_CELLML%ENVIRONMENTS => CELLML_ENVIRONMENTS
+      NEW_CELLML%CELLML_FINISHED = .FALSE.
+      NULLIFY(NEW_CELLML%MODELS)
+      ALLOCATE(NEW_CELLML%MODELS,STAT=ERR)
+      IF (ERR/=0) CALL FLAG_ERROR("CellML environment models could not be allocated.",ERR,ERROR,*999)
+      NEW_CELLML%MODELS%NUMBER_OF_MODELS = 0
+      NULLIFY(NEW_CELLML%MODELS%MODELS)
+      NEW_CELLML%MODELS%CELLML => NEW_CELLML
+      !Add cellml to the list of cellml environments
+      ALLOCATE(NEW_CELLML_ENVIRONMENTS(CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environments.",ERR,ERROR,*999)
+      DO cellml_idx=1,CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS
+        NEW_CELLML_ENVIRONMENTS(cellml_idx)%PTR=>CELLML_ENVIRONMENTS%ENVIRONMENTS(cellml_idx)%PTR
+      ENDDO !cellml_idx
+      NEW_CELLML_ENVIRONMENTS(CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1)%PTR=>NEW_CELLML
+      IF(ASSOCIATED(CELLML_ENVIRONMENTS%ENVIRONMENTS)) DEALLOCATE(CELLML_ENVIRONMENTS%ENVIRONMENTS)
+      CELLML_ENVIRONMENTS%ENVIRONMENTS=>NEW_CELLML_ENVIRONMENTS
+      CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS=CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1
+      CELLML=>NEW_CELLML
     ENDIF
+  ENDIF
 
 #else
 
@@ -267,14 +261,14 @@ CONTAINS
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      IF(ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
-        !Insert this CellML environment into the source field, deleting any existing CellML environment
-        IF(ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) CALL CELLML_DESTROY(CELLML%SOURCE_FIELD%CELLML,ERR,ERROR,*999)
-        CELLML%SOURCE_FIELD%CELLML => CELLML
-        CELLML%CELLML_FINISHED = .TRUE.
-      ELSE
-        CALL FLAG_ERROR("CellML source field not associated.",ERR,ERROR,*999)
-      ENDIF
+!      IF(ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
+!        !Insert this CellML environment into the source field, deleting any existing CellML environment
+!        IF(ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) CALL CELLML_DESTROY(CELLML%SOURCE_FIELD%CELLML,ERR,ERROR,*999)
+!        CELLML%SOURCE_FIELD%CELLML => CELLML
+!        CELLML%CELLML_FINISHED = .TRUE.
+!      ELSE
+!        CALL FLAG_ERROR("CellML source field not associated.",ERR,ERROR,*999)
+!      ENDIF
     ELSE
       CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -309,9 +303,9 @@ CONTAINS
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      IF(ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
-        IF(ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) NULLIFY(CELLML%SOURCE_FIELD%CELLML)
-      ENDIF
+!      IF(ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
+!        IF(ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) NULLIFY(CELLML%SOURCE_FIELD%CELLML)
+!      ENDIF
       IF(ASSOCIATED(CELLML%MODELS)) CALL CELLML_MODELS_FINALISE(CELLML%MODELS,ERR,ERROR,*999)
       DEALLOCATE(CELLML)
     ENDIF
@@ -480,7 +474,7 @@ CONTAINS
   !
 
   !>Import the specified CellML model into the given CellML environment object.
-  !! Here we load specified CellML models into the CellML environment object. Will be called for each model required for use with the base source field for which this CellML environment was created.
+  !! Here we load specified CellML models into the CellML environment object. Will be called for each model required for use with this CellML environment.
   !! - should do some level of validation when the model is loaded
   !! - see URI notes below...
   SUBROUTINE CELLML_MODEL_IMPORT_C(MODEL_USER_NUMBER,CELLML,URI,ERR,ERROR,*)
@@ -555,7 +549,7 @@ CONTAINS
   !
 
   !>Import the specified CellML model into the given CellML environment object.
-  !! Here we load specified CellML models into the CellML environment object. Will be called for each model required for use with the base source field for which this CellML environment was created.
+  !! Here we load specified CellML models into the CellML environment object. Will be called for each model required for use with this CellML environment.
   !! - should do some level of validation when the model is loaded
   !! - see URI notes below...
   SUBROUTINE CELLML_MODEL_IMPORT_VS(MODEL_USER_NUMBER,CELLML,URI,ERR,ERROR,*)
@@ -608,7 +602,7 @@ CONTAINS
  
     CALL ENTERS("CELLML_MODELS_FIELD_CREATE_START",ERR,ERROR,*999)
 
-#ifdef USECELLML
+#ifdef USECELLML_NEEDS_REDOING
 
     IF(ASSOCIATED(CELLML) .AND. ASSOCIATED(CELLML%SOURCE_FIELD)) THEN
       IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN

@@ -10366,16 +10366,14 @@ CONTAINS
   !  
 
   !>Starts the creation of a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLCreateStartNumber(CellMLUserNumber,RegionUserNumber,FieldUserNumber,Err)
+  SUBROUTINE CMISSCellMLCreateStartNumber(CellMLUserNumber,RegionUserNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating.
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the field to start the CellML enviroment creation on.
-    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the Field to start the CellML enviroment creation on.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -10386,18 +10384,10 @@ CONTAINS
 #endif
  
     NULLIFY(REGION)
-    NULLIFY(FIELD)
     NULLIFY(CELLML)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
-      IF(ASSOCIATED(FIELD)) THEN
-        CALL CELLML_CREATE_START(CellMLUserNumber,FIELD,CELLML,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
-          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
+      CALL CELLML_CREATE_START(CellMLUserNumber,CELLML,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
@@ -10418,11 +10408,10 @@ CONTAINS
   !  
  
   !>Start the creation of a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLCreateStartObj(CellMLUserNumber,Field,CellML,Err)
+  SUBROUTINE CMISSCellMLCreateStartObj(CellMLUserNumber,CellML,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating.
-    TYPE(CMISSFieldType), INTENT(INOUT) :: Field !<The (source) field to set up the CellML environment for.
     TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<On return, the created CellML environment.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -10433,7 +10422,7 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('CellML Create')
 #endif
  
-    CALL CELLML_CREATE_START(CellMLUserNumber,Field%FIELD,CellML%CELLML,Err,ERROR,*999)
+    CALL CELLML_CREATE_START(CellMLUserNumber,CellML%CELLML,Err,ERROR,*999)
 
     CALL EXITS("CMISSCellMLCreateStartObj")
     RETURN
