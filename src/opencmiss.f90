@@ -292,6 +292,8 @@ MODULE OPENCMISS
   PUBLIC CMISSDataProjectionType,CMISSDataProjectionTypeFinalise,CMISSDataProjectionTypeInitialise
 
   PUBLIC CMISSDecompositionType,CMISSDecompositionTypeFinalise,CMISSDecompositionTypeInitialise
+  
+  PUBLIC CMISSDecompositionCalculateFacesSet
 
   PUBLIC CMISSEquationsType,CMISSEquationsTypeFinalise,CMISSEquationsTypeInitialise
 
