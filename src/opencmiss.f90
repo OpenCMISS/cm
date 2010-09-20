@@ -936,18 +936,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLDestroyObj
   END INTERFACE !CMISSCellMLDestroy
 
-  !>Finishes the creation of CellML models. \see OPENCMISS::CMISSCellMLModelsCreateStart
-  INTERFACE CMISSCellMLModelsCreateFinish
-    MODULE PROCEDURE CMISSCellMLModelsCreateFinishNumber
-    MODULE PROCEDURE CMISSCellMLModelsCreateFinishObj
-  END INTERFACE !CMISSCellMLModelsCreateFinish
-
-  !>Starts the creation of CellML models. \see OPENCMISS::CMISSCellMLModelsCreateFinish
-  INTERFACE CMISSCellMLModelsCreateStart
-    MODULE PROCEDURE CMISSCellMLModelsCreateStartNumber
-    MODULE PROCEDURE CMISSCellMLModelsCreateStartObj
-  END INTERFACE !CMISSCellMLModelsCreateStart
-
   !>Imports the specified CellML model into a CellML models environment. 
   INTERFACE CMISSCellMLModelImport
     MODULE PROCEDURE CMISSCellMLModelImportNumberC
@@ -955,6 +943,14 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLModelImportNumberVS
     MODULE PROCEDURE CMISSCellMLModelImportObjVS
   END INTERFACE !CMISSCellMLModelImport
+
+  !>Map the given field variable component to a CellML model variable in this CellML environment.
+  INTERFACE CMISSCellMLCreateFieldToCellMLMap
+    MODULE PROCEDURE CMISSCellMLCreateFieldToCellMLMapNumberC
+    MODULE PROCEDURE CMISSCellMLCreateFieldToCellMLMapObjC
+    MODULE PROCEDURE CMISSCellMLCreateFieldToCellMLMapNumberVS
+    MODULE PROCEDURE CMISSCellMLCreateFieldToCellMLMapObjVS
+  END INTERFACE !CMISSCellMLCreateFieldToCellMLMap
 
   !>Finishes the creation of CellML models field. \see OPENCMISS::CMISSCellMLModelsFieldCreateStart
   INTERFACE CMISSCellMLModelsFieldCreateFinish
@@ -1076,7 +1072,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSCellMLDestroy
 
-  PUBLIC CMISSCellMLModelsCreateFinish,CMISSCellMLModelsCreateStart,CMISSCellMLModelImport
+  PUBLIC CMISSCellMLModelImport,CMISSCellMLCreateFieldToCellMLMap
 
   PUBLIC CMISSCellMLModelsFieldCreateFinish,CMISSCellMLModelsFieldCreateStart,CMISSCellMLModelsFieldGet
 
@@ -10387,7 +10383,7 @@ CONTAINS
     NULLIFY(CELLML)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
-      CALL CELLML_CREATE_START(CellMLUserNumber,CELLML,Err,ERROR,*999)
+      CALL CELLML_CREATE_START(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
         & " does not exist."
@@ -10408,10 +10404,11 @@ CONTAINS
   !  
  
   !>Start the creation of a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLCreateStartObj(CellMLUserNumber,CellML,Err)
+  SUBROUTINE CMISSCellMLCreateStartObj(CellMLUserNumber,Region,CellML,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating.
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The Region containing the field to start the CellML enviroment creation on.
     TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<On return, the created CellML environment.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -10422,7 +10419,7 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('CellML Create')
 #endif
  
-    CALL CELLML_CREATE_START(CellMLUserNumber,CellML%CELLML,Err,ERROR,*999)
+    CALL CELLML_CREATE_START(CellMLUserNumber,Region%REGION,CellML%CELLML,Err,ERROR,*999)
 
     CALL EXITS("CMISSCellMLCreateStartObj")
     RETURN
@@ -10492,127 +10489,6 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSCellMLDestroyObj
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Finishes the creation of CellML modesl for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLModelsCreateFinishNumber(CellMLUserNumber,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the models for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLModelsCreateFinishNumber",Err,ERROR,*999)
- 
-    NULLIFY(CELLML)
-    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
-    IF(ASSOCIATED(CELLML)) THEN
-      CALL CELLML_MODELS_CREATE_FINISH(CELLML,Err,ERROR,*999)
-    ELSE
-      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSCellMLModelsCreateFinishNumber")
-    RETURN
-999 CALL ERRORS("CMISSCellMLModelsCreateFinishNumber",Err,ERROR)
-    CALL EXITS("CMISSCellMLModelsCreateFinishNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLModelsCreateFinishNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Finish the creation of CellML models for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLModelsCreateFinishObj(CellML,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the models for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLModelsCreateFinishObj",Err,ERROR,*999)
- 
-    CALL CELLML_MODELS_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLModelsCreateFinishObj")
-    RETURN
-999 CALL ERRORS("CMISSCellMLModelsCreateFinishObj",Err,ERROR)
-    CALL EXITS("CMISSCellMLModelsCreateFinishObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLModelsCreateFinishObj
-
-  !  
-  !================================================================================================================================
-  !  
-
-  !>Starts the creation of CellML models for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLModelsCreateStartNumber(CellMLUserNumber,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating the models for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLModelsCreateStartNumber",Err,ERROR,*999)
- 
-    NULLIFY(CELLML)
-    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
-    IF(ASSOCIATED(CELLML)) THEN
-      CALL CELLML_MODELS_CREATE_START(CELLML,Err,ERROR,*999)
-    ELSE
-      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSCellMLModelsCreateStartNumber")
-    RETURN
-999 CALL ERRORS("CMISSCellMLModelsCreateStartNumber",Err,ERROR)
-    CALL EXITS("CMISSCellMLModelsCreateStartNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLModelsCreateStartNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Start the creation of CellML models for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLModelsCreateStartObj(CellML,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of models for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLModelsCreateStartObj",Err,ERROR,*999)
-
- 
-    CALL CELLML_MODELS_CREATE_START(CellML%CELLML,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLModelsCreateStartObj")
-    RETURN
-999 CALL ERRORS("CMISSCellMLModelsCreateStartObj",Err,ERROR)
-    CALL EXITS("CMISSCellMLModelsCreateStartObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLModelsCreateStartObj
 
   !  
   !================================================================================================================================
@@ -10746,18 +10622,178 @@ CONTAINS
   !================================================================================================================================
   !  
  
+  !>Defines a field variable component to CellML model variable map, by user number
+  SUBROUTINE CMISSCellMLCreateFieldToCellMLMapNumberC(CellMLUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+  & CellMLModelUserNumber,VariableID,Err)
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The field variable to map from.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number to map from the given field variable.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map to.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The of the CellML variable in the given model to map to.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSCellMLCreateFieldToCellMLMapNumberC",Err,ERROR,*999)
+
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,CELLML%REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL CELLML_CREATE_FIELD_TO_CELLML_MAP(CELLML,FIELD,VariableType,ComponentNumber,CellMLModelUserNumber, &
+        & VariableID,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+        & " does not exist in this CellML environment's region."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapNumberC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateFieldToCellMLMapNumberC",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapNumberC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLCreateFieldToCellMLMapNumberC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Defines a field variable component to CellML model variable map, by object.
+  SUBROUTINE CMISSCellMLCreateFieldToCellMLMapObjC(CellML,Field,VariableType,ComponentNumber, &
+  & CellMLModelUserNumber,VariableID,Err)
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to map from.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The field variable to map from.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number to map from the given field variable.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map to.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The of the CellML variable in the given model to map to.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLCreateFieldToCellMLMapObjC",Err,ERROR,*999)
+
+    CALL CELLML_CREATE_FIELD_TO_CELLML_MAP(CellML%CELLML,Field%FIELD,VariableType,ComponentNumber,CellMLModelUserNumber, &
+        & VariableID,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapObjC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateFieldToCellMLMapObjC",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapObjC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLCreateFieldToCellMLMapObjC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Defines a field variable component to CellML model variable map, by user number
+  SUBROUTINE CMISSCellMLCreateFieldToCellMLMapNumberVS(CellMLUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+  & CellMLModelUserNumber,VariableID,Err)
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The field variable to map from.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number to map from the given field variable.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map to.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The of the CellML variable in the given model to map to.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSCellMLCreateFieldToCellMLMapNumberVS",Err,ERROR,*999)
+
+    NULLIFY(CELLML)
+    CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+    IF(ASSOCIATED(CELLML)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,CELLML%REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL CELLML_CREATE_FIELD_TO_CELLML_MAP(CELLML,FIELD,VariableType,ComponentNumber,CellMLModelUserNumber, &
+        & CHAR(VariableID),Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+        & " does not exist in this CellML environment's region."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapNumberVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateFieldToCellMLMapNumberVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapNumberVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLCreateFieldToCellMLMapNumberVS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Defines a field variable component to CellML model variable map, by object.
+  SUBROUTINE CMISSCellMLCreateFieldToCellMLMapObjVS(CellML,Field,VariableType,ComponentNumber, &
+  & CellMLModelUserNumber,VariableID,Err)
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to map from.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The field variable to map from.
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number to map from the given field variable.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map to.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The of the CellML variable in the given model to map to.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLCreateFieldToCellMLMapNumberVS",Err,ERROR,*999)
+
+    CALL CELLML_CREATE_FIELD_TO_CELLML_MAP(CellML%CELLML,Field%FIELD,VariableType,ComponentNumber,CellMLModelUserNumber, &
+        & CHAR(VariableID),Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapObjVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLCreateFieldToCellMLMapObjVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLCreateFieldToCellMLMapObjVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLCreateFieldToCellMLMapObjVS
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finishes the creation of CellML models field for a CellML environment identified by a user number.
   SUBROUTINE CMISSCellMLModelsFieldCreateFinishNumber(CellMLUserNumber,Err)
-  
+
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the models field for.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
+
     CALL ENTERS("CMISSCellMLModelsFieldCreateFinishNumber",Err,ERROR,*999)
- 
+
     NULLIFY(CELLML)
     CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
     IF(ASSOCIATED(CELLML)) THEN
@@ -10774,13 +10810,13 @@ CONTAINS
     CALL EXITS("CMISSCellMLModelsFieldCreateFinishNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
-    
+
   END SUBROUTINE CMISSCellMLModelsFieldCreateFinishNumber
 
-  !  
+  !
   !================================================================================================================================
-  !  
- 
+  !
+
   !>Finish the creation of CellML models field for a CellML environment identified by an object.
   SUBROUTINE CMISSCellMLModelsFieldCreateFinishObj(CellML,Err)
   

@@ -87,6 +87,11 @@ MODULE CMISS_CELLML
     MODULE PROCEDURE CELLML_MODEL_IMPORT_VS
   END INTERFACE !CELLML_MODEL_IMPORT
   
+  INTERFACE CELLML_CREATE_FIELD_TO_CELLML_MAP
+    MODULE PROCEDURE CELLML_CREATE_FIELD_TO_CELLML_MAP_C
+    MODULE PROCEDURE CELLML_CREATE_FIELD_TO_CELLML_MAP_VS
+  END INTERFACE !CELLML_CREATE_FIELD_TO_CELLML_MAP
+
   INTERFACE CELLML_FIELD_COMPONENT_GET
     MODULE PROCEDURE CELLML_FIELD_COMPONENT_GET_C
     MODULE PROCEDURE CELLML_FIELD_COMPONENT_GET_VS
@@ -108,7 +113,9 @@ MODULE CMISS_CELLML
 
   PUBLIC CELLML_DESTROY
   
-  PUBLIC CELLML_MODELS_CREATE_START,CELLML_MODELS_CREATE_FINISH,CELLML_MODEL_IMPORT
+  PUBLIC CELLML_MODEL_IMPORT
+
+  PUBLIC CELLML_CREATE_FIELD_TO_CELLML_MAP
 
   PUBLIC CELLML_MODELS_FIELD_CREATE_START,CELLML_MODELS_FIELD_CREATE_FINISH,CELLML_MODELS_FIELD_GET
 
@@ -173,9 +180,10 @@ CONTAINS
   !>Set up the CellML environment in the given field.
   !! For a given region, create a CellML environment that will be used to define CellML models in openCMISS. This will simply create and initialise an empty CellML environment object in the specified region with the specified unique identifier number. Also set some flag to indicate the CellML environment object is in the process of being created and should not yet be used.
   !! \todo Should be passing in a region? or leave that for the field mapping?
-  SUBROUTINE CELLML_CREATE_START(CELLML_USER_NUMBER,CELLML,ERR,ERROR,*)
+  SUBROUTINE CELLML_CREATE_START(CELLML_USER_NUMBER,REGION,CELLML,ERR,ERROR,*)
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CELLML_USER_NUMBER !<The user specified ID for this CellML environment.
+    TYPE(REGION_TYPE), POINTER, INTENT(IN) :: REGION !<The region this CellML environment belongs to.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The newly created CellML environment object.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -191,6 +199,9 @@ CONTAINS
 
 #ifdef USECELLML
 
+  IF(.NOT. ASSOCIATED(REGION)) THEN
+    CALL FLAG_ERROR("Region for a new CellML environment must be defined.",ERR,ERROR,*999)
+  ENDIF
   IF(ASSOCIATED(CELLML)) THEN
     CALL FLAG_ERROR("CellML is already associated.",ERR,ERROR,*999)
   ELSE
@@ -210,6 +221,7 @@ CONTAINS
       NEW_CELLML%USER_NUMBER = CELLML_USER_NUMBER
       NEW_CELLML%GLOBAL_NUMBER = CELLML_ENVIRONMENTS%NUMBER_OF_ENVIRONMENTS+1
       NEW_CELLML%ENVIRONMENTS => CELLML_ENVIRONMENTS
+      NEW_CELLML%REGION => REGION
       NEW_CELLML%CELLML_FINISHED = .FALSE.
       NULLIFY(NEW_CELLML%MODELS)
       ALLOCATE(NEW_CELLML%MODELS,STAT=ERR)
@@ -342,6 +354,7 @@ CONTAINS
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
+        NULLIFY(CELLML%REGION)
         NULLIFY(CELLML%MODELS_FIELD)
     ENDIF
 
@@ -357,87 +370,6 @@ CONTAINS
     CALL EXITS("CELLML_INITIALISE")
     RETURN 1
   END SUBROUTINE CELLML_INITIALISE
-
-  !
-  !=================================================================================================================================
-  !
-
-  !> Prepare the given CellML environment for the creation of individual model objects.
-  !! Ensure the provided CellML environment object is suitable and ready for creating all the individual models that will be used with it. Probably simply check the object is valid and empty of all models? or perhaps it also a way to indicate that the user wants to add some more models to it?
-  SUBROUTINE CELLML_MODELS_CREATE_START(CELLML,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object that we want to start creating models with.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local variables
-
-    CALL ENTERS("CELLML_MODELS_CREATE_START",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-    IF(CELLML%CELLML_FINISHED) THEN
-      !Clear any existing model definitions
-      IF(ASSOCIATED(CELLML%MODELS%MODELS)) THEN
-        !> \todo Add in removal of models...
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("CellML environment not yet finished, unable to create models.",ERR,ERROR,*999)
-    ENDIF
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_MODELS_CREATE_START")
-    RETURN
-999 CALL ERRORS("CELLML_MODELS_CREATE_START",ERR,ERROR)
-    CALL EXITS("CELLML_MODELS_CREATE_START")
-    RETURN 1
-  END SUBROUTINE CELLML_MODELS_CREATE_START
-
-  !
-  !=================================================================================================================================
-  !
-
-  !>Finalise the given CellML environment after all models have been defined.
-  !! This routine is called once all the models for the provided CellML environment have been created.
-  !! - is this where the models are instantiated? (turned into code and compiled) - no, need more information before we can generate code.
-  !! - perhaps we simply "validate" the models to ensure they are suitable for use before the user gets too far along? or maybe that should be done with the model import routine?
-  SUBROUTINE CELLML_MODELS_CREATE_FINISH(CELLML,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object that we want to finalise the creation of new models with.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local variables
-
-    CALL ENTERS("CELLML_MODELS_CREATE_FINISH",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-    IF(ASSOCIATED(CELLML)) THEN
-        IF (ASSOCIATED(CELLML%MODELS) .AND. ASSOCIATED(CELLML%MODELS%MODELS) .AND. (CELLML%MODELS%NUMBER_OF_MODELS .GT. 0)) THEN
-            !> \todo Add in calls to validate the model?
-        ELSE
-            CALL FLAG_ERROR("CellML models is not associated or empty.",ERR,ERROR,*999)
-        ENDIF
-    ELSE
-      CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_MODELS_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("CELLML_MODELS_CREATE_FINISH",ERR,ERROR)
-    CALL EXITS("CELLML_MODELS_CREATE_FINISH")
-    RETURN 1
-  END SUBROUTINE CELLML_MODELS_CREATE_FINISH
 
   !
   !=================================================================================================================================
@@ -582,6 +514,81 @@ CONTAINS
     CALL EXITS("CELLML_MODEL_IMPORT_VS")
     RETURN 1
   END SUBROUTINE CELLML_MODEL_IMPORT_VS
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Create a field variable component to CellML model variable map.
+  SUBROUTINE CELLML_CREATE_FIELD_TO_CELLML_MAP_C(CELLML,FIELD,FIELD_VARIABLE,FIELD_COMPONENT,MODEL_USER_NUMBER,VARIABLE_ID, &
+  & ERR,ERROR,*)
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object in which to create the map.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field to map from.
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE !<The field variable to map from.
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT !<The component number to map from the given field variable.
+    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The user number of the CellML model to map to.
+    CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_ID !<The ID of the CellML variable in the given model to map to.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local variables
+
+    CALL ENTERS("CELLML_CREATE_FIELD_TO_CELLML_MAP_C",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    write(*,*) 'Mapping variable: ',FIELD_VARIABLE,' to model number: ',MODEL_USER_NUMBER,' with ID: ',VARIABLE_ID
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_CREATE_FIELD_TO_CELLML_MAP_C")
+    RETURN
+999 CALL ERRORS("CELLML_CREATE_FIELD_TO_CELLML_MAP_C",ERR,ERROR)
+    CALL EXITS("CELLML_CREATE_FIELD_TO_CELLML_MAP_C")
+    RETURN 1
+  END SUBROUTINE CELLML_CREATE_FIELD_TO_CELLML_MAP_C
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Create a field variable component to CellML model variable map.
+  SUBROUTINE CELLML_CREATE_FIELD_TO_CELLML_MAP_VS(CELLML,FIELD,FIELD_VARIABLE,FIELD_COMPONENT,MODEL_USER_NUMBER,VARIABLE_ID, &
+  & ERR,ERROR,*)
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object in which to create the map.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field to map from.
+    INTEGER(INTG), INTENT(IN) :: FIELD_VARIABLE !<The field variable to map from.
+    INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT !<The component number to map from the given field variable.
+    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The user number of the CellML model to map to.
+    TYPE(VARYING_STRING), INTENT(IN) :: VARIABLE_ID !<The ID of the CellML variable in the given model to map to.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local variables
+
+    CALL ENTERS("CELLML_CREATE_FIELD_TO_CELLML_MAP_VS",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    CALL CELLML_CREATE_FIELD_TO_CELLML_MAP(CELLML,FIELD,FIELD_VARIABLE,FIELD_COMPONENT,MODEL_USER_NUMBER,CHAR(VARIABLE_ID), &
+    & ERR,ERROR,*999)
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_CREATE_FIELD_TO_CELLML_MAP_VS")
+    RETURN
+999 CALL ERRORS("CELLML_CREATE_FIELD_TO_CELLML_MAP_VS",ERR,ERROR)
+    CALL EXITS("CELLML_CREATE_FIELD_TO_CELLML_MAP_VS")
+    RETURN 1
+  END SUBROUTINE CELLML_CREATE_FIELD_TO_CELLML_MAP_VS
 
   !
   !=================================================================================================================================

@@ -251,13 +251,13 @@ MODULE OPENCMISS_C
 !! CMISS_CELLML
 !!
 !!==================================================================================================================================
+#ifdef STILL_WORKING_ON_INTERFACE_SO_LEAVE_C_BINDINGS_FOR_NOW
 
  PUBLIC CMISSCellMLCreateFinishCNum,CMISSCellMLCreateFinishCPtr,CMISSCellMLCreateStartCNum,CMISSCellMLCreateStartCPtr
 
  PUBLIC CMISSCellMLDestroyCNum,CMISSCellMLDestroyCPtr
  
- PUBLIC CMISSCellMLModelsCreateFinishCNum,CMISSCellMLModelsCreateFinishCPtr,CMISSCellMLModelsCreateStartCNum, &
-   & CMISSCellMLModelsCreateStartCPtr,CMISSCellMLModelImportCNum,CMISSCellMLModelImportCPtr
+ PUBLIC CMISSCellMLModelImportCNum,CMISSCellMLModelImportCPtr
  
  PUBLIC CMISSCellMLModelsFieldCreateFinishCNum,CMISSCellMLModelsFieldCreateFinishCPtr,CMISSCellMLModelsFieldCreateStartCNum, &
    & CMISSCellMLModelsFieldCreateStartCPtr,CMISSCellMLModelsFieldGetCNum,CMISSCellMLModelsFieldGetCPtr
@@ -279,7 +279,8 @@ MODULE OPENCMISS_C
    & CMISSCellMLParametersFieldGetCPtr
  
  PUBLIC CMISSCellMLGenerateCNum,CMISSCellMLGenerateCPtr
-  
+
+#endif !def STILL_WORKING_ON_INTERFACE_SO_LEAVE_C_BINDINGS_FOR_NOW
 !!==================================================================================================================================
 !!
 !! COMP_ENVIRONMENT
@@ -5392,7 +5393,7 @@ CONTAINS
 !! CMISS_CELLML
 !!
 !!==================================================================================================================================
-
+#ifdef STILL_WORKING_ON_INTERFACE_SO_LEAVE_C_BINDINGS_FOR_NOW
   !>Finishes the creation of a CellML environment identified by a user number for C.
   FUNCTION CMISSCellMLCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLCreateFinishNum")
 
@@ -5534,104 +5535,6 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSCellMLDestroyCPtr
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Finishes the creation of CellML models for a CellML environment identified by a user number for C.
-  FUNCTION CMISSCellMLModelsCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLModelsCreateFinishNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating the models for.
-    !Function variable
-    INTEGER(C_INT) :: CMISSCellMLModelsCreateFinishCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSCellMLModelsCreateFinish(CellMLUserNumber,CMISSCellMLModelsCreateFinishCNum)
-
-    RETURN
-
-  END FUNCTION CMISSCellMLModelsCreateFinishCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finishes the creation of CellML models for a CellML environment identified by a pointer for C.
-  FUNCTION CMISSCellMLModelsCreateFinishCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsCreateFinish")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to finish creating the models for.
-    !Function variable
-    INTEGER(C_INT) :: CMISSCellMLModelsCreateFinishCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSCellMLType), POINTER :: CellML
-
-    CMISSCellMLModelsCreateFinishCPtr = CMISSNoError
-    IF(C_ASSOCIATED(CellMLPtr)) THEN
-      CALL C_F_POINTER(CellMLPtr,CellML )
-      IF(ASSOCIATED(CellML)) THEN
-        CALL CMISSCellMLModelsCreateFinish(CellML,CMISSCellMLModelsCreateFinishCPtr )
-      ELSE
-        CMISSCellMLModelsCreateFinishCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSCellMLModelsCreateFinishCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSCellMLModelsCreateFinishCPtr
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Starts the creation of CellML models for a CellML environment identified by a user number for C.
-  FUNCTION CMISSCellMLModelsCreateStartCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLModelsCreateStartNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to start creating the models for.
-    !Function variable
-    INTEGER(C_INT) :: CMISSCellMLModelsCreateStartCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSCellMLModelsCreateStart(CellMLUserNumber,CMISSCellMLModelsCreateStartCNum)
-
-    RETURN
-
-  END FUNCTION CMISSCellMLModelsCreateStartCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Starts the creation of CellML models for a CellML environment identified by a pointer for C.
-  FUNCTION CMISSCellMLModelsCreateStartCPtr(CellMLPtr) BIND(C, NAME = "CMISSCellMLModelsCreateStart")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to start creating the models for.
-    !Function variable
-    INTEGER(C_INT) :: CMISSCellMLModelsCreateStartCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSCellMLType), POINTER :: CellML
-
-    CMISSCellMLModelsCreateStartCPtr = CMISSNoError
-    IF(C_ASSOCIATED(CellMLPtr)) THEN
-      CALL C_F_POINTER(CellMLPtr,CellML )
-      IF(ASSOCIATED(CellML)) THEN
-        CALL CMISSCellMLModelsCreateStart(CellML,CMISSCellMLModelsCreateStartCPtr )
-      ELSE
-        CMISSCellMLModelsCreateStartCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSCellMLModelsCreateStartCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSCellMLModelsCreateStartCPtr
 
   !
   !================================================================================================================================
@@ -6713,6 +6616,7 @@ CONTAINS
 
   END FUNCTION CMISSCellMLGenerateCPtr
 
+#endif !def STILL_WORKING_ON_INTERFACE_SO_LEAVE_C_BINDINGS_FOR_NOW
 
 !!==================================================================================================================================
 !!

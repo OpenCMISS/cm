@@ -2698,6 +2698,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE CELLML_TYPE
      INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
      INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
+     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this CellML environment.
      TYPE(CELLML_ENVIRONMENTS_TYPE), POINTER :: ENVIRONMENTS !<A pointer back to the CellML environments.
      LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
      TYPE(CELLML_MODELS_TYPE), POINTER :: MODELS !< A pointer to the models for this environment
