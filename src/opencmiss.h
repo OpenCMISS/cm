@@ -1,7 +1,6 @@
-<<<<<<< .mine
 /* 
  * \file
- * $Id: opencmiss.h 582 2009-07-08 03:51:19Z catalept $
+ * $Id$
  * \author Chris Bradley
  * \brief The OpenCMISS library C header file.
  *
@@ -106,7 +105,7 @@ static int CMISSFromTimingType = 3;
 
 /* Module parameters */
 
-/* > \addtogroup OPENCMISS_BasisConstants OPENCMISS::Basis::Constants
+/* \addtogroup OPENCMISS_BasisConstants OPENCMISS::Basis::Constants
  *> \brief Basis function constants.
  *>@{
  *> \addtogroup OPENCMISS_BasisTypes OPENCMISS::Basis::BasisTypes
@@ -4190,6 +4189,17 @@ CMISSError CMISSRegionLabelSet(const CMISSRegionType Region,
  *==================================================================================================================================
  */
 
+CMISSError CMISSSolverCellMLAddNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int CellMLUserNumber,
+		int *CellMLIndex);
+
+CMISSError CMISSSolverCellMLAdd(const CMISSSolverType Solver,
+		const CMISSCellMLType CellML,
+		int *CellMLIndex);
+
 CMISSError CMISSSolverDAEEulerSolverTypeGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
 		const int *ControlLoopIdentifiers,
@@ -4590,7 +4600,7 @@ CMISSError CMISSSolverEquationsSparsityTypeSet(const CMISSSolverEquationsType So
 =======
 /* 
  * \file
- * $Id: opencmiss.h 582 2009-07-08 03:51:19Z catalept $
+ * $Id$
  * \author Chris Bradley
  * \brief The OpenCMISS library C header file.
  *

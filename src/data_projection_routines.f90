@@ -1,5 +1,5 @@
 !> \file
-!> $Id: data_projection_routines.f90 $
+!> $Id$
 !> \author Tim Wu
 !> \brief This module handles all data projection routines
 !>
@@ -544,7 +544,7 @@ CONTAINS
   
   !
   !================================================================================================================================
-  !  
+  !  
   !>Starts the process of creating data projection.
   SUBROUTINE DATA_PROJECTION_CREATE_START(DATA_POINTS,GEOMETRIC_FIELD,DATA_PROJECTION,ERR,ERROR,*)
     
@@ -1149,7 +1149,7 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: MAXIMUM_ITERATION_UPDATE !<On exit, the maximum iteration update of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables    
+    !Local Variables    
     CALL ENTERS("DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
@@ -2543,7 +2543,7 @@ CONTAINS
     REAL(DP), INTENT(IN) :: RELATIVE_TOLERANCE !<the relative tolerance to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables    
+    !Local Variables    
     CALL ENTERS("DATA_PROJECTION_RELATIVE_TOLERANCE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN

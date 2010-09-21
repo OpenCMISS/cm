@@ -299,14 +299,14 @@
     \Gamma_{#1#2#3}
     }} % Christoffel symbol of the first kind e.g. \christoffelfirst{i}{j}{k} => Gamma_{ijk}
 \newcommand{\christoffelsecond}[3]{\ensuremath{ %
-    \Gamma_{#1#2}^{#3}
-    }} % Christoffel symbol of the second kinde.g. \christoffelsecond{i}{j}{k} => Gamma_{ij}^[k}
+    \Gamma^{#1}_{#2#3}
+    }} % Christoffel symbol of the second kind e.g. \christoffelsecond{i}{j}{k} => Gamma^{i}_{jk}
+\newcommand{\partialderiv}[2]{\ensuremath{ %
+    {#1}_{,#2}
+    }} % partial derivative e.g. \partialderiv{i}{j} => i_{,j}
 \newcommand{\covarderiv}[2]{\ensuremath{ %
-    \brac{.}{#1}{|}_{#2}
-    }} % covariant derivative e.g. \covarderiv{i}{j} => i | _{j}
-\newcommand{\contraderiv}[2]{\ensuremath{ %
-    \brac{.}{#1}{|}^{#2}
-    }} % contravariant derivative e.g. \contraderiv{i}{j} => i | ^{j}
+    {#1}_{;#2}
+    }} % covariant derivative e.g. \covarderiv{i}{j} => i_{;j}
 \newcommand{\mixedderiv}[3]{\ensuremath{ %
     \brac{.}{#1}{|}^{#2}_{#3}
     }} % mixed derivative e.g. \mixedderiv{i}{j}{k} => i | ^{j}_{k}

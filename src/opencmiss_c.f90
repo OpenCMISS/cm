@@ -1,5 +1,5 @@
 !> \file
-!> $Id: opencmiss_c.f90 542 2009-06-03 17:16:22Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief The top level OpenCMISS module for C bindings.
 !>
@@ -807,6 +807,8 @@ MODULE OPENCMISS_C
 !! SOLVER_ROUTINES
 !!
 !!==================================================================================================================================
+
+ PUBLIC CMISSSolverCellMLAddCNum, CMISSSolverCellMLAddCPtr
 
  PUBLIC CMISSSolverDAEEulerSolverTypeGetCNum, CMISSSolverDAEEulerSolverTypeGetCPtr
 
@@ -20943,6 +20945,89 @@ CONTAINS
 !! SOLVER_ROUTINES
 !!
 !!==================================================================================================================================
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds a CellML environment, for C, sets to a solver identified by an user number.
+  FUNCTION CMISSSolverCellMLAddCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,CellMLUserNumber,CellMLIndex) BIND(C, NAME = "CMISSSolverCellMLAddNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to add the CellML environment for, for C.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers, for C.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier to add the CellML environment for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to add the CellML environment for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to add for C.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLIndex !<On return, the index of the added CellML environment in the solver for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverCellMLAddCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverCellMLAddCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverCellMLSetAdd(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,CellMLUserNumber, &
+          & CellMLIndex,CMISSSolverCellMLAddCNum)
+      ELSE
+        CMISSSolverCellMLAddCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverCellMLAddCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverCellMLAddCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds a CellML environment sets to a solver identified by an object for C.
+  FUNCTION CMISSSolverCellMLAddCPtr(SolverPtr,CellMLPtr,CellMLIndex) BIND(C, NAME = "CMISSSolverCellMLAdd")
+
+    !Argument variables
+    TYPE(C_PTR), VALUE, INTENT(IN) :: SolverPtr !<C pointer to the solver  to add the CellML environment for.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: CellMLPtr !<C pointer to the CellML environment to add.
+    INTEGER(C_INT), INTENT(OUT) :: CellMLIndex !<On return, the index of the added CellML environment in the DAE solver, for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSSolverCellMLAddCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSSolverType), POINTER :: Solver
+    TYPE(CMISSCellMLType), POINTER :: CellML
+
+    CMISSSolverCellMLAddCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverPtr)) THEN
+      CALL C_F_POINTER(SolverPtr,Solver)
+      IF(ASSOCIATED(Solver)) THEN
+        IF(C_ASSOCIATED(CellMLPtr)) THEN
+          CALL C_F_POINTER(CellMLPtr, CellML)
+          IF(ASSOCIATED(CellML)) THEN
+            CALL CMISSSolverCellMLAdd(Solver,CellML,CellMLIndex,CMISSSolverCellMLAddCPtr)
+          ELSE
+            CMISSSolverCellMLAddCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSSolverCellMLAddCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverCellMLAddCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverCellMLAddCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverCellMLAddCPtr
+
+  !
+  !================================================================================================================================
+  !
 
   !>Returns the solve type, for C, for an Euler differential-algebraic equation solver identified by an user number.
   FUNCTION CMISSSolverDAEEulerSolverTypeGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex,&

@@ -23,7 +23,7 @@ MY_MAINFILE=OpenCMISSNotes
 # more than one source quotation (") marks must be used around the
 # individual sources seperated by spaces.
 
-MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.tex EquationSets/EquationSets.tex AnalyticSolutions/AnalyticSolutions.tex References/References.tex Index/Index.tex"
+MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.tex EquationSets/EquationSets.tex EquationSets/ClassicalFieldClass/AdvectionDiffusionEquation.tex  EquationSets/ClassicalFieldClass/GeneralisedLaplaceEquation.tex EquationSets/ClassicalFieldClass/BiharmonicEquation.tex EquationSets/ClassicalFieldClass/DiffusionEquation.tex EquationSets/ClassicalFieldClass/HelmholtzEquation.tex EquationSets/ClassicalFieldClass/PoissonEquation.tex EquationSets/ClassicalFieldClass/ReactionDiffusionEquation.tex EquationSets/ClassicalFieldClass/WaveEquation.tex AnalyticSolutions/AnalyticSolutions.tex References/References.tex Index/Index.tex"
 
 #
 # The names of the eps/figs/(gnu)plot files that go into the document. 
@@ -31,12 +31,10 @@ MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.
 # more than one source quotation (") marks must be used around the
 # individual sources seperated by spaces.
 
-#MY_EPS_SRC=epsfiles/*.eps
+#MY_EPS_SRC="epsfiles/*.eps"
 MY_EPS_SRC=
-#MY_FIG_SRC=figs/*.fig 
-MY_FIG_SRC=
-#MY_PLOT_SRC=plots/*.gnu
-MY_PLOT_SRC=
+MY_FIG_SRC=figs/Theory/*.fig
+MY_PLOT_SRC=plots/Theory/*.gnu
 
 #
 # The name of the directory to place the html version of the document.

@@ -1,5 +1,5 @@
 !> \file
-!> $Id: interface_condition_constants.f90 1016 2010-04-07 09:48:32Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all constants shared across interface condition routines.
 !>

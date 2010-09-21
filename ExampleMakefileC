@@ -2,7 +2,7 @@
 #
 # For use with GNU make.
 #
-# $Id: ExampleMakefile 27 2007-07-24 16:52:51Z cpb $
+# $Id$
 #
 #----------------------------------------------------------------------------------------------------------------------------------
 # ExampleMakefile for compiling OpenCMISS C examples

@@ -3618,10 +3618,10 @@ CONTAINS
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Field create values cache is not associated",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Field create values cache is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_VARIABLE_COMPONENTS_INITIALISE")
@@ -3675,7 +3675,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     IF(DIAGNOSTICS1) THEN
@@ -13504,7 +13504,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_DESTROY")
@@ -15564,7 +15564,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_GET_NODE_INTG")
@@ -15753,7 +15753,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_GET_NODE_SP")
@@ -15942,7 +15942,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_GET_NODE_DP")
@@ -16131,7 +16131,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_GET_NODE_L")
@@ -18496,7 +18496,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_UPDATE_FINISH")
@@ -18685,7 +18685,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_UPDATE_NODE_INTG")
@@ -18874,7 +18874,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_UPDATE_NODE_SP")
@@ -19063,7 +19063,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_UPDATE_NODE_DP")
@@ -19252,7 +19252,7 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_PARAMETER_SET_UPDATE_NODE_L")
@@ -21462,7 +21462,7 @@ CONTAINS
         CALL FLAG_ERROR("Field create values cache is not associated.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*998)
     ENDIF
 
     CALL EXITS("FIELD_VARIABLE_INITIALISE")

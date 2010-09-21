@@ -1,5 +1,5 @@
 !> \file
-!> $Id: data_point_routines.f90 $
+!> $Id$
 !> \author Tim Wu
 !> \brief This module handles all data point routines.
 !>
@@ -328,7 +328,7 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<On exit, a pointer to the data projection for the data points. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables    
+    !Local Variables    
     CALL ENTERS("DATA_POINTS_DATA_PROJECTION_GET",ERR,ERROR,*999)
     
     IF(ASSOCIATED(DATA_POINTS)) THEN

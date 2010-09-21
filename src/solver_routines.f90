@@ -80,6 +80,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_TYPE=4 !<A differential-algebraic equation solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_EIGENPROBLEM_TYPE=5 !<A eigenproblem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_OPTIMISER_TYPE=6 !<An optimiser solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_CELLML_EVALUATOR_TYPE=7 !<A CellML evaluation solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolverLibraries SOLVER_ROUTINES::SolverLibraries
@@ -179,7 +180,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_JACOBIAN_FD_CALCULATED=3 !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
   !>@}  
 
-   !> \addtogroup SOLVER_ROUTINES_DynamicOrderTypes SOLVER_ROUTINES::DynamicOrderTypes
+  !> \addtogroup SOLVER_ROUTINES_DynamicOrderTypes SOLVER_ROUTINES::DynamicOrderTypes
   !> \brief The order types for a dynamic solver 
   !> \see SOLVER_ROUTINES
   !>@{
@@ -301,7 +302,8 @@ MODULE SOLVER_ROUTINES
     MODULE PROCEDURE SOLVER_DYNAMIC_THETA_SET_DP
   END INTERFACE !SOLVER_DYNAMIC_THETA_SET  
 
-  PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE,SOLVER_DAE_TYPE,SOLVER_EIGENPROBLEM_TYPE,SOLVER_OPTIMISER_TYPE
+  PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE,SOLVER_DAE_TYPE,SOLVER_EIGENPROBLEM_TYPE, &
+    & SOLVER_OPTIMISER_TYPE,SOLVER_CELLML_EVALUATOR_TYPE
 
   PUBLIC SOLVER_CMISS_LIBRARY,SOLVER_PETSC_LIBRARY,SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_SPOOLES_LIBRARY, &
     & SOLVER_UMFPACK_LIBRARY,SOLVER_LUSOL_LIBRARY,SOLVER_ESSL_LIBRARY,SOLVER_LAPACK_LIBRARY,SOLVER_TAO_LIBRARY, &
@@ -362,6 +364,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_EQUATIONS_STATIC,SOLVER_EQUATIONS_QUASISTATIC,SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC, &
     & SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC
 
+  PUBLIC SOLVER_CELLML_ADD
+
   PUBLIC SOLVER_DAE_SOLVER_TYPE_GET,SOLVER_DAE_SOLVER_TYPE_SET
 
   PUBLIC SOLVER_DAE_TIMES_SET
@@ -396,7 +400,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD
 
- PUBLIC SOLVER_EQUATIONS_LINEARITY_TYPE_SET
+  PUBLIC SOLVER_EQUATIONS_LINEARITY_TYPE_SET
 
   PUBLIC SOLVER_EQUATIONS_SPARSITY_TYPE_SET
   
@@ -487,6 +491,245 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVERS_SOLVER_GET
   
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds a CellML environment to a solver. \see OPENCMISS::CMISSSolverCellMLAdd
+  SUBROUTINE SOLVER_CELLML_ADD(SOLVER,CELLML,CELLML_INDEX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to add the CellML environment to.
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to add
+    INTEGER(INTG), INTENT(OUT) :: CELLML_INDEX !<On return, the index of the added CellML environment.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_CELLML_ADD",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+          CALL FLAG_ERROR("Can not add a CellML environment for a solver that has been linked.",ERR,ERROR,*999)
+        ELSE
+          IF(ASSOCIATED(CELLML)) THEN
+            IF(CELLML%CELLML_FINISHED) THEN
+            ELSE
+              CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_CELLML_ADD")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_ADD",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_ADD")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_ADD
+        
+   !
+  !================================================================================================================================
+  !
+
+  !>Finishes the process of creating a CellML evaluator solver 
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_CREATE_FINISH(CELLML_EVALUATOR_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the CellML evaluator solver to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("CellML evaluastor solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATOR_CREATE_FINISH",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_CREATE_FINISH")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_CREATE_FINISH
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a CellML evaluator solver.
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_FINALISE(CELLML_EVALUATOR_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer the CellML evaluator solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN        
+      DEALLOCATE(CELLML_EVALUATOR_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATOR_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a CellML evaluator solver for a solver.
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_INITIALISE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to initialise the CellML evaluator solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(ASSOCIATED(SOLVER%CELLML_EVALUATOR_SOLVER)) THEN
+        CALL FLAG_ERROR("CellML evaluator solver is already associated for this solver.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(SOLVER%CELLML_EVALUATOR_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver CellML evaluator solver.",ERR,ERROR,*999)
+        SOLVER%CELLML_EVALUATOR_SOLVER%SOLVER=>SOLVER
+        SOLVER%CELLML_EVALUATOR_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_INITIALISE")
+    RETURN
+999 CALL SOLVER_CELLML_EVALUATOR_FINALISE(SOLVER%CELLML_EVALUATOR_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_CELLML_EVALUATOR_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for a CellML evaluator solver.
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET(CELLML_EVALUATOR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer the CellML evaluator solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the CellML evaluator solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+      SOLVER_LIBRARY_TYPE=CELLML_EVALUATOR_SOLVER%SOLVER_LIBRARY
+    ELSE
+      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a CellML evaluator solver.
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET(CELLML_EVALUATOR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer the CellML evaluator solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the CellML evaluator solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+      SELECT CASE(SOLVER_LIBRARY_TYPE)
+      CASE(SOLVER_CMISS_LIBRARY)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The specified solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+          & " is invalid for a CellML evaluator solver."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve a CellML evaluator solver
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_SOLVE(CELLML_EVALUATOR_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer the CellML evaluator solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN        
+      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATOR_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_SOLVE
 
   !
   !================================================================================================================================
@@ -624,7 +867,7 @@ CONTAINS
    
   END SUBROUTINE SOLVER_DAE_ADAMS_MOULTON_SOLVE
 
-  !
+ !
   !================================================================================================================================
   !
 
@@ -4925,6 +5168,7 @@ CONTAINS
       CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)        
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_CELLML_EVALUATOR_FINALISE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
       IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) &
         & CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
       DEALLOCATE(SOLVER)
@@ -5019,6 +5263,7 @@ CONTAINS
       NULLIFY(SOLVER%DAE_SOLVER)
       NULLIFY(SOLVER%EIGENPROBLEM_SOLVER)
       NULLIFY(SOLVER%OPTIMISER_SOLVER)
+      NULLIFY(SOLVER%CELLML_EVALUATOR_SOLVER)
       NULLIFY(SOLVER%SOLVER_EQUATIONS)
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
@@ -5051,6 +5296,7 @@ CONTAINS
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LIBRARY_TYPE_GET",ERR,ERROR,*999)
@@ -5101,6 +5347,13 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
         ENDIF
+      CASE(SOLVER_CELLML_EVALUATOR_TYPE)
+        CELLML_EVALUATOR_SOLVER=>SOLVER%CELLML_EVALUATOR_SOLVER
+        IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+          CALL SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET(CELLML_EVALUATOR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Solver CellML evaluator solver is not associated.",ERR,ERROR,*999)
+        ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -5136,6 +5389,7 @@ CONTAINS
     TYPE(LINEAR_SOLVER_TYPE), POINTER :: LINEAR_SOLVER
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LIBRARY_TYPE_SET",ERR,ERROR,*999)
@@ -5196,6 +5450,13 @@ CONTAINS
           ELSE
             CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
           ENDIF
+        CASE(SOLVER_CELLML_EVALUATOR_TYPE)
+          CELLML_EVALUATOR_SOLVER=>SOLVER%CELLML_EVALUATOR_SOLVER
+          IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+            CALL SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET(CELLML_EVALUATOR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Solver CellML evaluator solver is not associated.",ERR,ERROR,*999)
+          ENDIF          
         CASE DEFAULT
           LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -10007,6 +10268,8 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
         ENDIF
+      CASE(SOLVER_CELLML_EVALUATOR_TYPE)
+        CALL FLAG_ERROR("Cannot get the solver matrices library for a CellML evaluator solver.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -10350,7 +10613,7 @@ CONTAINS
 
     !Argument variables
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer the Newton solver to get the library type for.
-    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the optimiser solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the Newton solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -13127,6 +13390,12 @@ CONTAINS
         CASE(SOLVER_EIGENPROBLEM_TYPE)
           !Solve eigenproblem
           CALL SOLVER_EIGENPROBLEM_SOLVE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_OPTIMISER_TYPE)
+          !Solve an optimisation problem
+          CALL SOLVER_OPTIMISER_SOLVE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_CELLML_EVALUATOR_TYPE)
+          !Solve a CellML evaluator
+          CALL SOLVER_CELLML_EVALUATOR_SOLVE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)

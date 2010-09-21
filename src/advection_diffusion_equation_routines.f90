@@ -1,5 +1,5 @@
 !> \file
-!> $Id: diffusion_equation_routines.f90 707 2009-10-12 16:35:33Z andync42 $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all diffusion equation routines.
 !>

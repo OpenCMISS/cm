@@ -2,7 +2,7 @@
 #
 # For use with GNU make.
 #
-# $Id: Makefile 27 2007-07-24 16:52:51Z cpb $
+# $Id$
 #
 #----------------------------------------------------------------------------------------------------------------------------------
 # Makefile for compiling OpenCMISS library
@@ -710,12 +710,6 @@ $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
-ifeq ($(USECELLML),true)
-     CELLML_OBJECT = $(OBJECT_DIR)/cmiss_cellml.o
-else
-     CELLML_OBJECT = $(OBJECT_DIR)/cmiss_cellml.o
-endif
-
 ifeq ($(USEFIELDML),true)
     FIELDML_OBJECT =  \
       $(OBJECT_DIR)/fieldml_util_routines.o \
@@ -747,7 +741,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
-	$(CELLML_OBJECT) \
+	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/cmiss_parmetis.o \
 	$(OBJECT_DIR)/cmiss_petsc.o \
@@ -1011,7 +1005,7 @@ $(OBJECT_DIR)/classical_field_routines.o	:	$(SOURCE_DIR)/classical_field_routine
 $(OBJECT_DIR)/cmiss.o	:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
-	$(CELLML_OBJECT) \
+	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
@@ -1821,7 +1815,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
-	$(CELLML_OBJECT) \
+	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
@@ -2093,6 +2087,7 @@ help:
 	@echo "	ABI=(32|64)"
 	@echo "	COMPILER=(intel|gnu|ibm|cray)"
 	@echo "	USECELLML=(false|true)"
+	@echo "	USEFIELDML=(false|true)"
 	@echo 
 	@echo "Available targets:                            "
 	@echo

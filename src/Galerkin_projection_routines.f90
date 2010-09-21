@@ -1,5 +1,5 @@
 !> \file
-!> $Id: Galerkin_projection_routines.f90 736 2009-10-21 15:22:43Z chrm76 $
+!> $Id$
 !> \author Christian Michler
 !> \brief This module handles all Galerkin projection routines.
 !>

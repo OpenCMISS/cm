@@ -1,5 +1,5 @@
 !> \file
-!> $Id: finite_elasticity_routines.f90 644 2009-09-02 22:56:28Z kmith $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all finite elasticity routines.
 !>

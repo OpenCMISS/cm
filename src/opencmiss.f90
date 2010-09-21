@@ -1,5 +1,5 @@
 !> \file
-!> $Id: opencmiss.f90 542 2009-06-03 17:16:22Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief The top level OpenCMISS module.
 !>
@@ -4497,6 +4497,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSSolverDAEType = SOLVER_DAE_TYPE !<A differential-algebraic equation solver. \see OPENCMISS_SolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverEigenproblemType = SOLVER_EIGENPROBLEM_TYPE !<A eigenproblem solver. \see OPENCMISS_SolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverOptimiserType = SOLVER_OPTIMISER_TYPE !<An optimiser solver. \see OPENCMISS_SolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverCellMLEvaluatorType = SOLVER_CELLML_EVALUATOR_TYPE !<A CellML evaluator solver. \see OPENCMISS_SolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_SolverLibraries OPENCMISS::Solver::SolverLibraries
   !> \brief The types of solver libraries.
@@ -4696,6 +4697,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   !Interfaces
 
+  !>Add a CellML environment to a solver.
+  INTERFACE CMISSSolverCellMLAdd
+    MODULE PROCEDURE CMISSSolverCellMLAddNumber0
+    MODULE PROCEDURE CMISSSolverCellMLAddNumber1
+    MODULE PROCEDURE CMISSSolverCellMLAddObj
+  END INTERFACE !CMISSSolverCellMLAdd
+  
   !>Returns the solver type for an Euler differential-algebraic equation solver. \todo should this be CMISSSolverDAEEulerSolverTypeGet???
   INTERFACE CMISSSolverDAEEulerSolverTypeGet
     MODULE PROCEDURE CMISSSolverDAEEulerSolverTypeGetNumber0
@@ -5062,6 +5070,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverNoOutput,CMISSSolverProgressOutput,CMISSSolverTimingOutput,CMISSSolverSolverOutput,CMISSSolverSolverMatrixOutput
 
   PUBLIC CMISSSolverEquationsSparseMatrices,CMISSSolverEquationsFullMatrices
+
+  PUBLIC CMISSSolverCellMLAdd
 
   PUBLIC CMISSSolverDAEEulerSolverTypeGet, CMISSSolverDAEEulerSolverTypeSet
 
@@ -36294,6 +36304,141 @@ CONTAINS
 !! SOLVER_ROUTINES
 !!
 !!==================================================================================================================================
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Adds a CellML environment to a solver identified by an user number.
+  SUBROUTINE CMISSSolverCellMLAddNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & CellMLUserNumber,CellMLIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem with the solver to add the CellML environment for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to add the CellML environment for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to add the CellML environment for.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to add.
+    INTEGER(INTG), INTENT(OUT) :: CellMLIndex !<On return, the index of the added CellML environment.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverCellMLAddNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(CELLML)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL SOLVER_CELLML_ADD(SOLVER,CELLML,CellMLIndex,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))//" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverCellMLAddNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverCellMLAddNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverCellMLAddNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverCellMLAddNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Adds a CellML environment to a solver identified by an user number.
+  SUBROUTINE CMISSSolverCellMLAddNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & CellMLUserNumber,CellMLIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to add the CellML environment for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to add the CellML environment for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to add the CellML environment for.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to add.
+    INTEGER(INTG), INTENT(OUT) :: CellMLIndex !<On return, the index of the added CellML environment.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverCellMLAddNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(CELLML)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL SOLVER_CELLML_ADD(SOLVER,CELLML,CellMLIndex,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))//" does not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverCellMLAddNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverCellMLAddNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverCellMLAddNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverCellMLAddNumber1
+
+  !
+  !================================================================================================================================
+  !  
+ 
+  !>Adds a CellML environment to a solver identified by an object.
+  SUBROUTINE CMISSSolverCellMLAddObj(Solver,CellML,CellMLIndex,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to add the CellML environment for.
+    TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML environment to add.
+    INTEGER(INTG), INTENT(OUT) :: CellMLIndex !<On return, the index of the added CellML environment.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverCellMLAddObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_CELLML_ADD(Solver%SOLVER,CellML%CELLML,CellMLIndex,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverCellMLAddObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverCellMLAddObj",Err,ERROR)
+    CALL EXITS("CMISSSolverCellMLAddObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverCellMLAddObj
+
+  !
+  !================================================================================================================================
+  !  
 
   !>Returns the solve type for an Euler differential-algebraic equation solver identified by an user number.
   SUBROUTINE CMISSSolverDAEEulerSolverTypeGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,DAEEulerSolverType,Err)

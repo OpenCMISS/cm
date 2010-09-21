@@ -2015,21 +2015,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the linked nonlinear solver
   END TYPE DYNAMIC_SOLVER_TYPE
   
-  !>Contains information for an eigenproblem solver
-  TYPE EIGENPROBLEM_SOLVER_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the eigenproblem solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
-  END TYPE EIGENPROBLEM_SOLVER_TYPE
-  
-  !>Contains information for an optimiser solver
-  TYPE OPTIMISER_SOLVER_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the optimiser solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
-    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the optimiser solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
-  END TYPE OPTIMISER_SOLVER_TYPE
-
-  !>Contains information for an forward Euler differential-algebraic equation solver
+   !>Contains information for an forward Euler differential-algebraic equation solver
   TYPE FORWARD_EULER_DAE_SOLVER_TYPE
     TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_DAE_SOLVER !<A pointer to the differential-algebraic solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the forward Euler differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
@@ -2188,6 +2174,27 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver information
   END TYPE NONLINEAR_SOLVER_TYPE
   
+  !>Contains information for an eigenproblem solver
+  TYPE EIGENPROBLEM_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the eigenproblem solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the eigenproblem solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+  END TYPE EIGENPROBLEM_SOLVER_TYPE
+  
+  !>Contains information for an optimiser solver
+  TYPE OPTIMISER_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the optimiser solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the optimiser solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+  END TYPE OPTIMISER_SOLVER_TYPE
+
+  !>Contains information for a CellML evaluation solver
+  TYPE CELLML_EVALUATOR_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the CellML evaluation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment for the solver
+  END TYPE CELLML_EVALUATOR_SOLVER_TYPE
+
   !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
   TYPE SOLVER_TYPE
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers
@@ -2205,6 +2212,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic equation solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
     TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer to the optimiser solver information
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the CellML solver information
 
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
 
@@ -2623,7 +2631,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: TYPE !<The problem specification type identifier
     INTEGER(INTG) :: SUBTYPE !<The problem specification subtype identifier
     
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop informaton for the problem.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop information for the problem.
   END TYPE PROBLEM_TYPE
   
   !>A buffer type to allow for an array of pointers to a PROBLEM_TYPE \see TYPES:PROBLEM_TYPE
@@ -2677,21 +2685,21 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   
   !> This type is a wrapper for the C_PTR which references the actual CellML model definition object.
   TYPE CELLML_MODEL_TYPE
-     TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
-     INTEGER(INTG) :: USER_NUMBER !< The user defined identifier for this CellML model
-     INTEGER(INTG) :: GLOBAL_NUMBER !< The global number of this CellML model within the parent CellML environment.
+    TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
+    INTEGER(INTG) :: USER_NUMBER !< The user defined identifier for this CellML model
+    INTEGER(INTG) :: GLOBAL_NUMBER !< The global number of this CellML model within the parent CellML environment.
   END TYPE CELLML_MODEL_TYPE
 
   !> A buffer type to allow for an array of pointers to a CELLML_MODEL_TYPE
   TYPE CELLML_MODEL_PTR_TYPE
-     TYPE(CELLML_MODEL_TYPE), POINTER :: PTR
+    TYPE(CELLML_MODEL_TYPE), POINTER :: PTR
   END TYPE CELLML_MODEL_PTR_TYPE
 
   !> Contains information on the models defined in a CellML environment
   TYPE CELLML_MODELS_TYPE
-     TYPE(CELLML_TYPE), POINTER :: CELLML !< A pointer to the CellML environment containing the models.
-     INTEGER(INTG) :: NUMBER_OF_MODELS !< The number of models defined in the CellML environment
-     TYPE(CELLML_MODEL_PTR_TYPE), POINTER :: MODELS(:) !< MODELS(model_idx). The array of pointers to the models.
+    TYPE(CELLML_TYPE), POINTER :: CELLML !< A pointer to the CellML environment containing the models.
+    INTEGER(INTG) :: NUMBER_OF_MODELS !< The number of models defined in the CellML environment
+    TYPE(CELLML_MODEL_PTR_TYPE), POINTER :: MODELS(:) !< MODELS(model_idx). The array of pointers to the models.
   END TYPE CELLML_MODELS_TYPE
 
   !> Contains information for a CellML environment defined for a host field.

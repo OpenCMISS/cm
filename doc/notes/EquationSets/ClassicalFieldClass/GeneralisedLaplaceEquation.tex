@@ -43,9 +43,10 @@ and
   \grad w = \covarderiv{w}{i}
 \end{equation}
 
-Now, both the above equations represent vectors that are covariant and therefore we must convert the
-first equation to a contravariant vector by multiplying by the contravariant
-metric tensor so that we can take the dot product. The final tensorial form is
+Now, both the above equations represent vectors that are covariant and
+therefore we must convert the first equation to a contravariant vector by 
+multiplying by the contravariant metric tensor (from \vect{i} to \vect{x} 
+coordinates) so that we can take the dot product. The final tensorial form is
 \begin{equation}
   \dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
 \end{equation}
@@ -62,19 +63,6 @@ We can now discretise the domain into finite elements \ie $\Omega=
 \eqnref{eqn:Laplaceweightedresidualtensorform} becomes
 \begin{equation}
   \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
-\end{equation}
-
-Now as we only know $\tensor{\sigma}^{*}$, the conductivity in the
-$\vect{\nu}$ (fibre) coordinate system rather than $\tensor{\sigma}$, the
-conductivity in the $\vect{x}$ (geometric) coordinate system we must transform the mixed
-tensor ${\sigma^{*}}^{a}_{b}$ from $\vect{\nu}$ to $\vect{x}$
-\begin{equation}
-  \sigma^{i}_{j}=\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}
-\end{equation}
-
-The left hand side of \eqnref{eqn:Laplaceweightedresidualtensorform} becomes
-\begin{equation}
-  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
 \end{equation}
 
 The next step is to approximate the dependent variable, $\phi$, using basis
@@ -122,68 +110,89 @@ $\gint{\vect{0}}{\vect{1}}{x}
 {\vect{\xi}}=\dintl{0}{1}\!\dintl{0}{1}\!\dintl{0}{1}\,x\,d\xione d\xitwo
 d\xithree$.
 
-In order to adopt the interpolation notation above we need to transform from
-$\vect{x}$ to $\vect{\xi}$ coordinates. To do this we note that the
-contravarient tensor
-$G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}$ in
-$\vect{x}$ space becomes
-$\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}$
-in $\vect{\xi}$ space. Similarily using the covariant vector transformation
-rule we have
-\begin{equation}
-  \covarderiv{\phi}{r}=\delby{\phi}{\xi^{r}}=\delby{x_{i}}{\xi^{r}}\covarderiv{\phi}{i}\quad\therefore\quad\covarderiv{\phi}{i}=\delby{\xi^{r}}{x_{i}}\delby{\phi}{\xi^{r}}
+In order to integrate in $\vect{\xi}$ coordinates we must convert the spatial
+derivatives to derivatives with respect to $\vect{\xi}$. Using the tensor
+transformation equations for a covariant vector we have
+\begin{equation}  
+  \covarderiv{\phi}{i}=\delby{\xi^{r}}{x^{i}}\covarderiv{\phi}{r}=\delby{\xi^{r}}{x^{i}}\delby{\phi}{\xi^{r}}
 \end{equation}
-and
+and 
 \begin{equation}
-  \covarderiv{w}{s}=\delby{w}{\xi^{s}}=\delby{x_{k}}{\xi^{s}}\covarderiv{w}{k}\quad\therefore\quad\covarderiv{w}{k}=\delby{\xi^{s}}{x_{k}}\delby{w}{\xi^{s}}
+  \covarderiv{w}{k}=\delby{\xi^{s}}{x^{k}}\covarderiv{w}{s}=\delby{\xi^{s}}{x^{k}}\delby{w}{\xi^{s}}
+\end{equation}
+
+Now as we only know $\tensor{\sigma}^{*}$, the conductivity in the
+$\vect{\nu}$ (fibre) coordinate system rather than $\tensor{\sigma}$, the
+conductivity in the $\vect{x}$ (geometric) coordinate system we must transform the mixed
+tensor ${\sigma^{*}}^{a}_{.b}$ from $\vect{\nu}$ to $\vect{x}$ coordinates. However, as the
+fibre coordinate system is defined in terms of $\vect{\xi}$ coordinates we
+first transform the conductivity tensor from $\vect{\nu}$ to $\vect{\xi}$
+coordinates \ie
+\begin{equation}
+  \sigma^{p}_{.q}=\delby{\xi^{p}}{\nu^{a}}\delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}
+\end{equation}
+and then transform the conductivity form $\vect{\xi}$ coordinates to
+$\vect{x}$ coordinates \ie
+\begin{equation}
+  \begin{split}
+    \sigma^{i}_{.j} &= \delby{x^{i}}{\xi^{p}}\delby{\xi^{q}}{x^{j}}{\sigma}^{p}_{.q} \\
+    &= \delby{x^{i}}{\xi^{p}}\delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} 
+    {\nu^{a}}\delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}
+  \end{split}
 \end{equation}
 
 Now, using an interpolated dependent variable and a Galerkin finite element
 approach (where the weighting functions are chosen to be the interpolating
-basis functions \ie $w=\gbfn{\beta}{v}{\vect{\xi}}$) yields
+basis functions \ie $w=\gbfn{\beta}{v}{\vect{\xi}}\gsf{(\beta)}{(v)}$) yields
 \begin{equation}
-  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}
-    \delby{\xi^{r}}{x_{i}}\delby{\pbrac{\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}}}{\xi^{r}}
-    \delby{\xi^{s}}{x_{k}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{G^{jk}\delby{x^{i}}{\xi^{p}}
+    \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
+    \delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}
+    \delby{\pbrac{\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}}}{\xi^{r}}
+    \delby{\xi^{s}}{x^{k}}\delby{\pbrac{\gbfn{\beta}{v}{\vect{\xi}}\gsf{(\beta)}{(v)}}}{\xi^{s}}
     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
 \end{equation}
 where $\fnof{\matr{J}}{\vect{\xi}}$ is the \emph{Jacobian} of the
 transformation from the integration $\vect{x}$ to $\vect{\xi}$ coordinates.
 
-
 Taking the fixed nodal degrees-of-freedom and scale factors outside the integral we have
 \begin{equation}
-  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}
-  \gint{\vect{0}}{\vect{1}}{\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}
-    \delby{\xi^{r}}{x_{i}}\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
-    \delby{\xi^{s}}{x_{k}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}
+  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}\gsf{(\beta)}{(v)}
+  \gint{\vect{0}}{\vect{1}}{G^{jk}\delby{x^{i}}{\xi^{p}}
+    \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
+    \delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}
+    \delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
+    \delby{\xi^{s}}{x^{k}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}
     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
   \label{eqn:elementalfemlhs1}
 \end{equation}
 or
 \begin{equation}
-  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}
+  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}\gsf{(\beta)}{(v)}
   \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}
     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
   \label{eqn:elementalfemlhs2}
 \end{equation}
 where
 \begin{equation}
-  \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}G^{jk}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}\delby{\xi^{r}}{x_{i}}\delby{\xi^{s}}{x_{k}}
+  \gamma^{rs}=G^{jk}\delby{x^{i}}{\xi^{p}}
+    \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
+    \delby{\nu^{b}}{\xi^{q}}{\sigma^{*}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
 \end{equation}
 
-If $G^{jk}=\kronecker{j}{k}$ then $j=k$ and we have
+Note that for Laplace's equation with no conductivity or fibre fields then we have
 \begin{equation}
-  \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{j}}\delby{x_{i}}{\nu_{a}}\delby{\nu^{b}}{x_{j}}{\sigma^{*}}^{a}_{b}\delby{\xi^{r}}{x_{i}}\delby{\xi^{s}}{x_{j}}
+  \gamma^{rs}=G^{ik}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
 \end{equation}
-
-
-
-The \emph{contravariant metric tensor} from $\vect{x}$ to $\vect{\xi}$ coordinates defined by
+and that for rectangular-Cartesian coordinates systems
+$G^{ik}=\kronecker{i}{k}$ and thus $i=k$. This now gives
 \begin{equation}
-  g^{rs}=\delby{\xi^{r}}{x_{i}}\delby{\xi^{s}}{x_{i}}
+  \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{i}}=g^{rs}
   \label{eqn:contrametrictensor}
 \end{equation}
+where $g^{rs}$ is the \emph{contravariant metric tensor} from $\vect{x}$ to
+$\vect{\xi}$ coordinates. It may thus be helpful to think about $\gamma^{rs}$
+as a scaled/transformed contravariant metric tensor.
 
 \subsubsection{Coded OpenCMISS formulation:}
 Finally, we use the Gaussian quadrature rule, usually stated as a weighted sum of function values at specified Gauss points within the domain of integration. An $n$-point Gaussian quadrature rule yields an exact result for polynomials of degree $2n-1$ or less by a suitable choice of the points $x_i$ and weights $g_i$ for $i = 1,...,n$. Consequently, the formulation implemented can be derived from Equation (\ref{eqn:elementalfemlhs2}) as: 
