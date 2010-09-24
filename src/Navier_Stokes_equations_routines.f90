@@ -3035,7 +3035,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
@@ -3043,11 +3043,10 @@ CONTAINS
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
 
-!\todo: Reduce number of variable used
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
-    REAL(DP) :: X(3)
+    REAL(DP) :: X(3),MU_PARAM,RHO_PARAM
     REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:), GEOMETRIC_PARAMETERS(:)
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
 
@@ -3157,7 +3156,15 @@ CONTAINS
                                               DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                                 ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                                 GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
-                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,variable_type, & 
+                                                MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                                                !Define MU_PARAM, density=1
+                                                MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                                  & parameters%cmiss%data_dp(1)
+                                                !Define RHO_PARAM, density=2
+                                                RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                                  & parameters%cmiss%data_dp(2)
+                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM, &
+                                                  & CURRENT_TIME,variable_type, & 
                                                   & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
                                                   & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
                                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -3318,7 +3325,8 @@ CONTAINS
                                               DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                                 ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                                 GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
-                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,variable_type, &
+                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM, &
+                                                  & CURRENT_TIME,variable_type, &
                                                   & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
                                                   & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
                                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -3513,7 +3521,6 @@ CONTAINS
                                               & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
                                               & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
                                           END IF
-
                                         ENDDO !deriv_idx
                                       ENDDO !node_idx
                                     ENDIF
@@ -4274,37 +4281,35 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,I,J,K
     INTEGER(INTG) :: number_of_nodes_xic(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX
-    REAL(DP) :: VALUE,X(3),MU_PARAM,L,XI_COORDINATES(3),RHO_PARAM
-    REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2),  T_COORDINATES(20,3),CURRENT_TIME
+    REAL(DP) :: VALUE,X(3),XI_COORDINATES(3)
+!     REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2),MU_PARAM,L
+    REAL(DP) :: T_COORDINATES(20,3),CURRENT_TIME,MU_PARAM,RHO_PARAM
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
 !     TYPE(VARYING_STRING) :: LOCAL_ERROR    
-    !Temp variables
-    INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
 
+! ! !     !Temp variables
+! ! !     INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
 
-    CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
- 
-!\todo: Use user-defined or default values for material parameters
-
+    CALL ENTERS("STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+!\todo: Introduce user call to set parameters
     BOUND_COUNT=0
-    MU_PARAM=1.0_DP !!!!!
-    RHO_PARAM=1.0_DP !!!!!
-    L=10.0_DP
+! ! ! !     L=10.0_DP
     XI_COORDINATES(3)=0.0_DP
-    BOUNDARY_TOLERANCE=0.00000001_DP
-    BOUNDARY_X=0.0_DP
-    number_of_element_nodes=0
-    temp_local_node_number=0
-    temp_local_ny=0
-    temp_node_number=0
-    velocity_DOF_check=0
+!     BOUNDARY_TOLERANCE=0.000000001_DP
+! ! !     BOUNDARY_X=0.0_DP
+! ! !     T_COORDINATES=0.0_DP
+! ! !     number_of_element_nodes=0
+! ! !     temp_local_node_number=0
+! ! !     temp_local_ny=0
+! ! !     temp_node_number=0
+! ! !     velocity_DOF_check=0
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
@@ -4317,26 +4322,26 @@ CONTAINS
             CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
 !\todo: Check if adjacent element calculation works for simplex elements now and then switch to boundary flag instead
-            IF(NUMBER_OF_DIMENSIONS==2) THEN
-              BOUNDARY_X(1,1)=0.0_DP
-              BOUNDARY_X(1,2)=10.0_DP
-              BOUNDARY_X(2,1)=0.0_DP
-              BOUNDARY_X(2,2)=10.0_DP
-              IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
-                & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5) THEN
-                BOUNDARY_X(1,1)=0.0_DP/L*PI
-                BOUNDARY_X(1,2)=L/L*PI
-                BOUNDARY_X(2,1)=0.0_DP/L*PI
-                BOUNDARY_X(2,2)=L/L*PI
-              ENDIF
-            ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-              BOUNDARY_X(1,1)=-5.0_DP
-              BOUNDARY_X(1,2)=5.0_DP
-              BOUNDARY_X(2,1)=-5.0_DP
-              BOUNDARY_X(2,2)=5.0_DP
-              BOUNDARY_X(3,1)=-5.0_DP
-              BOUNDARY_X(3,2)=5.0_DP
-            ENDIF
+! ! !             IF(NUMBER_OF_DIMENSIONS==2) THEN
+! ! !               BOUNDARY_X(1,1)=0.0_DP
+! ! !               BOUNDARY_X(1,2)=10.0_DP
+! ! !               BOUNDARY_X(2,1)=0.0_DP
+! ! !               BOUNDARY_X(2,2)=10.0_DP
+! ! !               IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
+! ! !                 & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5) THEN
+! ! !                 BOUNDARY_X(1,1)=0.0_DP/L*PI
+! ! !                 BOUNDARY_X(1,2)=L/L*PI
+! ! !                 BOUNDARY_X(2,1)=0.0_DP/L*PI
+! ! !                 BOUNDARY_X(2,2)=L/L*PI
+! ! !               ENDIF
+! ! !             ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+! ! !               BOUNDARY_X(1,1)=-5.0_DP
+! ! !               BOUNDARY_X(1,2)=5.0_DP
+! ! !               BOUNDARY_X(2,1)=-5.0_DP
+! ! !               BOUNDARY_X(2,2)=5.0_DP
+! ! !               BOUNDARY_X(3,1)=-5.0_DP
+! ! !               BOUNDARY_X(3,2)=5.0_DP
+! ! !             ENDIF
             NULLIFY(GEOMETRIC_VARIABLE)
             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
             NULLIFY(GEOMETRIC_PARAMETERS)
@@ -4483,8 +4488,15 @@ CONTAINS
                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
                               CURRENT_TIME=0.0_DP
-                              CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,variable_type, & 
-                                & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
+                              MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                              !Define MU_PARAM, density=1
+                              MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                & parameters%cmiss%data_dp(1)
+                              !Define RHO_PARAM, density=2
+                              RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                & parameters%cmiss%data_dp(2)
+                              CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME, &
+                                & variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
@@ -4497,7 +4509,17 @@ CONTAINS
                                   IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
                                     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                       & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                  BOUND_COUNT=BOUND_COUNT+1
+                                    BOUND_COUNT=BOUND_COUNT+1
+                                  ELSE
+! \todo: This is just a workaround for quadratic velocity information
+!                                     IF(BOUND_COUNT==0) THEN
+                                    IF(BOUND_COUNT==0.OR.DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
+                                      & (DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND. &
+                                      & NUMBER_OF_DIMENSIONS==3)) THEN
+                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                        & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                      BOUND_COUNT=BOUND_COUNT+1
+                                    ENDIF
                                   ENDIF
                                 ELSE
                                   IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
@@ -4620,7 +4642,7 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
                   ENDIF
-WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT 
+WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT             
                 ENDDO !component_idx
                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
                   & ERR,ERROR,*999)
@@ -4663,13 +4685,14 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
   !================================================================================================================================
   !
   !>Calculates the various analytic solutions given X and time, can be called from within analytic calculate or elsewhere if needed
-  SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,VARIABLE_TYPE, & 
+  SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME,VARIABLE_TYPE, & 
     & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     REAL(DP), INTENT(OUT) :: VALUE
+    REAL(DP) :: MU_PARAM,RHO_PARAM
     REAL(DP), INTENT(IN) :: CURRENT_TIME
     REAL(DP), INTENT(IN), DIMENSION(3) :: X
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX
@@ -4678,14 +4701,11 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     INTEGER(INTG) :: variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
     !TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     !TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    REAL(DP) :: MU_PARAM,L,RHO_PARAM,INTERNAL_TIME
+    REAL(DP) :: INTERNAL_TIME
 
     CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR,*999)
 
-!\todo: Use user-defined or default material parameters instead
-    MU_PARAM=1.0_DP !!!!!
-    RHO_PARAM=1.0_DP !!!!!
-    L=10.0_DP
+!\todo: Introduce user-defined or default values instead for density and viscosity
     INTERNAL_TIME=CURRENT_TIME
      SELECT CASE(ANALYTIC_FUNCTION_TYPE)
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
@@ -4697,13 +4717,13 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE=X(2)**2/L**2
+                     VALUE=X(2)**2/10.0_DP**2
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=X(1)**2/L**2
+                     VALUE=X(1)**2/10.0_DP**2
                    ELSE IF(component_idx==3) THEN
                      !calculate p
-                     VALUE=2.0_DP/3.0_DP*X(1)*(3.0_DP*MU_PARAM*L**2-RHO_PARAM*X(1)**2*X(2))/(L ** 4)
+                     VALUE=2.0_DP/3.0_DP*X(1)*(3.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(1)**2*X(2))/(10.0_DP ** 4)
                    ELSE
                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                    ENDIF
@@ -4754,13 +4774,13 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE= EXP((X(1)-X(2))/L)
+                     VALUE= EXP((X(1)-X(2))/10.0_DP)
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE= EXP((X(1)-X(2))/L)
+                     VALUE= EXP((X(1)-X(2))/10.0_DP)
                    ELSE IF(component_idx==3) THEN
                      !calculate p
-                     VALUE= 2.0_DP*MU_PARAM/L*EXP((X(1)-X(2))/L)
+                     VALUE= 2.0_DP*MU_PARAM/10.0_DP*EXP((X(1)-X(2))/10.0_DP)
                    ELSE
                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                    ENDIF
@@ -4822,14 +4842,14 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE=SIN(2.0_DP*PI*X(1)/L)*SIN(2.0_DP*PI*X(2)/L)
+                     VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=COS(2.0_DP*PI*X(1)/L)*COS(2.0_DP*PI*X(2)/L)
+                     VALUE=COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(2)/10.0_DP)
                    ELSE IF(component_idx==3) THEN
                      !calculate p
-                     VALUE=4.0_DP*MU_PARAM*PI/L*SIN(2.0_DP*PI*X(2)/L)*COS(2.0_DP*PI*X(1)/L)+ &
-                       & 0.5_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/L)*COS(2.0_DP*PI*X(1)/L)
+                     VALUE=4.0_DP*MU_PARAM*PI/10.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)+ &
+                       & 0.5_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
                    ELSE
                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                    ENDIF
@@ -4853,7 +4873,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                      VALUE=0.0_DP
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=16.0_DP*MU_PARAM*PI**2/L**2*cos(2.0_DP*PI*X(2)/ L)*cos(2.0_DP*PI*X(1)/L)
+                     VALUE=16.0_DP*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/ 10.0_DP)*cos(2.0_DP*PI*X(1)/10.0_DP)
                    ELSE IF(component_idx==3) THEN
                      !calculate p
                      VALUE=0.0_DP
@@ -4886,7 +4906,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
            !Taylor-Green vortex solution
            SELECT CASE(variable_type)
              CASE(FIELD_U_VARIABLE_TYPE)
-               RHO_PARAM=1000.0_DP
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
@@ -4962,18 +4981,18 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE=X(2)**2/L**2+X(3)**2/L**2
+                     VALUE=X(2)**2/10.0_DP**2+X(3)**2/10.0_DP**2
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=X(1)**2/L**2+X(3)**2/L** 2
+                     VALUE=X(1)**2/10.0_DP**2+X(3)**2/10.0_DP** 2
                    ELSE IF(component_idx==3) THEN
                      !calculate w
-                     VALUE=X(1)**2/L**2+X(2)**2/L** 2
+                     VALUE=X(1)**2/10.0_DP**2+X(2)**2/10.0_DP** 2
                    ELSE IF(component_idx==4) THEN
                      !calculate p
-                     VALUE=2.0_DP/3.0_DP*X(1)*(6.0_DP*MU_PARAM*L**2-RHO_PARAM*X(2)*X(1)**2-3.0_DP* & 
+                     VALUE=2.0_DP/3.0_DP*X(1)*(6.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(2)*X(1)**2-3.0_DP* & 
                        & RHO_PARAM*X(2)* &
-                       & X(3)**2-RHO_PARAM*X(3)*X(1)**2-3.0_DP*RHO_PARAM*X(3)*X(2)**2)/(L**4)
+                       & X(3)**2-RHO_PARAM*X(3)*X(1)**2-3.0_DP*RHO_PARAM*X(3)*X(2)**2)/(10.0_DP**4)
                    ELSE
                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                    ENDIF
@@ -5023,18 +5042,18 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE=EXP((X(1)-X(2))/L)+EXP((X(3)-X(1))/L)
+                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(3)-X(1))/10.0_DP)
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=EXP((X(1)-X(2))/L)+EXP((X(2)-X(3))/L)
+                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
                    ELSE IF(component_idx==3) THEN
                      !calculate w
-                     VALUE=EXP((X(3)-X(1))/L)+EXP((X(2)-X(3))/L)
+                     VALUE=EXP((X(3)-X(1))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
                    ELSE IF(component_idx==4) THEN
                      !calculate p
-                     VALUE=1.0_DP/L*(2.0_DP*MU_PARAM*EXP((X(1)-X(2))/L)- & 
-                       & 2.0_DP*MU_PARAM*EXP((X(3)-X(1))/L)+RHO_PARAM*L*EXP((X(1)-X(3))/L)+ & 
-                       & RHO_PARAM*L*EXP((X(2)-X(1))/L))
+                     VALUE=1.0_DP/10.0_DP*(2.0_DP*MU_PARAM*EXP((X(1)-X(2))/10.0_DP)- & 
+                       & 2.0_DP*MU_PARAM*EXP((X(3)-X(1))/10.0_DP)+RHO_PARAM*10.0_DP*EXP((X(1)-X(3))/10.0_DP)+ & 
+                       & RHO_PARAM*10.0_DP*EXP((X(2)-X(1))/10.0_DP))
                    ELSE
                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                    ENDIF
@@ -5098,19 +5117,19 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE=sin(2.0_DP*PI*X(1)/L)*sin(2.0_DP*PI*X(2)/L)*sin(2.0_DP*PI*X(3)/L)
+                     VALUE=sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=2.0_DP*cos(2.0_DP*PI*x(1)/L)*sin(2.0_DP*PI*X(3)/L)*cos(2.0_DP*PI*X(2)/L)
+                     VALUE=2.0_DP*cos(2.0_DP*PI*x(1)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)*cos(2.0_DP*PI*X(2)/10.0_DP)
                    ELSE IF(component_idx==3) THEN
                      !calculate w
-                     VALUE=-cos(2.0_DP*PI*X(1)/L)*sin(2.0_DP*PI*X(2)/L)*cos(2.0_DP*PI*X(3)/L)
+                     VALUE=-cos(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*cos(2.0_DP*PI*X(3)/10.0_DP)
                    ELSE IF(component_idx==4) THEN
                      !calculate p
-                     VALUE=-COS(2.0_DP*PI*X(1)/L)*(-12.0_DP*MU_PARAM*PI*SIN(2.0_DP*PI*X(2)/L)* & 
-                       & SIN(2.0_DP*PI*X(3)/L)-RHO_PARAM*COS(2.0_DP*PI*X(1)/L)*L+ &
-                       & 2.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/L)*L*COS(2.0_DP*PI*X(3)/L)**2- &
-                       & RHO_PARAM*COS(2.0_DP*PI*X(1)/L)*L*COS(2.0_DP*PI*X(2)/L)**2)/L/2.0_DP
+                     VALUE=-COS(2.0_DP*PI*X(1)/10.0_DP)*(-12.0_DP*MU_PARAM*PI*SIN(2.0_DP*PI*X(2)/10.0_DP)* & 
+                       & SIN(2.0_DP*PI*X(3)/10.0_DP)-RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP+ &
+                       & 2.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(3)/10.0_DP)**2- &
+                       & RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP/2.0_DP
                    ELSE
                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                    ENDIF
@@ -5134,8 +5153,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                       VALUE=0.0_DP
                     ELSE IF(component_idx==2) THEN
                       !calculate v
-                      VALUE=36*MU_PARAM*PI**2/L**2*cos(2.0_DP*PI*X(2)/L)*sin(2.0_DP*PI*X(3)/L)* & 
-                        & cos(2.0_DP*PI*X(1)/L)
+                      VALUE=36*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)* & 
+                        & cos(2.0_DP*PI*X(1)/10.0_DP)
                     ELSE IF(component_idx==3) THEN
                       !calculate w
                       VALUE=0.0_DP
