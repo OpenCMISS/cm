@@ -565,6 +565,12 @@ CONTAINS
                               CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3)
                                 !Set analtyic function type
                                 EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3
+                              CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4)
+                                !Set analtyic function type
+                                EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4
+                              CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5)
+                                !Set analtyic function type
+                                EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5
                               CASE DEFAULT
                                 LOCAL_ERROR="The specified analytic function type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -1715,7 +1721,9 @@ CONTAINS
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5.OR. &
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1.OR. &
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2.OR. &
-                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3) THEN
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3.OR. &
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4.OR. &
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
 
                     mhs=0
                     DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
@@ -1762,6 +1770,10 @@ CONTAINS
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4) THEN
 !                           do nothing!
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5) THEN
+!                           do nothing!
+                        ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4) THEN
+!                           do nothing!
+                        ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
 !                           do nothing!
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1) THEN
                           IF(mh==1) THEN 
@@ -2130,6 +2142,8 @@ CONTAINS
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                     IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4 .OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1 .OR. &
+                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4 .OR. &
+                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5 .OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5) THEN
                       IF(ASSOCIATED(EQUATIONS_SET)) THEN
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -2222,7 +2236,15 @@ CONTAINS
                                                 MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
                                                   & parameters%cmiss%data_dp(1)
                                                 !Define RHO_PARAM, density=2
-                                                RHO_PARAM=0.0_DP
+                                                IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4.OR. &
+                                                  & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5.OR. &
+                                                  & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4.OR. &
+                                                  & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
+                                                  RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                                    & parameters%cmiss%data_dp(2)
+                                                ELSE
+                                                  RHO_PARAM=0.0_DP
+                                                ENDIF
                                                 CALL STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME, &
                                                   & variable_type, & 
                                                   & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
@@ -3054,6 +3076,8 @@ CONTAINS
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                           IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5.OR. &
+                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4.OR. &
+                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
                             CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
                           ENDIF
@@ -3304,7 +3328,15 @@ CONTAINS
                               MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
                                 & parameters%cmiss%data_dp(1)
                               !Define RHO_PARAM, density=2
-                              RHO_PARAM=0.0_DP
+                              IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4.OR. &
+                                & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5.OR. &
+                                & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4.OR. &
+                                & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
+                                RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                  & parameters%cmiss%data_dp(2)
+                              ELSE
+                                RHO_PARAM=0.0_DP
+                              ENDIF
                               CALL STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME,variable_type, & 
                                 & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
@@ -3574,7 +3606,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
-
        CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Exponential function
@@ -3642,7 +3673,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
-
        CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Sine and cosine functions
@@ -3989,13 +4019,90 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
             LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
+       CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4)
+         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+           !Reduced Taylor-Green solution for Stokes
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         ENDIF
+       CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5)
+         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+           !Stokes-Taylor-Green dynamic
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=X(2)*exp(-(2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME))
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=X(1)*exp(-(2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME))
+                   ELSE IF(component_idx==3) THEN
+                     !calculate v
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=2.0_DP*X(2)*MU_PARAM*exp(-(2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME))*X(1)
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=0.0_DP
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The analytic function type of "// &
             & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
-
     CALL EXITS("STOKES_EQUATION_ANALYTIC_FUNCTIONS")
     RETURN
 999 CALL ERRORS("STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR)

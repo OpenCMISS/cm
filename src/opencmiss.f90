@@ -2127,6 +2127,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim1 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim2 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim3 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim4 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim5 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_NavierStokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::NavierStokes
   !> \brief The analytic function types for a Navier-Stokes equation.
@@ -2140,6 +2142,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim4 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim5 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DarcyAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Darcy
   !> \brief The analytic function types for a Darcy equation.
@@ -2270,10 +2274,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
   PUBLIC CMISSEquationsSetStokesTwoDim4,CMISSEquationsSetStokesTwoDim5
   PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
+  PUBLIC CMISSEquationsSetStokesThreeDim4,CMISSEquationsSetStokesThreeDim5
 
   PUBLIC CMISSEquationsSetNavierStokesTwoDim1,CMISSEquationsSetNavierStokesTwoDim2,CMISSEquationsSetNavierStokesTwoDim3
   PUBLIC CMISSEquationsSetNavierStokesTwoDim4,CMISSEquationsSetNavierStokesTwoDim5
   PUBLIC CMISSEquationsSetNavierStokesThreeDim1,CMISSEquationsSetNavierStokesThreeDim2,CMISSEquationsSetNavierStokesThreeDim3
+  PUBLIC CMISSEquationsSetNavierStokesThreeDim4,CMISSEquationsSetNavierStokesThreeDim5
   
   PUBLIC CMISSEquationsSetDarcyTwoDim1,CMISSEquationsSetDarcyTwoDim2,CMISSEquationsSetDarcyTwoDim3
   PUBLIC CMISSEquationsSetDarcyThreeDim1,CMISSEquationsSetDarcyThreeDim2,CMISSEquationsSetDarcyThreeDim3
