@@ -1906,7 +1906,7 @@ CONTAINS
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               !Loop over field components
               mhs=0
-              DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+              DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
                 MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                 DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -1918,7 +1918,7 @@ CONTAINS
                   nhs=0
                   IF(UPDATE_STIFFNESS_MATRIX.OR.UPDATE_DAMPING_MATRIX) THEN
                     !Loop over element columns
-                    DO nh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+                    DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                       MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                       DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                         & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2039,7 +2039,7 @@ CONTAINS
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3) THEN
                       mhs=0
-                      DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+                      DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
                         MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                         DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2217,13 +2217,15 @@ CONTAINS
             !Start with matrix calculations
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
 
+              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
               E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
               H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
               A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
               SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
 
               mhs=0
-              DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+              DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                 MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                 DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2231,14 +2233,14 @@ CONTAINS
                 JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                   & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
 
-                DO ms=1,(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS)
+                DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                   mhs=mhs+1
                   nhs=0
 
                   IF(UPDATE_STIFFNESS_MATRIX.OR.UPDATE_DAMPING_MATRIX) THEN
                     !Loop over element columns
 
-                    DO nh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+                    DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                       MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                       DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                         & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2246,7 +2248,7 @@ CONTAINS
                         &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                       ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
 
-                      DO ns=1,(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS)
+                      DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=nhs+1
                         !Calculate some general values
                           DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
@@ -2255,12 +2257,11 @@ CONTAINS
                           PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                      !DAMPING MATRIX
+                   !DAMPING MATRIX
                    IF(UPDATE_DAMPING_MATRIX) THEN
                       IF(mh==1) THEN
                         IF(nh==1) THEN
-                            SUM=0.0_DP
-                            SUM=SUM+PHINS*PHIMS
+                            SUM=PHINS*PHIMS
                             !Calculate Matrix
                             C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
                         END IF
@@ -2268,20 +2269,26 @@ CONTAINS
 
                       IF(mh==2) THEN
                         IF(nh==2) THEN
-                            SUM=0.0_DP
-                            SUM=SUM+PHINS*PHIMS
+                            SUM=PHINS*PHIMS
                             !Calculate Matrix
                             C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
                         END IF
                       END IF
                     END IF
 
-                      !STIFFNESS MATRIX
+                    !STIFFNESS MATRIX
                     IF(UPDATE_STIFFNESS_MATRIX) THEN
-                      IF(mh==1) THEN
-                        IF(nh==3) THEN
-                            SUM=0.0_DP
-                            SUM=SUM+PHIMS*DPHINS_DXI(1)*DXI_DX(1,1)*(1.0_DP/RHO_PARAM)
+                      IF(mh==2) THEN
+                        IF(nh==1) THEN
+                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
+                            !Calculate MATRIX
+                            K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
+                        END IF
+                      END IF
+
+                      IF(mh==3) THEN
+                        IF(nh==2) THEN
+                            SUM=-9208*DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
                             !Calculate MATRIX
                             K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
                         END IF
@@ -2289,8 +2296,7 @@ CONTAINS
 
                       IF(mh==3) THEN
                         IF(nh==3) THEN
-                            SUM=0.0_DP
-                            SUM=SUM+PHIMS*DPHINS_DXI(1)*DXI_DX(1,1)
+                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
                             !Calculate MATRIX
                             K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
                         END IF
@@ -2314,7 +2320,7 @@ CONTAINS
                 P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
 
                 mhs=0
-                DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2324,26 +2330,18 @@ CONTAINS
                   DXI_DX=0.0_DP
                   DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
 
-                  DO ms=1,(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS)
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                    !note mh value derivative 
+
                     IF(mh==1) THEN
-                      SUM=0.0_DP
                       !Calculate SUM
-                      SUM=SUM+((U_VALUE(1)*U_DERIV(1,1)*DXI_DX(1,1))+((25.133*MU_PARAM*U_VALUE(1))/(RHO_PARAM*A_VALUE)))*PHIMS
+                      SUM=(  ( 2*U_VALUE(1)*U_DERIV(1,1)*DXI_DX(1,1)/A_VALUE )+ &
+                           & ( -((U_VALUE(1)/A_VALUE)**2)*A_DERIV*DXI_DX(1,1) )+ &
+                           & ( 952.4*A_VALUE*P_DERIV*DXI_DX(1,1) )+ &
+                           & ( 84*U_VALUE(1)/A_VALUE )  )*PHIMS
                     ENDIF
-                    IF(mh==2) THEN
-                      SUM=0.0_DP
-                      !Calculate SUM
-                      SUM=SUM+(U_VALUE(1)*A_DERIV+A_VALUE*U_DERIV(1,1))*PHIMS*DXI_DX(1,1)
-                    ENDIF
-                    IF(mh==3) THEN
-                      SUM=0.0_DP
-                      !Calculate SUM
-                      SUM=SUM+(26113*(A_VALUE**(-0.5))*A_DERIV)*PHIMS*DXI_DX(1,1)
-                    ENDIF
-                    RH_VECTOR(mhs)=0.0_DP
+
                     NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
                   ENDDO !ms
                 ENDDO !mh
@@ -2654,6 +2652,8 @@ CONTAINS
               U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
               A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
               P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
+              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
               E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
               H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
               A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
@@ -2669,7 +2669,7 @@ CONTAINS
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
                 !Loop over field components
                 mhs=0
-                DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2681,7 +2681,7 @@ CONTAINS
                     nhs=0
                     IF(UPDATE_JACOBIAN_MATRIX) THEN
                       !Loop over element columns
-                      DO nh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+                      DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
                         MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                         DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
                           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2738,7 +2738,7 @@ CONTAINS
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
                 !Loop over field components
                 mhs=0
-                DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2746,13 +2746,13 @@ CONTAINS
                   JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                     & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
 
-                  DO ms=1,(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS)
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
                     nhs=0
 
                     IF(UPDATE_JACOBIAN_MATRIX) THEN
                       !Loop over element columns
-                     DO nh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS)
+                     DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                         MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
                         DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
                           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
@@ -2760,7 +2760,7 @@ CONTAINS
                           &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                         ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
 
-                        DO ns=1,(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS)
+                        DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                           nhs=nhs+1
  
                           DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
@@ -2769,47 +2769,36 @@ CONTAINS
                           PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                            !J1 ONLY
-                            IF(mh==1) THEN
-                              IF(nh==1) THEN
-                                SUM=0.0_DP
-                                SUM=SUM+(   (U_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1))  +  (PHINS*U_DERIV(1,1)*DXI_DX(1,1)) &
-                                  & +  ((25.133*MU_PARAM*PHINS)/(RHO_PARAM*A_VALUE))  )*PHIMS
-                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
+                          !J1 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=(  ( 2*PHINS*U_DERIV(1,1)*DXI_DX(1,1)/A_VALUE )+ &
+                                   & ( 2*U_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE )+ &
+                                   & ( -2*U_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2) )+ &
+                                   & ( 84*PHINS/A_VALUE )  )*PHIMS
+                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
-                            !J2 ONLY
-                            IF(mh==1) THEN
-                              IF(nh==2) THEN
-                                SUM=0.0_DP
-                                SUM=SUM+((-25.133*MU_PARAM*U_VALUE(1)*PHINS)/(RHO_PARAM*(A_VALUE**2)))*PHIMS
-                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
+                          END IF
+
+                          !J2 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==2) THEN
+                              SUM=(  ( -2*U_VALUE(1)*PHINS*U_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2) )+ &
+                                   & ( 2*PHINS*(U_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3) )+ &
+                                   & ( -((U_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1) )+ &
+                                   & ( 952.4*PHINS*P_DERIV*DXI_DX(1,1) )+ &
+                                   & ( -84*PHINS*U_VALUE(1)/(A_VALUE**2) )  )*PHIMS
+                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
-                            !J3 ONLY
-                            IF(mh==2) THEN
-                              IF(nh==1) THEN
-                                SUM=0.0_DP
-                                SUM=SUM+((A_DERIV*PHINS)+(A_VALUE*DPHINS_DXI(1)))*PHIMS*DXI_DX(1,1)
-                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
+                          END IF
+
+                          !J3 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==3) THEN
+                              SUM=(  ( 952.4*A_VALUE*DPHINS_DXI(1)*DXI_DX(1,1) )  )*PHIMS
+                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
-                            !J4 ONLY
-                            IF(mh==2) THEN
-                              IF(nh==2) THEN
-                                SUM=0.0_DP
-                                SUM=SUM+((U_DERIV(1,1)*PHINS)+(U_VALUE(1)*DPHINS_DXI(1)))*PHIMS*DXI_DX(1,1)
-                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
-                            END IF
-                            !J5 ONLY
-                            IF(mh==3) THEN
-                              IF(nh==2) THEN
-                                SUM=0.0_DP
-                 SUM=SUM-26113*((-0.5*(A_VALUE**(-1.5))*PHINS*A_DERIV)+((A_VALUE**(-0.5))*DPHINS_DXI(1)))*PHIMS*DXI_DX(1,1)
-                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                              END IF
-                            END IF
+                          END IF
 
                       ENDDO !ns
                     ENDDO !nh
