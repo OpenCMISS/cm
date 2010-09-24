@@ -2112,7 +2112,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,DISPLACEMENT_VALUE,VALUE,XI_COORDINATES(3)
-
+    REAL(DP) :: T_COORDINATES(20,3)
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
@@ -2222,6 +2222,80 @@ CONTAINS
                                                   ENDDO
                                                   CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
                                                     & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                              ELSE
+!\todo: Use boundary flag
+                                                IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
+                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
+                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
+                                                  T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
+                                                  T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
+                                                  & NUMBER_OF_DIMENSIONS==2) THEN
+                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                                  T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
+                                                  T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
+                                                  T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
+                                                  T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
+                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
+                                                  & NUMBER_OF_DIMENSIONS==3) THEN
+                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
+                                                  T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
+                                                  T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
+                                                  T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
+                                                  T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                                  T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                                  T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                                  T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                                  T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                                  T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                                  T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                                  T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                                  T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                                ENDIF
+                                                DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
+                                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
+                                                ENDDO
+                                                IF(NUMBER_OF_DIMENSIONS==2) THEN
+                                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
+                                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                                ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+                                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
+                                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                                ENDIF 
                                               ENDIF
                                               X=0.0_DP
                                               DO dim_idx=1,NUMBER_OF_DIMENSIONS
@@ -3353,15 +3427,53 @@ CONTAINS
                                       & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                     BOUND_COUNT=BOUND_COUNT+1
                                   ELSE
-! \todo: This is just a workaround for quadratic velocity information
-!                                     IF(BOUND_COUNT==0) THEN
-                                    IF(BOUND_COUNT==0.OR.DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
-                                      & (DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND. &
-                                      & NUMBER_OF_DIMENSIONS==3)) THEN
+! \todo: This is just a workaround for linear pressure fields in simplex element components
+                                    IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
+                                      IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5) THEN
+                                        IF(-0.001_DP<X(1).AND.X(1)<0.001_DP.AND.-0.001_DP<X(2).AND.X(2)<0.001_DP.OR. &
+                                          &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.-0.001_DP<X(2).AND. &
+                                          & X(2)<0.001_DP.OR. &
+                                          &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<10.0_DP+0.001_DP.OR. &
+                                          &  -0.001_DP<X(1).AND.X(1)<0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<10.0_DP+0.001_DP) THEN
+                                            CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                              & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                            BOUND_COUNT=BOUND_COUNT+1
+                                        ENDIF
+                                      ENDIF
+                                    ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND. &
+                                      & NUMBER_OF_DIMENSIONS==3) THEN
+                                      IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
+                                        IF(-5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                          & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                          & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                          & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                          & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                          & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                          & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                          & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                          & X(2)<-5.0_DP+ 0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP) THEN
+                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+                                            & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                          BOUND_COUNT=BOUND_COUNT+1
+                                        ENDIF
+                                      ENDIF
+! \todo: This is how it should be if adjacent elements would be working
+                                    ELSE IF(BOUND_COUNT==0) THEN
                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                       BOUND_COUNT=BOUND_COUNT+1
                                     ENDIF
+
+
                                   ENDIF
                                 ELSE
                                   IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
