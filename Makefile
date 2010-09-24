@@ -762,7 +762,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/elasticity_routines.o \
 	$(OBJECT_DIR)/electromechanics_routines.o \
-  $(OBJECT_DIR)/electrophysiology_cell_routines.o \
+	$(OBJECT_DIR)/electrophysiology_cell_routines.o \
 	$(OBJECT_DIR)/equations_routines.o \
 	$(OBJECT_DIR)/equations_mapping_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
@@ -885,6 +885,7 @@ ifeq ($(OPERATING_SYSTEM),aix)
 endif
 
 $(OBJECT_DIR)/advection_diffusion_equation_routines.o	:	$(SOURCE_DIR)/advection_diffusion_equation_routines.f90 \
+	$(OBJECT_DIR)/analytic_analysis_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
@@ -987,6 +988,7 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(SOURCE_DIR)/boundary_condition_
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/classical_field_routines.o	:	$(SOURCE_DIR)/classical_field_routines.f90 \
+	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \

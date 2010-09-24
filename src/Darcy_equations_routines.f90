@@ -1556,7 +1556,23 @@ CONTAINS
             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
 
-          CASE(EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE)
+          CASE(EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE)
+            EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+            CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+
+            my_compartment = EQUATIONS_SET_FIELD_DATA(1)
+            Ncompartments  = EQUATIONS_SET_FIELD_DATA(2)
+            LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+            STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
+
+            LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+            FIELD_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+            FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+
+            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+
+          CASE(EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE)
 
             EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
             CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -1580,6 +1596,8 @@ CONTAINS
             DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
             STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
             DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
+
+            
 
             DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
             FIELD_VARIABLE=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
@@ -2543,75 +2561,75 @@ CONTAINS
             ! end: RIGHT HAND SIDE FOR ANALYTIC SOLUTION
             !-----------------------------------------------------------------------------------------------------------------------------------
 
-            !===================================================================================================================
-            !COUPLING_MATRICES
-            SELECT CASE(EQUATIONS_SET%SUBTYPE)
-            CASE(EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE)
-
-              !Create FIELD_VARIABLES type, COUPLING_MATRICES type
-
-              !Loop over element rows
-              mhs=0
-              DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-
-                MESH_COMPONENT_1 = FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                DEPENDENT_BASIS_1 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_1)%PTR% &
-                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                QUADRATURE_SCHEME_1 => DEPENDENT_BASIS_1%QUADRATURE% &
-                  & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN * &
-                  & QUADRATURE_SCHEME_1%GAUSS_WEIGHTS(ng)
-
-                DO ms=1,DEPENDENT_BASIS_1%NUMBER_OF_ELEMENT_PARAMETERS
-                  mhs=mhs+1
-
-                  DO imatrix=1,Ncompartments
-
-                    IF(COUPLING_MATRICES(imatrix)%PTR%UPDATE_MATRIX) THEN
-
-                      !Loop over element columns
-                      nhs=0
-!                       DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                      DO nh=1,FIELD_VARIABLES(imatrix)%PTR%NUMBER_OF_COMPONENTS
-
-                        MESH_COMPONENT_2 = FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                        DEPENDENT_BASIS_2 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_2)%PTR% &
-                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                        !--- We cannot use two different quadrature schemes here !!!
-                        QUADRATURE_SCHEME_2 => DEPENDENT_BASIS_2%QUADRATURE% &
-                         & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                        !RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * &
-                        !  & QUADRATURE_SCHEME_2%GAUSS_WEIGHTS(ng)
-
-                        DO ns=1,DEPENDENT_BASIS_2%NUMBER_OF_ELEMENT_PARAMETERS
-                          nhs=nhs+1
-
-                          !-------------------------------------------------------------------------------------------------------------
-                          !velocity test function, velocity trial function
-                          !For now, this is only a dummy implementation - this still has to be properly set up.
-                          IF(mh==nh.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
-
-                            SUM = 0.0_DP
-
-                            PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                            PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-                            SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
-
-                            COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
-                              & COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * RWG
-                          ENDIF
-
-                        ENDDO !ns
-                      ENDDO !nh
-                    ENDIF
-                  ENDDO !imatrix
-                ENDDO !ms
-              ENDDO !mh
-            CASE DEFAULT
-              !Do nothing          
-            END SELECT
-          ENDDO !ng
+!             !===================================================================================================================
+!             !COUPLING_MATRICES
+!             SELECT CASE(EQUATIONS_SET%SUBTYPE)
+!             CASE(EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE)
+! 
+!               !Create FIELD_VARIABLES type, COUPLING_MATRICES type
+! 
+!               !Loop over element rows
+!               mhs=0
+!               DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+! 
+!                 MESH_COMPONENT_1 = FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+!                 DEPENDENT_BASIS_1 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_1)%PTR% &
+!                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+!                 QUADRATURE_SCHEME_1 => DEPENDENT_BASIS_1%QUADRATURE% &
+!                   & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+!                 RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN * &
+!                   & QUADRATURE_SCHEME_1%GAUSS_WEIGHTS(ng)
+! 
+!                 DO ms=1,DEPENDENT_BASIS_1%NUMBER_OF_ELEMENT_PARAMETERS
+!                   mhs=mhs+1
+! 
+!                   DO imatrix=1,Ncompartments
+! 
+!                     IF(COUPLING_MATRICES(imatrix)%PTR%UPDATE_MATRIX) THEN
+! 
+!                       !Loop over element columns
+!                       nhs=0
+! !                       DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+!                       DO nh=1,FIELD_VARIABLES(imatrix)%PTR%NUMBER_OF_COMPONENTS
+! 
+!                         MESH_COMPONENT_2 = FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+!                         DEPENDENT_BASIS_2 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_2)%PTR% &
+!                           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+!                         !--- We cannot use two different quadrature schemes here !!!
+!                         QUADRATURE_SCHEME_2 => DEPENDENT_BASIS_2%QUADRATURE% &
+!                          & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+!                         !RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * &
+!                         !  & QUADRATURE_SCHEME_2%GAUSS_WEIGHTS(ng)
+! 
+!                         DO ns=1,DEPENDENT_BASIS_2%NUMBER_OF_ELEMENT_PARAMETERS
+!                           nhs=nhs+1
+! 
+!                           !-------------------------------------------------------------------------------------------------------------
+!                           !velocity test function, velocity trial function
+!                           !For now, this is only a dummy implementation - this still has to be properly set up.
+!                           IF(mh==nh.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN
+! 
+!                             SUM = 0.0_DP
+! 
+!                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+!                             PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+! 
+!                             SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+! 
+!                             COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
+!                               & COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * RWG
+!                           ENDIF
+! 
+!                         ENDDO !ns
+!                       ENDDO !nh
+!                     ENDIF
+!                   ENDDO !imatrix
+!                 ENDDO !ms
+!               ENDDO !mh
+!             CASE DEFAULT
+!               !Do nothing          
+!             END SELECT
+           ENDDO !ng
 
 !-----------------------------------------------------------------------------------------------------------------------------------
 ! CHECK STIFFNESS MATRIX WITH CMHEART

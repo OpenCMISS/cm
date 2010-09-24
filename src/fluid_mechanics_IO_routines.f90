@@ -529,6 +529,7 @@ CONTAINS
         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
           & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
 !         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
+       IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) THEN  
         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
           & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
           & cmiss%data_dp(K+NodesPerMeshComponent(1))
@@ -539,7 +540,7 @@ CONTAINS
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
             & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
-
+       END IF
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
@@ -623,6 +624,9 @@ CONTAINS
     IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
       & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
         & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) )THEN
+      DN=.FALSE.
+    END IF
+    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS)THEN
       DN=.FALSE.
     END IF
    ! NodeSIGMAValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &

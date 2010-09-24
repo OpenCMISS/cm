@@ -43,6 +43,7 @@
 !>This module handles all advection-diffusion equation routines.
 MODULE ADVECTION_DIFFUSION_EQUATION_ROUTINES
 
+  USE ANALYTIC_ANALYSIS_ROUTINES
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
@@ -70,7 +71,7 @@ MODULE ADVECTION_DIFFUSION_EQUATION_ROUTINES
 
   IMPLICIT NONE
 
-  PRIVATE
+  PRIVATE ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA
 
   !Module parameters
 
@@ -83,7 +84,7 @@ MODULE ADVECTION_DIFFUSION_EQUATION_ROUTINES
   PUBLIC ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP,ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET,ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE, &
     & ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET,ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP, &
-    & ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA, ADVECTION_DIFFUSION_PRE_SOLVE, &
+    & ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA, ADVECTION_DIFFUSION_PRE_SOLVE,ADVECTION_DIFFUSION_POST_SOLVE, &
     & ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE,ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN
   
 CONTAINS
@@ -3498,10 +3499,8 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
           CASE (PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,&
-               & PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE,&
-               & PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-          
-
+            & PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE,&
+            & PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
           SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
           IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
             SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -3518,9 +3517,6 @@ CONTAINS
                     & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                    NULLIFY(BOUNDARY_VALUES)
                    NULLIFY(BOUNDARY_NODES)
-                   !CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                   !  & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-                   !WRITE (*,*) SIZE(BOUNDARY_VALUES)
                    CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS_ITERATION(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES,BOUNDARY_NODES,& 
                      & NUMBER_OF_COMPONENTS,BOUNDARY_CONDITION_FIXED,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                      & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER)
@@ -3537,38 +3533,6 @@ CONTAINS
                          & BOUNDARY_VALUES(node_idx),ERR,ERROR,*999)
                      END IF
                    ENDDO    
-!                    DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-!                      variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-!                      FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-!                      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-!                        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-!                          DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-!                          IF(ASSOCIATED(DOMAIN)) THEN
-!                            IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-!                              DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-!                              IF(ASSOCIATED(DOMAIN_NODES)) THEN
-!                                !Loop over the local nodes excluding the ghosts.
-!                                DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-!                                  DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-!                                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-!                                      & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
-!                                    BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-!                                      & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-!                                    IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
-!                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-!                                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-!                                        & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
-!                                    END IF
-!                                  ENDDO !deriv_idx
-!                                ENDDO !node_idx
-!                              ENDIF
-!                            ENDIF
-!                          ENDIF
-!                        ENDDO !component_idx
-!                      ENDIF
-!                    ENDDO !variable_idx
-
-!This part should be read in out of a file eventually
                  ELSE
                    CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                  END IF
@@ -3610,6 +3574,150 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC
+  !
+  !================================================================================================================================
+  !
+  SUBROUTINE ADVECTION_DIFFUSION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER!<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("ADVECTION_DIFFUSION_POST_SOLVE",ERR,ERROR,*999)
+    NULLIFY(SOLVER2)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
+                 & PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
+              CALL ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE, &
+                 & PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE,PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
+              ! do nothing ???
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for an advection-diffusion type of a classical field problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE")
+    RETURN
+999 CALL ERRORS("ADVECTION_DIFFUSION_POST_SOLVE",ERR,ERROR)
+    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE")
+    RETURN 1
+  END SUBROUTINE ADVECTION_DIFFUSION_POST_SOLVE
+  !
+  !================================================================================================================================
+  !
+  SUBROUTINE ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER!<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    INTEGER(INTG) :: EQUATIONS_SET_IDX,CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER
+
+    CHARACTER(14) :: FILE
+    CHARACTER(14) :: OUTPUT_FILE
+
+    CALL ENTERS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
+              CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                  !Make sure the equations sets are up to date
+                  DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+
+                    CURRENT_LOOP_ITERATION=CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER
+                    OUTPUT_ITERATION_NUMBER=CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER
+
+                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
+                      IF(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_LOOP%TIME_LOOP%STOP_TIME) THEN
+                        IF(CURRENT_LOOP_ITERATION<10) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
+                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                          WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
+                        END IF
+                        FILE=OUTPUT_FILE
+!                        FILE="TRANSIENT_OUTPUT"
+!                         METHOD="FORTRAN"
+!                         EXPORT_FIELD=.TRUE.
+!                         IF(EXPORT_FIELD) THEN          
+!                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
+                          CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                              & ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+!                           ENDIF
+!                         ENDIF 
+                      ENDIF 
+                    ENDIF
+                  ENDDO
+                ENDIF
+              ENDIF
+            CASE(PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
+              ! do nothing ???
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for an advection-diffusion equation type of a classical field problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA")
+    RETURN
+999 CALL ERRORS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
+    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA")
+    RETURN 1
+  END SUBROUTINE ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA
   !
   !================================================================================================================================
   !
