@@ -2560,6 +2560,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   !> \brief Field variable type parameters.
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
+  INTEGER(INTG), PARAMETER :: CMISSFieldNumberOfVariableSubtypes = FIELD_NUMBER_OF_VARIABLE_SUBTYPES !<The number of subtypes of a variable - i.e., u, du/dn, du/dt, d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldUVariableType = FIELD_U_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelNVariableType = FIELD_DELUDELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelTVariableType = FIELD_DELUDELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
@@ -2570,25 +2571,44 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSFieldDel2VDelT2VariableType = FIELD_DEL2VDELT2_VARIABLE_TYPE !<Second second time derivative variable type i.e., d^2v/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU1VariableType = FIELD_U1_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU1DelNVariableType = FIELD_DELU1DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU1DelTVariableType = FIELD_DELU1DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U1DelT2VariableType = FIELD_DEL2U1DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU2VariableType = FIELD_U2_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU2DelNVariableType = FIELD_DELU2DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU2DelTVariableType = FIELD_DELU2DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U2DelT2VariableType = FIELD_DEL2U2DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU3VariableType = FIELD_U3_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU3DelNVariableType = FIELD_DELU3DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU3DelTVariableType = FIELD_DELU3DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U3DelT2VariableType = FIELD_DEL2U3DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU4VariableType = FIELD_U4_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU4DelNVariableType = FIELD_DELU4DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU4DelTVariableType = FIELD_DELU4DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U4DelT2VariableType = FIELD_DEL2U4DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU5VariableType = FIELD_U5_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU5DelNVariableType = FIELD_DELU5DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU5DelTVariableType = FIELD_DELU5DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U5DelT2VariableType = FIELD_DEL2U5DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU6VariableType = FIELD_U6_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU6DelNVariableType = FIELD_DELU6DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU6DelTVariableType = FIELD_DELU6DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U6DelT2VariableType = FIELD_DEL2U6DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU7VariableType = FIELD_U7_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU7DelNVariableType = FIELD_DELU7DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU7DelTVariableType = FIELD_DELU7DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U7DelT2VariableType = FIELD_DEL2U7DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU8VariableType = FIELD_U8_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU8DelNVariableType = FIELD_DELU8DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU8DelTVariableType = FIELD_DELU8DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U8DelT2VariableType = FIELD_DEL2U8DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU9VariableType = FIELD_U9_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU9DelNVariableType = FIELD_DELU9DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU9DelTVariableType = FIELD_DELU9DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U9DelT2VariableType = FIELD_DEL2U9DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldU10VariableType = FIELD_U10_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldDelU10DelNVariableType = FIELD_DELU10DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-
+  INTEGER(INTG), PARAMETER :: CMISSFieldDelU10DelTVariableType = FIELD_DELU10DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U10DelT2VariableType = FIELD_DEL2U10DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldDataTypes OPENCMISS::Field::DataTypes
   !> \brief Field data types
@@ -3065,18 +3085,21 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSFieldConstantInterpolation,CMISSFieldElementBasedInterpolation,CMISSFieldNodeBasedInterpolation, &
     & CMISSFieldGridPointBasedInterpolation,CMISSFieldGaussPointBasedInterpolation
 
+  PUBLIC CMISSFieldNumberOfVariableSubtypes
+
   PUBLIC CMISSFieldUVariableType,CMISSFieldDelUDelNVariableType,CMISSFieldDelUDelTVariableType,CMISSFieldDel2UDelT2VariableType, &
     & CMISSFieldVVariableType,CMISSFieldDelVDelNVariableType,CMISSFieldDelVDelTVariableType,CMISSFieldDel2VDelT2VariableType, &
-    & CMISSFieldU1VariableType,CMISSFieldDelU1DelNVariableType,&
-    & CMISSFieldU2VariableType,CMISSFieldDelU2DelNVariableType,&
-    & CMISSFieldU3VariableType,CMISSFieldDelU3DelNVariableType,&
-    & CMISSFieldU4VariableType,CMISSFieldDelU4DelNVariableType,&
-    & CMISSFieldU5VariableType,CMISSFieldDelU5DelNVariableType,&
-    & CMISSFieldU6VariableType,CMISSFieldDelU6DelNVariableType,&
-    & CMISSFieldU7VariableType,CMISSFieldDelU7DelNVariableType,&
-    & CMISSFieldU8VariableType,CMISSFieldDelU8DelNVariableType,&
-    & CMISSFieldU9VariableType,CMISSFieldDelU9DelNVariableType,&
-    & CMISSFieldU10VariableType,CMISSFieldDelU10DelNVariableType
+    & CMISSFieldU1VariableType,CMISSFieldDelU1DelNVariableType,CMISSFieldDelU1DelTVariableType,CMISSFieldDel2U1DelT2VariableType, &
+    & CMISSFieldU2VariableType,CMISSFieldDelU2DelNVariableType,CMISSFieldDelU2DelTVariableType,CMISSFieldDel2U2DelT2VariableType, &
+    & CMISSFieldU3VariableType,CMISSFieldDelU3DelNVariableType,CMISSFieldDelU3DelTVariableType,CMISSFieldDel2U3DelT2VariableType, &
+    & CMISSFieldU4VariableType,CMISSFieldDelU4DelNVariableType,CMISSFieldDelU4DelTVariableType,CMISSFieldDel2U4DelT2VariableType, &
+    & CMISSFieldU5VariableType,CMISSFieldDelU5DelNVariableType,CMISSFieldDelU5DelTVariableType,CMISSFieldDel2U5DelT2VariableType, &
+    & CMISSFieldU6VariableType,CMISSFieldDelU6DelNVariableType,CMISSFieldDelU6DelTVariableType,CMISSFieldDel2U6DelT2VariableType, &
+    & CMISSFieldU7VariableType,CMISSFieldDelU7DelNVariableType,CMISSFieldDelU7DelTVariableType,CMISSFieldDel2U7DelT2VariableType, &
+    & CMISSFieldU8VariableType,CMISSFieldDelU8DelNVariableType,CMISSFieldDelU8DelTVariableType,CMISSFieldDel2U8DelT2VariableType, &
+    & CMISSFieldU9VariableType,CMISSFieldDelU9DelNVariableType,CMISSFieldDelU9DelTVariableType,CMISSFieldDel2U9DelT2VariableType, &
+    & CMISSFieldU10VariableType,CMISSFieldDelU10DelNVariableType,CMISSFieldDelU10DelTVariableType, &
+    & CMISSFieldDel2U10DelT2VariableType
 
   PUBLIC CMISSFieldIntgType,CMISSFieldSPType,CMISSFieldDPType,CMISSFieldLType
 

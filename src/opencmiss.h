@@ -626,12 +626,55 @@ static int CMISSFieldGaussPointBasedInterpolation = 5;
  * > \see OPENCMISS::Field,OPENCMISS
  * >@{
  */
+static int CMISSFieldNumberOfVariableSubtypes = 4;
 static int CMISSFieldUVariableType = 1;
 static int CMISSFieldDelUDelNVariableType = 2;
 static int CMISSFieldDelUDelTVariableType = 3;
 static int CMISSFieldDel2UDelT2VariableType = 4;
 static int CMISSFieldVVariableType = 5;
 static int CMISSFieldDelVDelNVariableType = 6;
+static int CMISSFieldDelVDelTVariableType = 7;
+static int CMISSFieldDel2VDelT2VariableType = 8;
+static int CMISSFieldU1VariableType = 9;
+static int CMISSFieldDelU1DelNVariableType = 10;
+static int CMISSFieldDelU1DelTVariableType = 11;
+static int CMISSFieldDel2U1DelT2VariableType = 12;
+static int CMISSFieldU2VariableType = 13;
+static int CMISSFieldDelU2DelNVariableType = 14;
+static int CMISSFieldDelU2DelTVariableType = 15;
+static int CMISSFieldDel2U2DelT2VariableType = 16;
+static int CMISSFieldU3VariableType = 17;
+static int CMISSFieldDelU3DelNVariableType = 18;
+static int CMISSFieldDelU3DelTVariableType = 19;
+static int CMISSFieldDel2U3DelT2VariableType = 20;
+static int CMISSFieldU4VariableType = 21;
+static int CMISSFieldDelU4DelNVariableType = 22;
+static int CMISSFieldDelU4DelTVariableType = 23;
+static int CMISSFieldDel2U4DelT2VariableType = 24;
+static int CMISSFieldU5VariableType = 25;
+static int CMISSFieldDelU5DelNVariableType = 26;
+static int CMISSFieldDelU5DelTVariableType = 27;
+static int CMISSFieldDel2U5DelT2VariableType = 28;
+static int CMISSFieldU6VariableType = 29;
+static int CMISSFieldDelU6DelNVariableType = 30;
+static int CMISSFieldDelU6DelTVariableType = 31;
+static int CMISSFieldDel2U6DelT2VariableType = 32;
+static int CMISSFieldU7VariableType = 33;
+static int CMISSFieldDelU7DelNVariableType = 34;
+static int CMISSFieldDelU7DelTVariableType = 35;
+static int CMISSFieldDel2U7DelT2VariableType = 36;
+static int CMISSFieldU8VariableType = 37;
+static int CMISSFieldDelU8DelNVariableType = 38;
+static int CMISSFieldDelU8DelTVariableType = 39;
+static int CMISSFieldDel2U8DelT2VariableType = 40;
+static int CMISSFieldU9VariableType = 41;
+static int CMISSFieldDelU9DelNVariableType = 42;
+static int CMISSFieldDelU9DelTVariableType = 43;
+static int CMISSFieldDel2U9DelT2VariableType = 44;
+static int CMISSFieldU10VariableType = 45;
+static int CMISSFieldDelU10DelNVariableType = 46;
+static int CMISSFieldDelU10DelTVariableType = 47;
+static int CMISSFieldDel2U10DelT2VariableType = 48;
 /*
  * >@}
  * > \addtogroup OPENCMISS_FieldDataTypes OPENCMISS::Field::DataTypes
