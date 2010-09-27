@@ -146,7 +146,6 @@ MODULE GENERATED_MESH_ROUTINES
   
   PUBLIC GENERATED_MESH_USER_NUMBER_FIND
   PUBLIC GENERATED_MESH_SURFACE_GET
-  !PUBLIC GENERATED_MESH_CYLINDER_SURFACE_GET,GENERATED_MESH_ELLIPSOID_SURFACE_GET
   
 CONTAINS
   
@@ -286,7 +285,13 @@ CONTAINS
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
             IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN
-              GENERATED_MESH%CYLINDER_MESH%BASIS=>BASIS!ES(1)%PTR 
+              IF(.NOT.ASSOCIATED(GENERATED_MESH%CYLINDER_MESH%BASIS)) THEN
+                GENERATED_MESH%CYLINDER_MESH%BASIS=>BASIS
+              ELSEIF(.NOT.ASSOCIATED(GENERATED_MESH%CYLINDER_MESH%BASIS2)) THEN
+                GENERATED_MESH%CYLINDER_MESH%BASIS2=>BASIS
+              ELSE
+                CALL FLAG_ERROR("This cylinder mesh has two bases associated already.",ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -775,9 +780,11 @@ CONTAINS
        ELSE
           SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
           CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
-             GENERATED_MESH%ELLIPSOID_MESH%APPEND_LINEAR_COMPONENT=APPEND_LINEAR_COMPONENT
+            GENERATED_MESH%ELLIPSOID_MESH%APPEND_LINEAR_COMPONENT=APPEND_LINEAR_COMPONENT
+          CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
+            GENERATED_MESH%CYLINDER_MESH%APPEND_LINEAR_COMPONENT=APPEND_LINEAR_COMPONENT
           CASE DEFAULT
-             LOCAL_ERROR="Multiple mesh components are not imlemented for " &
+             LOCAL_ERROR="Multiple mesh components are not implemented for " &
                   & //TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))//"."
              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -985,15 +992,9 @@ CONTAINS
        CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
           CYLINDER_MESH=>GENERATED_MESH%CYLINDER_MESH
           CALL GENERATED_MESH_CYLINDER_SURFACE_GET(CYLINDER_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*999) 
-!           ALLOCATE(SURFACE_NODES(SIZE(NODES,1)),STAT=ERR)
-!           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999) 
-!           SURFACE_NODES=NODES
        CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
           ELLIPSOID_MESH=>GENERATED_MESH%ELLIPSOID_MESH
           CALL GENERATED_MESH_ELLIPSOID_SURFACE_GET(ELLIPSOID_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*999)
-!           ALLOCATE(SURFACE_NODES(SIZE(NODES,1)),STAT=ERR)
-!           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999) 
-!           SURFACE_NODES=NODES
        CASE DEFAULT
           LOCAL_ERROR="The generated mesh mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
                & " is invalid."
@@ -2209,7 +2210,7 @@ CONTAINS
                                      NUMBER_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
                                   SELECT CASE(BASIS1%TYPE)
                                      !should also test for basis2
-                                  CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)            
+                                  CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
                                      IF(BASIS1%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1).AND. &
                                           & BASIS2%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1)) THEN
                                         IF(.NOT.ALL(NUMBER_ELEMENTS_XI>0)) &
@@ -2391,7 +2392,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH
-    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(BASIS_TYPE), POINTER :: BASIS,BASIS2 !<BASIS2 will point to the optional linear component
     INTEGER(INTG), ALLOCATABLE :: NUMBER_ELEMENTS_XI(:)
     TYPE(REGION_TYPE), POINTER :: REGION 
     TYPE(NODES_TYPE), POINTER :: NODES
@@ -2430,6 +2431,27 @@ CONTAINS
                       ALLOCATE(NUMBER_ELEMENTS_XI(SIZE(CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI)),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
                       NUMBER_ELEMENTS_XI=CYLINDER_MESH%NUMBER_OF_ELEMENTS_XI
+                      !Append linear component?
+                      IF(CYLINDER_MESH%APPEND_LINEAR_COMPONENT) THEN
+                        !Check the (additional) linear basis exists
+                        IF(ASSOCIATED(CYLINDER_MESH%BASIS2)) THEN
+                          BASIS2=>CYLINDER_MESH%BASIS2
+                          !Is it 3D? linear? collapsed?
+                          IF(BASIS2%NUMBER_OF_XI/=SIZE(NUMBER_ELEMENTS_XI,1)) &
+                            & CALL FLAG_ERROR("Cylinder generated mesh is only implemented for 3D currently.",ERR,ERROR,*999)
+                          IF(ANY(BASIS2%INTERPOLATION_ORDER/=BASIS_LINEAR_INTERPOLATION_ORDER)) &
+                            & CALL FLAG_ERROR("The second basis component must be linear, for now.",ERR,ERROR,*999)
+                          IF(.NOT.ALL(BASIS2%COLLAPSED_XI==BASIS_NOT_COLLAPSED)) &
+                            & CALL FLAG_ERROR("Degenerate (collapsed) basis is not implemented currently.",ERR,ERROR,*999)
+                          !Start the mesh creation
+                          CALL MESH_CREATE_START(MESH_USER_NUMBER,GENERATED_MESH%REGION, &
+                            & CYLINDER_MESH%MESH_DIMENSION, GENERATED_MESH%MESH,ERR,ERROR,*999)
+                          !Set total number of mesh components
+                          CALL MESH_NUMBER_OF_COMPONENTS_SET(GENERATED_MESH%MESH,2,ERR,ERROR,*999)
+                        ELSE
+                          CALL FLAG_ERROR("The linear basis component of cylinder generated mesh is not associated!",ERR,ERROR,*999)
+                        ENDIF
+                      ENDIF
                       SELECT CASE(BASIS%TYPE)
                       CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
                         IF(BASIS%NUMBER_OF_XI==SIZE(NUMBER_ELEMENTS_XI,1)) THEN
@@ -2449,14 +2471,16 @@ CONTAINS
                           CALL NODES_CREATE_START(REGION,TOTAL_NUMBER_OF_NODES,NODES,ERR,ERROR,*999)
                           !Finish the nodes creation
                           CALL NODES_CREATE_FINISH(NODES,ERR,ERROR,*999)
-                          !Create the mesh
-                          CALL MESH_CREATE_START(MESH_USER_NUMBER,GENERATED_MESH%REGION,SIZE(NUMBER_ELEMENTS_XI,1), &
-                            & GENERATED_MESH%MESH,ERR,ERROR,*999)
-                          !Create the elements
+                          IF(.not.CYLINDER_MESH%APPEND_LINEAR_COMPONENT) THEN
+                            !Create the mesh - should only be called once (if append_linear, it's done above)
+                            CALL MESH_CREATE_START(MESH_USER_NUMBER,GENERATED_MESH%REGION,SIZE(NUMBER_ELEMENTS_XI,1), &
+                              & GENERATED_MESH%MESH,ERR,ERROR,*999)
+                          ENDIF
+                          !Set the total number of elements
                           CALL MESH_NUMBER_OF_ELEMENTS_SET(GENERATED_MESH%MESH,TOTAL_NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
+                          !Create the elements - component 1
                           NULLIFY(MESH_ELEMENTS)
-                          CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,1,BASIS,MESH_ELEMENTS,ERR, &
-                            & ERROR,*999)
+                          CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,1,BASIS,MESH_ELEMENTS,ERR,ERROR,*999)
                           !Set the elements for the cylinder mesh
                           ALLOCATE(ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element nodes.",ERR,ERROR,*999)                
@@ -2478,8 +2502,7 @@ CONTAINS
                                       ! compensate for circumferential loop-around
                                       IF(nn2>SIZE(NIDX,2)) THEN
                                         ! DEBUG: little check here
-                                        IF(nn2>SIZE(NIDX,2)+1) CALL FLAG_ERROR("NIDX needs debugging",ERR, &
-                                          & ERROR,*999)
+                                        IF(nn2>SIZE(NIDX,2)+1) CALL FLAG_ERROR("NIDX needs debugging",ERR,ERROR,*999)
                                         ELEMENT_NODES(nn)=NIDX(nn1,1,nn3)
                                       ELSE
                                         ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
@@ -2493,8 +2516,49 @@ CONTAINS
                               ENDDO ! ne1
                             ENDDO ! ne2
                           ENDDO ! ne3
-                          
                           CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH_ELEMENTS,ERR,ERROR,*999)
+
+                          !Optional component 2
+                          IF(CYLINDER_MESH%APPEND_LINEAR_COMPONENT) THEN
+                            !We'll be reusing the node indices, just start creating elements
+                            NULLIFY(MESH_ELEMENTS)
+                            CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(GENERATED_MESH%MESH,2,BASIS2,MESH_ELEMENTS,ERR,ERROR,*999)
+                            IF(ALLOCATED(ELEMENT_NODES)) DEALLOCATE(ELEMENT_NODES)
+                            ALLOCATE(ELEMENT_NODES(BASIS2%NUMBER_OF_NODES),STAT=ERR)
+                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element nodes.",ERR,ERROR,*999)
+                            !Okay, take only the corner elements
+                            ne=0
+                            DO ne3=1,NUMBER_ELEMENTS_XI(3)
+                              from3=NINT(DELTA(3)*(ne3-1)/DELTAi(3)+1)
+                              DO ne2=1,NUMBER_ELEMENTS_XI(2)
+                                from2=NINT(DELTA(2)*(ne2-1)/DELTAi(2)+1)
+                                DO ne1=1,NUMBER_ELEMENTS_XI(1)
+                                  from1=NINT(DELTA(1)*(ne1-1)/DELTAi(1)+1)
+                                  nn=0
+                                  ! take only the corners
+                                  DO nn3=from3,from3+BASIS%NUMBER_OF_NODES_XIC(3)-1,BASIS%NUMBER_OF_NODES_XIC(3)-1
+                                    DO nn2=from2,from2+BASIS%NUMBER_OF_NODES_XIC(2)-1,BASIS%NUMBER_OF_NODES_XIC(2)-1
+                                      DO nn1=from1,from1+BASIS%NUMBER_OF_NODES_XIC(1)-1,BASIS%NUMBER_OF_NODES_XIC(1)-1
+                                        nn=nn+1
+                                        ! compensate for circumferential loop-around
+                                        IF(nn2>SIZE(NIDX,2)) THEN
+                                          ! DEBUG: little check here
+                                          IF(nn2>SIZE(NIDX,2)+1) CALL FLAG_ERROR("NIDX needs debugging",ERR,ERROR,*999)
+                                          ELEMENT_NODES(nn)=NIDX(nn1,1,nn3)
+                                        ELSE
+                                          ELEMENT_NODES(nn)=NIDX(nn1,nn2,nn3)
+                                        ENDIF
+                                      ENDDO ! nn1
+                                    ENDDO ! nn2
+                                  ENDDO ! nn3
+                                  ne=ne+1
+                                  CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(ne,MESH_ELEMENTS,ELEMENT_NODES,ERR,ERROR,*999)
+                                ENDDO ! ne1
+                              ENDDO ! ne2
+                            ENDDO ! ne3
+                            CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(MESH_ELEMENTS,ERR,ERROR,*999)
+                          ENDIF !End of component2
+
                           !Finish the mesh
                           CALL MESH_CREATE_FINISH(GENERATED_MESH%MESH,ERR,ERROR,*999)                        
                         ELSE
@@ -2506,6 +2570,7 @@ CONTAINS
                       CASE DEFAULT
                         CALL FLAG_ERROR("Basis type is either invalid or not implemented.",ERR,ERROR,*999)
                       END SELECT
+
                     ELSE
                       CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -3466,7 +3531,7 @@ CONTAINS
         IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
           CALL FIELD_SCALING_TYPE_GET(FIELD,SCALING_TYPE,ERR,ERROR,*999)
           IF(SCALING_TYPE/=FIELD_UNIT_SCALING) &
-            & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Note: If the cyinder looks wonky, set field scaling to&
+            & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Note: If the cylinder looks wonky, set field scaling to&
             & unit scaling type.",ERR,ERROR,*999)
           NUMBER_OF_PLANAR_NODES=TOTAL_NUMBER_NODES_XI(1)*TOTAL_NUMBER_NODES_XI(2)
           DO component_idx=1,3
@@ -3815,7 +3880,7 @@ CONTAINS
                 ALLOCATE(SURFACE_NODES((SIZE(NIDX,2))*(SIZE(NIDX,3))),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
                 DO k=1,SIZE(NIDX,3)
-                   DO j=1,SIZE(NIDX,2) 
+                   DO j=1,SIZE(NIDX,2)
                       node_counter=node_counter+1
                       SURFACE_NODES(node_counter)=NIDX(1,j,k)
                    ENDDO
@@ -4028,7 +4093,7 @@ CONTAINS
           TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XIC(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
         ENDDO
         TOTAL_NUMBER_NODES_XI(2)=TOTAL_NUMBER_NODES_XI(2)-1 ! theta loops around so slightly different
-        TOTAL_NUMBER_OF_ELEMENTS=PRODUCT(NUMBER_ELEMENTS_XI)
+        !TOTAL_NUMBER_OF_ELEMENTS=PRODUCT(NUMBER_ELEMENTS_XI)
         
         ! calculate NIDX first
         ALLOCATE(NIDX(TOTAL_NUMBER_NODES_XI(1),TOTAL_NUMBER_NODES_XI(2),TOTAL_NUMBER_NODES_XI(3)),STAT=ERR)

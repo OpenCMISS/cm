@@ -472,10 +472,10 @@ CONTAINS
             ENDIF
           ENDDO !gauss_idx
 
-          !Call surface pressure term here
-          IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
-            CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)          
-          ENDIF
+          !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
+IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
+!   CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)          
+ENDIF
 
         CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   ! compressible problem (no pressure component)
 
@@ -537,10 +537,10 @@ CONTAINS
             ENDDO !component_idx
           ENDDO !gauss_idx
 
-          !Call surface pressure term here
-          IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
-            CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)          
-          ENDIF
+!Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
+IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
+!   CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)          
+ENDIF
 
         END SELECT
       ELSE

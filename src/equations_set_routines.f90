@@ -5129,7 +5129,7 @@ CONTAINS
     NULLIFY(FULL_LOADS)
     NULLIFY(CURRENT_LOADS)
     
-write(*,*) "iteration_number=",ITERATION_NUMBER
+! write(*,*) "iteration_number=",ITERATION_NUMBER
     !Take the stored load, scale it down appropriately then apply to the unknown variables
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
@@ -5223,6 +5223,7 @@ write(*,*) "iteration_number=",ITERATION_NUMBER
                           & (pressure_incremented_idx)
                         NEW_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
                         NEW_LOAD=NEW_LOAD/MAXIMUM_NUMBER_OF_ITERATIONS
+!write(*,*) "new load=",new_load
                         !Update current and previous loads
                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
                             & pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
@@ -5244,7 +5245,6 @@ write(*,*) "iteration_number=",ITERATION_NUMBER
                             & pressure_incremented_dof_idx,CURRENT_LOAD,ERR,ERROR,*999)
                       ENDDO
                     ENDIF
-write(*,*) "new load=",new_load
                     !Restore the vector handles
                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
                       & PREV_LOADS,ERR,ERROR,*999)
