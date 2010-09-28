@@ -1939,8 +1939,8 @@ CONTAINS
             
             IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI1) THEN
                ef=ef+1  
-               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
-                  DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
+               DO nn3=1,MAXIMUM_NODE_EXTENT(ni2)
+                  DO nn2=1,MAXIMUM_NODE_EXTENT(ni3)
                      LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
                      BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
                           & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
@@ -1966,8 +1966,8 @@ CONTAINS
             LOCAL_NODE_COUNT=0
             IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI0) THEN
                ef=ef+1  
-               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
-                  DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
+               DO nn3=1,MAXIMUM_NODE_EXTENT(ni2)
+                  DO nn2=1,MAXIMUM_NODE_EXTENT(ni3)
                      LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
                      BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
                           & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)  
