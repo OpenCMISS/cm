@@ -623,13 +623,15 @@ CONTAINS
               
               !Set up ParMETIS variables
               WEIGHT_FLAG=0 !No weights
+              ELEMENT_WEIGHT(1)=1 !Isn't used due to weight flag
               NUMBER_FLAG=0 !C Numbering as there is a bug with Fortran numbering
               NUMBER_OF_CONSTRAINTS=1
               NUMBER_OF_COMMON_NODES=2
               TPWGTS=1.0_SP/REAL(DECOMPOSITION%NUMBER_OF_DOMAINS,SP)
               UBVEC=1.05_SP
-              PARMETIS_OPTIONS(0)=1
-              PARMETIS_OPTIONS(1)=7
+              PARMETIS_OPTIONS(0)=1 !If zero, defaults are used, otherwise next two values are used
+              PARMETIS_OPTIONS(1)=7 !Level of information to output
+              PARMETIS_OPTIONS(2)=9999 !Seed for random number generator
               
               !Call ParMETIS to calculate the partitioning of the mesh graph.
               CALL PARMETIS_PARTMESHKWAY(ELEMENT_DISTANCE,ELEMENT_PTR,ELEMENT_INDICIES,ELEMENT_WEIGHT,WEIGHT_FLAG,NUMBER_FLAG, &
