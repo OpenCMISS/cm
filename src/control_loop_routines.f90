@@ -174,7 +174,7 @@ CONTAINS
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER, INTENT(INOUT) :: PROBLEM !<A pointer to the problem to initialise the control for.
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, a pointer to the control loop. Must not be associated on entry.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<On exit, a pointer to the control loop. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

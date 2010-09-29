@@ -206,7 +206,8 @@ CONTAINS
   SUBROUTINE CMISS_INITIALISE(WORLD_REGION,ERR,ERROR,*)
   
     !Argument variables
-    TYPE(REGION_TYPE), POINTER, INTENT(OUT) :: WORLD_REGION !<On exit, a pointer to the world region. Must not be associated on entry.
+    !TYPE(REGION_TYPE), POINTER, INTENT(OUT) :: WORLD_REGION !<On exit, a pointer to the world region. Must not be associated on entry.
+    TYPE(REGION_TYPE), POINTER :: WORLD_REGION !<On exit, a pointer to the world region. Must not be associated on entry.
     INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
     !Local Variables
