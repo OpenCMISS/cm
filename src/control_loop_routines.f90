@@ -64,6 +64,15 @@ MODULE CONTROL_LOOP_ROUTINES
   INTEGER(INTG), PARAMETER :: CONTROL_LOOP_NODE=0 !<The identifier for a each "leaf" node in a control loop. \see CONTROL_LOOP_ROUTINES_ControlLoopIdentifiers,CONTROL_LOOP_ROUTINES
   !>@}
   
+  !> \addtogroup CONTROL_LOOP_ROUTINES_OutputTypes CONTROL_LOOP_ROUTINES::OutputTypes
+  !> \brief The types of output for a control loop.
+  !> \see CONTROL_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: CONTROL_LOOP_NO_OUTPUT=0 !<No output from the control loop \see CONTROL_LOOP_ROUTINES_OutputTypes,CONTROL_LOOP_ROUTINES
+  INTEGER(INTG), PARAMETER :: CONTROL_LOOP_PROGRESS_OUTPUT=1 !<Progress output from control loop \see CONTROL_LOOP_ROUTINES_OutputTypes,CONTROL_LOOP_ROUTINES
+  INTEGER(INTG), PARAMETER :: CONTROL_LOOP_TIMING_OUTPUT=2 !<Timing output from the control loop \see CONTROL_LOOP_ROUTINES_OutputTypes,CONTROL_LOOP_ROUTINES
+  !>@}
+
   !Module types
 
   !Module variables
@@ -78,11 +87,39 @@ MODULE CONTROL_LOOP_ROUTINES
 
   PUBLIC CONTROL_LOOP_NODE
 
-  PUBLIC CONTROL_LOOP_CREATE_FINISH,CONTROL_LOOP_CREATE_START,CONTROL_LOOP_CURRENT_TIMES_GET,CONTROL_LOOP_DESTROY, &
-    & CONTROL_LOOP_GET,CONTROL_LOOP_ITERATIONS_SET,CONTROL_LOOP_MAXIMUM_ITERATIONS_SET,CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET, &
-    & CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET,CONTROL_LOOP_SUB_LOOP_GET,CONTROL_LOOP_SOLVERS_DESTROY,CONTROL_LOOP_SOLVERS_GET, &
-    & CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY,CONTROL_LOOP_TIMES_GET,CONTROL_LOOP_TIMES_SET,CONTROL_LOOP_TYPE_SET, &
-    & CONTROL_LOOP_TIME_OUTPUT_SET, CONTROL_LOOP_TIME_INPUT_SET
+  PUBLIC CONTROL_LOOP_NO_OUTPUT,CONTROL_LOOP_PROGRESS_OUTPUT,CONTROL_LOOP_TIMING_OUTPUT
+  
+  PUBLIC CONTROL_LOOP_CREATE_FINISH,CONTROL_LOOP_CREATE_START
+  
+  PUBLIC CONTROL_LOOP_CURRENT_TIMES_GET
+
+  PUBLIC CONTROL_LOOP_DESTROY
+  
+  PUBLIC CONTROL_LOOP_GET
+
+  PUBLIC CONTROL_LOOP_ITERATIONS_SET
+
+  PUBLIC CONTROL_LOOP_MAXIMUM_ITERATIONS_SET
+
+  PUBLIC CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET,CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET
+
+  PUBLIC CONTROL_LOOP_OUTPUT_TYPE_GET,CONTROL_LOOP_OUTPUT_TYPE_SET
+
+  PUBLIC CONTROL_LOOP_SUB_LOOP_GET
+
+  PUBLIC CONTROL_LOOP_SOLVERS_DESTROY
+
+  PUBLIC CONTROL_LOOP_SOLVERS_GET
+  
+  PUBLIC CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY
+
+  PUBLIC CONTROL_LOOP_TIMES_GET,CONTROL_LOOP_TIMES_SET
+
+  PUBLIC CONTROL_LOOP_TYPE_SET
+  
+  PUBLIC CONTROL_LOOP_TIME_OUTPUT_SET
+
+  PUBLIC CONTROL_LOOP_TIME_INPUT_SET
 
 CONTAINS
 
@@ -94,7 +131,7 @@ CONTAINS
   RECURSIVE SUBROUTINE CONTROL_LOOP_CREATE_FINISH(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to finish.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to the control loop to finish.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -136,8 +173,8 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to initialise the control for.
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, a pointer to the control loop. Must not be associated on entry.
+    TYPE(PROBLEM_TYPE), POINTER, INTENT(INOUT) :: PROBLEM !<A pointer to the problem to initialise the control for.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, a pointer to the control loop. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -155,7 +192,7 @@ CONTAINS
         CONTROL_LOOP=>PROBLEM%CONTROL_LOOP
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*998)
     ENDIF
               
     CALL EXITS("CONTROL_LOOP_CREATE_START")
@@ -174,7 +211,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the times for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the times for
     REAL(DP), INTENT(OUT) :: CURRENT_TIME !<On exit, the current time for the time control loop.
     REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -219,7 +256,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to destroy.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to the control loop to destroy.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -247,7 +284,7 @@ CONTAINS
   RECURSIVE SUBROUTINE CONTROL_LOOP_FINALISE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to finalise.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to the control loop to finalise.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -290,7 +327,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_INITIALISE(PROBLEM,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to initialise the control for.
+    TYPE(PROBLEM_TYPE), POINTER, INTENT(INOUT) :: PROBLEM !<A pointer to the problem to initialise the control for.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -310,6 +347,7 @@ CONTAINS
         PROBLEM%CONTROL_LOOP%CONTROL_LOOP_FINISHED=.FALSE.
         PROBLEM%CONTROL_LOOP%LOOP_TYPE=PROBLEM_CONTROL_SIMPLE_TYPE
         PROBLEM%CONTROL_LOOP%CONTROL_LOOP_LEVEL=1
+        PROBLEM%CONTROL_LOOP%OUTPUT_TYPE=CONTROL_LOOP_NO_OUTPUT
         NULLIFY(PROBLEM%CONTROL_LOOP%SIMPLE_LOOP)
         NULLIFY(PROBLEM%CONTROL_LOOP%FIXED_LOOP)
         NULLIFY(PROBLEM%CONTROL_LOOP%TIME_LOOP)
@@ -320,7 +358,7 @@ CONTAINS
         CALL CONTROL_LOOP_SIMPLE_INITIALISE(PROBLEM%CONTROL_LOOP,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*998)
     ENDIF
               
     CALL EXITS("CONTROL_LOOP_INITIALISE")
@@ -339,7 +377,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_FIXED_FINALISE(FIXED_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: FIXED_LOOP !<A pointer to the fixed control loop to finalise
+    TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER, INTENT(INOUT) :: FIXED_LOOP !<A pointer to the fixed control loop to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -365,9 +403,9 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_GET_0(CONTROL_LOOP_ROOT,CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
     INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER !<The control loop identifier
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, the specified control loop
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, the specified control loop
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -391,9 +429,9 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_GET_1(CONTROL_LOOP_ROOT,CONTROL_LOOP_IDENTIFIER,CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
     INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER(:) !<The control loop identifier
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, the specified control loop. Must not be associated on entry.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, the specified control loop. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -471,7 +509,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_FIXED_INITIALISE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to initialise the fixed loop for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to the control loop to initialise the fixed loop for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -512,7 +550,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_ITERATIONS_SET(CONTROL_LOOP,START_ITERATION,STOP_ITERATION,ITERATION_INCREMENT,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to fixed control loop to set the iterations for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to fixed control loop to set the iterations for
     INTEGER(INTG), INTENT(IN) :: START_ITERATION !<The start iteration for the fixed control loop.
     INTEGER(INTG), INTENT(IN) :: STOP_ITERATION !<The stop iteration for the fixed control loop.
     INTEGER(INTG), INTENT(IN) :: ITERATION_INCREMENT !<The iteration increment for the fixed control loop.
@@ -583,7 +621,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(CONTROL_LOOP,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to while control loop to set the maximum iterations for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to while control loop to set the maximum iterations for
     INTEGER(INTG), INTENT(IN) :: MAXIMUM_ITERATIONS !<The maximum number of iterations for a while control loop.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -647,7 +685,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET(CONTROL_LOOP,NUMBER_OF_SUB_LOOPS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the number of sub loops for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the number of sub loops for
     INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_SUB_LOOPS !<On return, the number of sub loops for the specified control loop
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -680,7 +718,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(CONTROL_LOOP,NUMBER_OF_SUB_LOOPS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to set the number of sub loops for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to control loop to set the number of sub loops for
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_SUB_LOOPS !<The number of sub loops to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -761,11 +799,90 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Gets the output type for a control loop. \see OPENCMISS::CMISSControlLoopOutputTypeGet
+  SUBROUTINE CONTROL_LOOP_OUTPUT_TYPE_GET(CONTROL_LOOP,OUTPUT_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to the control loop to get the output type for.
+    INTEGER(INTG), INTENT(OUT) :: OUTPUT_TYPE !<On exit, the output type of the control loop \see CONTROL_LOOP_ROUTINES_OutputTypes,CONTROL_LOOP_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("CONTROL_LOOP_OUTPUT_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        OUTPUT_TYPE=CONTROL_LOOP%OUTPUT_TYPE
+      ELSE
+        CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_GET")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_OUTPUT_TYPE_GET",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_GET")
+    RETURN 1
+  END SUBROUTINE CONTROL_LOOP_OUTPUT_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for a control loop. \see OPENCMISS::CMISSControlLoopOutputTypeSet
+  SUBROUTINE CONTROL_LOOP_OUTPUT_TYPE_SET(CONTROL_LOOP,OUTPUT_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer the control loop to set the output type for
+    INTEGER(INTG), INTENT(IN) :: OUTPUT_TYPE !<The type of control loop output to be set \see CONTROL_LOOP_ROUTINES_OutputTypes,CONTROL_LOOP_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CONTROL_LOOP_OUTPUT_TYPE_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        CALL FLAG_ERROR("Control loop has already been finished.",ERR,ERROR,*999)
+      ELSE        
+        SELECT CASE(OUTPUT_TYPE)
+        CASE(CONTROL_LOOP_NO_OUTPUT)
+          CONTROL_LOOP%OUTPUT_TYPE=CONTROL_LOOP_NO_OUTPUT
+        CASE(SOLVER_PROGRESS_OUTPUT)
+          CONTROL_LOOP%OUTPUT_TYPE=CONTROL_LOOP_PROGRESS_OUTPUT
+        CASE(SOLVER_TIMING_OUTPUT)
+          CONTROL_LOOP%OUTPUT_TYPE=CONTROL_LOOP_TIMING_OUTPUT
+        CASE DEFAULT
+          LOCAL_ERROR="The specified control loop output type of "// &
+            & TRIM(NUMBER_TO_VSTRING(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_SET")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_OUTPUT_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE CONTROL_LOOP_OUTPUT_TYPE_SET
+        
+  !
+  !================================================================================================================================
+  !
+
   !>Finalises a simple control loop and deallocates all memory.
   SUBROUTINE CONTROL_LOOP_SIMPLE_FINALISE(SIMPLE_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_SIMPLE_TYPE), POINTER :: SIMPLE_LOOP !<A pointer to the simple control loop to finalise
+    TYPE(CONTROL_LOOP_SIMPLE_TYPE), POINTER, INTENT(INOUT) :: SIMPLE_LOOP !<A pointer to the simple control loop to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -791,7 +908,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_SIMPLE_INITIALISE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to initialise the simple loop for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to the control loop to initialise the simple loop for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -828,7 +945,7 @@ CONTAINS
   RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVERS_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solvers for.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to destroy the solvers for.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -866,8 +983,8 @@ CONTAINS
   RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the solvers for.
-    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<On exit, a pointer to the control loop solvers. Must not be associated on entry.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the solvers for.
+    TYPE(SOLVERS_TYPE), POINTER, INTENT(OUT) :: SOLVERS !<On exit, a pointer to the control loop solvers. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -901,7 +1018,7 @@ CONTAINS
   RECURSIVE SUBROUTINE CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to destroy the solver for.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to destroy the solver for.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -951,9 +1068,9 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,SUB_LOOP_INDEX,SUB_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the sub loop for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the sub loop for
     INTEGER(INTG), INTENT(IN) :: SUB_LOOP_INDEX !<The sub loop index to get
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: SUB_LOOP !<On return, a pointer to the specified sub loop. Must not be associated on entry.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: SUB_LOOP !<On return, a pointer to the specified sub loop. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -994,7 +1111,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_TIME_FINALISE(TIME_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP !<A pointer to the time control loop to finalise
+    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER, INTENT(INOUT) :: TIME_LOOP !<A pointer to the time control loop to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1020,7 +1137,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_TIME_INITIALISE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to initialise the time loop for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to the control loop to initialise the time loop for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1064,7 +1181,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,CURRENT_TIME,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to get the times for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the times for
     REAL(DP), INTENT(OUT) :: START_TIME !<On exit, the start time for the time control loop.
     REAL(DP), INTENT(OUT) :: STOP_TIME !<On exit, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
@@ -1113,7 +1230,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_TIMES_SET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to set the times for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to set the times for
     REAL(DP), INTENT(IN) :: START_TIME !<The start time for the time control loop.
     REAL(DP), INTENT(IN) :: STOP_TIME !<The stop time for the time control loop.
     REAL(DP), INTENT(IN) :: TIME_INCREMENT !<The time increment for the time control loop.
@@ -1182,7 +1299,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_TIME_OUTPUT_SET(CONTROL_LOOP,OUTPUT_FREQUENCY,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to set the times for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to set the times for
     INTEGER(INTG) :: OUTPUT_FREQUENCY !<The output frequency modulo to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1198,7 +1315,7 @@ CONTAINS
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
-              TIME_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
+            TIME_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
           ELSE
             CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1225,7 +1342,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_TIME_INPUT_SET(CONTROL_LOOP,INPUT_OPTION,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to set the times for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to set the times for
     INTEGER(INTG) :: INPUT_OPTION !<The input option modulo to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1241,7 +1358,7 @@ CONTAINS
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
-              TIME_LOOP%INPUT_NUMBER=INPUT_OPTION
+            TIME_LOOP%INPUT_NUMBER=INPUT_OPTION
           ELSE
             CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1268,7 +1385,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_TYPE_SET(CONTROL_LOOP,LOOP_TYPE,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to control loop to set the type of
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to control loop to set the type of
     INTEGER(INTG), INTENT(IN) :: LOOP_TYPE !<The type of loop type to set \see PROBLEM_CONSTANTS_ControlLoopTypes,PROBLEM_CONSTANTS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1336,7 +1453,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_WHILE_FINALISE(WHILE_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: WHILE_LOOP !<A pointer to the while control loop to finalise
+    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER, INTENT(INOUT) :: WHILE_LOOP !<A pointer to the while control loop to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1362,7 +1479,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_WHILE_INITIALISE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to initialise the while loop for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to the control loop to initialise the while loop for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1402,7 +1519,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_FINALISE(LOAD_INCREMENT_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP !<A pointer to the load increment control loop to finalise
+    TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER, INTENT(INOUT) :: LOAD_INCREMENT_LOOP !<A pointer to the load increment control loop to finalise
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1428,7 +1545,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_INITIALISE(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to initialise the load increment loop for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(INOUT) :: CONTROL_LOOP !<A pointer to the control loop to initialise the load increment loop for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

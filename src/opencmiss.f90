@@ -886,9 +886,23 @@ MODULE OPENCMISS
   
   !Interfaces
 
+  !>Gets the random seeds for OpenCMISS.
+  INTERFACE CMISSRandomSeedsGet
+    MODULE PROCEDURE CMISSRandomSeedsGet0
+    MODULE PROCEDURE CMISSRandomSeedsGet1
+  END INTERFACE !CMISSRandomSeedsGet
+  
+  !>Sets the random seeds for OpenCMISS.
+  INTERFACE CMISSRandomSeedsSet
+    MODULE PROCEDURE CMISSRandomSeedsSet0
+    MODULE PROCEDURE CMISSRandomSeedsSet1
+  END INTERFACE !CMISSRandomSeedsSet
+
   PUBLIC CMISSReturnErrorCode,CMISSOutputError,CMISSTrapError
 
   PUBLIC CMISSErrorHandlingModeGet,CMISSErrorHandlingModeSet
+
+  PUBLIC CMISSRandomSeedsGet,CMISSRandomSeedsSizeGet,CMISSRandomSeedsSet
   
 !!==================================================================================================================================
 !!
@@ -1166,6 +1180,14 @@ MODULE OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSControlLoopNode = CONTROL_LOOP_NODE !<The identifier for a each "leaf" node in a control loop. \see OPENCMISS_ControlLoopIdentifiers,OPENCMISS
   !>@}
+  !> \addtogroup OPENCMISS_ControlLoopOutputTypes OPENCMISS::ControlLoop::OutputTypes
+  !> \brief The control loop output types.
+  !> \see OPENCMISS::ControlLoop,OPENCMISS
+  !>@{
+  INTEGER(INTG), PARAMETER :: CMISSControlLoopNoOutput = CONTROL_LOOP_NO_OUTPUT !<No output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSControlLoopProgressOutput = CONTROL_LOOP_PROGRESS_OUTPUT !<Progress output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSControlLoopTimingOutput = CONTROL_LOOP_TIMING_OUTPUT !<Timing output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
+  !>@}
   !>@}
   
   !Module types
@@ -1233,6 +1255,20 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoopTimeOutputSetObj
   END INTERFACE !CMISSControlLoopTimeOutputSet
 
+  !>Returns the output type for a control loop.
+  INTERFACE CMISSControlLoopOutputTypeGet
+    MODULE PROCEDURE CMISSControlLoopOutputTypeGetNumber0
+    MODULE PROCEDURE CMISSControlLoopOutputTypeGetNumber1
+    MODULE PROCEDURE CMISSControlLoopOutputTypeGetObj
+  END INTERFACE !CMISSControlLoopOutputTypeGet
+
+  !>Sets/changes the output type for a control loop.
+  INTERFACE CMISSControlLoopOutputTypeSet
+    MODULE PROCEDURE CMISSControlLoopOutputTypeSetNumber0
+    MODULE PROCEDURE CMISSControlLoopOutputTypeSetNumber1
+    MODULE PROCEDURE CMISSControlLoopOutputTypeSetObj
+  END INTERFACE !CMISSControlLoopOutputTypeSet
+
   !>Sets/changes the input parameters for a time control loop.
   INTERFACE CMISSControlLoopTimeInputSet
     MODULE PROCEDURE CMISSControlLoopTimeInputSetNumber0
@@ -1262,6 +1298,8 @@ MODULE OPENCMISS
   END INTERFACE !CMISSControlLoopTypeSet
 
   PUBLIC CMISSControlLoopNode
+
+  PUBLIC CMISSControlLoopNoOutput,CMISSControlLoopProgressOutput,CMISSControlLoopTimingOutput
   
   PUBLIC CMISSControlLoopCurrentTimesGet
    
@@ -1274,6 +1312,8 @@ MODULE OPENCMISS
   PUBLIC CMISSControlLoopMaximumIterationsSet
 
   PUBLIC CMISSControlLoopNumberOfSubLoopsGet,CMISSControlLoopNumberOfSubLoopsSet
+
+  PUBLIC CMISSControlLoopOutputTypeGet,CMISSControlLoopOutputTypeSet
 
   PUBLIC CMISSControlLoopTimeOutputSet,CMISSControlLoopTimeInputSet
   
@@ -4178,6 +4218,10 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     & PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE !<Standard multi-compartment transport problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainGudunovSplitSubtype = PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplitSubtype = PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemBidomainGudunovSplitSubtype = PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Bidomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemBidomainStrangSplitSubtype = PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE !<Bidomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainBuenoOrovioSubtype = PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainTenTusscher06Subtype = PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
@@ -4265,6 +4309,9 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSProblemStandardGalerkinProjectionSubtype,CMISSProblemGeneralisedGalerkinProjectionSubtype, &
     & CMISSProblemMatPropertiesGalerkinProjectionSubtype
   
+  PUBLIC CMISSProblemMonodomainGudunovSplitSubtype,CMISSProblemMonodomainStrangSplitSubtype, &
+    & CMISSProblemBidomainGudunovSplitSubtype,CMISSProblemBidomainStrangSplitSubtype
+
   PUBLIC CMISSProblemMonodomainBuenoOrovioSubtype, CMISSProblemMonodomainTenTusscher06Subtype
 
   PUBLIC CMISSProblemControlSimpleType,CMISSProblemControlFixedLoopType,CMISSProblemControlTimeLoopType, &
@@ -10325,6 +10372,132 @@ CONTAINS
     
   END SUBROUTINE CMISSErrorHandlingModeSet
 
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the random seeds for OpenCMISS
+  SUBROUTINE CMISSRandomSeedsGet0(RandomSeed,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: RandomSeed !<On return, the random seed.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    INTEGER(INTG) :: RandomSeeds(1)
+    
+    CALL ENTERS("CMISSRandomSeedsGet0",Err,ERROR,*999)
+
+    CALL RANDOM_SEEDS_GET(RandomSeeds,Err,ERROR,*999)
+    RandomSeed=RandomSeeds(1)
+    
+    CALL EXITS("CMISSRandomSeedsGet0")
+    RETURN
+999 CALL ERRORS("CMISSRandomSeedsGet0",Err,ERROR)
+    CALL EXITS("CMISSRandomSeedsGet0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSRandomSeedsGet0
+  
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the random seeds for OpenCMISS
+  SUBROUTINE CMISSRandomSeedsGet1(RandomSeeds,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: RandomSeeds(:) !<On return, the random seeds.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSRandomSeedsGet1",Err,ERROR,*999)
+
+    CALL RANDOM_SEEDS_GET(RandomSeeds,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSRandomSeedsGet1")
+    RETURN
+999 CALL ERRORS("CMISSRandomSeedsGet1",Err,ERROR)
+    CALL EXITS("CMISSRandomSeedsGet1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSRandomSeedsGet1
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the size of the random seeds array for OpenCMISS
+  SUBROUTINE CMISSRandomSeedsSizeGet(RandomSeedsSize,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: RandomSeedsSize !<On return, the size of the random seeds array.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSRandomSeedsSizeGet",Err,ERROR,*999)
+
+    CALL RANDOM_SEEDS_SIZE_GET(RandomSeedsSize,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSRandomSeedsSizeGet")
+    RETURN
+999 CALL ERRORS("CMISSRandomSeedsSizeGet",Err,ERROR)
+    CALL EXITS("CMISSRandomSeedsSizeGet")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSRandomSeedsSizeGet
+
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets the random seeds for OpenCMISS
+  SUBROUTINE CMISSRandomSeedsSet0(RandomSeed,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RandomSeed !<The random seed to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSRandomSeedsSet0",Err,ERROR,*999)
+
+    CALL RANDOM_SEEDS_SET([RandomSeed],Err,ERROR,*999)
+    
+    CALL EXITS("CMISSRandomSeedsSet0")
+    RETURN
+999 CALL ERRORS("CMISSRandomSeedsSet0",Err,ERROR)
+    CALL EXITS("CMISSRandomSeedsSet0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSRandomSeedsSet0
+  
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets the random seeds for OpenCMISS
+  SUBROUTINE CMISSRandomSeedsSet1(RandomSeeds,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RandomSeeds(:) !<The random seeds to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSRandomSeedsSet1",Err,ERROR,*999)
+
+    CALL RANDOM_SEEDS_SET(RandomSeeds,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSRandomSeedsSet1")
+    RETURN
+999 CALL ERRORS("CMISSRandomSeedsSet1",Err,ERROR)
+    CALL EXITS("CMISSRandomSeedsSet1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSRandomSeedsSet1
 
 !!==================================================================================================================================
 !!
@@ -13143,6 +13316,214 @@ CONTAINS
     
   END SUBROUTINE CMISSControlLoopNumberOfSubLoopsSetObj
 
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Returns the output type for a control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopOutputTypeGetNumber0(ProblemUserNumber,ControlLoopIdentifier,OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the output type for.
+    INTEGER(INTG), INTENT(OUT) :: OutputType !<On return, the output type of the control loop \see OPENCMISS_ControlLoopOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoopOutputTypeGetNumber0",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_OUTPUT_TYPE_GET(CONTROL_LOOP,OutputType,Err,ERROR,*999)
+   ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSControlLoopOutputTypeGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopOutputTypeGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLoopOutputTypeGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopOutputTypeGetNumber0
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Returns the output type for a control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopOutputTypeGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers to get the output type for.
+    INTEGER(INTG), INTENT(OUT) :: OutputType !<On return, the output type of the control loop \see OPENCMISS_ControlLoopOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoopOutputTypeGetNumber1",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_OUTPUT_TYPE_GET(CONTROL_LOOP,OutputType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopOutputTypeGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopOutputTypeGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLoopOutputTypeGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopOutputTypeGetNumber1
+  
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Returns the output type for a control loop identified by an object.
+  SUBROUTINE CMISSControlLoopOutputTypeGetObj(ControlLoop,OutputType,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoop !<The control loop to get the output type for.
+    INTEGER(INTG), INTENT(OUT) :: OutputType !<On return, the output type of the control loop \see OPENCMISS_ControlLoopOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSControlLoopOutputTypeGetObj",Err,ERROR,*999)
+    
+    CALL CONTROL_LOOP_OUTPUT_TYPE_GET(ControlLoop%CONTROL_LOOP,OutputType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopOutputTypeGetObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopOutputTypeGetObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopOutputTypeGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopOutputTypeGetObj
+ 
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets the output type for a control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopOutputTypeSetNumber0(ProblemUserNumber,ControlLoopIdentifier,OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The output type to set \see OPENCMISS_ControlLoopOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoopOutputTypeSetNumber0",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_OUTPUT_TYPE_SET(CONTROL_LOOP,OutputType,Err,ERROR,*999)
+   ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSControlLoopOutputTypeSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopOutputTypeSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLoopOutputTypeSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopOutputTypeSetNumber0
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets the output type for a control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoopOutputTypeSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,OutputType,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The output type to set \see OPENCMISS_ControlLoopOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoopOutputTypeSetNumber1",Err,ERROR,*999)
+    
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_OUTPUT_TYPE_SET(CONTROL_LOOP,OutputType,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopOutputTypeSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopOutputTypeSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLoopOutputTypeSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopOutputTypeSetNumber1
+  
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Sets the output type for a control loop identified by an object.
+  SUBROUTINE CMISSControlLoopOutputTypeSetObj(ControlLoop,OutputType,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoop !<The control loop to set the output type for.
+    INTEGER(INTG), INTENT(IN) :: OutputType !<The output type to set \see OPENCMISS_ControlLoopOutputTypes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSControlLoopOutputTypeSetObj",Err,ERROR,*999)
+    
+    CALL CONTROL_LOOP_OUTPUT_TYPE_SET(ControlLoop%CONTROL_LOOP,OutputType,Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopOutputTypeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopOutputTypeSetObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopOutputTypeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopOutputTypeSetObj
+ 
   !
   !================================================================================================================================
   !  

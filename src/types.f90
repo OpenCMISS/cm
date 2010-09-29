@@ -1991,7 +1991,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     
   END TYPE SOLVER_EQUATIONS_TYPE
   
-  !
+ !
   !================================================================================================================================
   !
   ! Solver types
@@ -2217,6 +2217,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
 
+    !TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<A pointer to the cellml equations
+    
   END TYPE SOLVER_TYPE
 
   !>A buffer type to allow for an array of pointers to a SOLVER_TYPE \see TYPES::SOLVER_TYPE
@@ -2599,6 +2601,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: CONTROL_LOOP_FINISHED !<Is .TRUE. if the problem control has finished being created, .FALSE. if not.
     INTEGER(INTG) :: LOOP_TYPE !<The type of control loop \see PROBLEM_CONSTANTS_ControlTypes,PROBLEM_CONSTANTS
     INTEGER(INTG) :: CONTROL_LOOP_LEVEL !<The level of the control loop
+    INTEGER(INTG) :: OUTPUT_TYPE !<The output type of the control loop \see CONTROL_LOOP_ROUTINES_OutputTypes,CONTROL_LOOP_ROUTINES
     TYPE(CONTROL_LOOP_SIMPLE_TYPE), POINTER :: SIMPLE_LOOP !<A pointer to the simple loop information
     TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: FIXED_LOOP !<A pointer to the fixed loop information
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP !<A pointer to the time loop information
@@ -2705,13 +2708,14 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
   !> Contains information for a CellML environment defined for a host field.
   TYPE CELLML_TYPE
-     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
-     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
-     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this CellML environment.
-     TYPE(CELLML_ENVIRONMENTS_TYPE), POINTER :: ENVIRONMENTS !<A pointer back to the CellML environments.
-     LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
-     TYPE(CELLML_MODELS_TYPE), POINTER :: MODELS !< A pointer to the models for this environment
-     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD !<The models field for this CellML environment. Maps models in this environment to DOFs in the source_field.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the CellML environment in the list of environments for a field.
+    INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the CellML environment. The user number must be unique.
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing this CellML environment.
+    TYPE(CELLML_ENVIRONMENTS_TYPE), POINTER :: ENVIRONMENTS !<A pointer back to the CellML environments.
+    LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
+    TYPE(CELLML_MODELS_TYPE), POINTER :: MODELS !< A pointer to the models for this environment
+    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD !<The models field for this CellML environment. Maps models in this environment to DOFs in the source_field.
+    LOGICAL :: CELLML_GENERATED !<Is .TRUE. if the CellML environment has finished being generated, .FALSE. if not.
   END TYPE CELLML_TYPE
 
   !> A buffer type to allow for an array of pointers to a CELLML_TYPE.

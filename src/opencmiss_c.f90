@@ -245,6 +245,8 @@ MODULE OPENCMISS_C
 !!==================================================================================================================================
 
  PUBLIC CMISSErrorHandlingModeGetC,CMISSErrorHandlingModeSetC
+
+ PUBLIC CMISSRandomSeedsGetC,CMISSRandomSeedsSizeGetC,CMISSRandomSeedsSetC
  
 !!==================================================================================================================================
 !!
@@ -308,6 +310,10 @@ MODULE OPENCMISS_C
  PUBLIC CMISSControlLoopNumberOfSubLoopsGetCNum, CMISSControlLoopNumberOfSubLoopsGetCPtr
 
  PUBLIC CMISSControlLoopNumberOfSubLoopsSetCNum, CMISSControlLoopNumberOfSubLoopsSetCPtr
+
+ PUBLIC CMISSControlLoopOutputTypeGetCNum, CMISSControlLoopOutputTypeGetCPtr
+
+ PUBLIC CMISSControlLoopOutputTypeSetCNum, CMISSControlLoopOutputTypeSetCPtr
 
  PUBLIC CMISSControlLoopTimeOutputSetCNum, CMISSControlLoopTimeOutputSetCPtr
 
@@ -3603,10 +3609,10 @@ CONTAINS
 
     CMISSDiagnosticsSetOnC = CMISSNoError
     IF(C_ASSOCIATED(LevelListPtr)) THEN
-      CALL C_F_POINTER(LevelListPtr, LevelList,(/LevelListSize/))
+      CALL C_F_POINTER(LevelListPtr, LevelList,[LevelListSize])
       IF(ASSOCIATED(LevelList)) THEN
         IF(C_ASSOCIATED(RoutineListPtr)) THEN
-          CALL C_F_POINTER(RoutineListPtr, RoutineList,(/RoutineListSize/))
+          CALL C_F_POINTER(RoutineListPtr, RoutineList,[RoutineListSize])
           IF(ASSOCIATED(RoutineList)) THEN
             CALL CMISSC2FString(DiagFileName, FDiagFilename)
             CALL CMISSDiagnosticsSetOn(DiagType,LevelList,FDiagFilename,RoutineList,CMISSDiagnosticsSetOnC)
@@ -3709,7 +3715,7 @@ CONTAINS
     CMISSTimingSetOnC = CMISSNoError
     CALL CMISSC2FString(TimingFilename, FTimingFilename)
     IF(C_ASSOCIATED(RoutineListPtr)) THEN
-      CALL C_F_POINTER(RoutineListPtr, RoutineList,(/RoutineListSize/))
+      CALL C_F_POINTER(RoutineListPtr, RoutineList,[RoutineListSize])
       IF(ASSOCIATED(RoutineList)) THEN
         CALL CMISSTimingSetOn(TimingType,TimingSummaryFlag==CMISSTrue,FTimingFilename,RoutineList,CMISSTimingSetOnC)
       ELSE
@@ -3763,7 +3769,7 @@ CONTAINS
 
     CMISSBasisCollapsedXiGetCNum = CMISSNoError
     IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
-      CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi,(/CollapsedXiSize/))
+      CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi,[CollapsedXiSize])
       IF(ASSOCIATED(CollapsedXi)) THEN
         CALL CMISSBasisCollapsedXiGet(UserNumber, CollapsedXi, CMISSBasisCollapsedXiGetCNum)
       ELSE
@@ -3799,7 +3805,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
-          CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi,(/CollapsedXiSize/))
+          CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi,[CollapsedXiSize])
           IF(ASSOCIATED(CollapsedXi)) THEN
             CALL CMISSBasisCollapsedXiGet(Basis, CollapsedXi, CMISSBasisCollapsedXiGetCPtr)
           ELSE
@@ -3837,7 +3843,7 @@ CONTAINS
 
     CMISSBasisCollapsedXiSetCNum = CMISSNoError
     IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
-      CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi, (/CollapsedXiSize/))
+      CALL C_F_POINTER(CollapsedXiPtr,CollapsedXi, [CollapsedXiSize])
       IF(ASSOCIATED(CollapsedXi)) THEN
         CALL CMISSBasisCollapsedXiSet(UserNumber, CollapsedXi, CMISSBasisCollapsedXiSetCNum)
       ELSE
@@ -3873,7 +3879,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(CollapsedXiPtr)) THEN
-          CALL C_F_POINTER(CollapsedXiPtr, CollapsedXi,(/CollapsedXiSize/))
+          CALL C_F_POINTER(CollapsedXiPtr, CollapsedXi,[CollapsedXiSize])
           IF(ASSOCIATED(CollapsedXi)) THEN
             CALL CMISSBasisCollapsedXiSet(Basis, CollapsedXi, CMISSBasisCollapsedXiSetCPtr)
             IF(ASSOCIATED(Basis)) THEN
@@ -4080,7 +4086,7 @@ CONTAINS
 
     CMISSBasisInterpolationXiGetCNum = CMISSNoError
     IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
-      CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi,(/InterpolationXiSize/))
+      CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi,[InterpolationXiSize])
       IF(ASSOCIATED(InterpolationXi)) THEN
         CALL CMISSBasisInterpolationXiGet(UserNumber, InterpolationXi, CMISSBasisInterpolationXiGetCNum)
       ELSE
@@ -4117,7 +4123,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
-          CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi,(/InterpolationXiSize/))
+          CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi,[InterpolationXiSize])
           IF(ASSOCIATED(InterpolationXi)) THEN
             CALL CMISSBasisInterpolationXiGet(Basis, InterpolationXi, CMISSBasisInterpolationXiGetCPtr)
           ELSE
@@ -4156,7 +4162,7 @@ CONTAINS
 
     CMISSBasisInterpolationXiSetCNum = CMISSNoError
     IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
-      CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi, (/InterpolationXiSize/))
+      CALL C_F_POINTER(InterpolationXiPtr,InterpolationXi, [InterpolationXiSize])
       IF(ASSOCIATED(InterpolationXi)) THEN
         CALL CMISSBasisInterpolationXiSet(UserNumber, InterpolationXi, CMISSBasisInterpolationXiSetCNum)
       ELSE
@@ -4193,7 +4199,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(InterpolationXiPtr)) THEN
-          CALL C_F_POINTER(InterpolationXiPtr, InterpolationXi,(/InterpolationXiSize/))
+          CALL C_F_POINTER(InterpolationXiPtr, InterpolationXi,[InterpolationXiSize])
           IF(ASSOCIATED(InterpolationXi)) THEN
             CALL CMISSBasisInterpolationXiSet(Basis, InterpolationXi, CMISSBasisInterpolationXiSetCPtr)
           ELSE
@@ -4390,7 +4396,7 @@ CONTAINS
 
     CMISSBasisQuadratureNumberOfGaussXiGetCNum = CMISSNoError
     IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
-      CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi,(/NumberOfGaussXiSize/))
+      CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi,[NumberOfGaussXiSize])
       IF(ASSOCIATED(NumberOfGaussXi)) THEN
         CALL CMISSBasisQuadratureNumberOfGaussXiGet(UserNumber, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiGetCNum)
       ELSE
@@ -4427,7 +4433,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
-          CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi,(/NumberOfGaussXiSize/))
+          CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi,[NumberOfGaussXiSize])
           IF(ASSOCIATED(NumberOfGaussXi)) THEN
             CALL CMISSBasisQuadratureNumberOfGaussXiGet(Basis, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiGetCPtr)
           ELSE
@@ -4467,7 +4473,7 @@ CONTAINS
 
     CMISSBasisQuadratureNumberOfGaussXiSetCNum = CMISSNoError
     IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
-      CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi, (/NumberOfGaussXiSize/))
+      CALL C_F_POINTER(NumberOfGaussXiPtr,NumberOfGaussXi, [NumberOfGaussXiSize])
       IF(ASSOCIATED(NumberOfGaussXi)) THEN
         CALL CMISSBasisQuadratureNumberOfGaussXiSet(UserNumber, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiSetCNum)
       ELSE
@@ -4504,7 +4510,7 @@ CONTAINS
       CALL C_F_POINTER(BasisPtr, Basis)
       IF(ASSOCIATED(Basis)) THEN
         IF(C_ASSOCIATED(NumberOfGaussXiPtr)) THEN
-          CALL C_F_POINTER(NumberOfGaussXiPtr, NumberOfGaussXi, (/NumberOfGaussXiSize/))
+          CALL C_F_POINTER(NumberOfGaussXiPtr, NumberOfGaussXi, [NumberOfGaussXiSize])
           IF(ASSOCIATED(NumberOfGaussXi)) THEN
             CALL CMISSBasisQuadratureNumberOfGaussXiSet(Basis, NumberOfGaussXi, CMISSBasisQuadratureNumberOfGaussXiSetCPtr)
           ELSE
@@ -5389,6 +5395,65 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSErrorHandlingModeSetC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the random seeds for C.
+  FUNCTION CMISSRandomSeedsGetC(RandomSeedsSize,RandomSeeds)  BIND(C, NAME = "CMISSRandomSeedsGet")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RandomSeedsSize !<The size of the supplied RandomSeeds array.
+    INTEGER(C_INT), INTENT(OUT) :: RandomSeeds(RandomSeedsSize) !<On return, the random seeds for OpenCMISS
+    !Function variable
+    INTEGER(C_INT) :: CMISSRandomSeedsGetC !<Error Code.
+    !Local variables
+
+    CALL CMISSRandomSeedsGet(RandomSeeds,CMISSRandomSeedsGetC)
+
+    RETURN
+
+  END FUNCTION CMISSRandomSeedsGetC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the size of the random seeds array for C.
+  FUNCTION CMISSRandomSeedsSizeGetC(RandomSeedsSize)  BIND(C, NAME = "CMISSRandomSeedsSizeGet")
+
+    !Argument variables
+    INTEGER(C_INT), INTENT(OUT) :: RandomSeedsSize !<On return, the size of the random seeds array.
+    !Function variable
+    INTEGER(C_INT) :: CMISSRandomSeedsSizeGetC !<Error Code.
+    !Local variables
+
+    CALL CMISSRandomSeedsSizeGet(RandomSeedsSize,CMISSRandomSeedsSizeGetC)
+
+    RETURN
+
+  END FUNCTION CMISSRandomSeedsSizeGetC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the random seeds for C.
+  FUNCTION CMISSRandomSeedsSetC(RandomSeedsSize,RandomSeeds)  BIND(C, NAME = "CMISSRandomSeedsSet")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RandomSeedsSize !<The size of the supplied random seeds array
+    INTEGER(C_INT), INTENT(IN) :: RandomSeeds(RandomSeedsSize) !<The random seeds to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSRandomSeedsSetC !<Error Code.
+    !Local variables
+
+    CALL CMISSRandomSeedsSet(RandomSeeds,CMISSRandomSeedsSetC)
+
+    RETURN
+
+  END FUNCTION CMISSRandomSeedsSetC
   
 !!==================================================================================================================================
 !!
@@ -6682,7 +6747,7 @@ CONTAINS
 
     CMISSControlLoopCurrentTimesGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopCurrentTimesGet(ProblemUserNumber,ControlLoopIdentifiers,CurrentTime,TimeIncrement, &
           & CMISSControlLoopCurrentTimesGetCNum)
@@ -6822,10 +6887,10 @@ CONTAINS
 
     CMISSControlLoopGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopRootIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopRootIdentifiersPtr, ControlLoopRootIdentifiers,(/ControlLoopRootIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopRootIdentifiersPtr, ControlLoopRootIdentifiers,[ControlLoopRootIdentifiersSize])
       IF(ASSOCIATED(ControlLoopRootIdentifiers)) THEN
         IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
           IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
             CALL CMISSControlLoopGet(ProblemUserNumber,ControlLoopRootIdentifiers,ControlLoopIdentifiers,ControlLoop, &
               & CMISSControlLoopGetCNum)
@@ -6876,7 +6941,7 @@ CONTAINS
       CALL C_F_POINTER(ControlLoopRootPtr, ControlLoopRoot)
       IF(ASSOCIATED(ControlLoopRoot)) THEN
         IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+          CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
           IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
             CALL CMISSControlLoopGet(ControlLoopRoot,ControlLoopIdentifiers,ControlLoop, CMISSControlLoopGetCPtr)
             IF(ASSOCIATED(ControlLoop)) THEN
@@ -6923,7 +6988,7 @@ CONTAINS
 
     CMISSControlLoopIterationsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, (/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, [ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,StartIteration,&
           &StopIteration,IterationIncrement, CMISSControlLoopIterationsSetCNum)
@@ -6998,7 +7063,7 @@ CONTAINS
 
     CMISSControlLoopMaximumIterationsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopMaximumIterationsSet(ProblemUserNumber,ControlLoopIdentifiers,MaximumIterations,&
           & CMISSControlLoopMaximumIterationsSetCNum)
@@ -7070,7 +7135,7 @@ CONTAINS
 
     CMISSControlLoopNumberOfSubLoopsGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopNumberOfSubLoopsGet(ProblemUserNumber,ControlLoopIdentifiers,NumberOfSubLoops,&
           & CMISSControlLoopNumberOfSubLoopsGetCNum)
@@ -7137,7 +7202,7 @@ CONTAINS
 
     CMISSControlLoopNumberOfSubLoopsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopNumberOfSubLoopsSet(ProblemUserNumber,ControlLoopIdentifiers,NumberOfSubLoops,&
           & CMISSControlLoopNumberOfSubLoopsSetCNum)
@@ -7193,6 +7258,138 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the output type for a control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopOutputTypeGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & OutputType) BIND(C, NAME = "CMISSControlLoopOutputTypeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the output type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), INTENT(OUT) :: OutputType !<On return the output type of the control loop, for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSControlLoopOutputTypeGetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopOutputTypeGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopOutputTypeGet(ProblemUserNumber,ControlLoopIdentifiers,OutputType, &
+          & CMISSControlLoopOutputTypeGetCNum)
+      ELSE
+        CMISSControlLoopOutputTypeGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopOutputTypeGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopOutputTypeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the output type for a control loop identified by an object for C.
+  FUNCTION CMISSControlLoopOutputTypeGetCPtr(ControlLoopPtr,OutputType) BIND(C, NAME = "CMISSControlLoopOutputTypeGet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: ControlLoopPtr !<C pointer to the control loop to get the output type for.
+    INTEGER(C_INT), INTENT(OUT) ::  OutputType !<On return, the output type of the control loop, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopOutputTypeGetCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopOutputTypeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopOutputTypeGet(ControlLoop,OutputType,CMISSControlLoopOutputTypeGetCPtr)
+      ELSE
+        CMISSControlLoopOutputTypeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopOutputTypeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopOutputTypeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for a control loop identified by user numbers for C.
+  FUNCTION CMISSControlLoopOutputTypeSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & OutputType) BIND(C, NAME = "CMISSControlLoopOutputTypeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the output type for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ControlLoopIdentifiersSize !<Size of the supplied control loop identifiers, for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: OutputType !<The output type to set, for C.
+    !Function variables
+    INTEGER(C_INT) :: CMISSControlLoopOutputTypeSetCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSControlLoopOutputTypeSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSControlLoopOutputTypeSet(ProblemUserNumber,ControlLoopIdentifiers,OutputType, &
+          & CMISSControlLoopOutputTypeSetCNum)
+      ELSE
+        CMISSControlLoopOutputTypeSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopOutputTypeSetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopOutputTypeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the output type for a control loop identified by an object for C.
+  FUNCTION CMISSControlLoopOutputTypeSetCPtr(ControlLoopPtr,OutputType) BIND(C, NAME = "CMISSControlLoopOutputTypeSet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: ControlLoopPtr !<C pointer to the control loop to set the output type for.
+    INTEGER(C_INT), VALUE, INTENT(IN) ::  OutputType !<The output type to set, for C.
+    !Function variable
+    INTEGER(C_INT) :: CMISSControlLoopOutputTypeSetCPtr !<Error Code.
+    !Local variable
+    TYPE(CMISSControlLoopType), POINTER :: ControlLoop
+
+    CMISSControlLoopOutputTypeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopPtr)) THEN
+      CALL C_F_POINTER(ControlLoopPtr, ControlLoop)
+      IF(ASSOCIATED(ControlLoop)) THEN
+        CALL CMISSControlLoopOutputTypeSet(ControlLoop,OutputType,CMISSControlLoopOutputTypeSetCPtr)
+      ELSE
+        CMISSControlLoopOutputTypeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSControlLoopOutputTypeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSControlLoopOutputTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets/changes the output parameters for a time control loop identified by user numbers for C.
   FUNCTION CMISSControlLoopTimeOutputSetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
     & OutputFrequency) BIND(C, NAME = "CMISSControlLoopTimeOutputSetNum")
@@ -7209,7 +7406,7 @@ CONTAINS
 
     CMISSControlLoopTimeOutputSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimeOutputSet(ProblemUserNumber,ControlLoopIdentifiers,OutputFrequency,&
           & CMISSControlLoopTimeOutputSetCNum)
@@ -7280,7 +7477,7 @@ CONTAINS
 
     CMISSControlLoopTimeInputSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimeInputSet(ProblemUserNumber,ControlLoopIdentifiers,InputOption,CMISSControlLoopTimeInputSetCNum)
       ELSE
@@ -7349,7 +7546,7 @@ CONTAINS
 
     CMISSControlLoopTimesGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimesGet(ProblemUserNumber,ControlLoopIdentifiers,StartTime,StopTime,TimeIncrement,CurrentTime, &
           & CMISSControlLoopTimesGetCNum)
@@ -7421,7 +7618,7 @@ CONTAINS
 
     CMISSControlLoopTimesSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTimesSet(ProblemUserNumber,ControlLoopIdentifiers,StartTime,StopTime,TimeIncrement, &
           & CMISSControlLoopTimesSetCNum)
@@ -7494,7 +7691,7 @@ CONTAINS
 
     CMISSControlLoopTypeSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,(/ControlLoopIdentifiersSize/))
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers,[ControlLoopIdentifiersSize])
       IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
         CALL CMISSControlLoopTypeSet(ProblemUserNumber,ControlLoopIdentifiers,LoopType,CMISSControlLoopTypeSetCNum)
       ELSE
@@ -8171,7 +8368,7 @@ CONTAINS
 
     CMISSCoordinateSystemOriginGetCNum = CMISSNoError
     IF(C_ASSOCIATED(OriginPtr)) THEN
-      CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+      CALL C_F_POINTER(OriginPtr,Origin,[OriginSize])
       IF(ASSOCIATED(Origin)) THEN
         CALL CMISSCoordinateSystemOriginGet(CoordinateSystemUserNumber, Origin, CMISSCoordinateSystemOriginGetCNum)
       ELSE
@@ -8208,7 +8405,7 @@ CONTAINS
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
         IF(C_ASSOCIATED(OriginPtr)) THEN
-          CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+          CALL C_F_POINTER(OriginPtr,Origin,[OriginSize])
           IF(ASSOCIATED(Origin)) THEN
             CALL CMISSCoordinateSystemOriginGet(CoordinateSystem, Origin, CMISSCoordinateSystemOriginGetCPtr)
           ELSE
@@ -8247,7 +8444,7 @@ CONTAINS
 
     CMISSCoordinateSystemOriginSetCNum = CMISSNoError
     IF(C_ASSOCIATED(OriginPtr)) THEN
-      CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+      CALL C_F_POINTER(OriginPtr,Origin,[OriginSize])
       IF(ASSOCIATED(Origin)) THEN
         CALL CMISSCoordinateSystemOriginSet(CoordinateSystemUserNumber, Origin, CMISSCoordinateSystemOriginSetCNum)
       ELSE
@@ -8284,7 +8481,7 @@ CONTAINS
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
         IF(C_ASSOCIATED(OriginPtr)) THEN
-          CALL C_F_POINTER(OriginPtr, Origin, (/OriginSize/))
+          CALL C_F_POINTER(OriginPtr, Origin, [OriginSize])
           IF(ASSOCIATED(Origin)) THEN
             CALL CMISSCoordinateSystemOriginSet(CoordinateSystem, Origin, CMISSCoordinateSystemOriginSetCPtr)
           ELSE
@@ -8324,7 +8521,7 @@ CONTAINS
 
     CMISSCoordinateSystemOrientationGetCNum = CMISSNoError
     IF(C_ASSOCIATED(OrientationPtr)) THEN
-      CALL C_F_POINTER(OrientationPtr,Orientation,(/OrientationSize1,OrientationSize2/))
+      CALL C_F_POINTER(OrientationPtr,Orientation,[OrientationSize1,OrientationSize2])
       IF(ASSOCIATED(Orientation)) THEN
         CALL CMISSCoordinateSystemOrientationGet(CoordinateSystemUserNumber, Orientation, CMISSCoordinateSystemOrientationGetCNum)
       ELSE
@@ -8362,7 +8559,7 @@ CONTAINS
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
         IF(C_ASSOCIATED(OrientationPtr)) THEN
-          CALL C_F_POINTER(OrientationPtr,Orientation,(/OrientationSize1,OrientationSize2/))
+          CALL C_F_POINTER(OrientationPtr,Orientation,[OrientationSize1,OrientationSize2])
           IF(ASSOCIATED(Orientation)) THEN
             CALL CMISSCoordinateSystemOrientationGet(CoordinateSystem, Orientation, CMISSCoordinateSystemOrientationGetCPtr)
           ELSE
@@ -8402,7 +8599,7 @@ CONTAINS
 
     CMISSCoordinateSystemOrientationSetCNum = CMISSNoError
     IF(C_ASSOCIATED(OrientationPtr)) THEN
-      CALL C_F_POINTER(OrientationPtr, Orientation, (/OrientationSize1,OrientationSize2/))
+      CALL C_F_POINTER(OrientationPtr, Orientation, [OrientationSize1,OrientationSize2])
       IF(ASSOCIATED(Orientation)) THEN
         CALL CMISSCoordinateSystemOrientationSet(CoordinateSystemUserNumber, Orientation, CMISSCoordinateSystemOrientationSetCNum)
       ELSE
@@ -8440,7 +8637,7 @@ CONTAINS
       CALL C_F_POINTER(CoordinateSystemPtr, CoordinateSystem)
       IF(ASSOCIATED(CoordinateSystem)) THEN
         IF(C_ASSOCIATED(OrientationPtr)) THEN
-          CALL C_F_POINTER(OrientationPtr,Orientation,(/OrientationSize1,OrientationSize2/))
+          CALL C_F_POINTER(OrientationPtr,Orientation,[OrientationSize1,OrientationSize2])
           IF(ASSOCIATED(Orientation)) THEN
             CALL CMISSCoordinateSystemOrientationSet(CoordinateSystem, Orientation, CMISSCoordinateSystemOrientationSetCPtr)
           ELSE
@@ -9482,7 +9679,7 @@ CONTAINS
     TYPE(C_PTR), VALUE, INTENT(IN) :: RegionPtr !<C pointer to the region to create the equations set on.
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeomFibreFieldPtr !<C pointer to the Geometric/Fibre field for the creation of the equations set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field to be create for the equations set for C.
-    TYPE(C_PTR), INTENT(OUT) :: EquationsSetFieldFieldPtr !<C pointer to the equations set field for the equations set.
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetFieldFieldPtr !<C pointer to the equations set field for the equations set.
     TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the created equations set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetClass !<The equations set class to set for C. \see OPENCMISS_EquationsSetClasses
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetType !<The equations set type to set for C. \see OPENCMISS_EquationsSetTypes
@@ -16817,7 +17014,7 @@ CONTAINS
 
     CMISSGeneratedMeshExtentGetCNum = CMISSNoError
     IF(C_ASSOCIATED(ExtentPtr)) THEN
-      CALL C_F_POINTER(ExtentPtr,Extent,(/ExtentSize/))
+      CALL C_F_POINTER(ExtentPtr,Extent,[ExtentSize])
       IF(ASSOCIATED(Extent)) THEN
         CALL CMISSGeneratedMeshExtentGet(RegionUserNumber,GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentGetCNum)
       ELSE
@@ -16853,7 +17050,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(ExtentPtr)) THEN
-          CALL C_F_POINTER(ExtentPtr,Extent,(/ExtentSize/))
+          CALL C_F_POINTER(ExtentPtr,Extent,[ExtentSize])
           IF(ASSOCIATED(Extent)) THEN
             CALL CMISSGeneratedMeshExtentGet(GeneratedMesh, Extent, CMISSGeneratedMeshExtentGetCPtr)
           ELSE
@@ -16893,7 +17090,7 @@ CONTAINS
 
     CMISSGeneratedMeshExtentSetCNum = CMISSNoError
     IF(C_ASSOCIATED(ExtentPtr)) THEN
-      CALL C_F_POINTER(ExtentPtr, Extent, (/ExtentSize/))
+      CALL C_F_POINTER(ExtentPtr, Extent, [ExtentSize])
       IF(ASSOCIATED(Extent)) THEN
         CALL CMISSGeneratedMeshExtentSet(RegionUserNumber,GeneratedMeshUserNumber, Extent, CMISSGeneratedMeshExtentSetCNum)
       ELSE
@@ -16930,7 +17127,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(ExtentPtr)) THEN
-          CALL C_F_POINTER(ExtentPtr,Extent,(/ExtentSize/))
+          CALL C_F_POINTER(ExtentPtr,Extent,[ExtentSize])
           IF(ASSOCIATED(Extent)) THEN
             CALL CMISSGeneratedMeshExtentSet(GeneratedMesh, Extent, CMISSGeneratedMeshExtentSetCPtr)
           ELSE
@@ -16970,7 +17167,7 @@ CONTAINS
 
     CMISSGeneratedMeshNumberOfElementsGetCNum = CMISSNoError
     IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
-      CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,(/NumberOfElementsSize/))
+      CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,[NumberOfElementsSize])
       IF(ASSOCIATED(NumberOfElements)) THEN
         CALL CMISSGeneratedMeshNumberOfElementsGet(RegionUserNumber,GeneratedMeshUserNumber, NumberOfElements, &
           & CMISSGeneratedMeshNumberOfElementsGetCNum)
@@ -17009,7 +17206,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
-          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,(/NumberOfElementsSize/))
+          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,[NumberOfElementsSize])
           IF(ASSOCIATED(NumberOfElements)) THEN
             CALL CMISSGeneratedMeshNumberOfElementsGet(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsGetCPtr)
           ELSE
@@ -17049,7 +17246,7 @@ CONTAINS
 
     CMISSGeneratedMeshNumberOfElementsSetCNum = CMISSNoError
     IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
-      CALL C_F_POINTER(NumberOfElementsPtr, NumberOfElements,(/NumberOfElementsSize/))
+      CALL C_F_POINTER(NumberOfElementsPtr, NumberOfElements,[NumberOfElementsSize])
       IF(ASSOCIATED(NumberOfElements)) THEN
         CALL CMISSGeneratedMeshNumberOfElementsSet(RegionUserNumber,GeneratedMeshUserNumber, NumberOfElements, &
           & CMISSGeneratedMeshNumberOfElementsSetCNum)
@@ -17088,7 +17285,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(NumberOfElementsPtr)) THEN
-          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,(/NumberOfElementsSize/))
+          CALL C_F_POINTER(NumberOfElementsPtr,NumberOfElements,[NumberOfElementsSize])
           IF(ASSOCIATED(NumberOfElements)) THEN
             CALL CMISSGeneratedMeshNumberOfElementsSet(GeneratedMesh, NumberOfElements, CMISSGeneratedMeshNumberOfElementsSetCPtr)
           ELSE
@@ -17128,7 +17325,7 @@ CONTAINS
 
     CMISSGeneratedMeshOriginGetCNum = CMISSNoError
     IF(C_ASSOCIATED(OriginPtr)) THEN
-      CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+      CALL C_F_POINTER(OriginPtr,Origin,[OriginSize])
       IF(ASSOCIATED(Origin)) THEN
         CALL CMISSGeneratedMeshOriginGet(RegionUserNumber,GeneratedMeshUserNumber,Origin,CMISSGeneratedMeshOriginGetCNum)
       ELSE
@@ -17164,7 +17361,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(OriginPtr)) THEN
-         CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+         CALL C_F_POINTER(OriginPtr,Origin,[OriginSize])
          IF(ASSOCIATED(Origin)) THEN
            CALL CMISSGeneratedMeshOriginGet(GeneratedMesh,Origin,CMISSGeneratedMeshOriginGetCPtr)
          ELSE
@@ -17204,7 +17401,7 @@ CONTAINS
 
     CMISSGeneratedMeshOriginSetCNum = CMISSNoError
     IF(C_ASSOCIATED(OriginPtr)) THEN
-      CALL C_F_POINTER(OriginPtr, Origin, (/OriginSize/))
+      CALL C_F_POINTER(OriginPtr, Origin, [OriginSize])
       IF(ASSOCIATED(Origin)) THEN
         CALL CMISSGeneratedMeshOriginSet(RegionUserNumber,GeneratedMeshUserNumber,Origin,CMISSGeneratedMeshOriginSetCNum)
       ELSE
@@ -17241,7 +17438,7 @@ CONTAINS
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(OriginPtr)) THEN
-          CALL C_F_POINTER(OriginPtr,Origin,(/OriginSize/))
+          CALL C_F_POINTER(OriginPtr,Origin,[OriginSize])
           IF(ASSOCIATED(Origin)) THEN
             CALL CMISSGeneratedMeshOriginSet(GeneratedMesh, Origin, CMISSGeneratedMeshOriginSetCPtr)
           ELSE

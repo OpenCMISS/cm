@@ -258,6 +258,16 @@ static int CMISSControlLoopNode = 0;
 
 /*
  * >@}
+ * > \addtogroup OPENCMISS_ControlLoopOutputTypes OPENCMISS::ControlLoop::OutputTypes
+ * > \brief The control loop output types.
+ * > \see OPENCMISS::ControlLoop,OPENCMISS
+ * >@{
+ */
+static int CMISSControlLoopNoOutput = 0;
+static int CMISSControlLoopProgressOutput = 1;
+static int CMISSControlLoopTimingOutput = 2;
+/*
+ * >@}
  * >@}
  */
 
@@ -921,6 +931,10 @@ static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
+static int CMISSProblemMonodomainGudunovSplitSubtype = 1;
+static int CMISSProblemMonodomainStrangSplitSubtype = 2;
+static int CMISSProblemBidomainGudunovSplitSubtype = 1;
+static int CMISSProblemBidomainStrangSplitSubtype = 2;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
@@ -6635,6 +6649,15 @@ CMISSError CMISSInitialiseNum(int *WorldCoordinateSystemUserNumber,
 
 CMISSError CMISSInitialise(CMISSCoordinateSystemType *WorldCoordinateSystem,
 			   CMISSRegionType *WorldRegion);
+
+CMISSError CMISSRandomSeedsGet(const int RandomSeedsSize,
+			       int *RandomSeeds);
+
+CMISSError CMISSRandomSeedsSizeGet(int *RandomSeedsSize);
+
+CMISSError CMISSRandomSeedsSet(const int RandomSeedsSize,
+			       int *RandomSeeds);
+
 
 /*
  *==================================================================================================================================

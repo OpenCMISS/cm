@@ -146,6 +146,7 @@ MODULE BASE_ROUTINES
 
   INTEGER(INTG), SAVE :: MY_COMPUTATIONAL_NODE_NUMBER !<The computational rank for this node
   INTEGER(INTG), SAVE :: NUMBER_OF_COMPUTATIONAL_NODES !<The number of computational nodes
+  INTEGER(INTG), ALLOCATABLE :: CMISS_RANDOM_SEEDS(:) !<The current error handling seeds for OpenCMISS
   LOGICAL, SAVE :: DIAGNOSTICS !<.TRUE. if diagnostic output is required in any routines.
   LOGICAL, SAVE :: DIAGNOSTICS1 !<.TRUE. if level 1 diagnostic output is active in the current routine
   LOGICAL, SAVE :: DIAGNOSTICS2 !<.TRUE. if level 2 diagnostic output is active in the current routine
@@ -206,12 +207,35 @@ MODULE BASE_ROUTINES
     & START_READ_COMFILE_UNIT,STOP_READ_COMFILE_UNIT,TEMPORARY_FILE_UNIT,ALL_TIMING_TYPE,IN_TIMING_TYPE,FROM_TIMING_TYPE, &
     & LEARN_FILE_UNIT,IO1_FILE_UNIT,IO2_FILE_UNIT,IO3_FILE_UNIT,IO4_FILE_UNIT,IO5_FILE_UNIT
 
-  PUBLIC COMPUTATIONAL_NODE_NUMBERS_SET,ENTERS,ERRORS,EXITS,EXTRACT_ERROR_MESSAGE,FLAG_ERROR,FLAG_WARNING, &
-    & BASE_ROUTINES_FINALISE,BASE_ROUTINES_INITIALISE
+  PUBLIC CMISS_RANDOM_SEEDS
   
-  PUBLIC OP_STRING,DIAGNOSTICS_SET_ON,DIAGNOSTICS_SET_OFF,OUTPUT_SET_OFF,OUTPUT_SET_ON,TIMING_SET_ON,TIMING_SET_OFF, &
-    & TIMING_SUMMARY_OUTPUT,WRITE_ERROR,WRITE_STR
+  PUBLIC OP_STRING
 
+  PUBLIC BASE_ROUTINES_FINALISE,BASE_ROUTINES_INITIALISE
+  
+  PUBLIC COMPUTATIONAL_NODE_NUMBERS_SET
+
+  PUBLIC DIAGNOSTICS_SET_ON,DIAGNOSTICS_SET_OFF
+
+  PUBLIC ENTERS,ERRORS,EXITS
+  
+  PUBLIC EXTRACT_ERROR_MESSAGE
+  
+  PUBLIC FLAG_ERROR,FLAG_WARNING
+  
+  PUBLIC OUTPUT_SET_OFF,OUTPUT_SET_ON
+
+  PUBLIC RANDOM_SEEDS_GET,RANDOM_SEEDS_SIZE_GET,RANDOM_SEEDS_SET
+
+  PUBLIC TIMING_SET_ON,TIMING_SET_OFF
+  
+  PUBLIC TIMING_SUMMARY_OUTPUT
+   
+  PUBLIC WRITE_ERROR
+  
+  PUBLIC WRITE_STR
+
+  
 CONTAINS
 
   !
@@ -626,6 +650,8 @@ CONTAINS
 
     ERR=0
     ERROR=""
+    !Deallocate the random seeds
+    IF(ALLOCATED(CMISS_RANDOM_SEEDS)) DEALLOCATE(CMISS_RANDOM_SEEDS)
     
     RETURN 
 999 RETURN 1
@@ -642,7 +668,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j
+    INTEGER(INTG) :: i,j,RANDOM_SEEDS_SIZE,TIME(8)
 
     ERR=0
     ERROR=""
@@ -672,6 +698,14 @@ CONTAINS
     !Initialise loose tolerance here rather than in constants.f90
     LOOSE_TOLERANCE=SQRT(EPSILON(1.0_DP))
     LOOSE_TOLERANCE_SP=SQRT(EPSILON(1.0_SP))
+    !Setup the random seeds based on the time
+    CALL RANDOM_SEED(SIZE=RANDOM_SEEDS_SIZE)
+    ALLOCATE(CMISS_RANDOM_SEEDS(RANDOM_SEEDS_SIZE),STAT=ERR)
+    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate random seeds.",ERR,ERROR,*999)
+    CMISS_RANDOM_SEEDS=[(i,i=1,RANDOM_SEEDS_SIZE)]
+    CALL DATE_AND_TIME(VALUES=TIME)
+    CMISS_RANDOM_SEEDS(1)=3600000*TIME(5)+60000*TIME(6)+1000*TIME(7)+TIME(8)
+    CALL RANDOM_SEED(PUT=CMISS_RANDOM_SEEDS)
 
     !Initialise OP_STRING
     SELECT CASE(MACHINE_OS)
@@ -960,6 +994,89 @@ CONTAINS
     CALL EXITS("OUTPUT_SET_ON")
     RETURN 1
   END SUBROUTINE OUTPUT_SET_ON
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the random seeds for CMISS \see OPENCMISS::CMISSRandomSeedsGet
+  SUBROUTINE RANDOM_SEEDS_GET(RANDOM_SEEDS,ERR,ERROR,*)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: RANDOM_SEEDS(:) !<On return, the random seeds.
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error string
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
+    !Local Variables
+    CHARACTER(LEN=MAXSTRLEN) :: LOCAL_ERROR
+    
+    CALL ENTERS("RANDOM_SEEDS_GET",ERR,ERROR,*999)
+
+    IF(SIZE(RANDOM_SEEDS,1)>=SIZE(CMISS_RANDOM_SEEDS,1)) THEN
+      RANDOM_SEEDS(1:SIZE(CMISS_RANDOM_SEEDS,1))=CMISS_RANDOM_SEEDS(1:SIZE(CMISS_RANDOM_SEEDS,1))
+    ELSE
+      WRITE(LOCAL_ERROR,'("The size of the supplied random seeds array of ",I2," is too small. The size must be >= ",I2,".")') &
+        & SIZE(RANDOM_SEEDS,1),SIZE(CMISS_RANDOM_SEEDS,1)
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("RANDOM_SEED_GET")
+    RETURN
+999 CALL ERRORS("RANDOM_SEEDS_GET",ERR,ERROR)
+    CALL EXITS("RANDOM_SEEDS_GET")
+    RETURN 1
+  END SUBROUTINE RANDOM_SEEDS_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the size of the random seeds array for CMISS \see OPENCMISS::CMISSRandomSeedsSizeGet
+  SUBROUTINE RANDOM_SEEDS_SIZE_GET(RANDOM_SEEDS_SIZE,ERR,ERROR,*)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: RANDOM_SEEDS_SIZE !<On return, the size of the random seeds array.
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error string
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
+    !Local Variables
+
+    CALL ENTERS("RANDOM_SEEDS_SIZE_GET",ERR,ERROR,*999)
+
+    RANDOM_SEEDS_SIZE=SIZE(CMISS_RANDOM_SEEDS,1)
+    
+    CALL EXITS("RANDOM_SEED_SIZE_GET")
+    RETURN
+999 CALL ERRORS("RANDOM_SEEDS_SIZE_GET",ERR,ERROR)
+    CALL EXITS("RANDOM_SEEDS_SIZE_GET")
+    RETURN 1
+  END SUBROUTINE RANDOM_SEEDS_SIZE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the random seeds for cmiss \see OPENCMISS::CMISSRandomSeedsSet
+  SUBROUTINE RANDOM_SEEDS_SET(RANDOM_SEEDS,ERR,ERROR,*)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RANDOM_SEEDS(:) !<The random seeds to set. 
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error string
+    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
+    !Local Variables
+    
+    CALL ENTERS("RANDOM_SEEDS_SET",ERR,ERROR,*999)
+
+    IF(SIZE(RANDOM_SEEDS,1)>SIZE(CMISS_RANDOM_SEEDS,1)) THEN
+      CMISS_RANDOM_SEEDS(1:SIZE(CMISS_RANDOM_SEEDS,1))=RANDOM_SEEDS(1:SIZE(CMISS_RANDOM_SEEDS,1))
+    ELSE
+      CMISS_RANDOM_SEEDS(1:SIZE(RANDOM_SEEDS,1))=RANDOM_SEEDS(1:SIZE(RANDOM_SEEDS,1))
+    ENDIF
+
+    CALL EXITS("RANDOM_SEEDS_SET")
+    RETURN
+999 CALL ERRORS("RANDOM_SEEDS_SET",ERR,ERROR)
+    CALL EXITS("RANDOM_SEEDS_SET")
+    RETURN 1
+  END SUBROUTINE RANDOM_SEEDS_SET
 
   !
   !================================================================================================================================

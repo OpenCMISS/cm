@@ -7,6 +7,7 @@
 - \subpage local-examples
 - \subpage library_commands  
 - \subpage code_style 
+- \subpage new_code_style 
 - \subpage tools
 - \subpage profiling_with_TAU
 .

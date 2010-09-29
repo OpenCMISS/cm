@@ -631,7 +631,7 @@ CONTAINS
               UBVEC=1.05_SP
               PARMETIS_OPTIONS(0)=1 !If zero, defaults are used, otherwise next two values are used
               PARMETIS_OPTIONS(1)=7 !Level of information to output
-              PARMETIS_OPTIONS(2)=9999 !Seed for random number generator
+              PARMETIS_OPTIONS(2)=CMISS_RANDOM_SEEDS(1) !Seed for random number generator
               
               !Call ParMETIS to calculate the partitioning of the mesh graph.
               CALL PARMETIS_PARTMESHKWAY(ELEMENT_DISTANCE,ELEMENT_PTR,ELEMENT_INDICIES,ELEMENT_WEIGHT,WEIGHT_FLAG,NUMBER_FLAG, &

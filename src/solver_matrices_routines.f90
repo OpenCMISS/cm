@@ -1597,10 +1597,10 @@ CONTAINS
                                 CALL FLAG_ERROR("Equations matrix linear matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations matrix is not assocaited.",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations to solver matrix map is not assocaited.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Equations to solver matrix map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !equations_matrix_idx
                         JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -1627,7 +1627,7 @@ CONTAINS
                               CALL FLAG_ERROR("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Jacobian matrix is not assocaited.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDIF
                       ENDIF
@@ -1671,7 +1671,7 @@ CONTAINS
                               CALL FLAG_ERROR("Interface to solver map interface matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface to solver matrix map is not assocaited.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Interface to solver matrix map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !interface_matrix_idx
                       CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
@@ -2208,7 +2208,7 @@ CONTAINS
                     ENDDO !solver_row_number
                     !Allocate and setup the column locations
                     ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices.",ERR,ERROR,*999)
                     DO solver_row_number=1,SOLVER_MAPPING%NUMBER_OF_ROWS
                       CALL LIST_DETACH_AND_DESTROY(COLUMN_INDICES_LISTS(solver_row_number)%PTR,NUMBER_OF_COLUMNS,COLUMNS, &
                         & ERR,ERROR,*999)
@@ -2241,10 +2241,12 @@ CONTAINS
                         & SOLVER_MATRIX%NUMBER_OF_COLUMNS,DP)*100.0_DP
                       CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F6.2", ERR,ERROR,*999)
                     ENDIF
-                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MATRICES%NUMBER_OF_ROWS+1,8,8,ROW_INDICES, &
-                      & '("  Row indices    :",8(X,I13))','(18X,8(X,I13))',ERR,ERROR,*999)
-                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NUMBER_OF_NON_ZEROS,8,8,COLUMN_INDICES, &
-                      & '("  Column indices :",8(X,I13))','(18X,8(X,I13))', ERR,ERROR,*999)
+                    IF(DIAGNOSTICS2) THEN
+                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MATRICES%NUMBER_OF_ROWS+1,8,8,ROW_INDICES, &
+                        & '("  Row indices    :",8(X,I13))','(18X,8(X,I13))',ERR,ERROR,*999)
+                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NUMBER_OF_NON_ZEROS,8,8,COLUMN_INDICES, &
+                        & '("  Column indices :",8(X,I13))','(18X,8(X,I13))', ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("Solver matrices solver mapping is not associated",ERR,ERROR,*999)

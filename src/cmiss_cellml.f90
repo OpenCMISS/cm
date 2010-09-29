@@ -280,7 +280,7 @@ CONTAINS
 !        !Insert this CellML environment into the source field, deleting any existing CellML environment
 !        IF(ASSOCIATED(CELLML%SOURCE_FIELD%CELLML)) CALL CELLML_DESTROY(CELLML%SOURCE_FIELD%CELLML,ERR,ERROR,*999)
 !        CELLML%SOURCE_FIELD%CELLML => CELLML
-!        CELLML%CELLML_FINISHED = .TRUE.
+        CELLML%CELLML_FINISHED = .TRUE.
 !      ELSE
 !        CALL FLAG_ERROR("CellML source field not associated.",ERR,ERROR,*999)
 !      ENDIF
