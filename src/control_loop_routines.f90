@@ -405,7 +405,8 @@ CONTAINS
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
     INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER !<The control loop identifier
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, the specified control loop
+    !TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, the specified control loop
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, the specified control loop
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -431,7 +432,8 @@ CONTAINS
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP_ROOT !<A pointer to the control loop to root
     INTEGER(INTG), INTENT(IN) :: CONTROL_LOOP_IDENTIFIER(:) !<The control loop identifier
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, the specified control loop. Must not be associated on entry.
+    !TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: CONTROL_LOOP !<On exit, the specified control loop. Must not be associated on entry.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<On exit, the specified control loop. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -984,7 +986,8 @@ CONTAINS
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the solvers for.
-    TYPE(SOLVERS_TYPE), POINTER, INTENT(OUT) :: SOLVERS !<On exit, a pointer to the control loop solvers. Must not be associated on entry.
+!    TYPE(SOLVERS_TYPE), POINTER, INTENT(OUT) :: SOLVERS !<On exit, a pointer to the control loop solvers. Must not be associated on entry.
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<On exit, a pointer to the control loop solvers. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1070,7 +1073,8 @@ CONTAINS
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the sub loop for
     INTEGER(INTG), INTENT(IN) :: SUB_LOOP_INDEX !<The sub loop index to get
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: SUB_LOOP !<On return, a pointer to the specified sub loop. Must not be associated on entry.
+!    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(OUT) :: SUB_LOOP !<On return, a pointer to the specified sub loop. Must not be associated on entry.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: SUB_LOOP !<On return, a pointer to the specified sub loop. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
