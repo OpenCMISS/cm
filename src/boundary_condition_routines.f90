@@ -194,6 +194,9 @@ CONTAINS
                       & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
+                  ! Update to ensure all set boundary condition values are sent to ghosts
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                   ! Find out how many dirichlet conditions in problem  \todo make below just fixed
                   NUMBER_OF_DIRICHLET_CONDITIONS=0
                   NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS=0
@@ -441,6 +444,9 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDIF
+                  ! Finish field update
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD_VARIABLE%FIELD,FIELD_VARIABLE%VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                 ELSE
                   LOCAL_ERROR="Field variable is not associated for variable type "// &
                     & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
