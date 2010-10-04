@@ -491,7 +491,7 @@ MODULE CMISS_PETSC
     
     SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
       Mat A
-      PetscScalar, POINTER :: mat_data(:,:)
+      PetscScalar, POINTER :: mat_data(:)
       PetscInt ierr
     END SUBROUTINE MatGetArrayF90
     
@@ -508,6 +508,15 @@ MODULE CMISS_PETSC
       PetscInt lastrow
       PetscInt ierr
     END SUBROUTINE MatGetOwnershipRange
+    
+    SUBROUTINE MatGetRow(A,row,ncols,cols,values,ierr)
+      Mat A
+      PetscInt row
+      PetscInt ncols
+      PetscInt cols(*)
+      PetscScalar values(*)
+      PetscInt ierr
+    END SUBROUTINE MatGetRow
     
     SUBROUTINE MatGetValues(A,m,idxm,n,idxn,values,ierr)
       Mat A
@@ -531,6 +540,15 @@ MODULE CMISS_PETSC
       PetscScalar, POINTER :: mat_data(:)
       PetscInt ierr
     END SUBROUTINE MatRestoreArrayF90
+    
+   SUBROUTINE MatRestoreRow(A,row,ncols,cols,values,ierr)
+      Mat A
+      PetscInt row
+      PetscInt ncols
+      PetscInt cols(*)
+      PetscScalar values(*)
+      PetscInt ierr
+    END SUBROUTINE MatRestoreRow
     
     SUBROUTINE MatSetLocalToGlobalMapping(A,ctx,ierr)
       Mat A
@@ -1105,7 +1123,8 @@ MODULE CMISS_PETSC
     & PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE,PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY, &
     & PETSC_MATFDCOLORINGCREATE,PETSC_MATFDCOLORINGDESTROY,PETSC_MATFDCOLORINGFINALISE,PETSC_MATFDCOLORINGINITIALISE, &
     & PETSC_MATFDCOLORINGSETFROMOPTIONS,PETSC_MATFDCOLORINGSETFUNCTION,PETSC_MATFDCOLORINGSETFUNCTIONSNES, &
-    & PETSC_MATGETARRAY,PETSC_MATGETCOLORING,PETSC_MATGETOWNERSHIPRANGE,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY, &
+    & PETSC_MATGETARRAY,PETSC_MATGETARRAYF90,PETSC_MATGETCOLORING,PETSC_MATGETOWNERSHIPRANGE,PETSC_MATGETROW, &
+    & PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATRESTOREARRAYF90,PETSC_MATRESTOREROW, &
     & PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUE,PETSC_MATSETVALUES, &
     & PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW,PETSC_MATZEROENTRIES,PETSC_MATSETTYPE
 
@@ -2698,6 +2717,41 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatGetArrayF90 routine.
+  SUBROUTINE PETSC_MATGETARRAYF90(A,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT), TARGET :: A !<The matrix to get the array for
+    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the matrix array
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETARRAYF90",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ARRAY)) THEN
+      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
+    ELSE
+      CALL MatGetArrayF90(A%MAT,ARRAY,ERR)
+      IF(ERR/=0) THEN
+        IF(PETSC_HANDLE_ERROR) THEN
+          CHKERRQ(ERR)
+        ENDIF
+        CALL FLAG_ERROR("PETSc error in MatGetArrayF90",ERR,ERROR,*999)
+      ENDIF
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETARRAYF90")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETARRAYF90",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETARRAYF90")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETARRAYF90
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc MatGetColoring routine.
   SUBROUTINE PETSC_MATGETCOLORING(A,COLORING_TYPE,ISCOLORING,ERR,ERROR,*)
 
@@ -2757,6 +2811,40 @@ CONTAINS
     CALL EXITS("PETSC_MATGETOWNERSHIPRANGE")
     RETURN 1
   END SUBROUTINE PETSC_MATGETOWNERSHIPRANGE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetRow routine.
+  SUBROUTINE PETSC_MATGETROW(A,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the array for
+    INTEGER(INTG), INTENT(IN) :: ROW_NUMBER !<The row number to get the row values for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_COLUMNS !<On return, the number of nonzero columns in the row
+    INTEGER(INTG), INTENT(OUT) :: COLUMNS(:) !<On return, the column numbers for the nonzero columns in the row
+    REAL(DP), INTENT(OUT) :: VALUES(:) !<On exit, the nonzero values in the row.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETROW",ERR,ERROR,*999)
+
+    CALL MatGetRow(A%MAT,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatGetRow",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETROW")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETROW",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETROW")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETROW
     
   !
   !================================================================================================================================
@@ -2850,10 +2938,11 @@ CONTAINS
   !
 
   !>Buffer routine to the PETSc MatRestoreArray routine.
-  SUBROUTINE PETSC_MATRESTOREARRAY(A,ERR,ERROR,*)
+  SUBROUTINE PETSC_MATRESTOREARRAY(A,ARRAY,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
+    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the matrix array to restore
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2874,6 +2963,71 @@ CONTAINS
     CALL EXITS("PETSC_MATRESTOREARRAY")
     RETURN 1
   END SUBROUTINE PETSC_MATRESTOREARRAY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatRestoreArrayF90 routine.
+  SUBROUTINE PETSC_MATRESTOREARRAYF90(A,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
+    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the matrix array to restore
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATRESTOREARRAYF90",ERR,ERROR,*999)
+
+    CALL MatRestoreArrayF90(A%MAT,ARRAY,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatRestoreArrayF90",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATRESTOREARRAYF90")
+    RETURN
+999 CALL ERRORS("PETSC_MATRESTOREARRAYF90",ERR,ERROR)
+    CALL EXITS("PETSC_MATRESTOREARRAYF90")
+    RETURN 1
+  END SUBROUTINE PETSC_MATRESTOREARRAYF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatRestoreRow routine.
+  SUBROUTINE PETSC_MATRESTOREROW(A,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the row for
+    INTEGER(INTG), INTENT(IN) :: ROW_NUMBER !<The row number to restore the row values for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_COLUMNS !<The number of nonzero columns in the row
+    INTEGER(INTG), INTENT(OUT) :: COLUMNS(:) !<The column numbers for the nonzero columns in the row
+    REAL(DP), INTENT(OUT) :: VALUES(:) !<The nonzero values in the row to restore.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATRESTOREROW",ERR,ERROR,*999)
+
+    CALL MatRestoreRow(A%MAT,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatRestoreRow.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATRESTOREROW")
+    RETURN
+999 CALL ERRORS("PETSC_MATRESTOREROW",ERR,ERROR)
+    CALL EXITS("PETSC_MATRESTOREROW")
+    RETURN 1
+  END SUBROUTINE PETSC_MATRESTOREROW
     
   !
   !================================================================================================================================
