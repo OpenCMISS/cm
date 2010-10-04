@@ -5052,15 +5052,15 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE=SIN(X(1))*COS(X(2))*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                     VALUE=SIN(X(1)/10.0_DP*2.0_DP*PI)*COS(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
 !                      VALUE=SIN(X(1))*COS(X(2))
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=-COS(X(1))*SIN(X(2))*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                     VALUE=-COS(X(1)/10.0_DP*2.0_DP*PI)*SIN(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
 !                      VALUE=-COS(X(1))*SIN(X(2))
                    ELSE IF(component_idx==3) THEN
                      !calculate p
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))* &
+                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*2.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*2.0_DP*PI))* &
                        & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
 !                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
                    ELSE
@@ -5336,11 +5336,11 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                  CASE(NO_GLOBAL_DERIV)
                    IF(component_idx==1) THEN
                      !calculate u
-                     VALUE=SIN(X(1))*COS(X(2))*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                     VALUE=SIN(X(1)/10.0_DP*2.0_DP*PI)*COS(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
 !                      VALUE=SIN(X(1))*COS(X(2))
                    ELSE IF(component_idx==2) THEN
                      !calculate v
-                     VALUE=-COS(X(1))*SIN(X(2))*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                     VALUE=-COS(X(1)/10.0_DP*2.0_DP*PI)*SIN(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
 !                      VALUE=-COS(X(1))*SIN(X(2))
                    ELSE IF(component_idx==3) THEN
                      !calculate v
@@ -5348,7 +5348,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !                      VALUE=-COS(X(1))*SIN(X(2))
                    ELSE IF(component_idx==4) THEN
                      !calculate p
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))* &
+                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*2.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*2.0_DP*PI))* &
                        & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
 !                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
                    ELSE
