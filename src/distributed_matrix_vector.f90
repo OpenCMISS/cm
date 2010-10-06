@@ -4756,7 +4756,7 @@ CONTAINS
                                                 DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                                   global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                   SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%M)* &
-                                                    & CMISS_VECTOR%DATA_DP(row)
+                                                    & CMISS_VECTOR%DATA_DP(local_column)
                                                 ENDDO !local_column
                                                 CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
                                               ENDDO !row                                
@@ -4771,7 +4771,7 @@ CONTAINS
                                                 DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                                   global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                   SUM=SUM+MATRIX%DATA_DP(row+(global_column-1)*MATRIX%MAX_M)* &
-                                                    & CMISS_VECTOR%DATA_DP(row)
+                                                    & CMISS_VECTOR%DATA_DP(local_column)
                                                 ENDDO !local_column
                                                 CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
                                               ENDDO !row                                
@@ -4781,7 +4781,7 @@ CONTAINS
                                                 DO local_column=1,DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                                   global_column=DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                   SUM=SUM+MATRIX%DATA_DP((row-1)*MATRIX%MAX_N+global_column)* &
-                                                    & CMISS_VECTOR%DATA_DP(row)
+                                                    & CMISS_VECTOR%DATA_DP(local_column)
                                                 ENDDO !local_column
                                                 CMISS_PRODUCT%DATA_DP(row)=CMISS_PRODUCT%DATA_DP(row)+(ALPHA*SUM)
                                               ENDDO !row                                
