@@ -70,8 +70,8 @@ MODULE FIELDML_UTIL_ROUTINES
     INTEGER(C_INT) :: elementsHandle
     INTEGER(C_INT) :: xiHandle
     INTEGER(C_INT) :: nodeDofsHandle
-    INTEGER(C_INT) :: elementDofsHandle
-    INTEGER(C_INT) :: constantDofsHandle
+!    INTEGER(C_INT) :: elementDofsHandle
+!    INTEGER(C_INT) :: constantDofsHandle
     INTEGER(C_INT), ALLOCATABLE :: componentHandles(:)
     INTEGER(C_INT), ALLOCATABLE :: basisHandles(:)
   END TYPE FieldmlInfoType
@@ -520,8 +520,8 @@ CONTAINS
     fieldmlInfo%elementsHandle = FML_INVALID_HANDLE
     fieldmlInfo%xiHandle = FML_INVALID_HANDLE
     fieldmlInfo%nodeDofsHandle = FML_INVALID_HANDLE
-    fieldmlInfo%elementDofsHandle = FML_INVALID_HANDLE
-    fieldmlInfo%constantDofsHandle = FML_INVALID_HANDLE
+!    fieldmlInfo%elementDofsHandle = FML_INVALID_HANDLE
+!    fieldmlInfo%constantDofsHandle = FML_INVALID_HANDLE
     
     IF( ALLOCATED( fieldmlInfo%componentHandles ) ) THEN
       DEALLOCATE( fieldmlInfo%componentHandles )

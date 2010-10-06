@@ -494,9 +494,9 @@ CONTAINS
     DO i = 1, count
       object = Fieldml_GetObject( fmlHandle, FHT_CONTINUOUS_AGGREGATE, i )
       CALL FieldmlUtil_CheckError( "Cannot get aggregate evaluator", fmlHandle, errorString, *999 )
-      IF( .NOT. FieldmlInput_HasMarkup( fmlHandle, object, 'field', 'true', err ) ) THEN
-        CYCLE
-      ENDIF
+!      IF( .NOT. FieldmlInput_HasMarkup( fmlHandle, object, 'field', 'true', err ) ) THEN
+!        CYCLE
+!      ENDIF
 
       IF( .NOT. FieldmlInput_IsFieldCompatible( fmlHandle, object, elementDomain, err ) ) THEN
         CYCLE
@@ -619,11 +619,11 @@ CONTAINS
       
       IF( i == 1 ) THEN
         fmlInfo%nodesHandle = Fieldml_GetValueDomain( fmlInfo%fmlHandle, handle )
-        IF( .NOT. FieldmlInput_HasMarkup( fmlInfo%fmlHandle, fmlInfo%nodesHandle, "geometric", "point", err ) ) THEN
-          err = FML_ERR_INVALID_CONNECTIVITY
-          CALL FieldmlUtil_CheckError( "Connectivity evaluator must vary over a geometric point ensemble", &
-            & err, errorString, *999 )
-        END IF      
+!        IF( .NOT. FieldmlInput_HasMarkup( fmlInfo%fmlHandle, fmlInfo%nodesHandle, "geometric", "point", err ) ) THEN
+!          err = FML_ERR_INVALID_CONNECTIVITY
+!          CALL FieldmlUtil_CheckError( "Connectivity evaluator must vary over a geometric point ensemble", &
+!            & err, errorString, *999 )
+!        END IF      
       ELSE IF( fmlInfo%nodesHandle /= Fieldml_GetValueDomain( fmlInfo%fmlHandle, handle ) ) THEN
         err = FML_ERR_INVALID_CONNECTIVITY
         CALL FieldmlUtil_CheckError( "Connectivity evaluators must all vary over the same point ensemble", &

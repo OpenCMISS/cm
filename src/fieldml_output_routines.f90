@@ -61,10 +61,6 @@ MODULE FIELDML_OUTPUT_ROUTINES
   INTEGER(INTG), PARAMETER :: BUFFER_SIZE = 1024
   CHARACTER(C_CHAR), PARAMETER :: NUL=C_NULL_CHAR
 
-  !INTEGER(INTG), PARAMETER ::
-  !INTEGER(INTG), PARAMETER ::
-  !INTEGER(INTG), PARAMETER ::
-
   TYPE(VARYING_STRING) :: errorString
 
   !Interfaces
@@ -78,9 +74,14 @@ MODULE FIELDML_OUTPUT_ROUTINES
     INTEGER(C_INT) :: connectivityHandle
     INTEGER(C_INT) :: referenceHandle
   END TYPE BasisInfoType
-  
+
+  INTERFACE FieldmlOutput_AddField
+    MODULE PROCEDURE FieldmlOutput_AddField_NoDomain
+    MODULE PROCEDURE FieldmlOutput_AddField_WithDomain
+  END INTERFACE
+ 
   PUBLIC :: FieldmlOutput_Write, FieldmlOutput_AddField, FieldmlOutput_InitializeInfo, &
-    & FieldmlOutput_AddFieldComponents
+    & FieldmlOutput_AddFieldComponents, FieldmlOutput_CreateEnsembleDomain, FieldmlOutput_CreateContinuousDomain
 
 CONTAINS
 
@@ -583,7 +584,8 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, fieldHandle, mesh, field, fieldComponentNumbers, err, * )
+  SUBROUTINE FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, fieldHandle, mesh, field, fieldComponentNumbers, &
+    & variableType, nodeDofsHandle, err, * )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
@@ -591,10 +593,12 @@ CONTAINS
     TYPE(CMISSMeshType), INTENT(IN) :: mesh
     TYPE(CMISSFieldType), INTENT(IN) :: field
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(C_INT), INTENT(INOUT) :: nodeDofsHandle
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(C_INT) :: domainHandle, nodeDofsHandle, real1DHandle, nodeCount
+    INTEGER(C_INT) :: domainHandle, real1DHandle, nodeCount
     INTEGER(C_INT), TARGET :: dummy(0)
     INTEGER(INTG) :: componentCount, i, j, interpolationType
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
@@ -617,10 +621,10 @@ CONTAINS
     ALLOCATE( isNodeBased( componentCount ) )
 
     DO i = 1, componentCount
-      CALL CMISSFieldComponentMeshComponentGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+      CALL CMISSFieldComponentMeshComponentGet( field, variableType, fieldComponentNumbers(i), &
         & meshComponentNumbers(i), Err)
 
-      CALL CMISSFieldComponentInterpolationGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+      CALL CMISSFieldComponentInterpolationGet( field, variableType, fieldComponentNumbers(i), &
         & interpolationType, err )
       CALL FieldmlUtil_CheckError( "Cannot get mesh component interpolation info", err, errorString, *999 )
         
@@ -654,7 +658,7 @@ CONTAINS
         IF( isNodeBased(j) ) THEN
           CALL CMISSMeshNodeExists( mesh, meshComponentNumbers(j), i, nodeExists, err )
           IF( nodeExists ) THEN
-            CALL CMISSFieldParameterSetGetNode( field, CMISSFieldUVariableType, CMISSFieldValuesSetType, & 
+            CALL CMISSFieldParameterSetGetNode( field, variableType, CMISSFieldValuesSetType, & 
               & CMISSNoGlobalDerivative, i, fieldComponentNumbers(j), dValue, err )
           ENDIF
           CALL FieldmlUtil_CheckError( "Cannot get nodal dof value", err, errorString, *999 )
@@ -683,17 +687,20 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlOutput_AddFieldElementDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, err, * )
+  SUBROUTINE FieldmlOutput_AddFieldElementDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, &
+    & variableType, elementDofsHandle, err, * )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
     INTEGER(C_INT), INTENT(IN) :: fieldHandle
     TYPE(CMISSFieldType), INTENT(IN) :: field
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(C_INT), INTENT(INOUT) :: elementDofsHandle
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(C_INT) :: domainHandle, elementDofsHandle, real1DHandle, elementCount
+    INTEGER(C_INT) :: domainHandle, real1DHandle, elementCount
     INTEGER(C_INT), TARGET :: dummy(0)
     INTEGER(INTG) :: componentCount, i, j, interpolationType
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
@@ -716,10 +723,10 @@ CONTAINS
     ALLOCATE( isElementBased( componentCount ) )
 
     DO i = 1, componentCount
-      CALL CMISSFieldComponentMeshComponentGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+      CALL CMISSFieldComponentMeshComponentGet( field, variableType, fieldComponentNumbers(i), &
         & meshComponentNumbers(i), Err)
 
-      CALL CMISSFieldComponentInterpolationGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+      CALL CMISSFieldComponentInterpolationGet( field, variableType, fieldComponentNumbers(i), &
         & interpolationType, err )
         
       CALL FieldmlUtil_CheckError( "Cannot get mesh component interpolation info", err, errorString, *999 )
@@ -742,8 +749,8 @@ CONTAINS
     ENDIF
     err = Fieldml_AddSemidenseIndex( fieldmlInfo%fmlHandle, elementDofsHandle, fieldmlInfo%elementsHandle, 0 )
     CALL FieldmlUtil_CheckError( "Cannot add element index for element dofs parameter set", err, errorString, *999 )
-    err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%elementDofsHandle, elementDofsHandle )
-    CALL FieldmlUtil_CheckError( "Cannot set element dofs alias for field with constant elements", err, errorString, *999 )
+!    err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%elementDofsHandle, elementDofsHandle )
+!    CALL FieldmlUtil_CheckError( "Cannot set element dofs alias for field with constant elements", err, errorString, *999 )
 
     ALLOCATE( dBuffer( componentCount ) )
     writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, elementDofsHandle, 0 )
@@ -752,7 +759,7 @@ CONTAINS
       DO j = 1, componentCount
         dValue = 0
         IF( isElementBased(j) ) THEN
-          CALL CMISSFieldParameterSetGetElement( field, CMISSFieldUVariableType, CMISSFieldValuesSetType, & 
+          CALL CMISSFieldParameterSetGetElement( field, variableType, CMISSFieldValuesSetType, & 
             & i, fieldComponentNumbers(j), dValue, err )
           CALL FieldmlUtil_CheckError( "Cannot get element dof value", err, errorString, *999 )
         ENDIF
@@ -780,41 +787,56 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlOutput_AddFieldConstantDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, err, * )
+  SUBROUTINE FieldmlOutput_AddFieldConstantDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, &
+    & variableType, constantDofsHandle, err, * )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
     INTEGER(C_INT), INTENT(IN) :: fieldHandle
     TYPE(CMISSFieldType), INTENT(IN) :: field
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(C_INT), INTENT(INOUT) :: constantDofsHandle
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(C_INT) :: domainHandle, constantDofsHandle, real1DHandle
+    INTEGER(C_INT) :: domainHandle, dofDomainHandle, domainType, componentDomain
     INTEGER(C_INT), TARGET :: dummy(0)
     INTEGER(INTG) :: componentCount, i, j, interpolationType
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
     TYPE(C_PTR) :: writer
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: dBuffer(:)
+    INTEGER(C_INT), ALLOCATABLE, TARGET :: iBuffer(:)
     REAL(C_DOUBLE) :: dValue
+    INTEGER(C_INT) :: iValue
+    LOGICAL :: isReal
     LOGICAL, ALLOCATABLE :: isConstant(:)
 
     CALL ENTERS( "FieldmlOutput_AddFieldConstantDofs", err, errorString, *999 )
     
-    CALL FieldmlUtil_GetGenericDomain( fieldmlInfo%fmlHandle, 1, real1DHandle, err, *999 )
-
     domainHandle = Fieldml_GetValueDomain( fieldmlInfo%fmlHandle, fieldHandle )
-    componentCount = Fieldml_GetDomainComponentCount( fieldmlInfo%fmlHandle, domainHandle )
-    domainHandle = Fieldml_GetDomainComponentEnsemble( fieldmlInfo%fmlHandle, domainHandle )
+    domainType = Fieldml_GetObjectType(  fieldmlInfo%fmlHandle, domainHandle )
+
+    IF( domainType == FHT_ENSEMBLE_DOMAIN ) THEN
+      dofDomainHandle = domainHandle
+      componentCount = 1
+      componentDomain = FML_INVALID_HANDLE
+      isReal = .FALSE.
+    ELSE
+      CALL FieldmlUtil_GetGenericDomain( fieldmlInfo%fmlHandle, 1, dofDomainHandle, err, *999 )
+      componentCount = Fieldml_GetDomainComponentCount( fieldmlInfo%fmlHandle, domainHandle )
+      componentDomain = Fieldml_GetDomainComponentEnsemble( fieldmlInfo%fmlHandle, domainHandle )
+      isReal = .TRUE.
+    ENDIF
     
     ALLOCATE( meshComponentNumbers( componentCount ) )
     ALLOCATE( isConstant( componentCount ) )
 
     DO i = 1, componentCount
-      CALL CMISSFieldComponentMeshComponentGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+      CALL CMISSFieldComponentMeshComponentGet( field, variableType, fieldComponentNumbers(i), &
         & meshComponentNumbers(i), Err)
 
-      CALL CMISSFieldComponentInterpolationGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+      CALL CMISSFieldComponentInterpolationGet( field, variableType, fieldComponentNumbers(i), &
         & interpolationType, err )
         
       CALL FieldmlUtil_CheckError( "Cannot get mesh component interpolation info", err, errorString, *999 )
@@ -823,7 +845,7 @@ CONTAINS
     ENDDO
 
     constantDofsHandle = Fieldml_CreateContinuousParameters( fieldmlInfo%fmlHandle, baseName//".dofs.constant"//NUL, &
-      & real1DHandle )
+      & dofDomainHandle )
     CALL FieldmlUtil_CheckError( "Cannot create element dofs parameter set", fieldmlInfo, errorString, *999 )
     err = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, constantDofsHandle, DESCRIPTION_SEMIDENSE )
     CALL FieldmlUtil_CheckError( "Cannot set constant dofs parameter description", err, errorString, *999 )
@@ -834,30 +856,49 @@ CONTAINS
     CALL FieldmlUtil_CheckError( "Cannot set constant dofs parameter information", err, errorString, *999 )
 
 
-    IF( domainHandle /= FML_INVALID_HANDLE ) THEN
-      err = Fieldml_AddSemidenseIndex( fieldmlInfo%fmlHandle, constantDofsHandle, domainHandle, 0 )
+    IF( componentDomain /= FML_INVALID_HANDLE ) THEN
+      err = Fieldml_AddSemidenseIndex( fieldmlInfo%fmlHandle, constantDofsHandle, componentDomain, 0 )
       CALL FieldmlUtil_CheckError( "Cannot add component index for constant dofs parameter set", err, errorString, *999 )
     ENDIF
-    err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%constantDofsHandle, constantDofsHandle )
-    CALL FieldmlUtil_CheckError( "Cannot set constant dofs alias for field with constant components", err, errorString, *999 )
+!    err = Fieldml_SetAlias( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%constantDofsHandle, constantDofsHandle )
+!    CALL FieldmlUtil_CheckError( "Cannot set constant dofs alias for field with constant components", err, errorString, *999 )
 
-    ALLOCATE( dBuffer( componentCount ) )
     writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, constantDofsHandle, 0 )
     CALL FieldmlUtil_CheckError( "Cannot open element parameter writer", fieldmlInfo, errorString, *999 )
-    DO j = 1, componentCount
-      dValue = 0
-      IF( isConstant(j) ) THEN
-        CALL CMISSFieldParameterSetGetConstant( field, CMISSFieldUVariableType, CMISSFieldValuesSetType, & 
-          & fieldComponentNumbers(j), dValue, err )
-        CALL FieldmlUtil_CheckError( "Cannot get constant dof value", err, errorString, *999 )
-      ENDIF
-      dBuffer( j ) = dValue
-    ENDDO
-    err = Fieldml_WriteDoubleSlice( fieldmlInfo%fmlHandle, writer, C_LOC(dummy), C_LOC(dBuffer) )
-    CALL FieldmlUtil_CheckError( "Cannot write constant parameter values", err, errorString, *999 )
-    err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
-    CALL FieldmlUtil_CheckError( "Cannot close constant parameter writer", err, errorString, *999 )
-    DEALLOCATE( dBuffer )
+    
+    IF( isReal ) THEN
+      ALLOCATE( dBuffer( componentCount ) )
+      DO j = 1, componentCount
+        dValue = 0
+        IF( isConstant(j) ) THEN
+          CALL CMISSFieldParameterSetGetConstant( field, variableType, CMISSFieldValuesSetType, & 
+            & fieldComponentNumbers(j), dValue, err )
+          CALL FieldmlUtil_CheckError( "Cannot get constant dof value", err, errorString, *999 )
+        ENDIF
+        dBuffer( j ) = dValue
+      ENDDO
+      err = Fieldml_WriteDoubleSlice( fieldmlInfo%fmlHandle, writer, C_LOC(dummy), C_LOC(dBuffer) )
+      CALL FieldmlUtil_CheckError( "Cannot write constant parameter values", err, errorString, *999 )
+      err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
+      CALL FieldmlUtil_CheckError( "Cannot close constant parameter writer", err, errorString, *999 )
+      DEALLOCATE( dBuffer )
+    ELSE
+      ALLOCATE( iBuffer( componentCount ) )
+      DO j = 1, componentCount
+        iValue = 0
+        IF( isConstant(j) ) THEN
+          CALL CMISSFieldParameterSetGetConstant( field, variableType, CMISSFieldValuesSetType, & 
+            & fieldComponentNumbers(j), iValue, err )
+          CALL FieldmlUtil_CheckError( "Cannot get constant dof value", err, errorString, *999 )
+        ENDIF
+        iBuffer( j ) = iValue
+      ENDDO
+      err = Fieldml_WriteIntSlice( fieldmlInfo%fmlHandle, writer, C_LOC(dummy), C_LOC(iBuffer) )
+      CALL FieldmlUtil_CheckError( "Cannot write constant parameter values", err, errorString, *999 )
+      err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
+      CALL FieldmlUtil_CheckError( "Cannot close constant parameter writer", err, errorString, *999 )
+      DEALLOCATE( iBuffer )
+    ENDIF
     
     DEALLOCATE( meshComponentNumbers )
     DEALLOCATE( isConstant )
@@ -891,7 +932,6 @@ CONTAINS
     TYPE(CMISSNodesType) :: Nodes
 
     CALL ENTERS( "FieldmlOutput_InitializeInfo", err, errorString, *999 )
-    
     fieldmlInfo%fmlHandle = Fieldml_Create( location//NUL, baseName//NUL )
     IF( C_ASSOCIATED( fieldmlInfo%fmlHandle ) ) THEN
       CALL FieldmlUtil_CheckError( "Cannot create fieldml handle", err, errorString, *999 )
@@ -927,12 +967,12 @@ CONTAINS
     fieldmlInfo%nodeDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.node"//NUL, &
       & real1DHandle )
     CALL FieldmlUtil_CheckError( "Cannot create nodal dofs variable", fieldmlInfo, errorString, *999 )
-    fieldmlInfo%elementDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.element"//NUL, & 
-      & real1DHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create element dofs variable", fieldmlInfo, errorString, *999 )
-    fieldmlInfo%constantDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.constant"//NUL, & 
-      & real1DHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create constant dofs variable", fieldmlInfo, errorString, *999 )
+!    fieldmlInfo%elementDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.element"//NUL, & 
+!      & real1DHandle )
+!    CALL FieldmlUtil_CheckError( "Cannot create element dofs variable", fieldmlInfo, errorString, *999 )
+!    fieldmlInfo%constantDofsHandle = Fieldml_CreateContinuousVariable( fieldmlInfo%fmlHandle, baseName//".dofs.constant"//NUL, & 
+!      & real1DHandle )
+!    CALL FieldmlUtil_CheckError( "Cannot create constant dofs variable", fieldmlInfo, errorString, *999 )
 
     CALL CMISSMeshNumberOfComponentsGet( mesh, componentCount, err )
     CALL FieldmlUtil_CheckError( "Cannot get mesh component count", err, errorString, *999 )
@@ -965,7 +1005,8 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlOutput_AddFieldComponents( fieldmlInfo, domainHandle, baseName, mesh, field, fieldComponentNumbers, err )
+  SUBROUTINE FieldmlOutput_AddFieldComponents( fieldmlInfo, domainHandle, baseName, mesh, field, fieldComponentNumbers, &
+    & variableType, err )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
     INTEGER(C_INT), INTENT(IN) :: domainHandle
@@ -973,12 +1014,12 @@ CONTAINS
     TYPE(CMISSMeshType), INTENT(IN) :: mesh
     TYPE(CMISSFieldType), INTENT(IN) :: field
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
+    INTEGER(INTG), INTENT(IN) :: variableType
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(C_INT) :: fieldHandle, componentHandle
+    INTEGER(C_INT) :: fieldHandle, componentHandle, nodalDofsHandle, elementDofsHandle, constantDofsHandle
     INTEGER(INTG) :: componentCount, i, meshComponentNumber, interpolationType
-    LOGICAL :: hasNode, hasElement, hasConstant
   
     CALL ENTERS( "FieldmlOutput_AddFieldComponents", err, errorString, *999 )
 
@@ -996,44 +1037,41 @@ CONTAINS
     err = Fieldml_SetMarkup( fieldmlInfo%fmlHandle, fieldHandle, "field"//NUL, "true"//NUL )
     CALL FieldmlUtil_CheckError( "Cannot set aggregate evaluator markup", fieldmlInfo, errorString, *999 )
 
-    hasNode = .FALSE.
-    hasElement = .FALSE.
-    hasConstant = .FALSE.
+    nodalDofsHandle = FML_INVALID_HANDLE
+    elementDofsHandle = FML_INVALID_HANDLE
+    constantDofsHandle = FML_INVALID_HANDLE
     !TODO Other types or interpolation not yet supported.
     DO i = 1, componentCount
-      CALL CMISSFieldComponentInterpolationGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+      CALL CMISSFieldComponentInterpolationGet( field, variableType, fieldComponentNumbers(i), &
         interpolationType, err )
       CALL FieldmlUtil_CheckError( "Cannot get field component interpolation type", err, errorString, *999 )
         
       IF( interpolationType == CMISSFieldNodeBasedInterpolation ) THEN
-        CALL CMISSFieldComponentMeshComponentGet( field, CMISSFieldUVariableType, fieldComponentNumbers(i), &
+        IF( nodalDofsHandle == FML_INVALID_HANDLE ) THEN
+          CALL FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, fieldHandle, mesh, field, fieldComponentNumbers, &
+          & variableType, nodalDofsHandle, err, *999 )
+        ENDIF
+        CALL CMISSFieldComponentMeshComponentGet( field, variableType, fieldComponentNumbers(i), &
           & meshComponentNumber, err )
         CALL FieldmlUtil_CheckError( "Cannot get mesh component for field component", err, errorString, *999 )
         err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, fieldHandle, i, fieldmlInfo%componentHandles(meshComponentNumber) )
         CALL FieldmlUtil_CheckError( "Cannot set nodal evaluator for aggregate field component", err, errorString, *999 )
-        hasNode = .TRUE.
       ELSEIF( interpolationType == CMISSFieldElementBasedInterpolation ) THEN
-        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, fieldHandle, i, fieldmlInfo%elementDofsHandle )
+        IF( elementDofsHandle == FML_INVALID_HANDLE ) THEN
+          CALL FieldmlOutput_AddFieldElementDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, &
+            & variableType, elementDofsHandle, err, *999 )
+        ENDIF
+        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, fieldHandle, i, elementDofsHandle )
         CALL FieldmlUtil_CheckError( "Cannot set element evaluator for aggregate field component", err, errorString, *999 )
-        hasElement = .TRUE.
       ELSEIF( interpolationType == CMISSFieldConstantInterpolation ) THEN
-        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, fieldHandle, i, fieldmlInfo%constantDofsHandle )
+        IF( constantDofsHandle == FML_INVALID_HANDLE ) THEN
+          CALL FieldmlOutput_AddFieldConstantDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, &
+            & variableType, constantDofsHandle, err, *999 )
+        ENDIF
+        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, fieldHandle, i, constantDofsHandle )
         CALL FieldmlUtil_CheckError( "Cannot set constant evaluator for aggregate field component", err, errorString, *999 )
-        hasConstant = .TRUE.
       ENDIF
     ENDDO
-    
-    IF( hasNode ) THEN
-      CALL FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, fieldHandle, mesh, field, fieldComponentNumbers, err, *999 )
-    ENDIF
-    
-    IF( hasElement ) THEN
-      CALL FieldmlOutput_AddFieldElementDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, err, *999 )
-    ENDIF
-    
-    IF( hasConstant ) THEN
-      CALL FieldmlOutput_AddFieldConstantDofs( fieldmlInfo, baseName, fieldHandle, field, fieldComponentNumbers, err, *999 )
-    ENDIF
     
     CALL EXITS( "FieldmlOutput_AddFieldComponents" )
     RETURN
@@ -1047,25 +1085,51 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlOutput_AddField( fieldmlInfo, baseName, region, mesh, field, err )
+  SUBROUTINE FieldmlOutput_AddField_NoDomain( fieldmlInfo, baseName, region, mesh, field, variableType, err )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
     TYPE(CMISSRegionType), INTENT(IN) :: region
     TYPE(CMISSMeshType), INTENT(IN) :: mesh
     TYPE(CMISSFieldType), INTENT(IN) :: field
+    INTEGER(INTG), INTENT(IN) :: variableType
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(INTG), ALLOCATABLE :: fieldComponentNumbers(:)
-    INTEGER(INTG) :: componentCount, i
     INTEGER(C_INT) :: domainHandle
     
     CALL ENTERS( "FieldmlOutput_AddField", err, errorString, *999 )
 
-    !TODO Only u-values currently exported.
     CALL FieldmlUtil_GetValueDomain( fieldmlInfo%fmlHandle, region, field, domainHandle, err, *999 )
-    
+
+    CALL FieldmlOutput_AddField_WithDomain( fieldmlInfo, baseName, mesh, field, variableType, domainHandle, err )
+
+    CALL EXITS( "FieldmlOutput_AddField_NoDomain" )
+    RETURN
+999 CALL ERRORS( "FieldmlOutput_AddField_NoDomain", err, errorString )
+    CALL EXITS( "FieldmlOutput_AddField_NoDomain" )
+    CALL CMISS_HANDLE_ERROR( err, errorString )
+
+  END SUBROUTINE FieldmlOutput_AddField_NoDomain
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FieldmlOutput_AddField_WithDomain( fieldmlInfo, baseName, mesh, field, variableType, domainHandle, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    TYPE(CMISSFieldType), INTENT(IN) :: field
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(INTG), INTENT(IN) :: domainHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Locals
+    INTEGER(INTG) :: i, componentCount
+    INTEGER(INTG), ALLOCATABLE :: fieldComponentNumbers(:)
+
     IF( domainHandle == FML_INVALID_HANDLE ) THEN
       err = FML_ERR_UNSUPPORTED
       CALL FieldmlUtil_CheckError( "Cannot get value domain for field", err, errorString, *999 )
@@ -1079,17 +1143,84 @@ CONTAINS
       fieldComponentNumbers(i) = i
     ENDDO
     
-    CALL FieldmlOutput_AddFieldComponents( fieldmlInfo, domainHandle, baseName, mesh, field, fieldComponentNumbers, err )
+    CALL FieldmlOutput_AddFieldComponents( fieldmlInfo, domainHandle, baseName, mesh, field, fieldComponentNumbers, &
+      & variableType, err )
     
     DEALLOCATE( fieldComponentNumbers )
 
-    CALL EXITS( "FieldmlOutput_AddField" )
+    CALL EXITS( "FieldmlOutput_AddField_WithDomain" )
     RETURN
-999 CALL ERRORS( "FieldmlOutput_AddField", err, errorString )
-    CALL EXITS( "FieldmlOutput_AddField" )
+999 CALL ERRORS( "FieldmlOutput_AddField_WithDomain", err, errorString )
+    CALL EXITS( "FieldmlOutput_AddField_WithDomain" )
     CALL CMISS_HANDLE_ERROR( err, errorString )
     
-  END SUBROUTINE FieldmlOutput_AddField
+  END SUBROUTINE FieldmlOutput_AddField_WithDomain
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FieldmlOutput_CreateEnsembleDomain( fieldmlInfo, domainName, elementCount, domainHandle, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: domainName
+    INTEGER(INTG), INTENT(IN) :: elementCount
+    INTEGER(INTG), INTENT(OUT) :: domainHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS( "FieldmlOutput_CreateEnsembleDomain", err, errorString, *999 )
+
+    domainHandle = Fieldml_CreateEnsembleDomain( fieldmlInfo%fmlHandle, domainName//NUL, FML_INVALID_HANDLE )
+    CALL FieldmlUtil_CheckError( "Error creating ensemble domain", err, errorString, *999 )
+    
+    err = Fieldml_SetContiguousBoundsCount( fieldmlInfo%fmlHandle, domainHandle, elementCount )
+    CALL FieldmlUtil_CheckError( "Error setting ensemble domain bounds", err, errorString, *999 )
+
+    CALL EXITS( "FieldmlOutput_CreateEnsembleDomain" )
+    RETURN
+999 CALL ERRORS( "FieldmlOutput_CreateEnsembleDomain", err, errorString )
+    CALL EXITS( "FieldmlOutput_CreateEnsembleDomain" )
+    CALL CMISS_HANDLE_ERROR( err, errorString )
+
+  END SUBROUTINE FieldmlOutput_CreateEnsembleDomain
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FieldmlOutput_CreateContinuousDomain( fieldmlInfo, domainName, componentCount, domainHandle, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: domainName
+    INTEGER(INTG), INTENT(IN) :: componentCount
+    INTEGER(INTG), INTENT(OUT) :: domainHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Local variables
+    INTEGER(INTG) :: componentHandle
+
+    CALL ENTERS( "FieldmlOutput_CreateContinuousDomain", err, errorString, *999 )
+
+    componentHandle = FML_INVALID_HANDLE
+
+    IF( componentCount > 1 ) THEN
+      componentHandle = Fieldml_CreateComponentEnsembleDomain( fieldmlInfo%fmlHandle, domainName//".components"//NUL )
+      CALL FieldmlUtil_CheckError( "Error creating component domain", err, errorString, *999 )
+  
+      err = Fieldml_SetContiguousBoundsCount( fieldmlInfo%fmlHandle, componentHandle, componentCount )
+      CALL FieldmlUtil_CheckError( "Error setting component domain bounds", err, errorString, *999 )
+    ENDIF
+
+    domainHandle = Fieldml_CreateContinuousDomain( fieldmlInfo%fmlHandle, domainName//NUL, componentHandle )
+    CALL FieldmlUtil_CheckError( "Error creating continuous domain", err, errorString, *999 )
+
+    CALL EXITS( "FieldmlOutput_CreateContinuousDomain" )
+    RETURN
+999 CALL ERRORS( "FieldmlOutput_CreateContinuousDomain", err, errorString )
+    CALL EXITS( "FieldmlOutput_CreateContinuousDomain" )
+    CALL CMISS_HANDLE_ERROR( err, errorString )
+
+  END SUBROUTINE FieldmlOutput_CreateContinuousDomain
 
   !
   !================================================================================================================================
