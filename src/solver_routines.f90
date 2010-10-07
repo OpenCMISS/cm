@@ -9861,7 +9861,7 @@ CONTAINS
                                           ENDIF
                                         CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FREE_WALL,&
                                           & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
-                                          & BOUNDARY_CONDITION_NEUMANN_FREE)
+                                          & BOUNDARY_CONDITION_NEUMANN_FREE,BOUNDARY_CONDITION_FIXED_INCREMENTED)
                                           RHS_VALUE=RHS_PARAMETERS(rhs_variable_dof)
                                           IF(ABS(RHS_VALUE)>=ZERO_TOLERANCE) THEN
                                             !Loop over the solver rows associated with this equations set row
