@@ -880,7 +880,6 @@ CONTAINS
         IF( isConstant(j) ) THEN
           CALL CMISSFieldParameterSetGetConstant( field, variableType, CMISSFieldValuesSetType, & 
             & fieldComponentNumbers(j), dValue, err )
-            write(*,*) "getting a double precision value!"
           CALL FieldmlUtil_CheckError( "Cannot get constant dof value", err, errorString, *999 )
         ENDIF
         dBuffer( j ) = dValue
