@@ -800,7 +800,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err
 
     !Locals
-    INTEGER(C_INT) :: domainHandle, dofDomainHandle, domainType, componentDomain
+    INTEGER(C_INT) :: domainHandle, dofDomainHandle, domainType, componentDomain, dataType
     INTEGER(C_INT), TARGET :: dummy(0)
     INTEGER(INTG) :: componentCount, i, j, interpolationType
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
@@ -865,6 +865,13 @@ CONTAINS
 
     writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, constantDofsHandle, 0 )
     CALL FieldmlUtil_CheckError( "Cannot open element parameter writer", fieldmlInfo, errorString, *999 )
+
+    CALL CMISSFieldDataTypeGet( field, variableType, dataType, err )
+    IF(dataType==CMISSFieldIntgType) THEN
+      isReal = .false.
+    ELSEIF(dataType==CMISSFieldDPType) THEN
+      isReal = .true.
+    ENDIF
     
     IF( isReal ) THEN
       ALLOCATE( dBuffer( componentCount ) )
@@ -873,6 +880,7 @@ CONTAINS
         IF( isConstant(j) ) THEN
           CALL CMISSFieldParameterSetGetConstant( field, variableType, CMISSFieldValuesSetType, & 
             & fieldComponentNumbers(j), dValue, err )
+            write(*,*) "getting a double precision value!"
           CALL FieldmlUtil_CheckError( "Cannot get constant dof value", err, errorString, *999 )
         ENDIF
         dBuffer( j ) = dValue

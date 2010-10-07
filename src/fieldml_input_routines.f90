@@ -736,8 +736,8 @@ CONTAINS
     fieldmlInfo%elementsHandle = FML_INVALID_HANDLE
     fieldmlInfo%xiHandle = FML_INVALID_HANDLE
     fieldmlInfo%nodeDofsHandle = FML_INVALID_HANDLE
-    fieldmlInfo%elementDofsHandle = FML_INVALID_HANDLE
-    fieldmlInfo%constantDofsHandle = FML_INVALID_HANDLE
+    !fieldmlInfo%elementDofsHandle = FML_INVALID_HANDLE
+    !fieldmlInfo%constantDofsHandle = FML_INVALID_HANDLE
     
     CALL FieldmlUtil_CheckError( "Cannot create FieldML handle from file", fieldmlInfo, errorString, *999 )
 
@@ -899,8 +899,8 @@ CONTAINS
 
     !Some of these may not actually exist, but that's OK because that means they're not used.
     fieldmlInfo%nodeDofsHandle = Fieldml_GetNamedObject( fieldmlInfo%fmlHandle, nodeDofsName//NUL )
-    fieldmlInfo%elementDofsHandle = Fieldml_GetNamedObject( fieldmlInfo%fmlHandle, elementDofsName//NUL )
-    fieldmlInfo%constantDofsHandle = Fieldml_GetNamedObject( fieldmlInfo%fmlHandle, constantDofsName//NUL )
+    !fieldmlInfo%elementDofsHandle = Fieldml_GetNamedObject( fieldmlInfo%fmlHandle, elementDofsName//NUL )
+    !fieldmlInfo%constantDofsHandle = Fieldml_GetNamedObject( fieldmlInfo%fmlHandle, constantDofsName//NUL )
     
     CALL EXITS( "FieldmlInput_SetDofVariables" )
     RETURN

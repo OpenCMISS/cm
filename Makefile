@@ -76,8 +76,8 @@ ifndef USECELLML
 endif
 
 ifndef USEFIELDML
-  USEFIELDML := false
-  #USEFIELDML := true
+  #USEFIELDML := false
+  USEFIELDML := true
 endif
 
 ifeq ($(MPI),mpich2)
