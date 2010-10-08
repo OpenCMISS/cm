@@ -1,0 +1,233 @@
+\raggedbottom
+\clearemptydoublepage
+\chapter{Developers' Document}
+\label{cha:developers}
+
+\section{Introduction}
+\label{sec:devel_intro}
+
+This chapter is intented for new and existing developers of OpenCMISS. It contains tips
+from the developers who previously encountered the learning curve, and are now trying to 
+reduce it for those who are new to OpenCMISS. New developers are encouraged to use this
+chapter written in an informal narrative style as an independent study guide to get up to 
+speed with the codebase. The sections are ordered in an increasing level of difficulty,
+which introduce the basic concepts first and then progress through to more advanced features 
+of the code. Care was taken not to introduce too much information at once -- as such, it
+may at times appear to lack rigor, but after reading this chapter developers will be 
+empowered to answer their own questions. In addition, existing developers of OpenCMISS 
+will find that this chapter may serve as a reference to assist day-to-day development work, 
+and to keep up-to-date with extensions that are made in the core library functionalities.
+
+\section{The Anatomy of an Example File}
+
+Let's assume for the sake of discussion that this is your first encounter with OpenCMISS
+code. If not, simply skip to the next section. As you may already know, OpenCMISS source 
+code is split up into two major parts, one which provides the core library functionality, 
+like evaluating a basis function or solving a pde with finite element method, and one which 
+solves a particular problem by using these library routines. The source files (fortran .f90 
+and some .c files) for the library routines are entirely contained within \texttt{/cm/src}, 
+whereas the example files can be found under \texttt{/cm/examples}. 
+
+As a new developer, a good place to attack the 300,000+ lines of source code is to start 
+at an example file because it gives a good bird's eye view. for historical reasons (it was 
+the first to be set up and the most ``proper'') the Laplace example is often used as a 
+showcase. So let's go ahead and fire up the following file in your favourite editor (In Linux
+Kate, emacs or gedit work well. In Windows, maybe emacs, Kate or Notepad++ are okay):\\
+\texttt{/cm/examples/ClassicalField/Laplace/Laplace/src/LaplaceExample.f90}.
+
+Later in this chapter we will address the finer details of this example file, however, for
+now we'll look at the general outline and flow. Scroll down and have a brief look - after
+all the variable declarations, there should be a call to 
+\begin{lstlisting}
+CALL CMISSInitialise(...)
+\end{lstlisting}
+All OpenCMISS routines calls are made after this line, since this routine tells the library
+that we are ready to start using it. Similarly, near the end of the file there is a call to
+\begin{lstlisting}
+CALL CMISSFinalise(...)
+\end{lstlisting}
+which initiates the finalising of objects which had been created by OpenCMISS throughout
+the execution.
+
+Of course, what comes in between these calls does all the interesting stuff. It's about 200 
+lines of solid blocks of code, but there is an easier way to read this - most tasks in an
+example file are arranged in blocks, which looks like
+\begin{lstlisting}
+CALL CMISS****TypeInitialise(...)
+CALL CMISS****CreateStart(...)
+...
+CALL CMISS****CreateFinish(...)
+\end{lstlisting}
+where **** denotes the type of the object such as coordinate system, region, basis etc. 
+The initialise call usually creates a space in memory for the object and perhaps assign the
+default values for some of its members. If you forget to issue this call, the executable may
+or may not throw up an error that says "**** is already associated." depending on whether the 
+developer has written code to check it. Using an object without initialising it may lead to 
+some subtle memory problems. You have been warned.
+Between CreateStart and CreateFinish, we basically call routines that assign properties to 
+shape and mould this specific instance of the object. It's only when the CreateFinish call 
+is issued, that OpenCMISS oils up its gears and actually gets to work. Thus it is possible that
+you may have entered conflicting arguments, but the error may not occur until the CreateFinish
+is called. Because a lot happens in CreateFinish, it's usually the place that you might want
+to put a stop flag in your debugger (which will be discussed later).
+
+So, armed with the above knowledge, most of the example file can be broken down into these 
+blocks:
+\begin{lstlisting}
+CoordinateSystem
+Region
+Basis
+Mesh/GeneratedMesh
+Decomposition
+Field
+EquationsSet
+BoundaryConditions
+Problem
+Solver
+\end{lstlisting}
+From these, you probably won't touch CoordinateSystem (except for changing dimensions), Region 
+and Decomposition because, well, there's nothing much to change unless you're doing something
+quite advanced. This leaves for an average joe developer/user the following bits to tinker with:
+Basis, Mesh, Field, EquationsSet, BoundaryConditions, Problem and Solver.
+
+Basis objects are required for all finite element problems, which currently is the only solution
+method type implemented. A mesh object holds the geometry and mapping information. 
+Any kind of numerical data that you might want to hold in a vector or matrix, such 
+as the dependent (unknown) variables, material parameters or the nodal coordinates themselves
+are neatly packaged into the Field type object, which has several variants. These objects are
+described in further detail in section \ref{sec:devel_field}, but for now we will crack on with this
+introduction. EquationsSets, Solver and BoundaryConditions objects are so big and important that 
+they have their own designated sections elsewhere in this document (\ref{sec:devel_equationsset},
+\ref{sec:devel_solver} and \ref{sec:devel_bc}). This might leave
+you wondering what the role of the Problem object is - this one manages the control loops, which
+is a general way to handle linear/nonlinear/steady/time-dependent problems. The Problem objects
+also holds meta information regarding what equations are being solved, including coupled 
+physics problems that have been introduced recently.
+
+If you're a keen developer and you have peeked ahead at any of the library source files, you 
+might have noticed that they look quite a bit different from the example source file. Every 
+OpenCMISS routine called from the example file begin with \texttt{CMISS..}. The reason
+for this is because the example file may only use the library through OpenCMISS \textit{bindings}, 
+or \textit{application programming interface} rather than directly calling the routines from the 
+core library itself. This layer of separation is a pretty standard thing and it protects the user 
+from working directly with the object pointers which may be dangerous. All binding routines are 
+implemented in the file \texttt{/src/opencmiss.f90} which is the only module we include via the call
+\begin{lstlisting}
+USE OPENCMISS
+\end{lstlisting}
+at the top of the example file. When you start developing user-callable library routines, you 
+will have to also write (and maintain!) the bindings if they're to be used in the example file.
+
+Once you start to modify the code yourself, there will invariably be errors. That's okay. What
+you should know though is how OpenCMISS handles errors. When there is an error in the library
+routine, in most cases OpenCMISS won't exit straight away with an all-too familiar message like 
+"segmentation fault" but takes a more graceful approach. This is great for users of the library, 
+but as a developer it can take a little while to pinpoint exactly at which line the error has 
+occurred. The default error handling behaviour is to output the error and continue execution, 
+which, for a scientific code like this usually leads to more errors. This behaviour can be 
+changed via
+\begin{lstlisting}
+CALL CMISSErrorHandlingModeSet(CMISSTrapError,Err)
+\end{lstlisting}
+which forces the program to stop after the error message has been printed. 
+
+While we're on the subject of bug-hunting, let's address the issue of viewing variables. There
+are a couple of different approaches one can use to check on the value of variables mid-execution.
+The first is to use a debugger like Totalview, which isn't free but is worth every penny. The 
+other way is to go old-school and put \texttt{WRITE(*,*)} all over the source file (Don't forget 
+to remove this before committing). This approach involves you having to re-compile the entire 
+library which is quite time-consuming. Also, because most data you will be interested in are 
+encapsulated under extensive object structures, it may require some time to figure out exactly 
+what to print out.
+
+Having Totalview installed also helps with looking at routines. At this point we will break 
+through the surface of the example file and go under. Let's take the error handling mode setting
+routine from above. To follow it down, open up \texttt{/src/opencmiss.f90} and Ctrl-F for the routine.
+Between the \texttt{ENTERS} and \texttt{EXITS} routines (which will be described later) you will
+see that the binding routine simply makes a call to the actual routine which does the work:
+\begin{lstlisting}
+CALL CMISS_ERROR_HANDLING_MODE_SET(...)
+\end{lstlisting}
+This subroutine is not defined in \texttt{opencmiss.f90}, as it only contains the bindings. The
+convention in OpenCMISS code is to prefix every routine name with the module name, which, in this
+case is \texttt{CMISS}. You can now open up \texttt{/src/cmiss.f90} and search again for the routine.
+If you hate having to connect the dots every step of the way in this fashion, you can fire up the
+example in Totalview and simply double click on the routine names to dive into them.
+
+You should now have a good background to start modifying or setting up your own example files. 
+A large part of doing this involves copy \& pasting an existing example and modifying them to fit
+your own problem (be sure to use the \texttt{svn cp} command to avoid nagging emails). In this case,
+you might end up spending a lot of time figuring out what arguments a certain function should be called 
+with. For example, you might want to change the type of matrix storage from Full to Sparse. The 
+binding routine that sets this is called
+\begin{lstlisting}
+CMISSEquationsSparsityTypeSet(Equations,SparsityType,Err)
+\end{lstlisting}
+The second argument, which is what you want to change, is meant to be selected from a set of named
+constants. How do I know this? It's obvious after a while, but you can Ctrl-F for this routine in 
+\texttt{opencmiss.f90}. There, you will see in the comment next to \texttt{SparsityType} it will say
+\texttt{see OPENCMISS\_EquationsSparsityTypes}. These constants are also defined within 
+\texttt{opencmiss.f90} so Ctrl-F it again and it will take you to the near the top of the file where
+\begin{lstlisting}
+CMISSEquationsSparseMatrices
+CMISSEquationsFullMatrices
+\end{lstlisting}
+are defined. The whole thing can also be done by looking at the developer's page:\\
+\texttt{http://cmiss.bioeng.auckland.ac.nz/OpenCMISS/doc/doxygen/html/}
+if you have a lot of patience that is.
+
+Lastly, if you don't know already, learn how to search within full directory of files for a keyword 
+in your editor. Because Fortran doesn't have a great IDE (integrated development environment), this
+is unfortunately the fastest way to find information you're after.
+
+
+%-----------------------
+% These are only proposed headings - suggestions for improvements are welcome
+\section{A Deeper Look at the Laplace Example}
+\label{sec:devel_laplace}
+
+\section{Solver Object}
+\label{sec:devel_solver}
+
+\section{Petsc and OpenCMISS}
+\label{sec:devel_petsc}
+
+\section{Overview of Finite Element Routines}
+\label{sec:devel_fe_routines}
+
+\section{Boundary conditions}
+\label{sec:devel_bc}
+
+\section{Time Integrations}
+\label{sec:devel_time_integrations}
+
+\section{Parallel Execution}
+\label{sec:devel_parallel}
+
+\section{HECToR}
+\label{sec:devel_hector}
+
+%-----------------------
+\section{Description of OpenCMISS Objects}
+\label{sec:devel_objects}
+
+\subsection{Basis Object}
+\label{sec:devel_basis}
+
+\subsection{Mesh Object}
+\label{sec:devel_mesh}
+
+\subsection{Field Object}
+\label{sec:devel_field}
+
+\subsection{EquationsSet Object}
+\label{sec:devel_equationsset}
+
+\subsection{Decomposition Object}
+\label{sec:devel_decomposition}
+
+%-----------------------
+\section{CMISS Conventions, Bits and Bobs}
+% Derivative, Node, Component order
+% old CMISS variables (ng,ns,nu, etc)
+% 
