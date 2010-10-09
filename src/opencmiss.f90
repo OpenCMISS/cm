@@ -27283,10 +27283,19 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN):: Method !<The export method to use.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(VARYING_STRING) :: VFileName
+    TYPE(VARYING_STRING) :: VMethod
+    INTEGER(INTG) :: FileNameLength
+    INTEGER(INTG) :: MethodLength
   
     CALL ENTERS("CMISSFieldIOElementsExportCCObj",Err,ERROR,*999)
+
+    FileNameLength = LEN_TRIM(FileName)
+    VFileName = FileName(1:FileNameLength)
+    MethodLength = LEN_TRIM(Method)
+    VMethod = Method(1:MethodLength)
  
-    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,VAR_STR(FileName),VAR_STR(Method),Err,ERROR,*999)
+    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,VFileName,VMethod,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIOElementsExportCCObj")
     RETURN
@@ -27311,10 +27320,15 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN):: Method !<The export method to use.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(VARYING_STRING) :: VMethod
+    INTEGER(INTG) :: MethodLength
   
     CALL ENTERS("CMISSFieldIOElementsExportVSCObj",Err,ERROR,*999)
  
-    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,FileName,VAR_STR(Method),Err,ERROR,*999)
+    MethodLength = LEN_TRIM(Method)
+    VMethod = Method(1:MethodLength)
+
+    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,FileName,VMethod,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIOElementsExportVSCObj")
     RETURN
@@ -27339,10 +27353,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN):: Method !<The export method to use.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(VARYING_STRING) :: VFileName
+    INTEGER(INTG) :: FileNameLength
   
     CALL ENTERS("CMISSFieldIOElementsExportCVSObj",Err,ERROR,*999)
+
+    FileNameLength = LEN_TRIM(FileName)
+    VFileName = FileName(1:FileNameLength)
  
-    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,VAR_STR(FileName),Method,Err,ERROR,*999)
+    CALL FIELD_IO_ELEMENTS_EXPORT(Fields%FIELDS,VFileName,Method,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIOElementsExportCVSObj")
     RETURN
@@ -27393,10 +27412,19 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN):: Method !<The export method to use.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-  
+    TYPE(VARYING_STRING) :: VFileName
+    TYPE(VARYING_STRING) :: VMethod
+    INTEGER(INTG) :: FileNameLength
+    INTEGER(INTG) :: MethodLength
+
     CALL ENTERS("CMISSFieldIONodesExportCCObj",Err,ERROR,*999)
- 
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,VAR_STR(FileName),VAR_STR(Method),Err,ERROR,*999)
+
+    FileNameLength = LEN_TRIM(FileName)
+    VFileName = FileName(1:FileNameLength)
+    MethodLength = LEN_TRIM(Method)
+    VMethod = Method(1:MethodLength)
+
+    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,VFileName,VMethod,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIONodesExportCCObj")
     RETURN
@@ -27420,10 +27448,15 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN):: Method !<The export method to use.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(VARYING_STRING) :: VMethod
+    INTEGER(INTG) :: MethodLength
   
     CALL ENTERS("CMISSFieldIONodesExportVSCObj",Err,ERROR,*999)
- 
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,FileName,VAR_STR(Method),Err,ERROR,*999)
+
+    MethodLength = LEN_TRIM(Method)
+    VMethod = Method(1:MethodLength)
+
+    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,FileName,VMethod,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIONodesExportVSCObj")
     RETURN
@@ -27447,10 +27480,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN):: Method !<The export method to use.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(VARYING_STRING) :: VFileName
+    INTEGER(INTG) :: FileNameLength
   
     CALL ENTERS("CMISSFieldIONodesExportCVSObj",Err,ERROR,*999)
+
+    FileNameLength = LEN_TRIM(FileName)
+    VFileName = FileName(1:FileNameLength)
  
-    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,VAR_STR(FileName),Method,Err,ERROR,*999)
+    CALL FIELD_IO_NODES_EXPORT(Fields%FIELDS,VFileName,Method,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldIONodesExportCVSObj")
     RETURN
