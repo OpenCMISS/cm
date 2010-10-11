@@ -905,12 +905,17 @@ and
   g_{i}^{.j}=\dotprod{\vect{g}_{i}}{\vect{g}^{j}}
 \end{equation}
 
-Note that if the base vectors are all mutually orthogonal and constant then
+Note that for mixed tensors the ``.'' indicates the order of the index \ie
+$g^{i}_{.j}$ indicates taht the first index is contravariant and the second
+index is covariant whereas $g_{i}^{.j}$ indicates that the first index is
+covariant and the second index is contravariant.
+
+If the base vectors are all mutually orthogonal and constant then
 $\vect{g}_{i}=\vect{g}^{i}$ and $g_{ij}=g^{ij}$.
 
 The metric tensors generalise (Euclidean) distance \ie
 \begin{equation}
-  ds^{2}=g^{ij}dx^{i}dx^{j}
+  ds^{2}=g_{ij}dx^{i}dx^{j}
 \end{equation}
 
 Note that multiplying by the covariant metric tensor lowers indices \ie
@@ -943,31 +948,31 @@ system to a $\vect{\xi}$ coordinate system are as follows:
 
 For a covariant vector (a rank (0,1) tensor)
 \begin{equation}
-  {a^{*}}_{i}=\delby{\nu^{a}}{\xi^{i}}a_{a}
+  {\tilde{a}}_{i}=\delby{\nu^{a}}{\xi^{i}}a_{a}
 \end{equation}
 
 For a contravariant vector (a rank (1,0) tensor)
 \begin{equation}
-  {a^{*}}^{i}=\delby{\xi^{i}}{\nu^{a}}a^{a}
+  {\tilde{a}}^{i}=\delby{\xi^{i}}{\nu^{a}}a^{a}
 \end{equation}
 
 For a covariant tensor (a rank (0,2) tensor)
 \begin{equation}
-  {A^{*}}_{ij}=\delby{\nu^{a}}{\xi^{i}}\delby{\nu^{b}}{\xi^{j}}A_{ab} 
+  {\tilde{A}}_{ij}=\delby{\nu^{a}}{\xi^{i}}\delby{\nu^{b}}{\xi^{j}}A_{ab} 
 \end{equation}
 
 For a contravariant tensor (a rank (2,0) tensor)
 \begin{equation}
-  {A^{*}}^{ij}=\delby{\xi^{i}}{\nu^{a}}\delby{\xi^{j}}{\nu^{b}}A^{ab}
+  {\tilde{A}}^{ij}=\delby{\xi^{i}}{\nu^{a}}\delby{\xi^{j}}{\nu^{b}}A^{ab}
 \end{equation}
 
 and for Mixed tensors (rank (1,1) tensors)
 \begin{equation}
-  {A^{*}}^{i}_{.j}=\delby{\xi^{i}}{\nu^{a}}\delby{\nu^{b}}{\xi^{j}}A^{a}_{.b}
+  {\tilde{A}}^{i}_{.j}=\delby{\xi^{i}}{\nu^{a}}\delby{\nu^{b}}{\xi^{j}}A^{a}_{.b}
 \end{equation}
 and
 \begin{equation}
-  {A^{*}}_{i}^{.j}=\delby{\nu^{a}}{\xi^{i}}\delby{\xi^{j}}{\nu^{b}}A_{a}^{.b}
+  {\tilde{A}}_{i}^{.j}=\delby{\nu^{a}}{\xi^{i}}\delby{\xi^{j}}{\nu^{b}}A_{a}^{.b}
 \end{equation}
 
 \subsection{Derivatives}
@@ -1464,13 +1469,13 @@ with all other Christofell symbols zero.
 
 The general form for static equations is
 
-\subsection{Transient Equations}
+\subsection{Dynamic Equations}
 
-The general form for transient equations is
+The general form for dynamic equations is
 \begin{equation}
   \matr{M}\fnof{\ddot{\vect{u}}}{t}+\matr{C}\fnof{\dot{\vect{u}}}{t}+\matr{K}\fnof{\vect{u}}{t}+
   \fnof{\vect{g}}{\fnof{\vect{u}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
-  \label{eqn:generaltransientnonlinear}
+  \label{eqn:generaldynamicnonlinear}
 \end{equation}
 where $\fnof{\vect{u}}{t}$ is the unknown ``displacement vector'', $\matr{M}$
 is the mass matrix, $\matr{C}$ is the damping matrix, $\matr{K}$ is the
@@ -1493,7 +1498,7 @@ where the only unknown is the the vector $\vect{\alpha}^{p}_{n}$,
 \end{equation}
 
 A recurrance relationship can be established by substituting
-\eqnref{eqn:timepolyexpansion} into \eqnref{eqn:generaltransientnonlinear} and
+\eqnref{eqn:timepolyexpansion} into \eqnref{eqn:generaldynamicnonlinear} and
 taking a weighted residual approach \ie
 \begin{multline}
   \dintl{0}{\Delta
@@ -1656,7 +1661,7 @@ Rearranging gives
   +\pbrac{1-\theta_{1}}\fnof{\vect{g}}{\vect{u}_{n}}+
   \pbrac{\matr{M}\ddot{\bar{\vect{u}}}_{n+1}+\matr{C}\dot{\bar{\vect{u}}}_{n+1}+\matr{K}\bar{\vect{u}}_{n+1}+
     \bar{\vect{f}}}= \vect{0}
-  \label{eqn:transient}
+  \label{eqn:dynamic}
 \end{multline}
 or 
 \begin{equation}
@@ -1676,7 +1681,7 @@ and $\vect{b}$ is the right hand side vector given by
   \matr{K}\bar{\vect{u}}_{n+1}+\bar{\vect{f}}
 \end{equation}
 
-If $\fnof{\vect{g}}{\vect{u}}\equiv\vect{0}$ then \eqnref{eqn:transient} is linear in
+If $\fnof{\vect{g}}{\vect{u}}\equiv\vect{0}$ then \eqnref{eqn:dynamic} is linear in
 $\vect{\alpha}^{p}_{n}$ and $\vect{\alpha}^{p}_{n}$ can be found by solving
 the linear equation
 \begin{equation}
@@ -1692,7 +1697,7 @@ or
 \end{equation}
 
 If $\fnof{\vect{g}}{\vect{u}}$ is not $\equiv\vect{0}$ then
-\eqnref{eqn:transient} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
+\eqnref{eqn:dynamic} is nonlinear in $\vect{\alpha}^{p}_{n}$. To solve this
 equation we use Newton's method \ie
 \begin{equation}
   \begin{split}
@@ -1740,10 +1745,10 @@ For algorithms in which the degree of the polynomial, $p$, is higher than the
 order we require the algorithm to be initialised so that the initial velocity
 or acceleration can be computed. The initial velocity or acceleration values
 can be obtained by substituting the initial displacement or initial
-displacement and velocity values into \eqnref{eqn:generaltransientnonlinear},
+displacement and velocity values into \eqnref{eqn:generaldynamicnonlinear},
 rearranging and solving. For example consider an the case of a second degree
 polynomial and a first order system. Substituing the initial displacement
-$\vect{u}_{0}$ into \eqnref{eqn:generaltransientnonlinear} gives
+$\vect{u}_{0}$ into \eqnref{eqn:generaldynamicnonlinear} gives
 \begin{equation}
   \matr{C}\dot{\vect{u}}_{0}+\matr{K}\vect{u}_{0}+\fnof{\vect{g}}{\vect{u}_{0}}+\bar{\vect{f}}_{0}=\vect{0}
 \end{equation}

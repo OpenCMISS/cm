@@ -34,12 +34,11 @@ or
 \end{equation}
 where $\vect{n}$ is the unit outward normal vector to the boundary~$\Gamma$.
 
-
 \subsubsection{Tensor notation:}
 If we now consider the integrand of the left hand side of
 \eqnref{eqn:Laplaceweightedresidualform} in tensorial form with covariant
 derivatives indicated by a semi-colon in the index
-(see Section~\ref{subsec:function derivatives} for details) then
+(see \secref{subsec:function derivatives} for details) then
 \begin{equation}
   \tensor{\sigma}\grad\phi = \sigma^{i}_{j}\covarderiv{\phi}{i}
   \label{eqn:Laplace weak form factor1}
@@ -54,7 +53,7 @@ Now, Equations (\ref{eqn:Laplace weak form factor1}) and (\ref{eqn:Laplace weak 
 represent vectors that are covariant and
 therefore we must convert Equation (\ref{eqn:Laplace weak form factor1})
 to a contravariant vector by 
-multiplying by the contravariant metric tensor (from \vect{i} to \vect{x} 
+multiplying by the contravariant metric tensor (from $\vect{i}$ to $\vect{x}$ 
 coordinates) so that we can take the dot product. The final tensorial form is
 \begin{equation}
   \dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
@@ -81,7 +80,7 @@ interpolation is such that $\gbfn{\alpha}{u}{\vect{\xi}}$ are the appropriate
 basis functions for the type of element (\eg \bicubicherm, Hermite-sector,
 \etc) and dimension of the problem (one, two or \threedal). For example if
 $\vect{\xi}=\bbrac{\xi}$ and the element is a cubic Hermite element 
-(cf.~Sect.~\ref{sec:Hermitianbasisfunctions}) then
+(\secref{sec:Hermitianbasisfunctions}) then
 $\gbfn{\alpha}{u}{\vect{\xi}}$ are the cubic Hermite basis functions where
 the local node number $\alpha$ ranges from $1$ to $2$ and $u$ ranges from $0$ to $1$. 
 If, however, $\vect{\xi}=\bbrac{\xione,\xitwo}$ and the element is a \bicubicherm element
@@ -141,7 +140,7 @@ coordinates \ie
 \begin{equation}
   \sigma^{p}_{.q}=\delby{\xi^{p}}{\nu^{a}}\delby{\nu^{b}}{\xi^{q}}{\tilde{\sigma}}^{a}_{.b}
 \end{equation}
-with $.b$ indicating that $b$ is the ``second'' index (cf.~Sect.~\ref{subsec:summation notation}),
+with $.b$ indicating that $b$ is the ``second'' index (\secref{subsec:summation notation}),
 and then transform the conductivity from $\vect{\xi}$ coordinates to
 $\vect{x}$ coordinates \ie
 \begin{equation}
@@ -196,7 +195,7 @@ Note that for Laplace's equation with no conductivity or fibre fields then we ha
   \gamma^{rs}=G^{ik}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
 \end{equation}
 and that for rectangular-Cartesian coordinates systems
-$G^{ik}=\kronecker{i}{k}$ and thus $i=k$. This now gives
+$G^{ik}=\contrakronecker{i}{k}$ and thus $i=k$. This now gives
 \begin{equation}
   \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{i}}=g^{rs}
   \label{eqn:contrametrictensor}
