@@ -3,11 +3,13 @@
 \input{../latex/macros} %define new commands etc.
 \input{../latex/defns} %define pagesetup and std. packages etc.
 \input{../latex/abbreviations} %define packages etc.
+\input{ParameterEstimation/include} %define new commands etc.
 
 \usepackage{mybook} %define book style
 \usepackage{listings}
 \usepackage{times} %use the times font
 \usepackage{listings}
+
 \makeindex
 
 \title{OpenCMISS Notes}
@@ -35,6 +37,8 @@
 \include{Coupling/Coupling}                   %input from Coupling/Coupling.tex
 \include{BoundaryConditions/BoundaryConditions}
 \include{DevelopersDocument/DevelopersDoc}
+\include{ParameterEstimation/ParameterEstimation}                         %input from ParameterEstimation/ParameterEstimation.tex
+
 \include{References/References}               %input from References/References.tex
 
 \include{Index/Index}                         %input from Index/Index.tex
