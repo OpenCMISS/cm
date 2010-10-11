@@ -6,8 +6,6 @@
 - Generally, try to ensure that new code is consistent in formating, style, look and feel and convention with existing code. If in doubt about whether or not a new coding style rule is required please raise the issue rather than adopt a new style. 
 - Be professional in your coding style, comments, error messages, layout and other output.
 - Do not comment out code changes with dates and initials. The code management system will record all changes and who changed what.
-- As OpenCMISS needs to be used as a wrapped library all output should have the ability to be turned on or off. The default behaviour is that all output should be off. 
-- All output should be through the input/output routines. No output should be written out via WRITE or PRINT statements.
 
 \subsection code_layout Code Layout
 
@@ -16,6 +14,8 @@
 - Code should have no more than 132 characters in a line, use continuation &'s if need be. There should be a space before the first continuation character and a space after the second continuation character when continuing lines.
 - All arguments to a SUBROUTINE/FUNCTION must be decalared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INT), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes in the basis.
 - Continuation lines should be indented by 2 spaces with respect to the first line.
+- In general, code routines, local variable lists etc. should be alphabetical.
+- Add whitespace where appropriate to improve readability.
 
 \subsubsection for_discussion1 For discussion
 
@@ -106,8 +106,10 @@
 - For routines that return information (i.e., get routines) use SUBROUTINEs instead of FUNCTIONs. The result should be returned in memory supplied by the calling routine. The size of the supplied memory should be checked to ensure that it is large enough to hold the result. 
 - For read/write/print statement, avoid the comma before the data variable e.g., use READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA) instead of READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)
 - In IF/WHILE statement, do not use full logical expressions e.g., use IF(SOMEVALUE) or IF(.NOT.SOMEVALUE) instead of IF(SOMEVALUE==.TRUE.) or IF(SOMEVALUE==.FALSE.)
-- When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented", ... statement for the cases that are not yet implemented.
+- When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented.", ... statement for the cases that are not yet implemented.
 - SELECT CASE statements must always have a CASE DEFAULT clause.
+- As OpenCMISS needs to be used as a wrapped library all output should have the ability to be turned on or off. The default behaviour is that all output should be off. 
+- All output should be through the input/output routines. No output should be written out via WRITE or PRINT statements.
 
 \subsection for_discussion2 For discussion
 
@@ -121,6 +123,7 @@
 - All compiler warnings (e.g., unused variables) should be removed before committing code.
 - All error messages should be a proper sentance (with a full stop).
 - Input arguments should be checked in a subroutine before being used.
+- All pointer arguments that are assigned within a routine should be checked to ensure that they are null on entry.
 - All constants should be declared as named parameters. Never hardcode a constant in the code.
 
 \section pre_processing Pre-processing
@@ -216,6 +219,33 @@ MODULE SAMPLE
     RETURN 1
    
   END SUBROUTINE DO_SOMETHING
+  
+  !	      
+  !==================================================================================================================================
+  !
+
+  !>Function description.
+  FUNCTION DO_SOMETHING_ELSE(INPUT,OUTPUT,ERR,ERROR)
+
+    !Argument variables		
+    INTEGER(INTG), INTENT(IN) :: INPUT !<Input variable description.
+    INTEGER(INTG), INTENT(OUT) :: OUTPUT !<On return, the output variable description. Should rarely be used - use the function variable instead in possible.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    INTEGER(INTG) :: DO_SOMETHING_ELSE
+    !Local Variables
+
+    CALL ENTERS("DO_SOMETHING_ELSE",ERR,ERROR,*999)
+
+
+    CALL EXITS("DO_SOMETHING_ELSE")
+    RETURN
+999 CALL ERRORS("DO_SOMETHING_ELSE",ERR,ERROR)    
+    CALL EXITS("DO_SOMETHING_ELSE")
+    RETURN
+   
+  END FUNCTION DO_SOMETHING_ELSE
         
   !
   !==================================================================================================================================
