@@ -298,7 +298,7 @@ CONTAINS
       SELECT CASE(PROBLEM%SUBTYPE)
 
       !--------------------------------------------------------------------
-      !   coupled source diffusion-diffusion
+      !   coupled source diffusion--advection-diffusion
       !--------------------------------------------------------------------
       CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE)
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)

@@ -1149,7 +1149,7 @@ CONTAINS
     DO i = 1, componentCount
       fieldComponentNumbers(i) = i
     ENDDO
-    
+
     CALL FieldmlOutput_AddFieldComponents( fieldmlInfo, domainHandle, baseName, mesh, field, fieldComponentNumbers, &
       & variableType, err )
     
