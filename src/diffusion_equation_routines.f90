@@ -1177,7 +1177,11 @@ CONTAINS
                     & FIELD_VALUES_SET_TYPE,component_idx,1.0_DP,ERR,ERROR,*999)
                 ENDDO !component_idx
                 IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE) THEN
-                  DO component_idx=1,NUMBER_OF_DIMENSIONS
+                  EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                  CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+                    Ncompartments=EQUATIONS_SET_FIELD_DATA(2)
+                  DO component_idx=1,Ncompartments
                    CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                      & FIELD_VALUES_SET_TYPE,component_idx,0.0_DP,ERR,ERROR,*999)
                    ENDDO !component_idx
@@ -1482,7 +1486,12 @@ CONTAINS
                     & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                     & ERR,ERROR,*999)
                   CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
-                    (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)                  
+                    (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
+                  CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
+                    & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    & ERR,ERROR,*999)      
+                  CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                    (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)            
                 CASE DEFAULT
                   LOCAL_ERROR="The equations matrices sparsity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -2642,8 +2651,10 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,mh,mhs,ms,ng,nh,nhs,ni,nj,ns,my_compartment,Ncompartments,imatrix,num_var_count
-    REAL(DP) :: C_PARAM,K_PARAM,RWG,SUM,PGMJ(3),PGNJ(3),A_PARAM
+    INTEGER(INTG) :: MESH_COMPONENT_1, MESH_COMPONENT_2
+    REAL(DP) :: C_PARAM,K_PARAM,RWG,SUM,PGMJ(3),PGNJ(3),A_PARAM,COUPLING_PARAM,PGM,PGN
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
+    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS_1, DEPENDENT_BASIS_2
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -2660,6 +2671,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_PTR_TYPE) :: COUPLING_MATRICES(99) 
     INTEGER(INTG) :: FIELD_VAR_TYPES(99)
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME_1, QUADRATURE_SCHEME_2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: ADVEC_DIFF_DEPENDENT_CURRENT_INTERPOLATION_PARAMETERS, &
       & ADVEC_DIFF_DEPENDENT_PREVIOUS_INTERPOLATION_PARAMETERS,DIFFUSION_DEPENDENT_PREVIOUS_INTERPOLATION_PARAMETERS
@@ -2938,7 +2950,7 @@ CONTAINS
           DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
 
-
+ 
           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD,FIELD_U_VARIABLE_TYPE, &
             & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
 
@@ -2956,7 +2968,7 @@ CONTAINS
               COUPLING_MATRICES(num_var_count)%PTR=>LINEAR_MATRICES%MATRICES(num_var_count)%PTR
               FIELD_VARIABLES(num_var_count)%PTR=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(num_var_count)%VARIABLE
               FIELD_VAR_TYPES(num_var_count)=FIELD_VARIABLES(num_var_count)%PTR%VARIABLE_TYPE
-              write(*,*) FIELD_VAR_TYPES(num_var_count)
+              !write(*,*) FIELD_VAR_TYPES(num_var_count)
               COUPLING_MATRICES(num_var_count)%PTR%ELEMENT_MATRIX%MATRIX=0.0_DP
              ENDIF
             END DO
@@ -2976,6 +2988,8 @@ CONTAINS
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & SOURCE_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
           !Loop over gauss points
@@ -2986,6 +3000,8 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+              & MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             !Calculate RWG.
 !!TODO: Think about symmetric problems. 
             RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
@@ -3046,6 +3062,82 @@ CONTAINS
                     ENDDO !mh
                 ENDIF
              IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP 
+            !Calculate the coupling matrices
+            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+            CASE(EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE)
+              !Loop over element rows
+              mhs=0
+              DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS !field_variable is the variable associated with the equations set under consideration
+
+                MESH_COMPONENT_1 = FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                DEPENDENT_BASIS_1 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_1)%PTR% &
+                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                QUADRATURE_SCHEME_1 => DEPENDENT_BASIS_1%QUADRATURE% &
+                  & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN * &
+                  & QUADRATURE_SCHEME_1%GAUSS_WEIGHTS(ng)
+
+                DO ms=1,DEPENDENT_BASIS_1%NUMBER_OF_ELEMENT_PARAMETERS
+                  mhs=mhs+1
+
+                  num_var_count=0
+                  DO imatrix = 1,Ncompartments
+                  IF(imatrix/=my_compartment)THEN
+                    num_var_count=num_var_count+1
+
+!need to test for the case where imatrix==mycompartment
+!the coupling terms then needs to be added into the stiffness matrix
+                    IF(COUPLING_MATRICES(num_var_count)%PTR%UPDATE_MATRIX) THEN
+
+!                       !Loop over element columns
+                      nhs=0
+! !                       DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                      DO nh=1,FIELD_VARIABLES(num_var_count)%PTR%NUMBER_OF_COMPONENTS
+
+                        MESH_COMPONENT_2 = FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                        DEPENDENT_BASIS_2 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_2)%PTR% &
+                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        !--- We cannot use two different quadrature schemes here !!!
+                        QUADRATURE_SCHEME_2 => DEPENDENT_BASIS_2%QUADRATURE% &
+                         & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                        !RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * &
+                        !  & QUADRATURE_SCHEME_2%GAUSS_WEIGHTS(ng)
+
+                        DO ns=1,DEPENDENT_BASIS_2%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+
+!                           !-------------------------------------------------------------------------------------------------------------
+!                           !concentration test function, concentration trial function
+!                           !For now, this is only a dummy implementation - this still has to be properly set up.
+!                           IF(mh==nh.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN ! don't need this for diffusion equation
+
+!                             SUM = 0.0_DP
+
+                            PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                            PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                            !Get the coupling coefficients 
+                              COUPLING_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR% &
+                                & VALUES(imatrix,NO_PART_DERIV)
+
+!                              SUM = SUM + COUPLING_PARAM * PGM * PGN
+ 
+                             COUPLING_MATRICES(num_var_count)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
+                               & COUPLING_MATRICES(num_var_count)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) + & 
+                               & COUPLING_PARAM * PGM * PGN * RWG
+!                           ENDIF
+ 
+                        ENDDO !ns
+                      ENDDO !nh
+                    ENDIF
+                   ENDIF
+                  ENDDO !imatrix
+                ENDDO !ms
+              ENDDO !mh
+            CASE DEFAULT
+              !Do nothing        
+            END SELECT
+
           ENDDO !ng
          
           !Scale factor adjustment
