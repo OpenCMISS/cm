@@ -6,7 +6,7 @@
 \section{Introduction}
 \label{sec:devel_intro}
 
-This chapter is intented for new and existing developers of OpenCMISS. It contains tips
+This chapter is intended for new and existing developers of OpenCMISS. It contains tips
 from the developers who previously encountered the learning curve, and are now trying to 
 reduce it for those who are new to OpenCMISS. New developers are encouraged to use this
 chapter written in an informal narrative style as an independent study guide to get up to 
@@ -87,7 +87,7 @@ Solver
 \end{lstlisting}
 From these, you probably won't touch CoordinateSystem (except for changing dimensions), Region 
 and Decomposition because, well, there's nothing much to change unless you're doing something
-quite advanced. This leaves for an average joe developer/user the following bits to tinker with:
+quite advanced. This leaves for an average Joe developer/user the following bits to tinker with:
 Basis, Mesh, Field, EquationsSet, BoundaryConditions, Problem and Solver.
 
 Basis objects are required for all finite element problems, which currently is the only solution
@@ -133,14 +133,14 @@ which forces the program to stop after the error message has been printed.
 
 While we're on the subject of bug-hunting, let's address the issue of viewing variables. There
 are a couple of different approaches one can use to check on the value of variables mid-execution.
-The first is to use a debugger like Totalview, which isn't free but is worth every penny. The 
+The first is to use a debugger like TotalView, which isn't free but is worth every penny. The 
 other way is to go old-school and put \texttt{WRITE(*,*)} all over the source file (Don't forget 
 to remove this before committing). This approach involves you having to re-compile the entire 
 library which is quite time-consuming. Also, because most data you will be interested in are 
 encapsulated under extensive object structures, it may require some time to figure out exactly 
 what to print out.
 
-Having Totalview installed also helps with looking at routines. At this point we will break 
+Having TotalView installed also helps with looking at routines. At this point we will break 
 through the surface of the example file and go under. Let's take the error handling mode setting
 routine from above. To follow it down, open up \texttt{/src/opencmiss.f90} and Ctrl-F for the routine.
 Between the \texttt{ENTERS} and \texttt{EXITS} routines (which will be described later) you will
@@ -152,7 +152,7 @@ This subroutine is not defined in \texttt{opencmiss.f90}, as it only contains th
 convention in OpenCMISS code is to prefix every routine name with the module name, which, in this
 case is \texttt{CMISS}. You can now open up \texttt{/src/cmiss.f90} and search again for the routine.
 If you hate having to connect the dots every step of the way in this fashion, you can fire up the
-example in Totalview and simply double click on the routine names to dive into them.
+example in TotalView and simply double click on the routine names to dive into them.
 
 You should now have a good background to start modifying or setting up your own example files. 
 A large part of doing this involves copy \& pasting an existing example and modifying them to fit
@@ -189,7 +189,7 @@ is unfortunately the fastest way to find information you're after.
 \section{Solver Object}
 \label{sec:devel_solver}
 
-\section{Petsc and OpenCMISS}
+\section{PETSc and OpenCMISS}
 \label{sec:devel_petsc}
 
 \section{Overview of Finite Element Routines}
