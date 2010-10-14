@@ -403,6 +403,20 @@ MODULE TYPES
     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: PTR !<The pointer to the mesh topology.
   END TYPE MESH_TOPOLOGY_PTR_TYPE
 
+  !>Embedded mesh types
+  TYPE EMBEDDING_XI_TYPE
+    INTEGER(INTG) :: NUMBER_OF_NODES                  !<Number of nodes embedded in this element
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:)     !<Node numbers in the child mesh
+    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:)      !<Xi coordinates in parent element
+  END TYPE EMBEDDING_XI_TYPE
+
+  TYPE MESH_EMBEDDING_TYPE
+    TYPE(MESH_TYPE), POINTER :: CHILD_MESH, PARENT_MESH !<The parent and child mesh
+    TYPE(EMBEDDING_XI_TYPE), ALLOCATABLE :: ELEMENT_XI(:) !<Embedded nodes for each element in the parent mesh
+
+  END TYPE MESH_EMBEDDING_TYPE
+
+
   !>Contains information on a mesh defined on a region. \see OPENCMISS::CMISSMeshType
   TYPE MESH_TYPE
     INTEGER(INTG) :: USER_NUMBER !<The user number of the mesh. The user number must be unique.

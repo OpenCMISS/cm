@@ -214,6 +214,12 @@ MODULE OPENCMISS
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
   END TYPE CMISSMeshElementsType
   
+  !>Contains information on an embedded mesh
+  TYPE CMISSMeshEmbeddingType
+    PRIVATE
+    TYPE(MESH_EMBEDDING_TYPE), POINTER :: EMBEDDING
+  END TYPE CMISSMeshEmbeddingType
+
   !>Contains information on the nodes defined on a region.
   TYPE CMISSNodesType
     PRIVATE
@@ -3381,6 +3387,27 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSGeneratedMeshSurfaceGetNumber
     MODULE PROCEDURE CMISSGeneratedMeshSurfaceGetObj
   END INTERFACE
+
+ 
+  !>Creates an embedding of one mesh in another
+  INTERFACE CMISSMeshEmbeddingCreate
+    MODULE PROCEDURE CMISSMeshEmbeddingCreateObj
+  END INTERFACE
+
+  !>Sets the embedded nodes for one parent element
+  INTERFACE CMISSMeshEmbeddingSetElementXi
+    MODULE PROCEDURE CMISSMeshEmbeddingSetElementXiObj
+  END INTERFACE
+
+  
+  !>Pushes data from the parent field to the child field
+  INTERFACE CMISSMeshEmbeddingPushData
+    MODULE PROCEDURE CMISSMeshEmbeddingPushDataObj
+  END INTERFACE
+
+  PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetElementXi, CMISSMeshEmbeddingType, CMISSMeshEmbeddingPushData
+
+
 
   PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
  
@@ -28770,6 +28797,49 @@ CONTAINS
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
   END SUBROUTINE CMISSGeneratedMeshSurfaceGetObj
+
+
+!!==================================================================================================================================
+!!
+!! MESH EMBEDDING ROUTINES
+!!
+!!==================================================================================================================================
+
+  !>Creates a mesh embedding
+  SUBROUTINE CMISSMeshEmbeddingCreateObj(MeshEmbedding, ParentMesh, ChildMesh, Err)
+    TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
+    TYPE(CMISSMeshType), INTENT(IN) :: ParentMesh, ChildMesh   !<The parent and child meshes
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    CALL MESH_EMBEDDING_CREATE(MeshEmbedding%EMBEDDING,ParentMesh%MESH,ChildMesh%MESH,Err,ERROR,*999)
+999 RETURN
+  END SUBROUTINE CMISSMeshEmbeddingCreateObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets the embedded nodes for one parent element
+  SUBROUTINE CMISSMeshEmbeddingSetElementXiObj(MeshEmbedding, ElementNumber, NodeNumbers, XiCoords, Err)
+    TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
+    INTEGER(INTG), INTENT(IN) :: ElementNumber   !<Parent element number
+    INTEGER(INTG), INTENT(IN) :: NodeNumbers(:)  !<Node numbers in child mesh
+    REAL(DP), INTENT(IN)      :: XiCoords(:,:)   !<Xi coordinates of embedded nodes wrt parent element
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    CALL MESH_EMBEDDING_SET_ELEMENT_XI(MeshEmbedding%EMBEDDING,ElementNumber, NodeNumbers, XiCoords, Err, ERROR, *999)
+999 RETURN
+  END SUBROUTINE CMISSMeshEmbeddingSetElementXiObj
+
+  !>Pushes data to embedded mesh. Will generally be used at library and not API level. /TODO: Parameter set etc, function name?
+  SUBROUTINE CMISSMeshEmbeddingPushDataObj(MeshEmbedding, ParentField, ParentComponent, ChildField, ChildComponent, Err)
+    TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
+    TYPE(CMISSFieldType), POINTER, INTENT(IN) :: ParentField, ChildField  !<Fields associated with parent and child mesh to get/set data from
+    INTEGER(INTG), INTENT(IN) :: ParentComponent, ChildComponent  !<Component numbers in respective fields
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    CALL MESH_EMBEDDING_PUSH_DATA(MeshEmbedding%EMBEDDING,ParentField%FIELD, ParentComponent, ChildField%FIELD, ChildComponent,&
+      & Err, ERROR, *999)
+999 RETURN
+  END SUBROUTINE CMISSMeshEmbeddingPushDataObj
+
 
 
 !!==================================================================================================================================
