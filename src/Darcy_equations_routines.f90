@@ -3548,7 +3548,6 @@ CONTAINS
             CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy pre-solve ... ",ERR,ERROR,*999)
 
               IF((CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_SIMPLE_TYPE.OR.CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) &
                   & .AND.SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_MAT_PROPERTIES) THEN
@@ -3642,10 +3641,16 @@ CONTAINS
 
     !If this is the first time step then store reference data
     IF(CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER==1) THEN
+      IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
+        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,'== Storing reference data',ERR,ERROR,*999)
+      ENDIF
       CALL DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
     ENDIF
 
     !Store data of previous time step (mesh position); executed once per time step before subiteration
+    IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
+      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,'== Storing previous data',ERR,ERROR,*999)
+    ENDIF
     CALL DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_DATA(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
 
     CALL EXITS("DARCY_CONTROL_TIME_LOOP_PRE_LOOP")
@@ -3722,9 +3727,6 @@ CONTAINS
                           DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                           IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                            write(*,*)'======================================================='
-                            write(*,*)'***           Storing reference data                ***'
-                            write(*,*)'======================================================='
                             !--- Store the initial (= reference) GEOMETRY field values
                             ALPHA = 1.0_DP
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -3874,9 +3876,6 @@ CONTAINS
                           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                           IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                            write(*,*)'-------------------------------------------------------'
-                            write(*,*)'+++            Storing previous data                +++'
-                            write(*,*)'-------------------------------------------------------'
                             !--- Store the GEOMETRY field values of the previous time step
                             ALPHA = 1.0_DP
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -4001,7 +4000,9 @@ CONTAINS
                         CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
                           & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
                           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update mesh ... ",ERR,ERROR,*999)
+                          IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update mesh ... ",ERR,ERROR,*999)
+                          ENDIF
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                           IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
                             !--- First, get pointer to mesh displacement values
@@ -4173,7 +4174,9 @@ CONTAINS
                           CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
                             & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
                             & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update boundary conditions ... ",ERR,ERROR,*999)
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update boundary conditions ... ",ERR,ERROR,*999)
+                            ENDIF
                             DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                             GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                             IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
@@ -4394,7 +4397,9 @@ CONTAINS
               IF((CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_SIMPLE_TYPE.OR.CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) &
                   & .AND.SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
                 !--- Get the dependent field of the Material-Properties Galerkin-Projection equations
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update materials ... ",ERR,ERROR,*999)
+                IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update materials ... ",ERR,ERROR,*999)
+                ENDIF
                 CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,SOLVER_NUMBER_MAT_PROPERTIES,SOLVER_MAT_PROPERTIES,ERR,ERROR,*999)
                 SOLVER_EQUATIONS_MAT_PROPERTIES=>SOLVER_MAT_PROPERTIES%SOLVER_EQUATIONS
                 IF(ASSOCIATED(SOLVER_EQUATIONS_MAT_PROPERTIES)) THEN
@@ -4601,14 +4606,12 @@ CONTAINS
                       METHOD="FORTRAN"
                       EXPORT_FIELD=.TRUE.
                       IF(EXPORT_FIELD) THEN          
-!                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export fields ... ",ERR,ERROR,*999)
-
+                        IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export fields ... ",ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"STATICSOLUTION",ERR,ERROR,*999)
+                        ENDIF
                         CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,"STATICSOLUTION", &
                           & ERR,ERROR,*999)
-
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"STATICSOLUTION",ERR,ERROR,*999)
-!                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                       ENDIF
                     ENDDO
                   ENDIF 
@@ -4654,20 +4657,19 @@ CONTAINS
                           WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
                         END IF
                         FILE=OUTPUT_FILE
-  !                    FILE="TRANSIENT_OUTPUT"
                         METHOD="FORTRAN"
                         EXPORT_FIELD=.TRUE.
                         IF(EXPORT_FIELD) THEN          
                           IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export fields ...",ERR,ERROR,*999)
-
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export fields ...",ERR,ERROR,*999)
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                            ENDIF
                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                               & ERR,ERROR,*999)
-
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-!                             CALL FLUID_MECHANICS_IO_WRITE_ENCAS(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-!                               & ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy all fields exported ...",ERR,ERROR,*999)
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy all fields exported ...",ERR,ERROR,*999)
+                            ENDIF
                           ENDIF
                         ENDIF 
                       ENDIF 
@@ -5676,7 +5678,9 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                     ELSE
                       CALL FLAG_ERROR("Darcy equations set is not associated.",ERR,ERROR,*999)
                     END IF
-                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy motion read from a file ... ",ERR,ERROR,*999)
+                    IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy motion read from a file ... ",ERR,ERROR,*999)
+                    ENDIF
 
                     CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_DARCY%GEOMETRY%GEOMETRIC_FIELD, & 
                       & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
@@ -5712,7 +5716,9 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
               !--- Motion: defined by fluid-solid interaction (thus read from solid's dependent field)
               IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN  !It is called with 'SOLVER%GLOBAL_NUMBER=SOLVER_NUMBER_DARCY', otherwise it doesn't work
                 !--- Get the dependent field of the finite elasticity equations
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy motion read from solid's dependent field ... ",ERR,ERROR,*999)
+                IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                  CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy motion read from solid's dependent field ... ",ERR,ERROR,*999)
+                ENDIF
                 SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
                 CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
                   CALL CONTROL_LOOP_GET(ROOT_CONTROL_LOOP,(/1,CONTROL_LOOP_NODE/),CONTROL_LOOP_SOLID,ERR,ERROR,*999)

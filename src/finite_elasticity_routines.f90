@@ -2720,12 +2720,12 @@ ENDIF
                       METHOD="FORTRAN"
                       EXPORT_FIELD=.TRUE.
                       IF(EXPORT_FIELD) THEN          
-!                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ... ",ERR,ERROR,*999)
+                        IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ... ",ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"STATICSOLUTION",ERR,ERROR,*999)
+                        ENDIF
                         CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER, &
                           & "STATICSOLIDSOLUTION",ERR,ERROR,*999)
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"STATICSOLUTION",ERR,ERROR,*999)
-!                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                       ENDIF
                     ENDDO
                   ENDIF 
@@ -2772,11 +2772,15 @@ ENDIF
                         EXPORT_FIELD=.TRUE.
                         IF(EXPORT_FIELD) THEN          
                           IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ...",ERR,ERROR,*999)
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ...",ERR,ERROR,*999)
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                            ENDIF
                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                               & ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
+                            ENDIF
                           ENDIF
                         ENDIF 
                       ENDIF 
@@ -2912,7 +2916,9 @@ ENDIF
               ! every  solve
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity pre-solve ... ",ERR,ERROR,*999)
+              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity pre-solve",ERR,ERROR,*999)
+              ENDIF
 
               !--- Set 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -3162,7 +3168,9 @@ ENDIF
                           CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
                             & EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
                             & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update BCs ... ",ERR,ERROR,*999)
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update BCs",ERR,ERROR,*999)
+                            ENDIF
                             DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                             GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                             IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
