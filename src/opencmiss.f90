@@ -3395,8 +3395,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   END INTERFACE
 
   !>Sets the embedded nodes for one parent element
-  INTERFACE CMISSMeshEmbeddingSetElementXi
-    MODULE PROCEDURE CMISSMeshEmbeddingSetElementXiObj
+  INTERFACE CMISSMeshEmbeddingSetChildNodePosition
+    MODULE PROCEDURE CMISSMeshEmbeddingSetChildNodePositionObj
   END INTERFACE
 
   
@@ -3405,7 +3405,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSMeshEmbeddingPushDataObj
   END INTERFACE
 
-  PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetElementXi, CMISSMeshEmbeddingType, CMISSMeshEmbeddingPushData
+  PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetChildNodePosition, CMISSMeshEmbeddingType, CMISSMeshEmbeddingPushData
 
 
 
@@ -28819,15 +28819,15 @@ CONTAINS
   !  
  
   !>Sets the embedded nodes for one parent element
-  SUBROUTINE CMISSMeshEmbeddingSetElementXiObj(MeshEmbedding, ElementNumber, NodeNumbers, XiCoords, Err)
+  SUBROUTINE CMISSMeshEmbeddingSetChildNodePositionObj(MeshEmbedding, ElementNumber, NodeNumbers, XiCoords, Err)
     TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
     INTEGER(INTG), INTENT(IN) :: ElementNumber   !<Parent element number
     INTEGER(INTG), INTENT(IN) :: NodeNumbers(:)  !<Node numbers in child mesh
     REAL(DP), INTENT(IN)      :: XiCoords(:,:)   !<Xi coordinates of embedded nodes wrt parent element
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    CALL MESH_EMBEDDING_SET_ELEMENT_XI(MeshEmbedding%EMBEDDING,ElementNumber, NodeNumbers, XiCoords, Err, ERROR, *999)
+    CALL MESH_EMBEDDING_SET_CHILD_NODE_POSITION(MeshEmbedding%EMBEDDING,ElementNumber, NodeNumbers, XiCoords, Err, ERROR, *999)
 999 RETURN
-  END SUBROUTINE CMISSMeshEmbeddingSetElementXiObj
+  END SUBROUTINE CMISSMeshEmbeddingSetChildNodePositionObj
 
   !>Pushes data to embedded mesh. Will generally be used at library and not API level. /TODO: Parameter set etc, function name?
   SUBROUTINE CMISSMeshEmbeddingPushDataObj(MeshEmbedding, ParentField, ParentComponent, ChildField, ChildComponent, Err)

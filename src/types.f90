@@ -410,10 +410,16 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: XI_COORDS(:,:)      !<Xi coordinates in parent element
   END TYPE EMBEDDING_XI_TYPE
 
+  TYPE EMBEDDING_GAUSSPOINT_TYPE
+    INTEGER(INTG) :: ELEMENT_NUMBER             !<Element number in child mesh
+    REAL(DP), ALLOCATABLE :: CHILD_XI_COORD(:)  !<Xi coord in this element
+    REAL(DP), ALLOCATABLE :: PARENT_XI_COORD(:) !<Xi coordinates in parent element, not really needed but can be useful
+  END TYPE EMBEDDING_GAUSSPOINT_TYPE
+
   TYPE MESH_EMBEDDING_TYPE
     TYPE(MESH_TYPE), POINTER :: CHILD_MESH, PARENT_MESH !<The parent and child mesh
-    TYPE(EMBEDDING_XI_TYPE), ALLOCATABLE :: ELEMENT_XI(:) !<Embedded nodes for each element in the parent mesh
-
+    TYPE(EMBEDDING_XI_TYPE), ALLOCATABLE :: CHILD_NODE_XI_POSITION(:)            !<Location of embedded nodes for each element in the parent mesh
+    TYPE(EMBEDDING_GAUSSPOINT_TYPE), ALLOCATABLE :: GAUSS_POINT_XI_POSITION(:,:) !<Array of size #Gauss pts x #Elements, location of each Gauss point of the parent mesh in the child mesh
   END TYPE MESH_EMBEDDING_TYPE
 
 
