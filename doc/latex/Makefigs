@@ -21,7 +21,7 @@
 FIG2DEV=fig2dev
 
 
-SHELL=/bin/sh
+SHELL=/bin/bash
 
 .SUFFIXES:	.ps .tex .pstex .fig
 

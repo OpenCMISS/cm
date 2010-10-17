@@ -22,7 +22,7 @@
 #       Added code to translate title "$\\ sequences into title "$\ sequences.
 #
 
-SHELL=/bin/sh
+SHELL=/bin/bash
 
 .SUFFIXES:	.pstex .gnu .gnuc .gnucs .gnus .ps .eepic
 
