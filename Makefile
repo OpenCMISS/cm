@@ -946,6 +946,7 @@ $(OBJECT_DIR)/bioelectric_routines.o	:	$(SOURCE_DIR)/bioelectric_routines.f90 \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/monodomain_equations_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
@@ -1894,7 +1895,6 @@ $(OBJECT_DIR)/problem_routines.o	:	$(SOURCE_DIR)/problem_routines.f90 \
 	$(OBJECT_DIR)/interface_conditions_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/monodomain_equations_routines.o \
 	$(OBJECT_DIR)/multi_physics_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/solver_routines.o \
@@ -1921,6 +1921,7 @@ $(OBJECT_DIR)/region_routines.o	:	$(SOURCE_DIR)/region_routines.f90 \
 
 $(OBJECT_DIR)/solver_routines.o	:	$(SOURCE_DIR)/solver_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_petsc.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \

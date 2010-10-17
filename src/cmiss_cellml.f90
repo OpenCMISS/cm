@@ -108,10 +108,14 @@ MODULE CMISS_CELLML
   END INTERFACE !CELLML_PARAMETER_ADD
 
   PUBLIC CELLML_MODELS_FIELD_TYPE,CELLML_STATE_FIELD_TYPE,CELLML_INTERMEDIATE_FIELD_TYPE,CELLML_PARAMETERS_FIELD_TYPE
+
+  PUBLIC CELLML_CELLML_TO_FIELD_UPDATE
   
   PUBLIC CELLML_CREATE_START,CELLML_CREATE_FINISH
 
   PUBLIC CELLML_DESTROY
+
+  PUBLIC CELLML_FIELD_TO_CELLML_UPDATE
   
   PUBLIC CELLML_MODEL_IMPORT
 
@@ -142,6 +146,41 @@ CONTAINS
   !=================================================================================================================================
   !
 
+
+  !>Updates any mapped fields from the cellml fields
+  SUBROUTINE CELLML_CELLML_TO_FIELD_UPDATE(CELLML,ERR,ERROR,*)
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to update
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
+    !Local variables
+    
+    CALL ENTERS("CELLML_CELLML_TO_FIELD_UPDATE",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      
+    ELSE
+      CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
+    END IF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_CELLML_TO_FIELD_UPDATE")
+    RETURN
+999 CALL ERRORS("CELLML_CELLML_TO_FIELD_UPDATE",ERR,ERROR)
+    CALL EXITS("CELLML_CELLML_TO_FIELD_UPDATE")
+    RETURN 1
+  END SUBROUTINE CELLML_CELLML_TO_FIELD_UPDATE
+
+  !
+  !=================================================================================================================================
+  !
   !> Destroys the given CellML environment.
   SUBROUTINE CELLML_DESTROY(CELLML,ERR,ERROR,*)
     !Argument variables
@@ -302,6 +341,42 @@ CONTAINS
   END SUBROUTINE CELLML_CREATE_FINISH
 
   !
+  !=================================================================================================================================
+  !
+
+
+  !>Updates any cellml fields from the mapped fields
+  SUBROUTINE CELLML_FIELD_TO_CELLML_UPDATE(CELLML,ERR,ERROR,*)
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to update
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
+    !Local variables
+    
+    CALL ENTERS("CELLML_FIELD_TO_CELLML_UPDATE",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      
+    ELSE
+      CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
+    END IF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_FIELD_TO_CELLML_UPDATE")
+    RETURN
+999 CALL ERRORS("CELLML_FIELD_TO_CELLML_UPDATE",ERR,ERROR)
+    CALL EXITS("CELLML_FIELD_TO_CELLML_UPDATE")
+    RETURN 1
+  END SUBROUTINE CELLML_FIELD_TO_CELLML_UPDATE
+
+   !
   !=================================================================================================================================
   !
 

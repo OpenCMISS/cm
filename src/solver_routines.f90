@@ -45,6 +45,7 @@ MODULE SOLVER_ROUTINES
 
   USE BASE_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
+  USE CMISS_CELLML
   USE CMISS_PETSC
   USE COMP_ENVIRONMENT
   USE CONSTANTS
@@ -272,7 +273,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_NO_CHANGE=2 !<Do not change the solution before a solve \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
   !>@}
 
-  
   !> \addtogroup SOLVER_ROUTINES_OutputTypes SOLVER_ROUTINES::OutputTypes
   !> \brief The types of output
   !> \see SOLVER_ROUTINES
@@ -281,7 +281,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_PROGRESS_OUTPUT=1 !<Progress output from solver routines \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_TIMING_OUTPUT=2 !<Timing output from the solver routines plus below \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_SOLVER_OUTPUT=3 !<Solver specific output from the solver routines plus below \see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_MATRIX_OUTPUT=4 !<SolVER matrices output from the solver routines plus below\see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_MATRIX_OUTPUT=4 !<Solver matrices output from the solver routines plus below\see SOLVER_ROUTINES_OutputTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SparsityTypes SOLVER_ROUTINES::SparsityTypes
@@ -302,6 +302,16 @@ MODULE SOLVER_ROUTINES
     MODULE PROCEDURE SOLVER_DYNAMIC_THETA_SET_DP
   END INTERFACE !SOLVER_DYNAMIC_THETA_SET  
 
+  INTERFACE SOLVER_LABEL_GET
+    MODULE PROCEDURE SOLVER_LABEL_GET_C
+    MODULE PROCEDURE SOLVER_LABEL_GET_VS
+  END INTERFACE !SOLVER_LABEL_GET
+  
+  INTERFACE SOLVER_LABEL_SET
+    MODULE PROCEDURE SOLVER_LABEL_SET_C
+    MODULE PROCEDURE SOLVER_LABEL_SET_VS
+  END INTERFACE !SOLVER_LABEL_SET
+  
   PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE,SOLVER_DAE_TYPE,SOLVER_EIGENPROBLEM_TYPE, &
     & SOLVER_OPTIMISER_TYPE,SOLVER_CELLML_EVALUATOR_TYPE
 
@@ -364,11 +374,17 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_EQUATIONS_STATIC,SOLVER_EQUATIONS_QUASISTATIC,SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC, &
     & SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC
 
-  PUBLIC SOLVER_CELLML_ADD
+  PUBLIC CELLML_EQUATIONS_CELLML_ADD
+
+  PUBLIC CELLML_EQUATIONS_CREATE_FINISH,CELLML_EQUATIONS_CREATE_START
+
+  PUBLIC CELLML_EQUATIONS_DESTROY
+  
+  PUBLIC SOLVER_CELLML_EQUATIONS_GET
 
   PUBLIC SOLVER_DAE_SOLVER_TYPE_GET,SOLVER_DAE_SOLVER_TYPE_SET
 
-  PUBLIC SOLVER_DAE_TIMES_SET
+  PUBLIC SOLVER_DAE_TIMES_SET,SOLVER_DAE_TIME_STEP_SET
   
   PUBLIC SOLVER_DAE_EULER_SOLVER_TYPE_GET,SOLVER_DAE_EULER_SOLVER_TYPE_SET
   
@@ -405,6 +421,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_EQUATIONS_SPARSITY_TYPE_SET
   
   PUBLIC SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET
+
+  PUBLIC SOLVER_LABEL_GET,SOLVER_LABEL_SET
   
   PUBLIC SOLVER_LIBRARY_TYPE_GET,SOLVER_LIBRARY_TYPE_SET
 
@@ -496,50 +514,292 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Adds a CellML environment to a solver. \see OPENCMISS::CMISSSolverCellMLAdd
-  SUBROUTINE SOLVER_CELLML_ADD(SOLVER,CELLML,CELLML_INDEX,ERR,ERROR,*)
+  !>Adds a CellML environment to a solvers CellML equations. \see OPENCMISS::CMISSCellMLEquationsCellMLAdd
+  SUBROUTINE CELLML_EQUATIONS_CELLML_ADD(CELLML_EQUATIONS,CELLML,CELLML_INDEX,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to add the CellML environment to.
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<A pointer the CellML equations to add the CellML environment to.
     TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to add
     INTEGER(INTG), INTENT(OUT) :: CELLML_INDEX !<On return, the index of the added CellML environment.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: cellml_idx
+    TYPE(CELLML_PTR_TYPE), ALLOCATABLE :: NEW_CELLML_ENVIRONMENTS(:)
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
     
-    CALL ENTERS("SOLVER_CELLML_ADD",ERR,ERROR,*999)
+    CALL ENTERS("CELLML_EQUATIONS_CELLML_ADD",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+      IF(CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("CellML equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        SOLVER=>CELLML_EQUATIONS%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+            CALL FLAG_ERROR("Can not add a CellML environment for a solver that has been linked.",ERR,ERROR,*999)
+          ELSE
+            IF(ASSOCIATED(CELLML)) THEN
+              IF(CELLML%CELLML_FINISHED) THEN
+                ALLOCATE(NEW_CELLML_ENVIRONMENTS(CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environments.",ERR,ERROR,*999)
+                DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+                  NEW_CELLML_ENVIRONMENTS(cellml_idx)%PTR=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
+                ENDDO !cellml_idx
+                NEW_CELLML_ENVIRONMENTS(CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1)%PTR=>CELLML
+                CALL MOVE_ALLOC(NEW_CELLML_ENVIRONMENTS,CELLML_EQUATIONS%CELLML_ENVIRONMENTS)
+                CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1
+                CELLML_INDEX=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+              ELSE
+                CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("CELLML_EQUATIONS_CELLML_ADD")
+    RETURN
+999 IF(ALLOCATED(NEW_CELLML_ENVIRONMENTS)) DEALLOCATE(NEW_CELLML_ENVIRONMENTS)
+    CALL ERRORS("CELLML_EQUATIONS_CELLML_ADD",ERR,ERROR)    
+    CALL EXITS("CELLML_EQUATIONS_CELLML_ADD")
+    RETURN 1
+   
+  END SUBROUTINE CELLML_EQUATIONS_CELLML_ADD
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the process of creating CellML equations
+  SUBROUTINE CELLML_EQUATIONS_CREATE_FINISH(CELLML_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<A pointer the CellML equations to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+
+    CALL ENTERS("CELLML_EQUATIONS_CREATE_FINISH",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+      IF(CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED) THEN
+        CALL FLAG_ERROR("CellML equations has already been finished.",ERR,ERROR,*998)
+      ELSE
+        SOLVER=>CELLML_EQUATIONS%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+            CALL FLAG_ERROR("Can not finish CellML equations creation for a solver that has been linked.",ERR,ERROR,*999)
+          ELSE
+            CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED=.TRUE.
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML equations solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("CELLML_EQUATIONS_CREATE_FINISH")
+    RETURN
+999 CONTINUE
+998 CALL ERRORS("CELLML_EQUATIONS_CREATE_FINISH",ERR,ERROR)    
+    CALL EXITS("CELLML_EQUATIONS_CREATE_FINISH")
+    RETURN 1
+   
+  END SUBROUTINE CELLML_EQUATIONS_CREATE_FINISH
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Starts the process of creating CellML equations
+  SUBROUTINE CELLML_EQUATIONS_CREATE_START(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to start the creation of CellML equations on
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<On return, A pointer the CellML equations. Must not be associated on entry
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("CELLML_EQUATIONS_CREATE_START",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
-      ELSE
         IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-          CALL FLAG_ERROR("Can not add a CellML environment for a solver that has been linked.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Can not start CellML equations creation for a solver that has been linked.",ERR,ERROR,*999)
         ELSE
-          IF(ASSOCIATED(CELLML)) THEN
-            IF(CELLML%CELLML_FINISHED) THEN
-            ELSE
-              CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
-            ENDIF
+          IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+            CALL FLAG_ERROR("CellML equations is already associated.",ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+            NULLIFY(CELLML_EQUATIONS)
+            CALL CELLML_EQUATIONS_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
           ENDIF
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
-    CALL EXITS("SOLVER_CELLML_ADD")
+    CALL EXITS("CELLML_EQUATIONS_CREATE_START")
     RETURN
-999 CALL ERRORS("SOLVER_CELLML_ADD",ERR,ERROR)    
-    CALL EXITS("SOLVER_CELLML_ADD")
+999 CALL ERRORS("CELLML_EQUATIONS_CREATE_START",ERR,ERROR)    
+    CALL EXITS("CELLML_EQUATIONS_CREATE_START")
     RETURN 1
    
-  END SUBROUTINE SOLVER_CELLML_ADD
+  END SUBROUTINE CELLML_EQUATIONS_CREATE_START
         
-   !
+  !
+  !================================================================================================================================
+  !
+
+  !>Destroys the CellML equations
+  SUBROUTINE CELLML_EQUATIONS_DESTROY(CELLML_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<A pointer the CellML equations to destroy.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("CELLML_EQUATIONS_DESTROY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+      CALL CELLML_EQUATIONS_FINALISE(CELLML_EQUATIONS,ERR,ERROR,*999)
+    ELSE
+      CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("CELLML_EQUATIONS_DESTROY")
+    RETURN
+999 CALL ERRORS("CELLML_EQUATIONS_DESTROY",ERR,ERROR)    
+    CALL EXITS("CELLML_EQUATIONS_DESTROY")
+    RETURN 1
+   
+  END SUBROUTINE CELLML_EQUATIONS_DESTROY
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises the CellML equations and deallocates all memory.
+  SUBROUTINE CELLML_EQUATIONS_FINALISE(CELLML_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<A pointer the CellML equations to finalise.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("CELLML_EQUATIONS_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+      IF(ALLOCATED(CELLML_EQUATIONS%CELLML_ENVIRONMENTS)) DEALLOCATE(CELLML_EQUATIONS%CELLML_ENVIRONMENTS)
+      DEALLOCATE(CELLML_EQUATIONS)
+    ENDIF
+        
+    CALL EXITS("CELLML_EQUATIONS_FINALISE")
+    RETURN
+999 CALL ERRORS("CELLML_EQUATIONS_FINALISE",ERR,ERROR)    
+    CALL EXITS("CELLML_EQUATIONS_FINALISE")
+    RETURN 1
+    
+  END SUBROUTINE CELLML_EQUATIONS_FINALISE
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the CellML equations for a solver.
+  SUBROUTINE CELLML_EQUATIONS_INITIALISE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to initialise the CellML equations for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("CELLML_EQUATIONS_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(ASSOCIATED(SOLVER%CELLML_EQUATIONS)) THEN
+        CALL FLAG_ERROR("CellML equations is already associated for this solver.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(SOLVER%CELLML_EQUATIONS,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CellML equations.",ERR,ERROR,*999)
+        SOLVER%CELLML_EQUATIONS%SOLVER=>SOLVER
+        SOLVER%CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED=.FALSE.
+        SOLVER%CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS=0
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("CELLML_EQUATIONS_INITIALISE")
+    RETURN
+999 CALL CELLML_EQUATIONS_FINALISE(SOLVER%CELLML_EQUATIONS,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("CELLML_EQUATIONS_INITIALISE",ERR,ERROR)    
+    CALL EXITS("CELLML_EQUATIONS_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE CELLML_EQUATIONS_INITIALISE
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns a pointer to the CellML equations for a solver. \see OPENCMISS::CMISSSolverCellMLEquationsGet
+  SUBROUTINE SOLVER_CELLML_EQUATIONS_GET(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to get the CellML equations for
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<On exit, a pointer to the specified CellML equations. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("SOLVER_CELLML_EQUATIONS_GET",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN 
+        IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+          CALL FLAG_ERROR("CellML equations is already associated.",ERR,ERROR,*998)
+        ELSE
+          CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
+          IF(.NOT.ASSOCIATED(CELLML_EQUATIONS)) CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+       
+    CALL EXITS("SOLVER_CELLML_EQUATIONS_GET")
+    RETURN
+999 NULLIFY(CELLML_EQUATIONS)
+998 CALL ERRORS("SOLVER_CELLML_EQUATIONS_GET",ERR,ERROR)
+    CALL EXITS("SOLVER_CELLLML_EQUATIONS_GET")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_CELLML_EQUATIONS_GET
+  
+  !
   !================================================================================================================================
   !
 
@@ -1099,6 +1359,42 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Integrate using a forward Euler differential-algebraic equation solver.
+!  SUBROUTINE SOLVER_DAE_EULER_FORWARD_INTEGRATE(FORWARD_EULER_SOLVER,N,START_TIME,END_TIME,TIME_INCREMENT,MODELS_DATA, &
+!    & NUMBER_STATES,STATE_DATA,NUMBER_PARAMETERS,PARAMETERS_DATA,NUMBER_INTERMEDIATE,INTERMEDIATE_DATA,ERR,ERROR,*)
+
+!    !Argument variables
+!    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer the forward Euler differential-algebraic equation solver to integrate
+!    INTEGER(INTG), INTENT(IN) :: N !<The number of degrees-of-freedom
+!    REAL(DP), INTENT(IN) :: START_TIME !<The start time for the integration
+!    REAL(DP), INTENT(IN) :: END_TIME !<The end time for the integration
+!    REAL(DP), INTENT(INOUT) :: TIME_INCREMENT !<The (initial) time increment for the integration
+!    INTEGER(INTG), INTENT(IN) :: MODELS_DATA(N) !<MODELS_DATA(dof_idx). The models data for the dof_idx'th dof.
+!    INTEGER(INTG), INTENT(IN) :: NUMBER_STATES !<The maximum number of state variables per dof
+!    REAL(DP), INTENT(INOUT) :: STATE_DATA(NUMBER_STATES,N) !<STATE_DATA(state_idx,dof_idx). The state data for the state_idx'th state variable of the dof_idx'th dof. state_idx varies from 1..NUMBER_STATES.
+!    INTEGER(INTG), INTENT(IN) :: NUMBER_PARAMETERS !<The maximum number of parameter variables per dof.
+!    REAL(DP), INTENT(IN) :: PARAMETERS_DATA(NUMBER_PARAMETERS,N) !<PARAMETERS_DATA(parameter_idx,dof_idx). The parameters data for the parameter_idx'th parameter variable of the dof_idx'th dof. parameter_idx varies from 1..NUMBER_PARAMETERS.
+!    INTEGER(INTG), INTENT(IN) :: NUMBER_INTERMEDIATE !<The maximum number of intermediate variables per dof.
+!    REAL(DP), INTENT(OUT) :: INTERMEDIATE_DATA(NUMBER_INTERMEDIATE,N) !<INTERMEDIATE_DATA(intermediate_idx,dof_idx). The intermediate values data for the intermediate_idx'th intermediate variable of the dof_idx'th dof. intermediate_idx varies from 1.NUMBER_INTERMEDIATE    
+!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+!    !Local Variables
+!    REAL(DP) :: RATES(NUMBER_STATES)
+    
+!    CALL ENTERS("SOLVER_DAE_EULER_FORWARD_INTEGRATE",ERR,ERROR,*999)
+        
+!    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INTEGRATE")
+!    RETURN
+!999 CALL ERRORS("SOLVER_DAE_EULER_FORWARD_INTEGRATE",ERR,ERROR)    
+!    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INTEGRATE")
+!    RETURN 1
+   
+!  END SUBROUTINE SOLVER_DAE_EULER_FORWARD_INTEGRATE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Solve using a forward Euler differential-algebraic equation solver.
   SUBROUTINE SOLVER_DAE_EULER_FORWARD_SOLVE(FORWARD_EULER_SOLVER,ERR,ERROR,*)
 
@@ -1107,11 +1403,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: cellml_idx
+    INTEGER(INTG), POINTER :: MODELS_DATA(:)
+    REAL(DP), POINTER :: INTERMEDIATE_DATA(:),PARAMETERS_DATA(:),STATE_DATA(:)
+    TYPE(CELLML_TYPE), POINTER :: CELLML_ENVIRONMENT
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
     TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER
+    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("SOLVER_DAE_EULER_FORWARD_SOLVE",ERR,ERROR,*999)
 
@@ -1122,13 +1425,42 @@ CONTAINS
         IF(ASSOCIATED(DAE_SOLVER)) THEN
           SOLVER=>DAE_SOLVER%SOLVER
           IF(ASSOCIATED(SOLVER)) THEN
-            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-              ELSE
-                CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
-              ENDIF
+            CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
+            IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+              DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+                CELLML_ENVIRONMENT=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
+                IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN
+                  MODELS_FIELD=>CELLML_ENVIRONMENT%MODELS_FIELD
+                  IF(ASSOCIATED(MODELS_FIELD)) THEN
+                    
+                    !Make sure CellML fields have been updated to the current value of any mapped fields
+                    CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
+                    
+                    CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & MODELS_DATA,ERR,ERROR,*999)
+                    
+                    !CALL SOLVER_DAE_EULER_FORWARD_INTEGRATE(FORWARD_EULER_SOLVER,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS, &
+                    !  & DAE_SOLVER%START_TIME,DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP,MODELS_DATA,STATE_DATA, &
+                    !  & PARAMETERS_DATA,INTERMEDIATE_DATA,ERR,ERROR,*999)
+                    
+                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & MODELS_DATA,ERR,ERROR,*999)
+                    
+                    !Make sure fields have been updated to the current value of any mapped CellML fields
+                    CALL CELLML_CELLML_TO_FIELD_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
+                    
+                  ELSE
+                    LOCAL_ERROR="The CellML enviroment models field is not associated for CellML index "// &
+                      & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF                  
+                ELSE
+                  LOCAL_ERROR="The CellML enviroment is not associated for for CellML index "// &
+                    & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDDO !cellml_idx
             ELSE
               CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -2556,13 +2888,12 @@ CONTAINS
   !
 
   !>Set/change the times for a differential-algebraic equation solver
-  SUBROUTINE SOLVER_DAE_TIMES_SET(SOLVER,START_TIME,END_TIME,INITIAL_STEP,ERR,ERROR,*)
+  SUBROUTINE SOLVER_DAE_TIMES_SET(SOLVER,START_TIME,END_TIME,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the differential-algebraic equation solver to set the times for
     REAL(DP), INTENT(IN) :: START_TIME !<The start time for the differential equation solver
     REAL(DP), INTENT(IN) :: END_TIME !<The end time for the differential equation solver
-    REAL(DP), INTENT(IN) :: INITIAL_STEP !<The (initial) time step for the differential equation solver    
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2576,15 +2907,8 @@ CONTAINS
         DAE_SOLVER=>SOLVER%DAE_SOLVER
         IF(ASSOCIATED(DAE_SOLVER)) THEN
           IF(END_TIME>START_TIME) THEN
-            IF(ABS(INITIAL_STEP)<=ZERO_TOLERANCE) THEN
-              LOCAL_ERROR="The specified initial step of "//TRIM(NUMBER_TO_VSTRING(INITIAL_STEP,"*",ERR,ERROR))// &
-                & " is invalid. The initial step must not be zero."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ELSE
-              DAE_SOLVER%START_TIME=START_TIME
-              DAE_SOLVER%END_TIME=END_TIME
-              DAE_SOLVER%INITIAL_STEP=INITIAL_STEP
-            ENDIF
+            DAE_SOLVER%START_TIME=START_TIME
+            DAE_SOLVER%END_TIME=END_TIME
           ELSE
             LOCAL_ERROR="The specified end time of "//TRIM(NUMBER_TO_VSTRING(END_TIME,"*",ERR,ERROR))// &
               & " is not > than the specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))//"."
@@ -2607,6 +2931,53 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_DAE_TIMES_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set/change the (initial) time step size for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_TIME_STEP_SET(SOLVER,TIME_STEP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the differential-algebraic equation solver to set the times for
+    REAL(DP), INTENT(IN) :: TIME_STEP !<The (initial) time step for the differential-algebraic equation solver    
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_TIME_STEP_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+        DAE_SOLVER=>SOLVER%DAE_SOLVER
+        IF(ASSOCIATED(DAE_SOLVER)) THEN
+          IF(ABS(TIME_STEP)<=ZERO_TOLERANCE) THEN
+            LOCAL_ERROR="The specified time step of "//TRIM(NUMBER_TO_VSTRING(TIME_STEP,"*",ERR,ERROR))// &
+              & " is invalid. The time step must not be zero."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ELSE
+            DAE_SOLVER%INITIAL_STEP=TIME_STEP
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_TIME_STEP_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_TIME_STEP_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_TIME_STEP_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_TIME_STEP_SET
 
   !
   !================================================================================================================================
@@ -5256,6 +5627,7 @@ CONTAINS
       NULLIFY(SOLVER%LINKING_SOLVER)
       NULLIFY(SOLVER%LINKED_SOLVER)
       SOLVER%SOLVER_FINISHED=.FALSE.
+      SOLVER%LABEL=""
       SOLVER%OUTPUT_TYPE=SOLVER_NO_OUTPUT
       NULLIFY(SOLVER%LINEAR_SOLVER)
       NULLIFY(SOLVER%NONLINEAR_SOLVER)
@@ -5265,6 +5637,7 @@ CONTAINS
       NULLIFY(SOLVER%OPTIMISER_SOLVER)
       NULLIFY(SOLVER%CELLML_EVALUATOR_SOLVER)
       NULLIFY(SOLVER%SOLVER_EQUATIONS)
+      NULLIFY(SOLVER%CELLML_EQUATIONS)
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -5276,6 +5649,140 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE SOLVER_INITIALISE_PTR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the label of a solver. \see OPENCMISS::CMISSSolverLabelGet
+  SUBROUTINE SOLVER_LABEL_GET_C(SOLVER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to get the label for
+    CHARACTER(LEN=*), INTENT(OUT) :: LABEL !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: C_LENGTH,VS_LENGTH
+
+    CALL ENTERS("SOLVER_LABEL_GET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      C_LENGTH=LEN(LABEL)
+      VS_LENGTH=LEN_TRIM(SOLVER%LABEL)
+      IF(C_LENGTH>VS_LENGTH) THEN
+        LABEL=CHAR(SOLVER%LABEL,VS_LENGTH)
+      ELSE
+        LABEL=CHAR(SOLVER%LABEL,C_LENGTH)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LABEL_GET_C")
+    RETURN
+999 CALL ERRORS("SOLVER_LABEL_GET_C",ERR,ERROR)
+    CALL EXITS("SOLVER_LABEL_GET_C")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_LABEL_GET_C
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Returns the label of a solver. \see OPENCMISS::CMISSSolverLabelGet
+  SUBROUTINE SOLVER_LABEL_GET_VS(SOLVER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to get the label for
+    TYPE(VARYING_STRING), INTENT(OUT) :: LABEL !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_LABEL_GET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      LABEL=VAR_STR(CHAR(SOLVER%LABEL))
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LABEL_GET_VS")
+    RETURN
+999 CALL ERRORS("SOLVER_LABEL_GET_VS",ERR,ERROR)
+    CALL EXITS("SOLVER_LABEL_GET_VS")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_LABEL_GET_VS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the label of a solver. \see OPENCMISS::CMISSSolverLabelSet
+  SUBROUTINE SOLVER_LABEL_SET_C(SOLVER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to set the label for 
+    CHARACTER(LEN=*), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_LABEL_SET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has been finished.",ERR,ERROR,*999)
+      ELSE
+        SOLVER%LABEL=LABEL
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LABEL_SET_C")
+    RETURN
+999 CALL ERRORS("SOLVER_LABEL_SET_C",ERR,ERROR)
+    CALL EXITS("SOLVER_LABEL_SET_C")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_LABEL_SET_C
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the label of a solver. \see OPENCMISS::CMISSSolverLabelSet
+  SUBROUTINE SOLVER_LABEL_SET_VS(SOLVER,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to set the label for 
+    TYPE(VARYING_STRING), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_LABEL_SET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver has been finished.",ERR,ERROR,*999)
+      ELSE
+        SOLVER%LABEL=LABEL
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_LABEL_SET_VS")
+    RETURN
+999 CALL ERRORS("SOLVER_LABEL_SET_VS",ERR,ERROR)
+    CALL EXITS("SOLVER_LABEL_SET_VS")
+    RETURN 1
+  END SUBROUTINE SOLVER_LABEL_SET_VS
 
   !
   !================================================================================================================================
@@ -13863,7 +14370,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_idx,solver_dof_idx,solver_matrix_idx,variable_dof
+    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_idx,solver_dof_idx,solver_matrix_idx
     REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER

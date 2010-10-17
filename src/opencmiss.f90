@@ -112,6 +112,12 @@ MODULE OPENCMISS
     TYPE(CELLML_TYPE), POINTER :: CELLML
   END TYPE CMISSCellMLType
 
+  !>Contains information about the CellML equations for a solver.
+  TYPE CMISSCellMLEquationsType
+    PRIVATE
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
+  END TYPE CMISSCellMLEquationsType
+
   !>Contains information on a control loop.
   TYPE CMISSControlLoopType
     PRIVATE
@@ -288,6 +294,8 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditionsType,CMISSBoundaryConditionsTypeFinalise,CMISSBoundaryConditionsTypeInitialise
 
   PUBLIC CMISSCellMLType,CMISSCellMLTypeFinalise,CMISSCellMLTypeInitialise
+
+  PUBLIC CMISSCellMLEquationsType,CMISSCellMLEquationsTypeFinalise,CMISSCellMLEquationsTypeInitialise
 
   PUBLIC CMISSControlLoopType,CMISSControlLoopTypeFinalise,CMISSControlLoopTypeInitialise
 
@@ -1232,6 +1240,26 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoopIterationsSetNumber1
     MODULE PROCEDURE CMISSControlLoopIterationsSetObj
   END INTERFACE !CMISSControlLoopIterationsSet
+    
+  !>Returns the label of a control loop. 
+  INTERFACE CMISSControlLoopLabelGet
+    MODULE PROCEDURE CMISSControlLoopLabelGetCNumber0
+    MODULE PROCEDURE CMISSControlLoopLabelGetCNumber1
+    MODULE PROCEDURE CMISSControlLoopLabelGetCObj
+    MODULE PROCEDURE CMISSControlLoopLabelGetVSNumber0
+    MODULE PROCEDURE CMISSControlLoopLabelGetVSNumber1
+    MODULE PROCEDURE CMISSControlLoopLabelGetVSObj
+  END INTERFACE !CMISSControlLoopLabelGet
+    
+  !>Sets/changes the label of a control loop. 
+  INTERFACE CMISSControlLoopLabelSet
+    MODULE PROCEDURE CMISSControlLoopLabelSetCNumber0
+    MODULE PROCEDURE CMISSControlLoopLabelSetCNumber1
+    MODULE PROCEDURE CMISSControlLoopLabelSetCObj
+    MODULE PROCEDURE CMISSControlLoopLabelSetVSNumber0
+    MODULE PROCEDURE CMISSControlLoopLabelSetVSNumber1
+    MODULE PROCEDURE CMISSControlLoopLabelSetVSObj
+  END INTERFACE !CMISSControlLoopLabelSet
 
   !>Sets/changes the maximum iterations for a while control loop. \todo need a get method
   INTERFACE CMISSControlLoopMaximumIterationsSet
@@ -1314,6 +1342,8 @@ MODULE OPENCMISS
   PUBLIC CMISSControlLoopGet
 
   PUBLIC CMISSControlLoopIterationsSet
+
+  PUBLIC CMISSControlLoopLabelGet,CMISSControlLoopLabelSet
 
   PUBLIC CMISSControlLoopMaximumIterationsSet
 
@@ -4364,6 +4394,26 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   !Interfaces
 
+  !>Finish the creation of CellML equations for a problem. \see OPENCMISS::CMISSProblemCellMLEquationsCreateStart
+  INTERFACE CMISSProblemCellMLEquationsCreateFinish
+    MODULE PROCEDURE CMISSProblemCellMLEquationsCreateFinishNumber
+    MODULE PROCEDURE CMISSProblemCellMLEquationsCreateFinishObj
+  END INTERFACE !CMISSProblemCellMLEquationsCreateFinish
+  
+  !>Start the creation of solver equations for a problem. \see OPENCMISS::CMISSProblemCellMLEquationsCreateFinish
+  INTERFACE CMISSProblemCellMLEquationsCreateStart
+    MODULE PROCEDURE CMISSProblemCellMLEquationsCreateStartNumber
+    MODULE PROCEDURE CMISSProblemCellMLEquationsCreateStartObj
+  END INTERFACE !CMISSProblemCellMLEquationsCreateStart
+  
+  !>Returns the CellML equations for a problem. 
+  INTERFACE CMISSProblemCellMLEquationsGet
+    MODULE PROCEDURE CMISSProblemCellMLEquationsGetNumber0
+    MODULE PROCEDURE CMISSProblemCellMLEquationsGetNumber1
+    MODULE PROCEDURE CMISSProblemCellMLEquationsGetObj0
+    MODULE PROCEDURE CMISSProblemCellMLEquationsGetObj1
+  END INTERFACE !CMISSProblemCellMLEquationsGet
+
   !>Finishes the process of creating a problem. \see OPENCMISS::CMISSProblemCreateStart
   INTERFACE CMISSProblemCreateFinish
     MODULE PROCEDURE CMISSProblemCreateFinishNumber
@@ -4375,13 +4425,7 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSProblemCreateStartNumber
     MODULE PROCEDURE CMISSProblemCreateStartObj
   END INTERFACE !CMISSProblemCreateStart
- 
-  !>Destroys a problem. 
-  INTERFACE CMISSProblemDestroy
-    MODULE PROCEDURE CMISSProblemDestroyNumber
-    MODULE PROCEDURE CMISSProblemDestroyObj
-  END INTERFACE !CMISSProblemDestroy
-  
+
   !>Finishes the process of creating a control loop on a problem. \see OPENCMISS::CMISSProblemControlLoopCreateStart
   INTERFACE CMISSProblemControlLoopCreateFinish
     MODULE PROCEDURE CMISSProblemControlLoopCreateFinishNumber
@@ -4408,6 +4452,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSProblemControlLoopGetObj1
   END INTERFACE !CMISSProblemControlLoopGet
 
+  !>Destroys a problem. 
+  INTERFACE CMISSProblemDestroy
+    MODULE PROCEDURE CMISSProblemDestroyNumber
+    MODULE PROCEDURE CMISSProblemDestroyObj
+  END INTERFACE !CMISSProblemDestroy
+  
   !>Solve a problem. 
   INTERFACE CMISSProblemSolve
     MODULE PROCEDURE CMISSProblemSolveNumber
@@ -4478,15 +4528,19 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSProblemSpecificationSetObj
   END INTERFACE !CMISSProblemSpecificationSet
 
-  PUBLIC CMISSProblemCreateFinish,CMISSProblemCreateStart
+  PUBLIC CMISSProblemCellMLEquationsCreateFinish,CMISSProblemCellMLEquationsCreateStart
 
-  PUBLIC CMISSProblemDestroy
+  PUBLIC CMISSProblemCellMLEquationsGet
+
+  PUBLIC CMISSProblemCreateFinish,CMISSProblemCreateStart
 
   PUBLIC CMISSProblemControlLoopCreateFinish,CMISSProblemControlLoopCreateStart
 
   PUBLIC CMISSProblemControlLoopDestroy
 
   PUBLIC CMISSProblemControlLoopGet
+
+  PUBLIC CMISSProblemDestroy
 
   PUBLIC CMISSProblemSolve
 
@@ -4800,12 +4854,19 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   !Interfaces
 
-  !>Add a CellML environment to a solver.
-  INTERFACE CMISSSolverCellMLAdd
-    MODULE PROCEDURE CMISSSolverCellMLAddNumber0
-    MODULE PROCEDURE CMISSSolverCellMLAddNumber1
-    MODULE PROCEDURE CMISSSolverCellMLAddObj
-  END INTERFACE !CMISSSolverCellMLAdd
+  !>Returns the CellML equations for a solver.
+  INTERFACE CMISSSolverCellMLEquationsGet
+    MODULE PROCEDURE CMISSSolverCellMLEquationsGetNumber0
+    MODULE PROCEDURE CMISSSolverCellMLEquationsGetNumber1
+    MODULE PROCEDURE CMISSSolverCellMLEquationsGetObj
+  END INTERFACE !CMISSSolverCellMLEquationsGet
+  
+  !>Adds CellML environments to CellML equations.
+  INTERFACE CMISSCellMLEquationsCellMLAdd
+    MODULE PROCEDURE CMISSCellMLEquationsCellMLAddNumber0
+    MODULE PROCEDURE CMISSCellMLEquationsCellMLAddNumber1
+    MODULE PROCEDURE CMISSCellMLEquationsCellMLAddObj
+  END INTERFACE !CMISSCellMLEquationsCellMLAdd
   
   !>Returns the solver type for an Euler differential-algebraic equation solver. \todo should this be CMISSSolverDAEEulerSolverTypeGet???
   INTERFACE CMISSSolverDAEEulerSolverTypeGet
@@ -4841,6 +4902,13 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverDAETimesSetNumber1
     MODULE PROCEDURE CMISSSolverDAETimesSetObj
   END INTERFACE !CMISSSolverDAETimesSet
+  
+  !>Sets/changes the (initial) time step for a differential-algebraic equation solver.
+  INTERFACE CMISSSolverDAETimeStepSet
+    MODULE PROCEDURE CMISSSolverDAETimeStepSetNumber0
+    MODULE PROCEDURE CMISSSolverDAETimeStepSetNumber1
+    MODULE PROCEDURE CMISSSolverDAETimeStepSetObj
+  END INTERFACE !CMISSSolverDAETimeStepSet
   
   !>Returns the degree of the polynomial used to interpolate time for a dynamic solver.
   INTERFACE CMISSSolverDynamicDegreeGet
@@ -4901,6 +4969,26 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
     MODULE PROCEDURE CMISSSolverDynamicTimesSetObj
   END INTERFACE !CMISSSolverDynamicTimesSet
   
+  !>Returns the label of a solver. 
+  INTERFACE CMISSSolverLabelGet
+    MODULE PROCEDURE CMISSSolverLabelGetCNumber0
+    MODULE PROCEDURE CMISSSolverLabelGetCNumber1
+    MODULE PROCEDURE CMISSSolverLabelGetCObj
+    MODULE PROCEDURE CMISSSolverLabelGetVSNumber0
+    MODULE PROCEDURE CMISSSolverLabelGetVSNumber1
+    MODULE PROCEDURE CMISSSolverLabelGetVSObj
+  END INTERFACE !CMISSSolverLabelGet
+    
+  !>Sets/changes the label of a control loop. 
+  INTERFACE CMISSSolverLabelSet
+    MODULE PROCEDURE CMISSSolverLabelSetCNumber0
+    MODULE PROCEDURE CMISSSolverLabelSetCNumber1
+    MODULE PROCEDURE CMISSSolverLabelSetCObj
+    MODULE PROCEDURE CMISSSolverLabelSetVSNumber0
+    MODULE PROCEDURE CMISSSolverLabelSetVSNumber1
+    MODULE PROCEDURE CMISSSolverLabelSetVSObj
+  END INTERFACE !CMISSSolverLabelSet
+
   !>Returns the type of library to use for the solver.
   INTERFACE CMISSSolverLibraryTypeGet
     MODULE PROCEDURE CMISSSolverLibraryTypeGetNumber0
@@ -5174,13 +5262,15 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
 
   PUBLIC CMISSSolverEquationsSparseMatrices,CMISSSolverEquationsFullMatrices
 
-  PUBLIC CMISSSolverCellMLAdd
+  PUBLIC CMISSSolverCellMLEquationsGet
+
+  PUBLIC CMISSCellMLEquationsCellMLAdd
 
   PUBLIC CMISSSolverDAEEulerSolverTypeGet, CMISSSolverDAEEulerSolverTypeSet
 
   PUBLIC CMISSSolverDAESolverTypeGet,CMISSSolverDAESolverTypeSet
 
-  PUBLIC CMISSSolverDAETimesSet
+  PUBLIC CMISSSolverDAETimesSet,CMISSSolverDAETimeStepSet
 
   PUBLIC CMISSSolverDynamicDegreeGet,CMISSSolverDynamicDegreeSet
 
@@ -5193,6 +5283,8 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSSolverDynamicThetaSet
 
   PUBLIC CMISSSolverDynamicTimesSet
+
+  PUBLIC CMISSSolverLabelGet,CMISSSolverLabelSet
 
   PUBLIC CMISSSolverLibraryTypeGet,CMISSSolverLibraryTypeSet
 
@@ -5531,6 +5623,57 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSCellMLTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a CMISSCellMLEquationsType object.
+  SUBROUTINE CMISSCellMLEquationsTypeFinalise(CMISSCellMLEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLEquationsType), INTENT(OUT) :: CMISSCellMLEquations !<The CMISSCellMLEquationsType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    
+    CALL ENTERS("CMISSCellMLEquationsTypeFinalise",Err,ERROR,*999)
+    
+    IF(ASSOCIATED(CMISSCellMLEquations%CELLML_EQUATIONS))  &
+      & CALL CELLML_EQUATIONS_DESTROY(CMISSCellMLEquations%CELLML_EQUATIONS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLEquationsTypeFinalise")
+    RETURN
+999 CALL ERRORS("CMISSCellMLEquationsTypeFinalise",Err,ERROR)
+    CALL EXITS("CMISSCellMLEquationsTypeFinalise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLEquationsTypeFinalise
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSCellMLEquationsType object.
+  SUBROUTINE CMISSCellMLEquationsTypeInitialise(CMISSCellMLEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLEquationsType), INTENT(OUT) :: CMISSCellMLEquations !<The CMISSCellMLEquationsType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLEquationsTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(CMISSCellMLEquations%CELLML_EQUATIONS)
+
+    CALL EXITS("CMISSCellMLEquationsTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSCellMLEquationsTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSCellMLEquationsTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLEquationsTypeInitialise
 
   !
   !================================================================================================================================
@@ -13030,6 +13173,422 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSControlLoopIterationsSetObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the character string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelGetCNumber0(ProblemUserNumber,ControlLoopIdentifier,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the control loop label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelGetCNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_GET(CONTROL_LOOP,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelGetCNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelGetCNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelGetCNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelGetCNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the character string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelGetCNumber1(ProblemUserNumber,ControlLoopIdentifiers,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the control loop label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelGetCNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_GET(CONTROL_LOOP,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelGetCNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelGetCNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelGetCNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelGetCNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the character string label for a control loop identified by an object.
+  SUBROUTINE CMISSControlLoopLabelGetCObj(ControlLoop,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoop !<The control loop to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the region label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSControlLoopLabelGetCObj",Err,ERROR,*999)
+ 
+    CALL CONTROL_LOOP_LABEL_GET(ControlLoop%CONTROL_LOOP,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopLabelGetCObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelGetCObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelGetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelGetCObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the varying string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelGetVSNumber0(ProblemUserNumber,ControlLoopIdentifier,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the control loop label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelGetVSNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_GET(CONTROL_LOOP,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelGetVSNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelGetVSNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelGetVSNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelGetVSNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the varying string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelGetVSNumber1(ProblemUserNumber,ControlLoopIdentifiers,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the control loop label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelGetVSNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_GET(CONTROL_LOOP,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelGetVSNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelGetVSNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelGetVSNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelGetVSNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the varying string label for a control loop identified by an object.
+  SUBROUTINE CMISSControlLoopLabelGetVSObj(ControlLoop,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoop !<The control loop to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the control loop label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSControlLoopLabelGetVSObj",Err,ERROR,*999)
+ 
+    CALL CONTROL_LOOP_LABEL_GET(ControlLoop%CONTROL_LOOP,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopLabelGetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelGetVSObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelGetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelGetVSObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the character string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelSetCNumber0(ProblemUserNumber,ControlLoopIdentifier,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The region label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelSetCNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_SET(CONTROL_LOOP,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelSetCNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelSetCNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelSetCNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelSetCNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the character string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelSetCNumber1(ProblemUserNumber,ControlLoopIdentifiers,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The region label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelSetCNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_SET(CONTROL_LOOP,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelSetCNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelSetCNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelSetCNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelSetCNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the character string label for a control loop identified by an object.
+  SUBROUTINE CMISSControlLoopLabelSetCObj(ControlLoop,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoop !<The control loop to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The control loop label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSControlLoopLabelSetCObj",Err,ERROR,*999)
+ 
+    CALL CONTROL_LOOP_LABEL_SET(ControlLoop%CONTROL_LOOP,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopLabelSetCObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelSetCObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelSetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelSetCObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the varying string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelSetVSNumber0(ProblemUserNumber,ControlLoopIdentifier,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The control loop label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelSetVSNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifier,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_SET(CONTROL_LOOP,CHAR(Label),Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelStVSNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelSetVSNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLabelSetVSNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelSetVSNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the varying string label for a control loop identified by an user number.
+  SUBROUTINE CMISSControlLoopLabelSetVSNumber1(ProblemUserNumber,ControlLoopIdentifiers,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifier.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The control loop label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelSetVSNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,ControlLoopIdentifiers,CONTROL_LOOP,Err,ERROR,*999)
+      CALL CONTROL_LOOP_LABEL_SET(CONTROL_LOOP,CHAR(Label),Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSControlLoopLabelStVSNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelSetVSNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLabelSetVSNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelSetVSNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes string label for a control loop identified by an object.
+  SUBROUTINE CMISSControlLoopLabelSetVSObj(ControlLoop,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoop !<The control loop to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The control loop label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSControlLoopLabelSetVSObj",Err,ERROR,*999)
+ 
+    CALL CONTROL_LOOP_LABEL_SET(ControlLoop%CONTROL_LOOP,CHAR(Label),Err,ERROR,*999)
+
+    CALL EXITS("CMISSControlLoopLabelSetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoopLabelSetVSObj",Err,ERROR)
+    CALL EXITS("CMISSControlLoopLabelSetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSControlLoopLabelSetVSObj
 
   !
   !================================================================================================================================
@@ -34834,6 +35393,274 @@ CONTAINS
 !!
 !!==================================================================================================================================
 
+  !>Finishes the process of creating CellML equations for a problem identified by user number.
+  SUBROUTINE CMISSProblemCellMLEquationsCreateFinishNumber(ProblemUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to finish the creation of CellML equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSProblemCellMLEquationsCreateFinishNumber",Err,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CELLML_EQUATIONS_CREATE_FINISH(PROBLEM,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CellML Equations Create')
+#endif
+
+    CALL EXITS("CMISSProblemCellMLEquationsCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSProblemCellMLEquationsCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSProblemCellMLEquationsCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of CellML equations for problem identified by an object.
+  SUBROUTINE CMISSProblemCellMLEquationsCreateFinishObj(Problem,Err)
+  
+    !Argument variables
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to finish creating the CellML equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSProblemCellMLEquationsCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL PROBLEM_CELLML_EQUATIONS_CREATE_FINISH(Problem%PROBLEM,Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('CellML Equations Create')
+#endif
+
+    CALL EXITS("CMISSProblemSolverEquationsCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSProblemSolverEquationsCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSProblemSolverEquationsCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !    
+
+  !>Starts the process of creating CellML equations for a problem identified by user number.
+  SUBROUTINE CMISSProblemCellMLEquationsCreateStartNumber(ProblemUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to start the creation of CellML equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSProblemCellMLEquationsCreateStartNumber",Err,ERROR,*999)
+ 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Equations Create')
+#endif
+
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CELLML_EQUATIONS_CREATE_START(PROBLEM,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSProblemCellMLEquationsCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSProblemCellMLEquationsCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSProblemCellMLEquationsCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of CellML equations for problem identified by an object.
+  SUBROUTINE CMISSProblemCellMLEquationsCreateStartObj(Problem,Err)
+  
+    !Argument variables
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to start creating the CellML equations for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSProblemCellMLEquationsCreateStartObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Equations Create')
+#endif
+
+    CALL PROBLEM_CELLML_EQUATIONS_CREATE_START(Problem%PROBLEM,Err,ERROR,*999)
+
+    CALL EXITS("CMISSProblemCellMLEquationsCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSProblemCellMLEquationsCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSProblemCellMLEquationsCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsCreateStartObj
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Returns the CellML equations from a problem identified by an user number.
+  SUBROUTINE CMISSProblemCellMLEquationsGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,CellMLEquations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
+    TYPE(CMISSCellMLEquationsType), INTENT(INOUT) :: CellMLEquations !<On return, the specified CellML equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSProblemCellMLEquationsGetNumber0",Err,ERROR,*999)
+    
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CELLML_EQUATIONS_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,CellMLEquations%CELLML_EQUATIONS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSProblemCellMLEquationsGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSProblemCellMLEquationsGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSProblemCellMLEquationsGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsGetNumber0
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Returns the CellML equations from a problem identified by an user number.
+  SUBROUTINE CMISSProblemCellMLEquationsGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,CellMLEquations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the CellML equations for.
+    TYPE(CMISSCellMLEquationsType), INTENT(INOUT) :: CellMLEquations !<On return, the specified CellML equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSProblemCellMLEquationsGetNumber1",Err,ERROR,*999)
+    
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CELLML_EQUATIONS_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,CellMLEquations%CELLML_EQUATIONS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSProblemCellMLEquationsGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSProblemCellMLEquationsGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSProblemCellMLEquationsGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsGetNumber1
+  
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Returns the CellML equations from a problem identified by an object.
+  SUBROUTINE CMISSProblemCellMLEquationsGetObj0(Problem,ControlLoopIdentifier,SolverIndex,CellMLEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the CellML equations for.
+    TYPE(CMISSCellMLEquationsType), INTENT(INOUT) :: CellMLEquations !<On return, the specified CellML equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSProblemCellMLEquationsGetObj0",Err,ERROR,*999)
+
+    CALL PROBLEM_CELLML_EQUATIONS_GET(Problem%PROBLEM,ControlLoopIdentifier,SolverIndex,CellMLEquations%CELLML_EQUATIONS, &
+      & Err,ERROR,*999)
+     
+    CALL EXITS("CMISSProblemCellMLEquationsGetObj0")
+    RETURN
+999 CALL ERRORS("CMISSProblemCellMLEquationsGetObj0",Err,ERROR)
+    CALL EXITS("CMISSProblemCellMLEquationsGetObj0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsGetObj0
+
+  !
+  !================================================================================================================================
+  !  
+  
+  !>Returns the CellML equations from a problem identified by an object.
+  SUBROUTINE CMISSProblemCellMLEquationsGetObj1(Problem,ControlLoopIdentifiers,SolverIndex,CellMLEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the CellML equations for.
+    TYPE(CMISSCellMLEquationsType), INTENT(INOUT) :: CellMLEquations !<On return, the specified CellML equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSProblemCellMLEquationsGetObj1",Err,ERROR,*999)
+    
+    CALL PROBLEM_CELLML_EQUATIONS_GET(Problem%PROBLEM,ControlLoopIdentifiers,SolverIndex,CellMLEquations%CELLML_EQUATIONS, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSProblemCellMLEquationsGetObj1")
+    RETURN
+999 CALL ERRORS("CMISSProblemCellMLEquationsGetObj1",Err,ERROR)
+    CALL EXITS("CMISSProblemCellMLEquationsGetObj1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemCellMLEquationsGetObj1
+  
+   !  
+  !================================================================================================================================
+  !  
+ 
   !>Finishes the process of a problem identified by user number.
   SUBROUTINE CMISSProblemCreateFinishNumber(ProblemUserNumber,Err)
   
@@ -34958,66 +35785,6 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSProblemCreateStartObj
-
-  !  
-  !================================================================================================================================
-  !  
-
-  !>Destroys a problem identified by an user number.
-  SUBROUTINE CMISSProblemDestroyNumber(ProblemUserNumber,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to destroy.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSProblemDestroyNumber",Err,ERROR,*999)
- 
-    NULLIFY(PROBLEM)
-    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
-    IF(ASSOCIATED(PROBLEM)) THEN
-      CALL PROBLEM_DESTROY(PROBLEM,Err,ERROR,*999)
-    ELSE
-      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSProblemDestroyNumber")
-    RETURN
-999 CALL ERRORS("CMISSProblemDestroyNumber",Err,ERROR)
-    CALL EXITS("CMISSProblemDestroyNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSProblemDestroyNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Destroys a problem identified by an object.
-  SUBROUTINE CMISSProblemDestroyObj(Problem,Err)
-  
-    !Argument variables
-    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to destroy.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSProblemDestroyObj",Err,ERROR,*999)
- 
-    CALL PROBLEM_DESTROY(Problem%PROBLEM,Err,ERROR,*999)
-
-    CALL EXITS("CMISSProblemDestroyObj")
-    RETURN
-999 CALL ERRORS("CMISSProblemDestroyObj",Err,ERROR)
-    CALL EXITS("CMISSProblemDestroyObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSProblemDestroyObj
 
   !  
   !================================================================================================================================
@@ -35343,6 +36110,66 @@ CONTAINS
   
   !  
   !================================================================================================================================
+  !  
+
+  !>Destroys a problem identified by an user number.
+  SUBROUTINE CMISSProblemDestroyNumber(ProblemUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSProblemDestroyNumber",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_DESTROY(PROBLEM,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSProblemDestroyNumber")
+    RETURN
+999 CALL ERRORS("CMISSProblemDestroyNumber",Err,ERROR)
+    CALL EXITS("CMISSProblemDestroyNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Destroys a problem identified by an object.
+  SUBROUTINE CMISSProblemDestroyObj(Problem,Err)
+  
+    !Argument variables
+    TYPE(CMISSProblemType), INTENT(IN) :: Problem !<The problem to destroy.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSProblemDestroyObj",Err,ERROR,*999)
+ 
+    CALL PROBLEM_DESTROY(Problem%PROBLEM,Err,ERROR,*999)
+
+    CALL EXITS("CMISSProblemDestroyObj")
+    RETURN
+999 CALL ERRORS("CMISSProblemDestroyObj",Err,ERROR)
+    CALL EXITS("CMISSProblemDestroyObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSProblemDestroyObj
+
+  !  
+  !================================================================================================================================
   !    
 
   !>Solves a problem identified by an user number.
@@ -35563,10 +36390,6 @@ CONTAINS
     
     CALL ENTERS("CMISSProblemSolverEquationsCreateFinishNumber",Err,ERROR,*999)
 
-#ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
-#endif
-
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
@@ -35576,6 +36399,10 @@ CONTAINS
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
+#endif
 
     CALL EXITS("CMISSProblemSolverEquationsCreateFinishNumber")
     RETURN
@@ -36827,8 +37654,8 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Adds a CellML environment to a solver identified by an user number.
-  SUBROUTINE CMISSSolverCellMLAddNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+  !>Adds a CellML environment to CellML equations identified by an user number.
+  SUBROUTINE CMISSCellMLEquationsCellMLAddNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
     & CellMLUserNumber,CellMLIndex,Err)
   
     !Argument variables
@@ -36840,21 +37667,24 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSSolverCellMLAddNumber0",Err,ERROR,*999)
+    CALL ENTERS("CMISSCellMLEquationsCellMLAddNumber0",Err,ERROR,*999)
  
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
+    NULLIFY(CELLML_EQUATIONS)
     NULLIFY(CELLML)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_CELLML_EQUATIONS_GET(SOLVER,CELLML_EQUATIONS,Err,ERROR,*999)
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL SOLVER_CELLML_ADD(SOLVER,CELLML,CellMLIndex,Err,ERROR,*999)
+        CALL CELLML_EQUATIONS_CELLML_ADD(CELLML_EQUATIONS,CELLML,CellMLIndex,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "// &
           & TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))//" does not exist."
@@ -36866,21 +37696,21 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSSolverCellMLAddNumber0")
+    CALL EXITS("CMISSCellMLEquationsCellMLAddNumber0")
     RETURN
-999 CALL ERRORS("CMISSSolverCellMLAddNumber0",Err,ERROR)
-    CALL EXITS("CMISSSolverCellMLAddNumber0")
+999 CALL ERRORS("CMISSCellMLEquationsCellMLAddNumber0",Err,ERROR)
+    CALL EXITS("CMISSCellMLEquationsCellMLAddNumber0")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSSolverCellMLAddNumber0
+  END SUBROUTINE CMISSCellMLEquationsCellMLAddNumber0
 
   !  
   !================================================================================================================================
   !  
 
-  !>Adds a CellML environment to a solver identified by an user number.
-  SUBROUTINE CMISSSolverCellMLAddNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+  !>Adds a CellML environment to CellML equations identified by an user number.
+  SUBROUTINE CMISSCellMLEquationsCellMLAddNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
     & CellMLUserNumber,CellMLIndex,Err)
   
     !Argument variables
@@ -36892,21 +37722,24 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CMISSSolverCellMLAddNumber1",Err,ERROR,*999)
+    CALL ENTERS("CMISSCellMLEquationsCellMLAddNumber1",Err,ERROR,*999)
  
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
+    NULLIFY(CELLML_EQUATIONS)
     NULLIFY(CELLML)
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_CELLML_EQUATIONS_GET(SOLVER,CELLML_EQUATIONS,Err,ERROR,*999)
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,CELLML,Err,ERROR,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL SOLVER_CELLML_ADD(SOLVER,CELLML,CellMLIndex,Err,ERROR,*999)
+        CALL CELLML_EQUATIONS_CELLML_ADD(CELLML_EQUATIONS,CELLML,CellMLIndex,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "// &
           & TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))//" does not exist."
@@ -36918,42 +37751,149 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSSolverCellMLAddNumber1")
+    CALL EXITS("CMISSCellMLEquationsCellMLAddNumber1")
     RETURN
-999 CALL ERRORS("CMISSSolverCellMLAddNumber1",Err,ERROR)
-    CALL EXITS("CMISSSolverCellMLAddNumber1")
+999 CALL ERRORS("CMISSCellMLEquationsCellMLAddNumber1",Err,ERROR)
+    CALL EXITS("CMISSCellmlEquationsCellMLAddNumber1")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSSolverCellMLAddNumber1
+  END SUBROUTINE CMISSCellMLEquationsCellMLAddNumber1
 
   !
   !================================================================================================================================
   !  
  
-  !>Adds a CellML environment to a solver identified by an object.
-  SUBROUTINE CMISSSolverCellMLAddObj(Solver,CellML,CellMLIndex,Err)
+  !>Adds a CellML environment to CellML equations identified by an object.
+  SUBROUTINE CMISSCellMLEquationsCellMLAddObj(CellMLEquations,CellML,CellMLIndex,Err)
   
     !Argument variables
-    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to add the CellML environment for.
+    TYPE(CMISSCellMLEquationsType), INTENT(IN) :: CellMLEquations !<The CellML equations to add the CellML environment for.
     TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML environment to add.
     INTEGER(INTG), INTENT(OUT) :: CellMLIndex !<On return, the index of the added CellML environment.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
-    CALL ENTERS("CMISSSolverCellMLAddObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSCellMLEquationsCellMLAddObj",Err,ERROR,*999)
  
-    CALL SOLVER_CELLML_ADD(Solver%SOLVER,CellML%CELLML,CellMLIndex,Err,ERROR,*999)
+    CALL CELLML_EQUATIONS_CELLML_ADD(CellMLEquations%CELLML_EQUATIONS,CellML%CELLML,CellMLIndex,Err,ERROR,*999)
 
-    CALL EXITS("CMISSSolverCellMLAddObj")
+    CALL EXITS("CMISSCellMLEquationsCellMLAddObj")
     RETURN
-999 CALL ERRORS("CMISSSolverCellMLAddObj",Err,ERROR)
-    CALL EXITS("CMISSSolverCellMLAddObj")
+999 CALL ERRORS("CMISSCellMLEquationsCellMLAddObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLEquationsCellMLAddObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
 
-  END SUBROUTINE CMISSSolverCellMLAddObj
+  END SUBROUTINE CMISSCellMLEquationsCellMLAddObj
 
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML equations for a solver identified by an user number.
+  SUBROUTINE CMISSSolverCellMLEquationsGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,CellMLEquations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the CellML equations for.
+    TYPE(CMISSCellMLEquationsType), INTENT(INOUT) :: CellMLEquations !<On return, the CellML equations for the solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverCellMLEquationsGetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_CELLML_EQUATIONS_GET(SOLVER,CellMLEquations%CELLML_EQUATIONS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverCellMLEquationsGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverCellMLEquationsGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverCellMLEquationsGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverCellMLEquationsGetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the CellML equations for a solver identified by an user number.
+  SUBROUTINE CMISSSolverCellMLEquationsGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,CellMLEquations,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the CellML equations for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the CellML equations for.
+    TYPE(CMISSCellMLEquationsType), INTENT(INOUT) :: CellMLEquations !<On return, the CelllML equations for the solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverCellMLEquationsGetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_CELLML_EQUATIONS_GET(SOLVER,CellMLEquations%CELLML_EQUATIONS,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverCellMLEquationsGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverCellMLEquationsGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverCellMLEquationsGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverCellMLEquationsGetNumber1
+
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML equations for a solver identified by an object.
+  SUBROUTINE CMISSSolverCellMLEquationsGetObj(Solver,CellMLEquations,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to get the CellML equations for.
+    TYPE(CMISSCellMLEquationsType), INTENT(INOUT) :: CellMLEquations !<On return, the CellML equations for the solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverCellMLEquationsGetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_CELLML_EQUATIONS_GET(Solver%SOLVER,CellMLEquations%CELLML_EQUATIONS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverCellMLEquationsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverCellMLEquationsGetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverCellMLEquationsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverCellMLEquationsGetObj
+    
   !
   !================================================================================================================================
   !  
@@ -37391,7 +38331,7 @@ CONTAINS
   !
   
   !>Sets/changes the times for an differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolverDAETimesSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,StartTime,EndTime,InitialStep,Err)
+  SUBROUTINE CMISSSolverDAETimesSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,StartTime,EndTime,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
@@ -37399,7 +38339,6 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
     REAL(DP), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
     REAL(DP), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
-    REAL(DP), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -37413,7 +38352,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
-      CALL SOLVER_DAE_TIMES_SET(SOLVER,StartTime,EndTime,InitialStep,Err,ERROR,*999)
+      CALL SOLVER_DAE_TIMES_SET(SOLVER,StartTime,EndTime,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
@@ -37434,7 +38373,7 @@ CONTAINS
   !  
 
   !>Sets/changes the times for an differential-algebraic equation solver identified by an user number.
-  SUBROUTINE CMISSSolverDAETimesSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,StartTime,EndTime,InitialStep,Err)
+  SUBROUTINE CMISSSolverDAETimesSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,StartTime,EndTime,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
@@ -37442,7 +38381,6 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
     REAL(DP), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
     REAL(DP), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
-    REAL(DP), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -37456,7 +38394,7 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
-      CALL SOLVER_DAE_TIMES_SET(SOLVER,StartTime,EndTime,InitialStep,Err,ERROR,*999)
+      CALL SOLVER_DAE_TIMES_SET(SOLVER,StartTime,EndTime,Err,ERROR,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
         & " does not exist."
@@ -37477,19 +38415,18 @@ CONTAINS
   !  
  
   !>Sets/changes the times for an differential-algebraic equation solver identified by an object.
-  SUBROUTINE CMISSSolverDAETimesSetObj(Solver,StartTime,EndTime,InitialStep,Err)
+  SUBROUTINE CMISSSolverDAETimesSetObj(Solver,StartTime,EndTime,Err)
   
     !Argument variables
     TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the DAE times for.
     REAL(DP), INTENT(IN) :: StartTime !<The start time for the differential-algebraic solver.
     REAL(DP), INTENT(IN) :: EndTime !<The end time for the differential-algebraic solver.
-    REAL(DP), INTENT(IN) :: InitialStep !<The (initial) time step for the differential-algebraic solver.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSSolverDAETimesSetObj",Err,ERROR,*999)
  
-    CALL SOLVER_DAE_TIMES_SET(Solver%SOLVER,StartTime,EndTime,InitialStep,Err,ERROR,*999)
+    CALL SOLVER_DAE_TIMES_SET(Solver%SOLVER,StartTime,EndTime,Err,ERROR,*999)
 
     CALL EXITS("CMISSSolverDAETimesSetObj")
     RETURN
@@ -37499,6 +38436,114 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSSolverDAETimesSetObj
+  
+  !  
+  !================================================================================================================================
+  !
+  
+  !>Sets/changes the (initial) time step for an differential-algebraic equation solver identified by an user number.
+  SUBROUTINE CMISSSolverDAETimeStepSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,TimeStep,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
+    REAL(DP), INTENT(IN) :: TimeStep !<The (initial) time step for the differential-algebraic solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDAETimeStepSetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DAE_TIME_STEP_SET(SOLVER,TimeStep,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDAETimeStepSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverDAETimeStepSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverDAETimeStepSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDAETimeStepSetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the (initial) time step for an differential-algebraic equation solver identified by an user number.
+  SUBROUTINE CMISSSolverDAETimeStepSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,TimeStep,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
+    REAL(DP), INTENT(IN) :: TimeStep !<The (initial) time step for the differential-algebraic solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverDAETimeStepSetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_DAE_TIME_STEP_SET(SOLVER,TimeStep,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverDAETimeStepSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverDAETimeStepSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverDAETimeStepSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDAETimeStepSetNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the (initial) time step for an differential-algebraic equation solver identified by an object.
+  SUBROUTINE CMISSSolverDAETimeStepSetObj(Solver,TimeStep,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the DAE times for.
+    REAL(DP), INTENT(IN) :: TimeStep !<The (initial) time step for the differential-algebraic solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverDAETimeStepSetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_DAE_TIME_STEP_SET(Solver%SOLVER,TimeStep,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverDAETimeStepSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverDAETimeStepSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverDAETimeStepSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverDAETimeStepSetObj
   
   !  
   !================================================================================================================================
@@ -38489,7 +39534,431 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolverDynamicTimesSetObj
+  
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the character string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelGetCNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+    CALL ENTERS("CMISSSolverLabelGetCNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_GET(SOLVER,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelGetCNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelGetCNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelGetCNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelGetCNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the character string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelGetCNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLabelGetCNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_GET(SOLVER,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelGetCNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelGetCNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelGetCNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelGetCNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the character string label for a solver identified by an object.
+  SUBROUTINE CMISSSolverLabelGetCObj(Solver,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to get the label for.
+    CHARACTER(LEN=*), INTENT(OUT) :: Label !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLabelGetCObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LABEL_GET(Solver%SOLVER,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLabelGetCObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelGetCObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelGetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelGetCObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the varying string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelGetVSNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLabelGetVSNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_GET(SOLVER,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelGetVSNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelGetVSNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelGetVSNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelGetVSNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the varying string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelGetVSNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The solver identifiers.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLabelGetVSNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_GET(SOLVER,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelGetVSNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelGetVSNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelGetVSNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelGetVSNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the varying string label for a solver identified by an object.
+  SUBROUTINE CMISSSolverLabelGetVSObj(Solver,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to get the label for.
+    TYPE(VARYING_STRING), INTENT(OUT) :: Label !<On return, the solver label.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLabelGetVSObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LABEL_GET(Solver%SOLVER,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLabelGetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelGetVSObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelGetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelGetVSObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the character string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelSetCNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the times for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The region label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLabelSetCNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_SET(SOLVER,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelSetCNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelSetCNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelSetCNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelSetCNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the character string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelSetCNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The solver identifiers.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The region label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSControlLoopLabelSetCNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_SET(SOLVER,Label,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelSetCNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelSetCNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelSetCNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelSetCNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the character string label for a solver identified by an object.
+  SUBROUTINE CMISSSolverLabelSetCObj(Solver,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the label for.
+    CHARACTER(LEN=*), INTENT(IN) :: Label !<The solver label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLabelSetCObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LABEL_SET(Solver%SOLVER,Label,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLabelSetCObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelSetCObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelSetCObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelSetCObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the varying string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelSetVSNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The solver identifier.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The solver label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLabelSetVSNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_SET(SOLVER,CHAR(Label),Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelStVSNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelSetVSNumber0",Err,ERROR)
+    CALL EXITS("CMISSControlLabelSetVSNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelSetVSNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the varying string label for a solver identified by an user number.
+  SUBROUTINE CMISSSolverLabelSetVSNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Label,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to set the label for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifier.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the times for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The solver label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverLabelSetVSNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_LABEL_SET(SOLVER,CHAR(Label),Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverLabelStVSNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelSetVSNumber1",Err,ERROR)
+    CALL EXITS("CMISSControlLabelSetVSNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelSetVSNumber1
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes string label for a solver identified by an object.
+  SUBROUTINE CMISSSolverLabelSetVSObj(Solver,Label,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the label for.
+    TYPE(VARYING_STRING), INTENT(IN) :: Label !<The solver label to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverLabelSetVSObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_LABEL_SET(Solver%SOLVER,CHAR(Label),Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverLabelSetVSObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverLabelSetVSObj",Err,ERROR)
+    CALL EXITS("CMISSSolverLabelSetVSObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverLabelSetVSObj
+
   !  
   !================================================================================================================================
   !

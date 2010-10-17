@@ -85,6 +85,16 @@ MODULE CONTROL_LOOP_ROUTINES
     MODULE PROCEDURE CONTROL_LOOP_GET_1
   END INTERFACE !CONTROL_LOOP_GET
 
+  INTERFACE CONTROL_LOOP_LABEL_GET
+    MODULE PROCEDURE CONTROL_LOOP_LABEL_GET_C
+    MODULE PROCEDURE CONTROL_LOOP_LABEL_GET_VS
+  END INTERFACE !CONTROL_LOOP_LABEL_GET
+  
+  INTERFACE CONTROL_LOOP_LABEL_SET
+    MODULE PROCEDURE CONTROL_LOOP_LABEL_SET_C
+    MODULE PROCEDURE CONTROL_LOOP_LABEL_SET_VS
+  END INTERFACE !CONTROL_LOOP_LABEL_SET
+  
   PUBLIC CONTROL_LOOP_NODE
 
   PUBLIC CONTROL_LOOP_NO_OUTPUT,CONTROL_LOOP_PROGRESS_OUTPUT,CONTROL_LOOP_TIMING_OUTPUT
@@ -98,6 +108,8 @@ MODULE CONTROL_LOOP_ROUTINES
   PUBLIC CONTROL_LOOP_GET
 
   PUBLIC CONTROL_LOOP_ITERATIONS_SET
+
+  PUBLIC CONTROL_LOOP_LABEL_GET,CONTROL_LOOP_LABEL_SET
 
   PUBLIC CONTROL_LOOP_MAXIMUM_ITERATIONS_SET
 
@@ -345,8 +357,10 @@ CONTAINS
         PROBLEM%CONTROL_LOOP%PROBLEM=>PROBLEM
         NULLIFY(PROBLEM%CONTROL_LOOP%PARENT_LOOP)
         PROBLEM%CONTROL_LOOP%CONTROL_LOOP_FINISHED=.FALSE.
+        PROBLEM%CONTROL_LOOP%LABEL=""        
         PROBLEM%CONTROL_LOOP%LOOP_TYPE=PROBLEM_CONTROL_SIMPLE_TYPE
         PROBLEM%CONTROL_LOOP%CONTROL_LOOP_LEVEL=1
+        PROBLEM%CONTROL_LOOP%SUB_LOOP_INDEX=0
         PROBLEM%CONTROL_LOOP%OUTPUT_TYPE=CONTROL_LOOP_NO_OUTPUT
         NULLIFY(PROBLEM%CONTROL_LOOP%SIMPLE_LOOP)
         NULLIFY(PROBLEM%CONTROL_LOOP%FIXED_LOOP)
@@ -413,7 +427,7 @@ CONTAINS
  
     CALL ENTERS("CONTROL_LOOP_GET_0",ERR,ERROR,*999)
 
-    CALL CONTROL_LOOP_GET_1(CONTROL_LOOP_ROOT,(/CONTROL_LOOP_IDENTIFIER/),CONTROL_LOOP,ERR,ERROR,*999)
+    CALL CONTROL_LOOP_GET_1(CONTROL_LOOP_ROOT,[CONTROL_LOOP_IDENTIFIER],CONTROL_LOOP,ERR,ERROR,*999)
        
     CALL EXITS("CONTROL_LOOP_GET_0")
     RETURN
@@ -619,6 +633,141 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the label of a control loop. \see OPENCMISS::CMISSControlLoopLabelGet
+  SUBROUTINE CONTROL_LOOP_LABEL_GET_C(CONTROL_LOOP,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to get the label for
+    CHARACTER(LEN=*), INTENT(OUT) :: LABEL !<On return, the control loop label.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: C_LENGTH,VS_LENGTH
+
+    CALL ENTERS("CONTROL_LOOP_LABEL_GET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      C_LENGTH=LEN(LABEL)
+      VS_LENGTH=LEN_TRIM(CONTROL_LOOP%LABEL)
+      IF(C_LENGTH>VS_LENGTH) THEN
+        LABEL=CHAR(CONTROL_LOOP%LABEL,VS_LENGTH)
+      ELSE
+        LABEL=CHAR(CONTROL_LOOP%LABEL,C_LENGTH)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CONTROL_LOOP_LABEL_GET_C")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_LABEL_GET_C",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_LABEL_GET_C")
+    RETURN 1
+    
+  END SUBROUTINE CONTROL_LOOP_LABEL_GET_C
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Returns the label of a control loop. \see OPENCMISS::CMISSControlLoopLabelGet
+  SUBROUTINE CONTROL_LOOP_LABEL_GET_VS(CONTROL_LOOP,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to get the label for
+    TYPE(VARYING_STRING), INTENT(OUT) :: LABEL !<On return, the control loop label.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("CONTROL_LOOP_LABEL_GET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      LABEL=VAR_STR(CHAR(CONTROL_LOOP%LABEL))
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CONTROL_LOOP_LABEL_GET_VS")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_LABEL_GET_VS",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_LABEL_GET_VS")
+    RETURN 1
+    
+  END SUBROUTINE CONTROL_LOOP_LABEL_GET_VS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the label of a control loop. \see OPENCMISS::CMISSControlLoopLabelSet
+  SUBROUTINE CONTROL_LOOP_LABEL_SET_C(CONTROL_LOOP,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to set the label for 
+    CHARACTER(LEN=*), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("CONTROL_LOOP_LABEL_SET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+      ELSE
+        CONTROL_LOOP%LABEL=LABEL
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CONTROL_LOOP_LABEL_SET_C")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_LABEL_SET_C",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_LABEL_SET_C")
+    RETURN 1
+    
+  END SUBROUTINE CONTROL_LOOP_LABEL_SET_C
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the label of a control loop. \see OPENCMISS::CMISSControlLoopLabelSet
+  SUBROUTINE CONTROL_LOOP_LABEL_SET_VS(CONTROL_LOOP,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to set the label for 
+    TYPE(VARYING_STRING), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("CONTROL_LOOP_LABEL_SET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
+        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+      ELSE
+        CONTROL_LOOP%LABEL=LABEL
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CONTROL_LOOP_LABEL_SET_VS")
+    RETURN
+999 CALL ERRORS("CONTROL_LOOP_LABEL_SET_VS",ERR,ERROR)
+    CALL EXITS("CONTROL_LOOP_LABEL_SET_VS")
+    RETURN 1
+    
+  END SUBROUTINE CONTROL_LOOP_LABEL_SET_VS
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets the maximum number of iterations for a while or load increment control loop. \see OPENCMISS_CMISSControlLoopMaximumIterationsSet
   SUBROUTINE CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(CONTROL_LOOP,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
@@ -759,6 +908,7 @@ CONTAINS
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%CONTROL_LOOP_FINISHED=.FALSE.
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%LOOP_TYPE=PROBLEM_CONTROL_SIMPLE_TYPE
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%CONTROL_LOOP_LEVEL=CONTROL_LOOP%CONTROL_LOOP_LEVEL+1
+                CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%SUB_LOOP_INDEX=loop_idx
                 NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%SIMPLE_LOOP)
                 NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%FIXED_LOOP)
                 NULLIFY(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%TIME_LOOP)

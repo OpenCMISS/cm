@@ -4,7 +4,7 @@
 The generalised Laplace's equation on a domain $\Omega$ with boundary $\Gamma$
 can be stated as
 \begin{equation}
-  \diverg{\pbrac{\tensor{\sigma}\grad\phi}}=0
+  \diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}=0
   \label{eqn:Laplacesequation}
 \end{equation}
 where $\phi$ is the potential throughout the domain and $\tensor{\sigma}$ is
@@ -14,22 +14,22 @@ $\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $
 \subsubsection{Weak formulation:}
 The corresponding weak form of the equation \eqnref{eqn:Laplacesequation} is
 \begin{equation}
-  \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\grad\phi}}w}{\Omega}=0 \,,
+  \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}w}{\Omega}=0 \,,
   \label{eqn:Laplaceweakform}
 \end{equation}
 where $w$ is a suitable test function.
 
 Applying Green's theorem to \eqnref{eqn:Laplaceweakform} gives
 \begin{equation}
- \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\grad\phi}}w}{\Omega}
- = -\gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w}}{\Omega}
-   +\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}}w}{\Gamma}
+ \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}w}{\Omega}
+ = -\gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\gradient{w}}}{\Omega}
+   +\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}}w}{\Gamma}
  = 0
 \end{equation}
 or
 \begin{equation}
-  \gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w}}{\Omega}
-  = -\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}w}}{\Gamma} \,,
+  \gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\gradient{w}}}{\Omega}
+  = -\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma} \,,
   \label{eqn:Laplaceweightedresidualform}
 \end{equation}
 where $\vect{n}$ is the unit outward normal vector to the boundary~$\Gamma$.
@@ -40,12 +40,12 @@ If we now consider the integrand of the left hand side of
 derivatives indicated by a semi-colon in the index
 (see \secref{subsec:function derivatives} for details) then
 \begin{equation}
-  \tensor{\sigma}\grad\phi = \sigma^{i}_{j}\covarderiv{\phi}{i}
+  \tensor{\sigma}\gradient{\phi} = \sigma^{i}_{j}\covarderiv{\phi}{i}
   \label{eqn:Laplace weak form factor1}
 \end{equation}
 and
 \begin{equation}
-  \grad w = \covarderiv{w}{i}
+  \gradient{w} = \covarderiv{w}{i}
   \label{eqn:Laplace weak form factor2}
 \end{equation}
 
@@ -56,12 +56,12 @@ to a contravariant vector by
 multiplying by the contravariant metric tensor (from $\vect{i}$ to $\vect{x}$ 
 coordinates) so that we can take the dot product. The final tensorial form is
 \begin{equation}
-  \dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
+  \dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\gradient{w}} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
 \end{equation}
 and thus \eqnref{eqn:Laplaceweightedresidualform} becomes
 \begin{equation}
   \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
-  = -\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}w}}{\Gamma}
+  = -\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma}
   \label{eqn:Laplaceweightedresidualtensorform}
 \end{equation}
 

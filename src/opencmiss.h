@@ -80,9 +80,9 @@ const int CMISSFalse=0;
  * \see OPENCMISS::DiagnosticTypes,OPENCMISS
  *@{
  */
-#define CMISSAllDiagType 1;
-#define CMISSInDiagType 2;
-#define CMISSFromDiagType 3;
+static int CMISSAllDiagType = 1;
+static int CMISSInDiagType = 2;
+static int CMISSFromDiagType = 3;
 /* @}
  * \addtogroup OPENCMISS_TimingTypes OPENCMISS::DiagnosticAndTiming::TimingTypes
  * \brief Timing constants.
@@ -1240,6 +1240,7 @@ static int CMISSSolverEquationsFullMatrices = 2;
 struct CMISSBasisType_;
 struct CMISSBoundaryConditionsType_;
 struct CMISSCellMLType_;
+struct CMISSCellMLEquationsType_;
 struct CMISSControlLoopType_;
 struct CMISSCoordinateSystemType_;
 struct CMISSDecompositionType_;
@@ -1268,6 +1269,7 @@ typedef int CMISSError;
 typedef struct CMISSBasisType_ *CMISSBasisType;
 typedef struct CMISSBoundaryConditionsType_ *CMISSBoundaryConditionsType;
 typedef struct CMISSCellMLType_ *CMISSCellMLType;
+typedef struct CMISSCellMLEquationsType_ *CMISSCellMLEquationsType;
 typedef struct CMISSControlLoopType_ *CMISSControlLoopType;
 typedef struct CMISSCoordinateSystemType_ *CMISSCoordinateSystemType;
 typedef struct CMISSDecompositionType_ *CMISSDecompositionType;
@@ -1309,6 +1311,10 @@ CMISSError CMISSBoundaryConditionsTypeInitialise(CMISSBoundaryConditionsType *Bo
 CMISSError CMISSCellMLTypeFinalise(CMISSCellMLType *CellML);
 
 CMISSError CMISSCellMLTypeInitialise(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLEquationsTypeFinalise(CMISSCellMLEquationsType *CellMLEquations);
+
+CMISSError CMISSCellMLEquationsTypeInitialise(CMISSCellMLEquationsType *CellMLEquations);
 
 CMISSError CMISSControlLoopTypeFinalise(CMISSControlLoopType *ControlLoop);
 
@@ -4080,6 +4086,26 @@ CMISSError CMISSNodesUserNumberSet(const CMISSNodesType Nodes,
  *==================================================================================================================================
  */
 
+CMISSError CMISSProblemCellMLEquationsCreateFinishNum(const int ProblemUserNumber);
+
+CMISSError CMISSProblemCellMLEquationsCreateFinish(const CMISSProblemType Problem);
+
+CMISSError CMISSProblemCellMLEquationsCreateStartNum(const int ProblemUserNumber);
+
+CMISSError CMISSProblemCellMLEquationsCreateStart(const CMISSProblemType Problem);
+
+CMISSError CMISSProblemCellMLEquationsGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		CMISSCellMLEquationsType *CellMLEquations);
+
+CMISSError CMISSProblemCellMLEquationsGet(const CMISSProblemType Problem,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		CMISSCellMLEquationsType *CellMLEquations);
+
 CMISSError CMISSProblemCreateFinishNum(const int ProblemUserNumber);
 
 CMISSError CMISSProblemCreateFinish(const CMISSProblemType Problem);
@@ -4246,16 +4272,25 @@ CMISSError CMISSRegionLabelSet(const CMISSRegionType Region,
  *==================================================================================================================================
  */
 
-CMISSError CMISSSolverCellMLAddNum(const int ProblemUserNumber,
+CMISSError CMISSCellMLEquationsCellMLAddNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
 		const int *ControlLoopIdentifiers,
 		const int SolverIndex,
 		const int CellMLUserNumber,
 		int *CellMLIndex);
 
-CMISSError CMISSSolverCellMLAdd(const CMISSSolverType Solver,
+CMISSError CMISSCellMLEquationsCellMLAdd(const CMISSCellMLEquationsType CellMLEquations,
 		const CMISSCellMLType CellML,
 		int *CellMLIndex);
+
+CMISSError CMISSSolverCellMLEquationsGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		CMISSCellMLEquationsType *CellMLEquations);
+
+CMISSError CMISSSolverCellMLEquationsGet(const CMISSSolverType Solver,
+		CMISSCellMLEquationsType *CellMLEquations);
 
 CMISSError CMISSSolverDAEEulerSolverTypeGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
@@ -4298,13 +4333,20 @@ CMISSError CMISSSolverDAETimesSetNum(const int ProblemUserNumber,
 		const int *ControlLoopIdentifiers,
 		const int SolverIndex,
 		const int StartTime,
-		const int EndTime,
-		const int IntialStep);
+		const int EndTime);
 
 CMISSError CMISSSolverDAETimesSet(const CMISSSolverType Solver,
 		const int StartTime,
-		const int EndTime,
-		const int InitialStep);
+		const int EndTime);
+
+CMISSError CMISSSolverDAETimeStepSetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int TimeStep);
+
+CMISSError CMISSSolverDAETimeStepSet(const CMISSSolverType Solver,
+		const int TimeStep);
 
 CMISSError CMISSSolverDynamicDegreeGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
@@ -6873,6 +6915,26 @@ CMISSError CMISSControlLoopIterationsSet(CMISSControlLoopType *ControlLoop,
 		const int StopIteration,
 		const int IterationIncrement);
 
+CMISSError CMISSControlLoopLabelGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int LabelSize,
+		char *Label);
+
+CMISSError CMISSControlLoopLabelGet(const CMISSControlLoopType ControlLoop,
+		const int LabelSize,
+	        char *Label);
+
+CMISSError CMISSControlLoopLabelSetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int LabelSize,
+		const char *Label);
+
+CMISSError CMISSControlLoopLabelSet(const CMISSControlLoopType ControlLoop,
+		const int LabelSize,
+		const char *Label);
+
 CMISSError CMISSControlLoopMaximumIterationsSetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize,
 		const int *ControlLoopIdentifiers,
@@ -9120,6 +9182,29 @@ CMISSError CMISSSolverDynamicTimesSetNum(const int ProblemUserNumber,
 CMISSError CMISSSolverDynamicTimesSet(const CMISSSolverType Solver,
 		const double CurrentTime,
 		const double TimeIncrement);
+
+
+CMISSError CMISSSolverLabelGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int LabelSize,
+		char *Label);
+
+CMISSError CMISSSolverLabelGet(const CMISSSolverType Solver,
+		const int LabelSize,
+	        char *Label);
+
+CMISSError CMISSSolverLabelSetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int LabelSize,
+		const char *Label);
+
+CMISSError CMISSSolverLabelSet(const CMISSSolverType Solver,
+		const int LabelSize,
+		const char *Label);
 
 CMISSError CMISSSolverLibraryTypeGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],

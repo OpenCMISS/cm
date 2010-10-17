@@ -2347,11 +2347,11 @@ CONTAINS
                     ENDIF
 
                     !(dQ/dx)
-                    IF(mh==2) THEN
-                      SUM=( U_DERIV(1,1)*DXI_DX(1,1) )*PHIMS
-                      !Calculate Matrix
-                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
-                    ENDIF
+               !     IF(mh==2) THEN
+                 !     SUM=( U_DERIV(1,1)*DXI_DX(1,1) )*PHIMS
+                  !    !Calculate Matrix
+                  !    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+                  !  ENDIF
 
                   ENDDO !ms
                 ENDDO !mh
@@ -2802,12 +2802,12 @@ CONTAINS
                           END IF
 
                           !J3 ONLY (dQ/dx)
-!                          IF(mh==2) THEN
-!                            IF(nh==1) THEN
-!                              SUM=( DPHINS_DXI(1)*DXI_DX(1,1) )*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                            END IF
-!                          END IF
+                 !         IF(mh==2) THEN
+                  !          IF(nh==1) THEN
+                   !           SUM=( DPHINS_DXI(1)*DXI_DX(1,1) )*PHIMS
+                    !          J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                     !       END IF
+                      !    END IF
 
                       ENDDO !ns
                     ENDDO !nh
