@@ -20,6 +20,13 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
+!> The Initial Developer of the Original Code is University of Auckland,
 !> Auckland, New Zealand and University of Oxford, Oxford, United
 !> Kingdom. Portions created by the University of Auckland and University
 !> of Oxford are Copyright (C) 2007 by the University of Auckland and
