@@ -517,7 +517,10 @@ CONTAINS
         ELSE
           NULLIFY(ROUTINE_STACK%STACK_POINTER)
         ENDIF
-        DEALLOCATE(ROUTINE_PTR)
+
+        !Delete the routine pointer
+        call erase(ROUTINE_PTR%NAME) !Routine name (varying string) remains allocated - it's a leak hazard
+        DEALLOCATE(ROUTINE_PTR) 
 
         !ELSE ERROR????
       ENDIF

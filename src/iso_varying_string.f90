@@ -256,6 +256,10 @@ MODULE ISO_VARYING_STRING
      module procedure split_CH
   end interface split
 
+  interface erase
+    module procedure erase_
+  end interface erase
+
   ! Access specifiers
 
   public :: assignment(=)
@@ -291,6 +295,7 @@ MODULE ISO_VARYING_STRING
   public :: remove
   public :: replace
   public :: split
+  public :: erase
 
   private :: op_assign_CH_VS
   private :: op_assign_VS_CH
@@ -2557,6 +2562,27 @@ contains
     return
 
   end subroutine split_CH
+
+!****
+
+!JL 20/10/10 seems *very* strange that there is no deallocate statement in this entire file... given that varying string is 
+!            an allocatable character array. Adding one to prevent memory leak - has to be called manually like normal 
+!            deallocate statement
+  elemental subroutine erase_ (string)
+
+    type(varying_string), intent(inout) :: string
+
+! Get the length of a varying string
+
+    if(ALLOCATED(string%chars)) then
+       deallocate(string%chars)
+    endif
+
+! Finish
+
+    return
+
+  end subroutine erase_
 
 END MODULE ISO_VARYING_STRING
 
