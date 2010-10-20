@@ -7180,7 +7180,7 @@ CONTAINS
         SOLVER%LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER=.FALSE.
         NULLIFY(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER)
         NULLIFY(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER)
-        !Default to a iterative solver
+        !Default to an iterative solver
         SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE=SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE
         CALL SOLVER_LINEAR_ITERATIVE_INITIALISE(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
       ENDIF
@@ -7635,7 +7635,7 @@ CONTAINS
       IF(ASSOCIATED(LINEAR_SOLVER%ITERATIVE_SOLVER)) THEN
         CALL FLAG_ERROR("Iterative solver is already associated for this linear solver.",ERR,ERROR,*998)
       ELSE
-        !Allocate and initialise a iterative solver
+        !Allocate and initialise an iterative solver
         ALLOCATE(LINEAR_SOLVER%ITERATIVE_SOLVER,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear solver iterative solver.",ERR,ERROR,*999)
         LINEAR_SOLVER%ITERATIVE_SOLVER%LINEAR_SOLVER=>LINEAR_SOLVER
