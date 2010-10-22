@@ -368,7 +368,7 @@ CONTAINS
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
                 CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
-                  & DARCY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999) ! 'FIRST_PART_DERIV' required ???
+                  & DARCY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             ENDIF
 
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
@@ -379,27 +379,29 @@ CONTAINS
 !             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
 !               & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
 
-!---tob
+            IF(DIAGNOSTICS1) THEN
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ELEMENT_NUMBER = ",ELEMENT_NUMBER,ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  gauss_idx = ",gauss_idx,ERR,ERROR,*999)
+            ENDIF
+
             !Calculate Sigma=1/Jznu.FTF', the Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
               & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
               & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
-!---toe
 
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE) THEN
-                !For incompressible elasticity, rather pass Lagrange-Multiplier pressure to Darcy
-!               DO dim_idx=1,NUMBER_OF_DIMENSIONS
-!                 CAUCHY_TENSOR(dim_idx,dim_idx) = CAUCHY_TENSOR(dim_idx,dim_idx) &
-!                   & - 0.7_DP * DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
-!                   !Include (1-porosity) here via shared material field !!! (hardcoded 0.7 for now)
-!               ENDDO
-! 
-!               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(5,NO_PART_DERIV) 
-!               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
-            ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+            IF(DIAGNOSTICS1) THEN
+              CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+                & 3,3,CAUCHY_TENSOR,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    CAUCHY_TENSOR','(",I1,",:)',' :",3(X,E13.6))', &
+                & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+            ENDIF
+
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
               DARCY_RHO_0_F=1.0E-03 !rather pass it through shared material field
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
+
+!               write(*,*)'DARCY_VOL_INCREASE(1) = ',DARCY_VOL_INCREASE
+
             ENDIF
 
             !Calculate dPhi/dZ at the gauss point, Phi is the basis function
@@ -454,10 +456,14 @@ CONTAINS
                       & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
                       & GAUSS_WEIGHTS*Jxxi*COMPONENT_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,1,gauss_idx)* &
                       & (Jznu-1.0_DP-DARCY_VOL_INCREASE)
+
+!                     write(*,*)'Jznu-1.0_DP-DARCY_VOL_INCREASE = ',Jznu-1.0_DP-DARCY_VOL_INCREASE
+
                   ELSE
                     NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
                       & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
-                      & GAUSS_WEIGHTS*Jxxi*COMPONENT_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,1,gauss_idx)*(Jznu-1.0_DP)
+                      & GAUSS_WEIGHTS*Jxxi*COMPONENT_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,1,gauss_idx)* &
+                      & (Jznu-1.0_DP)
                   ENDIF
                 ENDDO
               ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based
@@ -468,7 +474,8 @@ CONTAINS
                     & (Jznu-1.0_DP-DARCY_VOL_INCREASE)
                 ELSE
                   NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
-                    & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+GAUSS_WEIGHTS*Jxxi*(Jznu-1.0_DP)
+                    & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+GAUSS_WEIGHTS*Jxxi* &
+                    & (Jznu-1.0_DP)
                 ENDIF
               ENDIF
             ENDIF
@@ -506,12 +513,10 @@ ENDIF
 !             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
 !               & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
 
-!---tob
-            !Caculate Cauchy stress tensor at the gauss point
+            !Calculate Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
               & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
               & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
-!---toe
 
             !Calculate dF/DZ at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_DFDZ(DEPENDENT_INTERPOLATED_POINT,ELEMENT_NUMBER,gauss_idx,NUMBER_OF_DIMENSIONS, &
@@ -565,16 +570,22 @@ ENDIF
           NDOFS = NDOFS + DEPENDENT_BASIS_1%NUMBER_OF_ELEMENT_PARAMETERS
         END DO
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"NDOFS: ",NDOFS,ERR,ERROR,*999)
+!         CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"NDOFS: ",NDOFS,ERR,ERROR,*999)
 
-!               CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Element Vector for element number * (Fin.Elast.):",ERR,ERROR,*999)
+              CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Element Vector for element number * (Fin.Elast.):",ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Element Vector for element number (Fin.Elast.): ", &
           & ELEMENT_NUMBER,ERR,ERROR,*999)
+!         CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element Vector for element number (Fin.Elast.): ", &
+!           & ELEMENT_NUMBER,ERR,ERROR,*999)
 !               DO mhs=1,NDOFS
 !                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"row number = ",mhs,ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS,NDOFS,NDOFS,&
             & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(:), &
             & '("",4(X,E13.6))','4(4(X,E13.6))',ERR,ERROR,*999)
-          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," ",ERR,ERROR,*999)
+!           CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,NDOFS,NDOFS,NDOFS,&
+!             & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(:), &
+!             & '("",4(X,E13.6))','4(4(X,E13.6))',ERR,ERROR,*999)
+!           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," ",ERR,ERROR,*999)
 !               END DO
       ENDIF
     ENDIF
@@ -845,14 +856,15 @@ ENDIF
     INTEGER(INTG) :: EQUATIONS_SET_SUBTYPE !<The equation subtype
     INTEGER(INTG) :: i,j,PRESSURE_COMPONENT
     REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),TEMP(3,3),TEMPTERM,I3,P,I1,ACTIVTIME
+    REAL(DP) :: PIOLA_TENSOR_ADDITION(3,3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP), DIMENSION (:), POINTER :: C !Parameters for constitutive laws
     REAL(DP) :: a, B(3,3), Q !Parameters for orthotropic laws
-    REAL(DP) :: DARCY_VOL_INCREASE, DARCY_MASS_INCREASE, DARCY_RHO_0_F  !coupled elasticity Darcy
-    REAL(DP) :: Mfact, bfact, ffact, dfdJfact  !INRIA constitutive law
+    REAL(DP) :: DARCY_MASS_INCREASE  !coupled elasticity Darcy
+    INTEGER(INTG) :: DARCY_MASS_INCREASE_ENTRY !position of mass-increase entry in dependent-variable vector
 
 
-    CALL ENTERS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR,*999)
+!     CALL ENTERS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR,*999)
     EQUATIONS_SET_SUBTYPE = EQUATIONS_SET%SUBTYPE
 
     C => MATERIALS_INTERPOLATED_POINT%VALUES(:,1)
@@ -977,13 +989,12 @@ ENDIF
              & EQUATIONS_SET%EQUATIONS%INTERPOLATION%MATERIALS_FIELD, PIOLA_TENSOR(1,1),E(1,1),         &
              & ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*999)
       END IF
-    CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)
+    CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
+      & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
       !Form of constitutive model is:
       ! W=c1*(I1-3)+c2*(I2-3)+c3*(J-1)^2   (this is actually nearly incompressible)
-      !However, implementation says: PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(I3-SQRT(I3))*AZU
       C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
       C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
-      C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
 
       PIOLA_TENSOR(1,1)=C(1)+C(2)*(AZL(2,2)+AZL(3,3))
       PIOLA_TENSOR(1,2)=C(2)*(-AZL(2,1))
@@ -994,109 +1005,81 @@ ENDIF
       PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
       PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
       PIOLA_TENSOR(3,3)=C(1)+C(2)*(AZL(1,1)+AZL(2,2))
-      PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(I3-SQRT(I3))*AZU
       PIOLA_TENSOR=PIOLA_TENSOR*2.0_DP
 
-      IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) THEN
-        !Parameters settings for coupled elasticity Darcy INRIA model:
-        !\ToDo: ensure constants are consistent with Darcy model ! Pass through material parameters ???
-        DARCY_RHO_0_F = 1.0E-03
-        Mfact = 2.18E05
-        bfact = 1.0_DP
+! !---tob
+!        PIOLA_TENSOR=PIOLA_TENSOR*1.0E-4_DP
+! !---toe
 
-        DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(5,NO_PART_DERIV) 
-        DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
 
-        !This modification sets it back to Mooney-Rivlin:
-        PIOLA_TENSOR=PIOLA_TENSOR-2.0_DP*C(3)*(I3-SQRT(I3))*AZU
+      IF(DIAGNOSTICS1) THEN
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  C(1) = ",C(1),ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  C(2) = ",C(2),ERR,ERROR,*999)
+        CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+          & 3,3,AZL,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    AZL','(",I1,",:)',' :",3(X,E13.6))', &
+          & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+      ENDIF
 
-        !This modification adjusts for the modified Ciarlet-Geymonat expression: Eq.(28) of the INRIA paper
-        PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
+      IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) THEN
 
-        Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
-        IF( ABS(Jznu) < 1.0E-10_DP ) THEN
-          CALL FLAG_ERROR("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR: ABS(Jznu) < 1.0E-10_DP",ERR,ERROR,*999)
-        END IF
+        C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
 
-        ! ffact = f(Jznu)  and  dfdJfact = f'(Jznu)  of the INRIA model
-        IF( ABS(Jznu-1.0_DP) > 1.0E-10_DP ) THEN
-          !Eq.(21) of the INRIA paper
-          ffact = 2.0_DP * (Jznu - 1.0_DP - log(Jznu)) / (Jznu - 1.0_DP)**2.0_DP
-          dfdJfact = ( 2.0_DP * (1.0_DP - 1.0_DP/Jznu) * (Jznu - 1.0_DP)**2.0_DP &
-                       & - 4.0_DP * (Jznu - 1.0_DP - log(Jznu)) * (Jznu - 1.0_DP) ) / (Jznu - 1.0_DP)**4.0_DP
-        ELSE
-          ffact = 1.0_DP
-          !dfdJfact = ???
-        END IF
+        PIOLA_TENSOR=PIOLA_TENSOR+2.0_DP*C(3)*(I3-SQRT(I3))*AZU
 
-        !Eq.(13) of the INRIA paper
-        PIOLA_TENSOR = PIOLA_TENSOR - Mfact * bfact * DARCY_VOL_INCREASE * (ffact + (Jznu - 1.0_DP) * dfdJfact) * Jznu * AZU &
-          & + 0.5_DP * Mfact * DARCY_VOL_INCREASE**2.0_DP * dfdJfact * Jznu * AZU
+      ELSE IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
+        & EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+
+        !Starting point for both models is above compressible form of 2nd PK tensor
+
+        SELECT CASE (EQUATIONS_SET_SUBTYPE)
+        CASE (EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) !Nearly incompressible
+
+          C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+
+          !Adjust for the modified Ciarlet-Geymonat expression: Eq.(22) of the INRIA paper
+          ! Question is: What deviation is to be penalized : (J-1) or (J-1-m/rho) ??? Probably the latter !
+          ! However, m/rho is a given 'constant' and, upon differentiation, drops out.
+          ! But it is important to retain I3 = J^2, since J ~ 1 + m/rho /= 1
+          PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
+
+          DARCY_MASS_INCREASE_ENTRY = 5 !fifth entry
+
+        CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) !Incompressible
+          !Constitutive model: W=c1*(I1-3)+c2*(I2-3)+p*(I3-1) 
+          ! The term 'p*(I3-1)' gives rise to: '2p I3 AZU'
+          ! Retain I3 = J^2, since J ~ 1 + m/rho /= 1 
+
+          IF(DIAGNOSTICS1) THEN
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  I3 = ",I3,ERR,ERROR,*999)
+          ENDIF
+
+          !\ToDo: Check: Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it ???
+          DO i=1,3
+           DO j=1,3
+             !\todo: Check which form to use. Recall: I3 = (1 + m/rho)^2 here !
+!              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 2.0_DP*P*I3*AZU(i,j)
+             PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 2.0_DP*P*AZU(i,j)
+           ENDDO
+          ENDDO
+
+          DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
+        END SELECT
+
+        DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
+        CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
+
+        IF(DIAGNOSTICS1) THEN
+          CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+            & 3,3,PIOLA_TENSOR,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR','(",I1,",:)',' :",3(X,E13.6))', &
+            & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+          CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+            & 3,3,PIOLA_TENSOR_ADDITION, &
+            & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR_ADDITION','(",I1,",:)',' :",3(X,E13.6))', &
+            & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+        ENDIF
+
+        PIOLA_TENSOR = PIOLA_TENSOR + PIOLA_TENSOR_ADDITION
       END IF
-
-    CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
-      !Form of constitutive model is:
-      ! W=c1*(I1-3)+c2*(I2-3)+c3*(J-1)^2   (this is actually nearly incompressible)
-      !However, implementation says: PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(I3-SQRT(I3))*AZU
-      C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
-      C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
-!       C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-
-      PIOLA_TENSOR(1,1)=C(1)+C(2)*(AZL(2,2)+AZL(3,3))
-      PIOLA_TENSOR(1,2)=C(2)*(-AZL(2,1))
-      PIOLA_TENSOR(1,3)=C(2)*(-AZL(3,1))   
-      PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
-      PIOLA_TENSOR(2,2)=C(1)+C(2)*(AZL(3,3)+AZL(1,1))
-      PIOLA_TENSOR(2,3)=C(2)*(-AZL(3,2))     
-      PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
-      PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
-      PIOLA_TENSOR(3,3)=C(1)+C(2)*(AZL(1,1)+AZL(2,2))
-!       PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(I3-SQRT(I3))*AZU
-
-      !Adding the volumetric part, as is done for incompressible Mooney-Rivlin above. Still debating whether this should be done.
-      !\ToDo: Check whether this is correct.
-      DO i=1,3
-       DO j=1,3
-         PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + p*AZU(i,j)
-       ENDDO
-      ENDDO
-
-      PIOLA_TENSOR=PIOLA_TENSOR*2.0_DP
-
-      !Parameters settings for coupled INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY model:
-      !\ToDo: ensure constants are consistent with Darcy model ! Pass through material parameters ???
-      DARCY_RHO_0_F = 1.0E-03
-      Mfact = 2.18E05
-      bfact = 1.0_DP
-
-      DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
-      DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
-
-!       !This modification sets it back to Mooney-Rivlin:
-!       PIOLA_TENSOR=PIOLA_TENSOR-2.0_DP*C(3)*(I3-SQRT(I3))*AZU
-
-!       !This modification adjusts for the modified Ciarlet-Geymonat expression: Eq.(28) of the INRIA paper
-!       PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
-
-      Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
-      IF( ABS(Jznu) < 1.0E-10_DP ) THEN
-        CALL FLAG_ERROR("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR: ABS(Jznu) < 1.0E-10_DP",ERR,ERROR,*999)
-      END IF
-
-      ! ffact = f(Jznu)  and  dfdJfact = f'(Jznu)  of the INRIA model
-      IF( ABS(Jznu-1.0_DP) > 1.0E-10_DP ) THEN
-        !Eq.(21) of the INRIA paper
-        ffact = 2.0_DP * (Jznu - 1.0_DP - log(Jznu)) / (Jznu - 1.0_DP)**2.0_DP
-        dfdJfact = ( 2.0_DP * (1.0_DP - 1.0_DP/Jznu) * (Jznu - 1.0_DP)**2.0_DP &
-                     & - 4.0_DP * (Jznu - 1.0_DP - log(Jznu)) * (Jznu - 1.0_DP) ) / (Jznu - 1.0_DP)**4.0_DP
-      ELSE
-        ffact = 1.0_DP
-        !dfdJfact = ???
-      END IF
-
-      !Eq.(13) of the INRIA paper
-      PIOLA_TENSOR = PIOLA_TENSOR - Mfact * bfact * DARCY_VOL_INCREASE * (ffact + (Jznu - 1.0_DP) * dfdJfact) * Jznu * AZU &
-        & + 0.5_DP * Mfact * DARCY_VOL_INCREASE**2.0_DP * dfdJfact * Jznu * AZU
 
     CASE (EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE) ! added by Thomas 2010-04-13
       !Form of the constitutive model is:
@@ -1136,7 +1119,7 @@ ENDIF
 
     NULLIFY(C)
 
-    CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
+!     CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
     RETURN
 999 CALL ERRORS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR)
     CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
@@ -3255,7 +3238,6 @@ ENDIF
                                       END IF
                                     END DO
 
-!---tob
                                     IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
                                       CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
                                         & FIELD_U_VARIABLE_TYPE, FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
@@ -3267,7 +3249,6 @@ ENDIF
                                       CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
                                         & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                                     ENDIF
-!---toe
 
                                     IF(DIAGNOSTICS1) THEN
                                       NULLIFY( DUMMY_VALUES1 )
@@ -3344,6 +3325,118 @@ ENDIF
     CALL EXITS("FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
     RETURN 1
   END SUBROUTINE FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the functions f(J) and f'(J); 
+  !>  Eq.(21) in Chapelle, Gerbeau, Sainte-Marie, Vignon-Clementel, Computational Mechanics (2010)
+  SUBROUTINE EVALUATE_CHAPELLE_FUNCTION(AZL,Jznu,ffact,dfdJfact,ERR,ERROR,*)
+  
+    !Argument variables
+    REAL(DP), INTENT(IN) :: AZL(3,3) !<C=F'F
+    REAL(DP), INTENT(OUT) :: Jznu !<Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
+    REAL(DP), INTENT(OUT) :: ffact !<f(Jznu) of the INRIA model
+    REAL(DP), INTENT(OUT) :: dfdJfact !<dfdJfact = f'(Jznu) of the INRIA model
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    CALL ENTERS("EVALUATE_CHAPELLE_FUNCTION",ERR,ERROR,*999)
+
+    Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
+    IF( ABS(Jznu) < 1.0E-10_DP ) THEN
+      CALL FLAG_ERROR("EVALUATE_CHAPELLE_FUNCTION: ABS(Jznu) < 1.0E-10_DP",ERR,ERROR,*999)
+    END IF
+
+    IF( ABS(Jznu-1.0_DP) > 5.0E-02_DP ) THEN
+      !Eq.(21) of the INRIA paper
+      ffact = 2.0_DP * (Jznu - 1.0_DP - log(Jznu)) / (Jznu - 1.0_DP)**2.0_DP
+      dfdJfact = ( 2.0_DP * (1.0_DP - 1.0_DP/Jznu) * (Jznu - 1.0_DP)**2.0_DP &
+                   & - 4.0_DP * (Jznu - 1.0_DP - log(Jznu)) * (Jznu - 1.0_DP) ) / (Jznu - 1.0_DP)**4.0_DP
+    ELSE
+      ffact = 1.0_DP
+      dfdJfact = 0.0_DP
+    END IF
+
+
+    CALL EXITS("EVALUATE_CHAPELLE_FUNCTION")
+    RETURN
+999 CALL ERRORS("EVALUATE_CHAPELLE_FUNCTION",ERR,ERROR)
+    CALL EXITS("EVALUATE_CHAPELLE_FUNCTION")
+    RETURN 1
+  END SUBROUTINE EVALUATE_CHAPELLE_FUNCTION
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the 2nd Piola-Kirchhoff stress tensor;
+  !>  Eq.(13) in Chapelle, Gerbeau, Sainte-Marie, Vignon-Clementel, Computational Mechanics (2010)
+  SUBROUTINE EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*)
+  
+    !Argument variables
+    REAL(DP), INTENT(IN) :: AZL(3,3) !<C=F'F
+    REAL(DP), INTENT(IN) :: AZU(3,3) !<inverse of AZL
+    REAL(DP), INTENT(IN) :: DARCY_MASS_INCREASE !<mass increase
+    REAL(DP), INTENT(OUT) :: PIOLA_TENSOR_ADDITION(3,3) !<Addition to the 2nd Piola-Kirchhoff tensor
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    REAL(DP) :: Jznu !<Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
+    REAL(DP) :: ffact !<f(Jznu) of the INRIA model
+    REAL(DP) :: dfdJfact !<dfdJfact = f'(Jznu) of the INRIA model
+    REAL(DP) :: Mfact, bfact  !<INRIA constitutive law
+    REAL(DP) :: DARCY_VOL_INCREASE, DARCY_RHO_0_F
+    INTEGER(INTG) :: i,j
+
+    
+    CALL ENTERS("EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION",ERR,ERROR,*999)
+
+    !Parameters settings for coupled elasticity Darcy INRIA model:
+    !\ToDo: ensure constants are consistent with Darcy model ! Pass through material parameters ???
+    DARCY_RHO_0_F = 1.0E-03_DP
+!     Mfact = 2.18E05_DP
+    Mfact = 2.18E03_DP
+    bfact = 1.0_DP
+
+    DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
+
+!     write(*,*)'DARCY_VOL_INCREASE(2) = ',DARCY_VOL_INCREASE
+
+    CALL EVALUATE_CHAPELLE_FUNCTION(AZL,Jznu,ffact,dfdJfact,ERR,ERROR,*999)
+
+    DO i=1,3
+      DO j=1,3
+        PIOLA_TENSOR_ADDITION(i,j) = - Mfact * bfact * DARCY_VOL_INCREASE * (ffact + (Jznu - 1.0_DP) * dfdJfact) * Jznu * AZU(i,j) &
+          & + 0.5_DP * Mfact * DARCY_VOL_INCREASE**2.0_DP * dfdJfact * Jznu * AZU(i,j)
+      ENDDO
+    ENDDO
+
+!     PIOLA_TENSOR_ADDITION = - Mfact * bfact * DARCY_VOL_INCREASE * (ffact + (Jznu - 1.0_DP) * dfdJfact) * Jznu * AZU &
+!       & + 0.5_DP * Mfact * DARCY_VOL_INCREASE**2.0_DP * dfdJfact * Jznu * AZU
+
+    IF(DIAGNOSTICS1) THEN
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DARCY_VOL_INCREASE = ",DARCY_VOL_INCREASE,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Jznu = ",Jznu,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ffact = ",ffact,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dfdJfact = ",dfdJfact,ERR,ERROR,*999)
+      CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+        & 3,3,AZU,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    AZU','(",I1,",:)',' :",3(X,E13.6))', &
+        & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+      CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+        & 3,3,PIOLA_TENSOR_ADDITION, &
+        & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR_ADDITION','(",I1,",:)',' :",3(X,E13.6))', &
+        & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+    ENDIF
+
+
+    CALL EXITS("EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION")
+    RETURN
+999 CALL ERRORS("EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION",ERR,ERROR)
+    CALL EXITS("EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION")
+    RETURN 1
+  END SUBROUTINE EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION
 
   !
   !================================================================================================================================
