@@ -3942,7 +3942,7 @@ CONTAINS
                       SURFACE_NODES(node_counter)=NIDX(i,1,j)
                    ENDDO
                 ENDDO
-                NORMAL_XI=-3
+                NORMAL_XI=-2
              CASE(GENERATED_MESH_REGULAR_BACK_SURFACE)
                 ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,3))),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
@@ -3952,7 +3952,7 @@ CONTAINS
                       SURFACE_NODES(node_counter)=NIDX(i,SIZE(NIDX,2),j)
                    ENDDO
                 ENDDO
-                NORMAL_XI=-3
+                NORMAL_XI=2
              CASE DEFAULT
                 LOCAL_ERROR="The specified surface type of "//TRIM(NUMBER_TO_VSTRING(SURFACE_TYPE,"*",ERR,ERROR))// &
                   & " is invalid for a regular mesh."
