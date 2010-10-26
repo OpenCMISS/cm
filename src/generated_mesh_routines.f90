@@ -74,7 +74,7 @@ MODULE GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_POLAR_MESH_TYPE=2 !<A polar generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_FRACTAL_TREE_MESH_TYPE=3 !<A fractal tree generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_CYLINDER_MESH_TYPE=4 !<A cylinder generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
-   INTEGER(INTG), PARAMETER :: GENERATED_MESH_ELLIPSOID_MESH_TYPE=5 !<An ellipsoid generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_ELLIPSOID_MESH_TYPE=5 !<An ellipsoid generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
   !>@}
 
   !> \addtogroup GENERATED_MESH_ROUTINES_GeneratedMeshCylinderSurfaces GENERATED_MESH_ROUTINES::GeneratedMeshCylinderSurfaces
@@ -92,6 +92,17 @@ MODULE GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_ELLIPSOID_INNER_SURFACE=5  !<Inner surface of the ellipsoid. \see GENERATED_MESH_ROUTINES_GeneratedMeshEllipsoidSurfaces,GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_ELLIPSOID_OUTER_SURFACE=6  !<Outer surface of the ellipsoid. \see GENERATED_MESH_ROUTINES_GeneratedMeshEllipsoidSurfaces,GENERATED_MESH_ROUTINES
   INTEGER(INTG), PARAMETER :: GENERATED_MESH_ELLIPSOID_TOP_SURFACE=7    !<Top surface of the ellipsoid. \see GENERATED_MESH_ROUTINES_GeneratedMeshEllipsoidSurfaces,GENERATED_MESH_ROUTINES  
+   !>@}
+
+  !> \addtogroup GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces GENERATED_MESH_ROUTINES::GeneratedMeshRegularSurfaces
+  !> \brief Generated mesh regular type surface types.
+  !>@{
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_REGULAR_LEFT_SURFACE=8    !<Left surface of the regular mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_REGULAR_RIGHT_SURFACE=9   !<Right surface of the regular mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_REGULAR_TOP_SURFACE=10    !<Top surface of the regular mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_REGULAR_BOTTOM_SURFACE=1  !<Bottom surface of the regular mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_REGULAR_FRONT_SURFACE=12  !<Front surface of the regular mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces,GENERATED_MESH_ROUTINES
+  INTEGER(INTG), PARAMETER :: GENERATED_MESH_REGULAR_BACK_SURFACE=13   !<Back surface of the regular mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces,GENERATED_MESH_ROUTINES
    !>@}
   
   !Module types
@@ -124,10 +135,13 @@ MODULE GENERATED_MESH_ROUTINES
   PUBLIC GENERATED_MESH_REGULAR_MESH_TYPE,GENERATED_MESH_POLAR_MESH_TYPE
   PUBLIC GENERATED_MESH_FRACTAL_TREE_MESH_TYPE,GENERATED_MESH_CYLINDER_MESH_TYPE
   PUBLIC GENERATED_MESH_ELLIPSOID_MESH_TYPE
-  public GENERATED_MESH_CYLINDER_INNER_SURFACE,GENERATED_MESH_CYLINDER_OUTER_SURFACE
-  public GENERATED_MESH_CYLINDER_TOP_SURFACE,GENERATED_MESH_CYLINDER_BOTTOM_SURFACE
-  public GENERATED_MESH_ELLIPSOID_INNER_SURFACE,GENERATED_MESH_ELLIPSOID_OUTER_SURFACE
-  public GENERATED_MESH_ELLIPSOID_TOP_SURFACE
+  PUBLIC GENERATED_MESH_CYLINDER_INNER_SURFACE,GENERATED_MESH_CYLINDER_OUTER_SURFACE
+  PUBLIC GENERATED_MESH_CYLINDER_TOP_SURFACE,GENERATED_MESH_CYLINDER_BOTTOM_SURFACE
+  PUBLIC GENERATED_MESH_ELLIPSOID_INNER_SURFACE,GENERATED_MESH_ELLIPSOID_OUTER_SURFACE
+  PUBLIC GENERATED_MESH_ELLIPSOID_TOP_SURFACE
+  PUBLIC GENERATED_MESH_REGULAR_LEFT_SURFACE,GENERATED_MESH_REGULAR_RIGHT_SURFACE
+  PUBLIC GENERATED_MESH_REGULAR_TOP_SURFACE,GENERATED_MESH_REGULAR_BOTTOM_SURFACE
+  PUBLIC GENERATED_MESH_REGULAR_FRONT_SURFACE,GENERATED_MESH_REGULAR_BACK_SURFACE
   PUBLIC GENERATED_MESHES_INITIALISE,GENERATED_MESHES_FINALISE
 
   PUBLIC GENERATED_MESH_BASE_VECTORS_SET
@@ -977,6 +991,7 @@ CONTAINS
     !Local Variables
     TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH
     TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 !     INTEGER(INTG), ALLOCATABLE :: NODES(:)
     
@@ -986,7 +1001,8 @@ CONTAINS
     IF(ASSOCIATED(GENERATED_MESH)) THEN
        SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
        CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          REGULAR_MESH=>GENERATED_MESH%REGULAR_MESH
+          CALL GENERATED_MESH_REGULAR_SURFACE_GET(REGULAR_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*999)
        CASE(GENERATED_MESH_POLAR_MESH_TYPE)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
        CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
@@ -3842,8 +3858,127 @@ CONTAINS
 
   !
   !================================================================================================================================
-  ! 
-  
+  !
+
+  !>Provides an easy way to grab surfaces for boundary condition assignment
+  SUBROUTINE GENERATED_MESH_REGULAR_SURFACE_GET(REGULAR_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*)
+    ! Argument variables
+    TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the regular mesh object
+    INTEGER(INTG), INTENT(IN) :: SURFACE_TYPE !<A constant identifying the type of surface to get \see GENERATED_MESH_ROUTINES_GeneratedMeshRegularSurfaces,GENERATED_MESH_ROUTINES
+    INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: SURFACE_NODES(:) !<On exit, contains the list of nodes belonging to the surface
+    INTEGER(INTG), INTENT(OUT) :: NORMAL_XI !<On exit, contains the xi direction of the outward pointing normal of the surface
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    ! Local variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS_XI(3) !Specified number of elements in each xi direction
+    INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
+    INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
+    REAL(DP) :: DELTA(3),DELTAI(3)
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: node_counter,i, j, k
+
+    CALL ENTERS("GENERATED_MESH_REGULAR_SURFACE_GET",ERR,ERROR,*999)
+
+    IF(ALLOCATED(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)) THEN
+       NUMBER_OF_ELEMENTS_XI=REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
+       IF(ASSOCIATED(REGULAR_MESH%BASIS)) THEN
+          BASIS=>REGULAR_MESH%BASIS
+          IF(.NOT.ALLOCATED(SURFACE_NODES)) THEN
+             NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XIC
+             ! build indices first (some of these are dummy arguments)
+             CALL GENERATED_MESH_REGULAR_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
+                  & REGULAR_MESH%MAXIMUM_EXTENT,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,EIDX, &
+                  & DELTA,DELTAI,ERR,ERROR,*999)
+             node_counter=0
+             SELECT CASE(SURFACE_TYPE)
+             CASE(GENERATED_MESH_REGULAR_LEFT_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,2))*(SIZE(NIDX,3))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO k=1,SIZE(NIDX,3)
+                   DO j=1,SIZE(NIDX,2)
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(1,j,k)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=-1
+             CASE(GENERATED_MESH_REGULAR_RIGHT_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,2))*(SIZE(NIDX,3))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO k=1,SIZE(NIDX,3)
+                   DO j=1,SIZE(NIDX,2)
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(SIZE(NIDX,1),j,k)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=1
+             CASE(GENERATED_MESH_REGULAR_TOP_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,2)
+                   DO i=1,SIZE(NIDX,1)
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(i,j,SIZE(NIDX,3))
+                   ENDDO
+                ENDDO
+                NORMAL_XI=3
+             CASE(GENERATED_MESH_REGULAR_BOTTOM_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,2))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,2)
+                   DO i=1,SIZE(NIDX,1)
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(i,j,1)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=-3
+             CASE(GENERATED_MESH_REGULAR_FRONT_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,3))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,3)
+                   DO i=1,SIZE(NIDX,1)
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(i,1,j)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=-3
+             CASE(GENERATED_MESH_REGULAR_BACK_SURFACE)
+                ALLOCATE(SURFACE_NODES((SIZE(NIDX,1))*(SIZE(NIDX,3))),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NODES array.",ERR,ERROR,*999)
+                DO j=1,SIZE(NIDX,3)
+                   DO i=1,SIZE(NIDX,1)
+                      node_counter=node_counter+1
+                      SURFACE_NODES(node_counter)=NIDX(i,SIZE(NIDX,2),j)
+                   ENDDO
+                ENDDO
+                NORMAL_XI=-3
+             CASE DEFAULT
+                LOCAL_ERROR="The specified surface type of "//TRIM(NUMBER_TO_VSTRING(SURFACE_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid for a regular mesh."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+             END SELECT
+          ELSE
+             CALL FLAG_ERROR("Output SURFACE_NODES array is already allocated.",ERR,ERROR,*999)
+          ENDIF
+       ELSE
+          CALL FLAG_ERROR("Regular mesh object does not have a basis associated.",ERR,ERROR,*999)
+       ENDIF
+    ELSE
+       CALL FLAG_ERROR("Regular mesh object does not have number of elements property specified.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("GENERATED_MESH_REGULAR_SURFACE_GET")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_REGULAR_SURFACE_GET",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_REGULAR_SURFACE_GET")
+    RETURN 1
+  END SUBROUTINE GENERATED_MESH_REGULAR_SURFACE_GET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Provides an easy way to grab surfaces for boundary condition assignment
   SUBROUTINE GENERATED_MESH_CYLINDER_SURFACE_GET(CYLINDER_MESH,SURFACE_TYPE,SURFACE_NODES,NORMAL_XI,ERR,ERROR,*)
     ! Argument variables
@@ -4054,7 +4189,91 @@ CONTAINS
 
   !
   !================================================================================================================================
-  ! 
+  !
+
+  !>Calculates the mesh topology information for a given regular mesh (Not to be called by user)
+  SUBROUTINE GENERATED_MESH_REGULAR_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,NUMBER_OF_NODES_XIC,MAXIMUM_EXTENT, &
+    & TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,EIDX,DELTA,DELTAi,ERR,ERROR,*)
+    ! Argument variables
+    INTEGER(INTG),INTENT(IN) :: NUMBER_ELEMENTS_XI(3) !<Specified number of elements in each xi direction
+    INTEGER(INTG),INTENT(IN) :: NUMBER_OF_NODES_XIC(3) !<Number of nodes per element in each xi direction (basis property)
+    REAL(DP),INTENT(IN) :: MAXIMUM_EXTENT(3)         !<width, length and height of regular mesh
+    INTEGER(INTG),INTENT(OUT) :: TOTAL_NUMBER_OF_NODES    !<On exit, contains total number of nodes in regular mesh
+    INTEGER(INTG),INTENT(OUT) :: TOTAL_NUMBER_OF_ELEMENTS !<On exit, contains total number of elements in regular mesh
+    INTEGER(INTG),ALLOCATABLE,INTENT(OUT) :: NIDX(:,:,:)  !<Mapping array to find a node number for a given (x,y,z)
+    INTEGER(INTG),ALLOCATABLE,INTENT(OUT) :: EIDX(:,:,:)  !<Mapping array to find an element number for a given (x,y,z)
+    REAL(DP),INTENT(OUT) :: DELTA(3)  !<Step sizes in each of (x,y,z) for elements
+    REAL(DP),INTENT(OUT) :: DELTAi(3) !<Step sizes in each of (x,y,z) for node (identical to DELTA if 2 nodes per xi direction)
+    INTEGER(INTG) :: ERR !<The error code
+    TYPE(VARYING_STRING) :: ERROR !<The error string
+
+    ! Local variables
+    INTEGER(INTG) :: xi_idx,ne1,ne2,ne3,nn1,nn2,nn3,NN,NE
+    INTEGER(INTG) :: TOTAL_NUMBER_NODES_XI(3) ! total number of nodes in each xi direction
+
+    CALL ENTERS("GENERATED_MESH_REGULAR_BUILD_NODE_INDICES",ERR,ERROR,*999)
+
+    IF(.NOT.ALLOCATED(NIDX)) THEN
+      IF(.NOT.ALLOCATED(EIDX)) THEN
+        ! calculate DELTA and DELTAi
+        DELTA(1)=MAXIMUM_EXTENT(1)/NUMBER_ELEMENTS_XI(1)
+        DELTA(2)=MAXIMUM_EXTENT(2)/NUMBER_ELEMENTS_XI(2)
+        DELTA(3)=MAXIMUM_EXTENT(3)/NUMBER_ELEMENTS_XI(3)
+        DO xi_idx=1,3
+          DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XIC(xi_idx)-1)
+        ENDDO
+
+        ! calculate total elements and nodes
+        DO xi_idx=1,3
+          TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XIC(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
+        ENDDO
+        TOTAL_NUMBER_OF_ELEMENTS=PRODUCT(NUMBER_ELEMENTS_XI)
+
+        ! calculate NIDX first
+        ALLOCATE(NIDX(TOTAL_NUMBER_NODES_XI(1),TOTAL_NUMBER_NODES_XI(2),TOTAL_NUMBER_NODES_XI(3)),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NIDX array.",ERR,ERROR,*999)
+        NN=0
+        DO nn3=1,TOTAL_NUMBER_NODES_XI(3)
+          DO nn2=1,TOTAL_NUMBER_NODES_XI(2)
+            DO nn1=1,TOTAL_NUMBER_NODES_XI(1)
+              NN=NN+1
+              NIDX(nn1,nn2,nn3)=NN
+            ENDDO ! nn1
+          ENDDO ! nn2
+        ENDDO ! nn3
+        TOTAL_NUMBER_OF_NODES=NN
+
+        ! now do EIDX
+        ALLOCATE(EIDX(NUMBER_ELEMENTS_XI(1),NUMBER_ELEMENTS_XI(2),NUMBER_ELEMENTS_XI(3)),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate EIDX array.",ERR,ERROR,*999)
+        NE=0
+        DO ne3=1,NUMBER_ELEMENTS_XI(3)
+          DO ne2=1,NUMBER_ELEMENTS_XI(2)
+            DO ne1=1,NUMBER_ELEMENTS_XI(1)
+              NE=NE+1
+              EIDX(ne1,ne2,ne3)=NE
+            ENDDO
+          ENDDO
+        ENDDO
+        TOTAL_NUMBER_OF_ELEMENTS=NE
+
+      ELSE
+        CALL FLAG_ERROR("NIDX array is already allocated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("EIDX array is already allocated.",ERR,error,*999)
+    ENDIF
+
+    CALL EXITS("GENERATED_MESH_REGULAR_BUILD_NODE_INDICES")
+    RETURN
+999 CALL ERRORS("GENERATED_MESH_REGULAR_BUILD_NODE_INDICES",ERR,ERROR)
+    CALL EXITS("GENERATED_MESH_REGULAR_BUILD_NODE_INDICES")
+    RETURN 1
+  END SUBROUTINE GENERATED_MESH_REGULAR_BUILD_NODE_INDICES
+
+  !
+  !================================================================================================================================
+  !
 
   !>Calculates the mesh topology information for a given cylinder (Not to be called by user)
   SUBROUTINE GENERATED_MESH_CYLINDER_BUILD_NODE_INDICES(NUMBER_ELEMENTS_XI,NUMBER_OF_NODES_XIC,CYLINDER_EXTENT, &

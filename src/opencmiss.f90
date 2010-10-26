@@ -3314,6 +3314,12 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidInnerSurfaceType = GENERATED_MESH_ELLIPSOID_INNER_SURFACE !<Ellipsoid inner surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidOuterSurfaceType = GENERATED_MESH_ELLIPSOID_OUTER_SURFACE !<Ellipsoid outer surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidTopSurfaceType = GENERATED_MESH_ELLIPSOID_TOP_SURFACE !<Ellipsoid top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularLeftSurface = GENERATED_MESH_REGULAR_LEFT_SURFACE !<Regular left surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularRightSurface = GENERATED_MESH_REGULAR_RIGHT_SURFACE !<Regular right surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularTopSurface = GENERATED_MESH_REGULAR_TOP_SURFACE !<Regular top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularBottomSurface = GENERATED_MESH_REGULAR_BOTTOM_SURFACE !<Regular bottom surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularFrontSurface = GENERATED_MESH_REGULAR_FRONT_SURFACE !<Regular front surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularBackSurface = GENERATED_MESH_REGULAR_BACK_SURFACE !<Regular back surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -3452,7 +3458,11 @@ INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
   PUBLIC CMISSGeneratedMeshEllipsoidInnerSurfaceType, CMISSGeneratedMeshEllipsoidOuterSurfaceType
 
   PUBLIC CMISSGeneratedMeshEllipsoidTopSurfaceType
-  
+
+  PUBLIC CMISSGeneratedMeshRegularLeftSurface, CMISSGeneratedMeshRegularRightSurface, CMISSGeneratedMeshRegularTopSurface
+
+  PUBLIC CMISSGeneratedMeshRegularBottomSurface, CMISSGeneratedMeshRegularFrontSurface, CMISSGeneratedMeshRegularBackSurface
+
   PUBLIC CMISSGeneratedMeshBasisGet,CMISSGeneratedMeshBasisSet
 
   PUBLIC CMISSGeneratedMeshBaseVectorsSet
