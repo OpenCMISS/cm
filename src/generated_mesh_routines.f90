@@ -3874,7 +3874,7 @@ CONTAINS
     INTEGER(INTG),ALLOCATABLE :: NIDX(:,:,:),EIDX(:,:,:)
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS_XI(3) !Specified number of elements in each xi direction
     INTEGER(INTG) :: NUMBER_OF_NODES_XI(3) ! Number of nodes per element in each xi direction (basis property)
-    INTEGER(INTG) :: total_number_of_nodes,total_number_of_elements
+    INTEGER(INTG) :: num_dims,total_number_of_nodes,total_number_of_elements
     REAL(DP) :: DELTA(3),DELTAI(3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: node_counter,i, j, k
@@ -3882,11 +3882,22 @@ CONTAINS
     CALL ENTERS("GENERATED_MESH_REGULAR_SURFACE_GET",ERR,ERROR,*999)
 
     IF(ALLOCATED(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)) THEN
-       NUMBER_OF_ELEMENTS_XI=REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
+       num_dims=SIZE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)
+       IF(num_dims==2) THEN
+         NUMBER_OF_ELEMENTS_XI(1:2)=REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(1:2)
+         NUMBER_OF_ELEMENTS_XI(3)=1
+       ELSE
+         NUMBER_OF_ELEMENTS_XI=REGULAR_MESH%NUMBER_OF_ELEMENTS_XI
+       ENDIF
        IF(ASSOCIATED(REGULAR_MESH%BASIS)) THEN
           BASIS=>REGULAR_MESH%BASIS
           IF(.NOT.ALLOCATED(SURFACE_NODES)) THEN
-             NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XIC
+             IF(num_dims==2) THEN
+               NUMBER_OF_NODES_XI(1:2)=BASIS%NUMBER_OF_NODES_XIC(1:2)
+               NUMBER_OF_NODES_XI(3)=1
+             ELSE
+               NUMBER_OF_NODES_XI=BASIS%NUMBER_OF_NODES_XIC
+             ENDIF
              ! build indices first (some of these are dummy arguments)
              CALL GENERATED_MESH_REGULAR_BUILD_NODE_INDICES(NUMBER_OF_ELEMENTS_XI,NUMBER_OF_NODES_XI, &
                   & REGULAR_MESH%MAXIMUM_EXTENT,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,NIDX,EIDX, &
