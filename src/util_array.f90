@@ -20,12 +20,10 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand, the University of Oxford, Oxford, United
-!> Kingdom and King's College, London, United Kingdom. Portions created
-!> by the University of Auckland, the University of Oxford and King's
-!> College, London are Copyright (C) 2007-2010 by the University of
-!> Auckland, the University of Oxford and King's College, London.
-!> All Rights Reserved.
+!> Auckland, New Zealand and University of Oxford, Oxford, United
+!> Kingdom. Portions created by the University of Auckland and University
+!> of Oxford are Copyright (C) 2007 by the University of Auckland and
+!> the University of Oxford. All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -136,10 +134,10 @@ CONTAINS
     CALL ENTERS("REALLOCATE_STRING",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
-      DO I=1,SIZE(array,1)
+      DO I=1,SIZE(ARRAY,1)
         CALL ERASE(ARRAY(I))
+        DEALLOCATE( array )
       ENDDO
-      DEALLOCATE( array )
     ENDIF
     
     ALLOCATE( array( newSize ), STAT = ERR )

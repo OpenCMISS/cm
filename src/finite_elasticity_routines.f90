@@ -48,6 +48,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
+  USE COMP_ENVIRONMENT
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES  
   USE COORDINATE_ROUTINES  
@@ -59,11 +60,13 @@ MODULE FINITE_ELASTICITY_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE FIELD_ROUTINES
   USE FLUID_MECHANICS_IO_ROUTINES
+  USE GENERATED_MESH_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
   USE MATHS  
   USE MATRIX_VECTOR
+  USE MESH_ROUTINES
   USE PROBLEM_CONSTANTS
   USE SOLVER_ROUTINES
   USE STRINGS
@@ -76,13 +79,33 @@ MODULE FINITE_ELASTICITY_ROUTINES
 
   !Module parameters
 
+  !> \addtogroup FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices FINITE_ELASTICITY_ROUTINES::AnalyticParamIndices
+  !> \brief Indices for EQUATIONS_SET_ANALYTIC_TYPE%ANALYTIC_USER_PARAMS
+  !> \see FINITE_ELASTICITY_ROUTINES,OPENCMISS_AnalyticParamIndices
+  !>@{
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX=1 !<Inner pressure parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX=2 !<Outer pressure parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX=3 !<Lambda parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_TSI_IDX=4 !<Tsi parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_RIN_IDX=5 !<Inner radius parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_ROUT_IDX=6 !<Outer radius parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C1_IDX=7 !<c1 parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX=8 !<c2 parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
+  !>@}
+
   !Module types
 
   !Module variables
 
   !Interfaces
 
-  PUBLIC FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE,FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE, &
+  PUBLIC FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX,FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX, &
+    & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX, FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_TSI_IDX, &
+    & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_RIN_IDX, FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_ROUT_IDX, &
+    & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C1_IDX, FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX
+
+  PUBLIC FINITE_ELASTICITY_ANALYTIC_CALCULATE, FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE, &
+    & FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE, &
     & FINITE_ELASTICITY_EQUATIONS_SET_SETUP,FINITE_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET, &
     & FINITE_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SETUP, &
     & FINITE_ELASTICITY_POST_SOLVE,FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA, &
@@ -94,7 +117,479 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the Jacobian for a finite elasticity finite element equations set.
+  !>Calculates the analytic solution and sets the boundary conditions for an analytic problem
+  SUBROUTINE FINITE_ELASTICITY_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: node_idx,component_idx,deriv_idx,variable_idx,dim_idx,local_ny,variable_type
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,user_node,global_node,local_node
+    REAL(DP) :: X(3),DEFORMED_X(3),P,VALUE
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
+!     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: MESH_TOPOLOGY
+!     TYPE(MESH_NODES_TYPE), POINTER :: MESH_NODES
+!     TYPE(MESH_NODE_TYPE), POINTER :: MESH_NODE
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    LOGICAL, ALLOCATABLE :: COMMON_NODE(:)  !Might be used later
+    !BC stuff
+    INTEGER(INTG),ALLOCATABLE :: INNER_SURFACE_NODES(:),OUTER_SURFACE_NODES(:),TOP_SURFACE_NODES(:),BOTTOM_SURFACE_NODES(:)
+    INTEGER(INTG) :: INNER_NORMAL_XI,OUTER_NORMAL_XI,TOP_NORMAL_XI,BOTTOM_NORMAL_XI
+    INTEGEr(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER, DOMAIN_NUMBER
+    REAL(DP) :: PIN,POUT,DEFORMED_Z
+    LOGICAL :: X_FIXED,Y_FIXED,NODE_EXISTS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FINITE_ELASTICITY_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+
+    MY_COMPUTATIONAL_NODE_NUMBER=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            !Get access to geometric coordinates
+            NULLIFY(GEOMETRIC_VARIABLE)
+            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+              & ERR,ERROR,*999)
+            !Assign BC here - it's complicated so separate from analytic calculations
+            NULLIFY(BOUNDARY_CONDITIONS)
+            CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
+            IF(ASSOCIATED(DECOMPOSITION)) THEN
+              MESH=>DECOMPOSITION%MESH
+              IF(ASSOCIATED(MESH)) THEN
+                GENERATED_MESH=>MESH%GENERATED_MESH
+                IF(ASSOCIATED(GENERATED_MESH)) THEN
+                  NODES_MAPPING=>DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES   !HACK - ALL CHECKING SKIPPED
+                  IF(ASSOCIATED(NODES_MAPPING)) THEN
+                    !Get surfaces (hardcoded): fix two nodes on the bottom face, pressure conditions inside & outside
+                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,1_INTG,INNER_SURFACE_NODES,INNER_NORMAL_XI,ERR,ERROR,*999) !Inner
+                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,2_INTG,OUTER_SURFACE_NODES,OUTER_NORMAL_XI,ERR,ERROR,*999) !Outer
+                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,3_INTG,TOP_SURFACE_NODES,TOP_NORMAL_XI,ERR,ERROR,*999) !Top
+                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,4_INTG,BOTTOM_SURFACE_NODES,BOTTOM_NORMAL_XI,ERR,ERROR,*999) !Bottom
+                    !Set all inner surface nodes to inner pressure (- sign is to make positive P into a compressive force) ?
+                    PIN=-EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX)
+                    DO node_idx=1,SIZE(INNER_SURFACE_NODES,1)
+                      user_node=INNER_SURFACE_NODES(node_idx)
+                      !Need to test if this node is in current decomposition
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                          & user_node,ABS(INNER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,PIN,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO
+                    !Set all outer surface nodes to outer pressure
+                    POUT=-EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX)
+                    DO node_idx=1,SIZE(OUTER_SURFACE_NODES,1)
+                      user_node=OUTER_SURFACE_NODES(node_idx)
+                      !Need to test if this node is in current decomposition
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                          & user_node,ABS(OUTER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,POUT,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO
+                    !Set all top nodes fixed in z plane at lambda*height
+                    DO node_idx=1,SIZE(TOP_SURFACE_NODES,1)
+                      user_node=TOP_SURFACE_NODES(node_idx)
+                      !Need to test if this node is in current decomposition
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+IF(.NOT.NODE_EXISTS) CYCLE
+CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
+local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        !local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,user_node)
+                        DEFORMED_Z=GEOMETRIC_PARAMETERS(local_ny)
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                          & user_node,ABS(TOP_NORMAL_XI),BOUNDARY_CONDITION_FIXED,DEFORMED_Z,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO
+                    !Set all bottom nodes fixed in z plane
+                    DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
+                      user_node=BOTTOM_SURFACE_NODES(node_idx)
+                      !Need to check this node exists in the current domain
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                          & user_node,ABS(BOTTOM_NORMAL_XI),BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO
+                    !Set two nodes on the bottom surface to axial displacement only - trickier in parallel
+                    IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
+                      X_FIXED=.FALSE.
+                      Y_FIXED=.FALSE.
+                      DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
+                        user_node=BOTTOM_SURFACE_NODES(node_idx) !Relying on the radial-first incrementing numbering scheme (hardcoded)
+                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+IF(.NOT.NODE_EXISTS) CYCLE
+CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
+local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+!                           local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,user_node)
+                          X(1)=GEOMETRIC_PARAMETERS(local_ny)
+CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+IF(.NOT.NODE_EXISTS) CYCLE
+CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
+local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+!                           local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,user_node)
+                          X(2)=GEOMETRIC_PARAMETERS(local_ny)
+                          IF(ABS(X(1))<1E-5_DP.AND..NOT.X_FIXED) THEN
+                            CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                              & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                            WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER,"FIXED IN X DIRECTION"
+                            X_FIXED=.TRUE.
+                          ENDIF
+                          IF(ABS(X(2))<1E-5_DP.AND..NOT.Y_FIXED) THEN
+                            CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                              & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                            WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER,"FIXED IN Y DIRECTION"
+                            Y_FIXED=.TRUE.
+                          ENDIF
+                        ENDIF
+                        IF(X_FIXED.AND.Y_FIXED) EXIT
+                      ENDDO
+                      !Check it went well
+                      IF(.NOT.X_FIXED .OR. .NOT.Y_FIXED) THEN
+                        CALL FLAG_ERROR("Could not fix nodes to prevent rigid body motion",ERR,ERROR,*999)
+                      ENDIF
+                    ENDIF
+
+                  ELSE
+                    CALL FLAG_ERROR("Domain nodes mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Generated mesh is not associated. For the Cylinder analytic solution, it must be available "// &
+                    & "for automatic boundary condition assignment",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
+            ENDIF
+
+            !Now calculate analytic solution
+            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                !DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS  !MOVE THIS!! NEED TO CONVERT CYLINDERICAL COORDS!!!!
+                  component_idx=1 !Assuming components 1..3 use a common mesh component and 4 uses a different one
+                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                    IF(ASSOCIATED(DOMAIN)) THEN
+                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                          
+!!!!!! BELOW CANNOT BE IMPLEMENTED UNTIL SOMETHING IS DONE ABOUT DOMAIN_MAPPING !!!!!!!
+!                           !In order to handle the pressure component, the potential mismatching of nodes must be handled
+!                           IF(FIELD_VARIABLE%COMPONENTS(4)%INTERPOLATTION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+!                             DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
+!                             IF(ASSOCIATED(DECOMPOSITION)) THEN
+!                               MESH=>DECOMPOSITION%MESH
+!                               IF(ASSOCIATED(MESH)) THEN
+!                                 IF(ALLOCATED(MESH%TOPOLOGY)) THEN
+!                                   MESH_TOPOLOGY=>MESH%TOPOLOGY(2)%PTR !\TODO:Assumes there are two mesh components and second one is for pressure
+!                                   IF(ASSOCIATED(MESH_TOPOLOGY)) THEN
+!                                     MESH_NODES=>MESH_TOPOLOGY%NODES
+!                                     IF(ASSOCIATED(MESH_NODES)) THEN
+!                                       
+! 
+!                                           !Populate the common nodes list
+!                                           ALLOCATE(COMMON_NODE(MESH_NODES%NUMBER_OF_NODES),STAT=ERR)
+!                                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate common nodes array",ERR,ERROR,*999)
+!                                           COMMON_NODE=.FALSE.
+!                                           DO node_idx=1,DOMAIN_NODES2%NUMBER_OF_NODES
+!                                             COMMON_NODE(
+!                                           ENDDO
+! 
+! 
+!                                     ELSE
+!                                       CALL FLAG_ERROR("Mesh nodes is not associated",ERR,ERROR,*999)
+!                                     ENDIF
+!                                   ELSE
+!                                     CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
+!                                   ENDIF
+!                                 ELSE
+!                                   CALL FLAG_ERROR("Mesh topology pointer is not associated",ERR,ERROR,*999)
+!                                 ENDIF
+!                               ELSE
+!                                 CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+!                               ENDIF
+!                             ELSE
+!                               CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
+!                             ENDIF
+!                           ELSE
+!                             CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+!                           ENDIF
+                          
+                          !Loop over the local nodes excluding the ghosts.
+                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                            !!TODO \todo We should interpolate the geometric field here and the node position.
+                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                            ENDDO !dim_idx
+                            !Loop over the derivatives
+                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                              CASE(EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER)
+                                !Cylinder inflation, extension, torsion
+                                SELECT CASE(variable_type)
+                                CASE(FIELD_U_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !Do all components at the same time (r,theta,z)->(x,y,z) & p
+                                    CALL FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X, &
+                                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS,DEFORMED_X,P,ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  CASE(NO_GLOBAL_DERIV)
+                                    !Not implemented, but don't want to cause an error so do nothing
+                                  CASE(GLOBAL_DERIV_S1)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE(GLOBAL_DERIV_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                  CASE(GLOBAL_DERIV_S1_S2)
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                                    & " is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT
+                              CASE DEFAULT
+                                LOCAL_ERROR="The analytic function type of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                  & " is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                              !Set the analytic solution to parameter set
+                              DO component_idx=1,NUMBER_OF_DIMENSIONS
+                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,DEFORMED_X(component_idx),ERR,ERROR,*999)
+!                                 !Moved to a separate block above
+!                                 IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
+!                                   IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+!                                     !If we are a boundary node then set the analytic value on the boundary
+!                                     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+!                                       & BOUNDARY_CONDITION_FIXED,DEFORMED_X(component_idx),ERR,ERROR,*999)
+!                                   ENDIF
+!                                 ENDIF
+                              ENDDO
+                              !!!!!! BELOW CANNOT BE UNCOMMENTED UNTIL SOMETHING IS DONE ABOUT DOMAIN_MAPPING !!!!!!!
+                              !Don't forget the pressure component
+                              !local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                              !CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                              !  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,P,ERR,ERROR,*999)
+                            ENDDO !deriv_idx
+                          ENDDO !node_idx
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                  ENDIF
+                !ENDDO !component_idx
+                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                  & ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+
+            ENDDO !variable_idx
+            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+          ENDIF            
+        ELSE
+          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    
+    CALL EXITS("FINITE_ELASTICITY_ANALYTIC_CALCULATE")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_ANALYTIC_CALCULATE",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_ANALYTIC_CALCULATE")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_ANALYTIC_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calcualates the analytic solution (deformed coordinates and hydrostatic pressure) for cylinder inflation+extension+torsion problem
+  SUBROUTINE FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X,ANALYTIC_USER_PARAMS,DEFORMED_X,P,ERR,ERROR,*)
+    !Argument variables
+    REAL(DP), INTENT(IN) :: X(:)                !<Undeformed coordinates
+    REAL(DP), INTENT(IN) :: ANALYTIC_USER_PARAMS(:) !<Array containing the problem parameters
+    REAL(DP), INTENT(OUT) :: DEFORMED_X(3)      !<Deformed coordinates
+    REAL(DP), INTENT(OUT) :: P                  !<Hydrostatic pressure at the given material coordintae
+    INTEGER(INTG), INTENT(OUT) :: ERR           !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR  !<The error string
+    !Local variables
+    REAL(DP) :: PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2 !A1=external radius, A2=internal radius
+    REAL(DP) :: MU1,MU2,MU,K
+    REAL(DP) :: F,F2,DF
+    REAL(DP) :: R,THETA ! Undeformed coordinates in radial coordinates
+    REAL(DP) :: DEFORMED_R,DEFORMED_THETA
+    REAL(DP) :: DELTA,RES
+    REAL(DP), PARAMETER :: STEP=1E-4_DP, RELTOL=1E-8_DP
+    
+
+    CALL ENTERS("FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+
+    !Grab problem parameters
+    PIN=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX)
+    POUT=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX)
+    LAMBDA=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX)
+    TSI=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_TSI_IDX)
+    A1=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_ROUT_IDX) ! external radius
+    A2=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_RIN_IDX) ! internal radius
+    C1=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C1_IDX)
+    C2=ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX)
+
+    !Solve for MU1 - Newton's method (\todo: Implement here, or separate out for general use?)
+    MU1=1.0_DP  !Initial guess - need a better way!
+    DO
+      !Calculate f(MU1)
+      F=FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE(MU1,PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2)
+
+      !Calculate f'(MU1) by finite differencing
+      F2=FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE(MU1+STEP,PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2)
+      DF=(F2-F)/STEP
+
+      !Next increment for MU1
+      DELTA=-F/DF
+
+      !Ensure that the step actually reduces residual
+      F2=FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE(MU1+DELTA,PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2)
+      DO
+        IF (ABS(F2)<ABS(F)) THEN    ! PASS
+          MU1=MU1+DELTA
+          EXIT
+        ELSEIF (DELTA<1E-3_DP) THEN ! FAIL: It's likely that the initial guess is too far away
+          CALL ERRORS('FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE failed to converge.',ERR,ERROR)
+        ELSE                        ! KEEP GOING
+          DELTA=DELTA/2.0_DP
+          F2=FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE(MU1+DELTA,PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2)
+        ENDIF
+      ENDDO
+
+      !Test for convergence: relative residual
+      RES=DELTA/(1.0_DP+MU1)
+      IF (RES<RELTOL) EXIT
+    ENDDO
+
+    !Calculate MU2
+    MU2=SQRT(((A1/A2)**2*(LAMBDA*MU1**2-1.0_DP)+1.0_DP)/LAMBDA)
+
+    !Calculate radius and angle from undeformed coordinates
+    R=SQRT(X(1)**2+X(2)**2)
+    THETA=ATAN2(X(2),X(1)) ! in radians
+
+    !Calculate deformed coordinates
+    K=A1**2*(LAMBDA*MU1**2-1.0_DP)
+    MU=SQRT(1.0_DP/LAMBDA*(1.0_DP+K/R**2))
+    DEFORMED_R=MU*R
+    DEFORMED_THETA=THETA+TSI*LAMBDA*X(3)
+    DEFORMED_X(1)=DEFORMED_R*COS(DEFORMED_THETA)
+    DEFORMED_X(2)=DEFORMED_R*SIN(DEFORMED_THETA)
+    DEFORMED_X(3)=LAMBDA*X(3)
+    
+    !Calculate pressure
+    P=POUT-(C1/LAMBDA+C2*LAMBDA)*(1.0_DP/LAMBDA/MU1**2-R**2/(R**2+K)+LOG(MU**2/MU1**2))+C1*TSI**2*LAMBDA*(R**2-A1**2) &
+      & -2.0_DP*(C1/LAMBDA**2/MU**2+C2*(1.0_DP/LAMBDA**2+1.0_DP/MU**2+TSI**2*R**2))
+
+    CALL EXITS("FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the residual function required to solve for MU1, in the cylinder analytic example
+  FUNCTION FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE(MU1,PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2)
+    !Argument variables
+    REAL(DP) :: FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE
+    REAL(DP) :: MU1,PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2
+    !Local variables
+    REAL(DP) :: MU,K
+
+    K=A1**2*(LAMBDA*MU1**2-1.0_DP)
+    MU=SQRT(1.0_DP/LAMBDA*(1.0_DP+K/A2**2))
+
+    FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE= &
+      &  2.0_DP*(C1/LAMBDA**2/MU**2 + C2*(1.0_DP/LAMBDA**2+1.0_DP/MU**2+TSI**2*A2**2))+ &
+      & POUT-(C1/LAMBDA+C2*LAMBDA)*(1.0_DP/LAMBDA/MU1**2-A2**2/(A2**2+K)+2*LOG(MU/MU1))+ &
+      & C1*TSI**2*LAMBDA*(A2**2-A1**2)-2.0_DP*(C1/LAMBDA**2/MU**2+C2*(1.0_DP/LAMBDA**2+ &
+      & 1.0_DP/MU**2+TSI**2*A2**2))+PIN
+  
+    RETURN
+  END FUNCTION FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the Jacobian matrix entries using finite differencing for a finite elasticity finite element equations set.
   SUBROUTINE FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
@@ -214,6 +709,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,COMPONENT_BASIS
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
@@ -240,6 +737,7 @@ CONTAINS
     INTEGER(INTG) :: DEPENDENT_COMPONENT_INTERPOLATION_TYPE
     INTEGER(INTG) :: DEPENDENT_NUMBER_OF_GAUSS_POINTS       
     INTEGER(INTG) :: MESH_COMPONENT_1, MESH_COMPONENT_NUMBER
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS
     INTEGER(INTG) :: var1 ! Variable number corresponding to 'U' in single physics case
     INTEGER(INTG) :: var2 ! Variable number corresponding to 'DELUDLEN' in single physics case
     REAL(DP) :: DZDNU(3,3),CAUCHY_TENSOR(3,3)
@@ -251,6 +749,7 @@ CONTAINS
     
     CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
+    NULLIFY(BOUNDARY_CONDITIONS,BOUNDARY_CONDITIONS_VARIABLE)
     NULLIFY(DEPENDENT_BASIS,COMPONENT_BASIS)
     NULLIFY(EQUATIONS,EQUATIONS_MAPPING,EQUATIONS_MATRICES,NONLINEAR_MATRICES)
     NULLIFY(DEPENDENT_FIELD,FIBRE_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD)
@@ -269,11 +768,16 @@ CONTAINS
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN 
         !Which variables are we working with - find the variable pair used for this equations set
-        !\todo: put in checks for all the objects/mappings below
+        !\todo: put in checks for all the objects/mappings below (do we want to do this for every element?)
         var1=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%VARIABLE%VARIABLE_NUMBER ! number for 'U'
         var2=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_NUMBER ! number for 'DELUDELN'
 
         !Grab pointers: matrices, fields, decomposition, basis
+        BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+        BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(var2)%PTR
+        TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS=BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_CONDITIONS+ &
+          & BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+
         EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
         NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
         EQUATIONS_MAPPING =>EQUATIONS%EQUATIONS_MAPPING
@@ -482,9 +986,9 @@ CONTAINS
           ENDDO !gauss_idx
 
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
-IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
-!   CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)          
-ENDIF
+          IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN
+            CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
+          ENDIF
 
         CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   ! compressible problem (no pressure component)
 
@@ -545,9 +1049,9 @@ ENDIF
           ENDDO !gauss_idx
 
 !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
-IF(MESH_ELEMENT%BOUNDARY_ELEMENT) THEN
-!   CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)          
-ENDIF
+          IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN
+            CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
+          ENDIF
 
         END SELECT
       ELSE
@@ -694,7 +1198,11 @@ ENDIF
           !Start integrating
           ! Note: As the code will look for P(appl) in the *normal* component to the face, the
           !       initial assignment of P(appl) will have to be made appropriately during bc assignment
-          DO gauss_idx=1,FACE_NUMBER_OF_GAUSS_POINTS
+!\todo: hopefully all quadrature stuff will always match up between face basis and local face stuff.
+! Annoying issue here that p(appl) is interpolated using the face_basis, while dZdXI has to be evaluated
+! using the 3D face interpolation... many variables are shared, probably supposed to be the same but I 
+! can't guarantee it and checking every single thing will be a fair bit of overhead
+          DO gauss_idx=1,FACE_NUMBER_OF_GAUSS_POINTS 
             !Sort out gauss weight
             GAUSS_WEIGHT=FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
 
@@ -709,11 +1217,15 @@ ENDIF
 
             !Interpolate delx_j/delxi_M = dZdxi at the face gauss point
             DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_U_TYPE)%PTR
-            CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,face_number,DEPENDENT_INTERPOLATION_PARAMETERS, &
-              & ERR,ERROR,*999)
+!             CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,face_number,DEPENDENT_INTERPOLATION_PARAMETERS, &
+!               & ERR,ERROR,*999) !old
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+              & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
             DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_U_TYPE)%PTR
-            CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,DEPENDENT_INTERPOLATED_POINT, &
-              & ERR,ERROR,*999)
+!             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,DEPENDENT_INTERPOLATED_POINT, &
+!               & ERR,ERROR,*999) !old
+            CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
+              & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             DZDXI=DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
 
             !Calculate covariant metric tensor
@@ -1335,6 +1847,7 @@ ENDIF
       & NUMBER_OF_DIMENSIONS, I, NUMBER_OF_DARCY_COMPONENTS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
+    TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
@@ -2178,13 +2691,64 @@ ENDIF
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              !Do nothing
+              DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+              IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                  SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
+                  CASE(EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER)
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE) THEN
+                      !Create analytic field if required
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER
+                    ELSE
+                      LOCAL_ERROR="The equations set subtype of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that the equations set subtype be a Mooney-Rivlin finite elasticity equation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  CASE DEFAULT
+                    LOCAL_ERROR="The specified analytic function type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for a finite elasticity equation."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            !Do nothing
-            !? Maybe set finished flag????
+            IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+              ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
+              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD_AUTO_CREATED) THEN
+                  CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
+            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
+                  CALL FINITE_ELASTICITY_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
+            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &

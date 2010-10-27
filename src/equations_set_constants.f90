@@ -381,6 +381,11 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_1=4
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_2=5
   !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_FiniteElasticityAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:FiniteElasticityAnalyticFunctionTypes
+  !> \brief The analytic function types for a Finite Elasticity equation
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER=1
+  !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_StokesAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:StokesAnalyticFunctionTypes
   !> \brief The analytic function types for a Stokes equation
   !>@{  

@@ -549,7 +549,7 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_GEOMETRIC_FIELD_GET,FIELD_GEOMETRIC_FIELD_SET,FIELD_GEOMETRIC_FIELD_SET_AND_LOCK
 
-  PUBLIC FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI
+  PUBLIC FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI,FIELD_INTERPOLATE_LOCAL_FACE_GAUSS
 
   PUBLIC FIELD_INTERPOLATED_POINT_METRICS_CALCULATE,FIELD_INTERPOLATED_POINTS_METRICS_FINALISE, &
     & FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE,FIELD_INTERPOLATED_POINTS_FINALISE,FIELD_INTERPOLATED_POINTS_INITIALISE
@@ -4933,6 +4933,199 @@ CONTAINS
     CALL EXITS("FIELD_INTERPOLATE_GAUSS")
     RETURN 1
   END SUBROUTINE FIELD_INTERPOLATE_GAUSS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates a field at a face gauss point to give an interpolated point. PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are evaluated.
+  SUBROUTINE FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(PARTIAL_DERIVATIVE_TYPE,QUADRATURE_SCHEME,LOCAL_FACE_NUMBER, &
+    & GAUSS_POINT_NUMBER,INTERPOLATED_POINT,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIVATIVE_TYPE !<The partial derivative type of the provided field interpolation
+    INTEGER(INTG), INTENT(IN) :: QUADRATURE_SCHEME !<The quadrature scheme of the Gauss points \see BASIS_ROUTINES_QuadratureSchemes,BASIS_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: LOCAL_FACE_NUMBER !<The index number of the face to interpolate on
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER !<The number of the face Gauss point to interpolate the field at
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<The pointer to the interpolated point which will contain the field interpolation information at the specified Gauss point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: component_idx,ni,nu
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: INTERPOLATION_PARAMETERS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_INTERPOLATE_LOCAL_FACE_GAUSS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERPOLATED_POINT)) THEN
+      INTERPOLATION_PARAMETERS=>INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
+      IF(ASSOCIATED(INTERPOLATION_PARAMETERS)) THEN
+        FIELD=>INTERPOLATION_PARAMETERS%FIELD
+        IF(ASSOCIATED(FIELD)) THEN
+          NULLIFY(COORDINATE_SYSTEM)
+          CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+          SELECT CASE(PARTIAL_DERIVATIVE_TYPE)
+          CASE(NO_PART_DERIV)
+            DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              SELECT CASE(INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+              CASE(FIELD_CONSTANT_INTERPOLATION)
+                INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)
+              CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)              
+              CASE(FIELD_NODE_BASED_INTERPOLATION)
+!                 INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_GAUSS(INTERPOLATION_PARAMETERS%BASES( &
+!                   & component_idx)%PTR,NO_PART_DERIV,QUADRATURE_SCHEME,GAUSS_POINT_NUMBER,INTERPOLATION_PARAMETERS% &
+!                   & PARAMETERS(:,component_idx),ERR,ERROR)
+                INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_LOCAL_FACE_GAUSS(INTERPOLATION_PARAMETERS%BASES( &
+                  & component_idx)%PTR,NO_PART_DERIV,QUADRATURE_SCHEME,LOCAL_FACE_NUMBER,GAUSS_POINT_NUMBER, &
+                  & INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                IF(ERR/=0) GOTO 999
+              CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
+                  & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid for component index "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+              END SELECT
+              CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+                & ERR,ERROR,*999)
+            ENDDO! component_idx
+            INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE=NO_PART_DERIV
+          CASE(FIRST_PART_DERIV)
+            DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              SELECT CASE(INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+              CASE(FIELD_CONSTANT_INTERPOLATION)
+                !Handle the first case of no partial derivative
+                INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)
+                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+                  & ERR,ERROR,*999)
+                !Now process all the first partial derivatives
+                DO ni=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                  nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
+                  INTERPOLATED_POINT%VALUES(component_idx,nu)=0.0_DP
+                  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                    & ERR,ERROR,*999)
+                ENDDO !ni
+              CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                !Handle the first case of no partial derivative
+                INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)
+                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+                  & ERR,ERROR,*999)
+                !Now process all the first partial derivatives
+                DO ni=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                  nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
+                  INTERPOLATED_POINT%VALUES(component_idx,nu)=0.0_DP
+                  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                    & ERR,ERROR,*999)
+                ENDDO !ni
+              CASE(FIELD_NODE_BASED_INTERPOLATION)
+                !Handle the first case of no partial derivative
+!                 INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_GAUSS(INTERPOLATION_PARAMETERS%BASES( &
+!                   & component_idx)%PTR,NO_PART_DERIV,QUADRATURE_SCHEME,GAUSS_POINT_NUMBER,INTERPOLATION_PARAMETERS% &
+!                   & PARAMETERS(:,component_idx),ERR,ERROR)
+                INTERPOLATED_POINT%VALUES(component_idx,1)=BASIS_INTERPOLATE_LOCAL_FACE_GAUSS(INTERPOLATION_PARAMETERS%BASES( &
+                  & component_idx)%PTR,NO_PART_DERIV,QUADRATURE_SCHEME,LOCAL_FACE_NUMBER,GAUSS_POINT_NUMBER, &
+                  & INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                IF(ERR/=0) GOTO 999
+                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+                  & ERR,ERROR,*999)
+                !Now process all the first partial derivatives
+                DO ni=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                  nu=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni)
+!                   INTERPOLATED_POINT%VALUES(component_idx,nu)=BASIS_INTERPOLATE_GAUSS(INTERPOLATION_PARAMETERS% &
+!                     & BASES(component_idx)%PTR,nu,QUADRATURE_SCHEME,GAUSS_POINT_NUMBER, &
+!                     & INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                INTERPOLATED_POINT%VALUES(component_idx,nu)=BASIS_INTERPOLATE_LOCAL_FACE_GAUSS(INTERPOLATION_PARAMETERS%BASES( &
+                  & component_idx)%PTR,nu,QUADRATURE_SCHEME,LOCAL_FACE_NUMBER,GAUSS_POINT_NUMBER, &
+                  & INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                  IF(ERR/=0) GOTO 999
+                  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                    & ERR,ERROR,*999)
+                ENDDO !ni
+              CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
+                  & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid for component index "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+              END SELECT
+            ENDDO! component_idx
+            INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE=FIRST_PART_DERIV
+          CASE(SECOND_PART_DERIV)
+            DO component_idx=1,INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              SELECT CASE(INTERPOLATION_PARAMETERS%FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+              CASE(FIELD_CONSTANT_INTERPOLATION)
+                !Handle the first case of no partial derivative
+                INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)
+                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+                  & ERR,ERROR,*999)
+                !Now process the rest of partial derivatives
+                DO nu=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_PARTIAL_DERIVATIVES
+                  INTERPOLATED_POINT%VALUES(component_idx,nu)=0.0_DP
+                  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                    & ERR,ERROR,*999)
+                ENDDO !nu
+              CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                !Handle the first case of no partial derivative
+                INTERPOLATED_POINT%VALUES(component_idx,1)=INTERPOLATION_PARAMETERS%PARAMETERS(1,component_idx)
+                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,NO_PART_DERIV,INTERPOLATED_POINT%VALUES(component_idx,1), &
+                  & ERR,ERROR,*999)
+                !Now process the rest of partial derivatives
+                DO nu=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_PARTIAL_DERIVATIVES
+                  INTERPOLATED_POINT%VALUES(component_idx,nu)=0.0_DP
+                  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                    & ERR,ERROR,*999)
+                ENDDO !nu
+              CASE(FIELD_NODE_BASED_INTERPOLATION)              
+                DO nu=1,INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_PARTIAL_DERIVATIVES
+!                   INTERPOLATED_POINT%VALUES(component_idx,nu)=BASIS_INTERPOLATE_GAUSS(INTERPOLATION_PARAMETERS% &
+!                     & BASES(component_idx)%PTR,nu,QUADRATURE_SCHEME,GAUSS_POINT_NUMBER, &
+!                     & INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                INTERPOLATED_POINT%VALUES(component_idx,nu)=BASIS_INTERPOLATE_LOCAL_FACE_GAUSS(INTERPOLATION_PARAMETERS%BASES( &
+                  & component_idx)%PTR,nu,QUADRATURE_SCHEME,LOCAL_FACE_NUMBER,GAUSS_POINT_NUMBER, &
+                  & INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                  IF(ERR/=0) GOTO 999
+                  CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,nu,INTERPOLATED_POINT%VALUES(component_idx,nu), &
+                    & ERR,ERROR,*999)
+                ENDDO! nu
+              CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The field component interpolation type of "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS% &
+                  & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid for component index "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+              END SELECT
+            ENDDO !component_idx
+            INTERPOLATED_POINT%PARTIAL_DERIVATIVE_TYPE=SECOND_PART_DERIV
+          CASE DEFAULT
+            LOCAL_ERROR="The partial derivative type of "//TRIM(NUMBER_TO_VSTRING(PARTIAL_DERIVATIVE_TYPE,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("The interpolation parameters field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interpolated point interpolation parameters is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interpolated point is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_INTERPOLATE_LOCAL_FACE_GAUSS")
+    RETURN
+999 CALL ERRORS("FIELD_INTERPOLATE_LOCAL_FACE_GAUSS",ERR,ERROR)
+    CALL EXITS("FIELD_INTERPOLATE_LOCAL_FACE_GAUSS")
+    RETURN 1
+  END SUBROUTINE FIELD_INTERPOLATE_LOCAL_FACE_GAUSS
 
   !
   !================================================================================================================================

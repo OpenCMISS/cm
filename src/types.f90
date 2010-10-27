@@ -137,6 +137,11 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: GAUSS_POSITIONS(:,:) !<GAUSS_POSITIONS(nic,ng). The positions in the nic'th xi coordinate of Gauss point ng. Old CMISS name XIG(ni,ng,nb).
     REAL(DP), ALLOCATABLE :: GAUSS_WEIGHTS(:) !<GAUSS_WEIGHTS(ng). The weight applied to Gauss point ng. Old CMISS name WG(ng,nb).
     REAL(DP), ALLOCATABLE :: GAUSS_BASIS_FNS(:,:,:) !<GAUSS_BASIS_FNS(ns,nu,ng). The value of the basis functions evaluated at Gauss point ng for the nu'th derivative of the basis function associated with the ns'th element parameter. Old CMISS name PG(ns,nu,ng,nb)
+    !Face gauss stuff
+    INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_FACE_GAUSS(:) !<NUMBER_OF_FACE_GAUSS(:) number of gauss points in each local face of the element
+    REAL(DP), ALLOCATABLE :: FACE_GAUSS_BASIS_FNS(:,:,:,:) !<FACE_GAUSS_BASIS_FNS(ns,nu,ng,naf)
+    REAL(DP), ALLOCATABLE :: FACE_GAUSS_POSITIONS(:,:,:) !<FACE_GAUSS_POSITIONS(nic,ng,naf)
+    REAL(DP), ALLOCATABLE :: FACE_GAUSS_WEIGHTS(:,:) !<FACE_GAUSS_WEIGHTS(ng,naf)
   END TYPE QUADRATURE_SCHEME_TYPE
 
   !>A buffer type to allow for an array of pointers to a QUADRATURE_SCHEME_TYPE \see TYPES::QUADRATURE_SCHEME_TYPE
@@ -153,6 +158,7 @@ MODULE TYPES
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), ALLOCATABLE :: QUADRATURE_SCHEME_MAP(:) !<QUADRATURE_SCHEME_MAP(scheme_idx). The pointer map to the defined quadrature schemes. The size of array is given by BASIS_ROUTINES::BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES. If the quadrature scheme is not defined for the particular type then the array element is NULL. \see BASIS_ROUTINES_QuadratureSchemes.
     INTEGER(INTG) :: NUMBER_OF_SCHEMES !<The number of quadrature schemes defined for this quadrature
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), POINTER :: SCHEMES(:) !<SCHEMES(scheme_idx). The array of pointers to the quadrature schemes defined for the basis. scheme_idx must be between 1 and QUADRATURE_TYPE::NUMBER_OF_SCHEMES.
+    LOGICAL :: EVALUATE_FACE_GAUSS=.FALSE. !< should this be here??
   END TYPE QUADRATURE_TYPE
 
   !
@@ -187,7 +193,7 @@ MODULE TYPES
     LOGICAL, ALLOCATABLE :: NODE_AT_COLLAPSE(:) !<NODE_AT_COLLAPSE(nn). Is .TRUE. if the nn'th node of the basis is at a collapse, .FALSE. if not.
     !Quadrature
     TYPE(QUADRATURE_TYPE) :: QUADRATURE !<The quadrature schemes for the basis.
-    INTEGER(INTG) :: NUMBER_OF_PARTIAL_DERIVATIVES !<The number of paratial derivatives for the basis. Old CMISS name NUT(nbf)
+    INTEGER(INTG) :: NUMBER_OF_PARTIAL_DERIVATIVES !<The number of partial derivatives for the basis. Old CMISS name NUT(nbf)
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of local nodes in the basis. Old CMISS name NNT(nbf)
 !!TODO: 
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_XIC(:) !<NUMBER_OF_NODES_XIC(nic). The number of local nodes in the nic'th coordinate in the basis. Old CMISS name IBT(2,ni,nb).
@@ -213,6 +219,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnl,nae). The derivative numbers (nk) for the nnl'th face node in the nae'th local face for the basis.
+    !\todo: what is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
     INTEGER(INTG), ALLOCATABLE :: LOCAL_XI_NORMAL(:) !<LOCAL_XI_NORMAL(nae). The Xi direction that is normal to either the nae'th local line for bases with 2 xi directions or the nae'th local face for bases with 3 xi directions. For bases with 1 xi direction the array is not allocated. Note: Normals are always outward.
     !Sub-basis information
     TYPE(BASIS_PTR_TYPE), POINTER :: LINE_BASES(:) !<LINE_BASES(nae). The pointer to the basis for the nae'th line for the basis.
@@ -1541,6 +1548,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_NEUMANN_BOUNDARIES
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS !<A pointer to the pressure incremented condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS !<Number of pressure incremented boundary conditions associated with this variable (\todo: is this the best place?)
+    INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS !<Number of pressure boundary conditions (not incremented) associated with this variable.
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_TYPE
 
   !>A buffer type to allow for an array of pointers to a VARIABLE_BOUNDARY_CONDITIONS_TYPE \see TYPES::VARIABLE_BOUNDARY_CONDITIONS_TYPE
@@ -1669,6 +1677,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
     LOGICAL :: ANALYTIC_FIELD_AUTO_CREATED !<Is .TRUE. if the analytic field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD !<A pointer to the analytic field for the equations set if one is defined. If no source is defined the pointer is NULL.
+    REAL(DP) :: ANALYTIC_USER_PARAMS(20)  !<A small array that can be used to hold various parameters often required in analytic problems. 
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
   TYPE EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE

@@ -392,6 +392,7 @@ MODULE ISO_VARYING_STRING
   private :: replace_CH_CH_CH_target
   private :: split_VS
   private :: split_CH
+  private :: erase_
 
 ! Procedures
 

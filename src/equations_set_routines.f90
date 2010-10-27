@@ -102,6 +102,7 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_ASSEMBLE
   PUBLIC EQUATIONS_SET_USER_NUMBER_FIND
   PUBLIC EQUATIONS_SET_LOAD_INCREMENT_APPLY
+  PUBLIC EQUATIONS_SET_ANALYTIC_USER_PARAM_SET,EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
   
 CONTAINS
 
@@ -369,6 +370,86 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_ANALYTIC_INITIALISE")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ANALYTIC_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the analytic problem user parameter
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_SET(EQUATIONS_SET,PARAM_IDX,PARAM,ERR,ERROR,*)
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the analytic solution for.
+    INTEGER(INTG), INTENT(IN) :: PARAM_IDX !<Index of the user parameter
+    REAL(DP), INTENT(IN) :: PARAM !<Value of the parameter
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      ANALYTIC=>EQUATIONS_SET%ANALYTIC
+      IF(ASSOCIATED(ANALYTIC)) THEN
+        IF(PARAM_IDX>0.AND.PARAM_IDX<=SIZE(ANALYTIC%ANALYTIC_USER_PARAMS)) THEN
+          !Set the value
+          ANALYTIC%ANALYTIC_USER_PARAMS(PARAM_IDX)=PARAM
+        ELSE
+          CALL FLAG_ERROR("Invalid parameter index.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF    
+    ELSE 
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the analytic problem user parameter
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_GET(EQUATIONS_SET,PARAM_IDX,PARAM,ERR,ERROR,*)
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the analytic solution for.
+    INTEGER(INTG), INTENT(IN) :: PARAM_IDX !<Index of the user parameter
+    REAL(DP), INTENT(OUT) :: PARAM !<Value of the parameter
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      ANALYTIC=>EQUATIONS_SET%ANALYTIC
+      IF(ASSOCIATED(ANALYTIC)) THEN
+        IF(PARAM_IDX>0.AND.PARAM_IDX<=SIZE(ANALYTIC%ANALYTIC_USER_PARAMS)) THEN
+          !Set the value
+          PARAM=ANALYTIC%ANALYTIC_USER_PARAMS(PARAM_IDX)
+        ELSE
+          CALL FLAG_ERROR("Invalid parameter index.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF    
+    ELSE 
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
 
   !
   !================================================================================================================================
@@ -5112,11 +5193,12 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
     INTEGER(INTG) :: variable_idx,variable_type,dirichlet_idx,dirichlet_dof_idx
-    INTEGER(INTG) :: pressure_incremented_idx, pressure_incremented_dof_idx
+    INTEGER(INTG) :: pressure_incremented_idx, pressure_incremented_dof_idx,MY_COMPUTATIONAL_NODE_NUMBER
     REAL(DP), POINTER :: FULL_LOADS(:),CURRENT_LOADS(:), PREV_LOADS(:)
     REAL(DP) :: FULL_LOAD, CURRENT_LOAD, NEW_LOAD, PREV_LOAD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5130,6 +5212,8 @@ CONTAINS
     NULLIFY(DIRICHLET_BOUNDARY_CONDITIONS)
     NULLIFY(FULL_LOADS)
     NULLIFY(CURRENT_LOADS)
+
+    MY_COMPUTATIONAL_NODE_NUMBER=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
     
 ! write(*,*) "iteration_number=",ITERATION_NUMBER
     !Take the stored load, scale it down appropriately then apply to the unknown variables
@@ -5144,122 +5228,156 @@ CONTAINS
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLES(variable_idx)
               variable_type=DEPENDENT_VARIABLE%VARIABLE_TYPE
-              IF(ASSOCIATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR)) THEN
-                BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
+              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+                IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
 
-                ! Dirichlet boundary conditions (can be displacement or force, as RHS is a whole another field variable)
-                IF(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
-                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
-                    DIRICHLET_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
-                    !Get the pointer to vector holding the full and current loads
-                    !   full load: FIELD_BOUNDARY_CONDITIONS_SET_TYPE - holds the target load values
-                    !   current load: FIELD_VALUES_SET_TYPE - holds the current increment values
-                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                      & FULL_LOADS,ERR,ERROR,*999)
-                    !chrm 22/06/2010: 'FIELD_BOUNDARY_CONDITIONS_SET_TYPE' does not get updated with time (update_BCs)
-                    !\ToDo: How can this be achieved ???
-!                     write(*,*)'FULL_LOADS = ',FULL_LOADS
-                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                      & CURRENT_LOADS,ERR,ERROR,*999)
-!                     write(*,*)'CURRENT_LOADS = ',CURRENT_LOADS
-                    !Get full increment, calculate new load, then apply to dependent field
-                    DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
-                      dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                      IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                          & BOUNDARY_CONDITION_FIXED_INCREMENTED .OR. &
-                        & BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                          & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN !Only increment if it's a incremented type bc
-                        FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
-                        ! Apply full load if last step, or fixed BC
-                        IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                            & dirichlet_dof_idx,FULL_LOAD,ERR,ERROR,*999)
-                        ELSE
-                          !Calculate new load and apply to dependent field
-                          CURRENT_LOAD=CURRENT_LOADS(dirichlet_dof_idx)
-                          NEW_LOAD=CURRENT_LOAD+(FULL_LOAD-CURRENT_LOAD)/(MAXIMUM_NUMBER_OF_ITERATIONS-ITERATION_NUMBER+1)
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                            & dirichlet_dof_idx,NEW_LOAD,ERR,ERROR,*999)
-                        ENDIF
-                      ENDIF
-                    ENDDO !dirichlet_idx
-!---tob
-                    !\ToDo: What happens if the call below is issued
-                    !without actually that the dependent field has been modified in above conditional ?
-                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-!---toe
-                    !Restore the vector handles
-                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                      & FULL_LOADS,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                      & CURRENT_LOADS,ERR,ERROR,*999)
-                  ELSE
-                    LOCAL_ERROR="Dirichlet boundary condition for variable type "// &
-                      & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ENDIF
-
-                !There might also be pressure incremented conditions
-                IF (BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS>0) THEN 
-                  ! handle pressure incremented boundary conditions
-                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)) THEN
-                    PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
-                    !Due to a variety of reasons, the pressure incremented type is setup differently to dirichlet conditions.
-                    !We store two sets of vectors, the current and previous values
-                    !   current: FIELD_PRESSURE_VALUES_SET_TYPE - always holds the current increment, even if not incremented
-                    !   previous: FIELD_PREVIOUS_PRESSURE_SET_TYPE - holds the previously applied increment
-                    !Grab the pointers for both
-                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
-                      & PREV_LOADS,ERR,ERROR,*999)                    
-                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
-                      & CURRENT_LOADS,ERR,ERROR,*999)
-                    !Calculate the new load, update the old load
-                    IF(ITERATION_NUMBER==1) THEN
-                      !On the first iteration, FIELD_PRESSURE_VALUES_SET_TYPE actually contains the full load
-                      DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
-                        pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
-                          & (pressure_incremented_idx)
-                        NEW_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
-                        NEW_LOAD=NEW_LOAD/MAXIMUM_NUMBER_OF_ITERATIONS
-!write(*,*) "new load=",new_load
-                        !Update current and previous loads
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
-                            & pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
-                            & pressure_incremented_dof_idx,0.0_dp,ERR,ERROR,*999)
-                      ENDDO
+                  ! Dirichlet boundary conditions (can be displacement or force, as RHS is a whole another field variable)
+                  IF(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
+                      DIRICHLET_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
+                      !Get the pointer to vector holding the full and current loads
+                      !   full load: FIELD_BOUNDARY_CONDITIONS_SET_TYPE - holds the target load values
+                      !   current load: FIELD_VALUES_SET_TYPE - holds the current increment values
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                        & FULL_LOADS,ERR,ERROR,*999)
+                      !chrm 22/06/2010: 'FIELD_BOUNDARY_CONDITIONS_SET_TYPE' does not get updated with time (update_BCs)
+                      !\ToDo: How can this be achieved ???
+  !                     write(*,*)'FULL_LOADS = ',FULL_LOADS
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+  !                     write(*,*)'CURRENT_LOADS = ',CURRENT_LOADS
+                      !Get full increment, calculate new load, then apply to dependent field
+                      DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
+                        dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
+                        IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
+                            & BOUNDARY_CONDITION_FIXED_INCREMENTED .OR. &
+                            & BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
+                            & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN !Only increment if it's a incremented type bc
+                          !Convert dof index to local index
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(dirichlet_dof_idx)%DOMAIN_NUMBER(1)== &
+                            & MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                            dirichlet_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(dirichlet_dof_idx)%LOCAL_NUMBER(1)
+                            IF(0<dirichlet_dof_idx.AND.dirichlet_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
+                              FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
+                              ! Apply full load if last step, or fixed BC
+                              IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                                  & dirichlet_dof_idx,FULL_LOAD,ERR,ERROR,*999)
+                              ELSE
+                                !Calculate new load and apply to dependent field
+                                CURRENT_LOAD=CURRENT_LOADS(dirichlet_dof_idx)
+                                NEW_LOAD=CURRENT_LOAD+(FULL_LOAD-CURRENT_LOAD)/(MAXIMUM_NUMBER_OF_ITERATIONS-ITERATION_NUMBER+1)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                                  & dirichlet_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                              ENDIF !Full or intermediate load
+                            ENDIF !non-ghost dof
+                          ENDIF !current domain
+                        ENDIF !correct BC type
+                      ENDDO !dirichlet_idx
+  !---tob
+                      !\ToDo: What happens if the call below is issued
+                      !without actually that the dependent field has been modified in above conditional ?
+                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                        & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                        & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+  !---toe
+                      !Restore the vector handles
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                        & FULL_LOADS,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
                     ELSE
-                      !Calculate the new load, keep the current load
-                      DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
-                        pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
-                          & (pressure_incremented_idx)
-                        PREV_LOAD=PREV_LOADS(pressure_incremented_dof_idx)
-                        CURRENT_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
-                        NEW_LOAD=CURRENT_LOAD+(CURRENT_LOAD-PREV_LOAD)  !This may be subject to numerical errors...
-                        !Update current and previous loads
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
-                            & pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
-                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
-                            & pressure_incremented_dof_idx,CURRENT_LOAD,ERR,ERROR,*999)
-                      ENDDO
+                      LOCAL_ERROR="Dirichlet boundary condition for variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                    !Restore the vector handles
-                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
-                      & PREV_LOADS,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
-                      & CURRENT_LOADS,ERR,ERROR,*999)
-                  ELSE
-                    LOCAL_ERROR="Pressure incremented boundary condition for variable type "// &
-                      & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated even though"// &
-                      & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS, &
-                      & '*',ERR,ERROR))//" conditions of this type has been counted."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
-                ENDIF !Pressure incremented bc block
+
+                  !There might also be pressure incremented conditions
+                  IF (BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS>0) THEN 
+                    ! handle pressure incremented boundary conditions
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)) THEN
+                      PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE% &
+                        & PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
+                      !Due to a variety of reasons, the pressure incremented type is setup differently to dirichlet conditions.
+                      !We store two sets of vectors, the current and previous values
+                      !   current: FIELD_PRESSURE_VALUES_SET_TYPE - always holds the current increment, even if not incremented
+                      !   previous: FIELD_PREVIOUS_PRESSURE_SET_TYPE - holds the previously applied increment
+                      !Grab the pointers for both
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
+                        & PREV_LOADS,ERR,ERROR,*999)                    
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+                      !Calculate the new load, update the old load
+                      IF(ITERATION_NUMBER==1) THEN
+                        !On the first iteration, FIELD_PRESSURE_VALUES_SET_TYPE actually contains the full load
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                          !Global dof index
+                          pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
+                            & (pressure_incremented_idx)
+                          !Must convert into local dof index
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)%DOMAIN_NUMBER(1)== &
+                            & MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                            pressure_incremented_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)% &
+                              & LOCAL_NUMBER(1)
+                            IF(0<pressure_incremented_dof_idx.AND.pressure_incremented_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
+                              NEW_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
+                              NEW_LOAD=NEW_LOAD/MAXIMUM_NUMBER_OF_ITERATIONS
+!if (pressure_incremented_idx==1) write(*,*) "new load=",new_load
+                              !Update current and previous loads
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,0.0_dp,ERR,ERROR,*999)
+                            ENDIF !Non-ghost dof
+                          ENDIF !Current domain
+                        ENDDO !pressure_incremented_idx
+                      ELSE
+                        !Calculate the new load, keep the current load
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                          !This is global dof idx
+                          pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
+                            & (pressure_incremented_idx)
+                          !Must convert into local dof index
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)%DOMAIN_NUMBER(1)== &
+                            & MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                            pressure_incremented_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)% &
+                              & LOCAL_NUMBER(1)
+                            IF(0<pressure_incremented_dof_idx.AND.pressure_incremented_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
+                              PREV_LOAD=PREV_LOADS(pressure_incremented_dof_idx)
+                              CURRENT_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
+                              NEW_LOAD=CURRENT_LOAD+(CURRENT_LOAD-PREV_LOAD)  !This may be subject to numerical errors...
+!if (pressure_incremented_idx==1) write(*,*) "new load=",new_load
+                          !Update current and previous loads
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,CURRENT_LOAD,ERR,ERROR,*999)
+                            ENDIF !Non-ghost dof
+                          ENDIF !Current domain
+                        ENDDO !pressure_incremented_idx
+                      ENDIF
+                      !Restore the vector handles
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
+                        & PREV_LOADS,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+                    ELSE
+                      LOCAL_ERROR="Pressure incremented boundary condition for variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated even though"// &
+                        & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS, &
+                        & '*',ERR,ERROR))//" conditions of this type has been counted."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDIF !Pressure incremented bc block
+                ELSE
+                  LOCAL_ERROR="Domain mapping is not associated for variable "// &
+                    & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" of dependent field"
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF !Domain mapping test
               ELSE
                 ! do nothing - no boundary conditions variable type associated?
               ENDIF

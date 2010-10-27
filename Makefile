@@ -78,8 +78,8 @@ ifndef USECELLML
 endif
 
 ifndef USEFIELDML
-  #USEFIELDML := false
-  USEFIELDML := true
+  USEFIELDML := false
+  #USEFIELDML := true
 endif
 
 ifeq ($(MPI),mpich2)
@@ -338,6 +338,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
     DBGF_FLGS += -O0 -fbounds-check
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    #OPTF_FLGS = -g -O3 -Wuninitialized -funroll-all-loops
     ifeq ($(PROF),false)
       ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
         OPTF_FLGS += -momit-leaf-frame-pointer
@@ -1133,6 +1134,7 @@ $(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(SOURCE_DIR)/finite_elastici
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
+	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/Darcy_equations_routines.o \
@@ -1148,6 +1150,7 @@ $(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(SOURCE_DIR)/finite_elastici
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/solver_routines.o \
@@ -1835,6 +1838,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/field_IO_routines.o \
+	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_routines.o \
 	$(OBJECT_DIR)/interface_conditions_constants.o \

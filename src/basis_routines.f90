@@ -174,6 +174,11 @@ MODULE BASIS_ROUTINES
     MODULE PROCEDURE BASIS_INTERPOLATE_XI_DP
   END INTERFACE !BASIS_INTERPOLATE_XI
 
+  !>Interpolates the requested partial derivative index(ices) of the element parameters for basis function at a face Gauss point \see BASIS_ROUTINES
+  INTERFACE BASIS_INTERPOLATE_LOCAL_FACE_GAUSS
+    MODULE PROCEDURE BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP
+  END INTERFACE !BASIS_INTERPOLATE_LOCAL_FACE_GAUSS
+
   !>Sets/changes the interpolation type in each Xi direction for a basis
   INTERFACE BASIS_INTERPOLATION_XI_SET
     MODULE PROCEDURE BASIS_INTERPOLATION_XI_SET_NUMBER
@@ -254,7 +259,7 @@ MODULE BASIS_ROUTINES
   
   PUBLIC BASIS_EVALUATE_XI
   
-  PUBLIC BASIS_INTERPOLATE_GAUSS,BASIS_INTERPOLATE_XI
+  PUBLIC BASIS_INTERPOLATE_GAUSS,BASIS_INTERPOLATE_XI,BASIS_INTERPOLATE_LOCAL_FACE_GAUSS
 
   PUBLIC BASIS_LOCAL_NODE_XI_CALCULATE
 
@@ -268,7 +273,7 @@ MODULE BASIS_ROUTINES
 
   PUBLIC BASIS_QUADRATURE_DESTROY,BASIS_QUADRATURE_ORDER_SET,BASIS_QUADRATURE_TYPE_SET
 
-  PUBLIC BASIS_TYPE_SET
+  PUBLIC BASIS_TYPE_SET,BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET
 
   PUBLIC BASIS_CREATE_START,BASIS_CREATE_FINISH
 
@@ -282,7 +287,7 @@ MODULE BASIS_ROUTINES
     & BASIS_QUADRATURE_ORDER_GET,BASIS_QUADRATURE_TYPE_GET,BASIS_TYPE_GET
 
 
-      
+
 CONTAINS
 
   !
@@ -1033,6 +1038,80 @@ CONTAINS
 999 CALL ERRORS("BASIS_INTERPOLATE_GAUSS_DP",ERR,ERROR)
     CALL EXITS("BASIS_INTERPOLATE_GAUSS_DP")
   END FUNCTION BASIS_INTERPOLATE_GAUSS_DP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Interpolates the appropriate partial derivative index of the element local face parameters at a face gauss point for the basis
+  !>for double precision arguments. Note the interpolated value returned needs to be adjusted for the particular
+  !!>coordinate system with COORDINATE_INTERPOLATE_ADJUST. 
+  FUNCTION BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP(BASIS,PARTIAL_DERIV_INDEX,QUADRATURE_SCHEME, &
+    & LOCAL_FACE_NUMBER,GAUSS_POINT_NUMBER,FACE_PARAMETERS,ERR,ERROR)
+  
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIV_INDEX !<The partial derivative index to interpolate \see CONSTANTS_PartialDerivativeConstants
+    INTEGER(INTG), INTENT(IN) :: QUADRATURE_SCHEME !<The quadrature scheme to use \see BASIS_ROUTINE_QuadratureSchemes
+    INTEGER(INTG), INTENT(IN) :: LOCAL_FACE_NUMBER !<The index number of the face to interpolate on
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER !<The face Gauss point number in the scheme to interpolate
+    REAL(DP), INTENT(IN) :: FACE_PARAMETERS(:) !<The face parameters to interpolate (in 3D coordinates)
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    REAL(DP) :: BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP
+    !Local Variables
+    INTEGER(INTG) :: ns
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: BASIS_QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP",ERR,ERROR,*999)
+    
+    BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP=0.0_DP
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(QUADRATURE_SCHEME>0.AND.QUADRATURE_SCHEME<=BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES) THEN
+        BASIS_QUADRATURE_SCHEME=>BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(QUADRATURE_SCHEME)%PTR
+        IF(ASSOCIATED(BASIS_QUADRATURE_SCHEME)) THEN
+          IF(BASIS%QUADRATURE%EVALUATE_FACE_GAUSS) THEN !Alternartively, can check whether scheme's face arrays are allocated?
+            IF(LOCAL_FACE_NUMBER>0.AND.LOCAL_FACE_NUMBER<=BASIS%NUMBER_OF_LOCAL_FACES) THEN
+              IF(GAUSS_POINT_NUMBER>0.AND.GAUSS_POINT_NUMBER<=BASIS_QUADRATURE_SCHEME%NUMBER_OF_FACE_GAUSS(LOCAL_FACE_NUMBER)) THEN
+                IF(PARTIAL_DERIV_INDEX>0.AND.PARTIAL_DERIV_INDEX<=BASIS%NUMBER_OF_PARTIAL_DERIVATIVES) THEN
+                  DO ns=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                    BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP=BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP+ &
+                      & BASIS_QUADRATURE_SCHEME%FACE_GAUSS_BASIS_FNS(ns,PARTIAL_DERIV_INDEX,GAUSS_POINT_NUMBER,LOCAL_FACE_NUMBER)* &
+                      & FACE_PARAMETERS(ns)
+                  ENDDO !ns
+                ELSE
+                  LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(PARTIAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                    & " is invalid. It must be between 1 and "// &
+                    & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_PARTIAL_DERIVATIVES,"*",ERR,ERROR))
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The local face number index is invalid.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The face gauss interpolation scheme has not been created",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The quadrature scheme has not been created",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The quadrature scheme type number of "//TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME,"*",ERR,ERROR))// &
+          & " is invalid. It must be between 1 and "// &
+          & TRIM(NUMBER_TO_VSTRING(BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES,"*",ERR,ERROR))
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP")
+    RETURN
+999 CALL ERRORS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP",ERR,ERROR)
+    CALL EXITS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP")
+  END FUNCTION BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP
 
   !
   !================================================================================================================================
@@ -1987,7 +2066,7 @@ CONTAINS
                   ENDDO
                ENDDO
                BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
-               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=ni1  
+               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=-ni1  
             ENDIF
          ENDDO
          
@@ -2567,6 +2646,7 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: NEW_SCHEME,SCHEME
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), POINTER :: NEW_SCHEMES(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: MAX_NUM_FACE_GAUSS,face_idx,NORMAL,FACE_XI(2)
 
     NULLIFY(NEW_SCHEME)
     NULLIFY(NEW_SCHEMES)
@@ -2630,7 +2710,6 @@ CONTAINS
               & POSITIONS(1:BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni),ni), &
               & WEIGHTS(1:BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni),ni),ERR,ERROR,*999)
           ENDDO !ni
-          
           SELECT CASE(BASIS%NUMBER_OF_XI)
           CASE(1)
             NUM_GAUSS_1=BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1)
@@ -2675,6 +2754,74 @@ CONTAINS
               ENDDO !i
             ENDDO !j
           ENDDO !k
+          !Create face quadrature scheme, if requested
+          IF(BASIS%QUADRATURE%EVALUATE_FACE_GAUSS) THEN
+            IF(BASIS%NUMBER_OF_XI==3) THEN
+              !Find maximum number of face gauss points and allocate the arrays
+              MAX_NUM_FACE_GAUSS=PRODUCT(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI))
+              MAX_NUM_FACE_GAUSS=MAX_NUM_FACE_GAUSS/MINVAL(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI))
+              ALLOCATE(NEW_SCHEME%NUMBER_OF_FACE_GAUSS(BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of face gauss",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_POSITIONS(BASIS%NUMBER_OF_XI_COORDINATES,MAX_NUM_FACE_GAUSS, &
+                & BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss positions",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_WEIGHTS(MAX_NUM_FACE_GAUSS,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss weights",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_BASIS_FNS(BASIS%NUMBER_OF_ELEMENT_PARAMETERS,BASIS%NUMBER_OF_PARTIAL_DERIVATIVES, &
+                & MAX_NUM_FACE_GAUSS,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss basis function values array",ERR,ERROR,*999)
+              !Zero them out just to be safe
+              NEW_SCHEME%FACE_GAUSS_POSITIONS=0.0_DP
+              NEW_SCHEME%FACE_GAUSS_WEIGHTS=0.0_DP
+              NEW_SCHEME%FACE_GAUSS_BASIS_FNS=0.0_DP
+              !Populate face_gauss_positions, weights, basis_fn
+              DO face_idx=1,BASIS%NUMBER_OF_LOCAL_FACES
+                !What's the normal?
+                NORMAL=BASIS%LOCAL_FACE_XI_DIRECTION(face_idx)
+                IF(NORMAL<0_INTG) THEN
+                  XI(ABS(NORMAL))=0.0_DP
+                ELSE
+                  XI(ABS(NORMAL))=1.0_DP
+                ENDIF
+                NORMAL=ABS(NORMAL)
+                FACE_XI=[OTHER_XI_DIRECTIONS3(NORMAL,2,1), OTHER_XI_DIRECTIONS3(NORMAL,3,1)]
+                !How many gauss points are in this face?
+                NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx)=PRODUCT(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI))
+                ng=0_INTG
+                DO j=1,BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(2))
+                  XI(FACE_XI(2))=POSITIONS(j,FACE_XI(2))
+                  DO i=1,BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))
+                    XI(FACE_XI(1))=POSITIONS(i,FACE_XI(1))
+                    ng=ng+1_INTG
+                    !Gauss point xi and weights first
+                    NEW_SCHEME%FACE_GAUSS_WEIGHTS(ng,face_idx)=WEIGHTS(i,FACE_XI(1))*WEIGHTS(j,FACE_XI(2))
+                    NEW_SCHEME%FACE_GAUSS_POSITIONS(1:3,ng,face_idx)=XI(1:3)
+                    !Evaluate basis fn values at the Gauss points now
+                    ns=0
+                    DO nn=1,BASIS%NUMBER_OF_NODES
+                      DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                        ns=ns+1
+                        DO nu=1,BASIS%NUMBER_OF_PARTIAL_DERIVATIVES
+                          SELECT CASE(BASIS%TYPE)
+                          CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+                            NEW_SCHEME%FACE_GAUSS_BASIS_FNS(ns,nu,ng,face_idx)= &
+                              & BASIS_LHTP_BASIS_EVALUATE(BASIS,nn,nk,nu,XI,ERR,ERROR)
+                            IF(ERR/=0) GOTO 999                        
+                          CASE DEFAULT
+                            CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+                          END SELECT
+                        ENDDO !nu
+                      ENDDO !nk
+                    ENDDO !nn
+
+                  ENDDO !i
+                ENDDO !j
+              ENDDO !face_idx
+            ELSE
+              CALL FLAG_ERROR("Cannot evaluate face quadrature schemes for a non three dimensional element.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+          !Clean up
           DEALLOCATE(WEIGHTS)
           DEALLOCATE(POSITIONS)
           DEALLOCATE(POSITIONS_MATRIX)
@@ -3377,6 +3524,39 @@ CONTAINS
     CALL EXITS("BASIS_QUADRATURE_TYPE_SET_PTR")
     RETURN 1
   END SUBROUTINE BASIS_QUADRATURE_TYPE_SET_PTR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the local face Gauss evaluation flag on a basis
+  SUBROUTINE BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET(BASIS,FACE_GAUSS_EVALUATE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    LOGICAL, INTENT(IN) :: FACE_GAUSS_EVALUATE !<face Gauss evaluation flag
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    CALL ENTERS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
+        CALL FLAG_ERROR("Basis has been finished",ERR,ERROR,*999)
+      ELSE
+        BASIS%QUADRATURE%EVALUATE_FACE_GAUSS=FACE_GAUSS_EVALUATE
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET")
+    RETURN 1
+
+  END SUBROUTINE BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET
 
   !
   !================================================================================================================================
