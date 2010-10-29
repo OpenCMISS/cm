@@ -735,12 +735,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -934,12 +933,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -1087,12 +1085,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -1261,12 +1258,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -3946,12 +3942,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -4100,12 +4095,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -4358,12 +4352,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -4512,12 +4505,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)

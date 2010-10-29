@@ -519,7 +519,7 @@ CONTAINS
         ENDIF
 
         !Delete the routine pointer
-        call erase(ROUTINE_PTR%NAME) !Routine name (varying string) remains allocated - it's a leak hazard
+        CALL erase(ROUTINE_PTR%NAME) !Routine name (varying string) remains allocated - it's a leak hazard
         DEALLOCATE(ROUTINE_PTR) 
 
         !ELSE ERROR????

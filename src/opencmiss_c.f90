@@ -5550,15 +5550,16 @@ CONTAINS
 !!==================================================================================================================================
 #ifdef STILL_WORKING_ON_INTERFACE_SO_LEAVE_C_BINDINGS_FOR_NOW
   !>Finishes the creation of a CellML environment identified by a user number for C.
-  FUNCTION CMISSCellMLCreateFinishCNum(CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLCreateFinishNum")
+  FUNCTION CMISSCellMLCreateFinishCNum(RegionUserNumber,CellMLUserNumber)  BIND(C, NAME = "CMISSCellMLCreateFinishNum")
 
     !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to finish creating.
     !Function variable
     INTEGER(C_INT) :: CMISSCellMLCreateFinishCNum !<Error Code.
     !Local variables
 
-    CALL CMISSCellMLCreateFinish(CellMLUserNumber,CMISSCellMLCreateFinishCNum)
+    CALL CMISSCellMLCreateFinish(RegionUserNumber,CellMLUserNumber,CMISSCellMLCreateFinishCNum)
 
     RETURN
 
@@ -5619,23 +5620,34 @@ CONTAINS
   !
 
   !>Starts the creation of a CellML environment identified by a pointer for C.
-  FUNCTION CMISSCellMLCreateStartCPtr(CellMLUserNumber,CellMLPtr) BIND(C, NAME = "CMISSCellMLCreateStart")
+  FUNCTION CMISSCellMLCreateStartCPtr(CellMLUserNumber,RegionPtr,CellMLPtr) BIND(C, NAME = "CMISSCellMLCreateStart")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: CellMLUserNumber !<The user number of the CellML environment to create.
+    TYPE(C_PTR), INTENT(INOUT) :: RegionPtr !<A C pointer to the region to create the CellML environment in.
     TYPE(C_PTR), INTENT(INOUT) :: CellMLPtr !<On return, the created C pointer to the CellML environment.
     !Function variable
     INTEGER(C_INT) :: CMISSCellMLCreateStartCPtr !<Error Code.
     !Local variables
     TYPE(CMISSCellMLType), POINTER :: CellML
+    TYPE(CMISSRegionType), POINTER :: Region
 
     CMISSCellMLCreateStartCPtr = CMISSNoError
-    IF(C_ASSOCIATED(CellMLPtr)) THEN
-      CMISSCellMLCreateStartCPtr = CMISSPointerNotNULL
+    IF(C_ASSOCIATED(RegionPtr)) THEN
+      CALL C_F_POINTER(RegionPtr,Region)
+      IF(ASSOCIATED(Region)) THEN
+        IF(C_ASSOCIATED(CellMLPtr)) THEN
+          CMISSCellMLCreateStartCPtr = CMISSPointerNotNULL
+        ELSE
+          NULLIFY(CellML)
+          CALL CMISSCellMLCreateStart(CellMLUserNumber,Region,CellML,CMISSCellMLCreateStartCPtr)
+          CellMLPtr = C_LOC(CellML)
+        ENDIF
+      ELSE
+        CMISSCellMLCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
     ELSE
-      NULLIFY(CellML)
-      CALL CMISSCellMLCreateStart(CellMLUserNumber,CellML,CMISSCellMLCreateStartCPtr)
-      CellMLPtr = C_LOC(CellML)
+      CMISSCellMLCreateStartCPtr = CMISSPointerIsNULL
     ENDIF
 
     RETURN

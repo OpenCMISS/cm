@@ -6,13 +6,14 @@
 - Generally, try to ensure that new code is consistent in formating, style, look and feel and convention with existing code. If in doubt about whether or not a new coding style rule is required please raise the issue rather than adopt a new style. 
 - Be professional in your coding style, comments, error messages, layout and other output.
 - Do not comment out code changes with dates and initials. The code management system will record all changes and who changed what.
+- All new code should be properly commented and describe what the code does and (if appropriate) describe any limitations.
 
 \subsection code_layout Code Layout
 
 - Free source form must be used.
 - A double space should be used for an indent. Tabs must not be used anywhere in the code.
 - Code should have no more than 132 characters in a line, use continuation &'s if need be. There should be a space before the first continuation character and a space after the second continuation character when continuing lines.
-- All arguments to a SUBROUTINE/FUNCTION must be decalared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INT), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes in the basis.
+- All arguments to a SUBROUTINE/FUNCTION must be declared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes in the basis.
 - Continuation lines should be indented by 2 spaces with respect to the first line.
 - In general, code routines, local variable lists etc. should be alphabetical.
 - Add whitespace where appropriate to improve readability.
@@ -35,7 +36,7 @@
 - INTENT(IN|OUT|INOUT) must be used for all dummy arguments including pointers. 
 - If there is just a single statement following an IF clause use the inline form of the IF statement and do not use THEN and ENDIF.
 - For dummy array arguments the dimension qualifier should be with the array name i.e., use INTEGER(INTG) :: FRED(N) rather than INTEGER(INTG), DIMENSION(N) :: FRED.
-- always name program units, types and interfaces and use the corresponding END PROGRAM, END SUBROUTINE, END MOUDLE, END TYPE, END INTERFACE etc. etc. 
+- always name program units, types and interfaces and use the corresponding END PROGRAM, END SUBROUTINE, END MODULE, END TYPE, END INTERFACE etc. etc. 
 - Never use a Fortran keyword as a variable name. Never use the name of an intrinsic function as the name for a user-defined function.
 - Use :: after the declaration part of a variable, even if there are no attributes.
 - All explicit constants should have the kind attribute at the end i.e., 3.14159_DP rather than 3.14159.
