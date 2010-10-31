@@ -1352,7 +1352,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
-    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3),L
+    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3)
     LOGICAL :: UPDATE_STIFFNESS_MATRIX, UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -1400,7 +1400,7 @@ CONTAINS
     ALE_MATRIX=0.0_DP
     RH_VECTOR=0.0_DP
     X=0.0_DP
-    L=10.0_DP
+!     L=10.0_DP
 
     UPDATE_STIFFNESS_MATRIX=.FALSE.
     UPDATE_DAMPING_MATRIX=.FALSE.
@@ -1751,7 +1751,7 @@ CONTAINS
                             SUM=0.0_DP                         
                           ELSE IF(mh==2) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(-2.0_DP*MU_PARAM/L**2)
+                            SUM=PHIMS*(-2.0_DP*MU_PARAM/10.0_DP**2)
                           ENDIF
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2) THEN
                           IF(mh==1) THEN 
@@ -1759,7 +1759,7 @@ CONTAINS
                             SUM=0.0_DP                               
                           ELSE IF(mh==2) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(-4.0_DP*MU_PARAM/L/L*EXP((X(1)-X(2))/L))
+                            SUM=PHIMS*(-4.0_DP*MU_PARAM/100.0_DP*EXP((X(1)-X(2))/10.0_DP))
                           ENDIF
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3) THEN
                           IF(mh==1) THEN 
@@ -1767,7 +1767,7 @@ CONTAINS
                             SUM=0.0_DP         
                           ELSE IF(mh==2) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(16.0_DP*MU_PARAM*PI*PI/L/L*COS(2.0_DP*PI*X(2)/L)*COS(2.0_DP*PI*X(1)/L))
+                            SUM=PHIMS*(16.0_DP*MU_PARAM*PI*PI/100.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP))
                           ENDIF
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4) THEN
 !                           do nothing!
@@ -1783,10 +1783,10 @@ CONTAINS
                             SUM=0.0_DP                         
                           ELSE IF(mh==2) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(-4.0_DP*MU_PARAM/L**2)                   
+                            SUM=PHIMS*(-4.0_DP*MU_PARAM/100.0_DP)                   
                           ELSE IF(mh==3) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(-4.0_DP*MU_PARAM/L**2)
+                            SUM=PHIMS*(-4.0_DP*MU_PARAM/100.0_DP)
                           ENDIF
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2) THEN
                           IF(mh==1) THEN 
@@ -1794,10 +1794,10 @@ CONTAINS
                             SUM=0.0_DP         
                           ELSE IF(mh==2) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(-2.0_DP*MU_PARAM/L/L*(2.0_DP*EXP((X(1)-X(2))/L)+EXP((X(2)-X(3))/L)))
+                            SUM=PHIMS*(-2.0_DP*MU_PARAM/100.0_DP*(2.0_DP*EXP((X(1)-X(2))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)))
                           ELSE IF(mh==3) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(-2.0_DP*MU_PARAM/L/L*(2.0_DP*EXP((X(3)-X(1))/L)+EXP((X(2)-X(3))/L)))
+                            SUM=PHIMS*(-2.0_DP*MU_PARAM/100.0_DP*(2.0_DP*EXP((X(3)-X(1))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)))
                           ENDIF
                         ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3) THEN
                           IF(mh==1) THEN 
@@ -1805,7 +1805,8 @@ CONTAINS
                             SUM=0.0_DP         
                           ELSE IF(mh==2) THEN
                             !Calculate SUM 
-                            SUM=PHIMS*(36*MU_PARAM*PI**2/L**2*COS(2.0_DP*PI*X(2)/L)*SIN(2.0_DP*PI*X(3)/L)*COS(2.0_DP*PI*X(1)/L))
+                            SUM=PHIMS*(36*MU_PARAM*PI**2/100.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)*SIN(2.0_DP*PI*X(3)/10.0_DP)* & 
+                              & COS(2.0_DP*PI*X(1)/10.0_DP))
                           ELSE IF(mh==3) THEN
                             !Calculate SUM 
                             SUM=0.0_DP         

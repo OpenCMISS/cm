@@ -1719,7 +1719,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM, &
-              & DPHIMS_DXI(3),DPHINS_DXI(3),X(3),L
+              & DPHIMS_DXI(3),DPHINS_DXI(3),X(3)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -1771,7 +1771,7 @@ CONTAINS
     NL_VECTOR=0.0_DP
 !\todo: Set X and L through user input instead (or default)
     X=0.0_DP
-    L=10.0_DP
+! ! !     L=10.0_DP
 !\todo: Check whether or not the update flags work properly
     UPDATE_STIFFNESS_MATRIX=.FALSE.
     UPDATE_DAMPING_MATRIX=.FALSE.
@@ -2072,8 +2072,8 @@ CONTAINS
                               SUM=0.0_DP                         
                             ELSE IF(mh==2) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(-2.0_DP/3.0_DP*(X(1)**3*RHO_PARAM+3.0_DP*MU_PARAM*L**2-3.0_DP*RHO_PARAM*X(2)**2*X(1))/ & 
-                                & (L**4))
+                              SUM=PHIMS*(-2.0_DP/3.0_DP*(X(1)**3*RHO_PARAM+3.0_DP*MU_PARAM*10.0_DP**2- &
+                                & 3.0_DP*RHO_PARAM*X(2)**2*X(1))/(10.0_DP**4))
                             ENDIF
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2) &
                             & THEN
@@ -2082,7 +2082,7 @@ CONTAINS
                               SUM=0.0_DP                               
                             ELSE IF(mh==2) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(-4.0_DP*MU_PARAM/L/L*EXP((X(1)-X(2))/L))
+                              SUM=PHIMS*(-4.0_DP*MU_PARAM/10.0_DP/10.0_DP*EXP((X(1)-X(2))/10.0_DP))
                             ENDIF
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3) & 
                            & THEN
@@ -2091,8 +2091,9 @@ CONTAINS
                               SUM=0.0_DP         
                             ELSE IF(mh==2) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(16.0_DP*MU_PARAM*PI**2/L**2*COS(2.0_DP*PI*X(2)/L)*COS(2.0_DP*PI*X(1)/L)- &
-                                & 2.0_DP*COS(2.0_DP*PI*X(2)/L)*SIN(2.0_DP*PI*X(2)/L)*RHO_PARAM*PI/L)
+                              SUM=PHIMS*(16.0_DP*MU_PARAM*PI**2/10.0_DP**2*COS(2.0_DP*PI*X(2)/10.0_DP)* &
+                                & COS(2.0_DP*PI*X(1)/10.0_DP)- &
+                                & 2.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)*RHO_PARAM*PI/10.0_DP)
                             ENDIF
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4) & 
                            & THEN
@@ -2113,14 +2114,16 @@ CONTAINS
                               SUM=0.0_DP       
                             ELSE IF(mh==2) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(-2.0_DP/3.0_DP*(RHO_PARAM*X(1)**3+6.0_DP*RHO_PARAM*X(1)*X(3)*X(2)+6.0_DP*MU_PARAM*L**2- & 
+                              SUM=PHIMS*(-2.0_DP/3.0_DP*(RHO_PARAM*X(1)**3+6.0_DP*RHO_PARAM*X(1)*X(3)*X(2)+ &
+                                & 6.0_DP*MU_PARAM*10.0_DP**2- & 
                                 & 3.0_DP*RHO_PARAM*X(2)**2*X(1)-3.0_DP*RHO_PARAM*X(3)*X(1)**2-3.0_DP*RHO_PARAM*X(3)*X(2)**2)/ &
-                                  & (L**4))
+                                  & (10.0_DP**4))
                             ELSE IF(mh==3) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(-2.0_DP/3.0_DP*(6.0_DP*RHO_PARAM*X(1)*X(3)*X(2)+RHO_PARAM*X(1)**3+6.0_DP*MU_PARAM*L**2- & 
+                              SUM=PHIMS*(-2.0_DP/3.0_DP*(6.0_DP*RHO_PARAM*X(1)*X(3)*X(2)+RHO_PARAM*X(1)**3+ &
+                                & 6.0_DP*MU_PARAM*10.0_DP**2- & 
                                 & 3.0_DP*RHO_PARAM*X(1)*X(3)**2-3.0_DP*RHO_PARAM*X(2)*X(1)**2-3.0_DP*RHO_PARAM*X(2)*X(3)**2)/ & 
-                                & (L**4))
+                                & (10.0_DP**4))
                             ENDIF
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== & 
                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2) THEN
@@ -2129,12 +2132,12 @@ CONTAINS
                               SUM=0.0_DP         
                             ELSE IF(mh==2) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*((-4.0_DP*MU_PARAM*EXP((X(1)-X(2))/L)-2.0_DP*MU_PARAM*EXP((X(2)-X(3))/L)+ & 
-                                & RHO_PARAM*EXP((X(3)-X(2))/L)*L)/L**2)
+                              SUM=PHIMS*((-4.0_DP*MU_PARAM*EXP((X(1)-X(2))/10.0_DP)-2.0_DP*MU_PARAM*EXP((X(2)-X(3))/10.0_DP)+ & 
+                                & RHO_PARAM*EXP((X(3)-X(2))/10.0_DP)*10.0_DP)/10.0_DP**2)
                             ELSE IF(mh==3) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(-(4.0_DP*MU_PARAM*EXP((X(3)-X(1))/L)+2.0_DP*MU_PARAM*EXP((X(2)-X(3))/L)+ & 
-                                & RHO_PARAM*EXP((X(3)-X(2))/L)*L)/L** 2)
+                              SUM=PHIMS*(-(4.0_DP*MU_PARAM*EXP((X(3)-X(1))/10.0_DP)+2.0_DP*MU_PARAM*EXP((X(2)-X(3))/10.0_DP)+ & 
+                                & RHO_PARAM*EXP((X(3)-X(2))/10.0_DP)*10.0_DP)/10.0_DP** 2)
                             ENDIF
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== & 
                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3) THEN
@@ -2143,14 +2146,15 @@ CONTAINS
                               SUM=0.0_DP         
                             ELSE IF(mh==2) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(2.0_DP*COS(2.0_DP*PI*X(2)/L)*(18.0_DP*COS(2.0_DP*PI*X(1)/L)* &
-                                & MU_PARAM*PI*SIN(2.0_DP*PI*X(3)/L)-3.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/L)**2* &
-                                & SIN(2.0_DP*PI*X(2)/L)*L-2.0_DP*RHO_PARAM*SIN(2.0_DP*PI*X(2)/L)*L+ & 
-                                & 2.0_DP*RHO_PARAM*SIN(2.0_DP*PI*X(2)/L)*L*COS(2.0_DP*PI*X(3)/L)**2)*PI/L**2)
+                              SUM=PHIMS*(2.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)*(18.0_DP*COS(2.0_DP*PI*X(1)/10.0_DP)* &
+                                & MU_PARAM*PI*SIN(2.0_DP*PI*X(3)/10.0_DP)-3.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)**2* &
+                                & SIN(2.0_DP*PI*X(2)/10.0_DP)*10.0_DP-2.0_DP*RHO_PARAM*SIN(2.0_DP*PI*X(2)/10.0_DP)*10.0_DP+ & 
+                                & 2.0_DP*RHO_PARAM*SIN(2.0_DP*PI*X(2)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(3)/10.0_DP)**2)*PI/ &
+                                & 10.0_DP**2)
                             ELSE IF(mh==3) THEN
                               !Calculate SUM 
-                              SUM=PHIMS*(-2.0_DP*PI*COS(2.0_DP*PI*X(3)/L)*RHO_PARAM*SIN(2.0_DP*PI*X(3)/L)* & 
-                                & (-1.0_DP+COS(2.0_DP*PI*X(2)/L)**2)/L)
+                              SUM=PHIMS*(-2.0_DP*PI*COS(2.0_DP*PI*X(3)/10.0_DP)*RHO_PARAM*SIN(2.0_DP*PI*X(3)/10.0_DP)* & 
+                                & (-1.0_DP+COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP)
                             ENDIF
                           ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4) & 
                            & THEN
@@ -4385,7 +4389,7 @@ CONTAINS
 ! ! !     !Temp variables
 ! ! !     INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
 
-    CALL ENTERS("STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+    CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
 !\todo: Introduce user call to set parameters
     BOUND_COUNT=0
 ! ! ! !     L=10.0_DP
