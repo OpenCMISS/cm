@@ -954,7 +954,23 @@ MODULE OPENCMISS
   !Module variables
   
   !Interfaces
-    
+
+  !>Set a CellML model variable as being known (the value will be set from an OpenCMISS field)
+  INTERFACE CMISSCellMLVariableSetAsKnown
+    MODULE PROCEDURE CMISSCellMLVariableSetAsKnownNumberC
+    MODULE PROCEDURE CMISSCellMLVariableSetAsKnownObjC
+    MODULE PROCEDURE CMISSCellMLVariableSetAsKnownNumberVS
+    MODULE PROCEDURE CMISSCellMLVariableSetAsKnownObjVS
+  END INTERFACE !CMISSCellMLVariableSetAsKnown
+
+  !>Set a CellML model variable as being wanted (the value will be extracted from the model to an OpenCMISS field)
+  INTERFACE CMISSCellMLVariableSetAsWanted
+    MODULE PROCEDURE CMISSCellMLVariableSetAsWantedNumberC
+    MODULE PROCEDURE CMISSCellMLVariableSetAsWantedObjC
+    MODULE PROCEDURE CMISSCellMLVariableSetAsWantedNumberVS
+    MODULE PROCEDURE CMISSCellMLVariableSetAsWantedObjVS
+  END INTERFACE !CMISSCellMLVariableSetAsWanted
+
   !>Map a CellML model variable to a field variable component in this CellML environment.
   INTERFACE CMISSCellMLCreateCellMLToFieldMap
     MODULE PROCEDURE CMISSCellMLCreateCellMLToFieldMapNumberC
@@ -1112,6 +1128,8 @@ MODULE OPENCMISS
   END INTERFACE !CMISSCellMLGenerate
 
   PUBLIC CMISSCellMLModelsFieldType,CMISSCellMLStateFieldType,CMISSCellMLIntermediateFieldType,CMISSCellMLParametersFieldType
+
+  PUBLIC CMISSCellMLVariableSetAsKnown,CMISSCellMLVariableSetAsWanted
 
   PUBLIC CMISSCellMLCreateCellMLToFieldMap,CMISSCellMLCreateFieldToCellMLMap
   
@@ -10812,10 +10830,306 @@ CONTAINS
 !!
 !!==================================================================================================================================
 
+  !>Sets a CellML model variable to be known by user number.
+  SUBROUTINE CMISSCellMLVariableSetAsKnownNumberC(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,VariableID,Err)
+    
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The CellML variable to set as known (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSCellMLVariableSetAsKnownNumberC",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(CELLML)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL CELLML_VARIABLE_SET_AS_KNOWN(CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("CMISSCellMLVariableSetAsKnownNumberC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsKnownNumberC",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsKnownNumberC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsKnownNumberC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be known by object.
+  SUBROUTINE CMISSCellMLVariableSetAsKnownObjC(CellML,CellMLModelUserNumber,VariableID,Err)
+    
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The CellML variable to set as known (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLVariableSetAsKnownObjC",Err,ERROR,*999)
+
+    CALL CELLML_VARIABLE_SET_AS_KNOWN(CellML%CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLVariableSetAsKnownObjC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsKnownObjC",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsKnownObjC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsKnownObjC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be known by user number.
+  SUBROUTINE CMISSCellMLVariableSetAsKnownNumberVS(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,VariableID,Err)
+    
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The CellML variable to set as known (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSCellMLVariableSetAsKnownNumberVS",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(CELLML)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL CELLML_VARIABLE_SET_AS_KNOWN(CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLVariableSetAsKnownNumberVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsKnownNumberVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsKnownNumberVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsKnownNumberVS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be known by object.
+  SUBROUTINE CMISSCellMLVariableSetAsKnownObjVS(CellML,CellMLModelUserNumber,VariableID,Err)
+
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The CellML variable to set as known (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLVariableSetAsKnownObjVS",Err,ERROR,*999)
+
+    CALL CELLML_VARIABLE_SET_AS_KNOWN(CellML%CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLVariableSetAsKnownObjVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsKnownObjVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsKnownObjVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsKnownObjVS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be wanted by user number.
+  SUBROUTINE CMISSCellMLVariableSetAsWantedNumberC(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,VariableID,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The CellML variable to set as wanted (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSCellMLVariableSetAsWantedNumberC",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(CELLML)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL CELLML_VARIABLE_SET_AS_WANTED(CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLVariableSetAsWantedNumberC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsWantedNumberC",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsWantedNumberC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsWantedNumberC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be wanted by object.
+  SUBROUTINE CMISSCellMLVariableSetAsWantedObjC(CellML,CellMLModelUserNumber,VariableID,Err)
+
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The CellML variable to set as wanted (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLVariableSetAsWantedObjC",Err,ERROR,*999)
+
+    CALL CELLML_VARIABLE_SET_AS_WANTED(CellML%CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLVariableSetAsWantedObjC")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsWantedObjC",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsWantedObjC")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsWantedObjC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be wanted by user number.
+  SUBROUTINE CMISSCellMLVariableSetAsWantedNumberVS(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,VariableID,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The CellML variable to set as wanted (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSCellMLVariableSetAsWantedNumberVS",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(CELLML)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL CELLML_VARIABLE_SET_AS_WANTED(CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLVariableSetAsWantedNumberVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsWantedNumberVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsWantedNumberVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsWantedNumberVS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be wanted by object.
+  SUBROUTINE CMISSCellMLVariableSetAsWantedObjVS(CellML,CellMLModelUserNumber,VariableID,Err)
+    
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model in which to find the given variable.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The CellML variable to set as wanted (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSCellMLVariableSetAsWantedObjVS",Err,ERROR,*999)
+
+    CALL CELLML_VARIABLE_SET_AS_WANTED(CellML%CELLML,CellMLModelUserNumber,VariableID,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSCellMLVariableSetAsWantedObjVS")
+    RETURN
+999 CALL ERRORS("CMISSCellMLVariableSetAsWantedObjVS",Err,ERROR)
+    CALL EXITS("CMISSCellMLVariableSetAsWantedObjVS")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSCellMLVariableSetAsWantedObjVS
+
+  !  
+  !================================================================================================================================
+  !  
+ 
   !>Defines a CellML model variable to field variable component map by user number
   SUBROUTINE CMISSCellMLCreateCellMLToFieldMapNumberC(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,VariableID, &
     & CellMLParameterSet,FieldUserNumber,VariableType,ComponentNumber,FieldParameterSet,Err)
-    
+
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML enviroment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
@@ -10861,7 +11175,7 @@ CONTAINS
         & " does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
-    
+
     CALL EXITS("CMISSCellMLCreateCellMLToFieldMapNumberC")
     RETURN
 999 CALL ERRORS("CMISSCellMLCreateCellMLToFieldMapNumberC",Err,ERROR)
@@ -10878,7 +11192,7 @@ CONTAINS
   !>Defines a CellML model variable to field variable component map by object.
   SUBROUTINE CMISSCellMLCreateCellMLToFieldMapObjC(CellML, CellMLModelUserNumber,VariableID,CellMLParameterSet, &
     & Field,VariableType,ComponentNumber,FieldParameterSet,Err)
-    
+
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
     INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
@@ -10912,7 +11226,7 @@ CONTAINS
   !>Defines a CellML model variable to field variable component map by user number
   SUBROUTINE CMISSCellMLCreateCellMLToFieldMapNumberVS(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,VariableID, &
     & CellMLParameterSet,FieldUserNumber,VariableType,ComponentNumber,FieldParameterSet,Err)
-    
+
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML enviroment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment.
@@ -10975,7 +11289,7 @@ CONTAINS
   !>Defines a field variable component to CellML model variable map, by object.
   SUBROUTINE CMISSCellMLCreateCellMLToFieldMapObjVS(CellML,CellMLModelUserNumber,VariableID,CellMLParameterSet, &
     & Field,VariableType,ComponentNumber,FieldParameterSet,Err)
-    
+
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(IN) :: CellML !<The CellML enviroment.
     INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
@@ -10992,7 +11306,7 @@ CONTAINS
 
     CALL CELLML_CREATE_CELLML_TO_FIELD_MAP(CellML%CELLML,CellMLModelUserNumber,VariableID,CellMLParameterSet, &
       & Field%FIELD,VariableType,ComponentNumber,FieldParameterSet,Err,ERROR,*999)
-    
+
     CALL EXITS("CMISSCellMLCreateCellMLToFieldMapObjVS")
     RETURN
 999 CALL ERRORS("CMISSCellMLCreateCellMLToFieldMapObjVS",Err,ERROR)
@@ -11002,10 +11316,10 @@ CONTAINS
 
   END SUBROUTINE CMISSCellMLCreateCellMLToFieldMapObjVS
 
-  !  
+  !
   !================================================================================================================================
-  !  
- 
+  !
+
   !>Defines a field variable component to CellML model variable map by user number.
   SUBROUTINE CMISSCellMLCreateFieldToCellMLMapNumberC(RegionUserNumber,CellMLUserNumber,FieldUserNumber,VariableType, &
     & ComponentNumber,FieldParameterSet,CellMLModelUserNumber,VariableID,CellMLParameterSet,Err)

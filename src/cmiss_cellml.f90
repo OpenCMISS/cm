@@ -99,6 +99,16 @@ MODULE CMISS_CELLML
     MODULE PROCEDURE CELLML_MODEL_IMPORT_VS
   END INTERFACE !CELLML_MODEL_IMPORT
   
+  INTERFACE CELLML_VARIABLE_SET_AS_KNOWN
+    MODULE PROCEDURE CELLML_VARIABLE_SET_AS_KNOWN_C
+    MODULE PROCEDURE CELLML_VARIABLE_SET_AS_KNOWN_VS
+  END INTERFACE !CELLML_VARIABLE_SET_AS_KNOWN
+
+  INTERFACE CELLML_VARIABLE_SET_AS_WANTED
+    MODULE PROCEDURE CELLML_VARIABLE_SET_AS_WANTED_C
+    MODULE PROCEDURE CELLML_VARIABLE_SET_AS_WANTED_VS
+  END INTERFACE !CELLML_VARIABLE_SET_AS_WANTED
+
   INTERFACE CELLML_CREATE_CELLML_TO_FIELD_MAP
     MODULE PROCEDURE CELLML_CREATE_CELLML_TO_FIELD_MAP_C
     MODULE PROCEDURE CELLML_CREATE_CELLML_TO_FIELD_MAP_VS
@@ -135,6 +145,8 @@ MODULE CMISS_CELLML
   PUBLIC CELLML_FIELD_TO_CELLML_UPDATE
   
   PUBLIC CELLML_MODEL_IMPORT
+
+  PUBLIC CELLML_VARIABLE_SET_AS_KNOWN,CELLML_VARIABLE_SET_AS_WANTED
 
   PUBLIC CELLML_CREATE_CELLML_TO_FIELD_MAP,CELLML_CREATE_FIELD_TO_CELLML_MAP
 
@@ -823,6 +835,196 @@ CONTAINS
   !=================================================================================================================================
   !
 
+  !>Sets a CellML model variable to be known - i.e., the variable's value will be set by an OpenCMISS field
+  SUBROUTINE CELLML_VARIABLE_SET_AS_KNOWN_C(CELLML,MODEL_INDEX,VARIABLE_ID,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object in which to create the map.
+    INTEGER(INTG), INTENT(IN) :: MODEL_INDEX !<The index of the CellML model in which to find the given variable.
+    CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_ID !<The CellML variable to set as known (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local variables
+    TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    CHARACTER(256) :: C_NAME
+    INTEGER(INTG) :: C_NAME_L
+
+    CALL ENTERS("CELLML_VARIABLE_SET_AS_KNOWN_C",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      IF(CELLML%CELLML_FINISHED) THEN
+        CALL FLAG_ERROR("CellML environment has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(MODEL_INDEX>0.AND.MODEL_INDEX<=CELLML%NUMBER_OF_MODELS) THEN
+          CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
+          IF(ASSOCIATED(CELLML_MODEL)) THEN
+            !All input arguments are ok.
+            C_NAME_L = LEN_TRIM(VARIABLE_ID)
+            WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
+            CALL CELLML_MODEL_DEFINITION_SET_VARIABLE_AS_KNOWN(CELLML_MODEL%PTR,C_NAME)
+          ELSE
+            CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified model index of "//TRIM(NUMBER_TO_VSTRING(MODEL_INDEX,"*",ERR,ERROR))// &
+            & " is invalid. The modex index should be >= 1 and <= "// &
+            & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_VARIABLE_SET_AS_KNOWN_C")
+    RETURN
+999 CALL ERRORS("CELLML_VARIABLE_SET_AS_KNOWN_C",ERR,ERROR)
+    CALL EXITS("CELLML_VARIABLE_SET_AS_KNOWN_C")
+    RETURN 1
+  END SUBROUTINE CELLML_VARIABLE_SET_AS_KNOWN_C
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be known - i.e., the variable's value will be set by an OpenCMISS field
+  SUBROUTINE CELLML_VARIABLE_SET_AS_KNOWN_VS(CELLML,MODEL_USER_NUMBER,VARIABLE_ID,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object in which to create the map.
+    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The index of the CellML model in which to find the given variable.
+    TYPE(VARYING_STRING), INTENT(IN) :: VARIABLE_ID !<The CellML variable to set as known (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local variables
+
+    CALL ENTERS("CELLML_VARIABLE_SET_AS_KNOWN_VS",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    CALL CELLML_VARIABLE_SET_AS_KNOWN(CELLML,MODEL_USER_NUMBER,CHAR(VARIABLE_ID),ERR,ERROR,*999)
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_VARIABLE_SET_AS_KNOWN_VS")
+    RETURN
+999 CALL ERRORS("CELLML_VARIABLE_SET_AS_KNOWN_VS",ERR,ERROR)
+    CALL EXITS("CELLML_VARIABLE_SET_AS_KNOWN_VS")
+    RETURN 1
+  END SUBROUTINE CELLML_VARIABLE_SET_AS_KNOWN_VS
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be wanted - i.e., the variable's value will used by an OpenCMISS field
+  SUBROUTINE CELLML_VARIABLE_SET_AS_WANTED_C(CELLML,MODEL_INDEX,VARIABLE_ID,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object in which to create the map.
+    INTEGER(INTG), INTENT(IN) :: MODEL_INDEX !<The index of the CellML model in which to find the given variable.
+    CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_ID !<The CellML variable to set as wanted (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local variables
+    TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    CHARACTER(256) :: C_NAME
+    INTEGER(INTG) :: C_NAME_L
+
+    CALL ENTERS("CELLML_VARIABLE_SET_AS_WANTED_C",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      IF(CELLML%CELLML_FINISHED) THEN
+        CALL FLAG_ERROR("CellML environment has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(MODEL_INDEX>0.AND.MODEL_INDEX<=CELLML%NUMBER_OF_MODELS) THEN
+          CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
+          IF(ASSOCIATED(CELLML_MODEL)) THEN
+            !All input arguments are ok.
+            C_NAME_L = LEN_TRIM(VARIABLE_ID)
+            WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
+            CALL CELLML_MODEL_DEFINITION_SET_VARIABLE_AS_WANTED(CELLML_MODEL%PTR,C_NAME)
+          ELSE
+            CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified model index of "//TRIM(NUMBER_TO_VSTRING(MODEL_INDEX,"*",ERR,ERROR))// &
+            & " is invalid. The model index should be >= 1 and <= "// &
+            & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_VARIABLE_SET_AS_WANTED_C")
+    RETURN
+999 CALL ERRORS("CELLML_VARIABLE_SET_AS_WANTED_C",ERR,ERROR)
+    CALL EXITS("CELLML_VARIABLE_SET_AS_WANTED_C")
+    RETURN 1
+  END SUBROUTINE CELLML_VARIABLE_SET_AS_WANTED_C
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Sets a CellML model variable to be wanted - i.e., the variable's value will be used by an OpenCMISS field
+  SUBROUTINE CELLML_VARIABLE_SET_AS_WANTED_VS(CELLML,MODEL_USER_NUMBER,VARIABLE_ID,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object in which to create the map.
+    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The index of the CellML model in which to find the given variable.
+    TYPE(VARYING_STRING), INTENT(IN) :: VARIABLE_ID !<The CellML variable to set as wanted (in the format 'component_name/variable_name').
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    !Local variables
+
+    CALL ENTERS("CELLML_VARIABLE_SET_AS_WANTED_VS",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    CALL CELLML_VARIABLE_SET_AS_WANTED(CELLML,MODEL_USER_NUMBER,CHAR(VARIABLE_ID),ERR,ERROR,*999)
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_VARIABLE_SET_AS_WANTED_VS")
+    RETURN
+999 CALL ERRORS("CELLML_VARIABLE_SET_AS_WANTED_VS",ERR,ERROR)
+    CALL EXITS("CELLML_VARIABLE_SET_AS_WANTED_VS")
+    RETURN 1
+  END SUBROUTINE CELLML_VARIABLE_SET_AS_WANTED_VS
+
+  !
+  !=================================================================================================================================
+  !
+
   !>Create a CellML model variable to field variable component map.
   SUBROUTINE CELLML_CREATE_CELLML_TO_FIELD_MAP_C(CELLML,MODEL_INDEX,VARIABLE_ID,CELLML_PARAMETER_SET, &
     & FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,FIELD_PARAMETER_SET,ERR,ERROR,*)
@@ -870,7 +1072,7 @@ CONTAINS
               CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
               C_NAME_L = LEN_TRIM(VARIABLE_ID)
               WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
-              CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
+              !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
               !Now check that the mapped field is consistent with the other mapped fields for the model.
               IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
                 IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,FIELD%GEOMETRIC_FIELD)) THEN
@@ -1067,7 +1269,7 @@ CONTAINS
               CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
               C_NAME_L = LEN_TRIM(VARIABLE_ID)
               WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
-              CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
+              !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
               !Now check that the mapped field is consistent with the other mapped fields for the model.
               IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
                 IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,FIELD%GEOMETRIC_FIELD)) THEN
