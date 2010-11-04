@@ -145,7 +145,7 @@ CONTAINS
     INTEGER(INTG),ALLOCATABLE :: INNER_SURFACE_NODES(:),OUTER_SURFACE_NODES(:),TOP_SURFACE_NODES(:),BOTTOM_SURFACE_NODES(:)
     INTEGER(INTG) :: INNER_NORMAL_XI,OUTER_NORMAL_XI,TOP_NORMAL_XI,BOTTOM_NORMAL_XI
     INTEGEr(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER, DOMAIN_NUMBER
-    REAL(DP) :: PIN,POUT,DEFORMED_Z
+    REAL(DP) :: PIN,POUT,LAMBDA,DEFORMED_Z
     LOGICAL :: X_FIXED,Y_FIXED,NODE_EXISTS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -181,6 +181,7 @@ CONTAINS
                     CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,2_INTG,OUTER_SURFACE_NODES,OUTER_NORMAL_XI,ERR,ERROR,*999) !Outer
                     CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,3_INTG,TOP_SURFACE_NODES,TOP_NORMAL_XI,ERR,ERROR,*999) !Top
                     CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,4_INTG,BOTTOM_SURFACE_NODES,BOTTOM_NORMAL_XI,ERR,ERROR,*999) !Bottom
+
                     !Set all inner surface nodes to inner pressure (- sign is to make positive P into a compressive force) ?
                     PIN=-EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX)
                     DO node_idx=1,SIZE(INNER_SURFACE_NODES,1)
@@ -204,17 +205,17 @@ CONTAINS
                       ENDIF
                     ENDDO
                     !Set all top nodes fixed in z plane at lambda*height
+                    LAMBDA=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX)
                     DO node_idx=1,SIZE(TOP_SURFACE_NODES,1)
                       user_node=TOP_SURFACE_NODES(node_idx)
                       !Need to test if this node is in current decomposition
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
-IF(.NOT.NODE_EXISTS) CYCLE
-CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
-                        !local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,user_node)
-                        DEFORMED_Z=GEOMETRIC_PARAMETERS(local_ny)
+                        CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+                        IF(.NOT.NODE_EXISTS) CYCLE
+                        CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
+                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        DEFORMED_Z=GEOMETRIC_PARAMETERS(local_ny)*LAMBDA
                         CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
                           & user_node,ABS(TOP_NORMAL_XI),BOUNDARY_CONDITION_FIXED,DEFORMED_Z,ERR,ERROR,*999)
                       ENDIF
@@ -229,46 +230,45 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
                           & user_node,ABS(BOTTOM_NORMAL_XI),BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
-                    !Set two nodes on the bottom surface to axial displacement only - trickier in parallel
-                    IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
-                      X_FIXED=.FALSE.
-                      Y_FIXED=.FALSE.
-                      DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
-                        user_node=BOTTOM_SURFACE_NODES(node_idx) !Relying on the radial-first incrementing numbering scheme (hardcoded)
-                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
-                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
-IF(.NOT.NODE_EXISTS) CYCLE
-CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
-!                           local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,user_node)
-                          X(1)=GEOMETRIC_PARAMETERS(local_ny)
-CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
-IF(.NOT.NODE_EXISTS) CYCLE
-CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
-!                           local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,user_node)
-                          X(2)=GEOMETRIC_PARAMETERS(local_ny)
-                          IF(ABS(X(1))<1E-5_DP.AND..NOT.X_FIXED) THEN
-                            CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
-                              & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
-                            WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER,"FIXED IN X DIRECTION"
-                            X_FIXED=.TRUE.
-                          ENDIF
-                          IF(ABS(X(2))<1E-5_DP.AND..NOT.Y_FIXED) THEN
-                            CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
-                              & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
-                            WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER,"FIXED IN Y DIRECTION"
-                            Y_FIXED=.TRUE.
-                          ENDIF
+                    !Set two nodes on the bottom surface to axial displacement only:
+                    !Easier for parallel: Fix everything that can be fixed !!!
+                    X_FIXED=.FALSE.
+                    Y_FIXED=.FALSE.
+                    DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
+                      user_node=BOTTOM_SURFACE_NODES(node_idx)
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                        CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+                        IF(.NOT.NODE_EXISTS) CYCLE
+                        CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
+                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        X(1)=GEOMETRIC_PARAMETERS(local_ny)
+                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+                          IF(.NOT.NODE_EXISTS) CYCLE
+                          CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
+                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        X(2)=GEOMETRIC_PARAMETERS(local_ny)
+                        IF(ABS(X(1))<1E-7_DP) THEN
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                            & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                          WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
+                            & "FIXED IN X DIRECTION"
+                          X_FIXED=.TRUE.
                         ENDIF
-                        IF(X_FIXED.AND.Y_FIXED) EXIT
-                      ENDDO
-                      !Check it went well
-                      IF(.NOT.X_FIXED .OR. .NOT.Y_FIXED) THEN
-                        CALL FLAG_ERROR("Could not fix nodes to prevent rigid body motion",ERR,ERROR,*999)
+                        IF(ABS(X(2))<1E-7_DP) THEN
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                            & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                          WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
+                            & "FIXED IN Y DIRECTION"
+                          Y_FIXED=.TRUE.
+                        ENDIF
                       ENDIF
-                    ENDIF
+                      !IF(X_FIXED.AND.Y_FIXED) EXIT
+                    ENDDO
+                    !Check it went well - no longer needed
+!                     IF(.NOT.X_FIXED .OR. .NOT.Y_FIXED) THEN
+!                       CALL FLAG_ERROR("Could not fix nodes to prevent rigid body motion",ERR,ERROR,*999)
+!                     ENDIF
 
                   ELSE
                     CALL FLAG_ERROR("Domain nodes mapping is not associated.",ERR,ERROR,*999)
@@ -629,12 +629,13 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
         CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999) ! can't we reuse old results?
         ELEMENT_VECTOR1=NONLINEAR_MATRICES%ELEMENT_RESIDUAL
 
-        ! determine step size: will this be robust enough?
-        DELTA=1e-4_dp
-        CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
-        xnorm=sqrt(sum(DATA**2))/size(DATA)
-        DELTA=(DELTA+xnorm)*DELTA
-        CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
+        ! determine step size
+        !\todo: will this be robust enough? Turns out it fails in some cases
+        DELTA=1e-5_dp
+!         CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
+!         xnorm=sqrt(sum(DATA**2))/size(DATA)
+!         DELTA=(DELTA+xnorm)*DELTA
+!         CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
 
         ! the actual finite differencing algorithm is about 4 lines but since the parameters are all 
         ! distributed out, have to use proper field accessing routines.. 
@@ -726,6 +727,7 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS_1
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(MESH_ELEMENT_TYPE), POINTER :: MESH_ELEMENT
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_ELEMENT_MAPPING
     !TYPE(VARYING_STRING) :: LOCAL_ERROR   
 
     INTEGER(INTG) :: component_idx,component_idx2,parameter_idx,gauss_idx,element_dof_idx,FIELD_VAR_TYPE
@@ -789,6 +791,8 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
 
         DECOMPOSITION  =>DEPENDENT_FIELD%DECOMPOSITION
         MESH_COMPONENT_NUMBER = DECOMPOSITION%MESH_COMPONENT_NUMBER
+
+        DOMAIN_ELEMENT_MAPPING=>DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%ELEMENTS
 
         DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS       
         DEPENDENT_QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
@@ -986,7 +990,7 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
           ENDDO !gauss_idx
 
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
-          IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN
+          IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    ! 
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
 
@@ -1048,8 +1052,8 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
             ENDDO !component_idx
           ENDDO !gauss_idx
 
-!Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
-          IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN
+          !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
+          IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    !
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
 
@@ -1174,13 +1178,22 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
       IF(DECOMP_FACE%BOUNDARY_FACE) THEN !!temporary until MESH_FACE (or equivalent) is available (decomp face includes ghost faces?)
         !Grab normal xi direction of the face and the other two xi directions
         normal_component_idx=ABS(DECOMP_FACE%XI_DIRECTION)  ! if xi=0, this can be a negative number
-        FACE_COMPONENTS=OTHER_XI_DIRECTIONS3(normal_component_idx,2:3,1)  !Two xi directions for the current face
+!         FACE_COMPONENTS=OTHER_XI_DIRECTIONS3(normal_component_idx,2:3,1)  !Two xi directions for the current face
         !\todo: will FACE_COMPONENTS be a problem with sector elements? Check this.
         !Get pressure interpolation objects (DELUDELN pressure_values_set_type)
         FACE_PRESSURE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DUDN_TYPE)%PTR
         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_PRESSURE_VALUES_SET_TYPE,face_number, &
           & FACE_PRESSURE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+        FACE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(var2)%PTR
 
+if (any(abs(abs(face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx))-1.0)>5e-1) .and. &
+  sum(abs(face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx)))>1e-5) then
+  write(*,*) "user element, face",decomposition%domain(1)%ptr%mappings%elements%local_to_global_map(element_number),element_face_idx
+  write(*,"(9f10.5)") face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx)
+  write(*,"(9i10)") decomposition%domain(1)%ptr%mappings%nodes%local_to_global_map(decomposition%domain(1)% &
+    & ptr%topology%faces%faces(face_number)%nodes_in_face(1:9))
+! face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx)=-1.0
+endif
         !Check if nonzero surface pressure is defined on the face
         NONZERO_PRESSURE=.FALSE.
         IF(ANY(ABS(FACE_PRESSURE_INTERPOLATION_PARAMETERS%PARAMETERS(:,normal_component_idx))>ZERO_TOLERANCE)) THEN
@@ -1207,10 +1220,6 @@ local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,
             GAUSS_WEIGHT=FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
 
             !Interpolate p(appl) at gauss point
-            FACE_PRESSURE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DUDN_TYPE)%PTR
-            CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_PRESSURE_VALUES_SET_TYPE,face_number, &
-              & FACE_PRESSURE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-            FACE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(var2)%PTR
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,FACE_INTERPOLATED_POINT, &
               & ERR,ERROR,*999)
             PRESSURE_GAUSS=FACE_INTERPOLATED_POINT%VALUES(normal_component_idx,1)    !Surface pressure at this gauss point
