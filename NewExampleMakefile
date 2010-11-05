@@ -275,7 +275,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
         OPTC_FLGS += -momit-leaf-frame-pointer
       endif
     else
-      C_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
+      C_FLGS += -g -pg -fprofile-arcs -ftest-coverage
+      ELFLGS += -g -pg -fprofile-arcs -ftest-coverage
     endif
   endif
   ifeq ($(CC),icc)
@@ -350,8 +351,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
         OPTF_FLGS += -momit-leaf-frame-pointer
       endif
     else
-      F_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
-      ELFLAGS += -pg
+      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
+      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
     endif
     ELFLAGS += -m$(ABI)
   endif
@@ -960,6 +961,16 @@ help:
 	@echo
 	@echo "	externallibs"
 	@echo "		Compile the external libraries."
+	@echo
+	@echo "	run"
+	@echo "		Run the executable."
+	@echo
+	@echo "	massifrun"
+	@echo "		Run the executable with valgrid massif."
+	@echo
+	@echo "	callgrindrun"
+	@echo "		Run the executable with valgrid callgrind."
+	@echo
 	@echo
 	@echo "	test"
 	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."

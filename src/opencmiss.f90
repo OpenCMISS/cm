@@ -1005,6 +1005,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLDestroyObj
   END INTERFACE !CMISSCellMLDestroy
 
+  !>Finishes the creation of field maps for a CellML environment. \see OPENCMISS::CMISSCellMLFieldMapsCreateStart
+  INTERFACE CMISSCellMLFieldMapsCreateFinish
+    MODULE PROCEDURE CMISSCellMLFieldMapsCreateFinishNumber
+    MODULE PROCEDURE CMISSCellMLFieldMapsCreateFinishObj
+  END INTERFACE !CMISSCellMLFieldMapsCreateFinish
+
+  !>Starts the creation of field maps for a CellML environment. \see OPENCMISS::CMISSCellMLFieldMapsCreateFinish
+  INTERFACE CMISSCellMLFieldMapsCreateStart
+    MODULE PROCEDURE CMISSCellMLFieldMapsCreateStartNumber
+    MODULE PROCEDURE CMISSCellMLFieldMapsCreateStartObj
+  END INTERFACE !CMISSCellMLFieldMapsCreateStart
+
   !>Imports the specified CellML model into a CellML models environment. 
   INTERFACE CMISSCellMLModelImport
     MODULE PROCEDURE CMISSCellMLModelImportNumberC
@@ -1057,14 +1069,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLFieldComponentGetObjVS
   END INTERFACE !CMISSCellMLFieldComponentGet
 
-  !>Adds a specific variable to the CellML environments intermediate field.
-  INTERFACE CMISSCellMLIntermediateFieldAdd
-    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddNumberC
-    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddObjC
-    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddNumberVS
-    MODULE PROCEDURE CMISSCellMLIntermediateFieldAddObjVS
-  END INTERFACE !CMISSCellMLIntermediateFieldAdd
-  
   !>Finishes the creation of CellML intermediate field. \see OPENCMISS::CMISSCellMLIntermediateFieldCreateStart
   INTERFACE CMISSCellMLIntermediateFieldCreateFinish
     MODULE PROCEDURE CMISSCellMLIntermediateFieldCreateFinishNumber
@@ -1082,26 +1086,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLIntermediateFieldGetNumber
     MODULE PROCEDURE CMISSCellMLIntermediateFieldGetObj
   END INTERFACE !CMISSCellMLIntermediateFieldGet
-
-  !>Adds a specific variable to the CellML environments parameters.
-  INTERFACE CMISSCellMLParameterAdd
-    MODULE PROCEDURE CMISSCellMLParameterAddNumberC
-    MODULE PROCEDURE CMISSCellMLParameterAddObjC
-    MODULE PROCEDURE CMISSCellMLParameterAddNumberVS
-    MODULE PROCEDURE CMISSCellMLParameterAddObjVS
-  END INTERFACE !CMISSCellMLParameterAdd
-  
-  !>Finishes the creation of CellML parameters. \see OPENCMISS::CMISSCellMLParametersCreateStart
-  INTERFACE CMISSCellMLParametersCreateFinish
-    MODULE PROCEDURE CMISSCellMLParametersCreateFinishNumber
-    MODULE PROCEDURE CMISSCellMLParametersCreateFinishObj
-  END INTERFACE !CMISSCellMLParametersCreateFinish
-
-  !>Starts the creation of CellML parameters. \see OPENCMISS::CMISSCellMLParametersCreateFinish
-  INTERFACE CMISSCellMLParametersCreateStart
-    MODULE PROCEDURE CMISSCellMLParametersCreateStartNumber
-    MODULE PROCEDURE CMISSCellMLParametersCreateStartObj
-  END INTERFACE !CMISSCellMLParametersCreateStart
 
   !>Finishes the creation of CellML parameters field. \see OPENCMISS::CMISSCellMLParametersFieldCreateStart
   INTERFACE CMISSCellMLParametersFieldCreateFinish
@@ -1137,6 +1121,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSCellMLDestroy
 
+  PUBLIC CMISSCellMLFieldMapsCreateStart,CMISSCellMLFieldMapsCreateFinish
+
   PUBLIC CMISSCellMLModelImport
 
   PUBLIC CMISSCellMLModelsFieldCreateFinish,CMISSCellMLModelsFieldCreateStart,CMISSCellMLModelsFieldGet
@@ -1145,10 +1131,9 @@ MODULE OPENCMISS
 
   PUBLIC CMISSCellMLFieldComponentGet
 
-  PUBLIC CMISSCellMLIntermediateFieldAdd,CMISSCellMLIntermediateFieldCreateFinish,CMISSCellMLIntermediateFieldCreateStart, &
-    & CMISSCellMLIntermediateFieldGet
+  PUBLIC CMISSCellMLIntermediateFieldCreateFinish,CMISSCellMLIntermediateFieldCreateStart
 
-  PUBLIC CMISSCellMLParameterAdd,CMISSCellMLParametersCreateFinish,CMISSCellMLParametersCreateStart
+  PUBLIC CMISSCellMLIntermediateFieldGet
 
   PUBLIC CMISSCellMLParametersFieldCreateFinish,CMISSCellMLParametersFieldCreateStart,CMISSCellMLParametersFieldGet
 
@@ -11735,6 +11720,150 @@ CONTAINS
   !================================================================================================================================
   !  
 
+  !>Finishes the creation of field maps for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldMapsCreateFinishNumber(RegionUserNumber,CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLFieldMapsCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(CELLML)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL CELLML_FIELD_MAPS_CREATE_FINISH(CELLML,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('CellML Create')
+#endif
+
+    CALL EXITS("CMISSCellMLFieldMapsCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldMapsCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldMapsCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldMapsCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finish the creation of field maps for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldMapsCreateFinishObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of maps for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLFieldMapsCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL CELLML_FIELD_MAPS_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLFieldMapsCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldMapsCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldMapsCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldMapsCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of field maps for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldMapsCreateStartNumber(RegionUserNumber,CellMLUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the CellML enviroment.
+    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating the maps for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSCellMLFieldMapsCreateStartNumber",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(CELLML)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
+      IF(ASSOCIATED(CELLML)) THEN
+        CALL CELLML_FIELD_MAPS_CREATE_START(CELLML,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSCellMLFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldMapsCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Start the creation of field maps for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldMapsCreateStartObj(CellML,Err)
+  
+    !Argument variables
+    TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<The CellML environment object to start the creation of maps for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSCellMLFieldMapsCreateStartObj",Err,ERROR,*999)
+
+    CALL CELLML_FIELD_MAPS_CREATE_START(CellML%CELLML,Err,ERROR,*999)
+
+    CALL EXITS("CMISSCellMLFieldMapsCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSCellMLFieldMapsCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSCellMLFieldMapsCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSCellMLFieldMapsCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+
   !>Imports a specified CellML model as specified by a character URI into a CellML environment identified by a user number.
   SUBROUTINE CMISSCellMLModelImportNumberC(RegionUserNumber,CellMLUserNumber,URI,ModelIndex,Err)
   
@@ -12476,155 +12605,6 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLIntermediateFieldAddNumberC(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the intermediate field for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLIntermediateFieldAddNumberC",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(CELLML)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
-      IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_INTERMEDIATE_FIELD_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberC")
-    RETURN
-999 CALL ERRORS("CMISSCellMLIntermediateFieldAddNumberC",Err,ERROR)
-    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberC")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLIntermediateFieldAddNumberC
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLIntermediateFieldAddObjC(CellML,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add to the intermediate field for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLIntermediateFieldAddObjC",Err,ERROR,*999)
- 
-    CALL CELLML_INTERMEDIATE_FIELD_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLIntermediateFieldAddObjC")
-    RETURN
-999 CALL ERRORS("CMISSCellMLIntermediateFieldAddObjC",Err,ERROR)
-    CALL EXITS("CMISSCellMLIntermediateFieldAddObjC")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLIntermediateFieldAddObjC
- 
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLIntermediateFieldAddNumberVS(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the intermediate field for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLIntermediateFieldAddNumberVS",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(CELLML)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
-      IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_INTERMEDIATE_FIELD_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberVS")
-    RETURN
-999 CALL ERRORS("CMISSCellMLIntermediateFieldAddNumberVS",Err,ERROR)
-    CALL EXITS("CMISSCellMLIntermediateFieldAddNumberVS")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLIntermediateFieldAddNumberVS
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Adds a specific variable to a CellML intermediate field for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLIntermediateFieldAddObjVS(CellML,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add to the intermediate field for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the intermediate field for
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the model variable to add to the intermediate field for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLIntermediateFieldAddObjVS",Err,ERROR,*999)
- 
-    CALL CELLML_INTERMEDIATE_FIELD_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLIntermediateFieldAddObjVS")
-    RETURN
-999 CALL ERRORS("CMISSCellMLIntermediateFieldAddObjVS",Err,ERROR)
-    CALL EXITS("CMISSCellMLIntermediateFieldAddObjVS")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLIntermediateFieldAddObjVS
- 
-  !  
-  !================================================================================================================================
-  !  
- 
   !>Finishes the creation of CellML intermediate field for a CellML environment identified by a user number.
   SUBROUTINE CMISSCellMLIntermediateFieldCreateFinishNumber(RegionUserNumber,CellMLUserNumber,Err)
   
@@ -12841,294 +12821,6 @@ CONTAINS
     
   END SUBROUTINE CMISSCellMLIntermediateFieldGetObj
  
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Override a specific parameter variable from a model in a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLParameterAddNumberC(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the parameters for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the parameter variable to add.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLParameterAddNumberC",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(CELLML)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
-      IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_PARAMETER_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSCellMLParameterAddNumberC")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParameterAddNumberC",Err,ERROR)
-    CALL EXITS("CMISSCellMLParameterAddNumberC")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParameterAddNumberC
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Override a specific parameter variable from a model in a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLParameterAddObjC(CellML,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add the parameter for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the parameter variable to add.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLParameterAddObjC",Err,ERROR,*999)
- 
-    CALL CELLML_PARAMETER_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLParameterAddObjC")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParameterAddObjC",Err,ERROR)
-    CALL EXITS("CMISSCellMLParameterAddObjC")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParameterAddObjC
- 
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Override a specific parameter variable from a model in a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLParameterAddNumberVS(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to add to the parameters for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the parameter variable to add.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLParameterAddNumberVS",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(CELLML)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
-      IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_PARAMETER_ADD(CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSCellMLParameterAddNumberVS")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParameterAddNumberVS",Err,ERROR)
-    CALL EXITS("CMISSCellMLParameterAddNumberVS")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParameterAddNumberVS
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Override a specific parameter variable from a model in a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLParameterAddObjVS(CellML,CellMLModelUserNumber,URI,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to add the parameter for.
-    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to add to the parameters for
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the parameter variable to add.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLParameterAddObjVS",Err,ERROR,*999)
- 
-    CALL CELLML_PARAMETER_ADD(CellML%CELLML,CellMLModelUserNumber,URI,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLParameterAddObjVS")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParameterAddObjVS",Err,ERROR)
-    CALL EXITS("CMISSCellMLParameterAddObjVS")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParameterAddObjVS
- 
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Finishes the creation of CellML parameters for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLParametersCreateFinishNumber(RegionUserNumber,CellMLUserNumber,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to finish creating the parameters for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLParametersCreateFinishNumber",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(CELLML)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
-      IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_PARAMETERS_CREATE_FINISH(CELLML,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSCellMLParametersCreateFinishNumber")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParametersCreateFinishNumber",Err,ERROR)
-    CALL EXITS("CMISSCellMLParametersCreateFinishNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParametersCreateFinishNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Finish the creation of CellML parameters for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLParametersCreateFinishObj(CellML,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to finish the creation of the parameters for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLParametersCreateFinishObj",Err,ERROR,*999)
- 
-    CALL CELLML_PARAMETERS_CREATE_FINISH(CellML%CELLML,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLParametersCreateFinishObj")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParametersCreateFinishObj",Err,ERROR)
-    CALL EXITS("CMISSCellMLParametersCreateFinishObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParametersCreateFinishObj
-
-  !  
-  !================================================================================================================================
-  !  
-
-  !>Starts the creation of CellML parameters for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLParametersCreateStartNumber(RegionUserNumber,CellMLUserNumber,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
-    INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating the parameters for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("CMISSCellMLParametersCreateStartNumber",Err,ERROR,*999)
- 
-    NULLIFY(REGION)
-    NULLIFY(CELLML)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
-      IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_PARAMETERS_CREATE_START(CELLML,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
-          & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("CMISSCellMLParametersCreateStartNumber")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParametersCreateStartNumber",Err,ERROR)
-    CALL EXITS("CMISSCellMLParametersCreateStartNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParametersCreateStartNumber
-
-  !  
-  !================================================================================================================================
-  !  
- 
-  !>Start the creation of CellML parameters for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLParametersCreateStartObj(CellML,Err)
-  
-    !Argument variables
-    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to start the creation of parameters for.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSCellMLParametersCreateStartObj",Err,ERROR,*999)
- 
-    CALL CELLML_PARAMETERS_CREATE_START(CellML%CELLML,Err,ERROR,*999)
-
-    CALL EXITS("CMISSCellMLParametersCreateStartObj")
-    RETURN
-999 CALL ERRORS("CMISSCellMLParametersCreateStartObj",Err,ERROR)
-    CALL EXITS("CMISSCellMLParametersCreateStartObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSCellMLParametersCreateStartObj
-
   !  
   !================================================================================================================================
   !  

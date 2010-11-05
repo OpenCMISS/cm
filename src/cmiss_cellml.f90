@@ -124,16 +124,6 @@ MODULE CMISS_CELLML
     MODULE PROCEDURE CELLML_FIELD_COMPONENT_GET_VS
   END INTERFACE !CELLML_FIELD_COMPONENT_GET
 
-  INTERFACE CELLML_INTERMEDIATE_FIELD_ADD
-    MODULE PROCEDURE CELLML_INTERMEDIATE_FIELD_ADD_C
-    MODULE PROCEDURE CELLML_INTERMEDIATE_FIELD_ADD_VS
-  END INTERFACE !CELLML_INTERMEDIATE_FIELD_ADD
-
-  INTERFACE CELLML_PARAMETER_ADD
-    MODULE PROCEDURE CELLML_PARAMETER_ADD_C
-    MODULE PROCEDURE CELLML_PARAMETER_ADD_VS
-  END INTERFACE !CELLML_PARAMETER_ADD
-
   PUBLIC CELLML_UNKNOWN_FIELD,CELLML_MODELS_FIELD,CELLML_STATE_FIELD,CELLML_INTERMEDIATE_FIELD,CELLML_PARAMETERS_FIELD
 
   PUBLIC CELLML_CELLML_TO_FIELD_UPDATE
@@ -148,6 +138,8 @@ MODULE CMISS_CELLML
 
   PUBLIC CELLML_VARIABLE_SET_AS_KNOWN,CELLML_VARIABLE_SET_AS_WANTED
 
+  PUBLIC CELLML_FIELD_MAPS_CREATE_START,CELLML_FIELD_MAPS_CREATE_FINISH
+
   PUBLIC CELLML_CREATE_CELLML_TO_FIELD_MAP,CELLML_CREATE_FIELD_TO_CELLML_MAP
 
   PUBLIC CELLML_MODELS_FIELD_CREATE_START,CELLML_MODELS_FIELD_CREATE_FINISH,CELLML_MODELS_FIELD_GET
@@ -156,12 +148,13 @@ MODULE CMISS_CELLML
 
   PUBLIC CELLML_FIELD_COMPONENT_GET
 
-  PUBLIC CELLML_INTERMEDIATE_FIELD_ADD,CELLML_INTERMEDIATE_FIELD_CREATE_FINISH,CELLML_INTERMEDIATE_FIELD_CREATE_START, &
-    & CELLML_INTERMEDIATE_FIELD_GET
+  PUBLIC CELLML_INTERMEDIATE_FIELD_CREATE_FINISH,CELLML_INTERMEDIATE_FIELD_CREATE_START
 
-  PUBLIC CELLML_PARAMETER_ADD,CELLML_PARAMETERS_CREATE_FINISH,CELLML_PARAMETERS_CREATE_START
+  PUBLIC CELLML_INTERMEDIATE_FIELD_GET
 
-  PUBLIC CELLML_PARAMETERS_FIELD_CREATE_START,CELLML_PARAMETERS_FIELD_CREATE_FINISH,CELLML_PARAMETERS_FIELD_GET
+  PUBLIC CELLML_PARAMETERS_FIELD_CREATE_START,CELLML_PARAMETERS_FIELD_CREATE_FINISH
+
+  PUBLIC CELLML_PARAMETERS_FIELD_GET
 
   PUBLIC CELLML_GENERATE
 
@@ -300,9 +293,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: model_idx
     TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CELLML_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -314,21 +305,6 @@ CONTAINS
       ELSE
         !Check that we have set up the models and mappings
         IF(CELLML%NUMBER_OF_MODELS>0) THEN
-          !Check that each model has field mappings
-          DO model_idx=1,CELLML%NUMBER_OF_MODELS
-            CELLML_MODEL=>CELLML%MODELS(model_idx)%PTR
-            IF(ASSOCIATED(CELLML_MODEL)) THEN
-              IF(CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_TO==0.AND.CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_FROM==0) THEN
-                LOCAL_ERROR="Invalid setup. CellML model index "//TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))// &
-                  & " does not have any mappings to or from a field."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              LOCAL_ERROR="CellML model is not associated for model index "// &
-                & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF
-          ENDDO !model_idx
           CELLML%CELLML_FINISHED = .TRUE.
         ELSE
           CALL FLAG_ERROR("Invalid setup. No models have been imported into the CellML environment.",ERR,ERROR,*999)
@@ -474,6 +450,7 @@ CONTAINS
         ENDDO !model_idx
         DEALLOCATE(CELLML%MODELS)
       ENDIF
+      CALL CELLML_FIELD_MAPS_FINALISE(CELLML%FIELD_MAPS,ERR,ERROR,*999)
       CALL CELLML_MODELS_FIELD_FINALISE(CELLML%MODELS_FIELD,ERR,ERROR,*999)
       CALL CELLML_STATE_FIELD_FINALISE(CELLML%STATE_FIELD,ERR,ERROR,*999)
       CALL CELLML_INTERMEDIATE_FIELD_FINALISE(CELLML%INTERMEDIATE_FIELD,ERR,ERROR,*999)
@@ -523,9 +500,7 @@ CONTAINS
       NULLIFY(CELLML%ENVIRONMENTS)
       CELLML%CELLML_FINISHED=.FALSE.
       CELLML%NUMBER_OF_MODELS=0
-      NULLIFY(CELLML%SOURCE_GEOMETRIC_FIELD)
-      NULLIFY(CELLML%SOURCE_FIELD_DOMAIN)
-      CELLML%SOURCE_FIELD_INTERPOLATION_TYPE=0
+      NULLIFY(CELLML%FIELD_MAPS)
       NULLIFY(CELLML%MODELS_FIELD)
       NULLIFY(CELLML%STATE_FIELD)
       NULLIFY(CELLML%INTERMEDIATE_FIELD)
@@ -551,6 +526,214 @@ CONTAINS
   !=================================================================================================================================
   !
 
+  !>Finish creating the field maps for a CellML environment.
+  SUBROUTINE CELLML_FIELD_MAPS_CREATE_FINISH(CELLML,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment to finish creating the maps for. 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: model_idx
+    TYPE(CELLML_MODEL_MAPS_TYPE), POINTER :: CELLML_MODEL_MAPS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+     
+    CALL ENTERS("CELLML_FIELD_MAPS_CREATE_FINISH",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      IF(CELLML%CELLML_FINISHED) THEN
+        IF(ASSOCIATED(CELLML%FIELD_MAPS)) THEN
+          IF(CELLML%FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED) THEN
+            CALL FLAG_ERROR("The CellML environment field maps have already been finished.",ERR,ERROR,*999)
+          ELSE
+            !Check that each model has field mappings
+            DO model_idx=1,CELLML%NUMBER_OF_MODELS
+              CELLML_MODEL_MAPS=>CELLML%FIELD_MAPS%MODEL_MAPS(model_idx)%PTR
+              IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
+                IF(CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO==0.AND.CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM==0) THEN
+                  LOCAL_ERROR="Invalid setup. CellML model index "//TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))// &
+                    & " does not have any mappings to or from a field."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="CellML field maps model maps is not associated for model index "// &
+                  & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDDO !model_idx
+            CELLML%FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED=.TRUE.
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_FIELD_MAPS_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("CELLML_FIELD_MAPS_CREATE_FINISH",ERR,ERROR)
+    CALL EXITS("CELLML_FIELD_MAPS_CREATE_FINISH")
+    RETURN 1
+  END SUBROUTINE CELLML_FIELD_MAPS_CREATE_FINISH
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Start the creation of field maps for a CellML environment.
+  SUBROUTINE CELLML_FIELD_MAPS_CREATE_START(CELLML,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment to create the maps for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+ 
+    CALL ENTERS("CELLML_FIELD_MAPS_CREATE_START",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      IF(CELLML%CELLML_FINISHED) THEN
+        CALL CELLML_FIELD_MAPS_INITIALISE(CELLML,ERR,ERROR,*999)
+      ELSE
+        CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_FIELD_MAPS_CREATE_START")
+    RETURN
+999 CALL ERRORS("CELLML_FIELD_MAPS_CREATE_START",ERR,ERROR)
+    CALL EXITS("CELLML_FIELD_MAPS_CREATE_START")
+    RETURN 1
+  END SUBROUTINE CELLML_FIELD_MAPS_CREATE_START
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Finalise a CellML maps and deallocate all memory.
+  SUBROUTINE CELLML_FIELD_MAPS_FINALISE(CELLML_FIELD_MAPS,ERR,ERROR,*)
+    !Argument variables
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS !<A pointer to the CellML field maps to finalise.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
+    !Local variables
+    INTEGER(INTG) :: model_idx
+    
+    CALL ENTERS("CELLML_FIELD_MAPS_FINALISE",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML_FIELD_MAPS)) THEN
+      IF(ALLOCATED(CELLML_FIELD_MAPS%MODEL_MAPS)) THEN
+        DO model_idx=1,SIZE(CELLML_FIELD_MAPS%MODEL_MAPS,1)
+          CALL CELLML_MODEL_MAPS_FINALISE(CELLML_FIELD_MAPS%MODEL_MAPS(model_idx)%PTR,ERR,ERROR,*999)
+        ENDDO !model_idx
+        DEALLOCATE(CELLML_FIELD_MAPS%MODEL_MAPS)
+      ENDIF
+      DEALLOCATE(CELLML_FIELD_MAPS)
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_FIELD_MAPS_FINALISE")
+    RETURN
+999 CALL ERRORS("CELLML_FIELD_MAPS_FINALISE",ERR,ERROR)
+    CALL EXITS("CELLML_FIELD_MAPS_FINALISE")
+    RETURN 1
+  END SUBROUTINE CELLML_FIELD_MAPS_FINALISE
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Initialise a CellML field mpas.
+  SUBROUTINE CELLML_FIELD_MAPS_INITIALISE(CELLML,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to initialise the field maps for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
+    !Local variables
+    INTEGER(INTG) :: DUMMY_ERR,model_idx
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("CELLML_FIELD_MAPS_INITIALISE",ERR,ERROR,*998)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      IF(ASSOCIATED(CELLML%FIELD_MAPS)) THEN
+        CALL FLAG_ERROR("CellML environment field maps is already associated.",ERR,ERROR,*999)
+      ELSE
+        IF(CELLML%CELLML_FINISHED) THEN
+          ALLOCATE(CELLML%FIELD_MAPS,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CellML field maps.",ERR,ERROR,*999)
+          CELLML%FIELD_MAPS%CELLML=>CELLML
+          CELLML%FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED=.FALSE.
+          NULLIFY(CELLML%FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)
+          NULLIFY(CELLML%FIELD_MAPS%SOURCE_FIELD_DOMAIN)
+          CELLML%FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE=0
+          CELLML%FIELD_MAPS%NUMBER_OF_SOURCE_DOFS=0
+          CELLML%FIELD_MAPS%TOTAL_NUMBER_OF_SOURCE_DOFS=0
+          CELLML%FIELD_MAPS%GLOBAL_NUMBER_OF_SOURCE_DOFS=0
+          ALLOCATE(CELLML%FIELD_MAPS%MODEL_MAPS(CELLML%NUMBER_OF_MODELS),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CellML environment field maps model maps.",ERR,ERROR,*999)
+          DO model_idx=1,CELLML%NUMBER_OF_MODELS
+            NULLIFY(CELLML%FIELD_MAPS%MODEL_MAPS(model_idx)%PTR)
+            CALL CELLML_MODEL_MAPS_INITIALISE(CELLML%FIELD_MAPS%MODEL_MAPS(model_idx)%PTR,ERR,ERROR,*999)
+          ENDDO !model_idx
+        ELSE
+          CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML environement is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*998)
+
+#endif
+
+    CALL EXITS("CELLML_FIELD_MAPS_INITIALISE")
+    RETURN
+999 CALL CELLML_FIELD_MAPS_FINALISE(CELLML%FIELD_MAPS,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("CELLML_FIELD_MAPS_INITIALISE",ERR,ERROR)
+    CALL EXITS("CELLML_FIELD_MAPS_INITIALISE")
+    RETURN 1
+  END SUBROUTINE CELLML_FIELD_MAPS_INITIALISE
+
+  !
+  !=================================================================================================================================
+  !
+
   !>Finalise a CellML model and deallocate all memory.
   SUBROUTINE CELLML_MODEL_FINALISE(CELLML_MODEL,ERR,ERROR,*)
     !Argument variables
@@ -558,8 +741,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    INTEGER(INTG) :: map_idx
-    
+     
     CALL ENTERS("CELLML_MODEL_FINALISE",ERR,ERROR,*999)
 
 #ifdef USECELLML
@@ -567,18 +749,6 @@ CONTAINS
     IF(ASSOCIATED(CELLML_MODEL)) THEN
       IF(C_ASSOCIATED(CELLML_MODEL%PTR)) CALL DESTROY_CELLML_MODEL_DEFINITION(CELLML_MODEL%PTR)
       CELLML_MODEL%MODEL_ID=""
-      IF(ALLOCATED(CELLML_MODEL%FIELDS_MAPPED_TO)) THEN
-        DO map_idx=1,SIZE(CELLML_MODEL%FIELDS_MAPPED_TO,1)
-          CALL CELLML_MODEL_MAP_FIELD_FINALISE(CELLML_MODEL%FIELDS_MAPPED_TO(map_idx)%PTR,ERR,ERROR,*999)
-        ENDDO !map_idx
-        DEALLOCATE(CELLML_MODEL%FIELDS_MAPPED_TO)
-      ENDIF
-      IF(ALLOCATED(CELLML_MODEL%FIELDS_MAPPED_FROM)) THEN
-        DO map_idx=1,SIZE(CELLML_MODEL%FIELDS_MAPPED_FROM,1)
-          CALL CELLML_MODEL_MAP_FIELD_FINALISE(CELLML_MODEL%FIELDS_MAPPED_FROM(map_idx)%PTR,ERR,ERROR,*999)
-        ENDDO !map_idx
-        DEALLOCATE(CELLML_MODEL%FIELDS_MAPPED_FROM)
-      ENDIF
       DEALLOCATE(CELLML_MODEL)
     ENDIF
 
@@ -626,9 +796,7 @@ CONTAINS
       CELLML_MODEL%NUMBER_OF_STATE=0
       CELLML_MODEL%NUMBER_OF_INTERMEDIATE=0
       CELLML_MODEL%NUMBER_OF_PARAMETERS=0
-      CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_TO=0
-      CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_FROM=0
-    ENDIF
+   ENDIF
 
 #else
 
@@ -648,16 +816,15 @@ CONTAINS
   !=================================================================================================================================
   !
 
-  !>Finalise a CellML model map field and deallocate all memory.
-  SUBROUTINE CELLML_MODEL_MAP_FIELD_FINALISE(CELLML_MODEL_MAP,ERR,ERROR,*)
+  !>Finalise a CellML model map and deallocate all memory.
+  SUBROUTINE CELLML_MODEL_MAP_FINALISE(CELLML_MODEL_MAP,ERR,ERROR,*)
     !Argument variables
-    TYPE(CELLML_MODEL_MAP_FIELD_TYPE), POINTER :: CELLML_MODEL_MAP !<A pointer to the CellML model map to finalise.
+    TYPE(CELLML_MODEL_MAP_TYPE), POINTER :: CELLML_MODEL_MAP !<A pointer to the CellML model map to finalise.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    INTEGER(INTG) :: model_idx
     
-    CALL ENTERS("CELLML_MODEL_MAP_FIELD_FINALISE",ERR,ERROR,*999)
+    CALL ENTERS("CELLML_MODEL_MAP_FINALISE",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
@@ -672,29 +839,29 @@ CONTAINS
 
 #endif
 
-    CALL EXITS("CELLML_MODEL_MAP_FIELD_FINALISE")
+    CALL EXITS("CELLML_MODEL_MAP_FINALISE")
     RETURN
-999 CALL ERRORS("CELLML_MODEL_MAP_FIELD_FINALISE",ERR,ERROR)
-    CALL EXITS("CELLML_MODEL_MAP_FIELD_FINALISE")
+999 CALL ERRORS("CELLML_MODEL_MAP_FINALISE",ERR,ERROR)
+    CALL EXITS("CELLML_MODEL_MAP_FINALISE")
     RETURN 1
-  END SUBROUTINE CELLML_MODEL_MAP_FIELD_FINALISE
+  END SUBROUTINE CELLML_MODEL_MAP_FINALISE
 
   !
   !=================================================================================================================================
   !
 
-  !>Initialise a CellML model map field.
-  SUBROUTINE CELLML_MODEL_MAP_FIELD_INITIALISE(CELLML_MODEL_MAP,ERR,ERROR,*)
+  !>Initialise a CellML model map.
+  SUBROUTINE CELLML_MODEL_MAP_INITIALISE(CELLML_MODEL_MAP,ERR,ERROR,*)
     
     !Argument variables
-    TYPE(CELLML_MODEL_MAP_FIELD_TYPE), POINTER :: CELLML_MODEL_MAP !<On return, a pointer to the CellML initialised model map field. Must not be associated on entry.
+    TYPE(CELLML_MODEL_MAP_TYPE), POINTER :: CELLML_MODEL_MAP !<On return, a pointer to the CellML initialised model map field. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
     
-    CALL ENTERS("CELLML_MODEL_MAP_FIELD_INITIALISE",ERR,ERROR,*998)
+    CALL ENTERS("CELLML_MODEL_MAP_INITIALISE",ERR,ERROR,*998)
 
 #ifdef USECELLML
 
@@ -720,13 +887,101 @@ CONTAINS
 
 #endif
 
-    CALL EXITS("CELLML_MODEL_MAP_FIELD_INITIALISE")
+    CALL EXITS("CELLML_MODEL_MAP_INITIALISE")
     RETURN
-999 CALL CELLML_MODEL_MAP_FIELD_FINALISE(CELLML_MODEL_MAP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CELLML_MODEL_MAP_FIELD_INITIALISE",ERR,ERROR)
-    CALL EXITS("CELLML_MODEL_MAP_FIELD_INITIALISE")
+999 CALL CELLML_MODEL_MAP_FINALISE(CELLML_MODEL_MAP,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("CELLML_MODEL_MAP_INITIALISE",ERR,ERROR)
+    CALL EXITS("CELLML_MODEL_MAP_INITIALISE")
     RETURN 1
-  END SUBROUTINE CELLML_MODEL_MAP_FIELD_INITIALISE
+  END SUBROUTINE CELLML_MODEL_MAP_INITIALISE
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Finalise a CellML model maps and deallocate all memory.
+  SUBROUTINE CELLML_MODEL_MAPS_FINALISE(CELLML_MODEL_MAPS,ERR,ERROR,*)
+    !Argument variables
+    TYPE(CELLML_MODEL_MAPS_TYPE), POINTER :: CELLML_MODEL_MAPS !<A pointer to the CellML model maps to finalise.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
+    !Local variables
+    INTEGER(INTG) :: map_idx
+    
+    CALL ENTERS("CELLML_MODEL_MAPS_FINALISE",ERR,ERROR,*999)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
+      IF(ALLOCATED(CELLML_MODEL_MAPS%FIELDS_MAPPED_TO)) THEN
+        DO map_idx=1,SIZE(CELLML_MODEL_MAPS%FIELDS_MAPPED_TO,1)
+          CALL CELLML_MODEL_MAP_FINALISE(CELLML_MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR,ERR,ERROR,*999)
+        ENDDO !map_idx
+        DEALLOCATE(CELLML_MODEL_MAPS%FIELDS_MAPPED_TO)
+      ENDIF
+      IF(ALLOCATED(CELLML_MODEL_MAPS%FIELDS_MAPPED_FROM)) THEN
+        DO map_idx=1,SIZE(CELLML_MODEL_MAPS%FIELDS_MAPPED_FROM,1)
+          CALL CELLML_MODEL_MAP_FINALISE(CELLML_MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR,ERR,ERROR,*999)
+        ENDDO !map_idx
+        DEALLOCATE(CELLML_MODEL_MAPS%FIELDS_MAPPED_FROM)
+      ENDIF
+      DEALLOCATE(CELLML_MODEL_MAPS)
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+
+#endif
+
+    CALL EXITS("CELLML_MODEL_MAPS_FINALISE")
+    RETURN
+999 CALL ERRORS("CELLML_MODEL_MAPS_FINALISE",ERR,ERROR)
+    CALL EXITS("CELLML_MODEL_MAPS_FINALISE")
+    RETURN 1
+  END SUBROUTINE CELLML_MODEL_MAPS_FINALISE
+
+  !
+  !=================================================================================================================================
+  !
+
+  !>Initialise a CellML model maps.
+  SUBROUTINE CELLML_MODEL_MAPS_INITIALISE(CELLML_MODEL_MAPS,ERR,ERROR,*)
+    
+    !Argument variables
+    TYPE(CELLML_MODEL_MAPS_TYPE), POINTER :: CELLML_MODEL_MAPS !<On return, a pointer to the CellML initialised model maps. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
+    !Local variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("CELLML_MODEL_MAPS_INITIALISE",ERR,ERROR,*998)
+
+#ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
+      CALL FLAG_ERROR("CellML model maps is already associated.",ERR,ERROR,*998)
+    ELSE
+      ALLOCATE(CELLML_MODEL_MAPS,STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CellML model maps.",ERR,ERROR,*999)
+      CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO=0
+      CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM=0
+    ENDIF
+
+#else
+
+    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*998)
+
+#endif
+
+    CALL EXITS("CELLML_MODEL_MAPS_INITIALISE")
+    RETURN
+999 CALL CELLML_MODEL_MAPS_FINALISE(CELLML_MODEL_MAPS,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("CELLML_MODEL_MAPS_INITIALISE",ERR,ERROR)
+    CALL EXITS("CELLML_MODEL_MAPS_INITIALISE")
+    RETURN 1
+  END SUBROUTINE CELLML_MODEL_MAPS_INITIALISE
 
   !
   !=================================================================================================================================
@@ -748,7 +1003,6 @@ CONTAINS
     !TYPE(C_PTR) :: CELLML_MODEL
     CHARACTER(256) :: C_URI
     INTEGER(INTG) :: C_URI_L
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CELLML_MODEL_IMPORT_C",ERR,ERROR,*999)
 
@@ -864,7 +1118,7 @@ CONTAINS
             !All input arguments are ok.
             C_NAME_L = LEN_TRIM(VARIABLE_ID)
             WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
-            CALL CELLML_MODEL_DEFINITION_SET_VARIABLE_AS_KNOWN(CELLML_MODEL%PTR,C_NAME)
+            !CALL CELLML_MODEL_DEFINITION_SET_VARIABLE_AS_KNOWN(CELLML_MODEL%PTR,C_NAME)
           ELSE
             CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -959,7 +1213,7 @@ CONTAINS
             !All input arguments are ok.
             C_NAME_L = LEN_TRIM(VARIABLE_ID)
             WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
-            CALL CELLML_MODEL_DEFINITION_SET_VARIABLE_AS_WANTED(CELLML_MODEL%PTR,C_NAME)
+            !CALL CELLML_MODEL_DEFINITION_SET_VARIABLE_AS_WANTED(CELLML_MODEL%PTR,C_NAME)
           ELSE
             CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
           ENDIF
@@ -1042,9 +1296,11 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
     INTEGER(INTG) :: CELLML_FIELD_TYPE,CELLML_VARIABLE_NUMBER,map_idx
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS
     TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
-    TYPE(CELLML_MODEL_MAP_FIELD_TYPE), POINTER :: NEW_CELLML_MODEL_MAP
-    TYPE(CELLML_MODEL_MAP_FIELD_PTR_TYPE), ALLOCATABLE :: NEW_FIELDS_MAPPED_FROM(:)
+    TYPE(CELLML_MODEL_MAP_TYPE), POINTER :: NEW_CELLML_MODEL_MAP
+    TYPE(CELLML_MODEL_MAP_PTR_TYPE), ALLOCATABLE :: NEW_FIELDS_MAPPED_FROM(:)
+    TYPE(CELLML_MODEL_MAPS_TYPE), POINTER :: CELLML_MODEL_MAPS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1057,108 +1313,133 @@ CONTAINS
 
     IF(ASSOCIATED(CELLML)) THEN
       IF(CELLML%CELLML_FINISHED) THEN
-        CALL FLAG_ERROR("CellML environment has already been finished.",ERR,ERROR,*999)
-      ELSE
-        NULLIFY(FIELD_VARIABLE)
-        CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
-        NULLIFY(PARAMETER_SET)
-        CALL FIELD_PARAMETER_SET_GET(FIELD,VARIABLE_TYPE,FIELD_PARAMETER_SET,PARAMETER_SET,ERR,ERROR,*999)
-        IF(COMPONENT_NUMBER>0.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
-          IF(MODEL_INDEX>0.AND.MODEL_INDEX<=CELLML%NUMBER_OF_MODELS) THEN
-            CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
-            IF(ASSOCIATED(CELLML_MODEL)) THEN
-              !All input arguments are ok.
-              !TEMP!!!
-              CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
-              C_NAME_L = LEN_TRIM(VARIABLE_ID)
-              WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
-              !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
-              !Now check that the mapped field is consistent with the other mapped fields for the model.
-              IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
-                IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,FIELD%GEOMETRIC_FIELD)) THEN
-                  LOCAL_ERROR="The geometric field for field user number "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " does not match the geometric field for other field variable components mapped in the CellML environment."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-                IF(.NOT.ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN,FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN)) THEN
-                  LOCAL_ERROR="The domain for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                    & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                    & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " does not match the domain for other field variable components mapped in the CellML environment."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-                IF(CELLML%SOURCE_FIELD_INTERPOLATION_TYPE/=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE) THEN
-                  LOCAL_ERROR="The interpolation type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-                    & " for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                    & " of variable type "//TRIM(NUMBER_TO_vSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                    & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " does not match the interpolation type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(CELLML%SOURCE_FIELD_INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-                    & " used in other field variable components mapped in the CellML environment."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CELLML_FIELD_MAPS=>CELLML%FIELD_MAPS
+        IF(ASSOCIATED(CELLML_FIELD_MAPS)) THEN
+          IF(CELLML_FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED) THEN
+            CALL FLAG_ERROR("CellML field maps have already been finished.",ERR,ERROR,*999)
+          ELSE
+            NULLIFY(FIELD_VARIABLE)
+            CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+            NULLIFY(PARAMETER_SET)
+            CALL FIELD_PARAMETER_SET_GET(FIELD,VARIABLE_TYPE,FIELD_PARAMETER_SET,PARAMETER_SET,ERR,ERROR,*999)
+            IF(COMPONENT_NUMBER>0.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+              IF(MODEL_INDEX>0.AND.MODEL_INDEX<=CELLML%NUMBER_OF_MODELS) THEN
+                CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
+                IF(ASSOCIATED(CELLML_MODEL)) THEN
+                  CELLML_MODEL_MAPS=>CELLML_FIELD_MAPS%MODEL_MAPS(MODEL_INDEX)%PTR
+                  IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
+                    !All input arguments are ok.
+                    !TEMP!!!
+                    CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
+                    C_NAME_L = LEN_TRIM(VARIABLE_ID)
+                    WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
+                    !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
+                    !Now check that the mapped field is consistent with the other mapped fields for the model.
+                    IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
+                      IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD,FIELD%GEOMETRIC_FIELD)) THEN
+                        LOCAL_ERROR="The geometric field for field user number "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the geometric field for other field variable components mapped" // &
+                          & " in the CellML environment."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN, &
+                        & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN)) THEN
+                        LOCAL_ERROR="The domain for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                          & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the domain for other field variable components mapped in the CellML environment."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      IF(CELLML_FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE/= &
+                        & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE) THEN
+                        LOCAL_ERROR="The interpolation type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE, &
+                          & "*",ERR,ERROR))//" for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                          & " of variable type "//TRIM(NUMBER_TO_vSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the interpolation type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(CELLML_FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                          & " used in other field variable components mapped in the CellML environment."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
+                      CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      CELLML_FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
+                        & INTERPOLATION_TYPE
+                    ENDIF
+                    !Everything is OK so create the model map field.
+                    NULLIFY(NEW_CELLML_MODEL_MAP)
+                    CALL CELLML_MODEL_MAP_INITIALISE(NEW_CELLML_MODEL_MAP,ERR,ERROR,*999)
+                    NEW_CELLML_MODEL_MAP%CELLML_MAP_TYPE=CELLML_MAP_FROM_FIELD_TYPE
+                    NEW_CELLML_MODEL_MAP%FIELD_VARIABLE=>FIELD_VARIABLE
+                    NEW_CELLML_MODEL_MAP%VARIABLE_TYPE=VARIABLE_TYPE
+                    NEW_CELLML_MODEL_MAP%COMPONENT_NUMBER=COMPONENT_NUMBER
+                    NEW_CELLML_MODEL_MAP%FIELD_PARAMETER_SET=FIELD_PARAMETER_SET
+                    NEW_CELLML_MODEL_MAP%VARIABLE_ID=VARIABLE_ID
+                    NEW_CELLML_MODEL_MAP%CELLML_FIELD_TYPE=CELLML_FIELD_TYPE
+                    NEW_CELLML_MODEL_MAP%CELLML_VARIABLE_NUMBER=CELLML_VARIABLE_NUMBER
+                    NEW_CELLML_MODEL_MAP%CELLML_PARAMETER_SET=CELLML_PARAMETER_SET
+                    !Put this model map field into the list of to field maps
+                    ALLOCATE(NEW_FIELDS_MAPPED_FROM(CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM+1),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields mapped from.",ERR,ERROR,*999)
+                    DO map_idx=1,CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM
+                      NEW_FIELDS_MAPPED_FROM(map_idx)%PTR=>CELLML_MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR
+                    ENDDO !map_idx
+                    NEW_FIELDS_MAPPED_FROM(CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM+1)%PTR=>NEW_CELLML_MODEL_MAP
+                    CALL MOVE_ALLOC(NEW_FIELDS_MAPPED_FROM,CELLML_MODEL_MAPS%FIELDS_MAPPED_FROM)
+                    CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM=CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM+1          
+                    
+                    IF(DIAGNOSTICS1) THEN
+                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"CellML model variable -> field map:",ERR,ERROR,*999)
+                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," CellML model :",ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML User number      = ",CELLML%USER_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Model index             = ",MODEL_INDEX,ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable ID             = ",VARIABLE_ID,ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML field type       = ",CELLML_FIELD_TYPE, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML variable number  = ",CELLML_VARIABLE_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML parameter set    = ",CELLML_PARAMETER_SET, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," Field :",ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   User number             = ",FIELD%USER_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable type           = ",VARIABLE_TYPE, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Component number        = ",COMPONENT_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Parameter set           = ",FIELD_PARAMETER_SET, &
+                        & ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("CellML field maps model maps is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CELLML%SOURCE_GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
-                CELLML%SOURCE_FIELD_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
-                CELLML%SOURCE_FIELD_INTERPOLATION_TYPE=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE
-              ENDIF
-              !Everything is OK so create the model map field.
-              NULLIFY(NEW_CELLML_MODEL_MAP)
-              CALL CELLML_MODEL_MAP_FIELD_INITIALISE(NEW_CELLML_MODEL_MAP,ERR,ERROR,*999)
-              NEW_CELLML_MODEL_MAP%CELLML_MAP_TYPE=CELLML_MAP_FROM_FIELD_TYPE
-              NEW_CELLML_MODEL_MAP%FIELD_VARIABLE=>FIELD_VARIABLE
-              NEW_CELLML_MODEL_MAP%VARIABLE_TYPE=VARIABLE_TYPE
-              NEW_CELLML_MODEL_MAP%COMPONENT_NUMBER=COMPONENT_NUMBER
-              NEW_CELLML_MODEL_MAP%FIELD_PARAMETER_SET=FIELD_PARAMETER_SET
-              NEW_CELLML_MODEL_MAP%VARIABLE_ID=VARIABLE_ID
-              NEW_CELLML_MODEL_MAP%CELLML_FIELD_TYPE=CELLML_FIELD_TYPE
-              NEW_CELLML_MODEL_MAP%CELLML_VARIABLE_NUMBER=CELLML_VARIABLE_NUMBER
-              NEW_CELLML_MODEL_MAP%CELLML_PARAMETER_SET=CELLML_PARAMETER_SET
-              !Put this model map field into the list of to field maps
-              ALLOCATE(NEW_FIELDS_MAPPED_FROM(CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_FROM+1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields mapped from.",ERR,ERROR,*999)
-              DO map_idx=1,CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_FROM
-                NEW_FIELDS_MAPPED_FROM(map_idx)%PTR=>CELLML_MODEL%FIELDS_MAPPED_FROM(map_idx)%PTR
-              ENDDO !map_idx
-              NEW_FIELDS_MAPPED_FROM(CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_FROM+1)%PTR=>NEW_CELLML_MODEL_MAP
-              CALL MOVE_ALLOC(NEW_FIELDS_MAPPED_FROM,CELLML_MODEL%FIELDS_MAPPED_FROM)
-              CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_FROM=CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_FROM+1          
-              
-              IF(DIAGNOSTICS1) THEN
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"CellML model variable -> field map:",ERR,ERROR,*999)
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," CellML model :",ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML User number      = ",CELLML%USER_NUMBER,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Model index             = ",MODEL_INDEX,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable ID             = ",VARIABLE_ID,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML field type       = ",CELLML_FIELD_TYPE,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML variable number  = ",CELLML_VARIABLE_NUMBER, &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML parameter set    = ",CELLML_PARAMETER_SET,ERR,ERROR,*999)
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," Field :",ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   User number             = ",FIELD%USER_NUMBER,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable type           = ",VARIABLE_TYPE,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Component number        = ",COMPONENT_NUMBER,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Parameter set           = ",FIELD_PARAMETER_SET,ERR,ERROR,*999)
+                LOCAL_ERROR="The specified model index of "//TRIM(NUMBER_TO_VSTRING(MODEL_INDEX,"*",ERR,ERROR))// &
+                  & " is invalid. The modex index should be >= 1 and <= "// &
+                  & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
+              LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
+                & " components."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
-          ELSE
-            LOCAL_ERROR="The specified model index of "//TRIM(NUMBER_TO_VSTRING(MODEL_INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The modex index should be >= 1 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF              
+          ENDIF
         ELSE
-          LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-            & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-            & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-            & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
-            & " components."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
@@ -1239,9 +1520,11 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
     INTEGER(INTG) :: CELLML_FIELD_TYPE,CELLML_VARIABLE_NUMBER,map_idx
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS
     TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
-    TYPE(CELLML_MODEL_MAP_FIELD_TYPE), POINTER :: NEW_CELLML_MODEL_MAP
-    TYPE(CELLML_MODEL_MAP_FIELD_PTR_TYPE), ALLOCATABLE :: NEW_FIELDS_MAPPED_TO(:)
+    TYPE(CELLML_MODEL_MAP_TYPE), POINTER :: NEW_CELLML_MODEL_MAP
+    TYPE(CELLML_MODEL_MAP_PTR_TYPE), ALLOCATABLE :: NEW_FIELDS_MAPPED_TO(:)
+    TYPE(CELLML_MODEL_MAPS_TYPE), POINTER :: CELLML_MODEL_MAPS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1254,108 +1537,132 @@ CONTAINS
 
     IF(ASSOCIATED(CELLML)) THEN
       IF(CELLML%CELLML_FINISHED) THEN
-        CALL FLAG_ERROR("CellML environment has already been finished.",ERR,ERROR,*999)
-      ELSE
-        NULLIFY(FIELD_VARIABLE)
-        CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
-        NULLIFY(PARAMETER_SET)
-        CALL FIELD_PARAMETER_SET_GET(FIELD,VARIABLE_TYPE,FIELD_PARAMETER_SET,PARAMETER_SET,ERR,ERROR,*999)
-        IF(COMPONENT_NUMBER>0.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
-          IF(MODEL_INDEX>0.AND.MODEL_INDEX<=CELLML%NUMBER_OF_MODELS) THEN
-            CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
-            IF(ASSOCIATED(CELLML_MODEL)) THEN
-              !All input arguments are ok.
-              !TEMP!!!
-              CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
-              C_NAME_L = LEN_TRIM(VARIABLE_ID)
-              WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
-              !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
-              !Now check that the mapped field is consistent with the other mapped fields for the model.
-              IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
-                IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,FIELD%GEOMETRIC_FIELD)) THEN
-                  LOCAL_ERROR="The geometric field for field user number "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " does not match the geometric field for other field variable components mapped in the CellML environment."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-                IF(.NOT.ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN,FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN)) THEN
-                  LOCAL_ERROR="The domain for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                    & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                    & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " does not match the domain for other field variable components mapped in the CellML environment."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-                IF(CELLML%SOURCE_FIELD_INTERPOLATION_TYPE/=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE) THEN
-                  LOCAL_ERROR="The interpolation type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-                    & " for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-                    & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                    & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
-                    & " does not match the interpolation type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(CELLML%SOURCE_FIELD_INTERPOLATION_TYPE,"*",ERR,ERROR))// &
-                    & " used in other field variable components mapped in the CellML environment."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CELLML_FIELD_MAPS=>CELLML%FIELD_MAPS
+        IF(ASSOCIATED(CELLML_FIELD_MAPS)) THEN
+          IF(CELLML_FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED) THEN
+            CALL FLAG_ERROR("CellML field maps have already been finished.",ERR,ERROR,*999)
+          ELSE
+            NULLIFY(FIELD_VARIABLE)
+            CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+            NULLIFY(PARAMETER_SET)
+            CALL FIELD_PARAMETER_SET_GET(FIELD,VARIABLE_TYPE,FIELD_PARAMETER_SET,PARAMETER_SET,ERR,ERROR,*999)
+            IF(COMPONENT_NUMBER>0.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+              IF(MODEL_INDEX>0.AND.MODEL_INDEX<=CELLML%NUMBER_OF_MODELS) THEN
+                CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
+                IF(ASSOCIATED(CELLML_MODEL)) THEN
+                  CELLML_MODEL_MAPS=>CELLML_FIELD_MAPS%MODEL_MAPS(MODEL_INDEX)%PTR
+                  IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
+                    !All input arguments are ok.
+                    !TEMP!!!
+                    CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
+                    C_NAME_L = LEN_TRIM(VARIABLE_ID)
+                    WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
+                    !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
+                    !Now check that the mapped field is consistent with the other mapped fields for the model.
+                    IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
+                      IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD,FIELD%GEOMETRIC_FIELD)) THEN
+                        LOCAL_ERROR="The geometric field for field user number "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the geometric field for other field variable components mapped in the" // &
+                          & " CellML environment."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN, &
+                        & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN)) THEN
+                        LOCAL_ERROR="The domain for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                          & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the domain for other field variable components mapped in the CellML environment."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      IF(CELLML_FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE/= &
+                        & FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE) THEN
+                        LOCAL_ERROR="The interpolation type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE, &
+                          & "*",ERR,ERROR))//" for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                          & " of variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                          & " of field user number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the interpolation type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(CELLML_FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                          & " used in other field variable components mapped in the CellML environment."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      CELLML_FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
+                        & INTERPOLATION_TYPE
+                    ENDIF
+                    !Everything is OK so create the model map field.
+                    NULLIFY(NEW_CELLML_MODEL_MAP)
+                    CALL CELLML_MODEL_MAP_INITIALISE(NEW_CELLML_MODEL_MAP,ERR,ERROR,*999)
+                    NEW_CELLML_MODEL_MAP%CELLML_MAP_TYPE=CELLML_MAP_TO_FIELD_TYPE
+                    NEW_CELLML_MODEL_MAP%FIELD_VARIABLE=>FIELD_VARIABLE
+                    NEW_CELLML_MODEL_MAP%VARIABLE_TYPE=VARIABLE_TYPE
+                    NEW_CELLML_MODEL_MAP%COMPONENT_NUMBER=COMPONENT_NUMBER
+                    NEW_CELLML_MODEL_MAP%FIELD_PARAMETER_SET=FIELD_PARAMETER_SET
+                    NEW_CELLML_MODEL_MAP%VARIABLE_ID=VARIABLE_ID
+                    NEW_CELLML_MODEL_MAP%CELLML_FIELD_TYPE=CELLML_FIELD_TYPE
+                    NEW_CELLML_MODEL_MAP%CELLML_VARIABLE_NUMBER=CELLML_VARIABLE_NUMBER
+                    NEW_CELLML_MODEL_MAP%CELLML_PARAMETER_SET=CELLML_PARAMETER_SET
+                    !Put this model map field into the list of to field maps
+                    ALLOCATE(NEW_FIELDS_MAPPED_TO(CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO+1),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields mapped to.",ERR,ERROR,*999)
+                    DO map_idx=1,CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO
+                      NEW_FIELDS_MAPPED_TO(map_idx)%PTR=>CELLML_MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR
+                    ENDDO !map_idx
+                    NEW_FIELDS_MAPPED_TO(CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO+1)%PTR=>NEW_CELLML_MODEL_MAP
+                    CALL MOVE_ALLOC(NEW_FIELDS_MAPPED_TO,CELLML_MODEL_MAPS%FIELDS_MAPPED_TO)
+                    CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO=CELLML_MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO+1
+                    
+                    IF(DIAGNOSTICS1) THEN
+                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"CellML model field -> CellML map:",ERR,ERROR,*999)
+                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," Field :",ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   User number             = ",FIELD%USER_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable type           = ",VARIABLE_TYPE,ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Component number        = ",COMPONENT_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Parameter set           = ",FIELD_PARAMETER_SET, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," CellML model :",ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML User number      = ",CELLML%USER_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Model index             = ",MODEL_INDEX,ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable ID             = ",VARIABLE_ID,ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML field type       = ",CELLML_FIELD_TYPE, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML variable number  = ",CELLML_VARIABLE_NUMBER, &
+                        & ERR,ERROR,*999)
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML parameter set    = ",CELLML_PARAMETER_SET, &
+                        & ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("CellML field maps model maps is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CELLML%SOURCE_FIELD_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
-                CELLML%SOURCE_FIELD_INTERPOLATION_TYPE=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE
+                LOCAL_ERROR="The specified model index of "//TRIM(NUMBER_TO_VSTRING(MODEL_INDEX,"*",ERR,ERROR))// &
+                  & " is invalid. The modex index should be >= 1 and <= "// &
+                  & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
-              !Everything is OK so create the model map field.
-              NULLIFY(NEW_CELLML_MODEL_MAP)
-              CALL CELLML_MODEL_MAP_FIELD_INITIALISE(NEW_CELLML_MODEL_MAP,ERR,ERROR,*999)
-              NEW_CELLML_MODEL_MAP%CELLML_MAP_TYPE=CELLML_MAP_TO_FIELD_TYPE
-              NEW_CELLML_MODEL_MAP%FIELD_VARIABLE=>FIELD_VARIABLE
-              NEW_CELLML_MODEL_MAP%VARIABLE_TYPE=VARIABLE_TYPE
-              NEW_CELLML_MODEL_MAP%COMPONENT_NUMBER=COMPONENT_NUMBER
-              NEW_CELLML_MODEL_MAP%FIELD_PARAMETER_SET=FIELD_PARAMETER_SET
-              NEW_CELLML_MODEL_MAP%VARIABLE_ID=VARIABLE_ID
-              NEW_CELLML_MODEL_MAP%CELLML_FIELD_TYPE=CELLML_FIELD_TYPE
-              NEW_CELLML_MODEL_MAP%CELLML_VARIABLE_NUMBER=CELLML_VARIABLE_NUMBER
-              NEW_CELLML_MODEL_MAP%CELLML_PARAMETER_SET=CELLML_PARAMETER_SET
-              !Put this model map field into the list of to field maps
-              ALLOCATE(NEW_FIELDS_MAPPED_TO(CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_TO+1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new fields mapped to.",ERR,ERROR,*999)
-              DO map_idx=1,CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_TO
-                NEW_FIELDS_MAPPED_TO(map_idx)%PTR=>CELLML_MODEL%FIELDS_MAPPED_TO(map_idx)%PTR
-              ENDDO !map_idx
-              NEW_FIELDS_MAPPED_TO(CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_TO+1)%PTR=>NEW_CELLML_MODEL_MAP
-              CALL MOVE_ALLOC(NEW_FIELDS_MAPPED_TO,CELLML_MODEL%FIELDS_MAPPED_TO)
-              CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_TO=CELLML_MODEL%NUMBER_OF_FIELDS_MAPPED_TO+1
               
-              IF(DIAGNOSTICS1) THEN
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"CellML model field -> CellML map:",ERR,ERROR,*999)
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," Field :",ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   User number             = ",FIELD%USER_NUMBER,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable type           = ",VARIABLE_TYPE,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Component number        = ",COMPONENT_NUMBER,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Parameter set           = ",FIELD_PARAMETER_SET,ERR,ERROR,*999)
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," CellML model :",ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML User number      = ",CELLML%USER_NUMBER,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Model index             = ",MODEL_INDEX,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   Variable ID             = ",VARIABLE_ID,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML field type       = ",CELLML_FIELD_TYPE,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML variable number  = ",CELLML_VARIABLE_NUMBER, &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"   CellML parameter set    = ",CELLML_PARAMETER_SET,ERR,ERROR,*999)
-              ENDIF
             ELSE
-              CALL FLAG_ERROR("CellML model is not associated.",ERR,ERROR,*999)
+              LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
+                & " components."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
-          ELSE
-            LOCAL_ERROR="The specified model index of "//TRIM(NUMBER_TO_VSTRING(MODEL_INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The modex index should be >= 1 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF              
-          
+          ENDIF
         ELSE
-          LOCAL_ERROR="Component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
-            & " is invalid for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-            & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-            & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))// &
-            & " components."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
@@ -1428,117 +1735,127 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER(INTG) :: DUMMY_ERR,MESH_COMPONENT
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(REGION_TYPE), POINTER :: REGION,MODELS_FIELD_REGION
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("CELLML_MODELS_FIELD_CREATE_START",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
-        CALL FLAG_ERROR("The CellML environment models field is already associated.",ERR,ERROR,*999)
-      ELSE
-        REGION=>CELLML%REGION
-        IF(ASSOCIATED(REGION)) THEN
-          IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
-            IF(ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN)) THEN
-              IF(ASSOCIATED(MODELS_FIELD)) THEN
-                !Check the field has been finished
-                IF(MODELS_FIELD%FIELD_FINISHED) THEN
-                  !Check the user numbers match
-                  IF(MODEL_FIELD_USER_NUMBER/=MODELS_FIELD%USER_NUMBER) THEN
-                    LOCAL_ERROR="The specified models field user number of "// &
-                      & TRIM(NUMBER_TO_VSTRING(MODEL_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                      & " does not match the user number of the specified models field of "// &
-                      & TRIM(NUMBER_TO_VSTRING(MODELS_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                  MODELS_FIELD_REGION=>MODELS_FIELD%REGION
-                  IF(ASSOCIATED(MODELS_FIELD_REGION)) THEN
-                    !Check the field is defined on the same region as the CellML region
-                    IF(MODELS_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
-                      LOCAL_ERROR="Invalid region setup. The specified models field has been created on region number "// &
-                        & TRIM(NUMBER_TO_VSTRING(MODELS_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                        & " and the specified CellML environment has been created on region number "// &
+      CELLML_FIELD_MAPS=>CELLML%FIELD_MAPS
+      IF(ASSOCIATED(CELLML_FIELD_MAPS)) THEN
+        IF(CELLML_FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED) THEN
+          IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+            CALL FLAG_ERROR("The CellML environment models field is already associated.",ERR,ERROR,*999)
+          ELSE
+            REGION=>CELLML%REGION
+            IF(ASSOCIATED(REGION)) THEN
+              IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
+                IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN)) THEN
+                  IF(ASSOCIATED(MODELS_FIELD)) THEN
+                    !Check the field has been finished
+                    IF(MODELS_FIELD%FIELD_FINISHED) THEN
+                      !Check the user numbers match
+                      IF(MODEL_FIELD_USER_NUMBER/=MODELS_FIELD%USER_NUMBER) THEN
+                        LOCAL_ERROR="The specified models field user number of "// &
+                          & TRIM(NUMBER_TO_VSTRING(MODEL_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the user number of the specified models field of "// &
+                          & TRIM(NUMBER_TO_VSTRING(MODELS_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      MODELS_FIELD_REGION=>MODELS_FIELD%REGION
+                      IF(ASSOCIATED(MODELS_FIELD_REGION)) THEN
+                        !Check the field is defined on the same region as the CellML region
+                        IF(MODELS_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                          LOCAL_ERROR="Invalid region setup. The specified models field has been created on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(MODELS_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & " and the specified CellML environment has been created on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified models field has the same geometric field as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD,MODELS_FIELD%GEOMETRIC_FIELD)) THEN
+                          CALL FLAG_ERROR("The specified models field does not have the same geometric field as the "// &
+                            & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified models field has the same decomposition as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION,MODELS_FIELD%DECOMPOSITION)) THEN
+                          CALL FLAG_ERROR("The specified models field does not have the same decomposition as the source "// &
+                            & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("The specified models field region is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("The specified models field has not been finished.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    !Check the user number has not already been used for a field in this region.
+                    NULLIFY(FIELD)
+                    CALL FIELD_USER_NUMBER_FIND(MODEL_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+                    IF(ASSOCIATED(FIELD)) THEN
+                      LOCAL_ERROR="The specified models field user number of "// &
+                        & TRIM(NUMBER_TO_VSTRING(MODEL_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                        & "has already been used to create a field on region number "// &
                         & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                    !Check the specified models field has the same geometric field as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,MODELS_FIELD%GEOMETRIC_FIELD)) THEN
-                      CALL FLAG_ERROR("The specified models field does not have the same geometric field as the "// &
-                        & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
-                    !Check the specified models field has the same decomposition as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,MODELS_FIELD%DECOMPOSITION)) THEN
-                      CALL FLAG_ERROR("The specified models field does not have the same decomposition as the source "// &
-                        & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
+                  ENDIF
+                  CALL CELLML_MODELS_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
+                  IF(ASSOCIATED(MODELS_FIELD)) THEN
+                    !Now check the supplied field.
+                    CALL FIELD_DATA_TYPE_CHECK(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INTG_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_TYPE_CHECK(MODELS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_CHECK(MODELS_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_CHECK(MODELS_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("The specified models field region is not associated.",ERR,ERROR,*999)
+                    CELLML%MODELS_FIELD%MODELS_FIELD_AUTO_CREATED=.TRUE.
+                    !Create the CellML environment models field
+                    CALL FIELD_CREATE_START(MODEL_FIELD_USER_NUMBER,REGION,CELLML%MODELS_FIELD%MODELS_FIELD,ERR,ERROR,*999)
+                    CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INTG_TYPE, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_LABEL_SET(CELLML%MODELS_FIELD%MODELS_FIELD,"CellMLModelsField",ERR,ERROR,*999)
+                    CALL FIELD_TYPE_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD, &
+                      & CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
+                    CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,CELLML_FIELD_MAPS% &
+                      & SOURCE_GEOMETRIC_FIELD,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_LABEL_SET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,"ModelMap",ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_LABEL_SET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1,"ModelUserNumber", &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                      & CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  ENDIF
+                  !Set pointers
+                  IF(CELLML%MODELS_FIELD%MODELS_FIELD_AUTO_CREATED) THEN            
+                    MODELS_FIELD=>CELLML%MODELS_FIELD%MODELS_FIELD
+                  ELSE
+                    CELLML%MODELS_FIELD%MODELS_FIELD=>MODELS_FIELD
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The specified models field has not been finished.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("CellML fields map source field domain is not associated.",ERR,ERROR,*999)         
                 ENDIF
               ELSE
-               !Check the user number has not already been used for a field in this region.
-                NULLIFY(FIELD)
-                CALL FIELD_USER_NUMBER_FIND(MODEL_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
-                IF(ASSOCIATED(FIELD)) THEN
-                  LOCAL_ERROR="The specified models field user number of "// &
-                    & TRIM(NUMBER_TO_VSTRING(MODEL_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                    & "has already been used to create a field on region number "// &
-                    & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-              CALL CELLML_MODELS_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
-              IF(ASSOCIATED(MODELS_FIELD)) THEN
-                !Now check the supplied field.
-                CALL FIELD_DATA_TYPE_CHECK(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INTG_TYPE,ERR,ERROR,*999)
-                CALL FIELD_TYPE_CHECK(MODELS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(MODELS_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(MODELS_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
-              ELSE
-                CELLML%MODELS_FIELD%MODELS_FIELD_AUTO_CREATED=.TRUE.
-                !Create the CellML environment models field
-                CALL FIELD_CREATE_START(MODEL_FIELD_USER_NUMBER,REGION,CELLML%MODELS_FIELD%MODELS_FIELD,ERR,ERROR,*999)
-                CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INTG_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_LABEL_SET(CELLML%MODELS_FIELD%MODELS_FIELD,"CellMLModelsField",ERR,ERROR,*999)
-                CALL FIELD_TYPE_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD, &
-                  & CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,CELLML%SOURCE_GEOMETRIC_FIELD, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_LABEL_SET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,"ModelMap",ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_LABEL_SET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1,"ModelUserNumber", &
-                  & ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & CELLML%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
-              ENDIF
-              !Set pointers
-              IF(CELLML%MODELS_FIELD%MODELS_FIELD_AUTO_CREATED) THEN            
-                MODELS_FIELD=>CELLML%MODELS_FIELD%MODELS_FIELD
-              ELSE
-                CELLML%MODELS_FIELD%MODELS_FIELD=>MODELS_FIELD
+                CALL FLAG_ERROR("CellML fields map source geometric field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("CellML source field domain is not associated.",ERR,ERROR,*999)         
+              CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("CellML source geometric field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The CellML environment fields map has not been finished.",ERR,ERROR,*999)
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment fields map is not associated. You must create the CellML field maps first.", &
+          & ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated",ERR,ERROR,*999)
@@ -1617,7 +1934,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    INTEGER(INTG) :: model_idx
     
     CALL ENTERS("CELLML_MODELS_FIELD_FINALISE",ERR,ERROR,*999)
 
@@ -1749,115 +2065,126 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER(INTG) :: DUMMY_ERR,MESH_COMPONENT
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(REGION_TYPE), POINTER :: REGION,STATE_FIELD_REGION
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CELLML_STATE_FIELD_CREATE_START",ERR,ERROR,*999)
 
 #ifdef USECELLML
     
     IF(ASSOCIATED(CELLML)) THEN
-      IF(ASSOCIATED(CELLML%STATE_FIELD)) THEN
-        CALL FLAG_ERROR("The CellML environment models field is already associated.",ERR,ERROR,*999)
-      ELSE
-        REGION=>CELLML%REGION
-        IF(ASSOCIATED(REGION)) THEN
-          IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
-            IF(ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN)) THEN
-              IF(ASSOCIATED(STATE_FIELD)) THEN
-                !Check the field has been finished
-                IF(STATE_FIELD%FIELD_FINISHED) THEN
-                  !Check the user numbers match
-                  IF(STATE_FIELD_USER_NUMBER/=STATE_FIELD%USER_NUMBER) THEN
-                    LOCAL_ERROR="The specified state field user number of "// &
-                      & TRIM(NUMBER_TO_VSTRING(STATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                      & " does not match the user number of the specified state field of "// &
-                      & TRIM(NUMBER_TO_VSTRING(STATE_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                  STATE_FIELD_REGION=>STATE_FIELD%REGION
-                  IF(ASSOCIATED(STATE_FIELD_REGION)) THEN
-                    !Check the field is defined on the same region as the CellML region
-                    IF(STATE_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
-                      LOCAL_ERROR="Invalid region setup. The specified state field has been created on region number "// &
-                        & TRIM(NUMBER_TO_VSTRING(STATE_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                        & " and the CellML environment has been created on region number "// &
+      CELLML_FIELD_MAPS=>CELLML%FIELD_MAPS
+      IF(ASSOCIATED(CELLML_FIELD_MAPS)) THEN
+        IF(CELLML_FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED) THEN
+          IF(ASSOCIATED(CELLML%STATE_FIELD)) THEN
+            CALL FLAG_ERROR("The CellML environment models field is already associated.",ERR,ERROR,*999)
+          ELSE
+            REGION=>CELLML%REGION
+            IF(ASSOCIATED(REGION)) THEN
+              IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
+                IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN)) THEN
+                  IF(ASSOCIATED(STATE_FIELD)) THEN
+                    !Check the field has been finished
+                    IF(STATE_FIELD%FIELD_FINISHED) THEN
+                      !Check the user numbers match
+                      IF(STATE_FIELD_USER_NUMBER/=STATE_FIELD%USER_NUMBER) THEN
+                        LOCAL_ERROR="The specified state field user number of "// &
+                          & TRIM(NUMBER_TO_VSTRING(STATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the user number of the specified state field of "// &
+                          & TRIM(NUMBER_TO_VSTRING(STATE_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      STATE_FIELD_REGION=>STATE_FIELD%REGION
+                      IF(ASSOCIATED(STATE_FIELD_REGION)) THEN
+                        !Check the field is defined on the same region as the CellML region
+                        IF(STATE_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                          LOCAL_ERROR="Invalid region setup. The specified state field has been created on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(STATE_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & " and the CellML environment has been created on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified models field has the same geometric field as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD,STATE_FIELD%GEOMETRIC_FIELD)) THEN
+                          CALL FLAG_ERROR("The specified state field does not have the same geometric field as the "// &
+                            & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified models field has the same decomposition as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION,STATE_FIELD%DECOMPOSITION)) THEN
+                          CALL FLAG_ERROR("The specified state field does not have the same decomposition as the source "// &
+                            & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("The specified state field region is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("The specified state field has not been finished.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    !Check the user number has not already been used for a field in this region.
+                    NULLIFY(FIELD)
+                    CALL FIELD_USER_NUMBER_FIND(STATE_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+                    IF(ASSOCIATED(FIELD)) THEN
+                      LOCAL_ERROR="The specified state field user number of "// &
+                        & TRIM(NUMBER_TO_VSTRING(STATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                        & "has already been used to create a field on region number "// &
                         & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                    !Check the specified models field has the same geometric field as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,STATE_FIELD%GEOMETRIC_FIELD)) THEN
-                      CALL FLAG_ERROR("The specified state field does not have the same geometric field as the "// &
-                        & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
-                    !Check the specified models field has the same decomposition as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,STATE_FIELD%DECOMPOSITION)) THEN
-                      CALL FLAG_ERROR("The specified state field does not have the same decomposition as the source "// &
-                        & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
+                  ENDIF
+                  CALL CELLML_STATE_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
+                  IF(ASSOCIATED(STATE_FIELD)) THEN
+                    !Now check the supplied field.
+                    CALL FIELD_DATA_TYPE_CHECK(STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_TYPE_CHECK(STATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_CHECK(STATE_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_CHECK(STATE_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(STATE_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("The specified state field region is not associated.",ERR,ERROR,*999)
+                    CELLML%STATE_FIELD%STATE_FIELD_AUTO_CREATED=.TRUE.
+                    !Create the CellML environment models field
+                    CALL FIELD_CREATE_START(STATE_FIELD_USER_NUMBER,REGION,CELLML%STATE_FIELD%STATE_FIELD,ERR,ERROR,*999)
+                    CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_LABEL_SET(CELLML%STATE_FIELD%STATE_FIELD,"CellMLStateField",ERR,ERROR,*999)
+                    CALL FIELD_TYPE_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD, &
+                      & CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
+                    CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,CELLML_FIELD_MAPS% &
+                      & SOURCE_GEOMETRIC_FIELD,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_LABEL_SET(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,"StateVariable", &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                      & CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  ENDIF
+                  !Set pointers
+                  IF(CELLML%STATE_FIELD%STATE_FIELD_AUTO_CREATED) THEN            
+                    STATE_FIELD=>CELLML%STATE_FIELD%STATE_FIELD
+                  ELSE
+                    CELLML%STATE_FIELD%STATE_FIELD=>STATE_FIELD
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The specified state field has not been finished.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("CellML field maps source field domain is not associated.",ERR,ERROR,*999)         
                 ENDIF
               ELSE
-               !Check the user number has not already been used for a field in this region.
-                NULLIFY(FIELD)
-                CALL FIELD_USER_NUMBER_FIND(STATE_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
-                IF(ASSOCIATED(FIELD)) THEN
-                  LOCAL_ERROR="The specified state field user number of "// &
-                    & TRIM(NUMBER_TO_VSTRING(STATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                    & "has already been used to create a field on region number "// &
-                    & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-              CALL CELLML_STATE_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
-              IF(ASSOCIATED(STATE_FIELD)) THEN
-                !Now check the supplied field.
-                CALL FIELD_DATA_TYPE_CHECK(STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                CALL FIELD_TYPE_CHECK(STATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(STATE_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(STATE_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(STATE_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
-              ELSE
-                CELLML%STATE_FIELD%STATE_FIELD_AUTO_CREATED=.TRUE.
-                !Create the CellML environment models field
-                CALL FIELD_CREATE_START(STATE_FIELD_USER_NUMBER,REGION,CELLML%STATE_FIELD%STATE_FIELD,ERR,ERROR,*999)
-                CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_LABEL_SET(CELLML%STATE_FIELD%STATE_FIELD,"CellMLStateField",ERR,ERROR,*999)
-                CALL FIELD_TYPE_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD, &
-                  & CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,CELLML%SOURCE_GEOMETRIC_FIELD, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_LABEL_SET(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,"StateVariable",ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & CELLML%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
-              ENDIF
-              !Set pointers
-              IF(CELLML%STATE_FIELD%STATE_FIELD_AUTO_CREATED) THEN            
-                STATE_FIELD=>CELLML%STATE_FIELD%STATE_FIELD
-              ELSE
-                CELLML%STATE_FIELD%STATE_FIELD=>STATE_FIELD
+                CALL FLAG_ERROR("CellML field mapssource geometric field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("CellML source field domain is not associated.",ERR,ERROR,*999)         
+              CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("CellML source geometric field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The CellML environment fields map has not been finished.",ERR,ERROR,*999)
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment fields map is not associated. You must create the CellML field maps first.", &
+          & ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated",ERR,ERROR,*999)
@@ -1938,7 +2265,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    INTEGER(INTG) :: model_idx
     
     CALL ENTERS("CELLML_STATE_FIELD_FINALISE",ERR,ERROR,*999)
 
@@ -2144,123 +2470,134 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER(INTG) :: DUMMY_ERR,MESH_COMPONENT
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(REGION_TYPE), POINTER :: REGION,INTERMEDIATE_FIELD_REGION
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CELLML_INTERMEDIATE_FIELD_CREATE_START",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      IF(ASSOCIATED(CELLML%INTERMEDIATE_FIELD)) THEN
-        CALL FLAG_ERROR("The CellML environment models field is already associated.",ERR,ERROR,*999)
-      ELSE
-        REGION=>CELLML%REGION
-        IF(ASSOCIATED(REGION)) THEN
-          IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
-            IF(ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN)) THEN
-              IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
-                !Check the field has been finished
-                IF(INTERMEDIATE_FIELD%FIELD_FINISHED) THEN
-                  !Check the user numbers match
-                  IF(INTERMEDIATE_FIELD_USER_NUMBER/=INTERMEDIATE_FIELD%USER_NUMBER) THEN
-                    LOCAL_ERROR="The specified intermediate field user number of "// &
-                      & TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                      & " does not match the user number of the specified intermediate field of "// &
-                      & TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                  INTERMEDIATE_FIELD_REGION=>INTERMEDIATE_FIELD%REGION
-                  IF(ASSOCIATED(INTERMEDIATE_FIELD_REGION)) THEN
-                    !Check the field is defined on the same region as the CellML region
-                    IF(INTERMEDIATE_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
-                      LOCAL_ERROR="Invalid region setup. The specified intermediate field has been created on region number "// &
-                        & TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                        & " and the specified CellML environment has been created on region number "// &
+      CELLML_FIELD_MAPS=>CELLML%FIELD_MAPS
+      IF(ASSOCIATED(CELLML_FIELD_MAPS)) THEN
+        IF(CELLML_FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED) THEN
+          IF(ASSOCIATED(CELLML%INTERMEDIATE_FIELD)) THEN
+            CALL FLAG_ERROR("The CellML environment models field is already associated.",ERR,ERROR,*999)
+          ELSE
+            REGION=>CELLML%REGION
+            IF(ASSOCIATED(REGION)) THEN
+              IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
+                IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN)) THEN
+                  IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
+                    !Check the field has been finished
+                    IF(INTERMEDIATE_FIELD%FIELD_FINISHED) THEN
+                      !Check the user numbers match
+                      IF(INTERMEDIATE_FIELD_USER_NUMBER/=INTERMEDIATE_FIELD%USER_NUMBER) THEN
+                        LOCAL_ERROR="The specified intermediate field user number of "// &
+                          & TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the user number of the specified intermediate field of "// &
+                          & TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      INTERMEDIATE_FIELD_REGION=>INTERMEDIATE_FIELD%REGION
+                      IF(ASSOCIATED(INTERMEDIATE_FIELD_REGION)) THEN
+                        !Check the field is defined on the same region as the CellML region
+                        IF(INTERMEDIATE_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                          LOCAL_ERROR="Invalid region setup. The specified intermediate field has been created on region"// &
+                            & " number "//TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & " and the specified CellML environment has been created on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified intermediate field has the same geometric field as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD,INTERMEDIATE_FIELD%GEOMETRIC_FIELD)) THEN
+                          CALL FLAG_ERROR("The specified intermediate field does not have the same geometric field as the "// &
+                            & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified intermediate field has the same decomposition as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION, &
+                          & INTERMEDIATE_FIELD%DECOMPOSITION)) THEN
+                          CALL FLAG_ERROR("The specified intermediate field does not have the same decomposition as the source "// &
+                            & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("The specified intermediate field region is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("The specified intermediate field has not been finished.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    !Check the user number has not already been used for a field in this region.
+                    NULLIFY(FIELD)
+                    CALL FIELD_USER_NUMBER_FIND(INTERMEDIATE_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+                    IF(ASSOCIATED(FIELD)) THEN
+                      LOCAL_ERROR="The specified intermediate field user number of "// &
+                        & TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                        & "has already been used to create a field on region number "// &
                         & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                    !Check the specified intermediate field has the same geometric field as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,INTERMEDIATE_FIELD%GEOMETRIC_FIELD)) THEN
-                      CALL FLAG_ERROR("The specified intermediate field does not have the same geometric field as the "// &
-                        & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
-                    !Check the specified intermediate field has the same decomposition as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,INTERMEDIATE_FIELD%DECOMPOSITION)) THEN
-                      CALL FLAG_ERROR("The specified intermediate field does not have the same decomposition as the source "// &
-                        & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
+                  ENDIF
+                  CALL CELLML_INTERMEDIATE_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
+                  IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
+                    !Now check the supplied field.
+                    CALL FIELD_DATA_TYPE_CHECK(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_TYPE_CHECK(INTERMEDIATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_CHECK(INTERMEDIATE_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_CHECK(INTERMEDIATE_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("The specified intermediate field region is not associated.",ERR,ERROR,*999)
+                    CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD_AUTO_CREATED=.TRUE.
+                    !Create the CellML environment intermediate field
+                    CALL FIELD_CREATE_START(INTERMEDIATE_FIELD_USER_NUMBER,REGION,CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_DP_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_LABEL_SET(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,"CellMLIntermediateField",ERR,ERROR,*999)
+                    CALL FIELD_TYPE_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                      & CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
+                    CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,CELLML_FIELD_MAPS% &
+                      & SOURCE_GEOMETRIC_FIELD,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,[FIELD_U_VARIABLE_TYPE], &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_LABEL_SET(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & "IntermediateVariable",ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,1,CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  ENDIF
+                  !Set pointers
+                  IF(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD_AUTO_CREATED) THEN            
+                    INTERMEDIATE_FIELD=>CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
+                  ELSE
+                    CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD=>INTERMEDIATE_FIELD
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The specified intermediate field has not been finished.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("CellML field maps source field domain is not associated.",ERR,ERROR,*999)         
                 ENDIF
               ELSE
-               !Check the user number has not already been used for a field in this region.
-                NULLIFY(FIELD)
-                CALL FIELD_USER_NUMBER_FIND(INTERMEDIATE_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
-                IF(ASSOCIATED(FIELD)) THEN
-                  LOCAL_ERROR="The specified intermediate field user number of "// &
-                    & TRIM(NUMBER_TO_VSTRING(INTERMEDIATE_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                    & "has already been used to create a field on region number "// &
-                    & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-              CALL CELLML_INTERMEDIATE_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
-              IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
-                !Now check the supplied field.
-                CALL FIELD_DATA_TYPE_CHECK(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                CALL FIELD_TYPE_CHECK(INTERMEDIATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(INTERMEDIATE_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(INTERMEDIATE_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
-              ELSE
-                CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD_AUTO_CREATED=.TRUE.
-                !Create the CellML environment intermediate field
-                CALL FIELD_CREATE_START(INTERMEDIATE_FIELD_USER_NUMBER,REGION,CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DP_TYPE,ERR,ERROR,*999)
-                CALL FIELD_LABEL_SET(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,"CellMLIntermediateField",ERR,ERROR,*999)
-                CALL FIELD_TYPE_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
-                  & CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,CELLML% &
-                  & SOURCE_GEOMETRIC_FIELD,ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,[FIELD_U_VARIABLE_TYPE], &
-                  & ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_LABEL_SET(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & "IntermediateVariable",ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
-                  & FIELD_U_VARIABLE_TYPE,1,CELLML%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
-              ENDIF
-              !Set pointers
-              IF(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD_AUTO_CREATED) THEN            
-                INTERMEDIATE_FIELD=>CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
-              ELSE
-                CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD=>INTERMEDIATE_FIELD
+                CALL FLAG_ERROR("CellML field maps source geometric field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("CellML source field domain is not associated.",ERR,ERROR,*999)         
+              CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("CellML source geometric field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The CellML environment fields map has not been finished.",ERR,ERROR,*999)
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment fields map is not associated. You must create the CellML field maps first.", &
+          & ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated",ERR,ERROR,*999)
     ENDIF
-
+    
 #else
 
     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
@@ -2326,70 +2663,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE CELLML_INTERMEDIATE_FIELD_CREATE_FINISH
 
-  !
-  !=================================================================================================================================
-  !
-
-  !>Add a specific variable to this CellML environment's intermediate field.
-  !! Nominate a specific variable from a model in this environment for inclusion in the environment's intermediate field. This will ensure the value of this variable is available at each of the environment's (source) field DOF's for which the specified model is valid.
-  SUBROUTINE CELLML_INTERMEDIATE_FIELD_ADD_C(CELLML,MODEL_USER_NUMBER,VARIABLE_URI,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which to add the nominated variable to the intermediate field.
-    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The user number of the model (simulation?) in which to look for the variable being nominated.
-    CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_URI !<The URI of the variable in the specified model to include in the intermediate field for this CellML environment.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local variables
-
-    CALL ENTERS("CELLML_INTERMEDIATE_FIELD_ADD_C",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_INTERMEDIATE_FIELD_ADD_C")
-    RETURN
-999 CALL ERRORS("CELLML_INTERMEDIATE_FIELD_ADD_C",ERR,ERROR)
-    CALL EXITS("CELLML_INTERMEDIATE_FIELD_ADD_C")
-    RETURN 1
-  END SUBROUTINE CELLML_INTERMEDIATE_FIELD_ADD_C
-
-  !
-  !=================================================================================================================================
-  !
-
-  !>Add a specific variable to this CellML environment's intermediate field.
-  !! Nominate a specific variable from a model in this environment for inclusion in the environment's intermediate field. This will ensure the value of this variable is available at each of the environment's (source) field DOF's for which the specified model is valid.
-  SUBROUTINE CELLML_INTERMEDIATE_FIELD_ADD_VS(CELLML,MODEL_USER_NUMBER,VARIABLE_URI,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which to add the nominated variable to the intermediate field.
-    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The user number of the model (simulation?) in which to look for the variable being nominated.
-    TYPE(VARYING_STRING), INTENT(IN) :: VARIABLE_URI !<The URI of the variable in the specified model to include in the intermediate field for this CellML environment.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local variables
-
-    CALL ENTERS("CELLML_INTERMEDIATE_FIELD_ADD_VS",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_INTERMEDIATE_FIELD_ADD_VS")
-    RETURN
-999 CALL ERRORS("CELLML_INTERMEDIATE_FIELD_ADD_VS",ERR,ERROR)
-    CALL EXITS("CELLML_INTERMEDIATE_FIELD_ADD_VS")
-    RETURN 1
-  END SUBROUTINE CELLML_INTERMEDIATE_FIELD_ADD_VS
-
  !
   !=================================================================================================================================
   !
@@ -2401,7 +2674,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    INTEGER(INTG) :: model_idx
     
     CALL ENTERS("CELLML_INTERMEDIATE_FIELD_FINALISE",ERR,ERROR,*999)
 
@@ -2524,129 +2796,6 @@ CONTAINS
   !=================================================================================================================================
   !
 
-  !>Start the creation of the para field for the given CellML environment.
-  SUBROUTINE CELLML_PARAMETERS_CREATE_START(CELLML,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which we will be defining parameter overrides.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local variables
-
-    CALL ENTERS("CELLML_PARAMETERS_CREATE_START",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_PARAMETERS_CREATE_START")
-    RETURN
-999 CALL ERRORS("CELLML_PARAMETERS_CREATE_START",ERR,ERROR)
-    CALL EXITS("CELLML_PARAMETERS_CREATE_START")
-    RETURN 1
-  END SUBROUTINE CELLML_PARAMETERS_CREATE_START
-
-  !
-  !=================================================================================================================================
-  !
-
-  !>Finialse the parameters definition process.
-  !! Indicates that the user has added all parameter overrides and allows the CellML environment to be further processed.
-  SUBROUTINE CELLML_PARAMETERS_CREATE_FINISH(CELLML,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object for which to finalise the parameter overrides.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local variables
-
-    CALL ENTERS("CELLML_PARAMETERS_CREATE_FINISH",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_PARAMETERS_CREATE_FINISH")
-    RETURN
-999 CALL ERRORS("CELLML_PARAMETERS_CREATE_FINISH",ERR,ERROR)
-    CALL EXITS("CELLML_PARAMETERS_CREATE_FINISH")
-    RETURN 1
-  END SUBROUTINE CELLML_PARAMETERS_CREATE_FINISH
-
-  !
-  !=================================================================================================================================
-  !
-
-  !>Nominate a specific parameter in CellML environment to override.
-  !! Nominate a specific parameter variable from a model in this environment which will have its value overridden by the envronment's parameter field.
-  SUBROUTINE CELLML_PARAMETER_ADD_C(CELLML,MODEL_USER_NUMBER,VARIABLE_URI,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object.
-    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The user number of the model (simulation?) in which to look for the variable being nominated.
-    CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_URI !<The URI of the variable in the specified model to specify for overriding.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local variables
-
-    CALL ENTERS("CELLML_PARAMETER_ADD_C",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_PARAMETER_ADD_C")
-    RETURN
-999 CALL ERRORS("CELLML_PARAMETERS_ADD_C",ERR,ERROR)
-    CALL EXITS("CELLML_PARAMETERS_ADD_C")
-    RETURN 1
-  END SUBROUTINE CELLML_PARAMETER_ADD_C
-
-  !
-  !=================================================================================================================================
-  !
-
-  !>Nominate a specific parameter in CellML environment to override.
-  !! Nominate a specific parameter variable from a model in this environment which will have its value overridden by the envronment's parameter field.
-  SUBROUTINE CELLML_PARAMETER_ADD_VS(CELLML,MODEL_USER_NUMBER,VARIABLE_URI,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object.
-    INTEGER(INTG), INTENT(IN) :: MODEL_USER_NUMBER !<The user number of the model (simulation?) in which to look for the variable being nominated.
-    TYPE(VARYING_STRING), INTENT(IN) :: VARIABLE_URI !<The URI of the variable in the specified model to specify for overriding.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local variables
-
-    CALL ENTERS("CELLML_PARAMETER_ADD_VS",ERR,ERROR,*999)
-
-#ifdef USECELLML
-
-#else
-
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
-
-#endif
-
-    CALL EXITS("CELLML_PARAMETER_ADD_VS")
-    RETURN
-999 CALL ERRORS("CELLML_PARAMETERS_ADD_VS",ERR,ERROR)
-    CALL EXITS("CELLML_PARAMETERS_ADD_VS")
-    RETURN 1
-  END SUBROUTINE CELLML_PARAMETER_ADD_VS
-
-  !
-  !=================================================================================================================================
-  !
-
   !>Start the creation of the parameters field for the given CellML environment.
   SUBROUTINE CELLML_PARAMETERS_FIELD_CREATE_START(PARAMETERS_FIELD_USER_NUMBER,CELLML,PARAMETERS_FIELD,ERR,ERROR,*)
     !Argument variables
@@ -2656,117 +2805,128 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER(INTG) :: DUMMY_ERR,MESH_COMPONENT
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS
     TYPE(FIELD_TYPE), POINTER :: FIELD
     TYPE(REGION_TYPE), POINTER :: REGION,PARAMETERS_FIELD_REGION
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("CELLML_PARAMETERS_FIELD_CREATE_START",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      IF(ASSOCIATED(CELLML%PARAMETERS_FIELD)) THEN
-        CALL FLAG_ERROR("The CellML environment parameters field is already associated.",ERR,ERROR,*999)
-      ELSE
-        REGION=>CELLML%REGION
-        IF(ASSOCIATED(REGION)) THEN
-          IF(ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD)) THEN
-            IF(ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN)) THEN
-              IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
-                !Check the field has been finished
-                IF(PARAMETERS_FIELD%FIELD_FINISHED) THEN
-                  !Check the user numbers match
-                  IF(PARAMETERS_FIELD_USER_NUMBER/=PARAMETERS_FIELD%USER_NUMBER) THEN
-                    LOCAL_ERROR="The specified parameters field user number of "// &
-                      & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                      & " does not match the user number of the specified parameters field of "// &
-                      & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                  PARAMETERS_FIELD_REGION=>PARAMETERS_FIELD%REGION
-                  IF(ASSOCIATED(PARAMETERS_FIELD_REGION)) THEN
-                    !Check the field is defined on the same region as the CellML region
-                    IF(PARAMETERS_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
-                      LOCAL_ERROR="Invalid region setup. The specified parameters field has been created on region number "// &
-                        & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                        & " and the specified CellML environment has been created on region number "// &
+      CELLML_FIELD_MAPS=>CELLML%FIELD_MAPS
+      IF(ASSOCIATED(CELLML_FIELD_MAPS)) THEN
+        IF(CELLML_FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED) THEN
+          IF(ASSOCIATED(CELLML%PARAMETERS_FIELD)) THEN
+            CALL FLAG_ERROR("The CellML environment parameters field is already associated.",ERR,ERROR,*999)
+          ELSE
+            REGION=>CELLML%REGION
+            IF(ASSOCIATED(REGION)) THEN
+              IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
+                IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN)) THEN
+                  IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
+                    !Check the field has been finished
+                    IF(PARAMETERS_FIELD%FIELD_FINISHED) THEN
+                      !Check the user numbers match
+                      IF(PARAMETERS_FIELD_USER_NUMBER/=PARAMETERS_FIELD%USER_NUMBER) THEN
+                        LOCAL_ERROR="The specified parameters field user number of "// &
+                          & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                          & " does not match the user number of the specified parameters field of "// &
+                          & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      PARAMETERS_FIELD_REGION=>PARAMETERS_FIELD%REGION
+                      IF(ASSOCIATED(PARAMETERS_FIELD_REGION)) THEN
+                        !Check the field is defined on the same region as the CellML region
+                        IF(PARAMETERS_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                          LOCAL_ERROR="Invalid region setup. The specified parameters field has been created on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & " and the specified CellML environment has been created on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified parameters field has the same geometric field as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD,PARAMETERS_FIELD%GEOMETRIC_FIELD)) THEN
+                          CALL FLAG_ERROR("The specified parameters field does not have the same geometric field as the "// &
+                            & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                        !Check the specified parameters field has the same decomposition as the source field
+                        IF(.NOT.ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION,PARAMETERS_FIELD%DECOMPOSITION)) THEN
+                          CALL FLAG_ERROR("The specified parameters field does not have the same decomposition as the source "// &
+                            & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("The specified parameters field region is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("The specified parameters field has not been finished.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    !Check the user number has not already been used for a field in this region.
+                    NULLIFY(FIELD)
+                    CALL FIELD_USER_NUMBER_FIND(PARAMETERS_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+                    IF(ASSOCIATED(FIELD)) THEN
+                      LOCAL_ERROR="The specified parameters field user number of "// &
+                        & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                        & "has already been used to create a field on region number "// &
                         & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                    !Check the specified parameters field has the same geometric field as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_GEOMETRIC_FIELD,PARAMETERS_FIELD%GEOMETRIC_FIELD)) THEN
-                      CALL FLAG_ERROR("The specified parameters field does not have the same geometric field as the "// &
-                        & "geometric field for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
-                    !Check the specified parameters field has the same decomposition as the source field
-                    IF(.NOT.ASSOCIATED(CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,PARAMETERS_FIELD%DECOMPOSITION)) THEN
-                      CALL FLAG_ERROR("The specified parameters field does not have the same decomposition as the source "// &
-                        & "domain decomposition for the specified CellML environment.",ERR,ERROR,*999)
-                    ENDIF
+                  ENDIF
+                  CALL CELLML_PARAMETERS_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
+                  IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
+                    !Now check the supplied field.
+                    CALL FIELD_DATA_TYPE_CHECK(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INTG_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_TYPE_CHECK(PARAMETERS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_CHECK(PARAMETERS_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_CHECK(PARAMETERS_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("The specified parameters field region is not associated.",ERR,ERROR,*999)
+                    CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD_AUTO_CREATED=.TRUE.
+                    !Create the CellML environment parameters field
+                    CALL FIELD_CREATE_START(PARAMETERS_FIELD_USER_NUMBER,REGION,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_DP_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_LABEL_SET(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,"CellMLParametersField",ERR,ERROR,*999)
+                    CALL FIELD_TYPE_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                      & CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
+                    CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                      & CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,[FIELD_U_VARIABLE_TYPE], &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_LABEL_SET(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & "ParametersVariable",ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,1,CELLML_FIELD_MAPS%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  ENDIF
+                  !Set pointers
+                  IF(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD_AUTO_CREATED) THEN            
+                    PARAMETERS_FIELD=>CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD
+                  ELSE
+                    CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD=>PARAMETERS_FIELD
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The specified parameters field has not been finished.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("CellML field maps source field domain is not associated.",ERR,ERROR,*999)         
                 ENDIF
               ELSE
-               !Check the user number has not already been used for a field in this region.
-                NULLIFY(FIELD)
-                CALL FIELD_USER_NUMBER_FIND(PARAMETERS_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
-                IF(ASSOCIATED(FIELD)) THEN
-                  LOCAL_ERROR="The specified parameters field user number of "// &
-                    & TRIM(NUMBER_TO_VSTRING(PARAMETERS_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
-                    & "has already been used to create a field on region number "// &
-                    & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-              CALL CELLML_PARAMETERS_FIELD_INITIALISE(CELLML,ERR,ERROR,*999)
-              IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
-                !Now check the supplied field.
-                CALL FIELD_DATA_TYPE_CHECK(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INTG_TYPE,ERR,ERROR,*999)
-                CALL FIELD_TYPE_CHECK(PARAMETERS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(PARAMETERS_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(PARAMETERS_FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
-              ELSE
-                CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD_AUTO_CREATED=.TRUE.
-                !Create the CellML environment parameters field
-                CALL FIELD_CREATE_START(PARAMETERS_FIELD_USER_NUMBER,REGION,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,ERR,ERROR,*999)
-                CALL FIELD_DATA_TYPE_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_LABEL_SET(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,"CellMLParametersField",ERR,ERROR,*999)
-                CALL FIELD_TYPE_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
-                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
-                  & CELLML%SOURCE_FIELD_DOMAIN%DECOMPOSITION,ERR,ERROR,*999)
-                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,CELLML%SOURCE_GEOMETRIC_FIELD, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,[FIELD_U_VARIABLE_TYPE], &
-                  & ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_LABEL_SET(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,"ParametersVariable", &
-                  ERR,ERROR,*999)
-                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,1, &
-                  & CELLML%SOURCE_FIELD_DOMAIN%MESH_COMPONENT_NUMBER,ERR,ERROR,*999)
-              ENDIF
-              !Set pointers
-              IF(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD_AUTO_CREATED) THEN            
-                PARAMETERS_FIELD=>CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD
-              ELSE
-                CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD=>PARAMETERS_FIELD
+                CALL FLAG_ERROR("CellML field maps source geometric field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("CellML source field domain is not associated.",ERR,ERROR,*999)         
+              CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("CellML source geometric field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("CellML environment region is not associated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("The CellML environment fields map has not been finished.",ERR,ERROR,*999)
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment fields map is not associated. You must create the CellML field maps first.", &
+          & ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated",ERR,ERROR,*999)
@@ -2845,7 +3005,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    INTEGER(INTG) :: model_idx
     
     CALL ENTERS("CELLML_PARAMETERS_FIELD_FINALISE",ERR,ERROR,*999)
 

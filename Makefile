@@ -261,7 +261,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
         OPTC_FLGS += -momit-leaf-frame-pointer
       endif
     else
-      C_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
+      C_FLGS += -g -pg -fprofile-arcs -ftest-coverage
     endif
   endif
   ifeq ($(CC),icc)
@@ -344,8 +344,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
         OPTF_FLGS += -momit-leaf-frame-pointer
       endif
     else
-      F_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
-      ELFLAGS += -pg
+      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
+      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
     endif
     ELFLAGS += -m$(ABI)
   endif

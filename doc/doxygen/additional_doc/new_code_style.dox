@@ -14,6 +14,8 @@
 - A double space should be used for an indent. Tabs must not be used anywhere in the code.
 - Code should have no more than 132 characters in a line, use continuation &'s if need be. There should be a space before the first continuation character and a space after the second continuation character when continuing lines.
 - All arguments to a SUBROUTINE/FUNCTION must be declared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes in the basis.
+- When commenting array variables in doxygen, include in the doxygen comment information about the array indicies e.g. INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DERIVATIVES(:) !<NUMBER_OF_DERIVATIVES(local_node_idx). The number of derivatives at the local_node_idx'th local node in the basis.
+- When commenting variables that are associated with a list of parameters a reference should be map in the doxygen comment to the doxygen description of those parameters e.g. INTEGER(INTG) :: TYPE !<The type of the field. \see FIELD_ROUTINES_FieldTypes
 - Continuation lines should be indented by 2 spaces with respect to the first line.
 - In general, code routines, local variable lists etc. should be alphabetical.
 - Add whitespace where appropriate to improve readability.
@@ -88,6 +90,7 @@
 - ALLOCATABLE arrays are preferred over POINTER arrays unless full pointer functionality is required.
 - All memory allocations should check to see if the allocation was successful and flag an error if not.
 - All pointers/allocated memory should be checked to see if they are ASSOCIATED/ALLOCATED before de-referencing/using them.
+- All pointers should be checked to ensure that they are not associated before allocation.
 - All dynamically allocated variables in a routine should be deallocated on the exit from a routine under error conditions.
 
 \section code_conventions Code conventions
