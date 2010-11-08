@@ -286,6 +286,7 @@ CONTAINS
   !
 
   !>Finish creating the CellML environment.
+  !>At this point we know all the variables that are known and wanted so can generate the final code.
   !! Check the provided CellML environment object and if it all looks good clear the "in progress" flag to indicate the object is now ready for use.
   SUBROUTINE CELLML_CREATE_FINISH(CELLML,ERR,ERROR,*)
     !Argument variables
@@ -294,6 +295,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
+    INTEGER(C_INT) :: ERROR_CODE
+    INTEGER(INTG) :: model_idx
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CELLML_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -303,8 +307,18 @@ CONTAINS
       IF(CELLML%CELLML_FINISHED) THEN
         CALL FLAG_ERROR("CellML environment has already been finished.",ERR,ERROR,*999)
       ELSE
-        !Check that we have set up the models and mappings
+        !Check that we have set up the models
         IF(CELLML%NUMBER_OF_MODELS>0) THEN
+          DO model_idx=1,CELLML%NUMBER_OF_MODELS
+            write(*,*) 'model_idx = ',model_idx
+            CELLML_MODEL => CELLML%MODELS(model_idx)%PTR
+            CALL CELLML_MODEL_DEFINITION_SET_SAVE_TEMP_FILES(CELLML_MODEL%PTR,1)
+            ERROR_CODE = CELLML_MODEL_DEFINITION_INSTANTIATE(CELLML_MODEL%PTR)
+            IF(ERROR_CODE /= 0) THEN
+              LOCAL_ERROR="Error instantiating CellML model index "//TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDDO
           CELLML%CELLML_FINISHED = .TRUE.
         ELSE
           CALL FLAG_ERROR("Invalid setup. No models have been imported into the CellML environment.",ERR,ERROR,*999)
