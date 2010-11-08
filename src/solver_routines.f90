@@ -14647,6 +14647,8 @@ CONTAINS
                           VARIABLE_TYPE=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                             & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TYPES(variable_idx)
                           CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                          CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_INCREMENTAL_VALUES_SET_TYPE, &
+                            & ERR,ERROR,*999)
                         ENDDO !variable_idx
                       ELSE
                         CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
@@ -14661,6 +14663,8 @@ CONTAINS
                         VARIABLE_TYPE=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TYPES(variable_idx)
                         CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_INCREMENTAL_VALUES_SET_TYPE, &
+                          & ERR,ERROR,*999)
                       ENDDO !variable_idx
                     ENDDO !equations_set_idx
                   ELSE
