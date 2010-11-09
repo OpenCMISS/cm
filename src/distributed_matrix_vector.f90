@@ -1977,9 +1977,9 @@ CONTAINS
                     & PETSC_MATRIX%GLOBAL_M,PETSC_MATRIX%GLOBAL_N,PETSC_NULL_INTEGER,PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS, &
                     & PETSC_NULL_INTEGER,PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS,PETSC_MATRIX%MATRIX,ERR,ERROR,*999)
                   !Set matrix options
-                  !CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
-                  !CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
-                  !CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
+                  CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_NEW_NONZERO_LOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
+                  CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
+                  CALL PETSC_MATSETOPTION(PETSC_MATRIX%MATRIX,PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR,PETSC_TRUE,ERR,ERROR,*999)
                   !Set up the Local to Global mappings
                   ALLOCATE(PETSC_MATRIX%GLOBAL_ROW_NUMBERS(PETSC_MATRIX%M),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global row numbers for PETSc distributed matrix.",ERR,ERROR,*999)
@@ -2218,7 +2218,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: i,j,k,global_row_start,global_row_finish
-    LOGICAL :: DIAGONAL_ENTRY
     TYPE(DISTRIBUTED_MATRIX_CMISS_TYPE), POINTER :: CMISS_MATRIX
     TYPE(DISTRIBUTED_MATRIX_PETSC_TYPE), POINTER :: PETSC_MATRIX
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ROW_DOMAIN_MAPPING,COLUMN_DOMAIN_MAPPING
@@ -2290,7 +2289,6 @@ CONTAINS
                           global_row_start=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(1)
                           global_row_finish=ROW_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(PETSC_MATRIX%M)
                           DO i=1,PETSC_MATRIX%M
-                            DIAGONAL_ENTRY=.FALSE.
                             DO j=ROW_INDICES(i),ROW_INDICES(i+1)-1
                               k=COLUMN_INDICES(j)
                               IF(k>0) THEN
@@ -2306,7 +2304,6 @@ CONTAINS
                                 ELSE
                                   PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS(i)=PETSC_MATRIX%OFFDIAGONAL_NUMBER_NON_ZEROS(i)+1
                                 ENDIF
-                                IF(k==i) DIAGONAL_ENTRY=.TRUE.
                               ELSE
                                 LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
                                   & " ("//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero."
@@ -2314,10 +2311,10 @@ CONTAINS
                               ENDIF
                             ENDDO !j
                             !Enforce a place for the diagonal entry.
-                            IF(.NOT.DIAGONAL_ENTRY) PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(i)=1 
+                            IF(PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(i)==0) PETSC_MATRIX%DIAGONAL_NUMBER_NON_ZEROS(i)=1
                           ENDDO !i
                           IF(DIAGNOSTICS3) THEN
-                            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"PETSc distributed vector sparsity:",ERR,ERROR,*999)
+                            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"PETSc distributed matrix sparsity:",ERR,ERROR,*999)
                             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Storage type = ",PETSC_MATRIX%STORAGE_TYPE, &
                               & ERR,ERROR,*999)
                             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  M = ",PETSC_MATRIX%M,ERR,ERROR,*999)
