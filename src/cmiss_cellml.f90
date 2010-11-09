@@ -176,15 +176,29 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
+    TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: FIELD_MAPS
+    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD
     
     CALL ENTERS("CELLML_CELLML_TO_FIELD_UPDATE",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      
+      FIELD_MAPS=>CELLML%FIELD_MAPS
+      IF(ASSOCIATED(FIELD_MAPS)) THEN
+        IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+          MODELS_FIELD=>CELLML%MODELS_FIELD%MODELS_FIELD
+          IF(ASSOCIATED(MODELS_FIELD)) THEN
+          ELSE
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
-      CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
     END IF
 
 #else

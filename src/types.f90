@@ -1990,6 +1990,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: MODELS_FIELD_FINISHED  !<Is .TRUE. if the models field has finished being created, .FALSE. if not.
     LOGICAL :: MODELS_FIELD_AUTO_CREATED !<Is .TRUE. if the models field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD !<A pointer to the models field
+    LOGICAL :: ONLY_ONE_MODEL !<Is .TRUE. if only one model is used, .FALSE. if not.
   END TYPE CELLML_MODELS_FIELD_TYPE
   
   !>Contains information on the state field for a CellML environment
