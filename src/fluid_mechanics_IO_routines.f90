@@ -423,13 +423,14 @@ CONTAINS
           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
           & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(1)-1.0)
+        IF(NumberOfDimensions==2)THEN
         XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
-          & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
-          & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(2)-1.0)
-
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
+            & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+            & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(2)-1.0)
+        END IF
         IF(NumberOfDimensions==3)THEN
-          XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+        XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION% &
             & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(3)-1.0)
@@ -519,9 +520,10 @@ CONTAINS
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
 !        NodeYValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
 !          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
-        NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
-          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
-
+        IF(NumberOfDimensions==2)THEN
+          NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+        END IF
         IF(NumberOfDimensions==3)THEN
           NodeZValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
@@ -635,17 +637,19 @@ CONTAINS
    ! NodeSIGMAValue=REGION%equations_sets%equations_sets(1)%ptr%materials%materials_field%variables(1)% &
     !  & parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(6)
 
-    IF(DN) THEN
-  ! output for DN only
-      DO K=1,NodesPerMeshComponent(2)
-        IF(NumberOfDimensions==2)THEN
-          NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
-            & %parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(2*NodesPerMeshComponent(1)+K)
-        ELSE IF(NumberOfDimensions==3)THEN
-          NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
-            & %parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(3*NodesPerMeshComponent(1)+K)
-        ENDIF
-      ENDDO
+    IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
+      IF(DN) THEN
+      ! output for DN only
+        DO K=1,NodesPerMeshComponent(2)
+          IF(NumberOfDimensions==2)THEN
+            NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+             & %parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(2*NodesPerMeshComponent(1)+K)
+          ELSE IF(NumberOfDimensions==3)THEN
+            NodePValue2(K)=REGION%equations_sets%equations_sets(1)%ptr%dependent%dependent_field%variables(1) &
+              & %parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(3*NodesPerMeshComponent(1)+K)
+          ENDIF
+        ENDDO
+      ENDIF
     ENDIF
 
     IF( NumberOfDimensions==3 )THEN
@@ -653,7 +657,10 @@ CONTAINS
       lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
         & interpolation%geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%type
 !         lagrange_simplex=2
-    ELSE
+
+    ELSE IF (NumberOfDimensions==1) THEN
+      lagrange_simplex=1
+    ELSE IF (NumberOfDimensions==2) THEN
       !chrm, 20.08.09:
       ! ... but the above call does not work for 2D.
       !Thus, for 2D, we hard-wire it to 'quad':
@@ -989,7 +996,9 @@ CONTAINS
       lagrange_simplex=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations% &
         & interpolation%geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%type
 !         lagrange_simplex=2
-    ELSE
+    ELSE IF ( NumberOfDimensions==1 )THEN
+      lagrange_simplex=1
+    ELSE IF ( NumberOfDimensions==2 )THEN
       !chrm, 20.08.09:
       ! ... but the above call does not work for 2D.
       !Thus, for 2D, we hard-wire it to 'quad':
@@ -1756,7 +1765,10 @@ CONTAINS
     DO I = 1,NodesPerMeshComponent(1)
       WRITE(14,*) ' Node: ',I
       WRITE(14,'("    ", es25.16 )')NodeXValue(I)
-      WRITE(14,'("    ", es25.16 )')NodeYValue(I)
+
+      IF(NumberOfDimensions==2) THEN
+        WRITE(14,'("    ", es25.16 )')NodeYValue(I)
+      END IF
 
       IF(NumberOfDimensions==3) THEN
         WRITE(14,'("    ", es25.16 )')NodeZValue(I)
@@ -1769,16 +1781,18 @@ CONTAINS
         WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 
-      IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
-        & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   &
-        & .OR. (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
-            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-            & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
-        WRITE(14,'("    ", es25.16 )')NodePValue(I)
+      IF(NumberOfDimensions/=1) THEN
+        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+                & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+                & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   &
+          & .OR. (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+              & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
+                & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
+          WRITE(14,'("    ", es25.16 )')NodePValue(I)
+        END IF
       END IF
 
 !---tob: Mass increase for coupled elasticity Darcy INRIA model
@@ -1793,10 +1807,13 @@ CONTAINS
 
       WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
       WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
-! ! !       WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
-! ! !       WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
-! ! !       WRITE(14,'("    ", es25.16 )')NodeEValue(I)
-! ! !       WRITE(14,'("    ", es25.16 )')NodeSIGMAValue(I)
+
+!      IF(NumberOfDimensions==1) THEN
+!        WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
+!        WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
+!        WRITE(14,'("    ", es25.16 )')NodeEValue(I)
+!        WRITE(14,'("    ", es25.16 )')NodeSIGMAValue(I)
+!      END IF
 
       IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
         IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
@@ -1810,7 +1827,9 @@ CONTAINS
 
       IF( ANALYTIC ) THEN
         WRITE(14,'("    ", es25.16 )')NodeUValue_analytic(I)
-        WRITE(14,'("    ", es25.16 )')NodeVValue_analytic(I)
+        IF(NumberOfDimensions==2) THEN
+          WRITE(14,'("    ", es25.16 )')NodeVValue_analytic(I)
+        END IF
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_analytic(I)
         END IF
@@ -1823,7 +1842,9 @@ CONTAINS
         END IF
 
         WRITE(14,'("    ", es25.16 )')NodeUValue_error(I)
-        WRITE(14,'("    ", es25.16 )')NodeVValue_error(I)
+        IF(NumberOfDimensions==2) THEN
+          WRITE(14,'("    ", es25.16 )')NodeVValue_error(I)
+        END IF
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_error(I)
         END IF
@@ -1846,21 +1867,38 @@ CONTAINS
     END IF
 
 !test output for DN only
-    IF(DN) THEN
-      FILENAME="./output/"//NAME//".davidn"
-      OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
-      WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1),NodesPerMeshComponent(2)
-      DO I=1,NodesPerMeshComponent(1) 
-        WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
-      ENDDO
-      DO I=1,NodesPerMeshComponent(1) 
-        WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
-      ENDDO
-      DO I=1,NodesPerMeshComponent(2)
-        WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodePValue2(I)
-      ENDDO
-      CLOSE(14)
-    ENDIF
+    IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
+      IF(DN) THEN
+        FILENAME="./output/"//NAME//".davidn"
+        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+        WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1),NodesPerMeshComponent(2)
+        DO I=1,NodesPerMeshComponent(1) 
+          WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
+        ENDDO
+        DO I=1,NodesPerMeshComponent(1) 
+          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
+        ENDDO
+        DO I=1,NodesPerMeshComponent(2)
+          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodePValue2(I)
+        ENDDO
+        CLOSE(14)
+      ENDIF
+    END IF
+
+    IF(NumberOfDimensions==1) THEN
+      IF(DN) THEN
+        FILENAME="./output/"//NAME//".davidn"
+        OPEN(UNIT=14, FILE=CHAR(FILENAME),STATUS='unknown')
+        WRITE(14,*) NodesPerMeshComponent(1),NodesPerMeshComponent(1)
+        DO I=1,NodesPerMeshComponent(1) 
+          WRITE(14,'(3("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I)
+        ENDDO
+        DO I=1,NodesPerMeshComponent(1) 
+          WRITE(14,'(6("    ", es25.16 ))')NodeXValue(I),NodeYValue(I),NodeZValue(I),NodeUValue(I),NodeVValue(I),NodeWValue(I)
+        ENDDO
+        CLOSE(14)
+      ENDIF
+    END IF
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Nodes...",ERR,ERROR,*999)
     RETURN
@@ -1920,16 +1958,16 @@ CONTAINS
     ELSE IF (lagrange_simplex==1) THEN
       WRITE(5,*) 'Shape.  Dimension= ',TRIM(NMs(NumberOfDimensions))
       WRITE(5,*) '#Scale factor sets= 1'
-      IF(NumberOfDimensions==2) THEN
+      IF(NumberOfDimensions==1) THEN
+           WRITE(5,*) 'q.Lagrange, #Scale factors=',NodesPerElement(1)
+      ELSE IF (NumberOfDimensions==2) THEN
         IF(MaxNodesPerElement==4) THEN
           WRITE(5,*) 'l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
         ELSE IF(MaxNodesPerElement==9) THEN
           WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
         ELSE IF(MaxNodesPerElement==16) THEN
           WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
-        END IF
-      ELSE
-        IF(MaxNodesPerElement==8) THEN
+        ELSE IF (MaxNodesPerElement==8) THEN
           WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
         ELSE IF(MaxNodesPerElement==27) THEN
           WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
@@ -1952,7 +1990,19 @@ CONTAINS
       END IF
 
       DO J=1,NumberOfFieldComponent(I)
-        IF(NumberOfDimensions==2) THEN
+        IF(NumberOfDimensions==1) THEN
+          IF(I==1)THEN
+            IF(J==1) THEN
+                WRITE(5,*)'   x.   q.Lagrange, no modify, standard node based.'
+            ELSE IF(J==2) THEN
+                WRITE(5,*)'   y.   q.Lagrange, no modify, standard node based.'
+            ELSE IF(J==3) THEN
+                WRITE(5,*)'   z.   q.Lagrange, no modify, standard node based.'
+            END IF
+          ELSE
+            WRITE(5,*)'   ',TRIM(NMs(J)),'.   q.Lagrange, no modify, standard node based.'
+          END IF
+        ELSE IF(NumberOfDimensions==2) THEN
           IF(I==1)THEN
             IF(J==1) THEN
               IF(MaxNodesPerElement==4)THEN
