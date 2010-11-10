@@ -423,14 +423,14 @@ CONTAINS
           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
           & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(1)-1.0)
-        IF(NumberOfDimensions==2)THEN
-        XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+        IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
+          XI_COORDINATES(2)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION% &
             & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(2)-1.0)
         END IF
         IF(NumberOfDimensions==3)THEN
-        XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
+          XI_COORDINATES(3)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,3)-1.0)/(REGION% &
             & equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
             & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%number_of_nodes_xic(3)-1.0)
@@ -520,7 +520,7 @@ CONTAINS
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
 !        NodeYValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
 !          & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
-        IF(NumberOfDimensions==2)THEN
+        IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
           NodeYValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
         END IF
@@ -1766,7 +1766,7 @@ CONTAINS
       WRITE(14,*) ' Node: ',I
       WRITE(14,'("    ", es25.16 )')NodeXValue(I)
 
-      IF(NumberOfDimensions==2) THEN
+      IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
         WRITE(14,'("    ", es25.16 )')NodeYValue(I)
       END IF
 
@@ -1827,7 +1827,7 @@ CONTAINS
 
       IF( ANALYTIC ) THEN
         WRITE(14,'("    ", es25.16 )')NodeUValue_analytic(I)
-        IF(NumberOfDimensions==2) THEN
+        IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeVValue_analytic(I)
         END IF
         IF(NumberOfDimensions==3) THEN
@@ -1842,7 +1842,7 @@ CONTAINS
         END IF
 
         WRITE(14,'("    ", es25.16 )')NodeUValue_error(I)
-        IF(NumberOfDimensions==2) THEN
+        IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeVValue_error(I)
         END IF
         IF(NumberOfDimensions==3) THEN
