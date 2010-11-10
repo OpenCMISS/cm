@@ -183,7 +183,7 @@ CONTAINS
                     CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,4_INTG,BOTTOM_SURFACE_NODES,BOTTOM_NORMAL_XI,ERR,ERROR,*999) !Bottom
 
                     !Set all inner surface nodes to inner pressure (- sign is to make positive P into a compressive force) ?
-                    PIN=-EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX)
+                    PIN=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX)
                     DO node_idx=1,SIZE(INNER_SURFACE_NODES,1)
                       user_node=INNER_SURFACE_NODES(node_idx)
                       !Need to test if this node is in current decomposition
@@ -194,7 +194,7 @@ CONTAINS
                       ENDIF
                     ENDDO
                     !Set all outer surface nodes to outer pressure
-                    POUT=-EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX)
+                    POUT=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX)
                     DO node_idx=1,SIZE(OUTER_SURFACE_NODES,1)
                       user_node=OUTER_SURFACE_NODES(node_idx)
                       !Need to test if this node is in current decomposition
@@ -630,8 +630,8 @@ CONTAINS
         ELEMENT_VECTOR1=NONLINEAR_MATRICES%ELEMENT_RESIDUAL
 
         ! determine step size
-        !\todo: will this be robust enough? Turns out it fails in some cases
-        DELTA=1e-5_dp
+        !\todo: will this be robust enough? Try a fraction of the smallest (largest?) entry
+        DELTA=1e-4_DP
 !         CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
 !         xnorm=sqrt(sum(DATA**2))/size(DATA)
 !         DELTA=(DELTA+xnorm)*DELTA
@@ -765,7 +765,6 @@ CONTAINS
     NULLIFY(DEPENDENT_BASIS_1)
     NULLIFY(DECOMPOSITION,MESH_ELEMENT)
 
-
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN 
@@ -834,6 +833,7 @@ CONTAINS
           & MATERIALS_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+
         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
@@ -883,9 +883,6 @@ CONTAINS
             CALL FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADIENT_TENSOR(DEPENDENT_INTERPOLATED_POINT, &
               & GEOMETRIC_INTERPOLATED_POINT,FIBRE_INTERPOLATED_POINT,NUMBER_OF_DIMENSIONS, &
               & NUMBER_OF_XI,DZDNU,Jxxi,ERR,ERROR,*999)
-!             !Calculate Sigma=1/Jznu.FTF', the Cauchy stress tensor at the gauss point
-!             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-!               & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
 
             IF(DIAGNOSTICS1) THEN
               CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ELEMENT_NUMBER = ",ELEMENT_NUMBER,ERR,ERROR,*999)
@@ -907,9 +904,7 @@ CONTAINS
               DARCY_RHO_0_F=1.0E-03 !rather pass it through shared material field
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
-
 !               write(*,*)'DARCY_VOL_INCREASE(1) = ',DARCY_VOL_INCREASE
-
             ENDIF
 
             !Calculate dPhi/dZ at the gauss point, Phi is the basis function
@@ -929,8 +924,9 @@ CONTAINS
             DO component_idx=1,NUMBER_OF_DIMENSIONS
               DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
               IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
-                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)% &
-                  & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+                DEPENDENT_BASIS=>DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY% &
+                  & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
                   element_dof_idx=element_dof_idx+1
                   DO component_idx2=1,NUMBER_OF_DIMENSIONS
@@ -954,19 +950,14 @@ CONTAINS
                 COMPONENT_BASIS=>DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(HYDROSTATIC_PRESSURE_COMPONENT)%DOMAIN% &
                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
                 COMPONENT_QUADRATURE_SCHEME=>COMPONENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_FIELD%VARIABLES(var1)% &
-                COMPONENTS(HYDROSTATIC_PRESSURE_COMPONENT)% &
-                  & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-                DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS 
+                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=COMPONENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
                   element_dof_idx=element_dof_idx+1 
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
                     NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
                       & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
                       & GAUSS_WEIGHTS*Jxxi*COMPONENT_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,1,gauss_idx)* &
                       & (Jznu-1.0_DP-DARCY_VOL_INCREASE)
-
-!                     write(*,*)'Jznu-1.0_DP-DARCY_VOL_INCREASE = ',Jznu-1.0_DP-DARCY_VOL_INCREASE
-
                   ELSE
                     NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
                       & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
@@ -1017,9 +1008,6 @@ CONTAINS
             !Calculate F=dZ/dNU at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADIENT_TENSOR(DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
               & FIBRE_INTERPOLATED_POINT,NUMBER_OF_DIMENSIONS,NUMBER_OF_XI,DZDNU,Jxxi,ERR,ERROR,*999)
-!             !Caculate Cauchy stress tensor at the gauss point
-!             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-!               & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
 
             !Calculate Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
@@ -1035,8 +1023,9 @@ CONTAINS
             DO component_idx=1,DEPENDENT_NUMBER_OF_COMPONENTS
               DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
               IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
-                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)% &
-                  & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+                DEPENDENT_BASIS=>DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY% &
+                  & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                 DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS  
                   element_dof_idx=element_dof_idx+1    
                   NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
@@ -1137,7 +1126,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FACE_INTERPOLATED_POINT
     INTEGER(INTG) :: FIELD_VAR_U_TYPE,FIELD_VAR_DUDN_TYPE,MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: element_face_idx,face_number,normal_component_idx,gauss_idx
-    INTEGER(INTG) :: FACE_COMPONENTS(2),FACE_NUMBER_OF_GAUSS_POINTS
+    INTEGER(INTG) :: FACE_NUMBER_OF_GAUSS_POINTS
     INTEGER(INTG) :: component_idx,component_idx2,element_base_dof_idx,face_node_idx
     INTEGER(INTG) :: node_derivative_idx,element_dof_idx,element_node_idx,parameter_idx
     INTEGER(INTG) :: face_parameter_idx,face_node_derivative_idx
@@ -1186,14 +1175,6 @@ CONTAINS
           & FACE_PRESSURE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         FACE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(var2)%PTR
 
-if (any(abs(abs(face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx))-1.0)>5e-1) .and. &
-  sum(abs(face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx)))>1e-5) then
-  write(*,*) "user element, face",decomposition%domain(1)%ptr%mappings%elements%local_to_global_map(element_number),element_face_idx
-  write(*,"(9f10.5)") face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx)
-  write(*,"(9i10)") decomposition%domain(1)%ptr%mappings%nodes%local_to_global_map(decomposition%domain(1)% &
-    & ptr%topology%faces%faces(face_number)%nodes_in_face(1:9))
-! face_pressure_interpolation_parameters%parameters(1:9,normal_component_idx)=-1.0
-endif
         !Check if nonzero surface pressure is defined on the face
         NONZERO_PRESSURE=.FALSE.
         IF(ANY(ABS(FACE_PRESSURE_INTERPOLATION_PARAMETERS%PARAMETERS(:,normal_component_idx))>ZERO_TOLERANCE)) THEN
@@ -1223,16 +1204,13 @@ endif
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,FACE_INTERPOLATED_POINT, &
               & ERR,ERROR,*999)
             PRESSURE_GAUSS=FACE_INTERPOLATED_POINT%VALUES(normal_component_idx,1)    !Surface pressure at this gauss point
+            IF(DECOMP_FACE%XI_DIRECTION<0) PRESSURE_GAUSS=-PRESSURE_GAUSS            !Crucial detail here
 
             !Interpolate delx_j/delxi_M = dZdxi at the face gauss point
             DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_U_TYPE)%PTR
-!             CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,face_number,DEPENDENT_INTERPOLATION_PARAMETERS, &
-!               & ERR,ERROR,*999) !old
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
               & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
             DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_U_TYPE)%PTR
-!             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx,DEPENDENT_INTERPOLATED_POINT, &
-!               & ERR,ERROR,*999) !old
             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
               & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             DZDXI=DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
@@ -1247,11 +1225,11 @@ endif
             DO component_idx=1,3
               !Calculate g^3M*dZ_j/dxi_M
               NORMAL_PROJECTION=dot_product(GIJU(normal_component_idx,:),DZDXI(component_idx,:))
+              IF(ABS(NORMAL_PROJECTION)<ZERO_TOLERANCE) CYCLE !Makes it a bit quicker
               !Update element_base_dof_idx
               element_base_dof_idx=0
               DO component_idx2=1,component_idx-1
-                element_base_dof_idx=element_base_dof_idx+DEPENDENT_FIELD%VARIABLES(var1)% &
-                & COMPONENTS(component_idx2)%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+                element_base_dof_idx=element_base_dof_idx+DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
               ENDDO
               !Looping here is a bit different to reduce redundancy
               DO face_node_idx=1,FACE_BASIS%NUMBER_OF_NODES !nnf
@@ -1335,7 +1313,7 @@ endif
     CALL MATRIX_PRODUCT(DZDXI,DXIDNU,DZDNU_TEMP,ERR,ERROR,*999) !dz/dnu = dz/dxi * dxi/dnu  (deformation gradient tensor, F)
 
     Jxxi=DETERMINANT(DXDXI,ERR,ERROR)
-    
+
     IF (DIMEN == 2) THEN
         DZDNU(1,:) = (/DZDNU_TEMP(1,1),DZDNU_TEMP(1,2),0.0_DP/)
         DZDNU(2,:) = (/DZDNU_TEMP(2,1),DZDNU_TEMP(2,2),0.0_DP/)
@@ -1808,9 +1786,7 @@ endif
       COMPONENT_BASIS=>FIELD%VARIABLES(1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS% &
         & ELEMENTS(ELEMENT_NUMBER)%BASIS
       QUADRATURE_SCHEME=>COMPONENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-      NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
-        & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
-      DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
+      DO parameter_idx=1,size(QUADRATURE_SCHEME%GAUSS_BASIS_FNS,1)
         DO xi_idx=1,NUMBER_OF_XI
           derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)  !2,4,7
           DFDXI(component_idx,parameter_idx,xi_idx)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(parameter_idx,derivative_idx, &
@@ -1822,8 +1798,9 @@ endif
     DO component_idx=1,NUMBER_OF_DIMENSIONS
       COMPONENT_BASIS=>FIELD%VARIABLES(1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS% &
         & ELEMENTS(ELEMENT_NUMBER)%BASIS
-      NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
-        & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+!       NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=FIELD%VARIABLES(1)%COMPONENTS(component_idx)% &
+!         & MAX_NUMBER_OF_INTERPOLATION_PARAMETERS
+      NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS=COMPONENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
       DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
           DO xi_idx=1,NUMBER_OF_XI
             DFDZ(parameter_idx,component_idx)= DFDZ(parameter_idx,component_idx) + &

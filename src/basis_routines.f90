@@ -1849,13 +1849,9 @@ CONTAINS
           ALLOCATE(BASIS%LOCAL_XI_NORMAL(NUMBER_OF_LOCAL_FACES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local xi normal.",ERR,ERROR,*999)
           
-          BASIS%NUMBER_OF_LOCAL_FACES=6
-
           ALLOCATE(BASIS%LOCAL_FACE_XI_DIRECTION(NUMBER_OF_LOCAL_FACES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local face xi direction",ERR,ERROR,*999)
           
-          !BASIS%NUMBER_OF_LOCAL_FACES=6
-
           !Find the lines and faces
           BASIS%NUMBER_OF_LOCAL_LINES=0
           DO ni1=1,3
@@ -2299,13 +2295,14 @@ CONTAINS
             DO ni2=1,ni-1
               FACE_XI2(1)=OTHER_XI_DIRECTIONS3(ni2,2,1)
               FACE_XI2(2)=OTHER_XI_DIRECTIONS3(ni2,3,1)
-              IF(BASIS%INTERPOLATION_XI(FACE_XI2(1))==BASIS%INTERPOLATION_XI(FACE_XI(1)).AND. &
-                & BASIS%INTERPOLATION_XI(FACE_XI2(2))==BASIS%INTERPOLATION_XI(FACE_XI(2)).AND. &
-                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(1))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1)).AND. &
-                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(2))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))) THEN
-                FACE_BASIS_DONE=.TRUE.
-                EXIT
-              ENDIF
+              !Going to disable the test below, as it results in error in collapsed elements and doesn't save much time
+!               IF(BASIS%INTERPOLATION_XI(FACE_XI2(1))==BASIS%INTERPOLATION_XI(FACE_XI(1)).AND. &
+!                 & BASIS%INTERPOLATION_XI(FACE_XI2(2))==BASIS%INTERPOLATION_XI(FACE_XI(2)).AND. &
+!                 & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(1))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1)).AND. &
+!                 & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(2))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))) THEN
+!                 FACE_BASIS_DONE=.TRUE.
+!                 EXIT
+!               ENDIF
             ENDDO !ni2
             IF(FACE_BASIS_DONE) THEN
               BASIS%FACE_BASES(ni)%PTR=>BASIS%FACE_BASES(ni2)%PTR
