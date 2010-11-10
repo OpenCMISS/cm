@@ -3333,7 +3333,6 @@ CONTAINS
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE
     INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
     INTEGER(INTG) :: NDOFS_TO_PRINT
 
