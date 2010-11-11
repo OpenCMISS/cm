@@ -185,6 +185,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue2  
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeMIValue ! Mass increase for coupled elasticity Darcy INRIA model
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeMUValue
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeLabelValue
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeRHOValue  
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeA0Value
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeH0Value
@@ -264,6 +265,7 @@ CONTAINS
     IF (ALLOCATED(NodePValue2)) DEALLOCATE(NodePValue2)
     IF (ALLOCATED(NodeMIValue)) DEALLOCATE(NodeMIValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
+    IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
     IF (ALLOCATED(NodeA0Value)) DEALLOCATE(NodeA0Value)
     IF (ALLOCATED(NodeH0Value)) DEALLOCATE(NodeH0Value)
@@ -377,6 +379,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodePValue2)) ALLOCATE(NodePValue2(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMIValue)) ALLOCATE(NodeMIValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeA0Value)) ALLOCATE(NodeA0Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeH0Value)) ALLOCATE(NodeH0Value(NodesPerMeshComponent(1)))
@@ -729,6 +732,7 @@ CONTAINS
     IF (ALLOCATED(NodeWValue)) DEALLOCATE(NodeWValue)
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
+    IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
     IF (ALLOCATED(NodeEValue)) DEALLOCATE(NodeEValue)
     IF (ALLOCATED(NodeH0Value)) DEALLOCATE(NodeH0Value)
@@ -837,6 +841,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeA0Value)) ALLOCATE(NodeA0Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeH0Value)) ALLOCATE(NodeH0Value(NodesPerMeshComponent(1)))
@@ -1364,7 +1369,7 @@ CONTAINS
   !================================================================================================================================
   !  
 
-  !> Writes solution into encas
+  !> Writes solution into encas --- BUT FOR PRESSURE POISSON ONLY --- not for general use!
   SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK(REGION, EQUATIONS_SET_GLOBAL_NUMBER, NAME, ERR, ERROR,*)
 
     !Argument variables
@@ -1392,6 +1397,7 @@ CONTAINS
     IF (ALLOCATED(NodeWValue)) DEALLOCATE(NodeWValue)
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
+    IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
     IF (ALLOCATED(NodeA0Value)) DEALLOCATE(NodeA0Value)
     IF (ALLOCATED(NodeH0Value)) DEALLOCATE(NodeH0Value)
@@ -1489,6 +1495,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeA0Value)) ALLOCATE(NodeA0Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeH0Value)) ALLOCATE(NodeH0Value(NodesPerMeshComponent(1)))
@@ -1546,19 +1553,29 @@ CONTAINS
         END IF
 
 !         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
-          & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
-!         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
-          & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+!         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+!           & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
+! !         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
+!         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+!           & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+
+        parameter_set_idx = 2
+        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
+        parameter_set_idx = 3
+        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
 
         IF(NumberOfDimensions==3)THEN
-!           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
-            & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+          parameter_set_idx = 4
+          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+            & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
+! 
+! !           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
+!           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+!             & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        ! Why do NodeUValue, NodeVValue, NodeWValue use 'source_field' while NodePValue uses 'dependent_field' ???
 
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
@@ -1573,20 +1590,36 @@ CONTAINS
               & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
               & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
                 & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
+          parameter_set_idx = 1 
           NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
 !             & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
         END IF
+
+          NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
+          NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
+
+          parameter_set_idx = 5
+          NodeLabelValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+            & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
+
       END DO 
     END DO
 
-    NodeMUValue=0.0_DP
-    NodeRHOValue=0.0_DP
-    NodeA0Value=0.0_DP
-    NodeH0Value=0.0_DP
-    NodeEValue=0.0_DP
-    NodeSIGMAValue=0.0_DP
-    NodeKappaValue=0.0_DP
+!     NodeMUValue=0.0_DP
+!     NodeRHOValue=0.0_DP
+
+
+
+
+
+!     NodeA0Value=0.0_DP
+!     NodeH0Value=0.0_DP
+!     NodeEValue=0.0_DP
+!     NodeSIGMAValue=0.0_DP
+!     NodeKappaValue=0.0_DP
 
     IF( NumberOfDimensions==3 )THEN
       !For 3D, the following call works ...
@@ -1606,8 +1639,8 @@ CONTAINS
 
     !This is for Poisson-Flow problems only
     IF(NumberOfVariableComponents==1)NumberOfVariableComponents=NumberOfDimensions+1
-    IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=2
-    IF(NumberOfMaterialComponents==4)NumberOfMaterialComponents=2
+    IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=3
+    IF(NumberOfMaterialComponents==4)NumberOfMaterialComponents=3
 
 
     NumberOfFieldComponent(1)=NumberOfDimensions
@@ -1621,9 +1654,6 @@ CONTAINS
         ElementNodesScales(I,J)=1.0000000000000000E+00
       END DO
     END DO
-
-
-
 
     CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME,EQUATIONS_SET)
     CALL FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
@@ -1792,6 +1822,7 @@ CONTAINS
               & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
                 & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           WRITE(14,'("    ", es25.16 )')NodePValue(I)
+          WRITE(14,'("    ", es25.16 )')NodeLabelValue(I)
         END IF
       END IF
 
@@ -1967,7 +1998,9 @@ CONTAINS
           WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
         ELSE IF(MaxNodesPerElement==16) THEN
           WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
-        ELSE IF (MaxNodesPerElement==8) THEN
+        END IF
+      ELSE
+        IF(MaxNodesPerElement==8) THEN
           WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
         ELSE IF(MaxNodesPerElement==27) THEN
           WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
@@ -2796,15 +2829,19 @@ CONTAINS
   !> Reads boundary conditions from a file
   SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS_ITERATION(SOLVER_TYPE,BOUNDARY_VALUES,BOUNDARY_NODES, &
     & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION,OPTION,ITERATION)
-    INTEGER(INTG):: SOLVER_TYPE,I,J,NUMBER_OF_TIME_STEPS,OPTION
+    INTEGER(INTG):: SOLVER_TYPE,I,NUMBER_OF_TIME_STEPS,OPTION
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
     INTEGER(INTG), POINTER :: BOUNDARY_NODES(:)
     INTEGER(INTG):: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION,NUM_BC_NODES,ITERATION
-    REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE, TIME_STEP
 
     CHARACTER(34) :: INPUT_FILE
 
     INTEGER(INTG):: ENDI
+
+    OPTION=1
+    ENDI=1
+    NUMBER_OF_TIME_STEPS=1
+    NUMBER_OF_DIMENSIONS=42
 
     IF(SOLVER_TYPE==1) THEN !LINEAR
       IF(BOUNDARY_CONDITION==1)THEN !SCALAR BOUNDARY CONDITION - SET THE NUMBER OF DIMENSIONS TO BE NUMBER OF DEPENDENT FIELD COMPONENTS (this will usually be one)!  
@@ -2840,12 +2877,12 @@ CONTAINS
   !
   !> Reads boundary conditions from a file
   SUBROUTINE FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_TYPE,BOUNDARY_VALUES,NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION, & 
-    & OPTION,TIME)
+    & OPTION,TIME_STEP,TIME,LENGTH_SCALE)
 
-    INTEGER(INTG):: SOLVER_TYPE,I,J,NUMBER_OF_TIME_STEPS,OPTION
+    INTEGER(INTG):: SOLVER_TYPE,I,OPTION, TIME_STEP
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
     INTEGER(INTG):: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION,NUM_BC_NODES
-    REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE, TIME_STEP
+    REAL(DP):: LENGTH_SCALE,TIME
 
     CHARACTER(34) :: INPUT_FILE
 
@@ -2854,33 +2891,27 @@ CONTAINS
 
     INTEGER(INTG):: ENDI
 
+    ENDI=42
+
 
     IF(SOLVER_TYPE==1) THEN !LINEAR
       IF(BOUNDARY_CONDITION==5)THEN !MOVED WALL
         IF(OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(OPTION==1) THEN
-          TIME_STEP_SIZE=0.01_DP
-          TIME_TOLERANCE=0.00001_DP
-          NUMBER_OF_TIME_STEPS=50
           ENDI=SIZE(BOUNDARY_VALUES)
-          DO J=1,NUMBER_OF_TIME_STEPS
-            TIME_STEP=J
-            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
-              IF(J<10) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
-              ELSE IF(J<100) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
-              ENDIF
-              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
-              DO I=1,ENDI
-                READ(J,*) BOUNDARY_VALUES(I)
-              ENDDO
-              BOUNDARY_VALUES=BOUNDARY_VALUES
-              WRITE(*,*)'1! BOUNDARY_VALUES=BOUNDARY_VALUES'
-              CLOSE(J)
-            ENDIF
+          IF(TIME_STEP<10) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') TIME_STEP
+          ENDIF
+          OPEN(UNIT=TIME_STEP,FILE=INPUT_FILE,STATUS='unknown') 
+          DO I=1,ENDI
+            READ(TIME_STEP,*) BOUNDARY_VALUES(I)
           ENDDO
+          BOUNDARY_VALUES=BOUNDARY_VALUES*LENGTH_SCALE
+          WRITE(*,*)'1! BOUNDARY_VALUES=BOUNDARY_VALUES'
+          CLOSE(TIME_STEP)
         ELSEIF(OPTION==2) THEN
           ENDI=SIZE(BOUNDARY_VALUES)/NUMBER_OF_DIMENSIONS
           !U,X COMPONENT
@@ -2964,35 +2995,28 @@ CONTAINS
 
   !> Reads input data from a file
   SUBROUTINE FLUID_MECHANICS_IO_READ_DATA(SOLVER_TYPE,INPUT_VALUES,NUMBER_OF_DIMENSIONS,INPUT_TYPE, & 
-    & INPUT_OPTION,TIME)
+    & INPUT_OPTION,TIME_STEP,LENGTH_SCALE)
 
     INTEGER(INTG):: SOLVER_TYPE,I,INPUT_OPTION,CHECK
     INTEGER(INTG) :: ERR
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS
     TYPE(VARYING_STRING):: ERROR
     REAL(DP), POINTER :: INPUT_VALUES(:)
-    INTEGER(INTG):: NUMBER_OF_DIMENSIONS,INPUT_TYPE,TEST
-    REAL(DP):: TIME, TIME_TOLERANCE, TIME_STEP_SIZE
+    INTEGER(INTG):: INPUT_TYPE
     REAL(DP) :: LENGTH_SCALE
 
-    INTEGER(INTG):: ENDI,NUMBER_OF_TIME_STEPS,J, TIME_STEP,K
+    INTEGER(INTG):: ENDI,TIME_STEP
     CHARACTER(35) :: INPUT_FILE
     CHARACTER(29) :: UVEL_FILE
 
     I=SOLVER_TYPE
-  
-    TIME_STEP_SIZE=1.0_DP  
-    TIME_TOLERANCE=0.00001_DP
+    NUMBER_OF_DIMENSIONS=42  
+    ENDI=42
+
   
 !     IF(SOLVER_TYPE==1) THEN !LINEAR
       IF(INPUT_TYPE==1)THEN !POISSON VECTOR SOURCE TEMPORARY
-        TIME_STEP_SIZE=0.04_DP  
-        TIME_TOLERANCE=0.00001_DP
         ENDI=SIZE(INPUT_VALUES)
-!         IF(NUMBER_OF_DIMENSIONS==3) THEN
-!           do nothing
-          TIME_STEP=INT(TIME/TIME_STEP_SIZE)
-!         ENDIF
-         TEST=NUMBER_OF_DIMENSIONS
 
 ! WRITE(*,*) "TIME_STEP", TIME_STEP
 
@@ -3010,16 +3034,34 @@ CONTAINS
           ENDIF
         ELSE IF(INPUT_OPTION==3) THEN
           IF(TIME_STEP<=10) THEN
-            WRITE(UVEL_FILE,'("./input/data/ORI_DATA_0",I0,".dat")') TIME_STEP-1
+            WRITE(UVEL_FILE,'("./input/data/ORI_DATA_0",I0,".dat")') TIME_STEP
           ELSE IF(TIME_STEP<100) THEN
-            WRITE(UVEL_FILE,'("./input/data/ORI_DATA_",I0,".dat")') TIME_STEP-1
+            WRITE(UVEL_FILE,'("./input/data/ORI_DATA_",I0,".dat")') TIME_STEP
+          ENDIF
+        ELSE IF(INPUT_OPTION==4) THEN
+          IF(TIME_STEP<=10) THEN
+            WRITE(UVEL_FILE,'("./input/data/U_DATA_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(UVEL_FILE,'("./input/data/U_DATA_",I0,".dat")') TIME_STEP
+          ENDIF
+        ELSE IF(INPUT_OPTION==5) THEN
+          IF(TIME_STEP<=10) THEN
+            WRITE(UVEL_FILE,'("./input/data/V_DATA_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(UVEL_FILE,'("./input/data/V_DATA_",I0,".dat")') TIME_STEP
+          ENDIF
+        ELSE IF(INPUT_OPTION==6) THEN
+          IF(TIME_STEP<=10) THEN
+            WRITE(UVEL_FILE,'("./input/data/W_DATA_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(UVEL_FILE,'("./input/data/W_DATA_",I0,".dat")') TIME_STEP
           ENDIF
         ENDIF
           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,UVEL_FILE,ERR,ERROR,*999)
           OPEN(UNIT=42, FILE=UVEL_FILE,STATUS='unknown') 
           READ(42,*) CHECK
           IF(CHECK/=ENDI) THEN
-            STOP 'Error during data input'
+            STOP 'Error during data input - probably wrong Lagrangian/Hermite input file!'
           ENDIF
           DO I=1,ENDI
             READ(42,*) INPUT_VALUES(I)
@@ -3031,85 +3073,54 @@ CONTAINS
         IF(INPUT_OPTION==0) THEN
           !do nothing (default)    
         ELSE IF(INPUT_OPTION==1) THEN
-          TIME_STEP_SIZE=0.1_DP
-          NUMBER_OF_TIME_STEPS=10
-          LENGTH_SCALE=1.0_DP
-          TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
-          DO J=1,NUMBER_OF_TIME_STEPS
-            TIME_STEP=J
-            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
-              IF(J<10) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') J
-              ELSE IF(J<100) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
-              ELSE IF(J<1000) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
-              ENDIF
-              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
-              DO I=1,ENDI
-                READ(J,*) INPUT_VALUES(I)
-              ENDDO
-! ! TESTETSTEST
-              INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE
-              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE'
-              CLOSE(J)
-            ENDIF
+          IF(TIME_STEP<=10) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<1000) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') TIME_STEP
+          ENDIF
+          OPEN(UNIT=TIME_STEP, FILE=INPUT_FILE,STATUS='unknown') 
+          DO I=1,ENDI
+            READ(TIME_STEP,*) INPUT_VALUES(I)
           ENDDO
+! ! TESTETSTEST
+          INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE
+          WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE'
+          CLOSE(TIME_STEP)
         ELSE IF(INPUT_OPTION==2) THEN ! For Darcy, invoke the length scale (consistent with reading in the geometry data)
-          LENGTH_SCALE=1000.0_DP
-          TIME_STEP_SIZE=0.05_DP
-          NUMBER_OF_TIME_STEPS=22
-          TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
-          DO J=1,NUMBER_OF_TIME_STEPS
-            TIME_STEP=J
-            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
-              IF(J<10) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') J
-              ELSE IF(J<100) THEN
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') J
-              ENDIF
-              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
-              DO I=1,ENDI
-                READ(J,*) INPUT_VALUES(I)
-                INPUT_VALUES(I) = LENGTH_SCALE * INPUT_VALUES(I)
-              ENDDO
-              CLOSE(J)
-            ENDIF
+          IF(TIME_STEP<=10) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<1000) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') TIME_STEP
+          ENDIF
+          OPEN(UNIT=TIME_STEP, FILE=INPUT_FILE,STATUS='unknown') 
+          DO I=1,ENDI
+            READ(TIME_STEP,*) INPUT_VALUES(I)
+            INPUT_VALUES(I) = LENGTH_SCALE * INPUT_VALUES(I)
           ENDDO
+          CLOSE(TIME_STEP)
         ELSE IF(INPUT_OPTION==3) THEN
-          TIME_STEP_SIZE=0.01_DP
-          NUMBER_OF_TIME_STEPS=1000
-          LENGTH_SCALE=100.0_DP
-          TIME_TOLERANCE=0.00001_DP
           ENDI=SIZE(INPUT_VALUES)
-          DO J=1,NUMBER_OF_TIME_STEPS
-            TIME_STEP=J
-            IF((TIME/TIME_STEP_SIZE<TIME_STEP+TIME_TOLERANCE).AND.(TIME/TIME_STEP_SIZE>TIME_STEP-TIME_TOLERANCE)) THEN
-              IF(J<10) THEN
-                K=J
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') K
-              ELSE IF(J<100) THEN
-                K=J
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') K
-              ELSE IF(J<500) THEN
-                K=J
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') K
-              ELSE IF(J<1000) THEN
-                K=J-1000
-                WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') K
-              ENDIF
-              OPEN(UNIT=J, FILE=INPUT_FILE,STATUS='unknown') 
-              DO I=1,ENDI
-                READ(J,*) INPUT_VALUES(I)
-              ENDDO
-! ! TESTETSTEST
-              INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE
-              WRITE(*,*)'1! INPUT_VALUES=INPUT_VALUES/LENGTH_SCALE'
-              CLOSE(J)
-            ENDIF
+          IF(TIME_STEP<=10) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_00",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<100) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_0",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<500) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') TIME_STEP
+          ELSE IF(TIME_STEP<1000) THEN
+            WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') 1000-TIME_STEP
+          ENDIF
+          OPEN(UNIT=TIME_STEP, FILE=INPUT_FILE,STATUS='unknown') 
+          DO I=1,ENDI
+            READ(TIME_STEP,*) INPUT_VALUES(I)
+            INPUT_VALUES(I) = LENGTH_SCALE * INPUT_VALUES(I)
           ENDDO
+          CLOSE(TIME_STEP)
         ELSE
           STOP 'Error during data input'
         ENDIF
