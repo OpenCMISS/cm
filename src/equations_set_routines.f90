@@ -209,21 +209,21 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-                !Check the specified analtyic field has the same decomposition as the geometric field
+                !Check the specified analytic field has the same decomposition as the geometric field
                 GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                 IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
                   IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD%DECOMPOSITION,ANALYTIC_FIELD%DECOMPOSITION)) THEN
-                    CALL FLAG_ERROR("The specified analtyic field does not have the same decomposition as the geometric "// &
+                    CALL FLAG_ERROR("The specified analytic field does not have the same decomposition as the geometric "// &
                       & "field for the specified equations set.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("The geometric field is not associated for the specified equations set.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The specified analtyic field region is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("The specified analytic field region is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The specified analtyic field has not been finished.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("The specified analytic field has not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
             !Check the user number has not already been used for a field in this region.

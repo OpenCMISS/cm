@@ -14407,7 +14407,12 @@ CONTAINS
                       !Get the solver variables data
                       CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
                       solver_dof_idx=1
-                      equations_idx=1
+                      !DO equations_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                      !equations_idx=1
+                      DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
+                        !Loop over the equations sets associated with this dof
+                        DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
                       SELECT CASE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                         & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%EQUATIONS_TYPES(equations_idx))
                       CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
@@ -14432,6 +14437,8 @@ CONTAINS
                       END SELECT
                       CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                          & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                        ENDDO !equations_idx
+                      ENDDO !solver_dof_idx
                     ELSE
                       CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
                     ENDIF

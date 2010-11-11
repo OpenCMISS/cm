@@ -1987,7 +1987,7 @@ CONTAINS
     
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to initialise the values for 
-    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to intiialise \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES 
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to intialise \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES 
     INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier to initialise \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The field component number to initialise
     INTEGER(INTG), INTENT(IN) :: VALUE !<The constant value to initialise the parameter set for

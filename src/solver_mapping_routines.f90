@@ -3946,6 +3946,7 @@ CONTAINS
                       IF(SIZE(VARIABLE_TYPES,1)>=1.AND.SIZE(VARIABLE_TYPES,1)<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
                         DO variable_idx=1,SIZE(VARIABLE_TYPES,1)
 !!TODO: CHECK THAT THE VARIABLE TYPE IS NOT REPEATED
+                          !write(*,*) VARIABLE_TYPES(variable_idx)
                           IF(VARIABLE_TYPES(variable_idx)<1.OR. &
                             & VARIABLE_TYPES(variable_idx)>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
                             LOCAL_ERROR="The variable type of "// &
