@@ -5,7 +5,7 @@
 \subsubsection{Introduction to Dirichlet boundary condition}
 
 Dirichlet boundary condition is a type of essential boundary condition where the value of the variable in an equation 
-does not change with time - for e.g. pressure or temperature at a particular computational node point. 
+does not change at a particular computational node - for e.g. pressure or temperature. 
 In contrast, a natural boundary condition can be flux in diffusion problem or stress in linear elasticity. 
 Dirichlet boundary condition is enforced as a fixed specification of values at a set of boundary nodes. 
 This type of boundary condition is implemented by modifying the set of equations as opposed to the right hand side of the equation.
@@ -160,7 +160,9 @@ In an example file, for example Laplace, the boundary condition is implemented i
     \end{verbatim} 
 In \emph{boundary conditions routine}
  the Dirichlet boundary condition is imposed by first calculating the Dirichlet degrees of freedom. 
-Then the row-column information of the equations matrix is obtained by obtaining information about the 
+Then the row-column information of the equations matrix is obtained by obtaining information about the distributed matrix, 
+more specifically the:
+ 
 \begin{itemize}
  \item \emph{DISTRIBUTED MATRIX STORAGE TYPE}  
  \item \emph{DISTRIBUTED MATRIX STORAGE LOCATIONS}
@@ -179,7 +181,10 @@ In our current structure the equation matrix is stored in the row based format i
 To implement a Dirichlet boundary condition however, the information of the degrees of freedom are required which are stored in the columns of the matrix. 
 Therefore it is useful to store the matrix in a column based approach in order to avoid redundant looping over all rows.
 Currently a linked list based approach has been proposed which stores the matrix in a CRS format as well as a linked list format 
-when a Dirichlet boundary condition is imposed on the problem. In this routine the column-row information of the matrix are obtained 
+when a Dirichlet boundary condition is imposed on the problem. In order reduce the memory usage of storing the equation matrix
+ in two different data formats we store only the degrees of freedom of the matrix that correspond to the nodes in the boundary. 
+The boundary nodes are calculated using a parameter mapping function of the local columns obtained using the 
+\emph{global to local mapping} of columns of the equation matrix. In this routine the column-row information of the matrix are obtained 
 from a linked list and the degree of freedom are calculated and stored to be used in the calculation of the right 
 hand side of the equation.
 
@@ -198,6 +203,9 @@ The storage algorithm is outlined by the following example. For a matrix of the 
 -3 & 0 & 0 & 5 & 0 & 0 \\
  0 &-1 & 0 & 0 & 4 & 0 \\
  0 & 0 & 0 &-2 & 0 & 6 \end{array} \right)\] 
+
+
+
 
 The compressed row storage or CRS is given by a pointer to the first element of row $i$ of A and a one dimensional array of the column indices,
 
