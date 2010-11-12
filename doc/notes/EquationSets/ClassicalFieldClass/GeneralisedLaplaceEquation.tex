@@ -1,5 +1,19 @@
 \subsection{Generalised Laplace Equation}
 
+Using the example of the generalised Laplace equation,
+we illustrate here the general workflow from the governing equations
+to the ``algorithmic'' form of the equations that is amenable
+for implementation into OpenCMISS.
+We thus start with the governing equations and subsequently introduce
+the weak (variational) form of these equations.
+We then shall switch to tensor notation which will be more amenable
+to code implementation.
+After breaking up the domain integrals arising in the formulation
+into a sum of element integrals and introducing numerical integration,
+we finally arrive at the ``algorithmic'' form of the equations
+that is ready for implementation in the code.
+
+
 \subsubsection{Governing equations:}
 The generalised Laplace's equation on a domain $\Omega$ with boundary $\Gamma$
 can be stated as
@@ -7,12 +21,12 @@ can be stated as
   \diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}=0
   \label{eqn:Laplacesequation}
 \end{equation}
-where $\phi$ is the potential throughout the domain and $\tensor{\sigma}$ is
+where $\phi$ is the potential and $\tensor{\sigma}$ is
 the conductivity tensor throughout the domain. Note that 
 $\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $\laplacian{\phi}=0$
 
 \subsubsection{Weak formulation:}
-The corresponding weak form of the equation \eqnref{eqn:Laplacesequation} is
+The corresponding weak form of \eqnref{eqn:Laplacesequation} is
 \begin{equation}
   \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}w}{\Omega}=0 \,,
   \label{eqn:Laplaceweakform}
@@ -29,7 +43,7 @@ Applying Green's theorem to \eqnref{eqn:Laplaceweakform} gives
 or
 \begin{equation}
   \gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\gradient{w}}}{\Omega}
-  = -\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma} \,,
+  = \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma} \,,
   \label{eqn:Laplaceweightedresidualform}
 \end{equation}
 where $\vect{n}$ is the unit outward normal vector to the boundary~$\Gamma$.
@@ -61,7 +75,7 @@ coordinates) so that we can take the dot product. The final tensorial form is
 and thus \eqnref{eqn:Laplaceweightedresidualform} becomes
 \begin{equation}
   \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
-  = -\gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma}
+  = \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma}
   \label{eqn:Laplaceweightedresidualtensorform}
 \end{equation}
 
@@ -205,7 +219,7 @@ $\vect{\xi}$ coordinates. It may thus be helpful to think about $\gamma^{rs}$
 as a scaled/transformed contravariant metric tensor.
 
 \subsubsection{Coded OpenCMISS formulation:}
-Finally, we use the Gaussian quadrature rule (see Section~???), 
+Finally, we use the Gaussian quadrature rule (see Section~??? - still to be written), 
 usually stated as a weighted sum of function values at specified Gauss points within the domain of integration. An $n$-point Gaussian quadrature rule yields an exact result for polynomials of degree $2n-1$ or less by a suitable choice of the points $x_i$ and weights $g_i$ for $i = 1,...,n$. Consequently, the formulation implemented can be derived from Equation (\ref{eqn:elementalfemlhs2}) as: 
 \begin{equation}
   \boxed{
@@ -223,18 +237,39 @@ usually stated as a weighted sum of function values at specified Gauss points wi
 \subsubsection{OpenCMISS implementation}
 
 For exemplification, we briefly discuss here a code snippet
-that evaluates the expression~(\ref{eqn:Laplaceweightedresidualtensorform in OpenCMISS})
-(still needs to be finished / discussed and maybe number of lines needs to be reduced):
+that evaluates the expression~(\ref{eqn:Laplaceweightedresidualtensorform in OpenCMISS}):
 
-{\footnotesize
+\lstset{ %
+language=Fortran,               % choose the language of the code
+basicstyle=\footnotesize,       % the size of the fonts that are used for the code
+numbers=left,                   % where to put the line-numbers
+numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+stepnumber=1,                   % the step between two line-numbers. If it's 1 each line 
+                                % will be numbered
+numbersep=5pt,                  % how far the line-numbers are from the code
+backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+showspaces=false,               % show spaces adding particular underscores
+showstringspaces=false,         % underline spaces within strings
+showtabs=false,                 % show tabs within strings adding particular underscores
+frame=single,	                % adds a frame around the code
+tabsize=2,	                % sets default tabsize to 2 spaces
+captionpos=b,                   % sets the caption-position to bottom
+breaklines=true,                % sets automatic line breaking
+breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+title=\lstname,                 % show the filename of files included with \lstinputlisting;
+                                % also try caption instead of title
+escapeinside={\%*}{*)},         % if you want to add a comment within your code
+morekeywords={*,...}            % if you want to add more keywords to the set
+}
+
+
+
+
+{\footnotesize\tt
 \begin{lstlisting}
-SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER, &
-  & ERR,ERROR,*)
-  ...
+SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER, ERR,ERROR,*)
   DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-    ...
-    RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)% &
-      & PTR%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+    RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
     !Loop over field components
     mhs=0          
     DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -248,12 +283,9 @@ SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBE
             DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
               nhs=nhs+1
               DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms, &
-                  & PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns, &
-                  & PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
               ENDDO !ni
-
               SUM=0.0_DP
               DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
                 DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
@@ -261,9 +293,7 @@ SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBE
                     & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)
                 ENDDO !ni
               ENDDO !mi
-              EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX% &
-                & ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
-
+              EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
             ENDDO !ns
           ENDDO !nh
         ENDIF
@@ -272,3 +302,22 @@ SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBE
   ENDDO !ng
 \end{lstlisting}
 }
+
+
+
+% \begin{minipage}{0.9\textwidth}
+\begin{tabular}{|rp{0.75\textwidth}|}
+  \hline
+  Line number & Explanation \\
+  & \\
+  6 & Loop over the number of variable components 
+      (For the scalar case of Laplace, this number is 1 (scalar potential),
+      whereas for a system like 3D incompressible Navier-Stokes, 
+      this number is 4 (3 components of velocity and pressure).) \\
+  8 & Loop over the number of element parameters (= the number of interpolation functions 
+      associated with this element) \\
+  \hline
+\end{tabular}
+% \end{minipage}
+
+
