@@ -1,36 +1,87 @@
 \subsection{Navier-Stokes Equations} 
-The Navier–Stokes equations arise from applying Newton's second law to fluid motion, together with the assumption that the fluid stress is the sum of a diffusing viscous term, plus a pressure term. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time. 
 
-% \subsubsection{Governing equations:}
-% The generalised Laplace's equation on a domain, $\Omega$, can be stated as
-% \begin{equation}
-%   \diverg{\pbrac{\tensor{\sigma}\grad\phi}}=0
-%   \label{eqn:Laplacesequation}
-% \end{equation}
-% where $\phi$ is the potential throughout the domain and $\tensor{\sigma}$ is
-% the conductivity tensor throughout the domain. Note that 
-% $\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $\laplacian{\phi}=0$
+\subsubsection{Governing equations:}
+
+The Navier-Stokes equations arise from applying Newton's second law to fluid motion, i.e. the temporal and spatial fluid inertia is in equilibrium with internal (volume/body)  and external (surface) forces. The reaction of surface forces can be described in terms of the fluid stress as the sum of a diffusing viscous term, plus a pressure term. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time.  In the common case of an incompressible Newtonian fluid, the nonlinear Navier-Stokes equations (three-dimensional, quasi-static) can be written as:
+\begin{equation}
+    \rho(\vect{u}\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
+  \label{eqn:NavierStokesequation1}
+\end{equation}
+
+accompanied by the conservation of mass
+\begin{equation}
+  \diverg{\vect{u}}=0
+  \label{eqn:NavierStokesmasequation}
+\end{equation}
+where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively. Whereas \eqnref{eqn:NavierStokesequation1} has been formulated in Eulerian form, moving domain approaches often require the ALE modification taking an additional term into account, depending on the fluid density $\rho$ and a correction velocity $\vect{u}^*$ which yields to:
+\begin{equation}
+    \rho((\vect{u}-\vect{u}^*)\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
+  \label{eqn:NavierStokesequationALE}
+\end{equation}
+So far, the nonlinear term in \eqnref{eqn:NavierStokesequation1} represents the fluid spatial acceleration only. \eqnref{eqn:NavierStokesequation2} now also takes the dynamic inertia terms into account
+\begin{equation}
+    \rho\delby{\vect{u}}{t}+ \rho((\vect{u}-\vect{u}^*)\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
+  \label{eqn:NavierStokesequation2}
+\end{equation}
+which gives us the complete Navier-Stokes equations in ALE formulation.
+The following section, however, describes the reordered quasi-static formulation of  \eqnref{eqn:NavierStokesequationALE}:
+\begin{equation}
+\rho((\vect{u}-\vect{u}^*)\cdot\grad)\vect{u}-\mu\laplacian{\vect{u}}+\grad{p}=\vect{f}
+%     -\grad{p}+\mu\laplacian{\vect{u}}-\rho(\vect{u}^*\cdot\grad)\vect{u}=\vect{f}
+  \label{eqn:NavierStokesequationALE2}
+\end{equation}
+
+\subsubsection{Weak formulation:}
+
+
+The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written as:
+\begin{equation}
+  \gint{\Omega}{}{\rho(\vect{u}\cdot\grad)\vect{u}\vect{v} }{\Omega}
+  -\gint{\Omega}{}{\rho(\vect{u}^*\cdot\grad)\vect{u}\vect{v} }{\Omega}
+  +\gint{\Omega}{}{\mu\laplacian{\vect{u}}\vect{v}}{\Omega}
+  -\gint{\Omega}{}{\grad{p}\vect{v}}{\Omega}
+  +\gint{\Omega}{}{\grad\cdot \vect{u}q}{\Omega}=
+  \gint{\Omega}{}{\vect{f}\vect{v}}{\Omega}  
+  \label{eqn:NavierStokesweakform}
+\end{equation}
+The general form for this kind of equation system is
+\begin{equation}
+  \matr{K}{\vect{\hat{u}}}+
+  \fnof{\vect{\hat{g}}}{{\vect{{u}}}}={\vect{\hat{f}}}
+  \label{eqn:NavierStokesequationALE2general}
+\end{equation}
+where ${\vect{\hat{u}}}$ is the vector of unknown ``DOFs'', $\matr{K}$ is the
+stiffness matrix, $\fnof{\vect{\hat{g}}}{{\vect{{u}}}}$ a non-linear vector
+function and ${\vect{\hat{f}}}$ the forcing vector. In \eqnref{eqn:NavierStokesweakform} the only real non-linear term is represented by $\fnof{\vect{\hat{g}}}{\vect{{u}}}=\gint{\Omega}{}{\rho(\vect{u}\cdot\grad)\vect{u}\vect{v} }{\Omega}$.
+If $\fnof{\vect{\hat{g}}}{\vect{u}}$ is not $\equiv\vect{0}$ then we use Newton's method \ie
+\begin{equation}
+  \begin{split}
+    \text{1.  } & \fnof{\matr{J}}{\vect{u}_{i}}.\delta
+    \vect{u}_{i} = 
+    -\fnof{\vect{\psi}}{\vect{u}_{i}} \\
+    \text{2.  } & \vect{u}_{i+1}=\vect{u}_{i}+\delta
+    \vect{u}_{i}
+  \end{split}
+\end{equation}
+where $\fnof{\matr{J}}{\vect{u}}$ is the Jacobian and is given by
+\begin{equation}
+  \fnof{\matr{J}}{\vect{u}}=\matr{K}+
+    \delby{\fnof{\vect{\hat{g}}}{\vect{u}}}{\vect{u}}
+\end{equation}
+with the stiffness matrix $\matr{K}$ derived from \eqnref{eqn:NavierStokesequationALE2general} by applying Green's theorem as follows:
+\begin{equation}
+  \begin{split}
+  \matr{K}\vect{\hat{u}}=
+  \gint{\Omega}{}{\grad\cdot\vect{v}p}{\Omega}
+  -\gint{\Omega}{}{\mu\grad\vect{v}:\grad\vect{u}}{\Omega}
+  -\gint{\Omega}{}{\rho(\vect{u}^*\cdot\grad)\vect{u}\vect{v}}{\Omega}
+  +\gint{\Omega}{}{\grad\cdot \vect{u}q}{\Omega}
+  \end{split}
+  \label{eqn:NavierStokesweakform2}
+\end{equation}
+and $\fnof{\vect{\psi}}{\vect{\hat{u}}}=\matr{K}\vect{\hat{u}}+\fnof{\vect{\hat{g}}}{\vect{u}}+\vect{\hat{f}}$.
+
 % 
-% \subsubsection{Weak formulation:}
-% The corresponding weak form of the equation \eqnref{eqn:Laplacesequation} is
-% \begin{equation}
-%   \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\grad\phi}}w}{\Omega}=0
-%   \label{eqn:Laplaceweakform}
-% \end{equation}
-% 
-% Applying Green's theorm to \eqnref{eqn:Laplaceweakform} gives
-% \begin{equation}
-%   \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\grad\phi}}w}{\Omega}= 
-%   \gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w}}{\Omega}-
-%   \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}}w}{\Gamma}
-%   =0
-% \end{equation}
-% or
-% \begin{equation}
-%   \gint{\Omega}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\grad w}}{\Omega}=
-%   \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\grad\phi}}{\vect{n}w}}{\Gamma}
-%   \label{eqn:Laplaceweightedresidualform}
-% \end{equation}
 % 
 % \subsubsection{Tensor notation:}
 % If we now consider the integrand of the left hand side of
