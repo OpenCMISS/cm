@@ -55,6 +55,33 @@ CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP\%FIELD, &
 \end{lstlisting}
 Then the field dimension, field data type and field number of components must be set/checked for each variable type that has been defined on the field.
 
+\subsubsection{Equations set field}
+
+The equations set field is a mandatory data structure that must be defined for all problems. However, if only a single equations set is being used for that subtype, it does not need to be initialised. However, a variable still needs to be defined in the example file, and passed in to the equations set create start:
+
+\begin{lstlisting}
+     CALL CMISSEquationsSetCreateStart(EquationsSetUserNumberDiffusion,Region,GeometricField,&
+         & CMISSEquationsSetClassicalFieldClass, &
+         & CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetMultiCompTransportDiffusionSubtype,&
+         & EquationsSetFieldUserNumberDiffusion,EquationsSetFieldDiffusion(icompartment),EquationsSetDiffusion(icompartment),&
+         & Err)
+\end{lstlisting}
+
+Need to describe the setup of the equations set field. Number of components, data type etc.
+ 
+
+
+
+
+\subsubsection{Other fields}
+
+Although there is only a single dependent field, we still define separate fields of other types for each equations set, that is, separate materials, source and independent fields, as appropriate for the particular problem under investigation.
+
+\subsection{Boundary conditions}
+
+For each equations set there must be a separate boundary condition object defined as standard. However, it is important to ensure the the correct field variable type is passed into the call to CMISSBoundaryConditionsSetNode, in agreement with the field variable associated with the particular equations set.
+
+
 \subsubsection{Equations mapping}
 
 \subsection{Partitioned scheme specifics}
@@ -178,12 +205,89 @@ Considering a general case of \textit{N} diffusion equations, there will be \tex
 \end{array} \right]
 \end{eqnarray}
 
-For a standard diffusion equation there are two dynamic matrices defined, stiffness and damping, which are mapped to the U variable type. To store the coupling contributions from the additional equations, extra matrices must be defined. An array of $N-1$ linear matrices are defined, which map to the $N-1$ other field variable types (V, U1, U2, etc). The terms on the diagonal of the global coupling matrix must be included within the stiffness matrix, as it is not possible to have both a dynamic matrix (stiffness) and an additional linear matrix mapping to the same field variable type. 
+For a standard diffusion equation there are two dynamic matrices defined, stiffness and damping, which are mapped to the U variable type. To store the coupling contributions from the additional equations, extra matrices must be defined. An array of $N-1$ linear matrices are defined, which map to the $N-1$ other field variable types (V, U1, U2, etc). The terms on the diagonal of the global coupling matrix must be included within the stiffness matrix, as it is not possible to have both a dynamic matrix (stiffness) and an additional linear matrix mapping to the same field variable type (the library will be modified in future to allow this, see tracker item 2741 to check progress on this feature). 
 
 For a simple implementation of this refer to the example, /examples/MultiPhysics/CoupledDiffusionDiffusion/MonolithicSchemeTest .
 
 \subsubsection{Setting up the solver}
 
 One solver, but add multiple solver equations.
+
+Show some example lines for the mappings that need to be defined in the set setup.
+
+In the set\_linear\_setup, for the setup case(EQUATIONS\_SET\_SETUP\_FINISH\_ACTION), the appropriate field variable must be mapped to the particular equations set that is being setup. This requires a certain degree of hard coding and \textit{a priori} knowledge about the field variable types avaiable, and the order in which they will be assigned to equations sets.
+
+First, retrieve the equations set field information and store in a local array.
+\begin{lstlisting}
+EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD% &
+  & EQUATIONS_SET_FIELD_FIELD
+CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,& 
+  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+  & EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+imy_matrix = EQUATIONS_SET_FIELD_DATA(1)
+Ncompartments = EQUATIONS_SET_FIELD_DATA(2)
+\end{lstlisting}
+
+Here arrays the store the mapping between the equations set id and the field variable type are allocated and initialised, for use when setting the mappings.
+
+\begin{lstlisting}
+CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET &
+   & (EQUATIONS_MAPPING,Ncompartments-1,ERR,ERROR,*999)
+
+ALLOCATE(VARIABLE_TYPES(2*Ncompartments))
+ALLOCATE(VARIABLE_U_TYPES(Ncompartments-1))
+DO num_var=1,Ncompartments
+  VARIABLE_TYPES(2*num_var-1)=FIELD_U_VARIABLE_TYPE+ &
+   & (FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(num_var-1))
+  VARIABLE_TYPES(2*num_var)=FIELD_DELUDELN_VARIABLE_TYPE+ &
+   & (FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(num_var-1))
+ENDDO
+num_var_count=0
+DO num_var=1,Ncompartments
+  IF(num_var/=imy_matrix)THEN
+    num_var_count=num_var_count+1
+    VARIABLE_U_TYPES(num_var_count)=VARIABLE_TYPES(2*num_var-1)
+  ENDIF
+ENDDO
+\end{lstlisting}
+
+
+Finally, set the mapping for the dynamic variable (as standard for the diffusion equation), the linear variable types (for the coupling matrices), the right hand side variable (i.e. delUdelN types) and the source variable. Note that the source variable that is mapped is always the FIELD\_U\_VARIABLE because we use separate source fields (containing only a U variable) for each equations set.
+
+\begin{lstlisting}
+CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET &
+ & (EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix-1),ERR,ERROR,*999)
+CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET &
+ & (EQUATIONS_MAPPING,VARIABLE_U_TYPES,ERR,ERROR,*999)
+CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET
+ & (EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix),ERR,ERROR,*999)
+CALL EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET &
+ & (EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
+\end{lstlisting}
+
+For a monolithic solution step there is only a single solver equation to setup, but several equations set equations to map into this. In the example file this is done in the following way:
+
+\begin{lstlisting}
+DO icompartment=1,Ncompartments
+  CALL CMISSSolverEquationsEquationsSetAdd(SolverEquationsDiffusion,&
+     & EquationsSetDiffusion(icompartment),&
+     & EquationsSetIndex,Err)
+ENDDO 
+\end{lstlisting}
+
+\subsection{IO}
+
+Currently field\_IO\_routines does not support the export of fields containing field variable types other than U and delUdelN. Therefore, it is necessary to use the FieldML output routines, and output separate files, one for each variable type, using calls of the following form:
+
+\begin{lstlisting}
+CALL FieldmlOutput_AddField(fieldmlInfo,baseName//".dependent_U",&
+  & region, mesh, DependentField,CMISSFieldUVariableType, err )
+
+CALL FieldmlOutput_AddField(fieldmlInfo,baseName//".dependent_V",&
+  & region, mesh, DependentField,CMISSFieldVVariableType, err ) 
+\end{lstlisting}
+
+
+
 
 \section{Interface coupling}
