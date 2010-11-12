@@ -183,8 +183,113 @@ is unfortunately the fastest way to find information you're after.
 
 %-----------------------
 % These are only proposed headings - suggestions for improvements are welcome
-\section{A Deeper Look at the Laplace Example}
-\label{sec:devel_laplace}
+\section{Data Model in OpenCMISS}
+\label{sec:devel_datamodel}
+
+%Intro - what's a data model (informally)? why's it so complicated here?
+As outlined in the previous section, the example file manages two major tasks. The first is all about the 
+\textbf{data}, that is, to do with defining and assigning various bits of information like mesh 
+coordinates, material parameters and so on. The second is all about \textbf{doing}, like setting up 
+and calling the solver, for example.
+
+By \textit{data model}, I am simply referring here as to how these different bits of numbers are stored,
+passed around, and accessed. If I asked you right now to find, say, 'the y-coordinate of node 7', you'll
+probably notice that it's not very straightforward since all numbers have been locked away inside the 
+OpenCMISS data structures. Indeed this is a source of frustration and makes the learning curve steep.
+Why is this so complicated? The answer is simple - it's because you haven't read this section yet. Oh 
+and also having the formal structures to support data handling makes the parallel coding much easier,
+even if it does cause some overhead in the code writing.
+
+%hierarchy is the key :- moving up and down the objects tree
+The key to understanding the OpenCMISS data model is to get to grips with the hierarchy of data objects, 
+which we'll go through now. We'll do this pretty quickly now and come back later to look at the details.
+Put very simply,\\
+\textsf{
+TOP \hspace{29mm} FIELD\\
+MIDDLE \hspace{10mm} VARIABLE, MESH\\
+BOTTOM \hspace{20mm} BASIS
+}\\
+That's it. Easy eh? Now the details:
+The thing to remember is, OpenCMISS has its own shelves it packs away data onto, and at times it will 
+seem inflexible. In some cases you might be right, but do you want to learn this or not?!  Moreover, 
+these shelves (objects) have names which you may already associate in your mind with something else 
+-- don't let it throw you off. Be strong.
+In the below list, pay attention to the indentation for the hierarchical order.
+\begin{enumerate} %
+%% FIELD
+\item In terms of data, \textsf{FIELD} is the top structure. Think of this as a continuous spatial 
+distribution of numbers, to be discretised by the structures below in the hierarchy. Note there are different
+types of fields, like geometric or materials field. This list applies mainly to the dependent field, which 
+is another name for the unknown variables of the problem.
+  \begin{itemize}%
+  \item \textsf{VARIABLES} The term variable here relates closer to a mathematical variable, not a code variable.
+  In the dependent field, it makes sense to group different variables under one field object. This is like 
+  keeping displacement and velocity under a common field object.
+    \begin{itemize} %
+    \item \textsf{COMPONENTS} In the above example, each displacement and velocity could each have three
+    different components in three dimensions. The data structure allows independent management of the components.
+    It's quite general - you can use different order basis functions for X,Y or Z component, for example.
+      \begin{itemize} %
+      \item \textsf{PARAM\_TO\_DOF\_MAP} Here the word `PARAM' refers to a node or grid point or gauss point etc, 
+      depending on whichever way you decided to interpolate the variable. If you chose a node-based interpolation, 
+      `node\_param2dof\_map' will tell you exactly where in the dof (degrees of freedom) vector the unknown of this 
+      component of this variable of this field maps to.
+      \end{itemize} %
+    \item \textsf{PARAMETER\_SETS} Even though for a given variable, components can be handled separately, 
+    all numbers of all components for a variable are actually dumped into one long vector. This vector is called
+    the parameter set, because it contains the parameters for the chosen interpolation scheme. Underneath the bonnet, 
+    this vector is powered by the distributed\_vector\_class which helps with parallel communication of data.
+      \begin{itemize} %
+      \item \textsf{PARAMETER\_SET\_TYPE} You might want to store different type of data, even for a given field 
+      variable. For example, you might want to store the displacement at the last time step as well the displacement.
+      Obviously the two data sets belong to the same variable and components, so what you have to do is to allocate
+      another vector of the same size to put your data into. This is easily achieved by creating an additional 
+      parameter set and assigning it an appropriate (and different) parameter set type, so that OpenCMISS will handle
+      its storage. This way, all your data are close by and you don't have to worry about creating and passing various 
+      different vectors around the code.
+      \end{itemize} %
+    \end{itemize} %
+  \end{itemize}%
+%% MESH
+\item The field is continuously varying, but we characterise it by a discrete vector of numbers. This should hint to 
+you that there is a \textsf{MESH} involved in this whole business -- you're right. And you figured it out all on your own.
+  \begin{itemize}
+  \item 
+  \end{itemize}
+
+
+\end{enumerate}%
+
+Did you notice how parameter\_sets contain the data, while param\_to\_dof\_map contains its mapping into arrays? The 
+structure above separates data from bookkeeping. 
+
+%Click through and learn yourself -- fire up totalview
+
+%MESH
+
+
+
+%As FEM ppl, you're probably used to defining things at a node and interpolating them - FIELD can be discretised into MESH and BASIS. Cubic Hermite
+%Mesh component is defined for different interpolation schemes define on same field - e.g. quadratic and linear
+
+
+
+
+% field types, grouping of different variables
+
+
+%Things get nasty with parallel - break the whole mesh into domains (and still call them domain), Decomp holds this info
+%The word DOMAIN is abused in OpenCMISS (along with few others)
+% 3 processor problem:
+%decomposition%domain = 2
+%Decomposition%decomposition%domain(2)%ptr%mappings%nodes%number_of_domains = 3
+%Decomposition%domain is a misnomer (or at least a point of common pitfall), because it's referring to mesh component number
+%Decomposition%decomposition%domain(2)%ptr%mappings%nodes%number_of_domains  refers to computational domains (nodes) now
+%I guess the word 'node' is also shared between mesh and parallel computer architecture
+
+
+%FIELD,BASIS,MESH,DOMAIN
+
 
 \section{Solver Object}
 \label{sec:devel_solver}
@@ -194,6 +299,8 @@ is unfortunately the fastest way to find information you're after.
 
 \section{Overview of Finite Element Routines}
 \label{sec:devel_fe_routines}
+
+%Looping orders, what to loop over
 
 \section{Boundary conditions}
 \label{sec:devel_bc}
@@ -216,6 +323,9 @@ is unfortunately the fastest way to find information you're after.
 
 \subsection{Mesh Object}
 \label{sec:devel_mesh}
+
+\subsection{Domain Object}
+\label{sec:devel_domain}
 
 \subsection{Field Object}
 \label{sec:devel_field}
