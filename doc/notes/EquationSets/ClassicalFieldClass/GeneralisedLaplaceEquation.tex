@@ -18,12 +18,30 @@ that is ready for implementation in the code.
 The generalised Laplace's equation on a domain $\Omega$ with boundary $\Gamma$
 can be stated as
 \begin{equation}
-  \diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}=0
+  \diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}=0  \quad \mathrm{on} \, \Omega \,,
   \label{eqn:Laplacesequation}
 \end{equation}
 where $\phi$ is the potential and $\tensor{\sigma}$ is
-the conductivity tensor throughout the domain. Note that 
-$\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $\laplacian{\phi}=0$
+the (positive definite) conductivity tensor throughout the domain. Note that 
+$\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $\laplacian{\phi}=0$.
+
+To complete the description of the boundary value problem,
+the governing equation~(\ref{eqn:Laplacesequation}) is supplemented
+by suitable boundary conditions on the domain boundary~$\Gamma$.
+These boundary conditions can either be of Dirichlet type and specify a solution value~$\phi_D$
+on the Dirichlet portion of the boundary~$\Gamma_D$
+\begin{equation}
+  \phi = \phi_D \quad \mathrm{on} \, \Gamma_D \,,
+  \label{eqn:Laplace Dirichlet BC} 
+\end{equation}
+or of Neumann type and specify the solution gradient in normal direction, $g$,
+on the Neumann portion of the boundary~$\Gamma_N$
+\begin{equation}
+  \nabla \phi \cdot {\bf{n}} = g \quad \mathrm{on} \, \Gamma_N
+  \label{eqn:Laplace Dirichlet BC} 
+\end{equation}
+with $\Gamma = \Gamma_D \cup \Gamma_N$.
+
 
 \subsubsection{Weak formulation:}
 The corresponding weak form of \eqnref{eqn:Laplacesequation} is
@@ -31,7 +49,9 @@ The corresponding weak form of \eqnref{eqn:Laplacesequation} is
   \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}w}{\Omega}=0 \,,
   \label{eqn:Laplaceweakform}
 \end{equation}
-where $w$ is a suitable test function.
+where $w$ is a suitable test function 
+(For a definition of what constitutes a ``suitable'' test and trial function,
+see Section~\ref{} - still has to be written).
 
 Applying Green's theorem to \eqnref{eqn:Laplaceweakform} gives
 \begin{equation}
@@ -68,7 +88,8 @@ represent vectors that are covariant and
 therefore we must convert Equation (\ref{eqn:Laplace weak form factor1})
 to a contravariant vector by 
 multiplying by the contravariant metric tensor (from $\vect{i}$ to $\vect{x}$ 
-coordinates) so that we can take the dot product. The final tensorial form is
+coordinates; see Sections~\ref{sec:metric tensors} and \ref{sec:coordinate systems})
+so that we can take the dot product. The final tensorial form is
 \begin{equation}
   \dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\gradient{w}} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
 \end{equation}
@@ -144,7 +165,7 @@ and
   \covarderiv{w}{k}=\delby{\xi^{s}}{x^{k}}\covarderiv{w}{s}=\delby{\xi^{s}}{x^{k}}\delby{w}{\xi^{s}}
 \end{equation}
 
-Now as we only know $\tensor{\tilde{\sigma}}$, the conductivity in the
+As we only know $\tensor{\tilde{\sigma}}$, the conductivity in the
 $\vect{\nu}$ (fibre) coordinate system rather than $\tensor{\sigma}$, the
 conductivity in the $\vect{x}$ (geometric) coordinate system, we must transform the mixed
 tensor ${\tilde{\sigma}}^{a}_{.b}$ from $\vect{\nu}$ to $\vect{x}$ coordinates. However, as the
@@ -165,7 +186,7 @@ $\vect{x}$ coordinates \ie
   \end{split}
 \end{equation}
 
-Now, using an interpolated dependent variable and a Galerkin finite element
+Using an interpolated dependent variable and a Galerkin finite element
 approach (where the weighting functions are chosen to be the interpolating
 basis functions \ie $w=\gbfn{\beta}{v}{\vect{\xi}}\gsf{(\beta)}{(v)}$) yields
 \begin{equation}
@@ -204,7 +225,7 @@ where
     \delby{\nu^{b}}{\xi^{q}}{\tilde{\sigma}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
 \end{equation}
 
-Note that for Laplace's equation with no conductivity or fibre fields then we have
+Note that for Laplace's equation with no conductivity or fibre fields we have
 \begin{equation}
   \gamma^{rs}=G^{ik}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
 \end{equation}
@@ -270,10 +291,9 @@ morekeywords={*,...}            % if you want to add more keywords to the set
 SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER, ERR,ERROR,*)
   DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
     RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
-    !Loop over field components
     mhs=0          
+    !Loop over element rows
     DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-      !Loop over element rows
       DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
         mhs=mhs+1
         nhs=0
@@ -304,20 +324,28 @@ SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBE
 }
 
 
+% * Still explain that we loop over the rows of the element matrix,
+%   and the loop is composed of a loop over number of components and element parameters.
 
-% \begin{minipage}{0.9\textwidth}
-\begin{tabular}{|rp{0.75\textwidth}|}
+\begin{tabular}{|rp{0.9\textwidth}|}
   \hline
-  Line number & Explanation \\
+  Line & Explanation \\
   & \\
-  6 & Loop over the number of variable components 
+  2 & Loop over the number of Gauss points\\
+  3 & Weight factor = Jacobian of the mapping * quadrature weight\\
+  6 & Loop ({\bf rows}) over the number of variable components 
       (For the scalar case of Laplace, this number is 1 (scalar potential),
       whereas for a system like 3D incompressible Navier-Stokes, 
-      this number is 4 (3 components of velocity and pressure).) \\
-  8 & Loop over the number of element parameters (= the number of interpolation functions 
+      this number is 4 (3 velocity components and pressure))\\
+  7 & Loop ({\bf rows}) over the number of element parameters (= the number of interpolation functions 
       associated with this element) \\
+  12 & Loop ({\bf columns}) over the number of variable components\\ 
+  13 & Loop ({\bf columns}) over the number of element parameters\\
+  15 & Loop over the element $\xi$-directions\\
+  20 & Loop over the element $\xi$-directions\\
+  21 & Loop over the element $\xi$-directions\\
+  26 & Add contribution to element matrix entry {\tt (mhs,nhs)}\\
   \hline
 \end{tabular}
-% \end{minipage}
 
 
