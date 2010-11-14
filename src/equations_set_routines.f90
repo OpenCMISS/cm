@@ -3891,8 +3891,8 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
-             !Output timing information if required
+            ENDIF
+            !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)

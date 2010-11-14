@@ -16916,18 +16916,27 @@ CONTAINS
 !!==================================================================================================================================
 
   !>Returns the basis for a generated mesh on a region identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshBasisGetCNum(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
-    & "CMISSGeneratedMeshBasisGetNum")
+  FUNCTION CMISSGeneratedMeshBasisGetCNum(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumbersSize,BasisUserNumbersPtr)  &
+    & BIND(C, NAME = "CMISSGeneratedMeshBasisGetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the basis for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the basis for, for C.
-    INTEGER(C_INT), INTENT(OUT) :: BasisUserNumber !<The user number of the basis to get, for C.
+    INTEGER(C_INT), INTENT(OUT) :: BasisUserNumbersSize !<The size of the basis user numbers array for C.
+    TYPE(C_PTR), INTENT(OUT) :: BasisUserNumbersPtr !<The user number of the ith basis to get, for C.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshBasisGetCNum !<Error Code.
     !Local variable
+    INTEGER(C_INT), POINTER :: BasisUserNumbers(:)
 
-    CALL CMISSGeneratedMeshBasisGet(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber,CMISSGeneratedMeshBasisGetCNum)
+    CMISSGeneratedMeshBasisGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(BasisUserNumbersPtr)) THEN
+      CMISSGeneratedMeshBasisGetCNum = CMISSPointerNotNULL
+    ELSE
+      CALL CMISSGeneratedMeshBasisGet(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumbers,CMISSGeneratedMeshBasisGetCNum)
+      BasisUserNumbersSize = Size(BasisUserNumbers,1)
+      BasisUserNumbersPtr = C_LOC(BasisUserNumbers(1))
+    ENDIF
 
     RETURN
 
@@ -16938,25 +16947,26 @@ CONTAINS
   !
 
   !>Returns the basis for a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshBasisGetCPtr(GeneratedMeshPtr,BasisPtr) BIND(C, NAME = "CMISSGeneratedMeshBasisGet")
+  FUNCTION CMISSGeneratedMeshBasisGetCPtr(GeneratedMeshPtr,BasisSize,BasisPtr) BIND(C, NAME = "CMISSGeneratedMeshBasisGet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr!<C pointer to the generated mesh to get the basis for.
-    TYPE(C_PTR), INTENT(INOUT) :: BasisPtr !<C pointer to the basis to get.
+    INTEGER(C_INT), INTENT(OUT) :: BasisSize !<Size of the bases array.
+    TYPE(C_PTR), INTENT(INOUT) :: BasisPtr !<C pointer to the ith basis to get.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshBasisGetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-    TYPE(CMISSBasisType), POINTER :: Basis
+    TYPE(CMISSBasisType), POINTER :: Bases(:)
 
     CMISSGeneratedMeshBasisGetCPtr = CMISSNoError
     IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(BasisPtr)) THEN
-          CALL C_F_POINTER(BasisPtr, Basis)
-          IF(ASSOCIATED(Basis)) THEN
-            CALL CMISSGeneratedMeshBasisGet(GeneratedMesh, Basis, CMISSGeneratedMeshBasisGetCPtr)
+          CALL C_F_POINTER(BasisPtr, Bases, [BasisSize])
+          IF(ASSOCIATED(Bases)) THEN
+            CALL CMISSGeneratedMeshBasisGet(GeneratedMesh, Bases, CMISSGeneratedMeshBasisGetCPtr)
           ELSE
             CMISSGeneratedMeshBasisGetCPtr = CMISSErrorConvertingPointer
           ENDIF
@@ -16979,18 +16989,30 @@ CONTAINS
   !
 
   !>Sets/changes the basis for a generated mesh on a region identified by a user number for C.
-  FUNCTION CMISSGeneratedMeshBasisSetCNum(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber) BIND(C, NAME = &
+  FUNCTION CMISSGeneratedMeshBasisSetCNum(RegionUserNumber,GeneratedMeshUserNumber,BasisSize,BasisUserNumbersPtr) BIND(C, NAME = &
     & "CMISSGeneratedMeshBasisSetNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to set the basis to, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to set the basis to, for C.
-    INTEGER(C_INT), INTENT(IN) :: BasisUserNumber !<The user number of the basis to set, for C.
+    INTEGER(C_INT), INTENT(IN) :: BasisSize !<The size of the basis array
+    TYPE(C_PTR), INTENT(IN) :: BasisUserNumbersPtr !<The user number of the ith basis to set, for C.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshBasisSetCNum !<Error Code.
     !Local variable
+    INTEGER(C_INT), POINTER :: BasisUserNumbers(:)
 
-    CALL CMISSGeneratedMeshBasisSet(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumber,CMISSGeneratedMeshBasisSetCNum)
+    CMISSGeneratedMeshBasisSetCNum = CMISSNoError
+    IF(C_ASSOCIATED(BasisuserNumbersPtr)) THEN
+      CALL C_F_POINTER(BasisUserNumbersPtr, BasisUserNumbers, [BasisSize])
+      IF(ASSOCIATED(BasisUserNumbers)) THEN
+        CALL CMISSGeneratedMeshBasisSet(RegionUserNumber,GeneratedMeshUserNumber,BasisUserNumbers,CMISSGeneratedMeshBasisSetCNum)
+      ELSE
+        CMISSGeneratedMeshBasisSetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSGeneratedMeshBasisSetCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -17001,23 +17023,24 @@ CONTAINS
   !
 
   !>Sets/changes the basis for a generated mesh identified by an object for C.
-  FUNCTION CMISSGeneratedMeshBasisSetCPtr(GeneratedMeshPtr,BasisPtr) BIND(C, NAME = "CMISSGeneratedMeshBasisSet")
+  FUNCTION CMISSGeneratedMeshBasisSetCPtr(GeneratedMeshPtr,BasisSize,BasisPtr) BIND(C, NAME = "CMISSGeneratedMeshBasisSet")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: GeneratedMeshPtr!<C pointer to the generated mesh to set the basis to.
+    INTEGER(C_INT), INTENT(IN) :: BasisSize !<The size of the basis array
     TYPE(C_PTR), INTENT(IN) :: BasisPtr !<C pointer to the basis to set.
     !Function variable
     INTEGER(C_INT) :: CMISSGeneratedMeshBasisSetCPtr !<Error Code.
     !Local variables
     TYPE(CMISSGeneratedMeshType), POINTER :: GeneratedMesh
-    TYPE(CMISSBasisType), POINTER :: Basis
+    TYPE(CMISSBasisType), POINTER :: Basis(:)
 
     CMISSGeneratedMeshBasisSetCPtr = CMISSNoError
     IF(C_ASSOCIATED(GeneratedMeshPtr)) THEN
       CALL C_F_POINTER(GeneratedMeshPtr, GeneratedMesh)
       IF(ASSOCIATED(GeneratedMesh)) THEN
         IF(C_ASSOCIATED(BasisPtr)) THEN
-          CALL C_F_POINTER(BasisPtr, Basis)
+          CALL C_F_POINTER(BasisPtr, Basis, [BasisSize])
           IF(ASSOCIATED(Basis)) THEN
             CALL CMISSGeneratedMeshBasisSet(GeneratedMesh, Basis, CMISSGeneratedMeshBasisSetCPtr)
           ELSE

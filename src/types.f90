@@ -475,7 +475,7 @@ MODULE TYPES
   !>Contains information on a generated regular mesh
   TYPE GENERATED_MESH_REGULAR_TYPE
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh
-    TYPE(BASIS_TYPE), POINTER :: BASIS !<The pointer to the basis used in the regular mesh.
+    TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<The pointers to the bases used in the regular mesh.
     INTEGER(INTG) :: COORDINATE_DIMENSION !<The number of coordinates for the regular mesh.
     INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the regular mesh.
     REAL(DP), ALLOCATABLE :: ORIGIN(:) !<ORIGIN(coordinate_idx). The position of the origin (first) corner of the regular mesh
@@ -492,7 +492,7 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: CYLINDER_EXTENT(:) !<CYLINDER_EXTENT(nj). The size of inner & outer radii and height of cylinder.
     INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the cylinder mesh.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in radial, circumferential and axial directions
-    TYPE(BASIS_TYPE), POINTER :: BASIS, BASIS2 !<The pointers to the basis used in the regular mesh (BASIS2 is the optional linear component).
+    TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<The pointers to the bases used in the regular mesh.
     LOGICAL :: APPEND_LINEAR_COMPONENT=.FALSE. !<True when two mesh components are needed
  END TYPE GENERATED_MESH_CYLINDER_TYPE
  
@@ -504,7 +504,7 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: ELLIPSOID_EXTENT(:) !<ELLIPSOID_EXTENT(nj). The size of long axis, short axis, wall thickness and cut off angle of ellipsoid.
     INTEGER(INTG) :: MESH_DIMENSION !<The dimension/number of Xi directions of the ellipsoid mesh.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ELEMENTS_XI(:) !<NUMBER_OF_ELEMENTS(ni). The number of elements in circumferential, longitudinal and transmural directions
-    TYPE(BASIS_TYPE), POINTER :: BASIS1, BASIS2, BASIS3, BASIS4 !<The pointer to the basis used in the ellipsoid mesh
+    TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<The pointers to the bases used in the ellipsoid mesh
     LOGICAL :: APPEND_LINEAR_COMPONENT=.FALSE. !<True when two mesh components are needed 
 END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
