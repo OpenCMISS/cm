@@ -76,7 +76,7 @@ MODULE TYPES
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE TREES
-
+  use linkedlist_routines
   IMPLICIT NONE
 
   !
@@ -719,6 +719,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
     INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed matrix data amongst the domains. The base tag number can be thought of as the identification number for the distributed matrix object.
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to store the rows corresponding to this domain.
+!    type(LinkedList),pointer :: list(:) 
   END TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
 
   !>Contains information for a PETSc distributed matrix
@@ -736,6 +737,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
     INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix.
     INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix.
+    type(LinkedList),pointer :: list(:) 
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
     REAL(DP), POINTER :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix. Is this used???
     LOGICAL :: USE_OVERRIDE_MATRIX !<Is .TRUE. if the override matrix is to be used instead of the standard matrix
@@ -789,6 +791,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
     INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
     INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
+    type(LinkedList),pointer :: list(:) 
     INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
     REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
     REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.

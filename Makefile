@@ -794,6 +794,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
 	$(OBJECT_DIR)/linear_elasticity_routines.o \
+	$(OBJECT_DIR)/linkedlist_routines.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/matrix_vector.o \
@@ -983,10 +984,12 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(SOURCE_DIR)/boundary_condition_
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/linkedlist_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/timer_f.o \
@@ -1264,6 +1267,7 @@ $(OBJECT_DIR)/distributed_matrix_vector.o	:	$(SOURCE_DIR)/distributed_matrix_vec
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/linkedlist_routines.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
@@ -1337,6 +1341,7 @@ $(OBJECT_DIR)/equations_matrices_routines.o	:	$(SOURCE_DIR)/equations_matrices_r
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/linkedlist_routines.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/strings.o \
@@ -1364,6 +1369,7 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(SOURCE_DIR)/equations_set_routines.f9
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/linkedlist_routines.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/monodomain_equations_routines.o \
@@ -1644,7 +1650,7 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(SOURCE_DIR)/Laplace_equations_rou
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
+	$(OBJECT_DIR)/types.o 
 
 $(OBJECT_DIR)/linear_elasticity_routines.o	:	$(SOURCE_DIR)/linear_elasticity_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1677,6 +1683,12 @@ $(OBJECT_DIR)/lists.o	:	$(SOURCE_DIR)/lists.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
+
+$(OBJECT_DIR)/linkedlist_routines.o	:	$(SOURCE_DIR)/linkedlist_routines.f90 \
+	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/kinds.o 
+
 $(OBJECT_DIR)/machine_constants_aix.o	:	$(SOURCE_DIR)/machine_constants_aix.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o
@@ -1701,6 +1713,7 @@ $(OBJECT_DIR)/matrix_vector.o	:	$(SOURCE_DIR)/matrix_vector.f90 \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/linkedlist_routines.o \
 	$(OBJECT_DIR)/lists.o \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
@@ -2038,6 +2051,7 @@ $(OBJECT_DIR)/types.o	:	$(SOURCE_DIR)/types.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/linkedlist_routines.o \
 	$(OBJECT_DIR)/trees.o
 
 $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
