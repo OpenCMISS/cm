@@ -10,66 +10,92 @@ from nose.plugins import Plugin
 
 import inspect
 
+class ResultTree:
+  isPassed = True
+  parent = None
+  childTrees = []
+
+  def __init__(self,parent=None) :
+    self.childTrees = []
+    self.isPassed = True
+    if parent!=None :
+      self.parent=parent
+      self.parent.childTrees.append(self)
+  
+  def isPass(self):
+    if len(self.childTrees)==0 :
+      return self.isPassed
+    else :
+      for childTree in self.childTrees:
+        if not childTree.isPass() :
+          return False
+      return True
+      
+  def setPass(self, isPassed) :
+    self.isPassed = isPassed
+
+
 class HtmlOutput(Plugin):
     """Output test results as ugly, unstyled html.
     """
     
     name = 'html-output'
-    score = 2 # run late
-    runTestPass = True
-    testPass = True
-    all42TestPass = True
+    current = ResultTree()
     testLevelsInner = []
     testLevelsOuter = []
-    isFirst = True
+    isStart = True
+    
+    
     
     def __init__(self):
         super(HtmlOutput, self).__init__()
-        self.html=['<html><head>',
+        self.header=['<html><head>',
                       '<title>Test output</title>',
-                      '<SCRIPT LANGUAGE="JavaScript" SRC="tree.js"></SCRIPT>',
-                      '<link href="tree.css" rel="stylesheet">',
+                      '<SCRIPT LANGUAGE="JavaScript" SRC="../../../../../../../tree.js"></SCRIPT>',
+                      '<link href="../../../../../../../tree.css" rel="stylesheet">',
                       '</head><body>',
-                      '<ul id="tree1" class="mktree">']
+                      '<h1>OpenCMISS Nighly Testing Results</h1>']
+        self.html=['</div>','<ul id="tree1" class="mktree">']
     
     def addSuccess(self, test):
         self.html.append('<a class="success">PASS</a>')
-        self.testPass = True
-        if list(test.test.arg)[0]=='run'  :
-          self.runTestPass = True   
+        self.current=self.current.parent
         
     def addError(self, test, err):
         err = self.formatErr(err)
         self.html.append('<a class="fail">ERROR</a>')
-        self.testPass = False
-        self.all42TestPass = False
-        if list(test.test.arg)[0]=='run'  :
-          self.runTestPass = False 
+        self.current.setPass(False)
+        self.current=self.current.parent
             
     def addFailure(self, test, err):
         err = self.formatErr(err)
         self.html.append('<a class="fail">FAIL</a>')
-        self.testPass = False
-        self.all42TestPass = False
-        if list(test.test.arg)[0]=='run'  :
-          self.runTestPass = False
+        self.current.setPass(False)
+        self.current=self.current.parent
 
     def finalize(self, result):
         for i in range(0,len(self.testLevelsInner)-1) :
           self.html.append('</ul>')
-          self.html.append('</li>')
-        for i in range(0,len(self.testLevelsOuter)-1) :
-          self.html.append('</ul>')
-          if self.all42TestPass :
-            self.html.append('<a class="success">PASS</a>')
-          else :
+          if self.current.isPass():
+            self.html.append('<a class="success">PASS</a>')                             
+          else:
             self.html.append('<a class="fail">FAIL</a>')
+          self.current=self.current.parent
+          self.html.append('</li>')
+        
+        for i in range(0,len(self.testLevelsOuter)) :
+          self.html.append('</ul>')
+          if self.current.isPass():
+            self.html.append('<a class="success">PASS</a>')                             
+          else:
+            self.html.append('<a class="fail">FAIL</a>')
+          self.current=self.current.parent
           self.html.append('</li>')
         self.html.append('</ul>')       
         if not result.wasSuccessful():
-            self.html.append('<br><a class="fail">FAIL</a>')                             
+            self.html.append('<br><a class="fail">'+str(len(result.failures))+' FAILs, '+str(len(result.errors))+ 'ERRORs</a>')                             
         else:
-            self.html.append('<br><a class="success">PASS</a>')
+            self.html.append('<br><a class="success">ALL PASS</a>')
         # print >> sys.stderr, self.html
         for l in self.html:
             self.stream.writeln(l)
@@ -86,6 +112,11 @@ class HtmlOutput(Plugin):
     def startContext(self, ctx):
         try:
             n = ctx.__name__
+            if n=='noseMain' and self.isStart :
+              for l in self.header:
+                self.stream.writeln(l)
+              self.stream.writeln('<div style="display:none">')
+              self.isStart=False
         except AttributeError:
             n = str(ctx).replace('<', '').replace('>', '')
 
@@ -94,70 +125,85 @@ class HtmlOutput(Plugin):
     
     def startTest(self, test):
         description = ''
-        if list(test.test.arg)[0]=='build' :
-          path = list(test.test.arg)[1]
-          path = path[path.find("/examples/")+10:]
-          levels = path.split('/')
-          for i in range(0,len(levels)):
-            if (len(self.testLevelsOuter)-1<i) :
-              self.testLevelsOuter.append(levels[i])
-              self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsOuter[i],'<ul>'])
-            if (self.testLevelsOuter[i]!=levels[i]) :
-              if(i<len(self.testLevelsOuter)-1) :
-                for k in range(0,len(self.testLevelsInner)) :
-                  self.html.append('</ul>')
-                  self.html.append('</li>')
-                self.testLevelsInner = []
-                for j in range(i,len(self.testLevelsOuter)-1) :
-                  self.html.append('</ul>')
-                  #TODO the checking of pass of fail is not correct.
-                  if self.all42TestPass :
-                    self.html.append('<a class="success">PASS</a>')
-                  else :
-                    self.html.append('<a class="fail">FAIL</a>')
-                  self.html.append('</li>')  
-                self.all42TestPass=True
-              self.testLevelsOuter[i]=levels[i]
-              self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsOuter[i],'<ul>'])
-              self.testLevelsOuter=self.testLevelsOuter[0:i+1]
-          description='Building the test'
-        elif list(test.test.arg)[0]=='run' :
-          path = list(test.test.arg)[6]
-          levels = path.split('/')
-          for i in range(0,len(levels)):
-            if (len(self.testLevelsInner)-1<i) :
-              self.testLevelsInner.append(levels[i])
-              self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsInner[i],'<ul>'])
-            if (self.testLevelsInner[i]!=levels[i]) :
-              if(i<len(self.testLevelsInner)-1) :
-                for j in range(i,len(self.testLevelsInner)-1) :
-                  self.html.append('</ul>')
-                  self.html.append('</li>')  
-              self.testLevelsInner[i]=levels[i]
-              self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsInner[i],'<ul>'])
-              self.testLevelsInner=self.testLevelsInner[0:i+1]
-          description='Running the test'
-        elif list(test.test.arg)[0]=='check' :  
-          description='Checking the output'
+        if str(test).find('test_build_library')!=-1 :
+          description='Building the library'
+        if str(test).find('test_example')!=-1 :
+          if list(test.test.arg)[0]=='build' :
+            path = list(test.test.arg)[1]
+            path = path[path.find("/examples/")+10:]
+            levels = path.split('/')
+            for i in range(0,len(levels)):
+              if (len(self.testLevelsOuter)-1<i) :
+                self.testLevelsOuter.append(levels[i])
+                self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsOuter[i],'<ul>'])
+                self.current = ResultTree(self.current)
+              if (self.testLevelsOuter[i]!=levels[i]) :
+                if(i<len(self.testLevelsOuter)-1) :
+                  for k in range(0,len(self.testLevelsInner)) :
+                    self.html.append('</ul>')
+                    if self.current.isPass():
+                      self.html.append('<a class="success">PASS</a>')                             
+                    else:
+                      self.html.append('<a class="fail">FAIL</a>')
+                    self.current=self.current.parent
+                    self.html.append('</li>')
+                  self.testLevelsInner = []
+                  for j in range(i,len(self.testLevelsOuter)-1) :
+                    self.html.append('</ul>')
+                    if self.current.isPass():
+                      self.html.append('<a class="success">PASS</a>')                             
+                    else:
+                      self.html.append('<a class="fail">FAIL</a>')
+                    self.current=self.current.parent
+                    self.html.append('</li>')  
+                self.testLevelsOuter[i]=levels[i]
+                self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsOuter[i],'<ul>'])
+                self.current = ResultTree(self.current)
+                self.testLevelsOuter=self.testLevelsOuter[0:i+1]
+            description='Building the test'
+          elif list(test.test.arg)[0]=='run' :
+            path = list(test.test.arg)[6]
+            if path!='.' :
+              levels = path.split('/')
+              for i in range(0,len(levels)):
+                if (len(self.testLevelsInner)-1<i) :
+                  self.testLevelsInner.append(levels[i])
+                  self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsInner[i],'<ul>'])
+                  self.current = ResultTree(self.current)
+                if (self.testLevelsInner[i]!=levels[i]) :
+                  if(i<len(self.testLevelsInner)-1) :
+                    for j in range(i,len(self.testLevelsInner)-1) :
+                      self.html.append('</ul>')
+                      if self.current.isPass():
+                        self.html.append('<a class="success">PASS</a>')                             
+                      else:
+                        self.html.append('<a class="fail">FAIL</a>')
+                      self.current=self.current.parent
+                      self.html.append('</li>')  
+                  self.testLevelsInner[i]=levels[i]
+                  self.html.extend(['<li class="liClosed">&nbsp;',self.testLevelsInner[i],'<ul>'])
+                  self.current =  ResultTree(self.current)
+                  self.testLevelsInner=self.testLevelsInner[0:i+1]
+            description='Running the test'
+          elif list(test.test.arg)[0]=='check' :  
+            description='Checking the output'
+        self.current = ResultTree(self.current)
         self.html.extend([ '<li class="liBullet">&nbsp;',description,':&nbsp;'])
         
         
     def stopTest(self, test):
         self.html.append('</li>')
-        if len(list(test.test.arg))==8 :
-          self.html.append('</ul>')    
-          if self.testPass:
-            self.html.append('<a class="success">PASS</a>')                             
-          else:
-            self.html.append('<a class="fail">FAIL</a>')
-          self.html.append('</li>')
-        if list(test.test.arg)[0]=='check' :  
-          self.html.append('</ul>')    
-          if self.runTestPass and self.testPass:
-            self.html.append('<a class="success">PASS</a>')                             
-          else:
-            self.html.append('<a class="fail">FAIL</a>')
-          self.html.append('</li>')
+        if str(test).find('test_build_library')!=-1 :
+          self.current=self.current.parent
+        if str(test).find('test_example')!=-1 :
+          if len(list(test.test.arg))==8 or list(test.test.arg)[0]=='check' :
+            self.html.append('</ul>')
+            if self.current.isPass():
+              self.html.append('<a class="success">PASS</a>')                             
+            else:
+              self.html.append('<a class="fail">FAIL</a>')
+            self.current=self.current.parent
+            self.html.append('</li>')
          
 import nose
 
