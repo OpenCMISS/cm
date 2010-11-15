@@ -63,7 +63,8 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   USE TIMER
   USE TYPES
   USE LISTS
-  
+  USE LINKEDLIST_ROUTINES
+
   IMPLICIT NONE
 
   PRIVATE
@@ -152,6 +153,7 @@ CONTAINS
     INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,NUMBER_OF_DIRICHLET_CONDITIONS, STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS,COUNT
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS,NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS,pressure_incremented_idx
     INTEGER(INTG) :: variable_type_idx,dof_idx, equ_matrix_idx, dirichlet_idx, sparse_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
+    INTEGER(INTG) :: col_idx
     INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
@@ -167,6 +169,8 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATION_MATRIX
     TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE), POINTER :: SPARSITY_INDICES
     TYPE(LIST_TYPE), POINTER :: SPARSE_INDICES
+    type(LinkedList),pointer :: list(:) 
+    integer(INTG),allocatable:: column_array(:)
 
     CALL ENTERS("BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -303,6 +307,8 @@ CONTAINS
                                       & COLUMN_INDICES,ERR,ERROR,*999)
                                     CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(EQUATION_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
                                       & ERR,ERROR,*999)
+                                    ! Get the matrix stored as a linked list
+                                    CALL DISTRIBUTED_MATRIX_LINKLIST_GET(EQUATION_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
                                     NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
                                     ! Initialise sparsity indices arrays
                                     CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
@@ -326,23 +332,19 @@ CONTAINS
                                       LAST=1
                                       DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                                         DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                                        DO row_idx=1,NUMBER_OF_ROWS
-                                          IF(DIRICHLET_DOF>=COLUMN_INDICES(ROW_INDICES(row_idx)).AND. &
-                                            & DIRICHLET_DOF<=COLUMN_INDICES(ROW_INDICES(row_idx+1)-1)) THEN
-                                            DO sparse_idx=ROW_INDICES(row_idx),ROW_INDICES(row_idx+1)-1
-                                              IF(DIRICHLET_DOF==COLUMN_INDICES(sparse_idx)) THEN
-                                                CALL LIST_ITEM_ADD(SPARSE_INDICES,row_idx,ERR,ERROR,*999)
-                                                COUNT=COUNT+1
-                                                LAST=row_idx+1
-                                                EXIT
-                                              ENDIF
-                                            ENDDO
-                                          ENDIF
-                                        ENDDO
+                                        CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+                                          DO row_idx=1,size(column_array)
+                                            CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
+                                            COUNT=COUNT+1
+                                            LAST=row_idx+1
+                                          ENDDO    
                                         SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
                                       ENDDO
                                       CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                         & ERR,ERROR,*999)
+				      DO col_idx =1,NUMBER_OF_ROWS
+                                       CALL LINKEDLIST_DESTROY(list(col_idx))
+                                      ENDDO
                                     ELSE
                                       LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -384,6 +386,8 @@ CONTAINS
                                       & COLUMN_INDICES,ERR,ERROR,*999)
                                     CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET(EQUATION_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS, &
                                       & ERR,ERROR,*999)
+                                    ! Sparse matrix in a list
+                                    CALL DISTRIBUTED_MATRIX_LINKLIST_GET(EQUATION_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
                                     NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
                                     ! Intialise sparsity indices arrays
                                     CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
@@ -406,24 +410,22 @@ CONTAINS
                                       SPARSITY_INDICES%SPARSE_COLUMN_INDICES(1)=1
                                       LAST=1
                                       DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
+                                        ! Dirichlet columns 
                                         DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                                        DO row_idx=1,NUMBER_OF_ROWS
-                                          IF(DIRICHLET_DOF>=COLUMN_INDICES(ROW_INDICES(row_idx)).AND. &
-                                            & DIRICHLET_DOF<=COLUMN_INDICES(ROW_INDICES(row_idx+1)-1)) THEN
-                                            DO sparse_idx=ROW_INDICES(row_idx),ROW_INDICES(row_idx+1)-1
-                                              IF(DIRICHLET_DOF==COLUMN_INDICES(sparse_idx)) THEN
-                                                CALL LIST_ITEM_ADD(SPARSE_INDICES,row_idx,ERR,ERROR,*999)
-                                                COUNT=COUNT+1
-                                                LAST=row_idx+1
-                                                EXIT
-                                              ENDIF
-                                            ENDDO
-                                          ENDIF
-                                        ENDDO
+                                        CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+                                        ! The row indices 
+                                        DO row_idx=1,size(column_array)
+                                          CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
+                                           COUNT=COUNT+1
+                                           LAST=row_idx+1
+                                        ENDDO          
                                         SPARSITY_INDICES%SPARSE_COLUMN_INDICES(dirichlet_idx+1)=COUNT+1
                                       ENDDO
                                       CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                         & ERR,ERROR,*999)
+                                      DO col_idx =1,NUMBER_OF_ROWS
+                                        CALL LINKEDLIST_DESTROY(list(col_idx))
+                                      ENDDO
                                     ELSE
                                       LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
