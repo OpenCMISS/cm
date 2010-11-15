@@ -55,7 +55,7 @@ MODULE EQUATIONS_MATRICES_ROUTINES
   USE MATRIX_VECTOR
   USE STRINGS
   USE TYPES
-
+  USE LINKEDLIST_ROUTINES
   IMPLICIT NONE
 
   PRIVATE
@@ -265,7 +265,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-
+    type(LinkedList),pointer :: list(:) 
     NULLIFY(ROW_INDICES)
     NULLIFY(COLUMN_INDICES)
 
@@ -299,7 +299,8 @@ CONTAINS
                       IF(EQUATIONS_MATRIX%STORAGE_TYPE/=DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE.AND. &
                         & EQUATIONS_MATRIX%STORAGE_TYPE/=DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE) THEN
                         CALL EQUATIONS_MATRIX_STRUCTURE_CALCULATE(EQUATIONS_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES,COLUMN_INDICES, &
-                          & ERR,ERROR,*999)
+                          & list,ERR,ERROR,*999)
+                        CALL DISTRIBUTED_MATRIX_LINKLIST_SET(EQUATIONS_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
                         CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET(EQUATIONS_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS,ERR,ERROR,*999)
                         CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET(EQUATIONS_MATRIX%MATRIX,ROW_INDICES,COLUMN_INDICES, &
                           & ERR,ERROR,*999)
@@ -342,7 +343,8 @@ CONTAINS
                       IF(EQUATIONS_MATRIX%STORAGE_TYPE/=DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE.AND. &
                         & EQUATIONS_MATRIX%STORAGE_TYPE/=DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE) THEN
                         CALL EQUATIONS_MATRIX_STRUCTURE_CALCULATE(EQUATIONS_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES,COLUMN_INDICES, &
-                          & ERR,ERROR,*999)
+                          & list,ERR,ERROR,*999)
+                        CALL DISTRIBUTED_MATRIX_LINKLIST_SET(EQUATIONS_MATRIX%MATRIX,LIST,ERR,ERROR,*999)
                         CALL DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET(EQUATIONS_MATRIX%MATRIX,NUMBER_OF_NON_ZEROS,ERR,ERROR,*999)
                         CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET(EQUATIONS_MATRIX%MATRIX,ROW_INDICES,COLUMN_INDICES, &
                           & ERR,ERROR,*999)
@@ -2958,24 +2960,25 @@ CONTAINS
   !
 
   !>Caclulates the matrix structure (sparsity) for a equations matrix.
-  SUBROUTINE EQUATIONS_MATRIX_STRUCTURE_CALCULATE(EQUATIONS_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_MATRIX_STRUCTURE_CALCULATE(EQUATIONS_MATRIX,NUMBER_OF_NON_ZEROS,ROW_INDICES,COLUMN_INDICES,list,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX !<A pointer to the equations matrix to calculate the structure for
     INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NON_ZEROS !<On return the number of non-zeros in the matrix
     INTEGER(INTG), POINTER :: ROW_INDICES(:) !<On return a pointer to row location indices in compressed row format. The pointer must be NULL on entry and the calling routine is responsible for deallocation.
     INTEGER(INTG), POINTER :: COLUMN_INDICES(:) !<On return a pointer to the column location indices in compressed row format. The pointer must be NULL on entry and the calling routine is responsible for deallocation.
+    type(LinkedList),pointer :: list(:) 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) ::  column_idx,DUMMY_ERR,elem_idx,global_column,local_column,local_ny,MATRIX_NUMBER,mk,mp,ne,nh,nh2,nn,nnk,np, &
-      & NUMBER_OF_COLUMNS,nyy
+      & NUMBER_OF_COLUMNS,nyy,bound_node_ind,nyyg,npg,nhg,local_cols,local_dof
     INTEGER(INTG), ALLOCATABLE :: COLUMNS(:)
     REAL(DP) :: SPARSITY
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DEPENDENT_DOFS_DOMAIN_MAPPING
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES,DOMAIN_NODES_GLOBAL
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -2989,7 +2992,8 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(LIST_PTR_TYPE), ALLOCATABLE :: COLUMN_INDICES_LISTS(:)
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-
+    INTEGER(INTG), POINTER :: BOUNDARY_NODES_LIST(:)
+    integer(INTG),allocatable:: row_array(:)
     CALL ENTERS("EQUATIONS_MATRIX_STRUCTURE_CALCULATE",ERR,ERROR,*998)
 
     NUMBER_OF_NON_ZEROS=0
@@ -3040,14 +3044,16 @@ CONTAINS
                                   ALLOCATE(ROW_INDICES(DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL+1),STAT=ERR)
                                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row indices.",ERR,ERROR,*999)
                                   ROW_INDICES(1)=1
+                                  
                                   !First, loop over the rows and calculate the number of non-zeros
                                   NUMBER_OF_NON_ZEROS=0
                                   DO local_ny=1,DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                     IF(DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(1,local_ny)==FIELD_NODE_DOF_TYPE) THEN
-                                      nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)
-                                      np=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(2,nyy)
-                                      nh=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyy)
+                                      nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)!value for a particular field dof (local_ny)
+                                      np=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(2,nyy)!node number (np) of the field parameter
+                                      nh=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyy)!component number (nh) of the field parameter
                                       DOMAIN_NODES=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%NODES
+                                      
                                       !Set up list
                                       NULLIFY(COLUMN_INDICES_LISTS(local_ny)%PTR)
                                       CALL LIST_CREATE_START(COLUMN_INDICES_LISTS(local_ny)%PTR,ERR,ERROR,*999)
@@ -3070,7 +3076,9 @@ CONTAINS
                                               local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP% &
                                                 & NODE_PARAM2DOF_MAP(mk,mp)
                                               global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
+                                          
                                               CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
+                                                
                                             ENDDO !mk
                                           ENDDO !nn
                                         ENDDO !nh2
@@ -3086,17 +3094,54 @@ CONTAINS
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !local_ny
+                                  
+                                  
                                   !Allocate and setup the column locations
                                   ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
+
+                                  ALLOCATE(list(DEPENDENT_DOFS_DOMAIN_MAPPING%NUMBER_OF_GLOBAL))
+
                                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices.",ERR,ERROR,*999)
                                   DO local_ny=1,DEPENDENT_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                                   
                                     CALL LIST_DETACH_AND_DESTROY(COLUMN_INDICES_LISTS(local_ny)%PTR,NUMBER_OF_COLUMNS,COLUMNS, &
-                                      & ERR,ERROR,*999)
+                                      & ERR,ERROR,*999)        
                                     DO column_idx=1,NUMBER_OF_COLUMNS
-                                      COLUMN_INDICES(ROW_INDICES(local_ny)+column_idx-1)=COLUMNS(column_idx)
+                                      !COLUMNS store the list of nonzero column indices for each local row (local_ny)
+                                      COLUMN_INDICES(ROW_INDICES(local_ny)+column_idx-1)=COLUMNS(column_idx) 
+
+                                      ! global to local columns
+                                       IF(ASSOCIATED(LINEAR_MAPPING).OR.ASSOCIATED(DYNAMIC_MAPPING)) THEN 
+					 IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
+                                           local_cols=equations_matrices%equations_mapping%dynamic_mapping &
+                                             & %equations_matrix_to_var_maps(1)%column_dofs_mapping%global_to_local_map &
+                                             & (COLUMNS(column_idx))%LOCAL_NUMBER(1)
+                                           local_dof = local_cols
+                                           ! Column to dof mapping?
+                                           !local_dof=equations_matrices%equations_mapping%dynamic_mapping% &
+                                            ! & equations_matrix_to_var_maps(1)%column_to_dof_map(local_cols)
+                                         ELSE
+                                           local_cols=equations_matrices%equations_mapping%linear_mapping &
+                                             & %equations_matrix_to_var_maps(1)%column_dofs_mapping%global_to_local_map &
+                                             & (COLUMNS(column_idx))%LOCAL_NUMBER(1)
+                                           local_dof = local_cols
+                                         ENDIF
+                                       ENDIF
+                                       nyyg=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_dof)
+                                       npg=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(2,nyyg)
+                                       nhg=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyyg)
+                                       DOMAIN_NODES=>FIELD_VARIABLE%COMPONENTS(nhg)%DOMAIN%TOPOLOGY%NODES
+                            
+                                      ! Check whether boundary node    
+                                      IF(DOMAIN_NODES%NODES(npg)%BOUNDARY_NODE)THEN
+                                        CALL LinkedList_Add(list(COLUMNS(column_idx)),local_ny)
+                                      ENDIF
+                                    
                                     ENDDO !column_idx
-                                    DEALLOCATE(COLUMNS)
+                                    DEALLOCATE(COLUMNS)                                    
                                   ENDDO !local_ny
+
+                                 
                                   IF(DIAGNOSTICS1) THEN
                                     CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Equations matrix structure:",ERR,ERROR,*999)
                                     CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Equations matrix number : ",MATRIX_NUMBER, &
