@@ -137,7 +137,8 @@ MODULE MATRIX_VECTOR
   USE LISTS
   USE STRINGS
   USE TYPES
-  
+  USE LINKEDLIST_ROUTINES
+
   IMPLICIT NONE
 
   !PRIVATE
@@ -285,6 +286,7 @@ MODULE MATRIX_VECTOR
   PUBLIC VECTOR_ALL_VALUES_SET,VECTOR_CREATE_FINISH,VECTOR_CREATE_START,VECTOR_DATA_GET,VECTOR_DATA_TYPE_SET,VECTOR_DESTROY, &
     & VECTOR_DUPLICATE,VECTOR_SIZE_SET,VECTOR_VALUES_GET,VECTOR_VALUES_SET
 
+  PUBLIC MATRIX_LINKLIST_SET,MATRIX_LINKLIST_GET
 CONTAINS
   
   !
@@ -1123,7 +1125,70 @@ CONTAINS
   !
   !================================================================================================================================
   !
+!>Gets the maximum number of columns in each row of a distributed matrix.
+  SUBROUTINE MATRIX_LINKLIST_SET(MATRIX,LIST,ERR,ERROR,*)
 
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    TYPE(LinkedList),pointer :: LIST(:) 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("MATRIX_LINKLIST_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        CALL FLAG_ERROR("The matrix has been finished",ERR,ERROR,*999)
+      ELSE
+        MATRIX%LIST => LIST      
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MATRIX_LINKLIST_SET")
+    RETURN
+999 CALL ERRORS("MATRIX_LINKLIST_SET",ERR,ERROR)
+    CALL EXITS("MATRIX_LINKLIST_SET")
+    RETURN 1
+  END SUBROUTINE MATRIX_LINKLIST_SET
+
+   !
+  !================================================================================================================================
+  !!>Gets the maximum number of columns in each row of a distributed matrix.
+  SUBROUTINE MATRIX_LINKLIST_GET(MATRIX,LIST,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix
+    type(LinkedList),pointer :: list(:) 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("MATRIX_LINKLIST_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(MATRIX)) THEN
+      IF(MATRIX%MATRIX_FINISHED) THEN
+        LIST=>MATRIX%LIST
+      ELSE
+        CALL FLAG_ERROR("The matrix has not been finished",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MATRIX_LINKLIST_GET")
+    RETURN
+999 CALL ERRORS("MATRIX_LINKLIST_GET",ERR,ERROR)
+    CALL EXITS("MATRIX_LINKLIST_GET")
+    RETURN 1
+  END SUBROUTINE MATRIX_LINKLIST_GET
+
+   !
+  !================================================================================================================================
+  !
+  !
   !>Sets/changes the maximum size of a matrix.
   SUBROUTINE MATRIX_MAX_SIZE_SET(MATRIX,MAX_M,MAX_N,ERR,ERROR,*)
 
