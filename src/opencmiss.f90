@@ -1964,6 +1964,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMagnetoStaticType = EQUATIONS_SET_MAGNETOSTATIC_TYPE !<Magnetostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMaxwellsEquationType = EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE !<Maxwells equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationType = EQUATIONS_SET_LAPLACE_EQUATION_TYPE !<Laplace equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoiseuilleEquationType = EQUATIONS_SET_POISEUILLE_EQUATION_TYPE !<Poiseuille equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonEquationType = EQUATIONS_SET_POISSON_EQUATION_TYPE !<Poisson equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetHelmholtzEquationType = EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE !<Helmholtz equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetWaveEquationType = EQUATIONS_SET_WAVE_EQUATION_TYPE !<Wave equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
@@ -2039,6 +2040,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticPoiseuilleSubtype = EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE !<Static Poiseuille equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDynamicPoiseuilleSubtype = EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE !<Dynamic Poiseuille equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearPressurePoissonSubtype = EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNonlinearPressurePoissonSubtype = EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourcePoissonSubtype = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2177,6 +2180,12 @@ MODULE OPENCMISS
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetHelmholtzEquationTwoDim1 = EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1 !<u=cos(sqrt(2)*k*x)*sin(sqrt(2)*k*y) \see OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes,OPENCMISS
+  !>@}
+  !> \addtogroup OPENCMISS_PoiseuilleAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poiseuille
+  !> \brief The analytic function types for a Poiseuille equation.
+  !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+  !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoiseuilleTwoDim1 = EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoiseuilleAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_PoissonAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poisson
   !> \brief The analytic function types for a Poisson equation.
@@ -2317,7 +2326,8 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSetNoType,CMISSEquationsSetLinearElasticityType,CMISSEquationsSetFiniteElasticityType, &
     & CMISSEquationsSetStokesEquationType,CMISSEquationsSetNavierStokesEquationType,CMISSEquationsSetDarcyEquationType, &
     & CMISSEquationsSetElectrostaticType,CMISSEquationsSetMagnetoStaticType,CMISSEquationsSetMaxwellsEquationType, &
-    & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetPoissonEquationType,CMISSEquationsSetHelmholtzEquationType, &
+    & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetPoiseuilleEquationType,CMISSEquationsSetPoissonEquationType, &
+    & CMISSEquationsSetHelmholtzEquationType, &
     & CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetAdvectionDiffusionEquationType, &
     & CMISSEquationsSetReactionDiffusionEquationType,CMISSEquationsSetBiharmonicEquationType, &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType, &
@@ -2345,7 +2355,8 @@ MODULE OPENCMISS
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype,CMISSEquationsSetTransientDarcySubtype, &
     & CMISSEquationsSetTransientALEDarcySubtype,CMISSEquationsSetMultiCompartmentDarcySubtype, &
     & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
-    & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
+    & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetStaticPoiseuilleSubtype, &
+    & CMISSEquationsSetDynamicPoiseuilleSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
     & CMISSEquationsSetLinearPressurePoissonSubtype, CMISSEquationsSetNonlinearPressurePoissonSubtype, &
     & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
     & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetStandardHelmholtzSubtype, &
@@ -2399,6 +2410,8 @@ MODULE OPENCMISS
     & CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim,CMISSEquationsSetMultiCompDiffusionFourCompThreeDim
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
+
+  PUBLIC CMISSEquationsSetPoiseuilleTwoDim1
 
   PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonTwoDim2,CMISSEquationsSetPoissonTwoDim3
   PUBLIC CMISSEquationsSetPoissonThreeDim1,CMISSEquationsSetPoissonThreeDim2,CMISSEquationsSetPoissonThreeDim3
@@ -4272,6 +4285,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemMagnetostaticType = PROBLEM_MAGNETOSTATIC_TYPE !<Magnetostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMaxwellsEquationsType = PROBLEM_MAXWELLS_EQUATIONS_TYPE !<Maxwell's equations problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemLaplaceEquationType = PROBLEM_LAPLACE_EQUATION_TYPE !<Laplace problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemPoiseuilleEquationType = PROBLEM_POISEUILLE_EQUATION_TYPE !<Poiseuille problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemPoissonEquationType = PROBLEM_POISSON_EQUATION_TYPE !<Poisson problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemHelmholtzEquationType = PROBLEM_HELMHOLTZ_EQUATION_TYPE !<Helmholtz problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemWaveEquationType = PROBLEM_WAVE_EQUATION_TYPE !<Wave equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
@@ -4318,6 +4332,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemPGMTransientDarcySubtype = PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE !<PGM Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardLaplaceSubtype = PROBLEM_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedLaplaceSubtype = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemStaticPoiseuilleSubtype = PROBLEM_STATIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+ INTEGER(INTG), PARAMETER :: CMISSProblemDynamicPoiseuilleSubtype = PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourcePoissonSubtype = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearPressurePoissonSubtype = PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearPressurePoissonSubtype = PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4404,7 +4420,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSProblemLinearElasticityType,CMISSProblemFiniteElasticityType
 
-  PUBLIC CMISSProblemStokesEquationType,CMISSProblemNavierStokesEquationType,CMISSProblemDarcyEquationType
+  PUBLIC CMISSProblemStokesEquationType,CMISSProblemNavierStokesEquationType,CMISSProblemDarcyEquationType, &
+    & CMISSProblemPoiseuilleEquationType
 
   PUBLIC CMISSProblemElectrostaticType,CMISSProblemMagnetostaticType,CMISSProblemMaxwellsEquationsType
 
@@ -4434,6 +4451,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSProblemStandardDarcySubtype,CMISSProblemQuasistaticDarcySubtype,CMISSProblemALEDarcySubtype, &
     & CMISSProblemTransientDarcySubtype,CMISSProblemPGMDarcySubtype,CMISSProblemPGMTransientDarcySubtype
+
+  PUBLIC CMISSProblemStaticPoiseuilleSubtype,CMISSProblemDynamicPoiseuilleSubtype
 
   PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype,CMISSProblemMonodomainStrangSplittingEquationType
 
