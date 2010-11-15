@@ -56,6 +56,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
   USE MPI
   USE STRINGS
   USE TYPES
+  USE LINKEDLIST_ROUTINES
 
   IMPLICIT NONE
 
@@ -260,6 +261,7 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
     & DISTRIBUTED_VECTOR_VALUES_GET,DISTRIBUTED_VECTOR_VALUES_SET,DISTRIBUTED_VECTOR_UPDATE_START, &
     & DISTRIBUTED_VECTOR_UPDATE_FINISH,DISTRIBUTED_VECTOR_UPDATE_ISFINISHED,DISTRIBUTED_VECTOR_UPDATE_WAITFINISHED
   
+  PUBLIC DISTRIBUTED_MATRIX_LINKLIST_SET,DISTRIBUTED_MATRIX_LINKLIST_GET
 CONTAINS  
   
   !
@@ -1727,7 +1729,121 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  !================================================================================================================================
+  !
 
+  !>Sets/changes the LIST STRUCTURE for a distributed matrix.
+  SUBROUTINE DISTRIBUTED_MATRIX_LINKLIST_SET(DISTRIBUTED_MATRIX,LIST,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
+    type(LinkedList),pointer :: list(:) 
+    !INTEGER(INTG), INTENT(IN) :: NUMBER_NON_ZEROS !<The number of non zeros in the matrix to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_MATRIX_LINKLIST_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+      IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
+        CALL FLAG_ERROR("The distributed matrix has been finished.",ERR,ERROR,*999)
+      ELSE
+        SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
+            CALL MATRIX_LINKLIST_SET(DISTRIBUTED_MATRIX%CMISS%MATRIX,LIST,ERR,ERROR,*999)
+            !DISTRIBUTED_MATRIX%CMISS%list=list 
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix CMISS is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
+            !IF(NUMBER_NON_ZEROS>0) THEN
+              ! Check this
+              DISTRIBUTED_MATRIX%PETSC%list=>list
+            !ELSE
+            !  LOCAL_ERROR="The specified number of non zeros ("//TRIM(NUMBER_TO_VSTRING(NUMBER_NON_ZEROS,"*",ERR,ERROR))// &
+            !    & ") is invalid. The number must be > 0."
+            !  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            !ENDIF
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The distributed matrix library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed mtrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("DISTRIBUTED_MATRIX_LIKLIST_SET")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_MATRIX_LINKLIST_SET",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_MATRIX_LINKLIST_SET")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_MATRIX_LINKLIST_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the LINKLIST STURUCTURE for a distributed matrix.
+  SUBROUTINE DISTRIBUTED_MATRIX_LINKLIST_GET(DISTRIBUTED_MATRIX,LIST,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
+    type(LinkedList),pointer :: list(:) 
+!    INTEGER(INTG), INTENT(OUT) :: NUMBER_NON_ZEROS !<On return, the number of non zeros in the matrix to get
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+      IF(DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
+        SELECT CASE(DISTRIBUTED_MATRIX%LIBRARY_TYPE)
+        CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_MATRIX%CMISS)) THEN
+            !list=DISTRIBUTED_MATRIX%CMISS%list
+            CALL MATRIX_LINKLIST_GET(DISTRIBUTED_MATRIX%CMISS%MATRIX,LIST,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix CMISS is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+          IF(ASSOCIATED(DISTRIBUTED_MATRIX%PETSC)) THEN
+            list=>DISTRIBUTED_MATRIX%PETSC%list
+          ELSE
+            CALL FLAG_ERROR("Distributed matrix PETSc is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The distributed matrix library type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_MATRIX%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("The distributed matrix is not finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Distributed matrix is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("DISTRIBUTED_MATRIX_LINKLIST_GET")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_MATRIX_LINKLIST_GET",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_MATRIX_LINKLIST_GET")
+    RETURN 1
+  END SUBROUTINE DISTRIBUTED_MATRIX_LINKLIST_GET
+
+  !
+  !================================================================================================================================
+  !
   !>Outputs a distributed matrix.
   SUBROUTINE DISTRIBUTED_MATRIX_OUTPUT(ID,DISTRIBUTED_MATRIX,ERR,ERROR,*)
 
