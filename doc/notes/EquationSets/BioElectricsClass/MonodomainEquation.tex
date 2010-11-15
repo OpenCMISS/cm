@@ -1,3 +1,134 @@
 
 \subsection{Monodomain Equation}
  
+
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+\newcommand{\Iion}{I_{\text{ion}}}
+\newcommand{\Iext}{I_{\text{ext}}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\lrbr}[1]{\left(#1\right)}
+\newcommand{\dt}{\Delta t}
+
+
+
+This section describes the implementation of the monodomain equations and hardcoded cell models in OpenCMISS.
+
+\subsection{Equations}
+The monodomain equations are:
+\begin{eqnarray}
+ \pd{V_m}{t}  &=&  \nabla \cdot \lrbr{\vec{D} \nabla V_m}  -  \frac{1}{C_m}\lrbr{\Iion + \Iext}
+\end{eqnarray}
+
+where $V_m$ is the membrane potential, $\vec{D}=\frac{\vec{\sigma}}{\chi C_m}$ is the diffusion coefficient, $\vec{\sigma}$ is the conductivity, $C_m$ the membrane capacitance, $\chi$ the cell's surface area to volume ratio, $\Iion$ the currents across the membrane, and $\Iext$ the external stimulus current.
+
+The numerical method developed to solve the monodomain model uses the idea of operator splitting based on Strang splitting outlined in (Qu \& Garfinkel 1999). The splitting algorithm is used to decouple the cell model from the diffusion part of the monodomain equation. 
+
+The splitting method enables us to solve:
+\begin{equation}
+\frac{d V_m}{d t} = \nabla \cdot (\mathbf{D}\nabla V)
+\label{diff}
+\end{equation}
+
+and use the solution of this step in the set of ODEs describing the ion concentrations,
+\begin{eqnarray}
+\frac{d V_m}{d t} &=& f(t,V_m,\vec{v})\\
+\frac{d V_m}{d t} &=&  - \frac{1}{C_m}(I_{ion} + I_{ext})
+\end{eqnarray}
+where $\vec{v}$ is the vector of other variables defining the cell model.
+The solution obtained this way is not second-order accurate as normal Strang splitting uses half steps, but the error does not accumulate as
+fast since
+
+\subsubsection{Finite element discretization}
+Equation \ref{diff} is discretized using a finite element approach, with a Crank-Nicholson discretization in time:\\
+\begin{equation}
+ (\vec{M}/\dt+\vec{A}/2) \vec{V_m}(t+\dt) = (\vec{M}/\dt-\vec{A}/2) \vec{V_m}(t)
+\end{equation}
+
+With the stiffness matrix:
+\begin{eqnarray}
+A_{kl} &=& \int_v \sum_{ij} D_{ij} \pd{\phi^{(l)}}{x_j} \pd{\phi^{(k)}}{x_i} ~dv
+\end{eqnarray}
+
+And the damping matrix (lumped, shown to give better convergence):
+\begin{eqnarray}
+M_{kl} &=& \delta_{kl}  \int_v \phi^{(k)} ~ dv \\
+\end{eqnarray}
+Where $\phi^{(k)}$ is the basis function such that $\phi^{(k)}(x_j)=\delta_{kj}$.
+
+\subsection{Example usage}
+
+\subsubsection{Types}
+The problem class and type are always \verb!CMISSProblemBioelectricsClass! and \verb!CMISSProblemMonodomainStrangSplittingEquationType! respectively.
+The problem subtype defines the cell model, currently either
+\verb!CMISSProblemMonodomainBuenoOrovioSubtype! or \verb!CMISSProblemMonodomainTenTusscher06Subtype!.
+
+The equations set class and type are always \verb!CMISSEquationsSetBioelectricsClass! and \verb!CMISSEquationsSetMonodomainSSEquationType! respectively.
+The problem subtype defines the cell model, currently either
+\verb!CMISSEquationsSetMonodomainBuenoOrovioSubtype! or \verb!CMISSEquationsSetMonodomainTenTusscher06Subtype!.
+
+\subsubsection{Cell models}
+There are currently two options for the cell model:
+\begin{itemize}
+ \item   Bueno-Orovio minimal cell model  with 1 Hz paced initial condition, 4 variables. 
+ Integration scheme is forward Euler with an adaptive time step 
+Functions \verb!bueno_orovio_initialize!, \verb!bueno_orovio_integrate! are called from \verb!monodomain_equations_routines.f90! in respectively the fields setup and post solve stages. 
+ \item   Ten Tusscher and Panfilov (2006) cell model, 19 variables and initial condition as in the euHeart benchmark. Integration scheme is forward Euler with an adaptive time step and a specialized scheme for the $m,d$ gates to prevent them from crossing the steady state solution.
+Functions \verb!tentusscher06_initialize!, \verb!tentusscher06_integrate! are used from \verb!monodomain_equations_routines.f90!.
+\end{itemize}
+
+
+
+\subsubsection{Fields}
+The main fields relevant for the example is the material field, which has the following components:
+\begin{enumerate}
+ \item Activation flag. Set to $1.0$ to have a cell be stimulated (standard $\Iext$) and to $0.0$ for no stimulation. Any other value $c$ will apply $c \Iext$ as stimulus current to that cell, allowing the strength to be tuned manually from the example file.
+ \item Fiber ``diffusivity'', i.e. $D_f=\frac{\sigma_f}{\chi C_m}$ where $\sigma_f$ is the conductivity along the fiber direction.
+ \item Transverse ``diffusivity'', i.e. $D_t=\frac{\sigma_t}{\chi C_m}$ where $\sigma_t$ is the conductivity orthogonal to the fiber direction.
+ \item Fiber direction unit vector $x$.
+ \item Fiber direction unit vector $y$.
+ \item Fiber direction unit vector $z$ (3D only).
+\end{enumerate}
+The activation flag and fiber direction are nodal by default, the others have constant interpolation but this can be changed.
+Fiber direction is normalized to lenght $1$ in the code, so input does not need to be.
+
+Internally, the dependent field contains a single variable $V_m$ (and its normal which is required by OpenCMISS but not used). The independent
+field contains the cell model, with the first component always being the copy of $V_m$ used in the cell model.
+
+\subsection{Internal implementation details}
+The diffusion equation is solved using OpenCMISS standard setup for a linear dynamic equation solved using a finite element approach.
+\subsubsection{Finite element calculation}
+The stiffness and damping matrices are calculated only once, and the update flags are set to false afterwards.
+Still, the basis function derivatives are tabulated instead of recalculated in the inner loop, and code for this table this could be used to speed up other equation types.
+
+
+\subsubsection{Examples}
+Current examples using this code are:
+\begin{itemize}
+ \item \verb!examples/Bioelectrics/MonodomainTP06!
+ \item \verb!examples/Bioelectrics/MonodomainBuenoOrovio!
+\end{itemize}
+The first of these is set up to match the euHeart benchmark problem.
+
+\subsection{Known issues and TODO}
+\begin{itemize}
+ \item We are planning to implement an adaptive time step.
+ \item Lookup tables would speed up the code as well, but there is currently no support for them.
+\end{itemize}
+
+\subsection{Testing}
+Solutions for spacing $0.5, 0.2, 0.1$mm match a reference implementation, and further tests
+with non-axis aligned fibers also match.
+
+
+%\begin{thebibliography}{}
+%\bibitem{cp} Clayton R. H. and Panfilov A.V., Prog. Bio-phys. Mol. Biol. 96(1-3):19-43, 2008
+%\bibitem{qg} Qu Z. and Garfinkel A. IEEE Trans Biomed. Eng. 25(4):389-392, 1998
+%\bibitem{bo} Bueno-Orovio A., Cherry E.M. and Fenton F. H., J. Theo. Bio. 253(3): 405-628 2008
+%\bibitem{tp} ten Tusscher, K. H. W. J and Panfilov A. V., Am. J. Physiol. Heart Circ. Physiol. 291(3):H1088--H1100, 2006
+%\end{thebibliography}
+\end{document}
+
+\begin{equation}
+
+\end{equation}
+
