@@ -129,6 +129,15 @@ class HtmlOutput(Plugin):
           description='Building the library'
         if str(test).find('test_example')!=-1 :
           if list(test.test.arg)[0]=='build' :
+            for k in range(0,len(self.testLevelsInner)) :
+              self.html.append('</ul>')
+              if self.current.isPass():
+                self.html.append('<a class="success">PASS</a>')                             
+              else:
+                self.html.append('<a class="fail">FAIL</a>')
+              self.current=self.current.parent
+              self.html.append('</li>')
+            self.testLevelsInner = []
             path = list(test.test.arg)[1]
             path = path[path.find("/examples/")+10:]
             levels = path.split('/')
@@ -139,15 +148,7 @@ class HtmlOutput(Plugin):
                 self.current = ResultTree(self.current)
               if (self.testLevelsOuter[i]!=levels[i]) :
                 if(i<len(self.testLevelsOuter)-1) :
-                  for k in range(0,len(self.testLevelsInner)) :
-                    self.html.append('</ul>')
-                    if self.current.isPass():
-                      self.html.append('<a class="success">PASS</a>')                             
-                    else:
-                      self.html.append('<a class="fail">FAIL</a>')
-                    self.current=self.current.parent
-                    self.html.append('</li>')
-                  self.testLevelsInner = []
+                  
                   for j in range(i,len(self.testLevelsOuter)-1) :
                     self.html.append('</ul>')
                     if self.current.isPass():
