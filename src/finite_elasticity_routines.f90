@@ -67,6 +67,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
   USE MATHS  
   USE MATRIX_VECTOR
   USE MESH_ROUTINES
+  USE MPI
   USE PROBLEM_CONSTANTS
   USE SOLVER_ROUTINES
   USE STRINGS
@@ -129,24 +130,20 @@ CONTAINS
     REAL(DP) :: X(3),DEFORMED_X(3),P,VALUE
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN,DOMAIN_PRESSURE
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES,DOMAIN_PRESSURE_NODES
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-!     TYPE(MESH_TOPOLOGY_TYPE), POINTER :: MESH_TOPOLOGY
-!     TYPE(MESH_NODES_TYPE), POINTER :: MESH_NODES
-!     TYPE(MESH_NODE_TYPE), POINTER :: MESH_NODE
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
-    LOGICAL, ALLOCATABLE :: COMMON_NODE(:)  !Might be used later
     !BC stuff
     INTEGER(INTG),ALLOCATABLE :: INNER_SURFACE_NODES(:),OUTER_SURFACE_NODES(:),TOP_SURFACE_NODES(:),BOTTOM_SURFACE_NODES(:)
     INTEGER(INTG) :: INNER_NORMAL_XI,OUTER_NORMAL_XI,TOP_NORMAL_XI,BOTTOM_NORMAL_XI,MESH_COMPONENT
-    INTEGEr(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER, DOMAIN_NUMBER
+    INTEGER(INTG) :: MY_COMPUTATIONAL_NODE_NUMBER, DOMAIN_NUMBER, MPI_IERROR
     REAL(DP) :: PIN,POUT,LAMBDA,DEFORMED_Z
-    LOGICAL :: X_FIXED,Y_FIXED,NODE_EXISTS
+    LOGICAL :: X_FIXED,Y_FIXED,NODE_EXISTS, X_OKAY,Y_OKAY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FINITE_ELASTICITY_ANALYTIC_CALCULATE",ERR,ERROR,*999)
@@ -175,7 +172,7 @@ CONTAINS
               IF(ASSOCIATED(MESH)) THEN
                 GENERATED_MESH=>MESH%GENERATED_MESH
                 IF(ASSOCIATED(GENERATED_MESH)) THEN
-                  NODES_MAPPING=>DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES   !HACK - ALL CHECKING SKIPPED
+                  NODES_MAPPING=>DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES   !HACK - ALL CHECKING INTERMEDIATE SKIPPED
                   IF(ASSOCIATED(NODES_MAPPING)) THEN
                     !Get surfaces (hardcoded): fix two nodes on the bottom face, pressure conditions inside & outside
                     CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,1_INTG, &
@@ -255,25 +252,27 @@ CONTAINS
                         IF(ABS(X(1))<1E-7_DP) THEN
                           CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
                             & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
-                          WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
-                            & "FIXED IN X DIRECTION"
+!                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
+!                             & "FIXED IN X DIRECTION"
                           X_FIXED=.TRUE.
                         ENDIF
                         IF(ABS(X(2))<1E-7_DP) THEN
                           CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
                             & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
-                          WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
-                            & "FIXED IN Y DIRECTION"
+!                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
+!                             & "FIXED IN Y DIRECTION"
                           Y_FIXED=.TRUE.
                         ENDIF
                       ENDIF
-                      !IF(X_FIXED.AND.Y_FIXED) EXIT
                     ENDDO
-                    !Check it went well - no longer needed
-!                     IF(.NOT.X_FIXED .OR. .NOT.Y_FIXED) THEN
-!                       CALL FLAG_ERROR("Could not fix nodes to prevent rigid body motion",ERR,ERROR,*999)
-!                     ENDIF
-
+                    !Check it went well
+                    CALL MPI_REDUCE(X_FIXED,X_OKAY,1,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,MPI_IERROR)
+                    CALL MPI_REDUCE(Y_FIXED,Y_OKAY,1,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,MPI_IERROR)
+                    IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
+                      IF(.NOT.(X_OKAY.AND.Y_OKAY)) THEN
+                        CALL FLAG_ERROR("Could not fix nodes to prevent rigid body motion",ERR,ERROR,*999)
+                      ENDIF
+                    ENDIF
                   ELSE
                     CALL FLAG_ERROR("Domain nodes mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -292,152 +291,136 @@ CONTAINS
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(variable_idx==1) CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Global number of dofs : ", &
+                & FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                 CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                !DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS  !MOVE THIS!! NEED TO CONVERT CYLINDERICAL COORDS!!!!
-                  component_idx=1 !Assuming components 1..3 use a common mesh component and 4 uses a different one
-                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                    IF(ASSOCIATED(DOMAIN)) THEN
-                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                          
-!!!!!! BELOW CANNOT BE IMPLEMENTED UNTIL SOMETHING IS DONE ABOUT DOMAIN_MAPPING !!!!!!!
-!                           !In order to handle the pressure component, the potential mismatching of nodes must be handled
-!                           IF(FIELD_VARIABLE%COMPONENTS(4)%INTERPOLATTION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-!                             DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
-!                             IF(ASSOCIATED(DECOMPOSITION)) THEN
-!                               MESH=>DECOMPOSITION%MESH
-!                               IF(ASSOCIATED(MESH)) THEN
-!                                 IF(ALLOCATED(MESH%TOPOLOGY)) THEN
-!                                   MESH_TOPOLOGY=>MESH%TOPOLOGY(2)%PTR !\TODO:Assumes there are two mesh components and second one is for pressure
-!                                   IF(ASSOCIATED(MESH_TOPOLOGY)) THEN
-!                                     MESH_NODES=>MESH_TOPOLOGY%NODES
-!                                     IF(ASSOCIATED(MESH_NODES)) THEN
-!                                       
-! 
-!                                           !Populate the common nodes list
-!                                           ALLOCATE(COMMON_NODE(MESH_NODES%NUMBER_OF_NODES),STAT=ERR)
-!                                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate common nodes array",ERR,ERROR,*999)
-!                                           COMMON_NODE=.FALSE.
-!                                           DO node_idx=1,DOMAIN_NODES2%NUMBER_OF_NODES
-!                                             COMMON_NODE(
-!                                           ENDDO
-! 
-! 
-!                                     ELSE
-!                                       CALL FLAG_ERROR("Mesh nodes is not associated",ERR,ERROR,*999)
-!                                     ENDIF
-!                                   ELSE
-!                                     CALL FLAG_ERROR("Mesh topology is not associated",ERR,ERROR,*999)
-!                                   ENDIF
-!                                 ELSE
-!                                   CALL FLAG_ERROR("Mesh topology pointer is not associated",ERR,ERROR,*999)
-!                                 ENDIF
-!                               ELSE
-!                                 CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
-!                               ENDIF
-!                             ELSE
-!                               CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
-!                             ENDIF
-!                           ELSE
-!                             CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
-!                           ENDIF
-                          
-                          !Loop over the local nodes excluding the ghosts.
-                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                            !!TODO \todo We should interpolate the geometric field here and the node position.
-                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
-                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                            ENDDO !dim_idx
-                            !Loop over the derivatives
-                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                              CASE(EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER)
-                                !Cylinder inflation, extension, torsion
-                                SELECT CASE(variable_type)
-                                CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                  CASE(NO_GLOBAL_DERIV)
-                                    !Do all components at the same time (r,theta,z)->(x,y,z) & p
-                                    CALL FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X, &
-                                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS,DEFORMED_X,P,ERR,ERROR,*999)
-                                  CASE(GLOBAL_DERIV_S1)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE(GLOBAL_DERIV_S1_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT
-                                CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
-                                  CASE(NO_GLOBAL_DERIV)
-                                    !Not implemented, but don't want to cause an error so do nothing
-                                  CASE(GLOBAL_DERIV_S1)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                                  CASE(GLOBAL_DERIV_S1_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                  CASE DEFAULT
-                                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT
-                                CASE DEFAULT
-                                  LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                    & " is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                END SELECT
-                              CASE DEFAULT
-                                LOCAL_ERROR="The analytic function type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                                  & " is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              END SELECT
-                              !Set the analytic solution to parameter set
-                              DO component_idx=1,NUMBER_OF_DIMENSIONS
-                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                  & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
-                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,DEFORMED_X(component_idx),ERR,ERROR,*999)
-!                                 !Moved to a separate block above
-!                                 IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-!                                   IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-!                                     !If we are a boundary node then set the analytic value on the boundary
-!                                     CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-!                                       & BOUNDARY_CONDITION_FIXED,DEFORMED_X(component_idx),ERR,ERROR,*999)
-!                                   ENDIF
-!                                 ENDIF
-                              ENDDO
-                              !!!!!! BELOW CANNOT BE UNCOMMENTED UNTIL SOMETHING IS DONE ABOUT DOMAIN_MAPPING !!!!!!!
-                              !Don't forget the pressure component
-                              !local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
-                              !CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                              !  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,P,ERR,ERROR,*999)
-                            ENDDO !deriv_idx
-                          ENDDO !node_idx
+                component_idx=1 !Assuming components 1..3 use a common mesh component and 4 uses a different one
+                IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                  DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                  IF(ASSOCIATED(DOMAIN)) THEN
+                    IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                      DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                      IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                        !Also grab the equivalent pointer for pressure component
+                        IF(FIELD_VARIABLE%COMPONENTS(4)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                          DOMAIN_PRESSURE=>FIELD_VARIABLE%COMPONENTS(4)%DOMAIN
+                          IF(ASSOCIATED(DOMAIN_PRESSURE)) THEN
+                            IF(ASSOCIATED(DOMAIN_PRESSURE%TOPOLOGY)) THEN
+                              DOMAIN_PRESSURE_NODES=>DOMAIN_PRESSURE%TOPOLOGY%NODES
+                                IF(ASSOCIATED(DOMAIN_PRESSURE_NODES)) THEN
+
+                                !Loop over the local nodes excluding the ghosts.
+                                DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                  !!TODO \todo We should interpolate the geometric field here and the node position.
+                                  DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                    local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                                    X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                                  ENDDO !dim_idx
+                                  !Loop over the derivatives
+                                  DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                    SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                                    CASE(EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER)
+                                      !Cylinder inflation, extension, torsion
+                                      SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        CASE(NO_GLOBAL_DERIV)
+                                          !Do all components at the same time (r,theta,z)->(x,y,z) & p
+                                          CALL FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X, &
+                                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS,DEFORMED_X,P,ERR,ERROR,*999)
+                                        CASE(GLOBAL_DERIV_S1)
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE(GLOBAL_DERIV_S2)
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE(GLOBAL_DERIV_S1_S2)
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                            DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                            & " is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        CASE(NO_GLOBAL_DERIV)
+                                          !Not implemented, but don't want to cause an error so do nothing
+                                        CASE(GLOBAL_DERIV_S1)
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE(GLOBAL_DERIV_S2)
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                        CASE(GLOBAL_DERIV_S1_S2)
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                            DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
+                                            & " is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR)) &
+                                          & //" is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      END SELECT
+                                    CASE DEFAULT
+                                      LOCAL_ERROR="The analytic function type of "// &
+                                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                        & " is invalid."
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                    !Set the analytic solution to parameter set
+                                    DO component_idx=1,NUMBER_OF_DIMENSIONS
+                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                        & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                        & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,DEFORMED_X(component_idx),ERR,ERROR,*999)
+                                    ENDDO
+                                    !Don't forget the pressure component
+                                    user_node=DOMAIN_NODES%NODES(node_idx)%USER_NUMBER
+                                    CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,DOMAIN_PRESSURE%MESH_COMPONENT_NUMBER,user_node, &
+                                      & NODE_EXISTS,global_node,ERR,ERROR,*999)
+                                    IF(NODE_EXISTS) THEN
+                                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node, &
+                                        & DOMAIN_PRESSURE%MESH_COMPONENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*999)
+                                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                                        !\todo: test the domain node mappings pointer properly
+                                        local_node=DOMAIN_PRESSURE%mappings%nodes%global_to_local_map(global_node)%local_number(1)
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(deriv_idx, &
+                                          & local_node)
+                                        !Because p=2.lambda in this particular constitutive law, we'll assign half the 
+                                        !hydrostatic pressure to the analytic array
+                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                        & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,P/2.0_dp,ERR,ERROR,*999)
+                                      ENDIF
+                                    ENDIF
+                                  ENDDO !deriv_idx
+                                ENDDO !node_idx
+
+                              ELSE
+                                CALL FLAG_ERROR("Domain for pressure topology node is not associated",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Domain for pressure topology is not associated",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Domain for pressure component is not associated",ERR,ERROR,*999)
+                          ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Non-nodal based interpolation of pressure cannot be used with analytic solutions", &
+                            & ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                   ENDIF
-                !ENDDO !component_idx
+                ELSE
+                  CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                ENDIF
                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
@@ -491,7 +474,7 @@ CONTAINS
     REAL(DP) :: R,THETA ! Undeformed coordinates in radial coordinates
     REAL(DP) :: DEFORMED_R,DEFORMED_THETA
     REAL(DP) :: DELTA,RES
-    REAL(DP), PARAMETER :: STEP=1E-4_DP, RELTOL=1E-8_DP
+    REAL(DP), PARAMETER :: STEP=1E-5_DP, RELTOL=1E-12_DP
     
 
     CALL ENTERS("FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE",ERR,ERROR,*999)
@@ -635,7 +618,7 @@ CONTAINS
 
         ! determine step size
         !\todo: will this be robust enough? Try a fraction of the smallest (largest?) entry
-        DELTA=1e-4_DP
+        DELTA=1e-5_DP
 !         CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
 !         xnorm=sqrt(sum(DATA**2))/size(DATA)
 !         DELTA=(DELTA+xnorm)*DELTA
@@ -1367,26 +1350,28 @@ CONTAINS
     INTEGER(INTG) :: DARCY_MASS_INCREASE_ENTRY !position of mass-increase entry in dependent-variable vector
 
 
-!     CALL ENTERS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR,*999)
+    !CALL ENTERS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR,*999)
     EQUATIONS_SET_SUBTYPE = EQUATIONS_SET%SUBTYPE
 
     C => MATERIALS_INTERPOLATED_POINT%VALUES(:,1)
 
+    !AZL = F'*F (deformed covariant or right cauchy deformation tensor, C)
+    !AZU - deformed contravariant tensor; I3 = det(C)
+    !E = Green-Lagrange strain tensor = 0.5*(C-I)
+    !PIOLA_TENSOR is the second Piola-Kirchoff tensor (PK2 or S)
+    !P is the actual hydrostatic pressure, not double it
+
     CALL MATRIX_TRANSPOSE(DZDNU,DZDNUT,ERR,ERROR,*999)
-    CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999) !AZL = F'*F (deformed covariant or right cauchy deformation tensor, C)
+    CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999)
 
     PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
     P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,1)
 
-
-    CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999) !AZU - deformed contravariant tensor; I3 = det(C)
-    E = 0.5_DP*AZL !Green-Lagrange strain tensor, E
+    CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999)
+    E = 0.5_DP*AZL 
     DO i=1,3
       E(i,i)=E(i,i)-0.5_DP
     ENDDO
-
-    !PIOLA_TENSOR is the second Piola-Kirchoff tensor (PK2 or S)
-    !p is the actual hydrostatic pressure, not double it
 
     SELECT CASE(EQUATIONS_SET_SUBTYPE)
     CASE(EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE,EQUATIONS_SET_MEMBRANE_SUBTYPE,EQUATIONS_SET_NO_SUBTYPE, &
@@ -1394,6 +1379,8 @@ CONTAINS
       !Form of constitutive model is:
       ! W=c1*(I1-3)+c2*(I2-3)+p*(I3-1)
       !Also assumed I3 = det(AZL) = 1.0
+      !  Note that because PIOLA = 2.del{W}/del{C}=[...]+2.lambda.J^2.C^{-1}
+      !  lambda here is actually half of hydrostatic pressure
 
       !If subtype is membrane, assume Mooney Rivlin constitutive law
       IF (EQUATIONS_SET_SUBTYPE /= EQUATIONS_SET_MEMBRANE_SUBTYPE) THEN
@@ -1412,10 +1399,10 @@ CONTAINS
         PIOLA_TENSOR(:,3) = 0.0_DP
         PIOLA_TENSOR(3,:) = 0.0_DP
       ENDIF
-        PIOLA_TENSOR(1,1)=2.0_DP*(C(1)+C(2)*(AZL(2,2)+AZL(3,3))+P*AZU(1,1))
-        PIOLA_TENSOR(1,2)=2.0_DP*(       C(2)*(-AZL(2,1))        +P*AZU(1,2))
-        PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
-        PIOLA_TENSOR(2,2)=2.0_DP*(C(1)+C(2)*(AZL(3,3)+AZL(1,1))+P*AZU(2,2))
+      PIOLA_TENSOR(1,1)=2.0_DP*(C(1)+C(2)*(AZL(2,2)+AZL(3,3))+P*AZU(1,1))
+      PIOLA_TENSOR(1,2)=2.0_DP*(     C(2)*(-AZL(2,1))        +P*AZU(1,2))
+      PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
+      PIOLA_TENSOR(2,2)=2.0_DP*(C(1)+C(2)*(AZL(3,3)+AZL(1,1))+P*AZU(2,2))
 
     CASE(EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE)
       !Form of constitutive model is:
@@ -1491,7 +1478,7 @@ CONTAINS
         CALL FINITE_ELASTICITY_PIOLA_ADD_ACTIVE_CONTRACTION(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
              & EQUATIONS_SET%EQUATIONS%INTERPOLATION%MATERIALS_FIELD, PIOLA_TENSOR(1,1),E(1,1),         &
              & ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*999)
-      END IF
+      ENDIF
     CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
       & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
       !Form of constitutive model is:
@@ -1510,11 +1497,6 @@ CONTAINS
       PIOLA_TENSOR(3,3)=C(1)+C(2)*(AZL(1,1)+AZL(2,2))
       PIOLA_TENSOR=PIOLA_TENSOR*2.0_DP
 
-! !---tob
-!        PIOLA_TENSOR=PIOLA_TENSOR*1.0E-4_DP
-! !---toe
-
-
       IF(DIAGNOSTICS1) THEN
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  C(1) = ",C(1),ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  C(2) = ",C(2),ERR,ERROR,*999)
@@ -1524,38 +1506,27 @@ CONTAINS
       ENDIF
 
       IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) THEN
-
         C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-
         PIOLA_TENSOR=PIOLA_TENSOR+2.0_DP*C(3)*(I3-SQRT(I3))*AZU
-
-      ELSE IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
+      ELSEIF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
         & EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
-
         !Starting point for both models is above compressible form of 2nd PK tensor
-
         SELECT CASE (EQUATIONS_SET_SUBTYPE)
         CASE (EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) !Nearly incompressible
-
           C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-
           !Adjust for the modified Ciarlet-Geymonat expression: Eq.(22) of the INRIA paper
           ! Question is: What deviation is to be penalized : (J-1) or (J-1-m/rho) ??? Probably the latter !
           ! However, m/rho is a given 'constant' and, upon differentiation, drops out.
           ! But it is important to retain I3 = J^2, since J ~ 1 + m/rho /= 1
           PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
-
           DARCY_MASS_INCREASE_ENTRY = 5 !fifth entry
-
         CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) !Incompressible
           !Constitutive model: W=c1*(I1-3)+c2*(I2-3)+p*(I3-1) 
           ! The term 'p*(I3-1)' gives rise to: '2p I3 AZU'
           ! Retain I3 = J^2, since J ~ 1 + m/rho /= 1 
-
           IF(DIAGNOSTICS1) THEN
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  I3 = ",I3,ERR,ERROR,*999)
           ENDIF
-
           !\ToDo: Check: Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it ???
           DO i=1,3
            DO j=1,3
@@ -1564,7 +1535,6 @@ CONTAINS
              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 2.0_DP*P*AZU(i,j)
            ENDDO
           ENDDO
-
           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
         END SELECT
 
@@ -1582,7 +1552,7 @@ CONTAINS
         ENDIF
 
         PIOLA_TENSOR = PIOLA_TENSOR + PIOLA_TENSOR_ADDITION
-      END IF
+      ENDIF
 
     CASE (EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE) ! added by Thomas 2010-04-13
       !Form of the constitutive model is:
@@ -1622,7 +1592,7 @@ CONTAINS
 
     NULLIFY(C)
 
-!     CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
+    !CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
     RETURN
 999 CALL ERRORS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR)
     CALL EXITS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR")
