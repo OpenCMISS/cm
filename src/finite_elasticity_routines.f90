@@ -735,7 +735,6 @@ CONTAINS
     REAL(DP) :: THICKNESS ! for elastic membrane
     REAL(DP) :: DARCY_MASS_INCREASE,DARCY_VOL_INCREASE,DARCY_RHO_0_F  !coupling with Darcy model
 
-    
     CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
     NULLIFY(BOUNDARY_CONDITIONS,BOUNDARY_CONDITIONS_VARIABLE)
@@ -799,7 +798,7 @@ CONTAINS
         ENDDO
         CAUCHY_TENSOR=DZDNU ! copy the identity matrix
         DFDZ=0.0_DP ! (parameter_idx,component_idx)
-  
+
         !Grab interpolation parameters
         FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%VARIABLE%VARIABLE_TYPE
         DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
@@ -891,7 +890,6 @@ CONTAINS
               DARCY_RHO_0_F=1.0E-03 !rather pass it through shared material field
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
-!               write(*,*)'DARCY_VOL_INCREASE(1) = ',DARCY_VOL_INCREASE
             ENDIF
 
             !Calculate dPhi/dZ at the gauss point, Phi is the basis function
@@ -923,9 +921,9 @@ CONTAINS
                       & DFDZ(parameter_idx,component_idx2)
                   ENDDO ! component_idx2 (inner component index)
                 ENDDO ! parameter_idx (residual vector loop)
-              ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based - probably not required
-                element_dof_idx=element_dof_idx+1
-                !TODO:  element-based interpolation will probably never be used...
+              ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN
+                !Will probably never be used
+                CALL FLAG_ERROR("Finite elasticity with element based interpolation is not implemented.",ERR,ERROR,*999)
               ENDIF
             ENDDO ! component_idx
 
@@ -1021,9 +1019,9 @@ CONTAINS
                     & CAUCHY_TENSOR(component_idx,2)*DFDZ(parameter_idx,2)+ &
                     & CAUCHY_TENSOR(component_idx,3)*DFDZ(parameter_idx,3)) 
                 ENDDO
-              ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN !element based - probably not required
-                element_dof_idx=element_dof_idx+1
-                !TODO:  element-based interpolation will probably never be used...
+              ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN
+                !Will probably never be used
+                CALL FLAG_ERROR("Finite elasticity with element based interpolation is not implemented.",ERR,ERROR,*999)
               ENDIF
             ENDDO !component_idx
           ENDDO !gauss_idx
@@ -1259,13 +1257,14 @@ CONTAINS
     !Argument variables
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
       & FIBRE_INTERPOLATED_POINT
-    REAL(DP), INTENT(OUT) :: DZDNU(3,3) !DZDNU - Deformation Gradient Tensor,
-    INTEGER(INTG), INTENT(IN) :: DIMEN
-    REAL(DP) :: DZDNU_TEMP(DIMEN,DIMEN),Jxxi
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_XI
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    INTEGER(INTG), INTENT(IN) :: DIMEN  !<The number of dimensions
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_XI !<The number of xi directions
+    REAL(DP), INTENT(OUT) :: DZDNU(3,3) !<On return, DZDNU - Deformation Gradient Tensor,
+    REAL(DP), INTENT(OUT) :: Jxxi       !<On return, The Jacobian of the transformation from xi to x
+    INTEGER(INTG), INTENT(OUT) :: ERR   !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    REAL(DP) :: DZDNU_TEMP(DIMEN,DIMEN)
     INTEGER(INTG) :: derivative_idx,component_idx,xi_idx
     REAL(DP) :: DNUDX(DIMEN,DIMEN),DNUDXI(DIMEN,DIMEN)
     REAL(DP) :: DXDNU(DIMEN,DIMEN),DXIDNU(DIMEN,DIMEN)
@@ -1330,11 +1329,11 @@ CONTAINS
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: EQUATIONS_SET !<A pointer to the equations set 
-    REAL(DP), INTENT(IN) :: DZDNU(3,3)
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DARCY_DEPENDENT_INTERPOLATED_POINT
     REAL(DP), INTENT(OUT) :: CAUCHY_TENSOR(:,:)
-    REAL(DP), INTENT(OUT) :: Jznu !Deformation Gradient Tensor
+    REAL(DP), INTENT(OUT) :: Jznu !Determinant of deformation gradient tensor
+    REAL(DP), INTENT(IN) :: DZDNU(3,3)
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER,GAUSS_POINT_NUMBER !<Element/Gauss point number
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1719,14 +1718,14 @@ CONTAINS
     & NUMBER_OF_XI,DFDZ,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT       
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER       
-    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER   
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_XI
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<Interpolated point for the dependent field
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER !<The gauss point number
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS !<The number of dimensions
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_XI !<The number of xi directions for the interpolation
+    REAL(DP), INTENT(OUT) :: DFDZ(:,:) !<On return, a matrix containing the derivatives of the basis functions wrt the deformed coordinates
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    REAL(DP) :: DFDZ(:,:)  
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string    
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(BASIS_TYPE), POINTER :: COMPONENT_BASIS
     TYPE(FIELD_TYPE), POINTER :: FIELD
