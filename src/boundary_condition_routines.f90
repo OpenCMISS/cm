@@ -550,6 +550,9 @@ CONTAINS
             IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
               !Initialise the boundary conditions for load increment loop
               CALL BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(EQUATIONS_SET,ERR,ERROR,*999)
+            ! Initialise boundary conditions for linear elasticity 
+            ELSE
+             CALL BOUNDARY_CONDITIONS_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             !Initialise the boundary conditions
