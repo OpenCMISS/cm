@@ -505,7 +505,7 @@ CONTAINS
       !Ensure that the step actually reduces residual
       F2=FINITE_ELASTICITY_CYLINDER_ANALYTIC_FUNC_EVALUATE(MU1+DELTA,PIN,POUT,LAMBDA,TSI,A1,A2,C1,C2)
       DO
-        IF (ABS(F2)<ABS(F)) THEN    ! PASS
+        IF (ABS(F2)<ABS(F).OR.ABS(F2)==0.0_DP) THEN    ! PASS
           MU1=MU1+DELTA
           EXIT
         ELSEIF (DELTA<1E-3_DP) THEN ! FAIL: It's likely that the initial guess is too far away
