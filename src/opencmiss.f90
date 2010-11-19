@@ -2214,6 +2214,7 @@ MODULE OPENCMISS
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionTwoDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionThreeDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1 !<
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceDiffusionThreeDim1 = &
     & EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim = &
@@ -2405,7 +2406,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetLinearElasticityTwoDim2,CMISSEquationsSetLinearElasticityThreeDim1, &
     & CMISSEquationsSetLinearElasticityThreeDim2
 
-  PUBLIC CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetLinearSourceDiffusionThreeDim1, &
+  PUBLIC CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetDiffusionThreeDim1,CMISSEquationsSetLinearSourceDiffusionThreeDim1, &
     & CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim,CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim, &
     & CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim,CMISSEquationsSetMultiCompDiffusionFourCompThreeDim
 

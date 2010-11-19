@@ -139,6 +139,7 @@ CONTAINS
              CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
              CURRENT_TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)
              write(*,*) CURRENT_TIME
+             write(*,*) "ANALYTIC CALCULATE TO THE MAXIMUM!"
               !Use predetermined mapping from equations set field compartment number to field variable type
               EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
               CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -221,6 +222,8 @@ CONTAINS
             !for single physics diffusion problems use standard analytic calculate           
              NULLIFY(BOUNDARY_CONDITIONS)
              CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+             CURRENT_TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)
+             write(*,*) CURRENT_TIME
              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
@@ -255,6 +258,9 @@ CONTAINS
                                   !If we are a boundary node then set the analytic value on the boundary
                                   CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                     & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                ELSE
+                                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                  & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                 ENDIF
                               ENDIF
                             ENDDO !deriv_idx
@@ -352,6 +358,46 @@ CONTAINS
          SELECT CASE(GLOBAL_DERIV_INDEX)
          CASE(NO_GLOBAL_DERIV)
            VALUE=EXP(-k*CURRENT_TIME)*SIN((SQRT(k))*(X(1)*COS(phi)+X(2)*SIN(phi)))!Need to specify time, k and phi!
+         CASE(GLOBAL_DERIV_S1)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE(GLOBAL_DERIV_S2)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE(GLOBAL_DERIV_S1_S2)
+           CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
+         CASE DEFAULT
+           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+            GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+            & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+         SELECT CASE(GLOBAL_DERIV_INDEX)
+         CASE(NO_GLOBAL_DERIV)
+           VALUE=0.0_DP!set to zero currently- actual value for diffusion solution needs adding                                    
+         CASE(GLOBAL_DERIV_S1)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE(GLOBAL_DERIV_S2)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+         CASE(GLOBAL_DERIV_S1_S2)
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CASE DEFAULT
+           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+            GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+            & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
+       CASE DEFAULT
+         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+          & " is invalid."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       END SELECT
+     CASE(EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1)
+       !u=A1*exp(-t)*(x^2+y^2+z^2)
+       SELECT CASE(variable_type)
+       CASE(FIELD_U_VARIABLE_TYPE)
+         SELECT CASE(GLOBAL_DERIV_INDEX)
+         CASE(NO_GLOBAL_DERIV)
+           VALUE=A1*EXP(-1*CURRENT_TIME)*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3))
          CASE(GLOBAL_DERIV_S1)
            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
          CASE(GLOBAL_DERIV_S2)
@@ -1752,7 +1798,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                         & " is invalid. The analytic function type of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                        & " requires that the equations set subtype be an no source diffusion equation."
+                        & " requires that the equations set subtype be a multi-compartment diffusion equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_THREE_DIM)
@@ -1775,7 +1821,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                         & " is invalid. The analytic function type of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                        & " requires that the equations set subtype be an no source diffusion equation."
+                        & " requires that the equations set subtype be be a multi-compartment diffusion equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_SET_MULTI_COMP_DIFFUSION_THREE_COMP_THREE_DIM)
@@ -1798,7 +1844,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                         & " is invalid. The analytic function type of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                        & " requires that the equations set subtype be an no source diffusion equation."
+                        & " requires that the equations set subtype be a multi-compartment diffusion equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_SET_MULTI_COMP_DIFFUSION_FOUR_COMP_THREE_DIM)
@@ -1821,7 +1867,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                         & " is invalid. The analytic function type of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                        & " requires that the equations set subtype be an no source diffusion equation."
+                        & " requires that the equations set subtype be a multi-compartment diffusion equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   CASE DEFAULT
@@ -2569,8 +2615,8 @@ CONTAINS
                            NULLIFY(INPUT_DATA1)
                            !CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                             !& FIELD_VALUES_SET_TYPE,INPUT_DATA1,ERR,ERROR,*999)
-                           CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_DATA1, & 
-                            & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+!                            CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_DATA1, & 
+!                             & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CURRENT_TIME)
 
                             NULLIFY(MESH_DISPLACEMENT_VALUES)
                             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
@@ -2582,8 +2628,8 @@ CONTAINS
                                 & ERR,ERROR,*999)
                             ENDIF
 
-                           CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_DATA1, & 
-                            & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+!                            CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_DATA1, & 
+!                             & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CURRENT_TIME)
 
                             TOTAL_NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% &
                               & TOTAL_NUMBER_OF_DOFS
