@@ -618,11 +618,12 @@ CONTAINS
 
         ! determine step size
         !\todo: will this be robust enough? Try a fraction of the smallest (largest?) entry
-        DELTA=1e-5_DP
-!         CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
-!         xnorm=sqrt(sum(DATA**2))/size(DATA)
-!         DELTA=(DELTA+xnorm)*DELTA
-!         CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
+!         DELTA=1e-6_DP
+        CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
+        !xnorm=sqrt(sum(DATA**2))/size(DATA)
+        !DELTA=(DELTA+xnorm)*DELTA
+        DELTA=MAX(MAXVAL(ABS(DATA))*1E-6_DP,1E-9)
+        CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
 
         ! the actual finite differencing algorithm is about 4 lines but since the parameters are all 
         ! distributed out, have to use proper field accessing routines.. 
