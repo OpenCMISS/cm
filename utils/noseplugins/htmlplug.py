@@ -44,6 +44,7 @@ class HtmlOutput(Plugin):
     testLevelsInner = []
     testLevelsOuter = []
     isStart = True
+    buildbotUrl = "http://autotest.bioeng.auckland.ac.nz/opencmiss-build/"
     
     
     
@@ -56,20 +57,37 @@ class HtmlOutput(Plugin):
                       '</head><body>',
                       '<h1>OpenCMISS Nighly Testing Results</h1>']
         self.html=['</div>','<ul id="tree1" class="mktree">']
+
+    def insertLog(self, test):
+        if str(test).find('test_build_library')!=-1 :
+          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build" 
+        elif str(test).find('test_example')!=-1 :
+          path = list(test.test.arg)[1]
+          path = path[path.find("/examples/")+10:]
+          if list(test.test.arg)[0]=='build' :
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build"
+          elif list(test.test.arg)[0]=='run' :
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run"
+          elif list(test.test.arg)[0]=='check' :
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check"
+        self.html.append(' <a href="'+logPath+'">log</a>')
     
     def addSuccess(self, test):
         self.html.append('<a class="success">PASS</a>')
+        self.insertLog(test)
         self.current=self.current.parent
         
     def addError(self, test, err):
         err = self.formatErr(err)
         self.html.append('<a class="fail">ERROR</a>')
+        self.insertLog(test)
         self.current.setPass(False)
         self.current=self.current.parent
             
     def addFailure(self, test, err):
         err = self.formatErr(err)
         self.html.append('<a class="fail">FAIL</a>')
+        self.insertLog(test)
         self.current.setPass(False)
         self.current=self.current.parent
 
@@ -163,7 +181,7 @@ class HtmlOutput(Plugin):
                 self.testLevelsOuter=self.testLevelsOuter[0:i+1]
             description='Building the test'
           elif list(test.test.arg)[0]=='run' :
-            path = list(test.test.arg)[6]
+            path = list(test.test.arg)[7]
             if path!='.' :
               levels = path.split('/')
               for i in range(0,len(levels)):
@@ -197,7 +215,7 @@ class HtmlOutput(Plugin):
         if str(test).find('test_build_library')!=-1 :
           self.current=self.current.parent
         if str(test).find('test_example')!=-1 :
-          if len(list(test.test.arg))==8 or list(test.test.arg)[0]=='check' :
+          if len(list(test.test.arg))==9 or list(test.test.arg)[0]=='check' :
             self.html.append('</ul>')
             if self.current.isPass():
               self.html.append('<a class="success">PASS</a>')                             
