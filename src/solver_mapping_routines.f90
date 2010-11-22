@@ -174,16 +174,22 @@ CONTAINS
       IF(ASSOCIATED(SOLVER_MAPPING%CREATE_VALUES_CACHE)) THEN
         SOLVER_EQUATIONS=>SOLVER_MAPPING%SOLVER_EQUATIONS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+          
           !
           !--- Equations set <-> interface conditions  ---
           !
+          ! 1. Calculate the list interface conditions that influence an equations set and vice versa.
+          !
+          
           !Allocate equations set to solver map
           ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping equations set to solver map.",ERR,ERROR,*999)      
           !Allocate interface condition to solver map
           ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping interface condition to solver map.",ERR,ERROR,*999)
-
+          !
+          ! Allocate and initialise
+          !
           ALLOCATE(INTERFACE_EQUATIONS_LISTS(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set list.",ERR,ERROR,*999)
           DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
@@ -209,6 +215,9 @@ CONTAINS
               CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !interface_condition_idx
+          !
+          ! Loop over equations sets
+          !
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
             IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -285,6 +294,10 @@ CONTAINS
           !
           !--- Row mappings ---
           !
+          ! 2. Determine the number of rows in the solver matrix. Do this the by setting up a list of rows for each rank.
+          !    We can then later arrange the rows in rank order by looping over the ranks in the list and then the rows
+          !    for each rank.
+          !
           !Calculate the row mappings.
           !We do not have any couplings defined at the moment there is only a 1-1 mapping.
           myrank=COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER
@@ -292,9 +305,11 @@ CONTAINS
           NUMBER_OF_LOCAL_SOLVER_ROWS=0
           !Add in the rows from any equations sets that have been added to the solver equations
           !Presort the row numbers by rank.
+          !
+          !Allocate and initialise the rank lists.
           ALLOCATE(RANK_GLOBAL_ROWS_LISTS(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+SOLVER_MAPPING% &
             & NUMBER_OF_INTERFACE_CONDITIONS,0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocat rank global rows lists.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate rank global rows lists.",ERR,ERROR,*999)
           DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
             equations_idx=0
             DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
@@ -368,7 +383,9 @@ CONTAINS
               ENDIF
             ENDDO !interface_condition_idx
           ENDDO !rank
-          !Calculate the number of local and global rows.
+          !Calculate the number of local and global rows. Do this by looking at the boundary conditions for field variables
+          !involved in the row. If all the variables are set as a fixed boundary condition then do not include the row. If
+          !any variable is not fixed then include the row.
           equations_idx=0
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             equations_idx=equations_idx+1
@@ -556,10 +573,18 @@ CONTAINS
             ENDIF
           ENDDO !interface_condition_idx
 
+          !Sanity check.
           IF(NUMBER_OF_LOCAL_SOLVER_ROWS==0) &
             & CALL FLAG_ERROR("Invalid problem setup. The number of local solver rows is zero.",ERR,ERROR,*999)
           IF(NUMBER_OF_GLOBAL_SOLVER_ROWS==0) &
             & CALL FLAG_ERROR("Invalid problem setup. The number of global solver rows is zero.",ERR,ERROR,*999)
+
+          !
+          ! 3. We now know how many local and global rows are in the solver matrix. Loop over the rows in rank order and calculate
+          !    the row mappings.
+          !
+          ! 3a Allocate and initialise the data structures
+          !
 
           !Allocate memory for the rows mapping
           !Allocate the solver rows to equations set maps
@@ -666,6 +691,10 @@ CONTAINS
             ENDDO !interface_col_number
             
           ENDDO !interface condition_idx
+
+          !
+          ! 3b Now calculate the mappings for each row in rank order.
+          !
           
           !Calculate the row mappings
           NUMBER_OF_GLOBAL_SOLVER_ROWS=0
@@ -885,6 +914,9 @@ CONTAINS
           !
           !--- Column mappings ---
           !
+          ! 4. Calculate the number of local and global columns in the solver matrix. Do this by calculating the list of columns
+          !    for each rank so that we can determine the column numbers in rank order.
+          !
           !Allocate solver column to equations sets mapping array
           ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping solver column to equations column maps.",ERR,ERROR,*999)
@@ -896,6 +928,9 @@ CONTAINS
 
             !Initialise the variables list
             CALL SOLVER_MAPPING_VARIABLES_INITIALISE(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx),ERR,ERROR,*999)
+            !
+            ! 4a Calculate the list of field variables involved in the columns of the solver matrix
+            !
             !Compute the order of variables for the solver matrices          
             CALL LIST_DETACH_AND_DESTROY(SOLVER_MAPPING%CREATE_VALUES_CACHE%EQUATIONS_VARIABLE_LIST(solver_matrix_idx)%PTR, &
               & NUMBER_OF_EQUATIONS_VARIABLES,EQUATIONS_VARIABLES,ERR,ERROR,*999)
@@ -1039,6 +1074,10 @@ CONTAINS
               & NUMBER_OF_VARIABLES),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub matrix list.",ERR,ERROR,*999)
             SUB_MATRIX_LIST=0
+
+            !
+            ! 4b Calculate the number of columns
+            !
             
             !Calculate the number of solver dofs
             ALLOCATE(NUMBER_OF_VARIABLE_GLOBAL_SOLVER_DOFS(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES), &
@@ -1561,6 +1600,7 @@ CONTAINS
               NUMBER_OF_GLOBAL_SOLVER_DOFS=NUMBER_OF_GLOBAL_SOLVER_DOFS+NUMBER_OF_VARIABLE_GLOBAL_SOLVER_DOFS(solver_variable_idx)
             ENDDO !solver_variable_idx
 
+            !Sanity check
             IF(NUMBER_OF_LOCAL_SOLVER_DOFS==0) THEN
               LOCAL_ERROR="Invalid problem setup. The number of local solver DOFs for solver matrix "// &
                 & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//" is zero."
@@ -1571,6 +1611,10 @@ CONTAINS
                 & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//" is zero."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
+
+            !
+            ! 4c Set up, allocate and initialise column mappings
+            !
 
             !Allocate memory for this solver matrix
             !Allocate solver columns to equations sets maps
@@ -1952,6 +1996,10 @@ CONTAINS
 
             ALLOCATE(solver_local_dof(0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver local dof array.",ERR,ERROR,*999)
+
+            !
+            ! 4d Now calculate the solver mappings for each column in rank order
+            !
             
             NUMBER_OF_GLOBAL_SOLVER_DOFS=0
             solver_global_dof=0
@@ -2631,6 +2679,10 @@ CONTAINS
             IF(ALLOCATED(TOTAL_NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS)) DEALLOCATE(TOTAL_NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS)
             
           ENDDO !solver_matrix_idx
+
+          !
+          ! 5. Set up the column mappings such that the solver matrix (sm) and equations matrix (em) orderings are the same.
+          !
           
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
