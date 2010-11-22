@@ -61,16 +61,21 @@ class HtmlOutput(Plugin):
     def insertLog(self, test):
         if str(test).find('test_build_library')!=-1 :
           logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build" 
+          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history" 
         elif str(test).find('test_example')!=-1 :
           path = list(test.test.arg)[1]
           path = path[path.find("/examples/")+10:]
           if list(test.test.arg)[0]=='build' :
             logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build"
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history"
           elif list(test.test.arg)[0]=='run' :
             logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run"
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history"
           elif list(test.test.arg)[0]=='check' :
             logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check"
-        self.html.append(' <a href="'+logPath+'">log</a>')
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history"
+        self.html.append('&nbsp;<a href="'+logPath+'">log</a>')
+        self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
     
     def addSuccess(self, test):
         self.html.append('<a class="success">PASS</a>')
