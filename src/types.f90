@@ -415,8 +415,8 @@ MODULE TYPES
   !>Embedded mesh types
   TYPE EMBEDDING_XI_TYPE
     INTEGER(INTG) :: NUMBER_OF_NODES                  !<Number of nodes embedded in this element
-    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:)     !<Node numbers in the child mesh
-    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:)      !<Xi coordinates in parent element
+    INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS(:)     !<NODE_NUMBERS(node_idx) Node numbers in child mesh for the node_idx'th embedded node in this element
+    REAL(DP), ALLOCATABLE :: XI_COORDS(:,:)           !<XI_COORDS(:,node_idx) Xi coordinates of the node_idx'th embedded node this element
   END TYPE EMBEDDING_XI_TYPE
 
   TYPE EMBEDDING_GAUSSPOINT_TYPE
@@ -428,7 +428,7 @@ MODULE TYPES
   TYPE MESH_EMBEDDING_TYPE
     TYPE(MESH_TYPE), POINTER :: CHILD_MESH, PARENT_MESH !<The parent and child mesh
     TYPE(EMBEDDING_XI_TYPE), ALLOCATABLE :: CHILD_NODE_XI_POSITION(:)            !<Location of embedded nodes for each element in the parent mesh
-    TYPE(EMBEDDING_GAUSSPOINT_TYPE), ALLOCATABLE :: GAUSS_POINT_XI_POSITION(:,:) !<Array of size #Gauss pts x #Elements, location of each Gauss point of the parent mesh in the child mesh
+    TYPE(EMBEDDING_GAUSSPOINT_TYPE), ALLOCATABLE :: GAUSS_POINT_XI_POSITION(:,:) !<GAUSS_POINT_XI_POSITION(gauss_idx,element_idx) Location of the gauss_idx'th Gauss point of the element_idx'th parent mesh in the child mesh
   END TYPE MESH_EMBEDDING_TYPE
 
 
