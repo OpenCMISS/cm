@@ -3759,172 +3759,333 @@ CONTAINS
     ! assign to the field
     np=0
     IF(FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
-      FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-        IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
-          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-          DO component_idx=2,3
-            IF(FIELD_VARIABLE%COMPONENTS(component_idx)%MESH_COMPONENT_NUMBER/=MESH_COMPONENT) THEN
-              CALL FLAG_ERROR("Multiple mesh components for geometric components is not implemented.",ERR,ERROR,*999)
-            ENDIF
-          ENDDO
-          basis_idx=MESH_COMPONENT*2-1
-          !< Ellipsoid_extent= inner long axis, inner short axis, wall thickness, top angle (from 0)
-          ! calculate the total number of nodes in each xi direction
-          IF(ALLOCATED(ELLIPSOID_MESH%BASES)) THEN
-            !Check that the all geometric bases use the same mesh component
-            BASIS=>ELLIPSOID_MESH%BASES(basis_idx)%PTR
-            NUMBER_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
-            NUMBER_OF_NODES_XIC=BASIS%NUMBER_OF_NODES_XIC
-            DO xi_idx=1,3
-              TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XIC(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
-            ENDDO
-            TOTAL_NUMBER_NODES_XI(1)=TOTAL_NUMBER_NODES_XI(1)-1 ! theta loops around so slightly different
-            ! calculate DELTAi now
-            ELLIPSOID_EXTENT=ELLIPSOID_MESH%ELLIPSOID_EXTENT
-            DELTA(1)=TWOPI/NUMBER_ELEMENTS_XI(1)
-            DELTA(2)=(PI-ELLIPSOID_EXTENT(4))/NUMBER_ELEMENTS_XI(2)
-            DELTA(3)=ELLIPSOID_EXTENT(3)/NUMBER_ELEMENTS_XI(3)
-            DO xi_idx=1,3
-              DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XIC(xi_idx)-1)
-            ENDDO
-          ELSE
-            CALL FLAG_ERROR("Ellipsoid mesh does not have bases allocated.",ERR,ERROR,*999)
-          ENDIF
-          CALL FIELD_SCALING_TYPE_GET(FIELD,SCALING_TYPE,ERR,ERROR,*999)
-          IF(SCALING_TYPE/=FIELD_UNIT_SCALING) &
-              & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Note: If the ellipsoid looks wonky, set field scaling to &
-              & unit scaling type.",ERR,ERROR,*999)
-          ! NUMBER_OF_PLANAR_NODES=TOTAL_NUMBER_NODES_XI(1)*TOTAL_NUMBER_NODES_XI(2)
-          DO component_idx=1,3
-            INTERPOLATION_TYPES(component_idx)=FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE
-          ENDDO
-          IF(ALL(INTERPOLATION_TYPES==FIELD_NODE_BASED_INTERPOLATION)) THEN
-            DOMAIN=>FIELD_VARIABLE%COMPONENTS(1)%DOMAIN ! just grab the first one
-            DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-            !DECOMPOSITION=>DOMAIN%DECOMPOSITION !\todo: test all these pointers
-            DECOMPOSITION=>FIELD%DECOMPOSITION !\todo: test all these pointers
-
-            k=1
-            !inner surface
-            alpha=sqrt((ELLIPSOID_EXTENT(1))**2-(ELLIPSOID_EXTENT(2))**2)
-            !xi=log(ELLIPSOID_EXTENT(1)/alpha+sqrt((ELLIPSOID_EXTENT(1)/alpha)**2+1))
-            xi=acosh(ELLIPSOID_EXTENT(1)/alpha)
-
-            j=1
-            !apex node
-            np=1
-            npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
-            CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
-            IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
-              RECT_COORDS(1)=0
-              RECT_COORDS(2)=0
-              RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)
-              DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
-                  & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
-                local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
-                IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
-                  CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
-                ENDIF !derivatives
-              ENDDO
-            ENDIF
-
-            DO j=2,TOTAL_NUMBER_NODES_XI(2)
-              !longitudinal loop
-              nu=PI-DELTAi(2)*(j-1)
-              DO i=1,TOTAL_NUMBER_NODES_XI(1)
-                !circumferential loop
-                phi=DELTAi(1)*(i-1)
-                RECT_COORDS(1)=alpha*(sinh(xi)*sin(nu)*cos(phi))
-                RECT_COORDS(2)=alpha*(sinh(xi)*sin(nu)*sin(phi))
-                RECT_COORDS(3)=alpha*(cosh(xi)*cos(nu))
-                np=np+1
-                npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
-                CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
-                IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
-                      & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
-                    local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
-                    IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
-                        CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
-                    ENDIF !derivatives
-                  ENDDO
+       FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+       IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+          IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
+             MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+             DO component_idx=2,3
+                IF(FIELD_VARIABLE%COMPONENTS(component_idx)%MESH_COMPONENT_NUMBER/=MESH_COMPONENT) THEN
+                   CALL FLAG_ERROR("Multiple mesh components for geometric components is not implemented.",ERR,ERROR,*999)
                 ENDIF
-              ENDDO
-            ENDDO
-
-            DO k=2,TOTAL_NUMBER_NODES_XI(3)
-              !transmural loop
-              j=1
-              !apex nodes
-              RECT_COORDS(1)=0
-              RECT_COORDS(2)=0
-              RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)-(k-1)*(DELTAi(3))
-              np=np+1
-              npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
-              CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
-              IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
-                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
-                    & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
-                  local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
-                  IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
-                    CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
-                  ENDIF !derivatives
+             ENDDO
+             basis_idx=MESH_COMPONENT*2-1
+             !< Ellipsoid_extent= inner long axis, inner short axis, wall thickness, top angle (from 0)
+             ! calculate the total number of nodes in each xi direction
+             IF(ALLOCATED(ELLIPSOID_MESH%BASES)) THEN
+                !Check that the all geometric bases use the same mesh component
+                BASIS=>ELLIPSOID_MESH%BASES(basis_idx)%PTR
+                NUMBER_ELEMENTS_XI=ELLIPSOID_MESH%NUMBER_OF_ELEMENTS_XI
+                NUMBER_OF_NODES_XIC=BASIS%NUMBER_OF_NODES_XIC
+                DO xi_idx=1,3
+                   TOTAL_NUMBER_NODES_XI(xi_idx)=(NUMBER_OF_NODES_XIC(xi_idx)-1)*NUMBER_ELEMENTS_XI(xi_idx)+1
                 ENDDO
-              ENDIF
-
-              DO j=2,TOTAL_NUMBER_NODES_XI(2)
-                !longitudinal loop
-                nu=PI-DELTAi(2)*(j-1)
-                DO i=1,TOTAL_NUMBER_NODES_XI(1)
-                  !circumferential loop
-                  phi=DELTAi(1)*(i-1)
-                  x=alpha*(sinh(xi)*sin(nu)*cos(phi))
-                  y=alpha*(sinh(xi)*sin(nu)*sin(phi))
-                  z=alpha*(cosh(xi)*cos(nu))
-                  !Normal vector from inner surface with length DELTAi(3)(k-1)
-                  ! Finney&Thomas: Calculus, second edition, Addison-Wesley Publishing Company, 1994, page 847
-                  !X=x(1+2t/a^2) Y=y(1+2t/a^2) Z=z(1+2t/c^2)
-                  t=(DELTAi(3)*(k-1))/sqrt((4*x**2/(ELLIPSOID_EXTENT(2))**4)+ &
-                       & (4*y**2/(ELLIPSOID_EXTENT(2))**4)+(4*z**2/(ELLIPSOID_EXTENT(1))**4))
-                  RECT_COORDS(1)=x*(1+2*t/(ELLIPSOID_EXTENT(2))**2)
-                  RECT_COORDS(2)=y*(1+2*t/(ELLIPSOID_EXTENT(2))**2)
-                  RECT_COORDS(3)=z*(1+2*t/(ELLIPSOID_EXTENT(1))**2)
-                  np=np+1
-                  npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
-                  CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
-                  IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
-                    DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
-                        & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
-                      local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
-                      IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
-                        CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
-                      ENDIF !derivatives
-                    ENDDO
-                  ENDIF
+                TOTAL_NUMBER_NODES_XI(1)=TOTAL_NUMBER_NODES_XI(1)-1 ! theta loops around so slightly different
+                ! calculate DELTAi now
+                ELLIPSOID_EXTENT=ELLIPSOID_MESH%ELLIPSOID_EXTENT
+                DELTA(1)=TWOPI/NUMBER_ELEMENTS_XI(1)
+                DELTA(2)=(PI-ELLIPSOID_EXTENT(4))/NUMBER_ELEMENTS_XI(2)
+                DELTA(3)=ELLIPSOID_EXTENT(3)/NUMBER_ELEMENTS_XI(3)
+                DO xi_idx=1,3
+                   DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XIC(xi_idx)-1)
                 ENDDO
-              ENDDO
-            ENDDO
+             ELSE
+                CALL FLAG_ERROR("Ellipsoid mesh does not have bases allocated.",ERR,ERROR,*999)
+             ENDIF
+             CALL FIELD_SCALING_TYPE_GET(FIELD,SCALING_TYPE,ERR,ERROR,*999)
+             IF(SCALING_TYPE/=FIELD_UNIT_SCALING) &
+                  & CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Note: If the ellipsoid looks wonky, set field scaling to &
+                  & unit scaling type.",ERR,ERROR,*999)
+             ! NUMBER_OF_PLANAR_NODES=TOTAL_NUMBER_NODES_XI(1)*TOTAL_NUMBER_NODES_XI(2)
+             DO component_idx=1,3
+                INTERPOLATION_TYPES(component_idx)=FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE
+             ENDDO
+             IF(ALL(INTERPOLATION_TYPES==FIELD_NODE_BASED_INTERPOLATION)) THEN
+                DOMAIN=>FIELD_VARIABLE%COMPONENTS(1)%DOMAIN ! just grab the first one
+                DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                !DECOMPOSITION=>DOMAIN%DECOMPOSITION !\todo: test all these pointers
+                DECOMPOSITION=>FIELD%DECOMPOSITION !\todo: test all these pointers
+                IF (ELLIPSOID_EXTENT(1)>ELLIPSOID_EXTENT(2)) THEN
+                   !Prolate spheroid
+                   k=1
+                   !inner surface
+                   alpha=sqrt((ELLIPSOID_EXTENT(1))**2-(ELLIPSOID_EXTENT(2))**2)
+                   !xi=log(ELLIPSOID_EXTENT(1)/alpha+sqrt((ELLIPSOID_EXTENT(1)/alpha)**2+1))
+                   xi=acosh(ELLIPSOID_EXTENT(1)/alpha)
+
+                   j=1
+                   !apex node
+                   np=1
+                   npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                   CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                   IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                      RECT_COORDS(1)=0
+                      RECT_COORDS(2)=0
+                      RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)
+                      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                              & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                         local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                         IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                            CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                         ENDIF !derivatives
+                      ENDDO
+                   ENDIF
+
+                   DO j=2,TOTAL_NUMBER_NODES_XI(2)
+                      !longitudinal loop
+                      nu=PI-DELTAi(2)*(j-1)
+                      DO i=1,TOTAL_NUMBER_NODES_XI(1)
+                         !circumferential loop
+                         phi=DELTAi(1)*(i-1)
+                         RECT_COORDS(1)=alpha*(sinh(xi)*sin(nu)*cos(phi))
+                         RECT_COORDS(2)=alpha*(sinh(xi)*sin(nu)*sin(phi))
+                         RECT_COORDS(3)=alpha*(cosh(xi)*cos(nu))
+                         np=np+1
+                         npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                         CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                         IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                            DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                               CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                    & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                               local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                               IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                                  CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                               ENDIF !derivatives
+                            ENDDO
+                         ENDIF
+                      ENDDO
+                   ENDDO
+
+                   DO k=2,TOTAL_NUMBER_NODES_XI(3)
+                      !transmural loop
+                      j=1
+                      !apex nodes
+                      RECT_COORDS(1)=0
+                      RECT_COORDS(2)=0
+                      RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)-(k-1)*(DELTAi(3))
+                      np=np+1
+                      npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                 & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                            local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                            IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                               CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                            ENDIF !derivatives
+                         ENDDO
+                      ENDIF
+
+                      DO j=2,TOTAL_NUMBER_NODES_XI(2)
+                         !longitudinal loop
+                         nu=PI-DELTAi(2)*(j-1)
+                         DO i=1,TOTAL_NUMBER_NODES_XI(1)
+                            !circumferential loop
+                            phi=DELTAi(1)*(i-1)
+                            x=alpha*(sinh(xi)*sin(nu)*cos(phi))
+                            y=alpha*(sinh(xi)*sin(nu)*sin(phi))
+                            z=alpha*(cosh(xi)*cos(nu))
+                            !Normal vector from inner surface with length DELTAi(3)(k-1)
+                            ! Finney&Thomas: Calculus, second edition, Addison-Wesley Publishing Company, 1994, page 847
+                            !X=x(1+2t/a^2) Y=y(1+2t/a^2) Z=z(1+2t/c^2)
+                            t=(DELTAi(3)*(k-1))/sqrt((4*x**2/(ELLIPSOID_EXTENT(2))**4)+ &
+                                 & (4*y**2/(ELLIPSOID_EXTENT(2))**4)+(4*z**2/(ELLIPSOID_EXTENT(1))**4))
+                            RECT_COORDS(1)=x*(1+2*t/(ELLIPSOID_EXTENT(2))**2)
+                            RECT_COORDS(2)=y*(1+2*t/(ELLIPSOID_EXTENT(2))**2)
+                            RECT_COORDS(3)=z*(1+2*t/(ELLIPSOID_EXTENT(1))**2)
+                            np=np+1
+                            npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                            CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                            IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                               DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                       & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                                  local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                                  IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                                     CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                                  ENDIF !derivatives
+                               ENDDO
+                            ENDIF
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSEIF (ELLIPSOID_EXTENT(1)==ELLIPSOID_EXTENT(2)) THEN
+                   !Sphere
+                   np=0
+                   DO k=1,TOTAL_NUMBER_NODES_XI(3)
+                      !transmural loop
+                      alpha=ELLIPSOID_EXTENT(1)+(k-1)*(DELTAi(3))
+                      j=1
+                      !apex nodes
+                      RECT_COORDS(1)=0
+                      RECT_COORDS(2)=0
+                      RECT_COORDS(3)=-alpha
+                      np=np+1
+                      npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                 & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                            local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                            IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                               CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                            ENDIF !derivatives
+                         ENDDO
+                      ENDIF
+
+                      DO j=2,TOTAL_NUMBER_NODES_XI(2)
+                         !longitudinal loop
+                         nu=PI-DELTAi(2)*(j-1)
+                         DO i=1,TOTAL_NUMBER_NODES_XI(1)
+                            !circumferential loop
+                            phi=DELTAi(1)*(i-1)
+                            RECT_COORDS(1)=alpha*sin(nu)*cos(phi)
+                            RECT_COORDS(2)=alpha*sin(nu)*sin(phi)
+                            RECT_COORDS(3)=alpha*cos(nu)
+                            np=np+1
+                            npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                            CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                            IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                               DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                       & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                                  local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                                  IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                                     CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                                  ENDIF !derivatives
+                               ENDDO
+                            ENDIF
+                         ENDDO
+                      ENDDO
+                   ENDDO
+
+                ELSEIF (ELLIPSOID_EXTENT(1)<ELLIPSOID_EXTENT(2)) THEN 
+                   !Oblate spheroid
+                   k=1
+                   !inner surface
+                   alpha=sqrt((ELLIPSOID_EXTENT(2))**2-(ELLIPSOID_EXTENT(1))**2)
+                   !xi=log(ELLIPSOID_EXTENT(1)/alpha+sqrt((ELLIPSOID_EXTENT(1)/alpha)**2+1))
+                   xi=acosh(ELLIPSOID_EXTENT(2)/alpha)
+
+                   j=1
+                   !apex node
+                   np=1
+                   npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                   CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                   IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                      RECT_COORDS(1)=0
+                      RECT_COORDS(2)=0
+                      RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)
+                      DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                              & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                         local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                         IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                            CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                         ENDIF !derivatives
+                      ENDDO
+                   ENDIF
+
+                   DO j=2,TOTAL_NUMBER_NODES_XI(2)
+                      !longitudinal loop
+                      nu=-PI/2+DELTAi(2)*(j-1)
+                      DO i=1,TOTAL_NUMBER_NODES_XI(1)
+                         !circumferential loop
+                         phi=DELTAi(1)*(i-1)
+                         RECT_COORDS(1)=alpha*(cosh(xi)*cos(nu)*cos(phi))
+                         RECT_COORDS(2)=alpha*(cosh(xi)*cos(nu)*sin(phi))
+                         RECT_COORDS(3)=alpha*(sinh(xi)*sin(nu))
+                         np=np+1
+                         npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                         CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                         IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                            DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                               CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                    & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                               local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                               IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                                  CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                               ENDIF !derivatives
+                            ENDDO
+                         ENDIF
+                      ENDDO
+                   ENDDO
+
+                   DO k=2,TOTAL_NUMBER_NODES_XI(3)
+                      !transmural loop
+                      j=1
+                      !apex nodes
+                      RECT_COORDS(1)=0
+                      RECT_COORDS(2)=0
+                      RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)-(k-1)*(DELTAi(3))
+                      np=np+1
+                      npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                 & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                            local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                            IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                               CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                            ENDIF !derivatives
+                         ENDDO
+                      ENDIF
+
+                      DO j=2,TOTAL_NUMBER_NODES_XI(2)
+                         !longitudinal loop
+                         nu=-PI/2+DELTAi(2)*(j-1)
+                         DO i=1,TOTAL_NUMBER_NODES_XI(1)
+                            !circumferential loop
+                            phi=DELTAi(1)*(i-1)
+                            x=alpha*(cosh(xi)*cos(nu)*cos(phi))
+                            y=alpha*(cosh(xi)*cos(nu)*sin(phi))
+                            z=alpha*(sinh(xi)*sin(nu))
+                            !Normal vector from inner surface with length DELTAi(3)(k-1)
+                            ! Finney&Thomas: Calculus, second edition, Addison-Wesley Publishing Company, 1994, page 847
+                            !X=x(1+2t/a^2) Y=y(1+2t/a^2) Z=z(1+2t/c^2)
+                            t=(DELTAi(3)*(k-1))/sqrt((4*x**2/(ELLIPSOID_EXTENT(2))**4)+ &
+                                 & (4*y**2/(ELLIPSOID_EXTENT(2))**4)+(4*z**2/(ELLIPSOID_EXTENT(1))**4))
+                            RECT_COORDS(1)=x*(1+2*t/(ELLIPSOID_EXTENT(2))**2)
+                            RECT_COORDS(2)=y*(1+2*t/(ELLIPSOID_EXTENT(2))**2)
+                            RECT_COORDS(3)=z*(1+2*t/(ELLIPSOID_EXTENT(1))**2)
+                            np=np+1
+                            npg=COMPONENT_NODE_TO_USER_NUMBER(ELLIPSOID_MESH%GENERATED_MESH,basis_idx,np,ERR,ERROR)
+                            CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
+                            IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
+                               DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                       & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
+                                  local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
+                                  IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
+                                     CALL FLAG_ERROR("Not generalized to hermittean elements.",ERR,ERROR,*999)
+                                  ENDIF !derivatives
+                               ENDDO
+                            ENDIF
+                         ENDDO
+                      ENDDO
+                   ENDDO
+                ELSE 
+                   CALL FLAG_ERROR("Not valid long axis - short axis relation",ERR,ERROR,*999)
+                ENDIF
+             ELSE
+                CALL FLAG_ERROR("All field variable components must have node-based interpolation.",ERR,ERROR,*999)
+             ENDIF
+             CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+             CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("All field variable components must have node-based interpolation.",ERR,ERROR,*999)
+             CALL FLAG_ERROR("Geometric field must be three dimensional.",ERR,ERROR,*999)
           ENDIF
-          CALL FIELD_PARAMETER_SET_UPDATE_START(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-        ELSE
-          CALL FLAG_ERROR("Geometric field must be three dimensional.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        LOCAL_ERROR="The standard field variable is not associated for field number "// &
-          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      ENDIF
+       ELSE
+          LOCAL_ERROR="The standard field variable is not associated for field number "// &
+               & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       ENDIF
     ELSE
-      LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not a geometric field."
+       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     ! all done
