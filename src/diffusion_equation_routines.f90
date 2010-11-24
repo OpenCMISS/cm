@@ -1751,6 +1751,29 @@ CONTAINS
                         & " requires that the equations set subtype be an no source diffusion equation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
+                  CASE(EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1)
+                    !Check there is no source
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_DIFFUSION_SUBTYPE) THEN
+                      !Check that domain is 3D
+                      IF(NUMBER_OF_DIMENSIONS/=3) THEN
+                        LOCAL_ERROR="The number of geometric dimensions of "// &
+                          & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                          & " is invalid. The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " requires that there be 3 geometric dimensions."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                      !Create analytic field if required
+                      !Set analytic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1
+                    ELSE
+                      LOCAL_ERROR="The equations set subtype of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                        & " is invalid. The analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " requires that the equations set subtype be an no source diffusion equation."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   CASE(EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1)
                     !Check there is no source
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE) THEN
@@ -2172,9 +2195,9 @@ CONTAINS
       !CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_MATERIALS_FIELD(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
     ENDIF
 
-    IF( UPDATE_BOUNDARY_CONDITIONS ) THEN
-      CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-    ENDIF
+!     IF( UPDATE_BOUNDARY_CONDITIONS ) THEN
+!       CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!     ENDIF
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
@@ -2183,11 +2206,12 @@ CONTAINS
             CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE, &
                   & PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE)
               ! do nothing ???
+               CALL DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_NO_SOURCE_ALE_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE, &
                   & PROBLEM_NONLINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE)
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE diffusion pre solve... ",ERR,ERROR,*999)
                 IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
-                  !First update mesh and calculates boundary velocity values
+                  !First update mesh and calculate boundary velocity values
                   CALL DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                   !Then apply both normal and moving mesh boundary conditions
                   !CALL DIFFUSION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -2534,6 +2558,297 @@ CONTAINS
     CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
     RETURN 1
   END SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
+
+  !   
+  !================================================================================================================================
+  !
+  !updates the boundary conditions and source term to the required analytic values
+  SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,SOURCE_FIELD
+!    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+!    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+!    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+!    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+!    REAL(DP), POINTER :: BOUNDARY_VALUES(:)
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+    REAL(DP) :: VALUE,X(3),VALUE_SOURCE !<The value to add
+!     REAL(DP) :: k_xx, k_yy, k_zz
+    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,variable_idx,eqnset_idx
+    INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG) :: ANALYTIC_FUNCTION_TYPE
+    INTEGER(INTG) :: GLOBAL_DERIV_INDEX
+    REAL(DP) :: A1,D1
+!    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+!    INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
+!    INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
+!    INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of (geometry) nodes
+!    INTEGER(INTG) :: LOCAL_NODE_NUMBER
+!    INTEGER(INTG) :: EQUATIONS_SET_IDX
+!    INTEGER(INTG) :: equations_row_number
+
+    CALL ENTERS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR,*999)
+
+
+    A1 = 0.4_DP
+    D1=1.0_DP
+
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+       !write(*,*)'CURRENT_TIME = ',CURRENT_TIME
+       !write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            !do nothing?! 
+            CASE(PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE,PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                !loop over all the equation sets and set the appropriate field variable type BCs and
+                !the source field associated with each equation set
+                DO eqnset_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(eqnset_idx)%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                     IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+                            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
+                              & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                            NULLIFY(GEOMETRIC_VARIABLE)
+                            NULLIFY(GEOMETRIC_PARAMETERS)
+                            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+                            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,& 
+                              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                             EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)=CURRENT_TIME
+!                              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                              variable_type=DEPENDENT_FIELD%VARIABLES(2*eqnset_idx-1)%VARIABLE_TYPE
+                              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
+                                    & FIELD_NODE_BASED_INTERPOLATION) THEN
+                                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                                    IF(ASSOCIATED(DOMAIN)) THEN
+                                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                          !Loop over the local nodes excluding the ghosts.
+                                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                            !!TODO \todo We should interpolate the geometric field here and the node position.
+                                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                              local_ny= & 
+                                          & GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                                            ENDDO !dim_idx
+                                            !Loop over the derivatives
+                                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                              ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+                                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
+                                              CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X, & 
+                                                & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX, &
+                                                & ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
+                                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                              BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+                                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% & 
+                                                & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
+                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                                 & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                                 & VALUE,ERR,ERROR,*999)
+                                              ENDIF
+
+!                                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
+!                                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                                  !If we are a boundary node then set the analytic value on the boundary
+!                                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+!                                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+!                                                ENDIF
+!                                              ENDIF
+                                            ENDDO !deriv_idx
+                                          ENDDO !node_idx
+                                        ELSE
+                                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                        ENDIF
+                                      ELSE
+                                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                  ENDIF
+                                ENDDO !component_idx
+                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                              ELSE
+                                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                              ENDIF
+
+!                              ENDDO !variable_idx
+                             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,& 
+                              & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                          ELSE
+                            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                          ENDIF            
+                        ELSE
+                          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        !CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  END IF                
+!                 ELSE
+!                   CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+!                 END IF  
+                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            IF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE)THEN
+            !>Set the source field to a specified analytical function
+            IF(ASSOCIATED(EQUATIONS_SET)) THEN
+              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                SOURCE_FIELD=>EQUATIONS_SET%SOURCE%SOURCE_FIELD
+                IF(ASSOCIATED(SOURCE_FIELD)) THEN
+                  GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                  IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                    NULLIFY(GEOMETRIC_VARIABLE)
+                    CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                      variable_type=FIELD_U_VARIABLE_TYPE
+                      FIELD_VARIABLE=>SOURCE_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                          IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                            DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                            IF(ASSOCIATED(DOMAIN)) THEN
+                              IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                  !Loop over the local nodes excluding the ghosts.
+                                  DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                    !!TODO \todo We should interpolate the geometric field here and the node position.
+                                    DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                      local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,&
+                                      & node_idx)
+                                      X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                                    ENDDO !dim_idx
+                                    !Loop over the derivatives
+                                    DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                      SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                                      CASE(EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1)
+                                          VALUE_SOURCE=-1*A1*EXP(-1*CURRENT_TIME)*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3)+6)
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The analytic function type of "// &
+                                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))//&
+                                          & " is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      END SELECT
+                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                        & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE_SOURCE,ERR,ERROR,*999)
+                                    ENDDO !deriv_idx
+                                  ENDDO !node_idx
+                                ELSE
+                                  CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                          ENDIF
+                        ENDDO !component_idx
+                        CALL FIELD_PARAMETER_SET_UPDATE_START(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                          & ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                          & ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                  ELSE
+                    CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                  ENDIF            
+                ELSE
+                  CALL FLAG_ERROR("Equations set source field is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+            ENDIF
+            ENDIF
+            ENDDO !eqnset_idx
+                ELSE
+                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                END IF  
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a diffusion equation type of a classical field problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES")
+    RETURN
+999 CALL ERRORS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR)
+    CALL EXITS("DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES")
+    RETURN 1
+  END SUBROUTINE DIFFUSION_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES
 
   !
   !================================================================================================================================

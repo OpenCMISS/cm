@@ -528,7 +528,7 @@ CONTAINS
     INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
     INTEGER(INTG) :: ANALYTIC_FUNCTION_TYPE
     INTEGER(INTG) :: GLOBAL_DERIV_INDEX
-    REAL(DP) :: A1,A2,A3,A4,D1,D2,D3,D4,LAMBDA_12
+    REAL(DP) :: A1,A2,A3,A4,D1,D2,D3,D4,LAMBDA_12,LAMBDA_13,LAMBDA_23
 !    INTEGER(INTG) :: FIELD_SET_TYPE !<The field parameter set identifier \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
 !    INTEGER(INTG) :: DERIVATIVE_NUMBER !<The node derivative number
 !    INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number
@@ -540,12 +540,17 @@ CONTAINS
     CALL ENTERS("MULTI_COMP_TRANSPORT_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR,*999)
 
 
-    A1=0.4_DP
-    A2=0.3_DP
+    A1 = 0.4_DP
+    A2 = 0.3_DP
+    A3 = 0.2_DP
+    A4 = 0.1_DP
     D1=1.0_DP
     D2=1.0_DP
+    D3=1.0_DP
+    D4=1.0_DP
     LAMBDA_12=0.1_DP
-
+    LAMBDA_13=0.1_DP
+    LAMBDA_23=0.1_DP
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
@@ -561,11 +566,6 @@ CONTAINS
                 !loop over all the equation sets and set the appropriate field variable type BCs and
                 !the source field associated with each equation set
                 DO eqnset_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-
-
-
-
-
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                   EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(eqnset_idx)%EQUATIONS
                   IF(ASSOCIATED(EQUATIONS)) THEN
@@ -700,8 +700,6 @@ CONTAINS
                     CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
                     CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-!                     DO variable_idx=1,SOURCE_FIELD%NUMBER_OF_VARIABLES
-!                      variable_type=SOURCE_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
                       variable_type=FIELD_U_VARIABLE_TYPE
                       FIELD_VARIABLE=>SOURCE_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                       IF(ASSOCIATED(FIELD_VARIABLE)) THEN
@@ -731,6 +729,21 @@ CONTAINS
                                         CASE(2)
                                           VALUE_SOURCE=EXP(-1*CURRENT_TIME)*(-1*A2*(X(1)*X(1)+X(2)*X(2))-4*D2*A2+LAMBDA_12*(A2-A1)*&
                                           & (X(1)*X(1)+X(2)*X(2)))
+                                        END SELECT
+                                      CASE(EQUATIONS_SET_MULTI_COMP_DIFFUSION_THREE_COMP_THREE_DIM)
+                                        SELECT CASE(eqnset_idx)
+                                        CASE(1)
+                                          VALUE_SOURCE=EXP(-1*CURRENT_TIME)*(-1*A1*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3))-&
+                                          & 6*D1*A1+LAMBDA_13*(A1-A3)*&
+                                          & (X(1)*X(1)+X(2)*X(2)+X(3)*X(3))+LAMBDA_12*(A1-A2)*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3)))
+                                        CASE(2)
+                                          VALUE_SOURCE=EXP(-1*CURRENT_TIME)*(-1*A2*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3))-&
+                                          & 6*D2*A2+LAMBDA_12*(A2-A1)*&
+                                          & (X(1)*X(1)+X(2)*X(2)+X(3)*X(3))+LAMBDA_23*(A2-A3)*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3)))
+                                        CASE(3)
+                                          VALUE_SOURCE=EXP(-1*CURRENT_TIME)*(-1*A3*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3))-&
+                                          & 6*D3*A3+LAMBDA_13*(A3-A1)*&
+                                          & (X(1)*X(1)+X(2)*X(2)+X(3)*X(3))+LAMBDA_23*(A3-A2)*(X(1)*X(1)+X(2)*X(2)+X(3)*X(3)))
                                         END SELECT
                                       CASE DEFAULT
                                         LOCAL_ERROR="The analytic function type of "// &
@@ -764,7 +777,6 @@ CONTAINS
                       ELSE
                         CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
                       ENDIF
-!                     ENDDO !variable_idx
                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                   ELSE
