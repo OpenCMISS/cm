@@ -1349,7 +1349,6 @@ CONTAINS
     REAL(DP) :: DARCY_MASS_INCREASE  !coupled elasticity Darcy
     INTEGER(INTG) :: DARCY_MASS_INCREASE_ENTRY !position of mass-increase entry in dependent-variable vector
 
-
     !CALL ENTERS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR,*999)
     EQUATIONS_SET_SUBTYPE = EQUATIONS_SET%SUBTYPE
 

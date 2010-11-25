@@ -55,6 +55,7 @@ MODULE FIELD_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE LISTS
+  USE MATHS
   USE MPI
   USE MESH_ROUTINES
   USE NODE_ROUTINES
@@ -5335,6 +5336,393 @@ CONTAINS
     CALL EXITS("FIELD_INTERPOLATE_XI")
     RETURN 1
   END SUBROUTINE FIELD_INTERPOLATE_XI
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Computes the geometric position, normal and tangent vectors at a node in a field. If the node is internal to the mesh the normal and tangents are zero.
+  SUBROUTINE FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,LOCAL_NODE_NUMBER,POSITION,NORMAL, &
+    & TANGENTS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<A pointer to the field to interpolate the geometric information for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type of the node to compute the geometric information for
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number of the node to compute the geometric information for
+    INTEGER(INTG), INTENT(IN) :: LOCAL_NODE_NUMBER !<The local node number to compute the geometric information for
+    REAL(DP), INTENT(OUT) :: POSITION(:) !<POSITION(coordinate_idx), on exit the geometric position of the node
+    REAL(DP), INTENT(OUT) :: NORMAL(:) !<NORMAL(coordinate_idx), on exit the normal vector
+    REAL(DP), INTENT(OUT) :: TANGENTS(:,:) !<TANGENTS(coordinate_idx,tangent_idx), on exit the tangent vectors for the tangent_idx'th tangent at the node. There are number_of_xi-1 tangent vectors.
+    !REAL(DP), INTENT(OUT) :: DXDXI(:,:) !<DXDXI(coordinate_idx,xi_idx), on exit the dx/dxi information at the node
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DIMS,INDEX_MATCH
+    INTEGER(INTG) :: nic,coordinate_idx,component_idx,derivative_idx,xi_idx,element,element_idx,local_node,local_node_idx
+    REAL(DP) :: XI(3), VEC(3), DXDXI(3,3) ! Note VEC, DXDXI sizes are fixed, but it doesn't matter so much
+    INTEGER(INTG) :: tangent_idx,tangent_xi_idx
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMP_TOPOLOGY
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: DECOMP_ELEMENTS
+    TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINTS(:)
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
+        IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+          IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+            CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+              DIMS=FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              IF(COMPONENT_NUMBER>=1.AND.COMPONENT_NUMBER<=DIMS) THEN
+                DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                IF(ASSOCIATED(DOMAIN)) THEN
+                  TOPOLOGY=>DOMAIN%TOPOLOGY
+                  IF(ASSOCIATED(TOPOLOGY)) THEN
+                    DECOMPOSITION=>FIELD%DECOMPOSITION
+                    IF(ASSOCIATED(DECOMPOSITION)) THEN
+                      DECOMP_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                      IF(ASSOCIATED(DECOMP_TOPOLOGY)) THEN
+                        DECOMP_ELEMENTS=>DECOMP_TOPOLOGY%ELEMENTS
+                        IF(ASSOCIATED(DECOMP_ELEMENTS)) THEN
+                          IF(SIZE(POSITION,1)>=DIMS) THEN
+                            IF(SIZE(NORMAL,1)>=DIMS) THEN
+                              IF(SIZE(TANGENTS,1)>=DIMS) THEN
+                                IF(SIZE(DXDXI,1)>=DIMS) THEN
+                                  SELECT CASE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE)
+                                  CASE(FIELD_CONSTANT_INTERPOLATION)
+                                    LOCAL_ERROR="Cannot compute the normal at a node for component number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" for variable type "// &
+                                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                                      & " which has constant interpolation."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                    LOCAL_ERROR="Cannot compute the normal at a node for component number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" for variable type "// &
+                                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based&
+                                      & interpolation."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CASE(FIELD_NODE_BASED_INTERPOLATION)
+                                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                                    IF(ASSOCIATED(DOMAIN)) THEN
+                                      TOPOLOGY=>DOMAIN%TOPOLOGY
+                                      IF(ASSOCIATED(TOPOLOGY)) THEN
+                                        DOMAIN_ELEMENTS=>TOPOLOGY%ELEMENTS
+                                        IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                                          DOMAIN_NODES=>TOPOLOGY%NODES
+                                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                            IF(LOCAL_NODE_NUMBER>0.AND.LOCAL_NODE_NUMBER<=DOMAIN_NODES%NUMBER_OF_NODES) THEN
+                                              !Normal & tangent will be calculated as averages in all surrounding elements. This is
+                                              !because there could be discontinuity in the surface gradients across elements.
+                                              POSITION(1:DIMS)=0.0_DP
+                                              DXDXI=0.0_DP
+                                              TANGENTS=0.0_DP
+                                              NORMAL(1:DIMS)=0.0_DP
+                                              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD, &
+                                                & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+                                              CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS, &
+                                                & INTERPOLATED_POINTS,ERR,ERROR,*999)
+                                              DO element_idx=1,DOMAIN_NODES%NODES(LOCAL_NODE_NUMBER)%NUMBER_OF_SURROUNDING_ELEMENTS
+                                                element=DOMAIN_NODES%NODES(LOCAL_NODE_NUMBER)%SURROUNDING_ELEMENTS(element_idx)
+                                                BASIS=>DOMAIN_ELEMENTS%ELEMENTS(element)%BASIS
+                                                !Find local node number in the basis
+                                                local_node=0
+                                                DO local_node_idx=1,BASIS%NUMBER_OF_NODES
+                                                  IF(DOMAIN_ELEMENTS%ELEMENTS(element)%ELEMENT_NODES(local_node_idx)== &
+                                                    & LOCAL_NODE_NUMBER) THEN
+                                                    local_node=local_node_idx
+                                                    EXIT
+                                                  ENDIF
+                                                ENDDO !local_node_idx
+                                                !Find the xi position of the node in the element. In most cases this will be 0,1.0 etc
+                                                ! but in some cases the geometric field may not contain this node in which case xi can be
+                                                ! arbitrary
+                                                CALL BASIS_LOCAL_NODE_XI_CALCULATE(BASIS,local_node,XI,ERR,ERROR,*999)
+                                                !Interpolate the geometric field at the xi position.
+                                                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element, &
+                                                  & INTERPOLATION_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI(1:BASIS%NUMBER_OF_XI), &
+                                                  & INTERPOLATED_POINTS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                                !Grab the position. This shouldn't vary between elements so do it once only
+                                                IF(element_idx==1) POSITION(1:DIMS)=INTERPOLATED_POINTS(VARIABLE_TYPE)% &
+                                                  & PTR%VALUES(1:DIMS,NO_PART_DERIV)
+                                                !Get DXDXI
+                                                !\todo: What if the surrounding elements have different number of xi? then DXDXI will be different in size.
+                                                !       Which one do we return in that case?
+                                                DO component_idx=1,DIMS
+                                                  DO xi_idx=1,BASIS%NUMBER_OF_XI_COORDINATES
+                                                    derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7
+                                                    !DXDXI(component_idx,xi_idx)=INTERPOLATED_POINTS%VALUES(component_idx,derivative_idx)
+                                                    DXDXI(component_idx,xi_idx)=INTERPOLATED_POINTS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                                                      & VALUES(component_idx,derivative_idx) !dx/dxi
+                                                  ENDDO
+                                                ENDDO
+                                                !Calculate the tangents and normal vectors
+                                                IF(DOMAIN_NODES%NODES(LOCAL_NODE_NUMBER)%BOUNDARY_NODE) THEN
+                                                  SELECT CASE(BASIS%TYPE)
+                                                  CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+                                                    DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
+                                                      IF(DECOMP_ELEMENTS%ELEMENTS(element)%ADJACENT_ELEMENTS(nic)% &
+                                                        & NUMBER_OF_ADJACENT_ELEMENTS==0) THEN
+                                                        IF(nic>0) THEN
+                                                          INDEX_MATCH=BASIS%NUMBER_OF_NODES_XIC(nic)
+                                                        ELSEIF(nic<0) THEN
+                                                          INDEX_MATCH=1
+                                                        ENDIF
+                                                        IF(BASIS%NODE_POSITION_INDEX(local_node,nic)==INDEX_MATCH) THEN
+                                                          !1D/2D/3D: tangents and normal
+                                                          SELECT CASE(BASIS%NUMBER_OF_XI)
+                                                          CASE(1)
+                                                            !There are no tangents. We can provide a normal, but no need to sum and average,
+                                                            ! since in a 1D mesh, a boundary node won't be share with other elements.
+                                                            NORMAL=DXDXI(1:DIMS,1)
+                                                          CASE(2)
+                                                            !One tangent vector, one normal vector
+                                                            tangent_xi_idx=OTHER_XI_DIRECTIONS2(ABS(nic))
+                                                            VEC(1:DIMS)=DXDXI(1:DIMS,tangent_xi_idx)
+                                                            VEC(1:DIMS)=NORMALISE(VEC(1:DIMS),ERR,ERROR)
+                                                            TANGENTS(1:DIMS,1)=TANGENTS(1:DIMS,1)+ &
+                                                              & VEC(1:DIMS)
+                                                            !Normal is the other component in DXDXI (correct?) Ensure the direction is outward
+                                                            VEC(1:DIMS)=DXDXI(1:DIMS,ABS(nic))
+                                                            IF(nic<0) VEC=-VEC
+                                                            NORMAL(1:DIMS)=NORMAL(1:DIMS)+ &
+                                                              & NORMALISE(VEC(1:DIMS),ERR,ERROR)
+                                                          CASE(3)
+                                                            !Two tangent vectors, one normal vector
+                                                            DO tangent_idx=1,2
+                                                              tangent_xi_idx=OTHER_XI_DIRECTIONS3(ABS(nic),tangent_idx+1,1)
+                                                              VEC(1:DIMS)=DXDXI(1:DIMS,tangent_xi_idx)
+                                                              VEC(1:DIMS)=NORMALISE(VEC(1:DIMS),ERR,ERROR)
+                                                              TANGENTS(1:DIMS,tangent_idx)= &
+                                                                & TANGENTS(1:DIMS,tangent_idx)+VEC(1:DIMS)
+                                                            ENDDO
+                                                            !Calculate the normal vector
+                                                            CALL CROSS_PRODUCT_DP(TANGENTS(1:DIMS,1),TANGENTS(1:DIMS,2), &
+                                                              & VEC(1:DIMS),ERR,ERROR,*999)
+                                                            IF(nic<0) VEC=-VEC
+                                                          CASE DEFAULT
+                                                            !Should never happen anyway
+                                                          END SELECT
+                                                        ENDIF
+                                                      ENDIF
+                                                    ENDDO !nic
+                                                  CASE(BASIS_SIMPLEX_TYPE)
+                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+      !                                               DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES
+      !                                                 IF(DOMAIN_ELEMENTS%ELEMENTS(element)%ADJACENT_ELEMENTS(nic)% &
+      !                                                   & NUMBER_OF_ADJACENT_ELEMENTS==0) THEN
+      !                                                   IF(BASIS%NODE_POSITION_INDEX(local_node,nic)==1) THEN
+      !                                                     !Area coordinates
+      !                                                     SELECT CASE(BASIS%NUMBER-OF_XI)
+      !                                                     CASE(1)
+      !                                                       
+      !                                                     CASE(2)
+      !                                                       
+      !                                                     CASE(3)
+      !                                                       
+      !                                                     CASE DEFAULT
+      !                                                       !Will never happen anyway
+      !                                                     END SELECT
+      !                                                   ENDIF
+      !                                                 ENDIF
+      !                                               ENDDO !nic
+                                                  CASE(BASIS_SERENDIPITY_TYPE)
+                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                  CASE(BASIS_AUXILLIARY_TYPE)
+                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                  CASE(BASIS_B_SPLINE_TP_TYPE)
+                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                  CASE(BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE)
+                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                  CASE(BASIS_EXTENDED_LAGRANGE_TP_TYPE)
+                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                  CASE DEFAULT
+                                                    LOCAL_ERROR="The basis type of "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE, &
+                                                      & "*",ERR,ERROR))//" is invalid."
+                                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                  END SELECT
+                                                ELSE
+                                                  !Node is internal to the mesh. Assign zero normal and tangents
+                                                  !Actually, they were already assigned to be zero at the start so do nothing.
+                                                ENDIF
+                                                  !Calculate tangents from DXDXI: which xi corresponds to normal direction?
+                                              ENDDO !element_idx
+                                              CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINTS,ERR,ERROR,*999)
+                                              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+
+                                              !Normalise the normal vector
+                                              NORMAL(1:DIMS)=NORMALISE(NORMAL(1:DIMS),ERR,ERROR)
+                                              !Normalise the tangent vectors
+                                              DO tangent_idx=1,BASIS%NUMBER_OF_XI-1
+                                                TANGENTS(1:DIMS,tangent_idx)=NORMALISE(TANGENTS(1:DIMS,tangent_idx),ERR,ERROR)
+                                              ENDDO
+                                            ELSE
+                                              LOCAL_ERROR="The local node number of "// &
+                                                & TRIM(NUMBER_TO_VSTRING(LOCAL_NODE_NUMBER,"*",ERR,ERROR))// &
+                                                & " is invalid for component number "// &
+                                                & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                                & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                                                & ". The local node number must be > 0 and <="// &
+                                                & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+                                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            ENDIF
+                                          ELSE
+                                            LOCAL_ERROR="The domain topology nodes for component number "// &
+                                              & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                              & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                              & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not associated."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          ENDIF
+                                        ELSE
+                                          LOCAL_ERROR="The domain topology elements for component number "// &
+                                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not associated."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        ENDIF
+                                      ELSE
+                                        LOCAL_ERROR="The domain topology for component number "// &
+                                          & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                          & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not associated."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      LOCAL_ERROR="The domain for component number "// &
+                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" is not associated."
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    ENDIF
+                                  CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                    LOCAL_ERROR="Cannot compute the normal at a node for component number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" for variable type "// &
+                                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                                      & " which has grid point based interpolation."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                    LOCAL_ERROR="Cannot compute the normal at a node for component number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" for variable type "// &
+                                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                                      & " which has Gauss point based interpolation."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING &
+                                      & (FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                                      & " is invalid for component number "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*", &
+                                      & ERR,ERROR))//" for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                                      & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
+                                ELSE
+                                  LOCAL_ERROR="The first dimension of the supplied dx/dxi array of "// &
+                                    & TRIM(NUMBER_TO_VSTRING(SIZE(DXDXI,1),"*",ERR,ERROR))// &
+                                    & " is too small. The first dimension of the supplied array must be >= "// &
+                                    & TRIM(NUMBER_TO_VSTRING(DIMS,"*",ERR,ERROR))//"."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                LOCAL_ERROR="The first dimension of the supplied tangent array of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(SIZE(TANGENTS,1),"*",ERR,ERROR))// &
+                                  & " is too small. The first dimension of the supplied array must be >= "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DIMS,"*",ERR,ERROR))//"."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              LOCAL_ERROR="The size of the supplied normal array of "//TRIM(NUMBER_TO_VSTRING(SIZE(NORMAL,1), &
+                                & "*",ERR,ERROR))//" is too small. The size of the supplied array must be >= "// &
+                                & TRIM(NUMBER_TO_VSTRING(DIMS,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            LOCAL_ERROR="The size of the supplied position array of "//TRIM(NUMBER_TO_VSTRING(SIZE(POSITION,1), &
+                              & "*",ERR,ERROR))//" is too small. The size of the supplied array must be >= "// &
+                              & TRIM(NUMBER_TO_VSTRING(DIMS,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Decomposition elements is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Decomposition topology is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Decomposition is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The field component number of "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                  & " for variable type "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                  & " of field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                  & " is invalid. The component number must be > 0 and <= "// &
+                  & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+                & " has not been defined on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The supplied variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+              & " is invalid. The field variable type must be > 1 and <= "// &
+              & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The geometric field is not associated for field number "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" has not been finished."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    IF(DIAGNOSTICS1) THEN
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Field normal at a node:",ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Field number      = ",FIELD%USER_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Variable type     = ",VARIABLE_TYPE,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Component number  = ",COMPONENT_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Local node number = ",LOCAL_NODE_NUMBER,ERR,ERROR,*999)
+      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DIMS,3,3,POSITION, &
+        & '("  Position          :",3(X,E13.6))','(21X,3(X,E13.6))',ERR,ERROR,*999)      
+      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DIMS,3,3,NORMAL, &
+        & '("  Normal            :",3(X,E13.6))','(21X,3(X,E13.6))',ERR,ERROR,*999)      
+    ENDIF
+    
+    CALL EXITS("FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE")
+    RETURN
+999 CALL ERRORS("FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE",ERR,ERROR)
+    CALL EXITS("FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE")
+    RETURN 1
+  END SUBROUTINE FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE
 
   !
   !================================================================================================================================
