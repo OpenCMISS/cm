@@ -557,6 +557,8 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI,FIELD_INTERPOLATE_LOCAL_FACE_GAUSS
 
+  PUBLIC FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE
+
   PUBLIC FIELD_INTERPOLATED_POINT_METRICS_CALCULATE,FIELD_INTERPOLATED_POINTS_METRICS_FINALISE, &
     & FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE,FIELD_INTERPOLATED_POINTS_FINALISE,FIELD_INTERPOLATED_POINTS_INITIALISE
 
@@ -5342,8 +5344,8 @@ CONTAINS
   !
 
   !>Computes the geometric position, normal and tangent vectors at a node in a field. If the node is internal to the mesh the normal and tangents are zero.
-  SUBROUTINE FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,LOCAL_NODE_NUMBER,POSITION,NORMAL, &
-    & TANGENTS,ERR,ERROR,*)
+  SUBROUTINE FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,LOCAL_NODE_NUMBER, &
+    & POSITION,NORMAL,TANGENTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<A pointer to the field to interpolate the geometric information for
@@ -5353,7 +5355,6 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: POSITION(:) !<POSITION(coordinate_idx), on exit the geometric position of the node
     REAL(DP), INTENT(OUT) :: NORMAL(:) !<NORMAL(coordinate_idx), on exit the normal vector
     REAL(DP), INTENT(OUT) :: TANGENTS(:,:) !<TANGENTS(coordinate_idx,tangent_idx), on exit the tangent vectors for the tangent_idx'th tangent at the node. There are number_of_xi-1 tangent vectors.
-    !REAL(DP), INTENT(OUT) :: DXDXI(:,:) !<DXDXI(coordinate_idx,xi_idx), on exit the dx/dxi information at the node
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -5378,6 +5379,8 @@ CONTAINS
 
     CALL ENTERS("FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE",ERR,ERROR,*999)
 
+    NULLIFY(FIELD_VARIABLE)
+
     IF(ASSOCIATED(FIELD)) THEN
       IF(FIELD%FIELD_FINISHED) THEN
         GEOMETRIC_FIELD=>FIELD%GEOMETRIC_FIELD
@@ -5385,7 +5388,7 @@ CONTAINS
           IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
             CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
             IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-              DIMS=FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              DIMS=GEOMETRIC_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS !\TODO: clean this up
               IF(COMPONENT_NUMBER>=1.AND.COMPONENT_NUMBER<=DIMS) THEN
                 DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                 IF(ASSOCIATED(DOMAIN)) THEN
@@ -5430,7 +5433,6 @@ CONTAINS
                                               !because there could be discontinuity in the surface gradients across elements.
                                               POSITION(1:DIMS)=0.0_DP
                                               DXDXI=0.0_DP
-                                              TANGENTS=0.0_DP
                                               NORMAL(1:DIMS)=0.0_DP
                                               CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD, &
                                                 & INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
@@ -5455,7 +5457,7 @@ CONTAINS
                                                 !Interpolate the geometric field at the xi position.
                                                 CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element, &
                                                   & INTERPOLATION_PARAMETERS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI(1:BASIS%NUMBER_OF_XI), &
+                                                CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,XI(1:BASIS%NUMBER_OF_XI), &
                                                   & INTERPOLATED_POINTS(VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                                                 !Grab the position. This shouldn't vary between elements so do it once only
                                                 IF(element_idx==1) POSITION(1:DIMS)=INTERPOLATED_POINTS(VARIABLE_TYPE)% &
@@ -5466,7 +5468,6 @@ CONTAINS
                                                 DO component_idx=1,DIMS
                                                   DO xi_idx=1,BASIS%NUMBER_OF_XI_COORDINATES
                                                     derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7
-                                                    !DXDXI(component_idx,xi_idx)=INTERPOLATED_POINTS%VALUES(component_idx,derivative_idx)
                                                     DXDXI(component_idx,xi_idx)=INTERPOLATED_POINTS(FIELD_U_VARIABLE_TYPE)%PTR% &
                                                       & VALUES(component_idx,derivative_idx) !dx/dxi
                                                   ENDDO
@@ -5476,14 +5477,14 @@ CONTAINS
                                                   SELECT CASE(BASIS%TYPE)
                                                   CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
                                                     DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
-                                                      IF(DECOMP_ELEMENTS%ELEMENTS(element)%ADJACENT_ELEMENTS(nic)% &
+                                                      IF(DECOMP_ELEMENTS%ELEMENTS(element)%ADJACENT_ELEMENTS(ABS(nic))% &
                                                         & NUMBER_OF_ADJACENT_ELEMENTS==0) THEN
                                                         IF(nic>0) THEN
-                                                          INDEX_MATCH=BASIS%NUMBER_OF_NODES_XIC(nic)
+                                                          INDEX_MATCH=BASIS%NUMBER_OF_NODES_XIC(ABS(nic))
                                                         ELSEIF(nic<0) THEN
                                                           INDEX_MATCH=1
                                                         ENDIF
-                                                        IF(BASIS%NODE_POSITION_INDEX(local_node,nic)==INDEX_MATCH) THEN
+                                                        IF(BASIS%NODE_POSITION_INDEX(local_node,ABS(nic))==INDEX_MATCH) THEN
                                                           !1D/2D/3D: tangents and normal
                                                           SELECT CASE(BASIS%NUMBER_OF_XI)
                                                           CASE(1)
@@ -5492,6 +5493,7 @@ CONTAINS
                                                             NORMAL=DXDXI(1:DIMS,1)
                                                           CASE(2)
                                                             !One tangent vector, one normal vector
+                                                            TANGENTS=0.0_DP
                                                             tangent_xi_idx=OTHER_XI_DIRECTIONS2(ABS(nic))
                                                             VEC(1:DIMS)=DXDXI(1:DIMS,tangent_xi_idx)
                                                             VEC(1:DIMS)=NORMALISE(VEC(1:DIMS),ERR,ERROR)
@@ -5504,6 +5506,7 @@ CONTAINS
                                                               & NORMALISE(VEC(1:DIMS),ERR,ERROR)
                                                           CASE(3)
                                                             !Two tangent vectors, one normal vector
+                                                            TANGENTS=0.0_DP
                                                             DO tangent_idx=1,2
                                                               tangent_xi_idx=OTHER_XI_DIRECTIONS3(ABS(nic),tangent_idx+1,1)
                                                               VEC(1:DIMS)=DXDXI(1:DIMS,tangent_xi_idx)
@@ -5512,9 +5515,12 @@ CONTAINS
                                                                 & TANGENTS(1:DIMS,tangent_idx)+VEC(1:DIMS)
                                                             ENDDO
                                                             !Calculate the normal vector
-                                                            CALL CROSS_PRODUCT_DP(TANGENTS(1:DIMS,1),TANGENTS(1:DIMS,2), &
+                                                            CALL CROSS_PRODUCT(TANGENTS(1:DIMS,1),TANGENTS(1:DIMS,2), &
                                                               & VEC(1:DIMS),ERR,ERROR,*999)
+                                                            !Yes below is compicated, but that's what it takes to get the normals pointing outwards
                                                             IF(nic<0) VEC=-VEC
+                                                            IF(ABS(nic)==2) VEC=-VEC
+                                                            NORMAL(1:DIMS)=NORMAL(1:DIMS)+VEC(1:DIMS)
                                                           CASE DEFAULT
                                                             !Should never happen anyway
                                                           END SELECT
@@ -5522,7 +5528,7 @@ CONTAINS
                                                       ENDIF
                                                     ENDDO !nic
                                                   CASE(BASIS_SIMPLEX_TYPE)
-                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       !                                               DO nic=1,BASIS%NUMBER_OF_XI_COORDINATES
       !                                                 IF(DOMAIN_ELEMENTS%ELEMENTS(element)%ADJACENT_ELEMENTS(nic)% &
       !                                                   & NUMBER_OF_ADJACENT_ELEMENTS==0) THEN
@@ -5542,15 +5548,15 @@ CONTAINS
       !                                                 ENDIF
       !                                               ENDDO !nic
                                                   CASE(BASIS_SERENDIPITY_TYPE)
-                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                                   CASE(BASIS_AUXILLIARY_TYPE)
-                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                                   CASE(BASIS_B_SPLINE_TP_TYPE)
-                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                                   CASE(BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE)
-                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                                   CASE(BASIS_EXTENDED_LAGRANGE_TP_TYPE)
-                                                    CALL FLAG_ERORR("Not implemented.",ERR,ERROR,*999)
+                                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                                   CASE DEFAULT
                                                     LOCAL_ERROR="The basis type of "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE, &
                                                       & "*",ERR,ERROR))//" is invalid."
