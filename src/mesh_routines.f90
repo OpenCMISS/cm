@@ -1171,12 +1171,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: j,ne,ne1,ne2,nep1,nep2,ni,nic,nn,nn1,nn2,nn3,node_idx,np,np1,np2,DUMMY_ERR,FACE_XI(2),FACE_XIC(3), &
-      & NODE_POSITION_INDEX(4)
+    INTEGER(INTG) :: j,ne,ne1,nep1,ni,nic,nn,nn1,nn2,nn3,np,np1,DUMMY_ERR,FACE_XI(2),FACE_XIC(3),NODE_POSITION_INDEX(4)
     INTEGER(INTG) :: xi_direction,direction_index,xi_dir_check,xi_dir_search,NUMBER_NODE_MATCHES
+    INTEGER(INTG) :: candidate_idx,face_node_idx,node_idx,surrounding_el_idx,candidate_el,idx
+    INTEGER(INTG) :: SURROUNDING_ELEMENTS(100) !Fixed size array... should be large enough
     INTEGER(INTG) :: NUMBER_SURROUNDING,NUMBER_OF_NODES_XIC(4)
     INTEGER(INTG), ALLOCATABLE :: NODE_MATCHES(:),ADJACENT_ELEMENTS(:)
-    LOGICAL :: FOUND,XI_COLLAPSED,FACE_COLLAPSED(-3:3),SUBSET
+    LOGICAL :: XI_COLLAPSED,FACE_COLLAPSED(-3:3),SUBSET
     TYPE(LIST_TYPE), POINTER :: NODE_MATCH_LIST
     TYPE(LIST_PTR_TYPE) :: ADJACENT_ELEMENTS_LIST(-4:4)
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -1211,6 +1212,7 @@ CONTAINS
                   !Loop over the elements in the decomposition
                   DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                     BASIS=>DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS
+                    !Create a list for every xi direction (plus and minus)
                     DO nic=-BASIS%NUMBER_OF_XI_COORDINATES,BASIS%NUMBER_OF_XI_COORDINATES
                       NULLIFY(ADJACENT_ELEMENTS_LIST(nic)%PTR)
                       CALL LIST_CREATE_START(ADJACENT_ELEMENTS_LIST(nic)%PTR,ERR,ERROR,*999)
@@ -1257,7 +1259,7 @@ CONTAINS
                                   & NODE_POSITION_INDEX(3),1)
                                 IF(nn1/=0.AND.nn2/=0) THEN
                                   IF(DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn1)/= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn2)) XI_COLLAPSED=.TRUE.
+                                    & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn2)) XI_COLLAPSED=.FALSE.
                                 ENDIF
                                 NODE_POSITION_INDEX(xi_dir_search)=NODE_POSITION_INDEX(xi_dir_search)+1
                               ENDDO !xi_dir_search
@@ -1293,9 +1295,9 @@ CONTAINS
                             !Do nothing - the match lists are already empty
                           ELSE
                             !Find the nodes to match and add them to the node match list
-                            DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1))
+                            DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1)),NUMBER_OF_NODES_XIC(FACE_XI(1))-1
                               NODE_POSITION_INDEX(FACE_XI(1))=nn1
-                              DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2))
+                              DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2)),NUMBER_OF_NODES_XIC(FACE_XI(2))-1
                                 NODE_POSITION_INDEX(FACE_XI(2))=nn2
                                 nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
                                   & NODE_POSITION_INDEX(3),1)
@@ -1310,32 +1312,31 @@ CONTAINS
                           CALL LIST_DETACH_AND_DESTROY(NODE_MATCH_LIST,NUMBER_NODE_MATCHES,NODE_MATCHES,ERR,ERROR,*999)
                           NUMBER_SURROUNDING=0
                           IF(NUMBER_NODE_MATCHES>0) THEN
-                            !Find list of elements surrounding those nodes
-                            np1=NODE_MATCHES(1)
-                            DO nep1=1,DOMAIN_NODES%NODES(np1)%NUMBER_OF_SURROUNDING_ELEMENTS
-                              ne1=DOMAIN_NODES%NODES(np1)%SURROUNDING_ELEMENTS(nep1)
-                              IF(ne1/=ne) THEN !Don't want the current element
-                                FOUND=.FALSE.
-                                nn2=2
-                                DO WHILE(nn2<=NUMBER_NODE_MATCHES.AND..NOT.FOUND)
-                                  np2=NODE_MATCHES(nn2)
-                                  nep2=1
-                                  DO WHILE(nep2<=DOMAIN_NODES%NODES(np2)%NUMBER_OF_SURROUNDING_ELEMENTS.AND..NOT.FOUND)
-                                    ne2=DOMAIN_NODES%NODES(np2)%SURROUNDING_ELEMENTS(nep2)
-                                    IF(ne1==ne2) THEN
-                                      FOUND=.TRUE.
-                                    ELSE
-                                      nep2=nep2+1
-                                    ENDIF
-                                  ENDDO !nep2
-                                  nn2=nn2+1
-                                ENDDO !nn2
-                                IF(FOUND) THEN
-                                  CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(xi_direction)%PTR,ne1,ERR,ERROR,*999)
-                                  NUMBER_SURROUNDING=NUMBER_SURROUNDING+1
+                            !NODE_MATCHES now contain the list of corner nodes in the current face with normal_xi of ni.
+                            !Look at the surrounding elements of each of these nodes, if there is a repeated element that
+                            !is not the current element ne, it's an adjacent element.
+                            candidate_idx=0
+                            DO face_node_idx=1,NUMBER_NODE_MATCHES
+                              !Dump all the surrounding elements into an array, see if any are repeated
+                              node_idx=NODE_MATCHES(face_node_idx)
+                              DO surrounding_el_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_SURROUNDING_ELEMENTS
+                                candidate_el=DOMAIN_NODES%NODES(node_idx)%SURROUNDING_ELEMENTS(surrounding_el_idx)
+                                IF(candidate_el/=ne) THEN
+                                  candidate_idx=candidate_idx+1
+                                  SURROUNDING_ELEMENTS(candidate_idx)=candidate_el
                                 ENDIF
+                              ENDDO
+                            ENDDO !face_node_idx
+                            DO idx=1,candidate_idx
+                              ne1=SURROUNDING_ELEMENTS(idx)
+                              !In a 2D mesh, match 2 nodes, in a 3D mesh, match 3 nodes (line/face)
+                              IF(COUNT(SURROUNDING_ELEMENTS(1:candidate_idx)==ne1)>=BASIS%NUMBER_OF_XI) THEN
+                                !Found it, just exit
+                                CALL LIST_ITEM_ADD(ADJACENT_ELEMENTS_LIST(xi_direction)%PTR,ne1,ERR,ERROR,*999)
+                                NUMBER_SURROUNDING=NUMBER_SURROUNDING+1
+                                EXIT
                               ENDIF
-                            ENDDO !nep1
+                            ENDDO
                           ENDIF
                           IF(ALLOCATED(NODE_MATCHES)) DEALLOCATE(NODE_MATCHES)
                         ENDDO !direction_index
