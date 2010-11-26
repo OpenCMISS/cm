@@ -985,15 +985,28 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   ! Field types
   !
 
+  !>Contains information on a physical point in a field.
+  TYPE FIELD_PHYSICAL_POINT_TYPE
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIELD_INTERPOLATED_POINT !<A pointer to the interpolated point of the field that is to be interpolated.
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT !<A pointer to the interpolated point of the geometric field that is to be interpolated.
+    INTEGER(INTG) :: PHYSICAL_DERIVATIVE_TYPE !<The type of the physical derivatives that have been interpolated. \see CONSTANTS_PhysicalDerivativeConstants
+    REAL(DP), ALLOCATABLE :: VALUES(:) !<VALUES(component_idx,geometric_component_idx). The physical field component values.
+  END TYPE FIELD_PHYSICAL_POINT_TYPE
+
+  !>Buffer type to allow for arrays of pointers to FIELD_PHYSICAL_POINT_TYPE
+  TYPE FIELD_PHYSICAL_POINT_PTR_TYPE
+    TYPE(FIELD_PHYSICAL_POINT_TYPE), POINTER :: PTR
+  END TYPE FIELD_PHYSICAL_POINT_PTR_TYPE
+  
   !> Contains the interpolated point coordinate metrics. Old CMISS name GL,GU,RG.
   TYPE FIELD_INTERPOLATED_POINT_METRICS_TYPE
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: INTERPOLATED_POINT !<A pointer to the interpolated point.
     INTEGER(INTG) :: NUMBER_OF_X_DIMENSIONS !<The number of X dimensions.
     INTEGER(INTG) :: NUMBER_OF_XI_DIMENSIONS !<The number of Xi dimensions
-    REAL(DP), ALLOCATABLE :: GL(:,:) !<GL(mi,ni). Covariant metric tensor. Old CMISS name GL.
-    REAL(DP), ALLOCATABLE :: GU(:,:) !<GU(mi,ni). Contravariant metric tensor. Old CMISS name GU.
-    REAL(DP), ALLOCATABLE :: DX_DXI(:,:) !<DX_DXI(nj,ni). Rate of change of the X coordinate system wrt the x coordinate system.
-    REAL(DP), ALLOCATABLE :: DXI_DX(:,:) !<DXI_DX(ni,nj). Rate of change of the Xi coordinate system wrt the x coordinate system. 
+    REAL(DP), ALLOCATABLE :: GL(:,:) !<GL(m_xi_idx,n_xi_idx). Covariant metric tensor. Old CMISS name GL.
+    REAL(DP), ALLOCATABLE :: GU(:,:) !<GU(m_xi_idx,n_xi_idx). Contravariant metric tensor. Old CMISS name GU.
+    REAL(DP), ALLOCATABLE :: DX_DXI(:,:) !<DX_DXI(coord_idx,xi_idx). Rate of change of the X coordinate system wrt the x coordinate system.
+    REAL(DP), ALLOCATABLE :: DXI_DX(:,:) !<DXI_DX(xi_idx,coord_idx). Rate of change of the Xi coordinate system wrt the x coordinate system. 
     REAL(DP) :: JACOBIAN !<The Jacobian of the Xi to X coordinate system transformation. Old CMISS name RG.
     INTEGER(INTG) :: JACOBIAN_TYPE !<The type of Jacobian. \see COORDINATE_ROUTINES_JacobianType
   END TYPE FIELD_INTERPOLATED_POINT_METRICS_TYPE
@@ -1082,8 +1095,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_GRID_POINT_PARAMETERS !<The number of grid point based field parameters for this field variable component.
     INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_PARAMETERS !<The number of Gauss point based field parameters for this field variable component.
     INTEGER(INTG) :: CONSTANT_PARAM2DOF_MAP !<The field variable dof number of the constant parameter for this field variable component. 
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAM2DOF_MAP(:) !<ELEMENT_PARAM2DOF_MAP(ne). The field variable dof number of the ne'th element based parameter for this field variable component. \todo Allow for multiple element parameters per element.
-    INTEGER(INTG), ALLOCATABLE :: NODE_PARAM2DOF_MAP(:,:) !<NODE_PARAM2DOF_MAP(nk,np). The field variable dof number of the nk'th derivative of the np'th node based parameter for this field variable component. Note: because the first index of this array is set to the maximum number of derivatives per node this array wastes memory if there are nodes with a smaller number of derivatives than the maximum. \todo Don't allocate too much memory if there are different numbers of derivatives for different nodes.
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAM2DOF_MAP(:) !<ELEMENT_PARAM2DOF_MAP(elem_idx). The field variable dof number of the elem_idx'th element based parameter for this field variable component. \todo Allow for multiple element parameters per element.
+    INTEGER(INTG), ALLOCATABLE :: NODE_PARAM2DOF_MAP(:,:) !<NODE_PARAM2DOF_MAP(deriv_idx,node_idx). The field variable dof number of the deriv_idx'th derivative of the node_idx'th nnpode based parameter for this field variable component. Note: because the first index of this array is set to the maximum number of derivatives per node this array wastes memory if there are nodes with a smaller number of derivatives than the maximum. \todo Don't allocate too much memory if there are different numbers of derivatives for different nodes.
     INTEGER(INTG), ALLOCATABLE :: GRID_POINT_PARAM2DOF_MAP(:) !<GRID_POINT_PARAM2DOF_MAP(nq). The field variable dof number of nq'th point based parameter for this field variable component.
     INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_PARAM2DOF_MAP(:,:) !<GAISS_POINT_PARAM2DOF_MAP(ng,ne). The field variable dof number of ng'th Gauss point in the ne'th element based parameter for this field variable component.
   END TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
@@ -1507,7 +1520,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_POINT(:) !<INDEPENDENT_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th independent interpolated point information for the equations. 
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: MATERIALS_INTERP_POINT(:) !<MATERIALS_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th material interpolated point information for the equations (if a material field is defined). 
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: SOURCE_INTERP_POINT(:) !<SOURCE_INTERP_POINT(field_variable_type). A pointer to the field_variable_type'th source interpolated point information for the equations (if a source field is defined).
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS(:) !<DEPENDENT_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th dependent interpolated point metrics information 
+    TYPE(FIELD_PHYSICAL_POINT_PTR_TYPE), POINTER :: DEPENDENT_PHYSICAL_POINT(:) !<DEPENDENT_PHYSICAL_POINT(field_variable_type). A pointer to the field_variable_type'th dependent physical point information for the equations. 
+     TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: DEPENDENT_INTERP_POINT_METRICS(:) !<DEPENDENT_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th dependent interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: INDEPENDENT_INTERP_POINT_METRICS(:) !<INDEPENDENT_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th independent interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: GEOMETRIC_INTERP_POINT_METRICS(:) !<GEOMETRIC_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th geometric interpolated point metrics information 
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: FIBRE_INTERP_POINT_METRICS(:) !<FIBRE_INTERP_POINT_METRICS(field_variable_type). A pointer to the field_variable_type'th fibre interpolated point metrics information 
@@ -1993,7 +2007,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: MODELS_FIELD_FINISHED  !<Is .TRUE. if the models field has finished being created, .FALSE. if not.
     LOGICAL :: MODELS_FIELD_AUTO_CREATED !<Is .TRUE. if the models field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD !<A pointer to the models field
-    LOGICAL :: ONLY_ONE_MODEL !<Is .TRUE. if only one model is used, .FALSE. if not.
   END TYPE CELLML_MODELS_FIELD_TYPE
   
   !>Contains information on the state field for a CellML environment
@@ -2023,7 +2036,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information on the mapping between CellML fields and OpenCMISS fields and vise versa.
   TYPE CELLML_MODEL_MAP_TYPE
     INTEGER(INTG) :: CELLML_MAP_TYPE !<The direction of the mapping. \see CELLML_FieldMappingTypes,CMISS_CELLML
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE !<A pointer to/from the field variable being mapped.
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to/from the field being mapped.
     INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type being mapped.
     INTEGER(INTG) :: COMPONENT_NUMBER !<The field variable component number being mapped.
     INTEGER(INTG) :: FIELD_PARAMETER_SET !<The field variable parameter set being mapped.
@@ -2058,6 +2071,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: SOURCE_GEOMETRIC_FIELD !<The source geometric field for the CellML environment.
     TYPE(DOMAIN_TYPE), POINTER :: SOURCE_FIELD_DOMAIN !<The source field domain for the CellML environment.
     INTEGER(INTG) :: SOURCE_FIELD_INTERPOLATION_TYPE !<The source field interpolation type for the CellML environment.
+    INTEGER(INTG) :: ONLY_ONE_MODEL_INDEX !<If only one model is used in the models field for the CellML environment then this will be equal to the model index. It will be zero otherwise.
     TYPE(CELLML_MODEL_MAPS_PTR_TYPE), ALLOCATABLE :: MODEL_MAPS(:) !<MODEL_MAPS(model_idx). Contains informatin on the maps between the model_idx'th CellML model and external OpenCMISS fields.
     INTEGER(INTG) :: NUMBER_OF_SOURCE_DOFS !<The number of local (excluding ghosts) source dofs.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_SOURCE_DOFS !<The number of local (including ghosts) source dofs.

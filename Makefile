@@ -1391,7 +1391,7 @@ $(OBJECT_DIR)/field_routines.o	:	$(SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/matrix_vector.o \
+	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \

@@ -3541,8 +3541,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetChildNodePosition, CMISSMeshEmbeddingType, CMISSMeshEmbeddingPushData
 
-
-
   PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
  
   PUBLIC CMISSGeneratedMeshCylinderMeshType, CMISSGeneratedMeshEllipsoidMeshType 
@@ -29184,14 +29182,10 @@ CONTAINS
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-    TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:)
-
+ 
     CALL ENTERS("CMISSGeneratedMeshBasisSetObj0",Err,ERROR,*999)
 
-    ALLOCATE(BASES(1),STAT=Err)
-    IF(Err/=0) CALL FLAG_ERROR("Could not allocate bases.",Err,ERROR,*999)
-    BASES(1)%PTR=>Basis%BASIS
-    CALL GENERATED_MESH_BASIS_SET(GeneratedMesh%GENERATED_MESH,BASES,Err,ERROR,*999)
+    CALL CMISSGeneratedMeshBasisSetObj1(GeneratedMesh,[Basis],Err)
 
     CALL EXITS("CMISSGeneratedMeshBasisSetObj0")
     RETURN
@@ -29214,18 +29208,15 @@ CONTAINS
     TYPE(CMISSBasisType), INTENT(IN) :: Bases(:) !<The bases to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
-    INTEGER(INTG) :: basis_idx,NumBases
-    TYPE(BASIS_PTR_TYPE), POINTER :: BASIS_PTRS(:)
+    INTEGER(INTG) :: basis_idx
+    TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASIS_PTRS(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSGeneratedMeshBasisSetObj1",Err,ERROR,*999)
 
-    NULLIFY(BASIS_PTRS)
-
-    NumBases=SIZE(Bases)
-    ALLOCATE(BASIS_PTRS(NumBases),STAT=Err)
+    ALLOCATE(BASIS_PTRS(SIZE(Bases,1)),STAT=Err)
     IF(Err/=0) CALL FLAG_ERROR("Could not allocate bases.",Err,ERROR,*999)
-    DO basis_idx=1,NumBases
+    DO basis_idx=1,SIZE(Bases,1)
       IF(ASSOCIATED(Bases(basis_idx)%BASIS)) THEN
         BASIS_PTRS(basis_idx)%PTR=>Bases(basis_idx)%BASIS
       ELSE

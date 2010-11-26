@@ -555,12 +555,14 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_GEOMETRIC_FIELD_GET,FIELD_GEOMETRIC_FIELD_SET,FIELD_GEOMETRIC_FIELD_SET_AND_LOCK
 
-  PUBLIC FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI,FIELD_INTERPOLATE_LOCAL_FACE_GAUSS
+  PUBLIC FIELD_INTERPOLATE_GAUSS,FIELD_INTERPOLATE_XI,FIELD_INTERPOLATE_NODE,FIELD_INTERPOLATE_FIELD_NODE, &
+    & FIELD_INTERPOLATE_LOCAL_FACE_GAUSS
 
   PUBLIC FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE
 
   PUBLIC FIELD_INTERPOLATED_POINT_METRICS_CALCULATE,FIELD_INTERPOLATED_POINTS_METRICS_FINALISE, &
-    & FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE,FIELD_INTERPOLATED_POINTS_FINALISE,FIELD_INTERPOLATED_POINTS_INITIALISE
+    & FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE,FIELD_INTERPOLATED_POINTS_FINALISE, &
+    & FIELD_INTERPOLATED_POINTS_INITIALISE,FIELD_PHYSICAL_POINTS_INITIALISE,FIELD_PHYSICAL_POINTS_FINALISE
 
   PUBLIC FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET,FIELD_INTERPOLATION_PARAMETERS_FINALISE, &
     & FIELD_INTERPOLATION_PARAMETERS_INITIALISE,FIELD_INTERPOLATION_PARAMETERS_LINE_GET, &
@@ -4965,6 +4967,546 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Interpolates a field to give the physical value of the field at a node. Note that as we are at a node then we do not have any xi directions and thus we can not talk about gradients of the field wrt to xi. Because derviatives of fields can be discountinuous at a node the average derivative over all the elements surrounding the node is calculated.
+  SUBROUTINE FIELD_INTERPOLATE_NODE(PHYSICAL_DERIVATIVE_TYPE,PARAMETER_SET_TYPE,COMPONENT_NUMBER,NODE_NUMBER, &
+    & PHYSICAL_POINT,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: PHYSICAL_DERIVATIVE_TYPE !<The physical derivative type of the field interpolation \see CONSTANTS_PhysicalDerivativeConstants
+    INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_TYPE !<The parameter set of the field to interpolate.
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to field that contains the node 
+    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The node number in the component to interpolate the field at
+    TYPE(FIELD_PHYSICAL_POINT_TYPE), POINTER :: PHYSICAL_POINT !<The pointer to the physical point for the field. On return it will contain the values.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: component_idx,element,elem_idx,LOCAL_NODE_NUMBER,local_node_idx,NUMBER_OF_SURROUNDING_ELEMENTS, &
+      & partial_deriv_idx,xi_idx
+    REAL(DP) :: XI(3),DX_DXI(3,3),DXI_DX(3,3),DET_DX_DXI
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEM_TOPOLOGY
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: NODES_TOPOLOGY
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIELD_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIELD_INTERPOLATION_PARAMETERS,GEOMETRIC_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_INTERPOLATE_NODE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PHYSICAL_POINT)) THEN
+      FIELD_INTERPOLATED_POINT=>PHYSICAL_POINT%FIELD_INTERPOLATED_POINT
+      IF(ASSOCIATED(FIELD_INTERPOLATED_POINT)) THEN
+        GEOMETRIC_INTERPOLATED_POINT=>PHYSICAL_POINT%GEOMETRIC_INTERPOLATED_POINT
+        IF(ASSOCIATED(GEOMETRIC_INTERPOLATED_POINT)) THEN
+          FIELD_INTERPOLATION_PARAMETERS=>FIELD_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
+          IF(ASSOCIATED(FIELD_INTERPOLATION_PARAMETERS)) THEN
+            GEOMETRIC_INTERPOLATION_PARAMETERS=>GEOMETRIC_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
+            IF(ASSOCIATED(GEOMETRIC_INTERPOLATION_PARAMETERS)) THEN
+              FIELD_VARIABLE=>FIELD_INTERPOLATION_PARAMETERS%FIELD_VARIABLE
+              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                GEOMETRIC_VARIABLE=>GEOMETRIC_INTERPOLATION_PARAMETERS%FIELD_VARIABLE
+                IF(ASSOCIATED(GEOMETRIC_VARIABLE)) THEN
+                  FIELD=>FIELD_VARIABLE%FIELD
+                  IF(ASSOCIATED(FIELD)) THEN            
+                    CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)            
+                    IF(COMPONENT_NUMBER>0.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      IF(ASSOCIATED(DOMAIN)) THEN
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                          NODES_TOPOLOGY=>DOMAIN_TOPOLOGY%NODES
+                          IF(ASSOCIATED(NODES_TOPOLOGY)) THEN
+                            IF(NODE_NUMBER>0.AND.NODE_NUMBER<=NODES_TOPOLOGY%NUMBER_OF_NODES) THEN
+                              ELEM_TOPOLOGY=>DOMAIN_TOPOLOGY%ELEMENTS
+                              IF(ASSOCIATED(ELEM_TOPOLOGY)) THEN
+                                PHYSICAL_POINT%VALUES=0.0_DP
+                                IF(PHYSICAL_DERIVATIVE_TYPE==NO_PHYSICAL_DERIV) THEN
+                                  NUMBER_OF_SURROUNDING_ELEMENTS=1
+                                ELSE
+                                  NUMBER_OF_SURROUNDING_ELEMENTS=NODES_TOPOLOGY%NODES(NODE_NUMBER)% &
+                                    & NUMBER_OF_SURROUNDING_ELEMENTS
+                                  PHYSICAL_POINT%VALUES=0.0_DP
+                                ENDIF
+                                !Loop over the elements surrounding the node
+                                DO elem_idx=1,NUMBER_OF_SURROUNDING_ELEMENTS
+                                  element=NODES_TOPOLOGY%NODES(NODE_NUMBER)%SURROUNDING_ELEMENTS(elem_idx)
+                                  CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(PARAMETER_SET_TYPE,element, &
+                                    & FIELD_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+                                  BASIS=>ELEM_TOPOLOGY%ELEMENTS(element)%BASIS
+                                  IF(ASSOCIATED(BASIS)) THEN
+                                    LOCAL_NODE_NUMBER=0
+                                    DO local_node_idx=1,BASIS%NUMBER_OF_NODES
+                                      IF(ELEM_TOPOLOGY%ELEMENTS(element)%ELEMENT_NODES(local_node_idx)==NODE_NUMBER) THEN
+                                        LOCAL_NODE_NUMBER=local_node_idx
+                                        EXIT
+                                      ENDIF
+                                    ENDDO
+                                    IF(LOCAL_NODE_NUMBER/=0) THEN
+                                      CALL BASIS_LOCAL_NODE_XI_CALCULATE(BASIS,LOCAL_NODE_NUMBER,XI,ERR,ERROR,*999)  
+                                      SELECT CASE(PHYSICAL_DERIVATIVE_TYPE)
+                                      CASE(NO_PHYSICAL_DERIV)
+                                        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                          SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                                          CASE(FIELD_CONSTANT_INTERPOLATION)
+                                            PHYSICAL_POINT%VALUES(component_idx)=FIELD_INTERPOLATION_PARAMETERS% &
+                                              & PARAMETERS(1,component_idx)
+                                          CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                            PHYSICAL_POINT%VALUES(component_idx)=FIELD_INTERPOLATION_PARAMETERS% &
+                                              & PARAMETERS(1,component_idx)
+                                          CASE(FIELD_NODE_BASED_INTERPOLATION)
+                                            PHYSICAL_POINT%VALUES(component_idx)=BASIS_INTERPOLATE_XI( &
+                                              & FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR,NO_PART_DERIV, &
+                                              & XI,FIELD_INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                                            IF(ERR/=0) GOTO 999
+                                          CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The field component interpolation type of "// &
+                                              & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(component_idx)% &
+                                              & INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component index "// &
+                                              & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+                                          END SELECT
+                                        ENDDO! component_idx
+                                        PHYSICAL_POINT%PHYSICAL_DERIVATIVE_TYPE=NO_PHYSICAL_DERIV
+                                      CASE(GRADIENT_PHYSICAL_DERIV)
+                                        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                          SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                                          CASE(FIELD_CONSTANT_INTERPOLATION)
+                                            !There is no gradient for constant interpolation
+                                            PHYSICAL_POINT%VALUES(component_idx)=0.0_DP                                            
+                                          CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                            !There is no graident for element interpolation
+                                            PHYSICAL_POINT%VALUES(component_idx)=0.0_DP
+                                          CASE(FIELD_NODE_BASED_INTERPOLATION)
+                                            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element, &
+                                              & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+                                            !Now process all the first partial derivatives
+                                            DO xi_idx=1,FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                                              partial_deriv_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)
+                                              !Interpolate the field
+                                              FIELD_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx) = &
+                                                & BASIS_INTERPOLATE_XI(FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR, &
+                                                & partial_deriv_idx,XI,FIELD_INTERPOLATION_PARAMETERS%PARAMETERS(:, &
+                                                & component_idx),ERR,ERROR)
+                                              IF(ERR/=0) GOTO 999
+                                              CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,partial_deriv_idx, &
+                                                & FIELD_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx),ERR,ERROR,*999)
+                                              GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx) = &
+                                                & BASIS_INTERPOLATE_XI(GEOMETRIC_INTERPOLATION_PARAMETERS%BASES(component_idx)% &
+                                                & PTR,partial_deriv_idx,XI,GEOMETRIC_INTERPOLATION_PARAMETERS%PARAMETERS(:, &
+                                                & component_idx),ERR,ERROR)
+                                              IF(ERR/=0) GOTO 999
+                                              CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,partial_deriv_idx, &
+                                                & GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx), &
+                                                & ERR,ERROR,*999)
+                                              DX_DXI(component_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT% &
+                                                & VALUES(component_idx,partial_deriv_idx)
+                                            ENDDO !xi_idx
+                                          CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The field component interpolation type of "// &
+                                              & TRIM(NUMBER_TO_VSTRING(FIELD_INTERPOLATION_PARAMETERS% &
+                                              & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                                              & " is invalid for component index "// &
+                                              & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+                                          END SELECT
+                                        ENDDO! component_idx
+                                        !Form the physical derivative
+                                        CALL INVERT(DX_DXI,DXI_DX,DET_DX_DXI,ERR,ERROR,*999)
+                                        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                          DO xi_idx=1,FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                                            partial_deriv_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)
+                                            PHYSICAL_POINT%VALUES(component_idx)=PHYSICAL_POINT%VALUES(component_idx)+ &
+                                              & FIELD_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx)* &
+                                              & DXI_DX(xi_idx,component_idx)
+                                          ENDDO !xi_idx
+                                        ENDDO !component_idx
+                                        PHYSICAL_POINT%PHYSICAL_DERIVATIVE_TYPE=GRADIENT_PHYSICAL_DERIV
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The physical derivative type of "// &
+                                          & TRIM(NUMBER_TO_VSTRING(PHYSICAL_DERIVATIVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      END SELECT
+                                    ELSE
+                                      LOCAL_ERROR="Could not find the local node for node "// &
+                                        & TRIM(NUMBER_TO_VSTRING(NODE_NUMBER,"*",ERR,ERROR))//" in element number "// &
+                                        & TRIM(NUMBER_TO_VSTRING(element,"*",ERR,ERROR))//"."
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    ENDIF
+                                  ELSE
+                                    LOCAL_ERROR="The basis for element "//TRIM(NUMBER_TO_VSTRING(element,"*",ERR,ERROR))// &
+                                      & " is not associated."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
+                                ENDDO !elem_idx
+                                IF(PHYSICAL_DERIVATIVE_TYPE==NO_PHYSICAL_DERIV) THEN
+                                  !Now calculate the average of the interpolated physical point
+                                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                    SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                                    CASE(FIELD_CONSTANT_INTERPOLATION)
+                                      !Do nothing
+                                    CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                      !Do nothing
+                                    CASE(FIELD_NODE_BASED_INTERPOLATION)                                      
+                                      PHYSICAL_POINT%VALUES(component_idx)=PHYSICAL_POINT%VALUES(component_idx)/ &
+                                        & REAL(NUMBER_OF_SURROUNDING_ELEMENTS,DP)
+                                    CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CASE DEFAULT
+                                      LOCAL_ERROR="The field component interpolation type of "// &
+                                        & TRIM(NUMBER_TO_VSTRING(FIELD_INTERPOLATION_PARAMETERS% &
+                                        & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                                        & " is invalid for component index "// &
+                                        & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+                                    END SELECT
+                                  ENDDO !component_idx
+                                ENDIF
+                              ELSE
+                                CALL FLAG_ERROR("Domain element topology is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              LOCAL_ERROR="The specified node number of "//TRIM(NUMBER_TO_VSTRING(NODE_NUMBER,"*",ERR,ERROR))// &
+                                & " is invalid. The node number needs to be > 0 and <= "// &
+                                & TRIM(NUMBER_TO_VSTRING(NODES_TOPOLOGY%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Nodes topology is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)          
+                      ENDIF
+                    ELSE
+                      LOCAL_ERROR="The specified component number of "//TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                        & " is invalid. The component number must be > 0 and <= "// &
+                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("The field variable field is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("The geometric interpolation parameters field variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The field interpolation parameters field variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Geometric interpolated point interpolation parameters is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Field interpolated point interpolation parameters is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Physical point geometric interpolated point is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Physical point field interpolated point is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Physical point is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_INTERPOLATE_NODE")
+    RETURN
+999 CALL ERRORS("FIELD_INTERPOLATE_NODE",ERR,ERROR)
+    CALL EXITS("FIELD_INTERPOLATE_NODE")
+    RETURN 1
+    
+  END SUBROUTINE FIELD_INTERPOLATE_NODE
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Interpolates a field to give the physical value of the field at a node in another field. Note that as we are at a node then we do not have any xi directions and thus we can not talk about gradients of the field wrt to xi. Because derviatives of fields can be discountinuous at a node the average derivative over all the elements surrounding the node is calculated.
+  SUBROUTINE FIELD_INTERPOLATE_FIELD_NODE(PHYSICAL_DERIVATIVE_TYPE,PARAMETER_SET_TYPE,FIELD,VARIABLE_TYPE,COMPONENT_NUMBER, &
+    & NODE_NUMBER,PHYSICAL_POINT,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: PHYSICAL_DERIVATIVE_TYPE !<The physical derivative type of the field interpolation \see CONSTANTS_PhysicalDerivativeConstants
+    INTEGER(INTG), INTENT(IN) :: PARAMETER_SET_TYPE !<The parameter set of the field to interpolate.
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<The field containing the node to interpolate at.
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type containing the node to interpolate at
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to field that contains the node to interpolate at
+    INTEGER(INTG), INTENT(IN) :: NODE_NUMBER !<The node number in the field variable component to interpolate the field at
+    TYPE(FIELD_PHYSICAL_POINT_TYPE), POINTER :: PHYSICAL_POINT !<The pointer to the physical point for the field. On return it will contain the values.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: component_idx,element,elem_idx,LOCAL_NODE_NUMBER,local_node_idx,NUMBER_OF_SURROUNDING_ELEMENTS, &
+      & partial_deriv_idx,xi_idx
+    REAL(DP) :: XI(3),DX_DXI(3,3),DXI_DX(3,3),DET_DX_DXI
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEM_TOPOLOGY
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: NODES_TOPOLOGY
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+    TYPE(FIELD_TYPE), POINTER :: INTERP_FIELD
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIELD_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIELD_INTERPOLATION_PARAMETERS,GEOMETRIC_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,INTERP_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_INTERPOLATE_FIELD_NODE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PHYSICAL_POINT)) THEN
+      FIELD_INTERPOLATED_POINT=>PHYSICAL_POINT%FIELD_INTERPOLATED_POINT
+      IF(ASSOCIATED(FIELD_INTERPOLATED_POINT)) THEN
+        GEOMETRIC_INTERPOLATED_POINT=>PHYSICAL_POINT%GEOMETRIC_INTERPOLATED_POINT
+        IF(ASSOCIATED(GEOMETRIC_INTERPOLATED_POINT)) THEN
+          FIELD_INTERPOLATION_PARAMETERS=>FIELD_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
+          IF(ASSOCIATED(FIELD_INTERPOLATION_PARAMETERS)) THEN
+            GEOMETRIC_INTERPOLATION_PARAMETERS=>GEOMETRIC_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
+            IF(ASSOCIATED(GEOMETRIC_INTERPOLATION_PARAMETERS)) THEN
+              INTERP_VARIABLE=>FIELD_INTERPOLATION_PARAMETERS%FIELD_VARIABLE
+              IF(ASSOCIATED(INTERP_VARIABLE)) THEN
+                GEOMETRIC_VARIABLE=>GEOMETRIC_INTERPOLATION_PARAMETERS%FIELD_VARIABLE
+                IF(ASSOCIATED(GEOMETRIC_VARIABLE)) THEN
+                  INTERP_FIELD=>INTERP_VARIABLE%FIELD
+                  IF(ASSOCIATED(INTERP_FIELD)) THEN            
+                    CALL FIELD_COORDINATE_SYSTEM_GET(INTERP_FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+                    IF(ASSOCIATED(FIELD)) THEN
+                      CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+                      IF(COMPONENT_NUMBER>0.AND.COMPONENT_NUMBER<=FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                        DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                        IF(ASSOCIATED(DOMAIN)) THEN
+                          DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                          IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                            NODES_TOPOLOGY=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(NODES_TOPOLOGY)) THEN
+                              IF(NODE_NUMBER>0.AND.NODE_NUMBER<=NODES_TOPOLOGY%NUMBER_OF_NODES) THEN
+                                ELEM_TOPOLOGY=>DOMAIN_TOPOLOGY%ELEMENTS
+                                IF(ASSOCIATED(ELEM_TOPOLOGY)) THEN
+                                  PHYSICAL_POINT%VALUES=0.0_DP
+                                  IF(PHYSICAL_DERIVATIVE_TYPE==NO_PHYSICAL_DERIV) THEN
+                                    NUMBER_OF_SURROUNDING_ELEMENTS=1
+                                  ELSE
+                                    NUMBER_OF_SURROUNDING_ELEMENTS=NODES_TOPOLOGY%NODES(NODE_NUMBER)% &
+                                      & NUMBER_OF_SURROUNDING_ELEMENTS
+                                    PHYSICAL_POINT%VALUES=0.0_DP
+                                  ENDIF
+                                  !Loop over the elements surrounding the node
+                                  DO elem_idx=1,NUMBER_OF_SURROUNDING_ELEMENTS
+                                    element=NODES_TOPOLOGY%NODES(NODE_NUMBER)%SURROUNDING_ELEMENTS(elem_idx)
+                                    CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(PARAMETER_SET_TYPE,element, &
+                                      & FIELD_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+                                    BASIS=>ELEM_TOPOLOGY%ELEMENTS(element)%BASIS
+                                    IF(ASSOCIATED(BASIS)) THEN
+                                      LOCAL_NODE_NUMBER=0
+                                      DO local_node_idx=1,BASIS%NUMBER_OF_NODES
+                                        IF(ELEM_TOPOLOGY%ELEMENTS(element)%ELEMENT_NODES(local_node_idx)==NODE_NUMBER) THEN
+                                          LOCAL_NODE_NUMBER=local_node_idx
+                                          EXIT
+                                        ENDIF
+                                      ENDDO
+                                      IF(LOCAL_NODE_NUMBER/=0) THEN
+                                        CALL BASIS_LOCAL_NODE_XI_CALCULATE(BASIS,LOCAL_NODE_NUMBER,XI,ERR,ERROR,*999)  
+                                        SELECT CASE(PHYSICAL_DERIVATIVE_TYPE)
+                                        CASE(NO_PHYSICAL_DERIV)
+                                          DO component_idx=1,INTERP_VARIABLE%NUMBER_OF_COMPONENTS
+                                            SELECT CASE(INTERP_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                                            CASE(FIELD_CONSTANT_INTERPOLATION)
+                                              PHYSICAL_POINT%VALUES(component_idx)=FIELD_INTERPOLATION_PARAMETERS% &
+                                                & PARAMETERS(1,component_idx)
+                                            CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                              PHYSICAL_POINT%VALUES(component_idx)=FIELD_INTERPOLATION_PARAMETERS% &
+                                                & PARAMETERS(1,component_idx)
+                                            CASE(FIELD_NODE_BASED_INTERPOLATION)
+                                              PHYSICAL_POINT%VALUES(component_idx)=BASIS_INTERPOLATE_XI( &
+                                                & FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR,NO_PART_DERIV, &
+                                                & XI,FIELD_INTERPOLATION_PARAMETERS%PARAMETERS(:,component_idx),ERR,ERROR)
+                                              IF(ERR/=0) GOTO 999
+                                            CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE DEFAULT
+                                              LOCAL_ERROR="The field component interpolation type of "// &
+                                                & TRIM(NUMBER_TO_VSTRING(INTERP_VARIABLE%COMPONENTS(component_idx)% &
+                                                & INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid for component index "// &
+                                                & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+                                            END SELECT
+                                          ENDDO! component_idx
+                                          PHYSICAL_POINT%PHYSICAL_DERIVATIVE_TYPE=NO_PHYSICAL_DERIV
+                                        CASE(GRADIENT_PHYSICAL_DERIV)
+                                          DO component_idx=1,INTERP_VARIABLE%NUMBER_OF_COMPONENTS
+                                            SELECT CASE(INTERP_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                                            CASE(FIELD_CONSTANT_INTERPOLATION)
+                                              !There is no gradient for constant interpolation
+                                              PHYSICAL_POINT%VALUES(component_idx)=0.0_DP
+                                            CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                              !There is no graident for element interpolation
+                                              PHYSICAL_POINT%VALUES(component_idx)=0.0_DP
+                                            CASE(FIELD_NODE_BASED_INTERPOLATION)
+                                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element, &
+                                                & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+                                              !Now process all the first partial derivatives
+                                              DO xi_idx=1,FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                                                partial_deriv_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)
+                                                !Interpolate the field
+                                                FIELD_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx) = &
+                                                  & BASIS_INTERPOLATE_XI(FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR, &
+                                                  & partial_deriv_idx,XI,FIELD_INTERPOLATION_PARAMETERS%PARAMETERS(:, &
+                                                  & component_idx),ERR,ERROR)
+                                                IF(ERR/=0) GOTO 999
+                                                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,partial_deriv_idx, &
+                                                  & FIELD_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx),ERR,ERROR,*999)
+                                                GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx) = &
+                                                  & BASIS_INTERPOLATE_XI(GEOMETRIC_INTERPOLATION_PARAMETERS%BASES(component_idx)% &
+                                                  & PTR,partial_deriv_idx,XI,GEOMETRIC_INTERPOLATION_PARAMETERS%PARAMETERS(:, &
+                                                  & component_idx),ERR,ERROR)
+                                                IF(ERR/=0) GOTO 999
+                                                CALL COORDINATE_INTERPOLATION_ADJUST(COORDINATE_SYSTEM,partial_deriv_idx, &
+                                                  & GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx), &
+                                                  & ERR,ERROR,*999)
+                                                DX_DXI(component_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT% &
+                                                  & VALUES(component_idx,partial_deriv_idx)
+                                              ENDDO !xi_idx
+                                            CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE DEFAULT
+                                              LOCAL_ERROR="The field component interpolation type of "// &
+                                                & TRIM(NUMBER_TO_VSTRING(FIELD_INTERPOLATION_PARAMETERS% &
+                                                & FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                                                & " is invalid for component index "// &
+                                                & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+                                            END SELECT
+                                          ENDDO! component_idx
+                                          !Form the physical derivative
+                                          CALL INVERT(DX_DXI,DXI_DX,DET_DX_DXI,ERR,ERROR,*999)
+                                          DO component_idx=1,INTERP_VARIABLE%NUMBER_OF_COMPONENTS
+                                            DO xi_idx=1,FIELD_INTERPOLATION_PARAMETERS%BASES(component_idx)%PTR%NUMBER_OF_XI
+                                              partial_deriv_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx)
+                                              PHYSICAL_POINT%VALUES(component_idx)=PHYSICAL_POINT%VALUES(component_idx)+ &
+                                                & FIELD_INTERPOLATED_POINT%VALUES(component_idx,partial_deriv_idx)* &
+                                                & DXI_DX(xi_idx,component_idx)
+                                            ENDDO !xi_idx
+                                          ENDDO !component_idx
+                                          PHYSICAL_POINT%PHYSICAL_DERIVATIVE_TYPE=GRADIENT_PHYSICAL_DERIV
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The physical derivative type of "// &
+                                            & TRIM(NUMBER_TO_VSTRING(PHYSICAL_DERIVATIVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      ELSE
+                                        LOCAL_ERROR="Could not find the local node for node "// &
+                                          & TRIM(NUMBER_TO_VSTRING(NODE_NUMBER,"*",ERR,ERROR))//" in element number "// &
+                                          & TRIM(NUMBER_TO_VSTRING(element,"*",ERR,ERROR))//"."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      ENDIF
+                                    ELSE
+                                      LOCAL_ERROR="The basis for element "//TRIM(NUMBER_TO_VSTRING(element,"*",ERR,ERROR))// &
+                                        & " is not associated."
+                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDDO !elem_idx
+                                  IF(PHYSICAL_DERIVATIVE_TYPE==NO_PHYSICAL_DERIV) THEN
+                                    !Now calculate the average of the interpolated physical point
+                                    DO component_idx=1,INTERP_VARIABLE%NUMBER_OF_COMPONENTS
+                                      SELECT CASE(INTERP_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                                      CASE(FIELD_CONSTANT_INTERPOLATION)
+                                        !Do nothing
+                                      CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                                        !Do nothing
+                                      CASE(FIELD_NODE_BASED_INTERPOLATION)                                      
+                                        PHYSICAL_POINT%VALUES(component_idx)=PHYSICAL_POINT%VALUES(component_idx)/ &
+                                          & REAL(NUMBER_OF_SURROUNDING_ELEMENTS,DP)
+                                      CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The field component interpolation type of "// &
+                                          & TRIM(NUMBER_TO_VSTRING(INTERP_VARIABLE%COMPONENTS(component_idx)% &
+                                          & INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                                          & " is invalid for component index "// &
+                                          & TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//"."
+                                      END SELECT
+                                    ENDDO !component_idx
+                                  ENDIF
+                                ELSE
+                                  CALL FLAG_ERROR("Domain element topology is not associated.",ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                LOCAL_ERROR="The specified node number of "//TRIM(NUMBER_TO_VSTRING(NODE_NUMBER,"*",ERR,ERROR))// &
+                                  & " is invalid. The node number needs to be > 0 and <= "// &
+                                  & TRIM(NUMBER_TO_VSTRING(NODES_TOPOLOGY%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Nodes topology is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)          
+                        ENDIF
+                      ELSE
+                        LOCAL_ERROR="The specified component number of "// &
+                          & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))// &
+                          & " is invalid. The component number must be > 0 and <= "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%NUMBER_OF_COMPONENTS,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("The field variable field is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("The geometric interpolation parameters field variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("The field interpolation parameters field variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Geometric interpolated point interpolation parameters is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Field interpolated point interpolation parameters is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Physical point geometric interpolated point is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Physical point field interpolated point is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Physical point is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("FIELD_INTERPOLATE_FIELD_NODE")
+    RETURN
+999 CALL ERRORS("FIELD_INTERPOLATE_FIELD_NODE",ERR,ERROR)
+    CALL EXITS("FIELD_INTERPOLATE_FIELD_NODE")
+    RETURN 1
+    
+  END SUBROUTINE FIELD_INTERPOLATE_FIELD_NODE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Interpolates a field at a face gauss point to give an interpolated point. PARTIAL_DERIVATIVE_TYPE controls which partial derivatives are evaluated. If it is NO_PART_DERIV then only the field values are interpolated. If it is FIRST_PART_DERIV then the field values and first partial derivatives are interpolated. If it is SECOND_PART_DERIV the the field values and first and second partial derivatives are evaluated.
   SUBROUTINE FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(PARTIAL_DERIVATIVE_TYPE,QUADRATURE_SCHEME,LOCAL_FACE_NUMBER, &
     & GAUSS_POINT_NUMBER,INTERPOLATED_POINT,ERR,ERROR,*)
@@ -7115,6 +7657,191 @@ CONTAINS
     RETURN 1
   END SUBROUTINE FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_FACE_GET
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises the physical point and deallocates all memory.
+  SUBROUTINE FIELD_PHYSICAL_POINT_FINALISE(PHYSICAL_POINT,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_PHYSICAL_POINT_TYPE), POINTER :: PHYSICAL_POINT !<A pointer to the physical point to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("FIELD_PHYSICAL_POINT_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PHYSICAL_POINT)) THEN
+      IF(ALLOCATED(PHYSICAL_POINT%VALUES)) DEALLOCATE(PHYSICAL_POINT%VALUES)
+      DEALLOCATE(PHYSICAL_POINT)
+    ENDIF
+
+    CALL EXITS("FIELD_PHYSICAL_POINT_FINALISE")
+    RETURN
+999 CALL ERRORS("FIELD_PHYSICAL_POINT_FINALISE",ERR,ERROR)
+    CALL EXITS("FIELD_PHYSICAL_POINT_FINALISE")
+    RETURN 1
+  END SUBROUTINE FIELD_PHYSICAL_POINT_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the physical point for interpolated points
+  SUBROUTINE FIELD_PHYSICAL_POINT_INITIALISE(FIELD_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT,PHYSICAL_POINT, &
+    & ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FIELD_INTERPOLATED_POINT !<A pointer to the field interpolation point to initialise the physical point for
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT !<A pointer to the geometric field interpolated point to initialise the physical point for
+    TYPE(FIELD_PHYSICAL_POINT_TYPE), POINTER :: PHYSICAL_POINT !<On exit, A pointer to the physical point that has been initialised
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(FIELD_TYPE), POINTER :: FIELD,GEOMETRIC_FIELD
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FIELD_INTERPOLATION_PARAMETERS,GEOMETRIC_INTERPOLATION_PARAMETERS
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("FIELD_PHYSICAL_POINT_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD_INTERPOLATED_POINT)) THEN
+      IF(ASSOCIATED(GEOMETRIC_INTERPOLATED_POINT)) THEN
+        FIELD_INTERPOLATION_PARAMETERS=>FIELD_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
+        IF(ASSOCIATED(FIELD_INTERPOLATION_PARAMETERS)) THEN
+          GEOMETRIC_INTERPOLATION_PARAMETERS=>GEOMETRIC_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS
+          IF(ASSOCIATED(GEOMETRIC_INTERPOLATION_PARAMETERS)) THEN
+            FIELD=>FIELD_INTERPOLATION_PARAMETERS%FIELD
+            IF(ASSOCIATED(FIELD)) THEN
+              GEOMETRIC_FIELD=>GEOMETRIC_INTERPOLATION_PARAMETERS%FIELD
+              IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                IF(ASSOCIATED(FIELD%GEOMETRIC_FIELD,GEOMETRIC_FIELD)) THEN
+                  IF(ASSOCIATED(PHYSICAL_POINT)) THEN
+                    CALL FLAG_ERROR("Physical point is already associated.",ERR,ERROR,*998)
+                  ELSE
+                    ALLOCATE(PHYSICAL_POINT,STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate physical point",ERR,ERROR,*999)
+                    PHYSICAL_POINT%FIELD_INTERPOLATED_POINT=>FIELD_INTERPOLATED_POINT
+                    PHYSICAL_POINT%GEOMETRIC_INTERPOLATED_POINT=>GEOMETRIC_INTERPOLATED_POINT
+                    PHYSICAL_POINT%PHYSICAL_DERIVATIVE_TYPE=0
+                    ALLOCATE(PHYSICAL_POINT%VALUES(FIELD_INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate physical point values.",ERR,ERROR,*999)
+                    PHYSICAL_POINT%VALUES=0.0_DP
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("The field geometric field and the specified geometric field are not associated.", &
+                    & ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Geometric interpolation parameters field is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Field interpolation parameters field is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Geometric interpolated point interpolation parameters is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Field interpolated point interpolation parameters is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Geometric interpolated point is not associated.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field interpolated point is not associated.",ERR,ERROR,*998)
+    ENDIF
+
+    CALL EXITS("FIELD_PHYSICAL_POINT_INITIALISE")
+    RETURN
+999 CALL FIELD_PHYSICAL_POINT_FINALISE(PHYSICAL_POINT,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("FIELD_PHYSICAL_POINT_INITIALISE",ERR,ERROR)
+    CALL EXITS("FIELD_PHYSICAL_POINT_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE FIELD_PHYSICAL_POINT_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises the physical points and deallocates all memory.
+  SUBROUTINE FIELD_PHYSICAL_POINTS_FINALISE(PHYSICAL_POINTS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_PHYSICAL_POINT_PTR_TYPE), POINTER :: PHYSICAL_POINTS(:) !<A pointer to the physical points to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: var_type_idx
+
+    CALL ENTERS("FIELD_PHYSICAL_POINTS_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(PHYSICAL_POINTS)) THEN
+      DO var_type_idx=1,SIZE(PHYSICAL_POINTS,1)
+        CALL FIELD_PHYSICAL_POINT_FINALISE(PHYSICAL_POINTS(var_type_idx)%PTR,ERR,ERROR,*999)
+      ENDDO !var_type_idx
+      DEALLOCATE(PHYSICAL_POINTS)
+    ENDIF
+
+    CALL EXITS("FIELD_PHYSICAL_POINTS_FINALISE")
+    RETURN
+999 CALL ERRORS("FIELD_PHYSICAL_POINTS_FINALISE",ERR,ERROR)
+    CALL EXITS("FIELD_PHYSICAL_POINTS_FINALISE")
+    RETURN 1
+  END SUBROUTINE FIELD_PHYSICAL_POINTS_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the physical point for an interpolation parameters
+  SUBROUTINE FIELD_PHYSICAL_POINTS_INITIALISE(FIELD_INTERPOLATED_POINTS,GEOMETRIC_INTERPOLATED_POINTS, &
+    & PHYSICAL_POINTS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: FIELD_INTERPOLATED_POINTS(:) !<A pointer to the field interpolated points to initialise the physical points for
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINTS(:) !<A pointer to the geometric interpolated points to initialise the physical points for
+    TYPE(FIELD_PHYSICAL_POINT_PTR_TYPE), POINTER :: PHYSICAL_POINTS(:) !<On exit, A pointer to the physical points that has been initialised. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR,var_type_idx
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("FIELD_PHYSICAL_POINTS_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(FIELD_INTERPOLATED_POINTS)) THEN
+      IF(ASSOCIATED(GEOMETRIC_INTERPOLATED_POINTS)) THEN
+        IF(ASSOCIATED(PHYSICAL_POINTS)) THEN
+          CALL FLAG_ERROR("Physical points is already associated.",ERR,ERROR,*998)
+        ELSE
+          ALLOCATE(PHYSICAL_POINTS(FIELD_NUMBER_OF_VARIABLE_TYPES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate physical points.",ERR,ERROR,*999)
+          DO var_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+            NULLIFY(PHYSICAL_POINTS(var_type_idx)%PTR)
+            IF(ASSOCIATED(FIELD_INTERPOLATED_POINTS(var_type_idx)%PTR).AND. &
+              & ASSOCIATED(GEOMETRIC_INTERPOLATED_POINTS(var_type_idx)%PTR)) &
+              & CALL FIELD_PHYSICAL_POINT_INITIALISE(FIELD_INTERPOLATED_POINTS(var_type_idx)%PTR, &
+              & GEOMETRIC_INTERPOLATED_POINTS(var_type_idx)%PTR,PHYSICAL_POINTS(var_type_idx)%PTR,ERR,ERROR,*999)
+          ENDDO !var_type_idx
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Geometric interpolated points is not associated.",ERR,ERROR,*998)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field interpolated points is not associated.",ERR,ERROR,*998)
+    ENDIF
+    
+    CALL EXITS("FIELD_PHYSICAL_POINTS_INITIALISE")
+    RETURN
+999 CALL FIELD_PHYSICAL_POINTS_FINALISE(PHYSICAL_POINTS,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("FIELD_PHYSICAL_POINTS_INITIALISE",ERR,ERROR)
+    CALL EXITS("FIELD_PHYSICAL_POINTS_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE FIELD_PHYSICAL_POINTS_INITIALISE
+  
   !
   !================================================================================================================================
   !

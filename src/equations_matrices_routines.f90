@@ -2972,7 +2972,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) ::  column_idx,DUMMY_ERR,elem_idx,global_column,local_column,local_ny,MATRIX_NUMBER,mk,mp,ne,nh,nh2,nn,nnk,np, &
-      & NUMBER_OF_COLUMNS,nyy,bound_node_ind,nyyg,npg,nhg,local_cols,local_dof
+      & NUMBER_OF_COLUMNS,nyy,nyyg,npg,nhg,local_cols,local_dof
     INTEGER(INTG), ALLOCATABLE :: COLUMNS(:)
     REAL(DP) :: SPARSITY
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -3111,8 +3111,8 @@ CONTAINS
                                       COLUMN_INDICES(ROW_INDICES(local_ny)+column_idx-1)=COLUMNS(column_idx) 
 
                                       ! global to local columns
-                                       IF(ASSOCIATED(LINEAR_MAPPING).OR.ASSOCIATED(DYNAMIC_MAPPING)) THEN 
-					 IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
+                                       IF(ASSOCIATED(LINEAR_MAPPING).OR.ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                                         IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
                                            local_cols=equations_matrices%equations_mapping%dynamic_mapping &
                                              & %equations_matrix_to_var_maps(1)%column_dofs_mapping%global_to_local_map &
                                              & (COLUMNS(column_idx))%LOCAL_NUMBER(1)

@@ -218,6 +218,15 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S1_S2_S3=8 !<Cross derivative in the s1, s2 and s3 direction i.e., d^3u/ds1ds2ds3 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
   !>@}
   
+  !> \addtogroup CONSTANTS_PhysicalDerivativeConstants CONSTANTS::PhysicalDerivativeConstants
+  !> \brief Physical derivative constant identifiers
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: MAXIMUM_PHYSICAL_DERIV_NUMBER=2 !<The maximum physical derivative number
+  INTEGER(INTG), PARAMETER :: NO_PHYSICAL_DERIV=1 !<No physical derivative i.e., u \see CONSTANTS_PhysicalDerivativeConstants,CONSTANTS
+  INTEGER(INTG), PARAMETER :: GRADIENT_PHYSICAL_DERIV=2 !<Gradient physical derivative i.e., grad u \see CONSTANTS_PhysicalDerivativeConstants,CONSTANTS
+  !>@}
+  
   INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX(23,4) = RESHAPE( &
     & [ NO_PART_DERIV,FIRST_PART_DERIV,SECOND_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV, &
     &    FIRST_PART_DERIV,NO_PART_DERIV,NO_PART_DERIV,FIRST_PART_DERIV,NO_PART_DERIV, &

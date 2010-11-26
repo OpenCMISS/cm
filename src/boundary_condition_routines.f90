@@ -342,8 +342,8 @@ CONTAINS
                                       ENDDO
                                       CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                         & ERR,ERROR,*999)
-				      DO col_idx =1,NUMBER_OF_ROWS
-                                       CALL LINKEDLIST_DESTROY(list(col_idx))
+                                      DO col_idx =1,NUMBER_OF_ROWS
+                                        CALL LINKEDLIST_DESTROY(list(col_idx))
                                       ENDDO
                                     ELSE
                                       LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."

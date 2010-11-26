@@ -257,7 +257,7 @@ CONTAINS
 
     !Argument variables
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH !<A pointer to the generated mesh to set the basis of
-    TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:) !<An array of pointers to the basis to generate the mesh with
+    TYPE(BASIS_PTR_TYPE) :: BASES(:) !<An array of pointers to the basis to generate the mesh with
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -274,94 +274,90 @@ CONTAINS
         NULLIFY(COORDINATE_SYSTEM)
         CALL GENERATED_MESH_COORDINATE_SYSTEM_GET(GENERATED_MESH,COORDINATE_SYSTEM,ERR,ERROR,*999)
         CALL COORDINATE_SYSTEM_DIMENSION_GET(COORDINATE_SYSTEM,COORDINATE_DIMENSION,ERR,ERROR,*999)
-        IF(ASSOCIATED(BASES)) THEN
-          NUM_BASES=SIZE(BASES)
-          NUM_XI=BASES(1)%PTR%NUMBER_OF_XI
-          BASIS_TYPE=BASES(1)%PTR%TYPE
-          DO basis_idx=2,NUM_BASES
-            IF(BASES(basis_idx)%PTR%NUMBER_OF_XI /= NUM_XI) THEN
-              CALL FLAG_ERROR("All bases must have the same number of xi.",ERR,ERROR,*999)
-            ENDIF
-            IF(BASES(basis_idx)%PTR%TYPE /= BASIS_TYPE) THEN
-              CALL FLAG_ERROR("Using different basis types is not supported for generated meshes.",ERR,ERROR,*999)
-            ENDIF
-          ENDDO
-          SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
-          CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
-            IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
-              IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%BASE_VECTORS)) THEN
-                CALL FLAG_ERROR("Can not reset the basis if base vectors have been specified.",ERR,ERROR,*999)
-              ELSE
-                IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%BASES)) DEALLOCATE(GENERATED_MESH%REGULAR_MESH%BASES)
-                ALLOCATE(GENERATED_MESH%REGULAR_MESH%BASES(NUM_BASES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bases.",ERR,ERROR,*999)
-                DO basis_idx=1,NUM_BASES
-                  IF(ASSOCIATED(BASES(basis_idx)%PTR)) THEN
-                    IF(BASES(basis_idx)%PTR%NUMBER_OF_XI<=COORDINATE_DIMENSION) THEN
-                      GENERATED_MESH%REGULAR_MESH%BASES(basis_idx)%PTR=>BASES(basis_idx)%PTR
-                    ELSE
-                      LOCAL_ERROR="The basis number of xi dimensions of "// &
-                        & TRIM(NUMBER_TO_VSTRING(BASES(basis_idx)%PTR%NUMBER_OF_XI,"*",ERR,ERROR))// &
-                        & " is invalid. The number of xi dimensions must be <= the number of coordinate dimensions of "// &
-                        & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
+        NUM_BASES=SIZE(BASES)
+        NUM_XI=BASES(1)%PTR%NUMBER_OF_XI
+        BASIS_TYPE=BASES(1)%PTR%TYPE
+        DO basis_idx=2,NUM_BASES
+          IF(BASES(basis_idx)%PTR%NUMBER_OF_XI /= NUM_XI) THEN
+            CALL FLAG_ERROR("All bases must have the same number of xi.",ERR,ERROR,*999)
+          ENDIF
+          IF(BASES(basis_idx)%PTR%TYPE /= BASIS_TYPE) THEN
+            CALL FLAG_ERROR("Using different basis types is not supported for generated meshes.",ERR,ERROR,*999)
+          ENDIF
+        ENDDO
+        SELECT CASE(GENERATED_MESH%GENERATED_TYPE)
+        CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
+          IF(ASSOCIATED(GENERATED_MESH%REGULAR_MESH)) THEN
+            IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%BASE_VECTORS)) THEN
+              CALL FLAG_ERROR("Can not reset the basis if base vectors have been specified.",ERR,ERROR,*999)
+            ELSE
+              IF(ALLOCATED(GENERATED_MESH%REGULAR_MESH%BASES)) DEALLOCATE(GENERATED_MESH%REGULAR_MESH%BASES)
+              ALLOCATE(GENERATED_MESH%REGULAR_MESH%BASES(NUM_BASES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bases.",ERR,ERROR,*999)
+              DO basis_idx=1,NUM_BASES
+                IF(ASSOCIATED(BASES(basis_idx)%PTR)) THEN
+                  IF(BASES(basis_idx)%PTR%NUMBER_OF_XI<=COORDINATE_DIMENSION) THEN
+                    GENERATED_MESH%REGULAR_MESH%BASES(basis_idx)%PTR=>BASES(basis_idx)%PTR
                   ELSE
-                    LOCAL_ERROR="The basis with index "//TRIM(NUMBER_TO_VSTRING(basis_idx,"*",ERR,ERROR))// &
-                      & " is not associated."
+                    LOCAL_ERROR="The basis number of xi dimensions of "// &
+                      & TRIM(NUMBER_TO_VSTRING(BASES(basis_idx)%PTR%NUMBER_OF_XI,"*",ERR,ERROR))// &
+                      & " is invalid. The number of xi dimensions must be <= the number of coordinate dimensions of "// &
+                      & TRIM(NUMBER_TO_VSTRING(COORDINATE_DIMENSION,"*",ERR,ERROR))
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
-                ENDDO
+                ELSE
+                  LOCAL_ERROR="The basis with index "//TRIM(NUMBER_TO_VSTRING(basis_idx,"*",ERR,ERROR))// &
+                    & " is not associated."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDDO
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE(GENERATED_MESH_POLAR_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
+          IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN
+            IF(ALLOCATED(GENERATED_MESH%CYLINDER_MESH%BASES)) DEALLOCATE(GENERATED_MESH%CYLINDER_MESH%BASES)
+            ALLOCATE(GENERATED_MESH%CYLINDER_MESH%BASES(NUM_BASES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bases.",ERR,ERROR,*999)
+            DO basis_idx=1,NUM_BASES
+              IF(ASSOCIATED(BASES(basis_idx)%PTR)) THEN
+                GENERATED_MESH%CYLINDER_MESH%BASES(basis_idx)%PTR=>BASES(basis_idx)%PTR
+              ELSE
+                LOCAL_ERROR="The basis with index "//TRIM(NUMBER_TO_VSTRING(basis_idx,"*",ERR,ERROR))// &
+                  & " is not associated."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
-            ELSE
-              CALL FLAG_ERROR("Regular generated mesh is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(GENERATED_MESH_POLAR_MESH_TYPE)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE(GENERATED_MESH_FRACTAL_TREE_MESH_TYPE)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-          CASE(GENERATED_MESH_CYLINDER_MESH_TYPE)
-            IF(ASSOCIATED(GENERATED_MESH%CYLINDER_MESH)) THEN
-              IF(ALLOCATED(GENERATED_MESH%CYLINDER_MESH%BASES)) DEALLOCATE(GENERATED_MESH%CYLINDER_MESH%BASES)
-              ALLOCATE(GENERATED_MESH%CYLINDER_MESH%BASES(NUM_BASES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bases.",ERR,ERROR,*999)
-              DO basis_idx=1,NUM_BASES
-                IF(ASSOCIATED(BASES(basis_idx)%PTR)) THEN
-                  GENERATED_MESH%CYLINDER_MESH%BASES(basis_idx)%PTR=>BASES(basis_idx)%PTR
-                ELSE
-                  LOCAL_ERROR="The basis with index "//TRIM(NUMBER_TO_VSTRING(basis_idx,"*",ERR,ERROR))// &
-                    & " is not associated."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDDO
-            ELSE
-              CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
-            IF(ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH)) THEN
-              IF(ALLOCATED(GENERATED_MESH%ELLIPSOID_MESH%BASES)) DEALLOCATE(GENERATED_MESH%ELLIPSOID_MESH%BASES)
-              ALLOCATE(GENERATED_MESH%ELLIPSOID_MESH%BASES(NUM_BASES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bases.",ERR,ERROR,*999)
-              DO basis_idx=1,NUM_BASES
-                IF(ASSOCIATED(BASES(basis_idx)%PTR)) THEN
-                  GENERATED_MESH%ELLIPSOID_MESH%BASES(basis_idx)%PTR=>BASES(basis_idx)%PTR
-                ELSE
-                  LOCAL_ERROR="The basis with index "//TRIM(NUMBER_TO_VSTRING(basis_idx,"*",ERR,ERROR))// &
-                    & " is not associated."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDDO
-            ELSE
-              CALL FLAG_ERROR("Ellpsoid generated mesh is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE DEFAULT
-            LOCAL_ERROR="The generated mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
-              & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Bases is not associated.",ERR,ERROR,*999)
-        ENDIF
+            ENDDO
+          ELSE
+            CALL FLAG_ERROR("Cylinder generated mesh is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE(GENERATED_MESH_ELLIPSOID_MESH_TYPE)
+          IF(ASSOCIATED(GENERATED_MESH%ELLIPSOID_MESH)) THEN
+            IF(ALLOCATED(GENERATED_MESH%ELLIPSOID_MESH%BASES)) DEALLOCATE(GENERATED_MESH%ELLIPSOID_MESH%BASES)
+            ALLOCATE(GENERATED_MESH%ELLIPSOID_MESH%BASES(NUM_BASES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate bases.",ERR,ERROR,*999)
+            DO basis_idx=1,NUM_BASES
+              IF(ASSOCIATED(BASES(basis_idx)%PTR)) THEN
+                GENERATED_MESH%ELLIPSOID_MESH%BASES(basis_idx)%PTR=>BASES(basis_idx)%PTR
+              ELSE
+                LOCAL_ERROR="The basis with index "//TRIM(NUMBER_TO_VSTRING(basis_idx,"*",ERR,ERROR))// &
+                  & " is not associated."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDDO
+          ELSE
+            CALL FLAG_ERROR("Ellpsoid generated mesh is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The generated mesh type of "//TRIM(NUMBER_TO_VSTRING(GENERATED_MESH%GENERATED_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
       ENDIF
     ELSE
       CALL FLAG_ERROR("Generated mesh is already associated.",ERR,ERROR,*999)
