@@ -2142,8 +2142,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE !<Generalised Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesDataFittingSubtype = &
     & EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE !<Material Properties Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype = &
-    & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_GALERKIN_PROJ_SUBTYPE !<Material Properties INRIA Model Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesInriaModelDataFittingSubtype = &
+    & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE !<Material Properties INRIA Model Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = &
@@ -2389,7 +2389,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype,CMISSEquationsSetMonodomainBuenoOrovioSubtype,&
     & CMISSEquationsSetMonodomainTenTusscher06Subtype  ,&
     & CMISSEquationsSetStandardDataFittingSubtype,CMISSEquationsSetGeneralisedDataFittingSubtype, &
-    & CMISSEquationsSetMatPropertiesDataFittingSubtype,CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype, &
+    & CMISSEquationsSetMatPropertiesDataFittingSubtype,CMISSEquationsSetMatPropertiesInriaModelDataFittingSubtype, &
     & CMISSEquationsSetPGMNavierStokesSubtype, &
     & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype
 
