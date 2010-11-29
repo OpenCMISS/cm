@@ -1975,7 +1975,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainEquationType = EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE !<Monodomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBidomainEquationType = EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE !<Bidomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticModalType = EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE !<Linear elasticity modal equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGalerkinProjectionEquationType = EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDataFittingEquationType = EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityDarcyType = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityStokesType = EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = &
@@ -2136,12 +2136,12 @@ MODULE OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFirstBidomainSubtype = EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE !<First bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetSecondBidomainSubtype = EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE !<Second bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardGalerkinProjectionSubtype = &
-    & EQUATIONS_SET_STANDARD_GALERKIN_PROJECTION_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedGalerkinProjectionSubtype = &
-    & EQUATIONS_SET_GENERALISED_GALERKIN_PROJECTION_SUBTYPE !<Generalised Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = &
-    & EQUATIONS_SET_MAT_PROPERTIES_GALERKIN_PROJECTION_SUBTYPE !<Material Properties Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardDataFittingSubtype = &
+    & EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedDataFittingSubtype = &
+    & EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE !<Generalised Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesDataFittingSubtype = &
+    & EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE !<Material Properties Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype = &
     & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_GALERKIN_PROJ_SUBTYPE !<Material Properties INRIA Model Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
@@ -2332,7 +2332,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetAdvectionDiffusionEquationType, &
     & CMISSEquationsSetReactionDiffusionEquationType,CMISSEquationsSetBiharmonicEquationType, &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType, &
-    & CMISSEquationsSetGalerkinProjectionEquationType,CMISSEquationsSetMonodomainSSEquationType
+    & CMISSEquationsSetDataFittingEquationType,CMISSEquationsSetMonodomainSSEquationType
 
   PUBLIC CMISSEquationsSetFiniteElasticityDarcyType, &
     & CMISSEquationsSetFiniteElasticityStokesType, CMISSEquationsSetFiniteElasticityNavierStokesType, &
@@ -2388,8 +2388,8 @@ MODULE OPENCMISS
     & CMISSEquationsSetPGMStokesSubtype, &
     & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype,CMISSEquationsSetMonodomainBuenoOrovioSubtype,&
     & CMISSEquationsSetMonodomainTenTusscher06Subtype  ,&
-    & CMISSEquationsSetStandardGalerkinProjectionSubtype,CMISSEquationsSetGeneralisedGalerkinProjectionSubtype, &
-    & CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype,CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype, &
+    & CMISSEquationsSetStandardDataFittingSubtype,CMISSEquationsSetGeneralisedDataFittingSubtype, &
+    & CMISSEquationsSetMatPropertiesDataFittingSubtype,CMISSEquationsSetMatPropertiesInriaModelGalerkinProjSubtype, &
     & CMISSEquationsSetPGMNavierStokesSubtype, &
     & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype
 
@@ -4295,7 +4295,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainEquationType = PROBLEM_MONODOMAIN_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemBidomainEquationType = PROBLEM_BIDOMAIN_EQUATION_TYPE !<Bidomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemLinearElasticModalType = PROBLEM_LINEAR_ELASTIC_MODAL_TYPE !<Linear elastic modal problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemGalerkinProjectionType = PROBLEM_GALERKIN_PROJECTION_TYPE !<Galerkin projection problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemDataFittingType = PROBLEM_DATA_FITTING_TYPE !<Galerkin projection problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityDarcyType = PROBLEM_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityStokesType = PROBLEM_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityNavierStokesType = PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity NavierStokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
@@ -4365,12 +4365,12 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = &
     & PROBLEM_NONLINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardGalerkinProjectionSubtype = &
-    & PROBLEM_STANDARD_GALERKIN_PROJECTION_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedGalerkinProjectionSubtype = &
-    & PROBLEM_GENERALISED_GALERKIN_PROJECTION_SUBTYPE !<Generalised Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMatPropertiesGalerkinProjectionSubtype = &
-    & PROBLEM_MAT_PROPERTIES_GALERKIN_PROJECTION_SUBTYPE !<Material Properties Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemStandardDataFittingSubtype = &
+    & PROBLEM_STANDARD_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedDataFittingSubtype = &
+    & PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE !<Generalised Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemMatPropertiesDataFittingSubtype = &
+    & PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE !<Material Properties Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityDarcySubtype = PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemPGMElasticityDarcySubtype = PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE !<PGM Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4432,7 +4432,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSProblemLinearElasticModalType
 
-  PUBLIC CMISSProblemGalerkinProjectionType
+  PUBLIC CMISSProblemDataFittingType
 
   PUBLIC CMISSProblemFiniteElasticityDarcyType, &
     & CMISSProblemFiniteElasticityStokesType, CMISSProblemFiniteElasticityNavierStokesType, &
@@ -4475,8 +4475,8 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemNoSourceStaticAdvecDiffSubtype,CMISSProblemLinearSourceStaticAdvecDiffSubtype, &
     & CMISSProblemNonlinearSourceStaticAdvecDiffSubtype
 
-  PUBLIC CMISSProblemStandardGalerkinProjectionSubtype,CMISSProblemGeneralisedGalerkinProjectionSubtype, &
-    & CMISSProblemMatPropertiesGalerkinProjectionSubtype
+  PUBLIC CMISSProblemStandardDataFittingSubtype,CMISSProblemGeneralisedDataFittingSubtype, &
+    & CMISSProblemMatPropertiesDataFittingSubtype
   
   PUBLIC CMISSProblemMonodomainGudunovSplitSubtype,CMISSProblemMonodomainStrangSplitSubtype, &
     & CMISSProblemBidomainGudunovSplitSubtype,CMISSProblemBidomainStrangSplitSubtype
