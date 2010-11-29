@@ -437,7 +437,7 @@ static int CMISSEquationsSetBiharmonicEquationType = 8;
 static int CMISSEquationsSetMonodomainEquationType = 1;
 static int CMISSEquationsSetBidomainEquationType = 2;
 static int CMISSEquationsSetLinearElasticModalType = 1;
-static int CMISSEquationsSetGalerkinProjectionEquationType = 9;
+static int CMISSEquationsSetDataFittingEquationType = 9;
 /*
  * >@}
  * > \addtogroup OPENCMISS_EquationsSetSubtypes OPENCMISS::EquationsSet::Subtypes
@@ -486,9 +486,9 @@ static int CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype = 4;
 static int CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype = 5;
 static int CMISSEquationsSetFirstBidomainSubtype = 1;
 static int CMISSEquationsSetSecondBidomainSubtype = 2;
-static int CMISSEquationsSetStandardGalerkinProjectionSubtype = 1;
-static int CMISSEquationsSetGeneralisedGalerkinProjectionSubtype = 2;
-static int CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = 3;
+static int CMISSEquationsSetStandardDataFittingSubtype = 1;
+static int CMISSEquationsSetGeneralisedDataFittingSubtype = 2;
+static int CMISSEquationsSetMatPropertiesDataFittingSubtype = 3;
 
 /*
  * >@}
@@ -885,7 +885,7 @@ static int CMISSProblemBiharmonicEquationType = 8;
 static int CMISSProblemMonodomainEquationType = 1;
 static int CMISSProblemBidomainEquationType = 2;
 static int CMISSProblemLinearElasticModalType = 1;
-static int CMISSProblemGalerkinProjectionType = 9;
+static int CMISSProblemDataFittingType = 9;
 static int CMISSProblemFiniteElasticityDarcyType = 1;
 static int CMISSProblemFiniteElasticityStokesType = 2;
 static int CMISSProblemFiniteElasticityNavierStokesType = 3;
@@ -927,9 +927,9 @@ static int CMISSProblemNonlinearSourceAdvectionDiffusionSubtype = 3;
 static int CMISSProblemNoSourceStaticAdvecDiffSubtype = 4;
 static int CMISSProblemLinearSourceStaticAdvecDiffSubtype = 5;
 static int CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = 6;
-static int CMISSProblemStandardGalerkinProjectionSubtype = 1;
-static int CMISSProblemGeneralisedGalerkinProjectionSubtype = 2;
-static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
+static int CMISSProblemStandardDataFittingSubtype = 1;
+static int CMISSProblemGeneralisedDataFittingSubtype = 2;
+static int CMISSProblemMatPropertiesDataFittingSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
@@ -5148,7 +5148,7 @@ static int CMISSEquationsSetBiharmonicEquationType = 8;
 static int CMISSEquationsSetMonodomainEquationType = 1;
 static int CMISSEquationsSetBidomainEquationType = 2;
 static int CMISSEquationsSetLinearElasticModalType = 1;
-static int CMISSEquationsSetGalerkinProjectionEquationType = 9;
+static int CMISSEquationsSetDataFittingEquationType = 9;
 /*
  * >@}
  * > \addtogroup OPENCMISS_EquationsSetSubtypes OPENCMISS::EquationsSet::Subtypes
@@ -5230,9 +5230,9 @@ static int CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = 19;
 
 static int CMISSEquationsSetFirstBidomainSubtype = 1;
 static int CMISSEquationsSetSecondBidomainSubtype = 2;
-static int CMISSEquationsSetStandardGalerkinProjectionSubtype = 1;
-static int CMISSEquationsSetGeneralisedGalerkinProjectionSubtype = 2;
-static int CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = 3;
+static int CMISSEquationsSetStandardDataFittingSubtype = 1;
+static int CMISSEquationsSetGeneralisedDataFittingSubtype = 2;
+static int CMISSEquationsSetMatPropertiesDataFittingSubtype = 3;
 
 static int CMISSEquationsSetStandardElasticityDarcySubtype = 101;
 static int CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = 111;
@@ -5625,7 +5625,7 @@ static int CMISSProblemBiharmonicEquationType = 8;
 static int CMISSProblemMonodomainEquationType = 1;
 static int CMISSProblemBidomainEquationType = 2;
 static int CMISSProblemLinearElasticModalType = 1;
-static int CMISSProblemGalerkinProjectionType = 9;
+static int CMISSProblemDataFittingType = 9;
 static int CMISSProblemFiniteElasticityDarcyType = 1;
 static int CMISSProblemFiniteElasticityStokesType = 2;
 static int CMISSProblemFiniteElasticityNavierStokesType = 3;
@@ -5674,9 +5674,9 @@ static int CMISSProblemNonlinearSourceALEAdvectionDiffusionSubtype = 6;
 static int CMISSProblemNoSourceStaticAdvecDiffSubtype = 7;
 static int CMISSProblemLinearSourceStaticAdvecDiffSubtype = 8;
 static int CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = 9;
-static int CMISSProblemStandardGalerkinProjectionSubtype = 1;
-static int CMISSProblemGeneralisedGalerkinProjectionSubtype = 2;
-static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
+static int CMISSProblemStandardDataFittingSubtype = 1;
+static int CMISSProblemGeneralisedDataFittingSubtype = 2;
+static int CMISSProblemMatPropertiesDataFittingSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
