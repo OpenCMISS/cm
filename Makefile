@@ -778,7 +778,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/FieldExport.o \
-	$(OBJECT_DIR)/Galerkin_projection_routines.o \
+	$(OBJECT_DIR)/data_fitting_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/Hamilton_Jacobi_equations_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
@@ -1001,7 +1001,7 @@ $(OBJECT_DIR)/classical_field_routines.o	:	$(SOURCE_DIR)/classical_field_routine
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/Galerkin_projection_routines.o \
+	$(OBJECT_DIR)/data_fitting_routines.o \
 	$(OBJECT_DIR)/Hamilton_Jacobi_equations_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -1469,7 +1469,7 @@ $(OBJECT_DIR)/input_output.o	:	$(SOURCE_DIR)/input_output.f90 \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/strings.o
 
-$(OBJECT_DIR)/Galerkin_projection_routines.o	:	$(SOURCE_DIR)/Galerkin_projection_routines.f90 \
+$(OBJECT_DIR)/data_fitting_routines.o	:	$(SOURCE_DIR)/data_fitting_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
@@ -1750,7 +1750,7 @@ $(OBJECT_DIR)/monodomain_equations_routines.o    :       $(SOURCE_DIR)/monodomai
         $(OBJECT_DIR)/equations_mapping_routines.o \
         $(OBJECT_DIR)/equations_matrices_routines.o \
         $(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/Galerkin_projection_routines.o \
+	$(OBJECT_DIR)/data_fitting_routines.o \
         $(OBJECT_DIR)/field_routines.o \
         $(OBJECT_DIR)/input_output.o \
         $(OBJECT_DIR)/iso_varying_string.o \
