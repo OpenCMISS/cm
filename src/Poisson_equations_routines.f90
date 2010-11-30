@@ -3318,7 +3318,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,I,J,K,M,N,O,element_node_identity !,k1sum,k2sum
+    INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,I,J,K,L,H,element_node_identity !,k1sum,k2sum
     REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SUM2,DXI_DX(3,3),DELTA_T,DXI_DX_DX(3,3)
     REAL(DP) :: U_VALUE(3),U_DERIV(3,3),RHO_PARAM,MU_PARAM,U_OLD(3),U_SECOND(3,3,3),X(3),B(3),P_DERIV(3),DIFF_COEFF
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS,SOURCE_BASIS
@@ -3335,11 +3335,10 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    LOGICAL :: INSIDE,DIVERGENCE_FREE
+    LOGICAL :: INSIDE
     REAL(DP), POINTER :: INPUT_LABEL(:)
     
     INSIDE=.TRUE.
-    DIVERGENCE_FREE=.FALSE.
 
     CALL ENTERS("POISSON_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
@@ -3477,6 +3476,8 @@ CONTAINS
               !outside node
               INSIDE=.FALSE.
               DIFF_COEFF=1.0_DP/1000.0_DP
+!TESTING FOR STABILITY
+              DIFF_COEFF=1.0_DP
             ELSE
               !inside node
               DIFF_COEFF=1.0_DP
@@ -3613,25 +3614,22 @@ CONTAINS
 !                         ENDDO  
 !                       ENDDO  
 !                       this is the second viscous term
-                        DO M=1,3
-                          DO I=1,3
-                            DO N=1,3
-                              B(K)=B(K)+MU_PARAM*U_SECOND(K,M,N)*DXI_DX(M,I)*DXI_DX(N,I)
+                        DO L=1,3
+                          DO H=1,3
+                            DO I=1,3
+                              B(K)=B(K)+MU_PARAM*U_SECOND(K,L,H)*DXI_DX(L,I)*DXI_DX(H,I)
                             ENDDO  
                           ENDDO  
                         ENDDO  
                       ELSE
+!TESTING FOR STABILITY
                       !This is the procedure if we are outside the fluid domain
-                        B(K)=B(K)+P_DERIV(K)
+! ! !                         B(K)=B(K)+P_DERIV(K)
+                        B(K)=0.0_DP
                       ENDIF
-!                       this statement forces the velocity field to be divergence-free
-                      IF(DIVERGENCE_FREE) THEN
-                        !Check sign for velocity!!!
-                        B(K)=B(K)+U_VALUE(K)
-                      ENDIF
-                        !eventually it gets combined to the RHS (source) term
-                      DO O=1,3
-                        SUM=SUM+B(K)*PGMSI(O)*DXI_DX(O,K)
+                      !eventually it gets combined to the RHS (source) term
+                      DO J=1,3
+                        SUM=SUM+B(K)*PGMSI(J)*DXI_DX(J,K)
                       ENDDO
                     ENDDO
                     SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+SUM*RWG
@@ -3646,31 +3644,29 @@ CONTAINS
                         !this is the temporal term (should be zero for static)
                         B(K)=-RHO_PARAM*((U_VALUE(K)-U_OLD(K))/DELTA_T)
                         !this is the nonlinear term (should be zero for Stokes)
-                        DO M=1,3
-                          !this is the nonlinear trem
-                          DO J=1,3
-                            B(K)=B(K)-RHO_PARAM*U_VALUE(J)*U_DERIV(K,M)*DXI_DX(M,J)
-                          ENDDO
-                          !this is the viscous terms    
-                          DO I=1,3
-                            DO N=1,3                      
-                              B(K)=B(K)+MU_PARAM*U_SECOND(K,M,N)*DXI_DX(M,I)*DXI_DX(N,I)
-                            ENDDO 
+                        DO L=1,3
+                          DO I=1,3 
+                            !this is the nonlinear trem
+                            B(K)=B(K)-RHO_PARAM*U_VALUE(I)*U_DERIV(K,L)*DXI_DX(L,I)
+                            DO H=1,3
+                              !this is the viscous terms    
+                              B(K)=B(K)+MU_PARAM*U_SECOND(K,L,H)*DXI_DX(L,I)*DXI_DX(H,I)
+                            ENDDO
                           ENDDO
                         ENDDO
-                      ELSE
+                        DO L=1,3
+                          DO I=1,3 
+                          ENDDO
+                        ENDDO
+!TESTING FOR STABILITY
                       !This is the procedure if we are outside the fluid domain
 ! ! !                         B(K)=B(K)+P_DERIV(K)
-                        B(K)=B(K)+0.0_DP
-                      ENDIF
-!                       this statement forces the velocity field to be divergence-free
-                      IF(DIVERGENCE_FREE) THEN
-                        !Check sign for velocity!!!
-                        B(K)=B(K)+U_VALUE(K)
+! ! !                         B(K)=B(K)+0.0_DP
+                        B(K)=0.0_DP
                       ENDIF
                       !now bring the test functino in
-                      DO O=1,3
-                        SUM=SUM+B(K)*PGMSI(O)*DXI_DX(O,K)
+                      DO J=1,3
+                        SUM=SUM+B(K)*PGMSI(J)*DXI_DX(J,K)
                       ENDDO
                     ENDDO
                     SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+SUM*RWG
