@@ -2197,6 +2197,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim1 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 !<u=ln(6/(x+y+z+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim2 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim3 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPressurePoissonThreeDim1 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPressurePoissonThreeDim2 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumann = TEST_CASE_NEUMANN !<Test case setup for testing of Neumann boundary conditions
   INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumannWithoutSource = TEST_CASE_NEUMANN_WITHOUT_SOURCE !<Test case setup for testing of Neumann boundary conditions
   INTEGER(INTG), PARAMETER :: CMISSTestCaseDirichlet = TEST_CASE_DIRICHLET !<Test case setup for testing of Neumann boundary conditions
@@ -2419,7 +2421,7 @@ MODULE OPENCMISS
   PUBLIC CMISSTestCaseNeumann,CMISSTestCaseDirichlet,CMISSTestCaseNeumannWithoutSource
   PUBLIC CMISSTestCaseMixedNeumannDirichlet_1,CMISSTestCaseMixedNeumannDirichlet_2,CMISSTestCaseMixedNeumannDirichlet_3
   PUBLIC CMISSTestCaseMixedNeumannDirichlet_4,CMISSTestCaseMixedNeumannDirichlet_6,CMISSTestCaseMixedNeumannDirichlet_7
-  PUBLIC CMISSTestCaseNeumannCubic
+  PUBLIC CMISSTestCaseNeumannCubic,CMISSEquationsSetPressurePoissonThreeDim1,CMISSEquationsSetPressurePoissonThreeDim2
 
   PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
   PUBLIC CMISSEquationsSetStokesTwoDim4,CMISSEquationsSetStokesTwoDim5

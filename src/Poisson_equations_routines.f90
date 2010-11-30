@@ -915,6 +915,8 @@ CONTAINS
                               CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2)
                                 CALL FLAG_ERROR("The analytic function type is not implemented yet.",ERR,ERROR,*999)
                               CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3)
+                                CALL FLAG_ERROR("The analytic function type is not implemented yet.",ERR,ERROR,*999)
+                              CASE(EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1,EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2)
 !\todo: This test case has been set up for the Pressure Poisson equation - needs to be formulated in a more general way
                                 !u=ln(4/(x+y+1^2))
                                 SELECT CASE(variable_type)
@@ -1785,9 +1787,15 @@ CONTAINS
 !                   CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2)
 !                     !Set analtyic function type
 !                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2
-                  CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3)
+!                   CASE(EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3)
+!                     !Set analtyic function type
+!                     EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3
+                  CASE(EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1)
                     !Set analtyic function type
-                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1
+                  CASE(EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2)
+                    !Set analtyic function type
+                    EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2
                   CASE DEFAULT
                     LOCAL_ERROR="The specified analytic function type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -3654,39 +3662,42 @@ CONTAINS
                             ENDDO
                           ENDDO
                         ENDDO
-                        DO L=1,3
-                          DO I=1,3 
-                          ENDDO
-                        ENDDO
+                      ELSE
 !TESTING FOR STABILITY
                       !This is the procedure if we are outside the fluid domain
 ! ! !                         B(K)=B(K)+P_DERIV(K)
 ! ! !                         B(K)=B(K)+0.0_DP
                         B(K)=0.0_DP
                       ENDIF
-                      !now bring the test functino in
+                      !now bring the test function in
                       DO J=1,3
                         SUM=SUM+B(K)*PGMSI(J)*DXI_DX(J,K)
                       ENDDO
                     ENDDO
-                    SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+SUM*RWG
-                  ENDIF
-                  IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                    IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3) THEN
-                      X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-                      X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-                      X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
-                      SUM2=-4.0_DP*PI*PI/100.0*(3.0_DP*sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0)* &
-                        & sin(2.0_DP*PI*X(3)/10.0_DP)-6.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2+ &
-                        & 8.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2*cos(2.0_DP*PI*X(3)/10.0_DP)**2- &
-                        & 2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(3)/10.0_DP)**2+2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2* &
-                        & cos(2.0_DP*PI*X(2)/10.0_DP)**2+4.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(2)/10.0_DP)**2- &
-                        & 2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(2)/10.0_DP)**2*cos(2.0_DP*PI*X(3)/10.0_DP)**2)
-                    ELSE 
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1) THEN
+                        X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
+                        X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
+                        X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
+                        SUM2=-4.0_DP*PI*PI/100.0*(3.0_DP*sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0)* &
+                          & sin(2.0_DP*PI*X(3)/10.0_DP)-6.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2+ &
+                          & 8.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2*cos(2.0_DP*PI*X(3)/10.0_DP)**2- &
+                          & 2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(3)/10.0_DP)**2+2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(1)/10.0_DP)**2* &
+                          & cos(2.0_DP*PI*X(2)/10.0_DP)**2+4.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(2)/10.0_DP)**2- &
+                          & 2.0_DP*RHO_PARAM*cos(2.0_DP*PI*X(2)/10.0_DP)**2*cos(2.0_DP*PI*X(3)/10.0_DP)**2)
+                      ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2) THEN
+                        X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
+                        X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
+                        X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
+                        SUM2=-12.0_DP* sin(2.0_DP*PI*X(1)/10.0_DP)*PI*PI/100.0_DP*sin(2.0_DP*PI*X(2)/10.0_DP)* &
+                          & sin(2.0_DP*PI*X(3)/10.0_DP)
+                        SUM=0.0_DP
+                      ELSE 
+                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      ENDIF
                     ENDIF
-                    SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)- & !This needs to changed to the source vector
-                      & SUM2*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG
+                    SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+SUM*RWG &
+                      & -SUM2*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG
                   ENDIF
                 ELSE
                   SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
