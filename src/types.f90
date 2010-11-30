@@ -2170,6 +2170,24 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NONLINEAR_SOLVE_TYPE !<The type of nonlinear solver \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver information
   END TYPE NONLINEAR_SOLVER_TYPE
+
+  !>Contains information for a fmm solver
+  TYPE FMM_SOLVER_TYPE
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer to the state solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the fmm solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+#ifdef USE_PROC_POINTER
+    PROCEDURE(SPEED_FUNCTION), POINTER :: SPEED_FUNCTION
+#endif
+  END TYPE FMM_SOLVER_TYPE
+  
+  !>Contains information for a state solver
+  TYPE STATE_SOLVER_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
+    INTEGER(INTG) :: STATE_SOLVE_TYPE !<The type of state solver \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
+    TYPE(FMM_SOLVER_TYPE), POINTER :: FMM_SOLVER !<A pointer to the Newton solver information
+    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets in the state solver
+    TYPE(EQUATIONS_SET_PTR_TYPE), ALLOCATABLE :: EQUATIONS_SETS(:) !<The list of equations sets that are in this state solver
+  END TYPE STATE_SOLVER_TYPE
   
   !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
   TYPE SOLVER_TYPE
@@ -2187,6 +2205,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer to the dynamic solver information
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic equation solver information
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer to the eigenproblem solver information
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer to the state solver information
     TYPE(OPTIMISER_SOLVER_TYPE), POINTER :: OPTIMISER_SOLVER !<A pointer to the optimiser solver information
 
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations
@@ -2703,5 +2722,12 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !================================================================================================================================
   !
 
+  CONTAINS
+  
+  SUBROUTINE SPEED_FUNCTION(EQUATIONS_SET,ERR,ERROR,*)
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+  END SUBROUTINE
 
 END MODULE TYPES

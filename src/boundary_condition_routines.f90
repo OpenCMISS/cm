@@ -694,6 +694,7 @@ CONTAINS
                       & " is invalid."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
+                CASE(EQUATIONS_TIME_STEPPING)
                 CASE DEFAULT
                   LOCAL_ERROR="The equations time dependence type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."

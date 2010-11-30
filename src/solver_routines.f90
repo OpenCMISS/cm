@@ -80,6 +80,7 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_TYPE=4 !<A differential-algebraic equation solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_EIGENPROBLEM_TYPE=5 !<A eigenproblem solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_OPTIMISER_TYPE=6 !<An optimiser solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_STATE_TYPE=7 !<A state solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_SolverLibraries SOLVER_ROUTINES::SolverLibraries
@@ -271,6 +272,12 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_SOLUTION_INITIALISE_NO_CHANGE=2 !<Do not change the solution before a solve \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
   !>@}
 
+  !> \addtogroup SOLVER_ROUTINES_StateSolverTypes SOLVER_ROUTINES::StateSolverTypes
+  !> \brief The types of state solvers
+  !> \see SOLVER_ROUTINES
+  !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_STATE_FMM=1 !<Fast marching method solver type \see SOLVER_ROUTINES_StateSolverTypes,SOLVER_ROUTINES
+  !>@}
   
   !> \addtogroup SOLVER_ROUTINES_OutputTypes SOLVER_ROUTINES::OutputTypes
   !> \brief The types of output
@@ -357,10 +364,10 @@ MODULE SOLVER_ROUTINES
   
   PUBLIC SOLVER_SPARSE_MATRICES,SOLVER_FULL_MATRICES
 
-  PUBLIC SOLVER_EQUATIONS_LINEAR,SOLVER_EQUATIONS_NONLINEAR
+  PUBLIC SOLVER_EQUATIONS_LINEAR,SOLVER_EQUATIONS_NONLINEAR,SOLVER_EQUATIONS_STATEITERATION
 
   PUBLIC SOLVER_EQUATIONS_STATIC,SOLVER_EQUATIONS_QUASISTATIC,SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC, &
-    & SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC
+    & SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC,SOLVER_EQUATIONS_TIME_STEPPING
 
   PUBLIC SOLVER_DAE_SOLVER_TYPE_GET,SOLVER_DAE_SOLVER_TYPE_SET
 
@@ -4407,7 +4414,9 @@ CONTAINS
             CALL FLAG_ERROR("Can not finish solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
           ELSE
             !Finish of the solver mapping
-            CALL SOLVER_MAPPING_CREATE_FINISH(SOLVER_EQUATIONS%SOLVER_MAPPING,ERR,ERROR,*999)
+            !IF (.NOT. (SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE)) THEN
+              CALL SOLVER_MAPPING_CREATE_FINISH(SOLVER_EQUATIONS%SOLVER_MAPPING,ERR,ERROR,*999)
+            !ENDIF
             !Now finish off with the solver specific actions
             SELECT CASE(SOLVER%SOLVE_TYPE)
             CASE(SOLVER_LINEAR_TYPE)
@@ -4777,6 +4786,8 @@ CONTAINS
               SOLVER_EQUATIONS%LINEARITY=SOLVER_EQUATIONS_LINEAR
             CASE(SOLVER_EQUATIONS_NONLINEAR)
               SOLVER_EQUATIONS%LINEARITY=SOLVER_EQUATIONS_NONLINEAR
+            CASE(SOLVER_EQUATIONS_STATEITERATION)
+              SOLVER_EQUATIONS%LINEARITY=SOLVER_EQUATIONS_STATEITERATION
             CASE DEFAULT
               LOCAL_ERROR="The specified solver equations linearity type of "// &
                 & TRIM(NUMBER_TO_VSTRING(LINEARITY_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -4936,6 +4947,7 @@ CONTAINS
       CALL SOLVER_DAE_FINALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)        
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_STATE_FINALISE(SOLVER%STATE_SOLVER,ERR,ERROR,*999)
       IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) &
         & CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
       DEALLOCATE(SOLVER)
@@ -13002,6 +13014,9 @@ CONTAINS
         CASE(SOLVER_EIGENPROBLEM_TYPE)
           !Solve eigenproblem
           CALL SOLVER_EIGENPROBLEM_SOLVE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_STATE_TYPE)
+          !Solve state problem
+          CALL SOLVER_STATE_SOLVE(SOLVER%STATE_SOLVER,ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -13033,6 +13048,539 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_SOLVE
+
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the process of creating an state solver 
+  SUBROUTINE SOLVER_STATE_CREATE_FINISH(STATE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer to the state solver to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_STATE_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(STATE_SOLVER)) THEN
+      SELECT CASE(STATE_SOLVER%STATE_SOLVE_TYPE)
+      CASE(SOLVER_STATE_FMM)
+        CALL SOLVER_FMM_CREATE_FINISH(STATE_SOLVER%FMM_SOLVER,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The state solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(STATE_SOLVER%STATE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("State solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_STATE_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("SOLVER_STATE_CREATE_FINISH",ERR,ERROR)    
+    CALL EXITS("SOLVER_STATE_CREATE_FINISH")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_STATE_CREATE_FINISH
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Finishes the process of creating an FMM solver 
+  SUBROUTINE SOLVER_FMM_CREATE_FINISH(FMM_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FMM_SOLVER_TYPE), POINTER :: FMM_SOLVER !<A pointer to the FMM solver to finish the creation of.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_FMM_CREATE_FINISH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FMM_SOLVER)) THEN
+      !Do nothing
+    ELSE
+      CALL FLAG_ERROR("State solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_FMM_CREATE_FINISH")
+    RETURN
+999 CALL ERRORS("SOLVER_FMM_CREATE_FINISH",ERR,ERROR)    
+    CALL EXITS("SOLVER_FMM_CREATE_FINISH")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_FMM_CREATE_FINISH
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a state solver.
+  SUBROUTINE SOLVER_STATE_FINALISE(STATE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer the state solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_STATE_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(STATE_SOLVER)) THEN        
+      CALL SOLVER_FMM_FINALISE(STATE_SOLVER%FMM_SOLVER,ERR,ERROR,*999)
+      DEALLOCATE(STATE_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_STATE_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_STATE_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_STATE_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_STATE_FINALISE
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise a FMM solver for a state solver
+  SUBROUTINE SOLVER_FMM_INITIALISE(STATE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer the solver to initialise the FMM solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+ 
+    CALL ENTERS("SOLVER_FMM_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(STATE_SOLVER)) THEN
+      IF(ASSOCIATED(STATE_SOLVER%FMM_SOLVER)) THEN
+        CALL FLAG_ERROR("FMM solver is already associated for this state solver.",ERR,ERROR,*998)
+      ELSE        
+        SOLVER=>STATE_SOLVER%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          !Allocate and initialise a FMM solver
+          ALLOCATE(STATE_SOLVER%FMM_SOLVER,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate state solver FMM solver.",ERR,ERROR,*999)
+          STATE_SOLVER%FMM_SOLVER%STATE_SOLVER=>STATE_SOLVER
+          STATE_SOLVER%FMM_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+        ELSE
+          CALL FLAG_ERROR("State solver solver is not associated.",ERR,ERROR,*998)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("State solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("SOLVER_FMM_INITIALISE")
+    RETURN
+999 CALL SOLVER_FMM_FINALISE(STATE_SOLVER%FMM_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_FMM_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_FMM_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_FMM_INITIALISE
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise a Newton solver and deallocate all memory
+  SUBROUTINE SOLVER_FMM_FINALISE(FMM_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FMM_SOLVER_TYPE), POINTER :: FMM_SOLVER !<A pointer the Newton solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_FMM_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FMM_SOLVER)) THEN
+      DEALLOCATE(FMM_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_FMM_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_FMM_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_FMM_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_FMM_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise an state solver for a solver.
+  SUBROUTINE SOLVER_STATE_INITIALISE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to initialise the state solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("SOLVER_STATE_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(ASSOCIATED(SOLVER%STATE_SOLVER)) THEN
+        CALL FLAG_ERROR("State solver is already associated for this solver.",ERR,ERROR,*998)
+      ELSE
+        ALLOCATE(SOLVER%STATE_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver state solver.",ERR,ERROR,*999)
+        NULLIFY(SOLVER%STATE_SOLVER%FMM_SOLVER)
+        SOLVER%STATE_SOLVER%SOLVER=>SOLVER
+        !default to FMM solver
+        SOLVER%STATE_SOLVER%STATE_SOLVE_TYPE=SOLVER_STATE_FMM
+        CALL SOLVER_FMM_INITIALISE(SOLVER%STATE_SOLVER,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+        
+    CALL EXITS("SOLVER_STATE_INITIALISE")
+    RETURN
+999 CALL SOLVER_STATE_FINALISE(SOLVER%STATE_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_STATE_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_STATE_INITIALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_STATE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for a FMM solver.
+  SUBROUTINE SOLVER_FMM_LIBRARY_TYPE_GET(FMM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FMM_SOLVER_TYPE), POINTER :: FMM_SOLVER !<A pointer the state solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the FMM solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("SOLVER_FMM_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FMM_SOLVER)) THEN
+      SOLVER_LIBRARY_TYPE=FMM_SOLVER%SOLVER_LIBRARY
+    ELSE
+      CALL FLAG_ERROR("FMM solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_FMM_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_FMM_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_FMM_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_FMM_LIBRARY_TYPE_GET
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the type of library to use for an state solver.
+  SUBROUTINE SOLVER_STATE_LIBRARY_TYPE_GET(STATE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer the state solver to get the library type for.
+    INTEGER(INTG), INTENT(OUT) :: SOLVER_LIBRARY_TYPE !<On exit, the type of library used for the state solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+ 
+    CALL ENTERS("SOLVER_STATE_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(STATE_SOLVER)) THEN
+      SELECT CASE(STATE_SOLVER%STATE_SOLVE_TYPE)
+      CASE(SOLVER_STATE_FMM)
+        CALL SOLVER_FMM_LIBRARY_TYPE_GET(STATE_SOLVER%FMM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The state solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(STATE_SOLVER%STATE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("State solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_STATE_LIBRARY_TYPE_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_STATE_LIBRARY_TYPE_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_STATE_LIBRARY_TYPE_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_STATE_LIBRARY_TYPE_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a state solver.
+  SUBROUTINE SOLVER_STATE_LIBRARY_TYPE_SET(STATE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer the state solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the state solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_STATE_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(STATE_SOLVER)) THEN
+      SELECT CASE(STATE_SOLVER%STATE_SOLVE_TYPE)
+      CASE(SOLVER_STATE_FMM)
+        CALL SOLVER_FMM_LIBRARY_TYPE_SET(STATE_SOLVER%FMM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The state solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(STATE_SOLVER%STATE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+
+    ELSE
+      CALL FLAG_ERROR("State solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_STATE_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_STATE_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_STATE_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_STATE_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the type of library to use for a FMM solver.
+  SUBROUTINE SOLVER_FMM_LIBRARY_TYPE_SET(FMM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FMM_SOLVER_TYPE), POINTER :: FMM_SOLVER !<A pointer the FMM solver to get the library type for.
+    INTEGER(INTG), INTENT(IN) :: SOLVER_LIBRARY_TYPE !<The type of library for the FMM solver to set. \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_FMM_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(FMM_SOLVER)) THEN
+      SELECT CASE(SOLVER_LIBRARY_TYPE)
+      CASE(SOLVER_CMISS_LIBRARY)
+        FMM_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+      CASE DEFAULT
+        LOCAL_ERROR="The specified solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+          & " is invalid for a FMM solver."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("FMM solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_FMM_LIBRARY_TYPE_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_FMM_LIBRARY_TYPE_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_FMM_LIBRARY_TYPE_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_FMM_LIBRARY_TYPE_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve an state solver
+  SUBROUTINE SOLVER_STATE_SOLVE(STATE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER !<A pointer the state solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_STATE_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(STATE_SOLVER)) THEN        
+      SELECT CASE(STATE_SOLVER%STATE_SOLVE_TYPE)
+      CASE(SOLVER_STATE_FMM)
+        CALL SOLVER_FMM_SOLVE(STATE_SOLVER%FMM_SOLVER,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="The state solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(STATE_SOLVER%STATE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+
+    ELSE
+      CALL FLAG_ERROR("state solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_STATE_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_STATE_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_STATE_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_STATE_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !Solves a state FMM solver 
+  SUBROUTINE SOLVER_FMM_SOLVE(FMM_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(FMM_SOLVER_TYPE), POINTER :: FMM_SOLVER !<A pointer to the state FMM solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_FMM_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FMM_SOLVER)) THEN
+      STATE_SOLVER=>FMM_SOLVER%STATE_SOLVER
+      IF(ASSOCIATED(STATE_SOLVER)) THEN
+        SOLVER=>STATE_SOLVER%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          SELECT CASE(FMM_SOLVER%SOLVER_LIBRARY)
+          CASE(SOLVER_CMISS_LIBRARY)
+            ! Loop over the equations sets
+            DO equations_set_idx=1,STATE_SOLVER%NUMBER_OF_EQUATIONS_SETS
+              EQUATIONS_SET=>STATE_SOLVER%EQUATIONS_SETS(equations_set_idx)%PTR
+              IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                ! Get the required fields for the problem solver
+                DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                !MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                !GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                !FIBRE_FIELD=>EQUATIONS_SET%GEOMETRY%FIBRE_FIELD
+#ifdef USE_PROC_POINTER
+                IF(ASSOCIATED(FMM_SOLVER%SPEED_FUNCTION)) THEN
+                  CALL FMM_SOLVER%SPEED_FUNCTION(EQUATIONS_SET,ERR,ERROR,*999)
+                  
+                ELSE
+                  CALL FLAG_ERROR("Speed function is not associated.",ERR,ERROR,*999)
+                ENDIF
+#else
+                CALL FLAG_ERROR("Procedure pointers are not supported by your compiler.",ERR,ERROR,*999)
+#endif
+              ELSE
+                CALL FLAG_ERROR("Equations set with index "// &
+                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
+                        & " is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ENDDO
+          CASE DEFAULT
+            LOCAL_ERROR="The FMM solver library of "// &
+              & TRIM(NUMBER_TO_VSTRING(FMM_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("State solver solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("FMM solver state solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("FMM solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_FMM_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_FMM_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_FMM_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_FMM_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Adds equations sets to solver. \see OPENCMISS::CMISSSolverEquationsSetAdd
+  SUBROUTINE SOLVER_EQUATIONS_SET_ADD(SOLVER,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to add the equations set to.
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to add
+    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_INDEX !<On exit, the index of the equations set that has been added
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(EQUATIONS_SET_PTR_TYPE), ALLOCATABLE :: NEW_EQUATIONS_SETS(:)
+    TYPE(STATE_SOLVER_TYPE), POINTER :: STATE_SOLVER
+    INTEGER(INTG) :: equations_set_idx
+    
+    CALL ENTERS("SOLVER_EQUATIONS_SET_ADD",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+      ELSE
+        SELECT CASE(SOLVER%SOLVE_TYPE)
+        CASE(SOLVER_STATE_TYPE)
+          STATE_SOLVER=>SOLVER%STATE_SOLVER
+          IF(ASSOCIATED(STATE_SOLVER)) THEN
+            IF(ASSOCIATED(EQUATIONS_SET)) THEN
+              ALLOCATE(NEW_EQUATIONS_SETS(STATE_SOLVER%NUMBER_OF_EQUATIONS_SETS+1), STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations sets.",ERR,ERROR,*999)
+              DO equations_set_idx=1,STATE_SOLVER%NUMBER_OF_EQUATIONS_SETS
+                NEW_EQUATIONS_SETS(equations_set_idx)%PTR=>STATE_SOLVER%EQUATIONS_SETS(equations_set_idx)%PTR
+              ENDDO !equations_set_idx
+              CALL MOVE_ALLOC(NEW_EQUATIONS_SETS,STATE_SOLVER%EQUATIONS_SETS)
+              STATE_SOLVER%NUMBER_OF_EQUATIONS_SETS=STATE_SOLVER%NUMBER_OF_EQUATIONS_SETS+1
+              EQUATIONS_SET_INDEX=STATE_SOLVER%NUMBER_OF_EQUATIONS_SETS
+            ELSE
+              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("State solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="Cannot add equations set to a solver of type "// &
+            & TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))// &
+            & "."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_EQUATIONS_SET_ADD")
+    RETURN
+999 IF(ALLOCATED(NEW_EQUATIONS_SETS)) DEALLOCATE(NEW_EQUATIONS_SETS)
+    CALL ERRORS("SOLVER_EQUATIONS_SET_ADD",ERR,ERROR)    
+    CALL EXITS("SOLVER_EQUATIONS_SET_ADD")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_EQUATIONS_SET_ADD
 
   !
   !================================================================================================================================
@@ -13074,6 +13622,8 @@ CONTAINS
               CALL SOLVER_EIGENPROBLEM_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_OPTIMISER_TYPE)
               CALL SOLVER_OPTIMISER_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_STATE_TYPE)
+              CALL SOLVER_STATE_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The specified solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -13092,6 +13642,8 @@ CONTAINS
               CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_OPTIMISER_TYPE)
               CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_STATE_TYPE)
+              CALL SOLVER_STATE_FINALISE(SOLVER%STATE_SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The solver solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -13120,6 +13672,8 @@ CONTAINS
       CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     CASE(SOLVER_OPTIMISER_TYPE)
       CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+    CASE(SOLVER_STATE_TYPE)
+      CALL SOLVER_STATE_FINALISE(SOLVER%STATE_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     END SELECT
 998 CALL ERRORS("SOLVER_TYPE_SET",ERR,ERROR)    
     CALL EXITS("SOLVER_TYPE_SET")

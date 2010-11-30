@@ -174,8 +174,8 @@ CONTAINS
               CASE(EQUATIONS_TIME_STEPPING)
                 !Time stepping DAE equations set
 !!NOTE: The time stepping variable type doesn't have to come from the dependent field, it could come from, say, the source field.
-                !DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%TIME_STEPPING_VARIABLE_TYPE)%PTR
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(1))%PTR
+                !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations time dependence type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
@@ -955,6 +955,7 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
+              CASE(EQUATIONS_TIME_STEPPING)
               CASE DEFAULT
                 LOCAL_ERROR="The equations time dependence type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
@@ -1132,7 +1133,7 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented. G",ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_NONLINEAR)
                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
@@ -1140,13 +1141,13 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented. F",ERR,ERROR,*999)
                     ENDIF
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented. E",ERR,ERROR,*999)
                     ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The equations linearity type of "// &
@@ -1172,13 +1173,13 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented. D",ERR,ERROR,*999)
                     ENDIF
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented. C",ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_NONLINEAR)
 ! SEBK 19/08/2009 not sure about mapping here
@@ -1204,13 +1205,13 @@ CONTAINS
 !
 !!!sebk 15/10/2009
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented. B",ERR,ERROR,*999)
                     ENDIF
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented. A",ERR,ERROR,*999)
                     ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The equations linearity type of "// &
@@ -1219,6 +1220,7 @@ CONTAINS
                   END SELECT
 !|
 ! SEBK 19/08/2009 not sure about mapping here
+                CASE (EQUATIONS_TIME_STEPPING)
                 CASE DEFAULT
                   LOCAL_ERROR="The equations time dependence type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
@@ -2412,7 +2414,8 @@ CONTAINS
                   LOCAL_ERROR="The equations linearity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT              
+                END SELECT     
+              CASE(EQUATIONS_TIME_STEPPING)         
               CASE DEFAULT
                 LOCAL_ERROR="The equations time dependence type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
@@ -2508,6 +2511,7 @@ CONTAINS
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
+                    CASE(EQUATIONS_TIME_STEPPING)         
                     CASE DEFAULT
                       LOCAL_ERROR="The equations time dependence type of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
