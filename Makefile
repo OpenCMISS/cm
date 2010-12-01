@@ -1629,7 +1629,6 @@ $(OBJECT_DIR)/kinds.o	:	$(SOURCE_DIR)/kinds.f90
 $(OBJECT_DIR)/Hamilton_Jacobi_equations_routines.o	:	$(SOURCE_DIR)/Hamilton_Jacobi_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
