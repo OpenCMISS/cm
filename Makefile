@@ -1634,9 +1634,6 @@ $(OBJECT_DIR)/Hamilton_Jacobi_equations_routines.o	:	$(SOURCE_DIR)/Hamilton_Jaco
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
@@ -1738,9 +1735,6 @@ $(OBJECT_DIR)/mesh_io_routines.o	:	$(SOURCE_DIR)/mesh_io_routines.f90 \
 	$(OBJECT_DIR)/control_loop_routines.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
