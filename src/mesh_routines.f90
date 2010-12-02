@@ -1297,7 +1297,7 @@ CONTAINS
                             !Find the nodes to match and add them to the node match list
                             DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1)),NUMBER_OF_NODES_XIC(FACE_XI(1))-1
                               NODE_POSITION_INDEX(FACE_XI(1))=nn1
-                              DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2)),NUMBER_OF_NODES_XIC(FACE_XI(2))-1
+                              DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2)),max(NUMBER_OF_NODES_XIC(FACE_XI(2))-1,1)
                                 NODE_POSITION_INDEX(FACE_XI(2))=nn2
                                 nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
                                   & NODE_POSITION_INDEX(3),1)
