@@ -1295,18 +1295,40 @@ CONTAINS
                             !Do nothing - the match lists are already empty
                           ELSE
                             !Find the nodes to match and add them to the node match list
-                            DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1)),NUMBER_OF_NODES_XIC(FACE_XI(1))-1
-                              NODE_POSITION_INDEX(FACE_XI(1))=nn1
-                              DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2)),max(NUMBER_OF_NODES_XIC(FACE_XI(2))-1,1)
-                                NODE_POSITION_INDEX(FACE_XI(2))=nn2
-                                nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
-                                  & NODE_POSITION_INDEX(3),1)
+                            SELECT CASE(BASIS%NUMBER_OF_XI)
+                            CASE(1)
+                              nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),1,1,1)
+                              IF(nn/=0) THEN
+                                np=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
+                                CALL LIST_ITEM_ADD(NODE_MATCH_LIST,np,ERR,ERROR,*999)
+                              ENDIF
+                            CASE(2)
+                              DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1)),NUMBER_OF_NODES_XIC(FACE_XI(1))-1
+                                NODE_POSITION_INDEX(FACE_XI(1))=nn1
+                                nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2),1,1)
                                 IF(nn/=0) THEN
                                   np=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                   CALL LIST_ITEM_ADD(NODE_MATCH_LIST,np,ERR,ERROR,*999)
                                 ENDIF
-                              ENDDO !nn2
-                            ENDDO !nn1
+                              ENDDO !nn1
+                            CASE(3)
+                              DO nn1=1,NUMBER_OF_NODES_XIC(FACE_XI(1)),NUMBER_OF_NODES_XIC(FACE_XI(1))-1
+                                NODE_POSITION_INDEX(FACE_XI(1))=nn1
+                                DO nn2=1,NUMBER_OF_NODES_XIC(FACE_XI(2)),NUMBER_OF_NODES_XIC(FACE_XI(2))-1
+                                  NODE_POSITION_INDEX(FACE_XI(2))=nn2
+                                  nn=BASIS%NODE_POSITION_INDEX_INV(NODE_POSITION_INDEX(1),NODE_POSITION_INDEX(2), &
+                                    & NODE_POSITION_INDEX(3),1)
+                                  IF(nn/=0) THEN
+                                    np=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
+                                    CALL LIST_ITEM_ADD(NODE_MATCH_LIST,np,ERR,ERROR,*999)
+                                  ENDIF
+                                ENDDO !nn2
+                              ENDDO !nn1
+                            CASE DEFAULT
+                              LOCAL_ERROR="The number of xi directions in the basis of "// &
+                                & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//" is invalid."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            END SELECT
                           ENDIF
                           CALL LIST_REMOVE_DUPLICATES(NODE_MATCH_LIST,ERR,ERROR,*999)
                           CALL LIST_DETACH_AND_DESTROY(NODE_MATCH_LIST,NUMBER_NODE_MATCHES,NODE_MATCHES,ERR,ERROR,*999)
