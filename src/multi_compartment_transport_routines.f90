@@ -42,7 +42,7 @@
 !> the terms of any one of the MPL, the GPL or the LGPL.
 !>
 
-!>TThis module handles all routines pertaining to diffusion coupled to diffusion.
+!>TThis module handles all routines pertaining to (advection-)diffusion coupled to (advection-)diffusion.
 
 
 MODULE MULTI_COMPARTMENT_TRANSPORT_ROUTINES

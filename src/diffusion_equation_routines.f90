@@ -1379,6 +1379,9 @@ CONTAINS
               & " is invalid for a linear diffusion equation"
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+        !-----------------------------------------------------------------
+        ! M a t e r i a l s   f i e l d
+        !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -1621,6 +1624,9 @@ CONTAINS
               & " is invalid for a linear diffusion equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+        !-----------------------------------------------------------------
+        ! S o u r c e   f i e l d
+        !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -1938,6 +1944,9 @@ CONTAINS
               & " is invalid for a linear diffusion equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+        !-----------------------------------------------------------------
+        ! E q u a t i o n s    t y p e
+        !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
