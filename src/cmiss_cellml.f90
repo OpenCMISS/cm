@@ -73,7 +73,6 @@ MODULE CMISS_CELLML
   !> the appropriate type once the model is instantiated and the type can be correctly determined.
   !> \todo Link to appropriate methods for instantiation.
   !>@{
-  INTEGER(INTG), PARAMETER :: CELLML_UNKNOWN_FIELD = -1 !<CellML unknown field \see CELLML_FieldTypes,CMISS_CELLML
   INTEGER(INTG), PARAMETER :: CELLML_MODELS_FIELD = 1 !<CellML models field \see CELLML_FieldTypes,CMISS_CELLML
   INTEGER(INTG), PARAMETER :: CELLML_STATE_FIELD = 2 !<CellML state field \see CELLML_FieldTypes,CMISS_CELLML
   INTEGER(INTG), PARAMETER :: CELLML_INTERMEDIATE_FIELD = 3 !<CellML intermediate field \see CELLML_FieldTypes,CMISS_CELLML
@@ -124,7 +123,7 @@ MODULE CMISS_CELLML
     MODULE PROCEDURE CELLML_FIELD_COMPONENT_GET_VS
   END INTERFACE !CELLML_FIELD_COMPONENT_GET
 
-  PUBLIC CELLML_UNKNOWN_FIELD,CELLML_MODELS_FIELD,CELLML_STATE_FIELD,CELLML_INTERMEDIATE_FIELD,CELLML_PARAMETERS_FIELD
+  PUBLIC CELLML_MODELS_FIELD,CELLML_STATE_FIELD,CELLML_INTERMEDIATE_FIELD,CELLML_PARAMETERS_FIELD
 
   PUBLIC CELLML_CELLML_TO_FIELD_UPDATE
   
@@ -188,79 +187,81 @@ CONTAINS
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      FIELD_MAPS=>CELLML%FIELD_MAPS
-      IF(ASSOCIATED(FIELD_MAPS)) THEN
-        IF(FIELD_MAPS%ONLY_ONE_MODEL_INDEX/=0) THEN
-          !The CellML environement only uses one model and so we can optimise for this.
-          MODEL_MAPS=>FIELD_MAPS%MODEL_MAPS(FIELD_MAPS%ONLY_ONE_MODEL_INDEX)%PTR
-          IF(ASSOCIATED(MODEL_MAPS)) THEN
-            !Loop over the number of CellML to field maps
-            DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO
-              MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR
-              IF(ASSOCIATED(MODEL_MAP)) THEN
-                SELECT CASE(MODEL_MAP%CELLML_FIELD_TYPE)
-                CASE(CELLML_MODELS_FIELD)
-                  CALL FLAG_ERROR("Cannot map models field.",ERR,ERROR,*999)
-                CASE(CELLML_STATE_FIELD)
-                  IF(ASSOCIATED(CELLML%STATE_FIELD)) THEN
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
-                      & MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("CellML environment state field is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(CELLML_INTERMEDIATE_FIELD)
-                  IF(ASSOCIATED(CELLML%INTERMEDIATE_FIELD)) THEN
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
-                      & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,MODEL_MAP%FIELD, &
-                      & MODEL_MAP%VARIABLE_TYPE,MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,ERR,ERROR,*999)
-                   ELSE
-                    CALL FLAG_ERROR("CellML environment intermediate field is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(CELLML_PARAMETERS_FIELD)
-                  IF(ASSOCIATED(CELLML%PARAMETERS_FIELD)) THEN
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
-                      & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,MODEL_MAP%FIELD, &
-                      & MODEL_MAP%VARIABLE_TYPE,MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,ERR,ERROR,*999)
-                   ELSE
-                    CALL FLAG_ERROR("CellML environment parameters field is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE DEFAULT
-                  LOCAL_ERROR="The CellML to field model map CellML field type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(MODEL_MAP%CELLML_FIELD_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid for map index "//TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD_MAPS%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" of CellML environment number "// &
-                    & TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
+      IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+        FIELD_MAPS=>CELLML%FIELD_MAPS
+        IF(ASSOCIATED(FIELD_MAPS)) THEN
+          IF(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX/=0) THEN
+            !The CellML environement only uses one model and so we can optimise for this.
+            MODEL_MAPS=>FIELD_MAPS%MODEL_MAPS(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX)%PTR
+            IF(ASSOCIATED(MODEL_MAPS)) THEN
+              !Loop over the number of CellML to field maps
+              DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO
+                MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR
+                IF(ASSOCIATED(MODEL_MAP)) THEN
+                  SELECT CASE(MODEL_MAP%CELLML_FIELD_TYPE)
+                  CASE(CELLML_MODELS_FIELD)
+                    CALL FLAG_ERROR("Cannot map models field.",ERR,ERROR,*999)
+                  CASE(CELLML_STATE_FIELD)
+                    IF(ASSOCIATED(CELLML%STATE_FIELD)) THEN
+                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(CELLML%STATE_FIELD%STATE_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER, &
+                        & MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE,MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER, &
+                        & ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("CellML environment state field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(CELLML_INTERMEDIATE_FIELD)
+                    IF(ASSOCIATED(CELLML%INTERMEDIATE_FIELD)) THEN
+                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,MODEL_MAP%FIELD, &
+                        & MODEL_MAP%VARIABLE_TYPE,MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("CellML environment intermediate field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(CELLML_PARAMETERS_FIELD)
+                    IF(ASSOCIATED(CELLML%PARAMETERS_FIELD)) THEN
+                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,MODEL_MAP%FIELD, &
+                        & MODEL_MAP%VARIABLE_TYPE,MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("CellML environment parameters field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE DEFAULT
+                    LOCAL_ERROR="The CellML to field model map CellML field type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(MODEL_MAP%CELLML_FIELD_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for map index "//TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
+                      & TRIM(NUMBER_TO_VSTRING(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))// &
+                      & " of CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  LOCAL_ERROR="The CellML to field map is not associated for map index "// &
+                    & TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
+                    & TRIM(NUMBER_TO_VSTRING(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))// &
+                    & " of CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                LOCAL_ERROR="The CellML to field map is not associated for map index "// &
-                  & TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
-                  & TRIM(NUMBER_TO_VSTRING(FIELD_MAPS%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" of CellML environment number "// &
-                  & TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ENDDO !map_idx
+                ENDIF
+              ENDDO !map_idx
+            ELSE
+              LOCAL_ERROR="The CellML field maps models map is not associated for model index "// &
+                & TRIM(NUMBER_TO_VSTRING(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))// &
+                & " of CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
           ELSE
-            LOCAL_ERROR="The CellML field maps models map is not associated for model index "// &
-              & TRIM(NUMBER_TO_VSTRING(FIELD_MAPS%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" of CellML environment number "// &
-              & TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN            
+            !More than one model used in the models field.
             MODELS_FIELD=>CELLML%MODELS_FIELD%MODELS_FIELD
             IF(ASSOCIATED(MODELS_FIELD)) THEN
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("CellML environment models field models field is not associated.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
           ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("CellML models field is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
@@ -397,7 +398,25 @@ CONTAINS
               LOCAL_ERROR="Error instantiating CellML model index "//TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
-          ENDDO
+            CELLML_MODEL%NUMBER_OF_STATE = CELLML_MODEL_DEFINITION_GET_N_RATES(CELLML_MODEL%PTR)
+            !IF(ERROR_CODE /= 0) THEN
+            !  LOCAL_ERROR="Error getting the number of rates for CellML model index "// &
+            !    & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+            !  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            !ENDIF
+            CELLML_MODEL%NUMBER_OF_PARAMETERS = CELLML_MODEL_DEFINITION_GET_N_CONSTANTS(CELLML_MODEL%PTR)
+            !IF(ERROR_CODE /= 0) THEN
+            !  LOCAL_ERROR="Error getting the number of parameters for CellML model index "// &
+            !    & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+            !  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            !ENDIF
+            CELLML_MODEL%NUMBER_OF_INTERMEDIATE = CELLML_MODEL_DEFINITION_GET_N_ALGEBRAIC(CELLML_MODEL%PTR)
+            !IF(ERROR_CODE /= 0) THEN
+            !  LOCAL_ERROR="Error getting the number of intermediates for CellML model index "// &
+            !    & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
+            !  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            !ENDIF
+          ENDDO!model_idx
           CELLML%CELLML_FINISHED = .TRUE.
         ELSE
           CALL FLAG_ERROR("Invalid setup. No models have been imported into the CellML environment.",ERR,ERROR,*999)
@@ -508,79 +527,80 @@ CONTAINS
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
-      FIELD_MAPS=>CELLML%FIELD_MAPS
-      IF(ASSOCIATED(FIELD_MAPS)) THEN
-        IF(FIELD_MAPS%ONLY_ONE_MODEL_INDEX/=0) THEN
-          !The CellML environement only uses one model and so we can optimise for this.
-          MODEL_MAPS=>FIELD_MAPS%MODEL_MAPS(FIELD_MAPS%ONLY_ONE_MODEL_INDEX)%PTR
-          IF(ASSOCIATED(MODEL_MAPS)) THEN
-            !Loop over the number of field to CellML maps
-            DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM
-              MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR
-              IF(ASSOCIATED(MODEL_MAP)) THEN
-                SELECT CASE(MODEL_MAP%CELLML_FIELD_TYPE)
-                CASE(CELLML_MODELS_FIELD)
-                  CALL FLAG_ERROR("Cannot map models field.",ERR,ERROR,*999)
-                CASE(CELLML_STATE_FIELD)
-                  IF(ASSOCIATED(CELLML%STATE_FIELD)) THEN
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
-                      & MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,CELLML%STATE_FIELD%STATE_FIELD, &
-                      & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("CellML environment state field is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(CELLML_INTERMEDIATE_FIELD)
-                  IF(ASSOCIATED(CELLML%INTERMEDIATE_FIELD)) THEN
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
-                      & MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
-                      & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("CellML environment intermediate field is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(CELLML_PARAMETERS_FIELD)
-                  IF(ASSOCIATED(CELLML%PARAMETERS_FIELD)) THEN
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
-                      & MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
-                      & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,ERR,ERROR,*999)
-                  ELSE
-                    CALL FLAG_ERROR("CellML environment parameters field is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE DEFAULT
-                  LOCAL_ERROR="The CellML to field model map CellML field type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(MODEL_MAP%CELLML_FIELD_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid for map index "//TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
-                    & TRIM(NUMBER_TO_VSTRING(FIELD_MAPS%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" of CellML environment number "// &
-                    & TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
+      IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+        FIELD_MAPS=>CELLML%FIELD_MAPS
+        IF(ASSOCIATED(FIELD_MAPS)) THEN
+          IF(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX/=0) THEN
+            !The CellML environement only uses one model and so we can optimise for this.
+            MODEL_MAPS=>FIELD_MAPS%MODEL_MAPS(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX)%PTR
+            IF(ASSOCIATED(MODEL_MAPS)) THEN
+              !Loop over the number of field to CellML maps
+              DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM
+                MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR
+                IF(ASSOCIATED(MODEL_MAP)) THEN
+                  SELECT CASE(MODEL_MAP%CELLML_FIELD_TYPE)
+                  CASE(CELLML_MODELS_FIELD)
+                    CALL FLAG_ERROR("Cannot map models field.",ERR,ERROR,*999)
+                  CASE(CELLML_STATE_FIELD)
+                    IF(ASSOCIATED(CELLML%STATE_FIELD)) THEN
+                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
+                        & MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,CELLML%STATE_FIELD%STATE_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("CellML environment state field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(CELLML_INTERMEDIATE_FIELD)
+                    IF(ASSOCIATED(CELLML%INTERMEDIATE_FIELD)) THEN
+                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
+                        & MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("CellML environment intermediate field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(CELLML_PARAMETERS_FIELD)
+                    IF(ASSOCIATED(CELLML%PARAMETERS_FIELD)) THEN
+                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
+                        & MODEL_MAP%FIELD_PARAMETER_SET,MODEL_MAP%COMPONENT_NUMBER,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,MODEL_MAP%CELLML_VARIABLE_NUMBER,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("CellML environment parameters field is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE DEFAULT
+                    LOCAL_ERROR="The CellML to field model map CellML field type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(MODEL_MAP%CELLML_FIELD_TYPE,"*",ERR,ERROR))// &
+                      & " is invalid for map index "//TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
+                      & TRIM(NUMBER_TO_VSTRING(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))// &
+                      & " of CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  LOCAL_ERROR="The CellML to field map is not associated for map index "// &
+                    & TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
+                    & TRIM(NUMBER_TO_VSTRING(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))// &
+                    & " of CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              ELSE
-                LOCAL_ERROR="The CellML to field map is not associated for map index "// &
-                  & TRIM(NUMBER_TO_VSTRING(map_idx,"*",ERR,ERROR))//" of model index "// &
-                  & TRIM(NUMBER_TO_VSTRING(FIELD_MAPS%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" of CellML environment number "// &
-                  & TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            ENDDO !map_idx
+                ENDIF
+              ENDDO !map_idx
+            ELSE
+              LOCAL_ERROR="The CellML field maps models map is not associated for model index "// &
+                & TRIM(NUMBER_TO_VSTRING(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))// &
+                & " of CellML environment number "//TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
           ELSE
-            LOCAL_ERROR="The CellML field maps models map is not associated for model index "// &
-              & TRIM(NUMBER_TO_VSTRING(FIELD_MAPS%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" of CellML environment number "// &
-              & TRIM(NUMBER_TO_VSTRING(CELLML%USER_NUMBER,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN            
+            !More than one model is used in the models field
             MODELS_FIELD=>CELLML%MODELS_FIELD%MODELS_FIELD
             IF(ASSOCIATED(MODELS_FIELD)) THEN
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("CellML environment models field models field is not associated.",ERR,ERROR,*999)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
           ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("CellML environment field maps is not associated.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
@@ -739,34 +759,6 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDDO !model_idx
-            !Check the models field to see how many models have been used.
-            IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
-              MODELS_FIELD=>CELLML%MODELS_FIELD%MODELS_FIELD
-              IF(ASSOCIATED(MODELS_FIELD)) THEN
-                CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
-                IF(MODELS_VARIABLE%NUMBER_OF_DOFS>0) THEN
-                  CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & MODELS_DATA,ERR,ERROR,*999)
-                  CELLML%FIELD_MAPS%ONLY_ONE_MODEL_INDEX=MODELS_DATA(1)
-                  DO dof_idx=2,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                    IF(MODELS_DATA(dof_idx)/=CELLML%FIELD_MAPS%ONLY_ONE_MODEL_INDEX) THEN
-                      CELLML%FIELD_MAPS%ONLY_ONE_MODEL_INDEX=0
-                      EXIT
-                    ENDIF
-                  ENDDO !dof_idx
-!!TODO: Do we need to make sure it is the same model number on different ranks? The only one model optimisation is to ensure that we don't
-!!have to reference the models field inside dof loops on the rank??? 
-                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & MODELS_DATA,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("CellML models field variable does not have any DOFs.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("CellML models field models field is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
-            ENDIF
             CELLML%FIELD_MAPS%CELLML_FIELD_MAPS_FINISHED=.TRUE.
           ENDIF
         ELSE
@@ -778,7 +770,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("CellML is not associated.",ERR,ERROR,*999)
     ENDIF
-
+    
 #else
 
     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
@@ -804,13 +796,14 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
- 
+  
     CALL ENTERS("CELLML_FIELD_MAPS_CREATE_START",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
     IF(ASSOCIATED(CELLML)) THEN
       IF(CELLML%CELLML_FINISHED) THEN
+        !Initialise the field maps
         CALL CELLML_FIELD_MAPS_INITIALISE(CELLML,ERR,ERROR,*999)
       ELSE
         CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
@@ -903,7 +896,6 @@ CONTAINS
           NULLIFY(CELLML%FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)
           NULLIFY(CELLML%FIELD_MAPS%SOURCE_FIELD_DOMAIN)
           CELLML%FIELD_MAPS%SOURCE_FIELD_INTERPOLATION_TYPE=0
-          CELLML%FIELD_MAPS%ONLY_ONE_MODEL_INDEX=0
           CELLML%FIELD_MAPS%NUMBER_OF_SOURCE_DOFS=0
           CELLML%FIELD_MAPS%TOTAL_NUMBER_OF_SOURCE_DOFS=0
           CELLML%FIELD_MAPS%GLOBAL_NUMBER_OF_SOURCE_DOFS=0
@@ -1544,8 +1536,12 @@ CONTAINS
                   CELLML_MODEL_MAPS=>CELLML_FIELD_MAPS%MODEL_MAPS(MODEL_INDEX)%PTR
                   IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
                     !All input arguments are ok.
-                    !TEMP!!!
-                    CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
+                    
+                    !For now assume that it is a state field being mapped.
+!!TODO: Sort out field type.                   
+                    CELLML_FIELD_TYPE=CELLML_STATE_FIELD
+                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
+                      & ERR,ERROR,*999)
                     C_NAME_L = LEN_TRIM(VARIABLE_ID)
                     WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
                     !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
@@ -1585,6 +1581,11 @@ CONTAINS
                         & INTERPOLATION_TYPE
                     ENDIF
                     !Everything is OK so create the model map field.
+                    !For now assume that it is a state field being mapped.
+!!TODO: Sort out field type.                   
+                    CELLML_FIELD_TYPE=CELLML_STATE_FIELD
+                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
+                      & ERR,ERROR,*999)
                     NULLIFY(NEW_CELLML_MODEL_MAP)
                     CALL CELLML_MODEL_MAP_INITIALISE(NEW_CELLML_MODEL_MAP,ERR,ERROR,*999)
                     NEW_CELLML_MODEL_MAP%CELLML_MAP_TYPE=CELLML_MAP_FROM_FIELD_TYPE
@@ -1769,7 +1770,12 @@ CONTAINS
                   IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
                     !All input arguments are ok.
                     !TEMP!!!
-                    CELLML_FIELD_TYPE=CELLML_UNKNOWN_FIELD
+                    
+                    !For now assume that it is a state field being mapped.
+!!TODO: Sort out field type.                   
+                    CELLML_FIELD_TYPE=CELLML_STATE_FIELD
+                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
+                      & ERR,ERROR,*999)
                     C_NAME_L = LEN_TRIM(VARIABLE_ID)
                     WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
                     !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
@@ -2248,6 +2254,7 @@ CONTAINS
         CELLML%MODELS_FIELD%MODELS_FIELD_FINISHED=.FALSE.
         CELLML%MODELS_FIELD%MODELS_FIELD_AUTO_CREATED=.FALSE.
         NULLIFY(CELLML%MODELS_FIELD%MODELS_FIELD)
+        CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX=0
       ENDIF
     ELSE
       CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*998)
@@ -2620,7 +2627,8 @@ CONTAINS
 
 #ifdef USECELLML
 
-    COMPONENT_USER_NUMBER=0
+!!todo: FIX THIS
+    COMPONENT_USER_NUMBER=1
 
 #else
 
@@ -2657,7 +2665,8 @@ CONTAINS
 
 #ifdef USECELLML
 
-    COMPONENT_USER_NUMBER=0
+!!todo: FIX THIS
+    COMPONENT_USER_NUMBER=1
 
 #else
 
@@ -3353,10 +3362,57 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-
+    INTEGER(INTG) :: dof_idx
+    INTEGER(INTG), POINTER :: MODELS_DATA(:)    
+    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
+ 
     CALL ENTERS("CELLML_GENERATE",ERR,ERROR,*999)
 
 #ifdef USECELLML
+
+    IF(ASSOCIATED(CELLML)) THEN
+      IF(CELLML%CELLML_FINISHED) THEN 
+        !Check the models field to see how many models have been used.
+        IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+          IF(CELLML%MODELS_FIELD%MODELS_FIELD_FINISHED) THEN
+            MODELS_FIELD=>CELLML%MODELS_FIELD%MODELS_FIELD
+            IF(ASSOCIATED(MODELS_FIELD)) THEN
+              CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
+              IF(MODELS_VARIABLE%NUMBER_OF_DOFS>0) THEN
+                CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & MODELS_DATA,ERR,ERROR,*999)
+                CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX=MODELS_DATA(1)
+                DO dof_idx=2,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                  IF(MODELS_DATA(dof_idx)/=CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX) THEN
+                    CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX=0
+                    EXIT
+                  ENDIF
+                ENDDO !dof_idx
+!!TODO: Do we need to make sure it is the same model number on different ranks? The only one model optimisation is to ensure that we don't
+!!have to reference the models field inside dof loops on the rank??? 
+                CALL FIELD_PARAMETER_SET_DATA_RESTORE(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & MODELS_DATA,ERR,ERROR,*999)
+                !Set the generated flag
+                CELLML%CELLML_GENERATED=.TRUE.
+              ELSE
+                CALL FLAG_ERROR("CellML models field variable does not have any DOFs.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("CellML models field models field is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("CellML models field has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+    ENDIF
 
 #else
 

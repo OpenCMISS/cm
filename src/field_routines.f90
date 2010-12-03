@@ -5901,11 +5901,10 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DIMS,INDEX_MATCH
-    INTEGER(INTG) :: nic,coordinate_idx,component_idx,derivative_idx,xi_idx,element,element_idx,local_node,local_node_idx
+    INTEGER(INTG) :: nic,component_idx,derivative_idx,xi_idx,element,element_idx,local_node,local_node_idx
     REAL(DP) :: XI(3), VEC(3), DXDXI(3,3) ! Note VEC, DXDXI sizes are fixed, but it doesn't matter so much
     INTEGER(INTG) :: tangent_idx,tangent_xi_idx
     TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
@@ -6008,7 +6007,7 @@ CONTAINS
                                                 !\todo: What if the surrounding elements have different number of xi? then DXDXI will be different in size.
                                                 !       Which one do we return in that case?
                                                 DO component_idx=1,DIMS
-                                                  DO xi_idx=1,BASIS%NUMBER_OF_XI_COORDINATES
+                                                  DO xi_idx=1,BASIS%NUMBER_OF_XI
                                                     derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7
                                                     DXDXI(component_idx,xi_idx)=INTERPOLATED_POINTS(FIELD_U_VARIABLE_TYPE)%PTR% &
                                                       & VALUES(component_idx,derivative_idx) !dx/dxi

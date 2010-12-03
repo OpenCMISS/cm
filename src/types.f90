@@ -2007,6 +2007,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: MODELS_FIELD_FINISHED  !<Is .TRUE. if the models field has finished being created, .FALSE. if not.
     LOGICAL :: MODELS_FIELD_AUTO_CREATED !<Is .TRUE. if the models field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD !<A pointer to the models field
+    INTEGER(INTG) :: ONLY_ONE_MODEL_INDEX !<If only one model is used in the models field for the CellML environment then this will be equal to the model index. It will be zero otherwise.
   END TYPE CELLML_MODELS_FIELD_TYPE
   
   !>Contains information on the state field for a CellML environment
@@ -2071,7 +2072,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: SOURCE_GEOMETRIC_FIELD !<The source geometric field for the CellML environment.
     TYPE(DOMAIN_TYPE), POINTER :: SOURCE_FIELD_DOMAIN !<The source field domain for the CellML environment.
     INTEGER(INTG) :: SOURCE_FIELD_INTERPOLATION_TYPE !<The source field interpolation type for the CellML environment.
-    INTEGER(INTG) :: ONLY_ONE_MODEL_INDEX !<If only one model is used in the models field for the CellML environment then this will be equal to the model index. It will be zero otherwise.
     TYPE(CELLML_MODEL_MAPS_PTR_TYPE), ALLOCATABLE :: MODEL_MAPS(:) !<MODEL_MAPS(model_idx). Contains informatin on the maps between the model_idx'th CellML model and external OpenCMISS fields.
     INTEGER(INTG) :: NUMBER_OF_SOURCE_DOFS !<The number of local (excluding ghosts) source dofs.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_SOURCE_DOFS !<The number of local (including ghosts) source dofs.

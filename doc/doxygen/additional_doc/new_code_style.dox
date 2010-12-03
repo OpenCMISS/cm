@@ -124,7 +124,7 @@
 
 \section good_practice Good practice
 
-- All compiler warnings (e.g., unused variables) should be removed before committing code.
+- All compiler warnings (e.g., unused variables) should be removed before committing code. Persistent compiler warnings can mask a new genuiue compiler warning leading to bugs.
 - All error messages should be a proper sentance (with a full stop).
 - Input arguments should be checked in a subroutine before being used.
 - All pointer arguments that are assigned within a routine should be checked to ensure that they are null on entry.
