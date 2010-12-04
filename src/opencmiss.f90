@@ -4932,7 +4932,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverDAERungeKutta = SOLVER_DAE_RUNGE_KUTTA !<Runge-Kutta differential-algebraic equation solver. \see 
   INTEGER(INTG), PARAMETER :: CMISSSolverDAEAdamsMoulton = SOLVER_DAE_ADAMS_MOULTON !<Adams-Moulton differential-algebraic equation solver. \see 
   INTEGER(INTG), PARAMETER :: CMISSSolverDAEBDF = SOLVER_DAE_BDF !<General BDF differential-algebraic equation solver. \see 
-  INTEGER(INTG), PARAMETER :: CMISSSolverRushLarson = SOLVER_DAE_RUSH_LARSON !<Rush-Larson differential-algebraic equation solver. \see 
+  INTEGER(INTG), PARAMETER :: CMISSSolverDAERushLarson = SOLVER_DAE_RUSH_LARSON !<Rush-Larson differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISSSolverDAEExternal = SOLVER_DAE_EXTERNAL !<External (e.g., CellML generated) differential-algebraic equation solver. \see 
   !>@}
   !> \addtogroup OPENCMISS_EulerDAESolverTypes OPENCMISS::Solver::EulerDAESolverTypes
   !> \brief The Euler solver types for a differential-algebriac equation solver.
@@ -5373,7 +5374,7 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverDAEDifferentialOnly,CMISSSolverDAEIndex1,CMISSSolverDAEIndex2,CMISSSolverDAEIndex3
 
   PUBLIC CMISSSolverDAEEuler,CMISSSolverDAECrankNicolson,CMISSSolverDAERungeKutta,CMISSSolverDAEAdamsMoulton,CMISSSolverDAEBDF, &
-    & CMISSSolverRushLarson
+    & CMISSSolverDAERushLarson,CMISSSolverDAEExternal
 
   PUBLIC CMISSSolverDAEEulerForward,CMISSSolverDAEEulerBackward,CMISSSolverDAEEulerImproved
 

@@ -992,7 +992,6 @@ CONTAINS
           CALL C_F_POINTER(WorldRegionPtr,WorldRegion)
           IF(ASSOCIATED(WorldRegion)) THEN
             CALL CMISSInitialise(WorldCoordinateSystem,WorldRegion,CMISSInitialiseCPtr)
-
           ELSE
             CMISSInitialiseCPtr=CMISSErrorConvertingPointer
           ENDIF

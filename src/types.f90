@@ -2267,6 +2267,11 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Rush-Larson differential-algebraic equation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
   END TYPE RUSH_LARSON_DAE_SOLVER_TYPE
   
+  !>Contains information for an external differential-algebraic equation solver
+  TYPE EXTERNAL_DAE_SOLVER_TYPE
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+  END TYPE EXTERNAL_DAE_SOLVER_TYPE
+  
   !>Contains information for an differential-algebraic equation solver
   TYPE DAE_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
@@ -2281,6 +2286,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(ADAMS_MOULTON_DAE_SOLVER_TYPE), POINTER :: ADAMS_MOULTON_SOLVER !<A pointer to information for an Adams-Moulton solver
     TYPE(BDF_DAE_SOLVER_TYPE), POINTER :: BDF_SOLVER !<A pointer to information for a BDF solver
     TYPE(RUSH_LARSON_DAE_SOLVER_TYPE), POINTER :: RUSH_LARSON_SOLVER !<A pointer to information for a Rush-Larson solver
+    TYPE(EXTERNAL_DAE_SOLVER_TYPE), POINTER :: EXTERNAL_SOLVER !<A pointer to information for an external solver
   END TYPE DAE_SOLVER_TYPE
   
   !>Contains information for a direct linear solver

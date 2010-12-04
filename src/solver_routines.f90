@@ -256,6 +256,8 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_ADAMS_MOULTON=4 !<Adams-Moulton differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_BDF=5 !<General BDF differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DAE_RUSH_LARSON=6 !<Rush-Larson differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  INTEGER(INTG), PARAMETER :: SOLVER_DAE_EXTERNAL=7 !<External (e.g., CellML generated) differential-algebraic equation solver \see SOLVER_ROUTINES_DAESolverTypes,SOLVER_ROUTINES
+  
   !>@}
 
   !> \addtogroup SOLVER_ROUTINES_EulerDAESolverTypes SOLVER_ROUTINES::EulerDAESolverTypes
@@ -299,6 +301,29 @@ MODULE SOLVER_ROUTINES
   !Module variables
 
   !Interfaces
+
+  INTERFACE
+
+    SUBROUTINE SOLVER_DAE_EXTERNAL_INTEGRATE(NUMBER_OF_DOFS,START_TIME,END_TIME,INITIAL_STEP, &
+      & ONLY_ONE_MODEL_INDEX,MODELS_DATA,STATE_DATA,PARAMETERS_DATA,INTERMEDIATE_DATA,ERR) &
+      & BIND(C, NAME="SolverDAEExternalIntegrate")
+      
+      USE ISO_C_BINDING
+
+      INTEGER(C_INT), INTENT(IN) :: NUMBER_OF_DOFS
+      REAL(C_DOUBLE), INTENT(IN) :: START_TIME
+      REAL(C_DOUBLE), INTENT(IN) :: END_TIME
+      REAL(C_DOUBLE), INTENT(INOUT) :: INITIAL_STEP
+      INTEGER(C_INT), INTENT(IN) :: ONLY_ONE_MODEL_INDEX
+      INTEGER(C_INT), INTENT(IN) :: MODELS_DATA(*)
+      REAL(C_DOUBLE), INTENT(INOUT) :: STATE_DATA(*)
+      REAL(C_DOUBLE), INTENT(IN) :: PARAMETERS_DATA(*)
+      REAL(C_DOUBLE), INTENT(OUT) :: INTERMEDIATE_DATA(*)
+      INTEGER(C_INT), INTENT(OUT) :: ERR
+      
+    END SUBROUTINE SOLVER_DAE_EXTERNAL_INTEGRATE
+    
+  END INTERFACE
 
   INTERFACE SOLVER_DYNAMIC_THETA_SET
     MODULE PROCEDURE SOLVER_DYNAMIC_THETA_SET_DP1
@@ -362,7 +387,7 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_DAE_DIFFERENTIAL_ONLY,SOLVER_DAE_INDEX_1,SOLVER_DAE_INDEX_2,SOLVER_DAE_INDEX_3
 
   PUBLIC SOLVER_DAE_EULER,SOLVER_DAE_CRANK_NICOLSON,SOLVER_DAE_RUNGE_KUTTA,SOLVER_DAE_ADAMS_MOULTON,SOLVER_DAE_BDF, &
-    & SOLVER_DAE_RUSH_LARSON
+    & SOLVER_DAE_RUSH_LARSON,SOLVER_DAE_EXTERNAL
 
   PUBLIC SOLVER_DAE_EULER_FORWARD,SOLVER_DAE_EULER_BACKWARD,SOLVER_DAE_EULER_IMPROVED
 
@@ -1991,6 +2016,7 @@ CONTAINS
       CALL SOLVER_DAE_ADAMS_MOULTON_FINALISE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_DAE_BDF_FINALISE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
       CALL SOLVER_DAE_RUSH_LARSON_FINALISE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
+      CALL SOLVER_DAE_EXTERNAL_FINALISE(DAE_SOLVER%EXTERNAL_SOLVER,ERR,ERROR,*999)
       DEALLOCATE(DAE_SOLVER)
     ENDIF
          
@@ -2123,6 +2149,8 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("The Rush-Larson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
+      CASE(SOLVER_DAE_EXTERNAL)
+        CALL FLAG_ERROR("Can not get the solver library for an external differntial-algebraic equations solver.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The differential-algebraic equations solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -2308,6 +2336,9 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("The Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
+      CASE(SOLVER_DAE_EXTERNAL)
+        CALL FLAG_ERROR("Can not set the library type for an external differential-algebraic equation solver is not associated.", &
+          & ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The differential-algebraic equations solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -2472,7 +2503,7 @@ CONTAINS
         CALL FLAG_ERROR("Crank-Nicolson solver is already associated for this differential-algebraic equation solver.", &
           & ERR,ERROR,*998)
       ELSE
-        !Allocate the Runge-Kutta solver
+        !Allocate the Crank-Nicholson solver
         ALLOCATE(DAE_SOLVER%CRANK_NICOLSON_SOLVER,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Crank-Nicolson solver.",ERR,ERROR,*999)
         !Initialise
@@ -2521,6 +2552,221 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_DAE_CRANK_NICOLSON_SOLVE
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise an external differential-algebraic equation solver and deallocate all memory.
+  SUBROUTINE SOLVER_DAE_EXTERNAL_FINALISE(EXTERNAL_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EXTERNAL_DAE_SOLVER_TYPE), POINTER :: EXTERNAL_SOLVER !<A pointer the external differential-algebraic equation solver to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("SOLVER_DAE_EXTERNAL_FINALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EXTERNAL_SOLVER)) THEN
+      DEALLOCATE(EXTERNAL_SOLVER)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_CRANK_NICOLSON_FINALISE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_CRANK_NICOLSON_FINALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_CRANK_NICOLSON_FINALISE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EXTERNAL_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise an external solver for a differential-algebraic equation solver
+  SUBROUTINE SOLVER_DAE_EXTERNAL_INITIALISE(DAE_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer the differential-algebraic equation solver to initialise an external solver for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    
+    CALL ENTERS("SOLVER_DAE_EXTERNAL_INITIALISE",ERR,ERROR,*998)
+
+    IF(ASSOCIATED(DAE_SOLVER)) THEN
+      IF(ASSOCIATED(DAE_SOLVER%EXTERNAL_SOLVER)) THEN
+        CALL FLAG_ERROR("External solver is already associated for this differential-algebraic equation solver.", &
+          & ERR,ERROR,*998)
+      ELSE
+        !Allocate the external solver
+        ALLOCATE(DAE_SOLVER%EXTERNAL_SOLVER,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate external solver.",ERR,ERROR,*999)
+        !Initialise
+        DAE_SOLVER%EXTERNAL_SOLVER%DAE_SOLVER=>DAE_SOLVER
+        !Defaults
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EXTERNAL_INITIALISE")
+    RETURN
+999 CALL SOLVER_DAE_EXTERNAL_FINALISE(DAE_SOLVER%EXTERNAL_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("SOLVER_DAE_EXTERNAL_INITIALISE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EXTERNAL_INITIALISE")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DAE_EXTERNAL_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Solve using an external differential-algebraic equation solver.
+  SUBROUTINE SOLVER_DAE_EXTERNAL_SOLVE(EXTERNAL_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EXTERNAL_DAE_SOLVER_TYPE), POINTER :: EXTERNAL_SOLVER !<A pointer the external differential-algebraic equation solver to solve
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: cellml_idx
+    INTEGER(INTG), POINTER :: MODELS_DATA(:)
+    REAL(DP), POINTER :: INTERMEDIATE_DATA(:),PARAMETERS_DATA(:),STATE_DATA(:)
+    TYPE(CELLML_TYPE), POINTER :: CELLML_ENVIRONMENT
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
+    TYPE(CELLML_MODELS_FIELD_TYPE), POINTER :: CELLML_MODELS_FIELD
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
+    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_DAE_EXTERNAL_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EXTERNAL_SOLVER)) THEN
+      DAE_SOLVER=>EXTERNAL_SOLVER%DAE_SOLVER
+      IF(ASSOCIATED(DAE_SOLVER)) THEN
+        SOLVER=>DAE_SOLVER%SOLVER
+        IF(ASSOCIATED(SOLVER)) THEN
+          CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
+          IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+            DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+              CELLML_ENVIRONMENT=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
+              IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN
+                IF(ASSOCIATED(CELLML_ENVIRONMENT%MODELS_FIELD)) THEN
+                  MODELS_FIELD=>CELLML_ENVIRONMENT%MODELS_FIELD%MODELS_FIELD
+                  IF(ASSOCIATED(MODELS_FIELD)) THEN
+                                           
+                    !Make sure CellML fields have been updated to the current value of any mapped fields
+                    CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
+                    
+                    CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & MODELS_DATA,ERR,ERROR,*999)
+                    
+                    !Get the state information if this environment has any.
+                    IF(ASSOCIATED(CELLML_ENVIRONMENT%STATE_FIELD)) THEN
+                      STATE_FIELD=>CELLML_ENVIRONMENT%STATE_FIELD%STATE_FIELD
+                      IF(ASSOCIATED(STATE_FIELD)) THEN
+                        CALL FIELD_PARAMETER_SET_DATA_GET(STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                          & STATE_DATA,ERR,ERROR,*999)
+                      ELSE
+                        NULLIFY(STATE_DATA)
+                      ENDIF
+                    ELSE
+                      NULLIFY(STATE_DATA)
+                    ENDIF
+                    
+                    !Get the parameters information if this environment has any.
+                    IF(ASSOCIATED(CELLML_ENVIRONMENT%PARAMETERS_FIELD)) THEN
+                      PARAMETERS_FIELD=>CELLML_ENVIRONMENT%PARAMETERS_FIELD%PARAMETERS_FIELD
+                      IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
+                        CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                          & PARAMETERS_DATA,ERR,ERROR,*999)
+                      ELSE
+                        NULLIFY(PARAMETERS_DATA)
+                      ENDIF
+                    ELSE
+                      NULLIFY(PARAMETERS_DATA)
+                    ENDIF
+                    
+                    !Get the intermediate information if this environment has any.
+                    IF(ASSOCIATED(CELLML_ENVIRONMENT%INTERMEDIATE_FIELD)) THEN
+                      INTERMEDIATE_FIELD=>CELLML_ENVIRONMENT%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
+                      IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
+                        CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                          & INTERMEDIATE_DATA,ERR,ERROR,*999)                            
+                      ELSE
+                        NULLIFY(INTERMEDIATE_DATA)
+                      ENDIF
+                    ELSE
+                      NULLIFY(INTERMEDIATE_DATA)
+                    ENDIF
+
+                    !Call the external solver to integrate these CellML equations
+                    CALL SOLVER_DAE_EXTERNAL_INTEGRATE(MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS,DAE_SOLVER%START_TIME, &
+                      & DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP,CELLML_ENVIRONMENT%MODELS_FIELD% &
+                      & ONLY_ONE_MODEL_INDEX,MODELS_DATA,STATE_DATA,PARAMETERS_DATA,INTERMEDIATE_DATA,ERR)
+                    IF(ERR/=0) THEN
+                      ERROR="Error from external solver integrate."
+                      GOTO 999
+                    ENDIF
+                      
+                    !Restore field data
+                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                      & MODELS_DATA,ERR,ERROR,*999)                    
+                    IF(ASSOCIATED(STATE_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,STATE_DATA,ERR,ERROR,*999)                    
+                    IF(ASSOCIATED(PARAMETERS_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(PARAMETERS_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,PARAMETERS_DATA,ERR,ERROR,*999)                    
+                    IF(ASSOCIATED(INTERMEDIATE_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(INTERMEDIATE_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,INTERMEDIATE_DATA,ERR,ERROR,*999)                    
+                    
+                    !Make sure fields have been updated to the current value of any mapped CellML fields
+                    CALL CELLML_CELLML_TO_FIELD_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
+                    
+                  ELSE
+                    LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
+                      & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
+                    & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The CellML enviroment is not associated for for CellML index "// &
+                  & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDDO !cellml_idx
+          ELSE
+            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("External Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+         
+    CALL EXITS("SOLVER_DAE_EXTERNAL_SOLVE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EXTERNAL_SOLVE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EXTERNAL_SOLVE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_DAE_EXTERNAL_SOLVE
   
   !
   !================================================================================================================================
@@ -2748,6 +2994,8 @@ CONTAINS
         CALL SOLVER_DAE_BDF_SOLVE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
       CASE(SOLVER_DAE_RUSH_LARSON)
         CALL SOLVER_DAE_RUSH_LARSON_SOLVE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
+      CASE(SOLVER_DAE_EXTERNAL)
+        CALL SOLVER_DAE_EXTERNAL_SOLVE(DAE_SOLVER%EXTERNAL_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The differential-algebraic equation solver solve type of "// &
           & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -2849,6 +3097,8 @@ CONTAINS
                 CALL SOLVER_DAE_BDF_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
               CASE(SOLVER_DAE_RUSH_LARSON)
                 CALL SOLVER_DAE_RUSH_LARSON_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_EXTERNAL)
+                CALL SOLVER_DAE_EXTERNAL_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The specified differential-algebraic equation solver type of "// &
                   & TRIM(NUMBER_TO_VSTRING(DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -2868,6 +3118,8 @@ CONTAINS
                 CALL SOLVER_DAE_BDF_FINALISE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
               CASE(SOLVER_DAE_RUSH_LARSON)
                 CALL SOLVER_DAE_RUSH_LARSON_FINALISE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
+              CASE(SOLVER_DAE_EXTERNAL)
+                CALL SOLVER_DAE_EXTERNAL_FINALISE(DAE_SOLVER%EXTERNAL_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The differential-algebraic equation solve type of "// &
                   & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -2875,7 +3127,7 @@ CONTAINS
               END SELECT
               DAE_SOLVER%DAE_SOLVE_TYPE=DAE_SOLVE_TYPE
             ENDIF
-         ELSE
+          ELSE
             CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
