@@ -346,7 +346,7 @@ CONTAINS
                           & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                         !calculate number of components with one component for each dimension and one for pressure
                         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-                           DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
+                           DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+2
                         ELSE
                            DEPENDENT_FIELD_NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS+1
                         ENDIF
@@ -1757,8 +1757,8 @@ CONTAINS
     REAL(DP) :: K_MATRIX(256,256)
     REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
     REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
-    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE
-    REAL(DP) :: U_DERIV(3,3),A_DERIV
+    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,P_VALUE
+    REAL(DP) :: U_DERIV(3,3),A_DERIV,P_DERIV
     
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
     out=0
@@ -2280,42 +2280,57 @@ CONTAINS
                       DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                         nhs=nhs+1
                         !Calculate some general values
-                          DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
-                          DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
-                          DPHINS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,FIRST_PART_DERIV,ng)
-                          PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                          PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                        DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
+                        DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
+                        DPHINS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,FIRST_PART_DERIV,ng)
+                        PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                        PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                    !DAMPING MATRIX
-                    IF(UPDATE_DAMPING_MATRIX) THEN
-                      IF(mh==1) THEN
-                        IF(nh==1) THEN
-                            SUM=PHINS*PHIMS
-                            !Calculate Matrix
-                            C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
-                        END IF
-                      END IF
+                        !DAMPING MATRIX
+                        IF(UPDATE_DAMPING_MATRIX) THEN
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=PHINS*PHIMS
+                              !Calculate Matrix
+                              C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
 
-                      IF(mh==2) THEN
-                        IF(nh==2) THEN
-                            SUM=PHINS*PHIMS
-                            !Calculate Matrix
-                            C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
+                          IF(mh==2) THEN
+                            IF(nh==2) THEN
+                              SUM=PHINS*PHIMS
+                              !Calculate Matrix
+                              C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
                         END IF
-                      END IF
-                    END IF
 
-                    !(dQ/dx)
-                    !STIFFNESS MATRIX
-                    IF(UPDATE_STIFFNESS_MATRIX) THEN
-                      IF(mh==2) THEN
-                        IF(nh==1) THEN
-                            SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
-                            !Calculate MATRIX
-                            K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
+                        !STIFFNESS MATRIX
+                        IF(UPDATE_STIFFNESS_MATRIX) THEN
+                          IF(mh==2) THEN
+                            IF(nh==1) THEN
+                              SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
+                              !Calculate MATRIX
+                              K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
+
+                          IF(mh==3) THEN
+                            IF(nh==2) THEN
+                              SUM=952.4*DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
+                              !Calculate MATRIX
+                              K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
+
+                          IF(mh==3) THEN
+                            IF(nh==3) THEN
+                              SUM=DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
+                              !Calculate MATRIX
+                              K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
                         END IF
-                      END IF
-                    END IF
 
                       !NO RIGHT HAND SIDE FOR THIS CASE
                       ENDDO !ns    
@@ -2328,8 +2343,10 @@ CONTAINS
               IF(UPDATE_NONLINEAR_RESIDUAL) THEN
                 U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
                 A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
                 U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
                 A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
+                P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)      
 
                 mhs=0
                 DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -2349,18 +2366,11 @@ CONTAINS
                     IF(mh==1) THEN
                       SUM=(  ( 2*U_VALUE(1)*U_DERIV(1,1)*DXI_DX(1,1)/A_VALUE )+ &
                            & ( -((U_VALUE(1)/A_VALUE)**2)*A_DERIV*DXI_DX(1,1) )+ &
-                           & ( 952.4e-6*920800*A_VALUE*A_DERIV*DXI_DX(1,1) )+ &
+                           & ( 952.4*A_VALUE*P_DERIV*DXI_DX(1,1) )+ &
                            & ( 84*U_VALUE(1)/A_VALUE )  )*PHIMS
                       !Calculate Matrix
                       NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
                     ENDIF
-
-                    !(dQ/dx)
-               !     IF(mh==2) THEN
-                 !     SUM=( U_DERIV(1,1)*DXI_DX(1,1) )*PHIMS
-                  !    !Calculate Matrix
-                  !    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
-                  !  ENDIF
 
                   ENDDO !ms
                 ENDDO !mh
@@ -2499,8 +2509,8 @@ CONTAINS
     REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
     REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
     REAL(DP) :: J_MATRIX(256,256)
-    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE
-    REAL(DP) :: U_DERIV(3,3),A_DERIV
+    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,P_VALUE
+    REAL(DP) :: U_DERIV(3,3),A_DERIV,P_DERIV
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
@@ -2667,8 +2677,10 @@ CONTAINS
              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
               U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+              P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
               U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
               A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
+              P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
 !              E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
@@ -2803,20 +2815,19 @@ CONTAINS
                               SUM=(  ( -2*U_VALUE(1)*PHINS*U_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2) )+ &
                                    & ( 2*PHINS*(U_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3) )+ &
                                    & ( -((U_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1) )+ &
-                                   & ( 952.4e-6*920800*PHINS*A_DERIV*DXI_DX(1,1) )+ &
-                                   & ( 952.4e-6*920800*A_VALUE*DPHINS_DXI(1)*DXI_DX(1,1) )+ &
+                                   & ( 952.4*PHINS*P_DERIV*DXI_DX(1,1) )+ &
                                    & ( -84*PHINS*U_VALUE(1)/(A_VALUE**2) )  )*PHIMS
                               J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
                           END IF
 
-                          !J3 ONLY (dQ/dx)
-                 !         IF(mh==2) THEN
-                  !          IF(nh==1) THEN
-                   !           SUM=( DPHINS_DXI(1)*DXI_DX(1,1) )*PHIMS
-                    !          J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                     !       END IF
-                      !    END IF
+                          !J3 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==3) THEN
+                              SUM=( A_VALUE*952.4*DPHINS_DXI(1)*DXI_DX(1,1) )*PHIMS
+                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
 
                       ENDDO !ns
                     ENDDO !nh
@@ -2826,7 +2837,7 @@ CONTAINS
           END IF
         ENDDO !ng
 
-             !Assemble matrices and vectors 
+            !Assemble matrices and vectors 
             mhs_min=mhs
             mhs_max=nhs
             nhs_min=mhs
