@@ -1946,7 +1946,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetClassicalFieldClass = EQUATIONS_SET_CLASSICAL_FIELD_CLASS !<Classical Field equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS   
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBioelectricsClass = EQUATIONS_SET_BIOELECTRICS_CLASS !<Bioelectrics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetModalClass = EQUATIONS_SET_MODAL_CLASS !<Modal equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFittingFieldClass = EQUATIONS_SET_FITTING_FIELD_CLASS !<Fitting equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFittingClass = EQUATIONS_SET_FITTING_CLASS !<Fitting equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisationClass = EQUATIONS_SET_OPTIMISATION_CLASS !<Optimisation equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS     
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiPhysicsClass = EQUATIONS_SET_MULTI_PHYSICS_CLASS !<Multi Physics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS   
   !>@}
@@ -2329,7 +2329,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsSetNoClass,CMISSEquationsSetElasticityClass,CMISSEquationsSetFluidMechanicsClass, &
     & CMISSEquationsSetElectroMechanicsClass,CMISSEquationsSetClassicalFieldClass,CMISSEquationsSetBioelectricsClass, &
-    & CMISSEquationsSetModalClass,CMISSEquationsSetFittingFieldClass,CMISSEquationsSetOptimisationClass, &
+    & CMISSEquationsSetModalClass,CMISSEquationsSetFittingClass,CMISSEquationsSetOptimisationClass, &
     & CMISSEquationsSetMultiPhysicsClass
 
   PUBLIC CMISSEquationsSetNoType,CMISSEquationsSetLinearElasticityType,CMISSEquationsSetFiniteElasticityType, &
@@ -4275,7 +4275,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemClassicalFieldClass = PROBLEM_CLASSICAL_FIELD_CLASS !<Classical field problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemBioelectricsClass = PROBLEM_BIOELECTRICS_CLASS !<Bioelectrics problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemModalClass = PROBLEM_MODAL_CLASS !<Modal problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
-  INTEGER(INTG), PARAMETER :: CMISSProblemFittingFieldClass = PROBLEM_FITTING_FIELD_CLASS !<Fitting problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemFittingClass = PROBLEM_FITTING_CLASS !<Fitting problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemOptimisationClass = PROBLEM_OPTIMISATION_CLASS !<Optimisation problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMultiPhysicsClass = PROBLEM_MULTI_PHYSICS_CLASS !<Multi physics problem class \see OPENCMISS_ProblemClasses,OPENCMISS 
   !>@}
@@ -4425,7 +4425,7 @@ MODULE OPENCMISS
   !Interfaces
 
   PUBLIC CMISSProblemNoClass,CMISSProblemElasticityClass,CMISSProblemFluidMechanicsClass,CMISSProblemElectromagneticsClass, &
-    & CMISSProblemClassicalFieldClass,CMISSProblemBioelectricsClass,CMISSProblemModalClass,CMISSProblemFittingFieldClass, &
+    & CMISSProblemClassicalFieldClass,CMISSProblemBioelectricsClass,CMISSProblemModalClass,CMISSProblemFittingClass, &
     & CMISSProblemOptimisationClass,CMISSProblemMultiPhysicsClass
 
   PUBLIC CMISSProblemNoType
