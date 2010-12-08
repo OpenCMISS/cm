@@ -2015,6 +2015,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE !<Multi Compartment Darcy INRIA Model coupled with finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype= &
     & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE !< Incompressible finite elasticity with Darcy flow driven by solid hydrostatic pressure \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype= &
+    & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE !< Incompressible finite elasticity with Darcy flow driven by solid hydrostatic pressure, formulated in terms of modified invariants. \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMembraneSubtype = EQUATIONS_SET_MEMBRANE_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype = &
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE !< Orthotropic Holzapfel-Ogden constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2354,7 +2356,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetTransverseIsotropicExponentialSubtype, CMISSEquationsSetOrthotropicMaterialCostaSubtype, &
     & CMISSEquationsSetCompressibleFiniteElasticitySubtype,CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype, &
     & CMISSEquationsSetElasticityDarcyInriaModelSubtype,CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype, &
-    & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype, &
+    & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype,CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype, &
     & CMISSEquationsSetMembraneSubtype, CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
@@ -2994,6 +2996,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldLabelSetVSObj
   END INTERFACE !CMISSFieldLabelSet
 
+  INTERFACE CMISSFieldPositionNormalTangentCalculateNode
+    MODULE PROCEDURE CMISSFieldPositionNormalTangentCalculateNodeNumber
+    MODULE PROCEDURE CMISSFieldPositionNormalTangentCalculateNodeObj
+  END INTERFACE
+
   !>Returns the mesh decomposition for a field. 
   INTERFACE CMISSFieldMeshDecompositionGet
     MODULE PROCEDURE CMISSFieldMeshDecompositionGetNumber
@@ -3320,6 +3327,8 @@ MODULE OPENCMISS
   PUBLIC CMISSFieldLabelGet,CMISSFieldLabelSet
 
   PUBLIC CMISSFieldMeshDecompositionGet,CMISSFieldMeshDecompositionSet
+
+  PUBLIC CMISSFieldPositionNormalTangentCalculateNode
 
   PUBLIC CMISSFieldNumberOfComponentsGet,CMISSFieldNumberOfComponentsSet
 
@@ -23506,6 +23515,89 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldLabelSetVSObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the interpolation type for a field variable component for a field identified by a user number.
+  SUBROUTINE CMISSFieldPositionNormalTangentCalculateNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,ComponentNumber, &
+    & LocalNodeNumber,Position,Normal,Tangents,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the interpolation type for.
+    INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the interpolation type for.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the interpolation type for. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the interpolation type for.
+    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The local node number of the field variable to get the data type for.
+    REAL(DP), INTENT(OUT) :: Position(:),Normal(:),Tangents(:,:) !<Actual useful outputs
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSFieldPositionNormalTangentCalculateNodeNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
+      IF(ASSOCIATED(FIELD)) THEN
+        CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(FIELD,VariableType,ComponentNumber,LocalNodeNumber, &
+          & Position,Normal,Tangents,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSFieldPositionNormalTangentCalculateNodeNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldPositionNormalTangentCalculateNodeNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldPositionNormalTangentCalculateNodeNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldPositionNormalTangentCalculateNodeNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the position, normal and tangents for a field node for a field identified by an object.
+  SUBROUTINE CMISSFieldPositionNormalTangentCalculateNodeObj(Field,VariableType,ComponentNumber,LocalNodeNumber, &
+    & Position,Normal,Tangents,Err)
+  
+    !Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the interpolation type for.
+    INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the interpolation type for. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the data type for.
+    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The local node number of the field variable to get the data type for.
+    REAL(DP), INTENT(OUT) :: Position(:),Normal(:),Tangents(:,:) !<Actual useful outputs
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSFieldPositionNormalTangentCalculateNodeObj",Err,ERROR,*999)
+ 
+    CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(Field%FIELD,VariableType,ComponentNumber,LocalNodeNumber, &
+    & Position,Normal,Tangents,Err,ERROR,*999)
+
+    CALL EXITS("CMISSFieldPositionNormalTangentCalculateNodeObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldPositionNormalTangentCalculateNodeObj",Err,ERROR)
+    CALL EXITS("CMISSFieldPositionNormalTangentCalculateNodeObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldPositionNormalTangentCalculateNodeObj
+
+
 
   !  
   !================================================================================================================================

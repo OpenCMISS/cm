@@ -1333,7 +1333,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DARCY_DEPENDENT_INTERPOLATED_POINT
     REAL(DP), INTENT(OUT) :: CAUCHY_TENSOR(:,:)
-    REAL(DP), INTENT(OUT) :: Jznu !Determinant of deformation gradient tensor
+    REAL(DP), INTENT(OUT) :: Jznu !Determinant of deformation gradient tensor (AZL)
     REAL(DP), INTENT(IN) :: DZDNU(3,3)
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER,GAUSS_POINT_NUMBER !<Element/Gauss point number
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -1341,7 +1341,9 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: EQUATIONS_SET_SUBTYPE !<The equation subtype
     INTEGER(INTG) :: i,j,PRESSURE_COMPONENT
-    REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),TEMP(3,3),TEMPTERM,I3,P,I1,ACTIVTIME
+    REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),P,ACTIVTIME
+    REAL(DP) :: I1,I2,I3            !Invariants, if needed
+    REAL(DP) :: TEMP(3,3),TEMPTERM  !Temporary variables
     REAL(DP) :: PIOLA_TENSOR_ADDITION(3,3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP), DIMENSION (:), POINTER :: C !Parameters for constitutive laws
@@ -1367,6 +1369,7 @@ CONTAINS
     P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,1)
 
     CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999)
+    Jznu=I3**0.5_DP
     E = 0.5_DP*AZL 
     DO i=1,3
       E(i,i)=E(i,i)-0.5_DP
@@ -1519,6 +1522,9 @@ CONTAINS
           ! But it is important to retain I3 = J^2, since J ~ 1 + m/rho /= 1
           PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
           DARCY_MASS_INCREASE_ENTRY = 5 !fifth entry
+          DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
+          CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
+          PIOLA_TENSOR = PIOLA_TENSOR + PIOLA_TENSOR_ADDITION
         CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) !Incompressible
           !Constitutive model: W=c1*(I1-3)+c2*(I2-3)+p*(I3-1) 
           ! The term 'p*(I3-1)' gives rise to: '2p I3 AZU'
@@ -1535,22 +1541,61 @@ CONTAINS
            ENDDO
           ENDDO
           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
+          DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
+          CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
+          PIOLA_TENSOR = PIOLA_TENSOR + PIOLA_TENSOR_ADDITION
+        CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE)
+          !Constitutive model: W=C1*(J1-3)+C2*(J2-3)+C3*(J-1)^2+lambda.(J-1-m/rho)
+          !J1 and J2 are the modified invariants, adjusted for volume change (J1=I1*J^(-2/3), J2=I2*J^(-4/3))
+          !Strictly speaking this law isn't for an incompressible material, but the fourth equation in the elasticity
+          !is used to satisfy a subtly different constraint, which is to require the solid portion of the poroelastic
+          !material retains its volume. (This law is applied on the whole pororous body).
+          
+          C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
+          C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
+          C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+
+          !J1 term: del(J1)/del(C)=J^(-2/3)*I-2/3*I_1*J^(-2/3)*C^-1
+          TEMPTERM=Jznu**(-2.0_DP/3.0_DP)
+          TEMP(1,1)=TEMPTERM
+          TEMP(2,2)=TEMPTERM
+          TEMP(3,3)=TEMPTERM
+          I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
+          PIOLA_TENSOR=C(1)* (TEMP-2.0_DP/3.0_DP*I1*TEMPTERM*AZU)
+
+          !J2 term: del(J2)/del(C)=J^(-4/3)*del(I2)/del(C) -4/3*I_2*J^(-4/3)*C^-1
+          TEMP=AZL*AZL  ! C^2
+          I2=0.5_DP*(I1**2-(TEMP(1,1)+TEMP(2,2)+TEMP(3,3)))
+          TEMPTERM=Jznu**(-4.0_DP/3.0_DP)
+          !TEMP is now del(I2)/del(C)
+          TEMP(1,1)=AZL(2,2)+AZL(3,3)
+          TEMP(1,2)=-2.0_DP*AZL(1,2)
+          TEMP(1,3)=-2.0_DP*AZL(1,3)
+          TEMP(2,1)=TEMP(1,2)
+          TEMP(2,2)=AZL(1,1)+AZL(3,3)
+          TEMP(2,3)=-2.0_DP*AZL(2,3)
+          TEMP(3,1)=TEMP(1,3)
+          TEMP(3,2)=TEMP(2,3)
+          TEMP(3,3)=AZL(1,1)+AZL(2,2)
+          PIOLA_TENSOR=PIOLA_TENSOR+C(2)* (TEMPTERM*TEMP-4.0_DP/3.0_DP*I2*TEMPTERM*AZU)
+          
+          !J (det(F)) term: (2.C3.(J-1)+lambda)*J.C^-1
+          PIOLA_TENSOR=PIOLA_TENSOR+(2.0_DP*C(3)*(Jznu-1.0_DP)+P)*Jznu*AZU
+
+          !Don't forget, it's wrt C so there is a factor of 2
+          PIOLA_TENSOR=2.0_DP*PIOLA_TENSOR
         END SELECT
 
-        DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
-        CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
 
         IF(DIAGNOSTICS1) THEN
           CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-            & 3,3,PIOLA_TENSOR,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR','(",I1,",:)',' :",3(X,E13.6))', &
-            & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+            & 3,3,PIOLA_TENSOR-PIOLA_TENSOR_ADDITION,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
+            & '("    PIOLA_TENSOR','(",I1,",:)',' :",3(X,E13.6))','(17X,3(X,E13.6))',ERR,ERROR,*999)
           CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
             & 3,3,PIOLA_TENSOR_ADDITION, &
             & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR_ADDITION','(",I1,",:)',' :",3(X,E13.6))', &
             & '(17X,3(X,E13.6))',ERR,ERROR,*999)
         ENDIF
-
-        PIOLA_TENSOR = PIOLA_TENSOR + PIOLA_TENSOR_ADDITION
       ENDIF
 
     CASE (EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE) ! added by Thomas 2010-04-13
@@ -1586,7 +1631,6 @@ CONTAINS
     CALL MATRIX_PRODUCT(DZDNU,PIOLA_TENSOR,TEMP,ERR,ERROR,*999)
     CALL MATRIX_PRODUCT(TEMP,DZDNUT,CAUCHY_TENSOR,ERR,ERROR,*999)
     
-    Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
     CAUCHY_TENSOR=CAUCHY_TENSOR/Jznu
 
     NULLIFY(C)
