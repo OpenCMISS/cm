@@ -1762,6 +1762,125 @@ CONTAINS
               & " is invalid for a Navier-Poisson equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+            !define an independent field for ALE information
+        CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
+          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE)
+          !do nothing!
+          CASE(EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE)
+          !do nothing!
+          CASE(EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+             !Set start action
+              CASE(EQUATIONS_SET_SETUP_START_ACTION)
+                IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                  !Create the auto created independent field
+                  !start field creation with name 'INDEPENDENT_FIELD'
+                  CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, &
+                    & EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
+                  !start creation of a new field
+                  CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                  !label the field
+                  CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,"Independent Field",ERR,ERROR,*999)
+                  !define new created field to be independent
+                  CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                    & FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                  !look for decomposition rule already defined
+                  CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, &
+                    & ERR,ERROR,*999)
+                  !apply decomposition rule found on new created field
+                  CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                    & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                  !point new field to geometric field
+                  CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,EQUATIONS_SET% & 
+                    & GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                  !set number of variables to 1 (1 for U)
+                  CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                  & 1,ERR,ERROR,*999)
+                  CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                    & (/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                  CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_DP_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                  !calculate number of components with one component for each dimension
+                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                    & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  !Default to the geometric interpolation setup
+                  DO I=1,NUMBER_OF_DIMENSIONS
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
+                      & FIELD_U_VARIABLE_TYPE,I,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  END DO
+                    SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                      !Specify fem solution method
+                      CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                        DO I=1,NUMBER_OF_DIMENSIONS
+                          CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & FIELD_U_VARIABLE_TYPE,I,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                        END DO
+                        CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, &
+                          & ERR,ERROR,*999)
+                        CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE, &
+                          & ERR,ERROR,*999)
+                        !Other solutions not defined yet
+                      CASE DEFAULT
+                        LOCAL_ERROR="The solution method of " &
+                          & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT 
+                  ELSE
+                    !Check the user specified field
+                    CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
+                    CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                    CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                      & ERR,ERROR,*999)
+                    CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                    !calculate number of components with one component for each dimension and one for pressure
+                    CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                    SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                      CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                        CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                          & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                        CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                          & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
+                          &"*",ERR,ERROR))//" is invalid."
+                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                  ENDIF    
+              !Specify finish action
+              CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+                IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                  CALL FIELD_CREATE_FINISH(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_MESH_VELOCITY_SET_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_BOUNDARY_SET_TYPE,ERR,ERROR,*999)
+                ENDIF
+              CASE DEFAULT
+                LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for a standard PPE fluid"
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          CASE DEFAULT
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " is invalid for a PPE equation."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -1951,6 +2070,161 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  !>Update mesh velocity and move mesh for ALE PPE problem
+
+  SUBROUTINE POISSON_PRE_SOLVE_ALE_UPDATE_PPE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solvers
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER_ALE_PPE, SOLVER_LAPLACE !<A pointer to the solvers
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD_LAPLACE, INDEPENDENT_FIELD_ALE_PPE
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS_LAPLACE, SOLVER_EQUATIONS_ALE_PPE  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING_LAPLACE, SOLVER_MAPPING_ALE_PPE !<A pointer to the solver mapping
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET_LAPLACE, EQUATIONS_SET_ALE_PPE !<A pointer to the equations set
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA
+    REAL(DP), POINTER :: MESH_DISPLACEMENT_VALUES(:)
+    INTEGER(INTG) :: I,NUMBER_OF_DIMENSIONS_LAPLACE,NUMBER_OF_DIMENSIONS_ALE_PPE,GEOMETRIC_MESH_COMPONENT
+    INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION,component_idx,deriv_idx,local_ny,node_idx,variable_idx,variable_type
+
+    CALL ENTERS("POISSON_PRE_SOLVE_ALE_UPDATE_PPE_MESH",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+      NULLIFY(SOLVER_LAPLACE)
+      NULLIFY(SOLVER_ALE_PPE)
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE)
+              ! do nothing ???
+            CASE(EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE)
+              ! do nothing ???
+            CASE(EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE)
+              !Update mesh within the dynamic solver
+              IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                !Get the independent field for the ALE PPE problem
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,1,SOLVER_ALE_PPE,ERR,ERROR,*999)
+                SOLVER_EQUATIONS_ALE_PPE=>SOLVER_ALE_PPE%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS_ALE_PPE)) THEN
+                  SOLVER_MAPPING_ALE_PPE=>SOLVER_EQUATIONS_ALE_PPE%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING_ALE_PPE)) THEN
+                    EQUATIONS_SET_ALE_PPE=>SOLVER_MAPPING_ALE_PPE%EQUATIONS_SETS(1)%PTR
+                    IF(ASSOCIATED(EQUATIONS_SET_ALE_PPE)) THEN
+                      INDEPENDENT_FIELD_ALE_PPE=>EQUATIONS_SET_ALE_PPE%INDEPENDENT%INDEPENDENT_FIELD
+                    ELSE
+                      CALL FLAG_ERROR("ALE PPE equations set is not associated.",ERR,ERROR,*999)
+                    END IF
+                    !Get the data
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_ALE_PPE%GEOMETRY%GEOMETRIC_FIELD, & 
+                      & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS_ALE_PPE,ERR,ERROR,*999)
+!\todo: Introduce flags set by the user (42/1 only for testings purpose)
+                    !Copy input to PPE' independent field
+                    INPUT_TYPE=42
+                    INPUT_OPTION=1
+                    NULLIFY(MESH_DISPLACEMENT_VALUES)
+                    CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_ALE_PPE%INDEPENDENT%INDEPENDENT_FIELD, &
+                      & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
+                    CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,MESH_DISPLACEMENT_VALUES, & 
+                      & NUMBER_OF_DIMENSIONS_ALE_PPE,INPUT_TYPE,INPUT_OPTION,CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
+                    CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET_ALE_PPE%INDEPENDENT%INDEPENDENT_FIELD, & 
+                      & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET_ALE_PPE%INDEPENDENT%INDEPENDENT_FIELD, & 
+                      & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                  ELSE
+                    CALL FLAG_ERROR("ALE PPE solver mapping is not associated.",ERR,ERROR,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("ALE PPE solver equations are not associated.",ERR,ERROR,*999)
+                END IF
+                 !Use calculated values to update mesh
+                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET_ALE_PPE%GEOMETRY%GEOMETRIC_FIELD, & 
+                  & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+!                 CALL FIELD_PARAMETER_SET_DATA_GET(INDEPENDENT_FIELD_ALE_PPE,FIELD_U_VARIABLE_TYPE, & 
+!                   & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
+                EQUATIONS=>SOLVER_MAPPING_ALE_PPE%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                IF(ASSOCIATED(EQUATIONS)) THEN
+                  EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                  IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                    DO variable_idx=1,EQUATIONS_SET_ALE_PPE%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                      variable_type=EQUATIONS_SET_ALE_PPE%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                      FIELD_VARIABLE=>EQUATIONS_SET_ALE_PPE%GEOMETRY%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                        DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                          DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                          IF(ASSOCIATED(DOMAIN)) THEN
+                            IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                              DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                              IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                !Loop over the local nodes excluding the ghosts.
+                                DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                  DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                    local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                      & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(EQUATIONS_SET_ALE_PPE%GEOMETRY%GEOMETRIC_FIELD, & 
+                                      & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                      & MESH_DISPLACEMENT_VALUES(local_ny),ERR,ERROR,*999)
+                                  ENDDO !deriv_idx
+                                ENDDO !node_idx
+                              ENDIF
+                            ENDIF
+                          ENDIF
+                        ENDDO !component_idx
+                      ENDIF
+                    ENDDO !variable_idx
+                  ELSE
+                    CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                END IF
+                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET_ALE_PPE%GEOMETRY%GEOMETRIC_FIELD, & 
+                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET_ALE_PPE%GEOMETRY%GEOMETRIC_FIELD, & 
+                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                !Now use displacement values to calculate velocity values
+                TIME_INCREMENT=CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT
+                ALPHA=1.0_DP/TIME_INCREMENT
+                CALL FIELD_PARAMETER_SETS_COPY(INDEPENDENT_FIELD_ALE_PPE,FIELD_U_VARIABLE_TYPE, & 
+                  & FIELD_MESH_DISPLACEMENT_SET_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
+              ELSE  
+                CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a PPE equation fluid type of a fluid mechanics problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+    CALL EXITS("POISSON_PRE_SOLVE_ALE_UPDATE_PPE_MESH")
+    RETURN
+999 CALL ERRORS("POISSON_PRE_SOLVE_ALE_UPDATE_PPE_MESH",ERR,ERROR)
+    CALL EXITS("POISSON_PRE_SOLVE_ALE_UPDATE_PPE_MESH")
+    RETURN 1
+  END SUBROUTINE POISSON_PRE_SOLVE_ALE_UPDATE_PPE_MESH
+
+  !
+  !================================================================================================================================
+  !
+
 
   !>Sets up the standard Poisson equation for linear sources.
   SUBROUTINE POISSON_EQUATION_EQUATIONS_SET_LINEAR_SOURCE_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
@@ -3328,7 +3602,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,I,J,K,L,H,element_node_identity !,k1sum,k2sum
     REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SUM2,DXI_DX(3,3),DELTA_T,DXI_DX_DX(3,3)
-    REAL(DP) :: U_VALUE(3),U_DERIV(3,3),RHO_PARAM,MU_PARAM,U_OLD(3),U_SECOND(3,3,3),X(3),B(3),P_DERIV(3),DIFF_COEFF
+    REAL(DP) :: U_VALUE(3),U_DERIV(3,3),RHO_PARAM,MU_PARAM,U_OLD(3),U_SECOND(3,3,3),X(3),B(3),P_DERIV(3),DIFF_COEFF,W_VALUE(3)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS,SOURCE_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -3441,7 +3715,8 @@ CONTAINS
             ENDDO !mh
           ENDDO !ng
 
-        CASE(EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE,EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE)
+        CASE(EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE,EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE, &
+          & EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE)
           !Store all these in equations matrices/somewhere else?????
           SOURCE_FIELD=>EQUATIONS%INTERPOLATION%SOURCE_FIELD
           MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
@@ -3465,6 +3740,8 @@ CONTAINS
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
@@ -3501,6 +3778,17 @@ CONTAINS
               & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE) THEN
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+              W_VALUE(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+              IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                W_VALUE(3)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+              END IF 
+            ELSE
+              W_VALUE=0.0_DP
+            END IF
             U_VALUE=0.0_DP
             U_OLD=0.0_DP
             DXI_DX=0.0_DP
@@ -3623,8 +3911,10 @@ CONTAINS
 !                       ENDDO  
 !                       this is the second viscous term
                         DO L=1,3
-                          DO H=1,3
-                            DO I=1,3
+                          DO I=1,3
+                            ! this is the ALE term
+                            B(K)=B(K)+RHO_PARAM*W_VALUE(I)*U_DERIV(K,L)*DXI_DX(L,I)
+                            DO H=1,3
                               B(K)=B(K)+MU_PARAM*U_SECOND(K,L,H)*DXI_DX(L,I)*DXI_DX(H,I)
                             ENDDO  
                           ENDDO  
@@ -3654,8 +3944,8 @@ CONTAINS
                         !this is the nonlinear term (should be zero for Stokes)
                         DO L=1,3
                           DO I=1,3 
-                            !this is the nonlinear trem
-                            B(K)=B(K)-RHO_PARAM*U_VALUE(I)*U_DERIV(K,L)*DXI_DX(L,I)
+                            !this is the nonlinear/ALE trem
+                            B(K)=B(K)-RHO_PARAM*(U_VALUE(I)-W_VALUE(I))*U_DERIV(K,L)*DXI_DX(L,I)
                             DO H=1,3
                               !this is the viscous terms    
                               B(K)=B(K)+MU_PARAM*U_SECOND(K,L,H)*DXI_DX(L,I)*DXI_DX(H,I)
@@ -4737,6 +5027,9 @@ CONTAINS
               ELSE
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"While loop... ",ERR,ERROR,*999)
               ENDIF
+            CASE(PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE)
+              !Update mesh
+              CALL POISSON_PRE_SOLVE_ALE_UPDATE_PPE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Poisson type of a classical field problem class."
