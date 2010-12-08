@@ -857,7 +857,7 @@ OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
 	$(OBJECT_DIR)/fluid_mechanics_routines.o \
 	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
 	$(OBJECT_DIR)/FieldExport.o \
-	$(OBJECT_DIR)/fitting_field_routines.o \
+	$(OBJECT_DIR)/fitting_routines.o \
 	$(OBJECT_DIR)/generated_mesh_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/history_routines.o \
@@ -1046,7 +1046,7 @@ $(OBJECT_DIR)/classical_field_routines.o	:	$(MAIN_SOURCE_DIR)/classical_field_ro
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/fitting_field_routines.o \
+	$(OBJECT_DIR)/fitting_routines.o \
 	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1531,7 +1531,7 @@ $(OBJECT_DIR)/interface_matrices_routines.o	:	$(MAIN_SOURCE_DIR)/interface_matri
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/fitting_field_routines.o	:	$(MAIN_SOURCE_DIR)/fitting_field_routines.f90 \
+$(OBJECT_DIR)/fitting_routines.o	:	$(MAIN_SOURCE_DIR)/fitting_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
