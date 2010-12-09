@@ -1557,6 +1557,7 @@ CONTAINS
 
           !J1 term: del(J1)/del(C)=J^(-2/3)*I-2/3*I_1*J^(-2/3)*C^-1
           TEMPTERM=Jznu**(-2.0_DP/3.0_DP)
+          TEMP=0.0_DP
           TEMP(1,1)=TEMPTERM
           TEMP(2,2)=TEMPTERM
           TEMP(3,3)=TEMPTERM
