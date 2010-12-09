@@ -801,6 +801,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedIncremented = BOUNDARY_CONDITION_FIXED_INCREMENTED
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressure = BOUNDARY_CONDITION_PRESSURE
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressureIncremented = BOUNDARY_CONDITION_PRESSURE_INCREMENTED
+
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCorrectionMassIncrease = BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
   !>@}
   !>@}
   
@@ -867,7 +869,8 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditionFree,CMISSBoundaryConditionFixed,CMISSBoundaryConditionMixed
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
-    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall,CMISSBoundaryConditionMovedWallIncremented
+    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall,CMISSBoundaryConditionMovedWallIncremented, &
+    & CMISSBoundaryConditionCorrectionMassIncrease
 
   PUBLIC CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionNeumannIntegrated,CMISSBoundaryConditionDirichlet
   PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented

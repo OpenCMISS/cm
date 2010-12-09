@@ -7793,7 +7793,9 @@ CONTAINS
     
     IF(DIAGNOSTICS1) THEN
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of mesh global nodes = ",MESHNODES%NUMBER_OF_NODES,ERR,ERROR,*999)
-      DO np=1,NODES%NUMBER_OF_NODES
+!Using "NODES%NUMBER_OF_NODES" seems to be a bug, since it exceeds the size of the array "MESHNODES%NODES(np)"
+!       DO np=1,NODES%NUMBER_OF_NODES
+      DO np=1,MESHNODES%NUMBER_OF_NODES
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh global node number = ",np,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global node number = ",MESHNODES%NODES(np)%GLOBAL_NUMBER, &
           & ERR,ERROR,*999)        
