@@ -4642,6 +4642,7 @@ CONTAINS
               ! The following command only when setting the Darcy mass increase explicitly to test finite elasticity !!!
 ! ! !               CALL DARCY_EQUATION_POST_SOLVE_SET_MASS_INCREASE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 
+                !\todo: Make conditional: Only for: EquationsSetIncompressibleElasticityDrivenDarcySubtype 
                 !Correction to mass increase to account for velocity boundary condition
                 CALL DARCY_EQUATION_POST_SOLVE_ADD_MASS_CORRECTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 
@@ -7289,7 +7290,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                           NULLIFY( DUMMY_VALUES1 )
                                           CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                             & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-!                                           write(*,*)'mass (BEFORE) = ',DUMMY_VALUES1(dof_number_mass)
+                                          write(*,*)'mass (BEFORE) = ',DUMMY_VALUES1(dof_number_mass)
 
                                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD, & 
                                             & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number_mass, & 
@@ -7304,7 +7305,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                           NULLIFY( DUMMY_VALUES1 )
                                           CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                             & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-!                                           write(*,*)'mass (AFTER) = ',DUMMY_VALUES1(dof_number_mass)
+                                          write(*,*)'mass (AFTER) = ',DUMMY_VALUES1(dof_number_mass)
                                         ELSE
                                           ! do nothing
                                         END IF
