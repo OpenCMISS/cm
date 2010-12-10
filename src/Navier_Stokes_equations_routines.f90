@@ -624,6 +624,9 @@ CONTAINS
                               CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
                                 !Set analtyic function type
                                 EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5
+                              CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
+                                !Set analtyic function type
+                                EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1
                               CASE DEFAULT
                                 LOCAL_ERROR="The specified analytic function type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -685,7 +688,7 @@ CONTAINS
                   !variable X with has Y components, here Y represents viscosity only
                   MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-                    MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
+                    MATERIAL_FIELD_NUMBER_OF_COMPONENTS=6!Y
                   ELSE
                     MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
                   ENDIF
@@ -767,6 +770,22 @@ CONTAINS
                               ! density=2
                               CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,2,1.0_DP,ERR,ERROR,*999)
+
+                              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+                              ! elasticity=3
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,3,1.0_DP,ERR,ERROR,*999)
+                              ! thickness=4
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,4,1.0_DP,ERR,ERROR,*999)
+                              ! area=5
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,5,1.0_DP,ERR,ERROR,*999)
+                              ! sigma=6
+                              CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,6,1.0_DP,ERR,ERROR,*999)
+                              ENDIF
+
                             ENDIF
                           ELSE
                             CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
@@ -2046,6 +2065,7 @@ CONTAINS
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5.OR. &
+                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2.OR. &
                       & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3.OR. &
@@ -2248,10 +2268,10 @@ CONTAINS
 
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-!              E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-!              H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-!              A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-!              SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
+              E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+              H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
+              A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
+              SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
 
               mhs=0
               DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -2317,7 +2337,7 @@ CONTAINS
 
                           IF(mh==3) THEN
                             IF(nh==2) THEN
-                              SUM=952.4*DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
+                              SUM=((-1.7725*E_PARAM*H0_PARAM)/(A0_PARAM**1.5))*DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
                               !Calculate MATRIX
                               K_MATRIX(mhs,nhs)=K_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
@@ -2366,8 +2386,8 @@ CONTAINS
                     IF(mh==1) THEN
                       SUM=(  ( 2*U_VALUE(1)*U_DERIV(1,1)*DXI_DX(1,1)/A_VALUE )+ &
                            & ( -((U_VALUE(1)/A_VALUE)**2)*A_DERIV*DXI_DX(1,1) )+ &
-                           & ( 952.4*A_VALUE*P_DERIV*DXI_DX(1,1) )+ &
-                           & ( 84*U_VALUE(1)/A_VALUE )  )*PHIMS
+                           & ( (1/RHO_PARAM)*A_VALUE*P_DERIV*DXI_DX(1,1) )+ &
+                           & ( (8*3.1416*MU_PARAM/RHO_PARAM)*U_VALUE(1)/A_VALUE )  )*PHIMS
                       !Calculate Matrix
                       NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
                     ENDIF
@@ -2674,22 +2694,6 @@ CONTAINS
                 W_VALUE=0.0_DP
              END IF
 
-             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-              U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-              P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-              U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
-              A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
-              P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
-              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-!              E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-!              H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-!              A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-!              SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
-             END IF
-
-
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
@@ -2765,6 +2769,19 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
+                A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
+                P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
+                MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
+                A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
+                SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
+
                 !Loop over field components
                 mhs=0
                 DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -2804,7 +2821,7 @@ CONTAINS
                               SUM=(  ( 2*PHINS*U_DERIV(1,1)*DXI_DX(1,1)/A_VALUE )+ &
                                    & ( 2*U_VALUE(1)*DPHINS_DXI(1)*DXI_DX(1,1)/A_VALUE )+ &
                                    & ( -2*U_VALUE(1)*PHINS*A_DERIV*DXI_DX(1,1)/(A_VALUE**2) )+ &
-                                   & ( 84*PHINS/A_VALUE )  )*PHIMS
+                                   & ( (8*3.1416*MU_PARAM/RHO_PARAM)*PHINS/A_VALUE )  )*PHIMS
                               J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
                           END IF
@@ -2815,8 +2832,9 @@ CONTAINS
                               SUM=(  ( -2*U_VALUE(1)*PHINS*U_DERIV(1,1)*DXI_DX(1,1)/(A_VALUE**2) )+ &
                                    & ( 2*PHINS*(U_VALUE(1)**2)*A_DERIV*DXI_DX(1,1)/(A_VALUE**3) )+ &
                                    & ( -((U_VALUE(1)/A_VALUE)**2)*DPHINS_DXI(1)*DXI_DX(1,1) )+ &
-                                   & ( 952.4*PHINS*P_DERIV*DXI_DX(1,1) )+ &
-                                   & ( -84*PHINS*U_VALUE(1)/(A_VALUE**2) )  )*PHIMS
+                                   & ( (1/RHO_PARAM)*PHINS*P_DERIV*DXI_DX(1,1) )+ &
+                                   & ( (-8*3.1416*MU_PARAM/RHO_PARAM)*PHINS*U_VALUE(1)/(A_VALUE**2) )  )*PHIMS
+
                               J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
                           END IF
@@ -2824,17 +2842,17 @@ CONTAINS
                           !J3 ONLY
                           IF(mh==1) THEN
                             IF(nh==3) THEN
-                              SUM=( A_VALUE*952.4*DPHINS_DXI(1)*DXI_DX(1,1) )*PHIMS
+                              SUM=( A_VALUE*(1/RHO_PARAM)*DPHINS_DXI(1)*DXI_DX(1,1) )*PHIMS
                               J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
                             END IF
                           END IF
 
-                      ENDDO !ns
-                    ENDDO !nh
-                  ENDIF
-              ENDDO !ms
-            ENDDO !mh
-          END IF
+                        ENDDO !ns
+                      ENDDO !nh
+                    ENDIF
+                  ENDDO !ms
+                ENDDO !mh
+              END IF
         ENDDO !ng
 
             !Assemble matrices and vectors 
@@ -3642,7 +3660,7 @@ CONTAINS
                                 ENDIF
                                 NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
 
-                                FLOW =(1000*SIN(CURRENT_TIME*3.1416))+500
+                                FLOW =(1000*SIN(CURRENT_TIME*3.1416))+1000
 
                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                    & FIELD_VALUES_SET_TYPE,1,FLOW,ERR,ERROR,*999)
@@ -4528,6 +4546,7 @@ CONTAINS
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5.OR. &
+                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
                             CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
                           ENDIF
@@ -5043,6 +5062,63 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !\todo: Introduce user-defined or default values instead for density and viscosity
     INTERNAL_TIME=CURRENT_TIME
      SELECT CASE(ANALYTIC_FUNCTION_TYPE)
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
+         IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
+           !Polynomial function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate Q
+                     VALUE=X(1)**2/10.0_DP**2
+                   ELSE IF(component_idx==2) THEN
+                     !calculate A
+                     VALUE=X(1)**2/10.0_DP**2
+                   ELSE IF(component_idx==3) THEN
+                     !calculate P
+                     VALUE=X(1)**2/10.0_DP**2
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   VALUE= 0.0_DP
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Polynomial function
