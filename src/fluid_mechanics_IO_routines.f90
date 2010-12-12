@@ -543,10 +543,13 @@ CONTAINS
         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
           & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
           & cmiss%data_dp(K+NodesPerMeshComponent(1))
+
+        IF(NumberOfDimensions==3 .OR. NumberOfDimensions==1)THEN
         NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
 !             & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
             & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+       END IF
 
        END IF
 ! ! !       NodeUValue(K)=INTERPOLATED_POINT%VALUES(1,1)
@@ -1760,7 +1763,10 @@ CONTAINS
 
       WRITE(14,'("    ", es25.16 )')NodeUValue(I)
       WRITE(14,'("    ", es25.16 )')NodeVValue(I)
+
+      IF(NumberOfDimensions==3 .OR. NumberOfDimensions==1) THEN
       WRITE(14,'("    ", es25.16 )')NodeWValue(I)
+      END IF
 
       IF(NumberOfDimensions/=1) THEN
         IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
