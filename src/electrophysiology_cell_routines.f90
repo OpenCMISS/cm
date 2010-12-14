@@ -372,7 +372,7 @@ contains
     integer, parameter :: celldim = 19
     real(dp), dimension(1:celldim) :: dydt
     real(dp), dimension(:), pointer :: y
-    real(dp) :: t, dt, activ, m_inf, d_inf, m_inf0, d_inf0
+    real(dp) :: t, dt, activ, m_inf, d_inf, m_inf0, d_inf0, prev_v
     real(dp), dimension(:), pointer :: celldata, activdata
 
     integer(intg) :: ncells, i, d, nodeno
@@ -393,13 +393,7 @@ contains
     do i=1,ncells
       d = CELLS_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)
       y => celldata(d:d+celldim-1)
-      !   field ->   y
-  !    do d=1,celldim
-!        nodeno = domain%ptr%topology%nodes%nodes(i)%global_number
-!        call field_parameter_set_get_node(cells,field_u_variable_type,field_values_set_type,1,nodeno,d,y(d),err,error,*999)
- !       y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
- !     end do
-      ! field_parameter_set_get_node(materials,field_u_variable_type,field_values_set_type,1,nodeno,1,activ,err,error,*999)
+      prev_v = y(1)
       activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
       
   
@@ -432,12 +426,10 @@ contains
         
         t = t + dt
       end do
-      !   y -> field  
-      !do d=1,celldim
- !       call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
-     !   celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
-    !  end do
-    end do
+      if(prev_v < 0 .and. y(1) > 0) then ! store activation times, where else?
+        activdata(ACTIV_VARIABLE%COMPONENTS(7)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))=t1
+      end if
+    end do ! for cells
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 

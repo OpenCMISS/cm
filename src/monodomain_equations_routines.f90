@@ -842,7 +842,8 @@ CONTAINS
                   ! 1. activation  factor (usually 0.0 or 1.0)
                   ! 2,3 for fiber/transverse conductivity   . defaults to constant interpolation 
                   ! 4,5[,6] : fiber unit vector in dimension
-                NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS + 3
+                  ! 7: out - activation times
+                NUMBER_OF_MATERIALS_COMPONENTS= 7 !NUMBER_OF_DIMENSIONS + 3
                  !Set the number of materials components
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_MATERIALS_COMPONENTS,ERR,ERROR,*999)
@@ -855,7 +856,7 @@ CONTAINS
                 CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & 3,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                 ! 4 5 (6) fiber unit vector
-                DO component_idx=1,NUMBER_OF_DIMENSIONS
+                DO component_idx=1,3 !NUMBER_OF_DIMENSIONS
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
