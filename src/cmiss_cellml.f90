@@ -2438,6 +2438,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
+    INTEGER(C_INT) :: ERROR_C
+    REAL(DP) :: INITIAL_VALUE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CELLML_STATE_FIELD_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -2453,6 +2456,18 @@ CONTAINS
             & CALL FIELD_CREATE_FINISH(CELLML%STATE_FIELD%STATE_FIELD,ERR,ERROR,*999)
           CELLML%STATE_FIELD%STATE_FIELD_FINISHED=.TRUE.
           !Default the models field to the first model
+          ERROR_C = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE(CELLML%MODELS(1)%PTR%PTR,"membrane/V",INITIAL_VALUE)
+          IF(ERROR_C == 0) THEN
+            ! success in getting the initial value
+            WRITE(*,*) 'Initial value = ',INITIAL_VALUE
+          ELSE
+            ! problem getting the initial value
+            LOCAL_ERROR="Failed to get an initial value for the variable: "// &
+                & "membrane/V"// &
+                & "; with the error code: "// &
+                & TRIM(NUMBER_TO_VSTRING(ERROR_C,"*",ERR,ERROR))
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
           CALL FIELD_COMPONENT_VALUES_INITIALISE(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
             & FIELD_VALUES_SET_TYPE,1,1.0_DP,ERR,ERROR,*999)
         ENDIF
