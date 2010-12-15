@@ -2020,6 +2020,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE !< Incompressible finite elasticity with Darcy flow driven by solid hydrostatic pressure \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype= &
     & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE !< Incompressible finite elasticity with Darcy flow driven by solid hydrostatic pressure, formulated in terms of modified invariants. \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype= &
+    & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMembraneSubtype = EQUATIONS_SET_MEMBRANE_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype = &
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE !< Orthotropic Holzapfel-Ogden constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2290,6 +2292,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyThreeDim1 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyThreeDim2 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyThreeDim3 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompElastDarcyAnalyticDarcy = EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY !<this is a solution where the finite elasticity solve is skipped to allow easy analytic testing of the mass increase & velocity solve step of incompressible poromechanical model
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::LinearElasticity
   !> \brief The analytic function types for a LinearElasticity equation
@@ -2365,6 +2368,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetCompressibleFiniteElasticitySubtype,CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype, &
     & CMISSEquationsSetElasticityDarcyInriaModelSubtype,CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype, &
     & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype,CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype, &
+    & CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype, &
     & CMISSEquationsSetMembraneSubtype, CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
@@ -2455,6 +2459,7 @@ MODULE OPENCMISS
   
   PUBLIC CMISSEquationsSetDarcyTwoDim1,CMISSEquationsSetDarcyTwoDim2,CMISSEquationsSetDarcyTwoDim3
   PUBLIC CMISSEquationsSetDarcyThreeDim1,CMISSEquationsSetDarcyThreeDim2,CMISSEquationsSetDarcyThreeDim3
+  PUBLIC CMISSEquationsSetIncompElastDarcyAnalyticDarcy
 
   PUBLIC CMISSEquationsSetFiniteElasticityCylinder
   PUBLIC CMISSFiniteElasticityAnalyticCylinderParamPinIdx,CMISSFiniteElasticityAnalyticCylinderParamPoutIdx
