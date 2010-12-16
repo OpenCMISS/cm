@@ -972,17 +972,17 @@ CONTAINS
             ENDIF
 
 !---tob
-            X_COORD_GAUSS = 0.33_DP
-            Y_COORD_GAUSS = 0.33_DP
-            X_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
-            Y_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
-            TOL_GAUSS = 0.1_DP
-
-            IF(ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
-              CALL WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
-                & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-                & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
-            ENDIF
+!             X_COORD_GAUSS = 0.33_DP
+!             Y_COORD_GAUSS = 0.33_DP
+!             X_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
+!             Y_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
+!             TOL_GAUSS = 0.1_DP
+! 
+!             IF(ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
+!               CALL WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
+!                 & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
+!                 & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
+!             ENDIF
 !---toe
 
           ENDDO !gauss_idx
@@ -1570,6 +1570,58 @@ CONTAINS
           !is used to satisfy a subtly different constraint, which is to require the solid portion of the poroelastic
           !material retains its volume. (This law is applied on the whole pororous body).
           
+          PIOLA_TENSOR=0.0_DP
+          TEMP=0.0_DP
+          
+          C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
+          C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
+          C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+
+          !J1 term: del(J1)/del(C)=J^(-2/3)*I-2/3*I_1*J^(-2/3)*C^-1
+          TEMPTERM=Jznu**(-2.0_DP/3.0_DP)
+          TEMP(1,1)=TEMPTERM
+          TEMP(2,2)=TEMPTERM
+          TEMP(3,3)=TEMPTERM
+          I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
+          PIOLA_TENSOR=C(1)* (TEMP-1.0_DP/3.0_DP*I1*TEMPTERM*AZU)
+
+          !J2 term: del(J2)/del(C)=J^(-4/3)*del(I2)/del(C) -4/3*I_2*J^(-4/3)*C^-1
+          TEMP=MATMUL(AZL,AZL)  ! C^2
+          I2=0.5_DP*(I1**2.0_DP-(TEMP(1,1)+TEMP(2,2)+TEMP(3,3)))
+          TEMPTERM=Jznu**(-4.0_DP/3.0_DP)
+          !TEMP is now del(I2)/del(C)
+          TEMP(1,1)=AZL(2,2)+AZL(3,3)
+          TEMP(1,2)=-2.0_DP*AZL(1,2)
+          TEMP(1,3)=-2.0_DP*AZL(1,3)
+          TEMP(2,1)=TEMP(1,2)
+          TEMP(2,2)=AZL(1,1)+AZL(3,3)
+          TEMP(2,3)=-2.0_DP*AZL(2,3)
+          TEMP(3,1)=TEMP(1,3)
+          TEMP(3,2)=TEMP(2,3)
+          TEMP(3,3)=AZL(1,1)+AZL(2,2)
+          PIOLA_TENSOR=PIOLA_TENSOR+C(2)* (TEMPTERM*TEMP-2.0_DP/3.0_DP*I2*TEMPTERM*AZU)
+          
+          !J (det(F)) term: (2.C3.(J-1)+lambda)*J.C^-1
+          PIOLA_TENSOR=PIOLA_TENSOR+(2.0_DP*C(3)*(Jznu-1.0_DP)+P)*Jznu*AZU
+
+          !Don't forget, it's wrt C so there is a factor of 2 - but not for the pressure !!??
+          PIOLA_TENSOR=2.0_DP*PIOLA_TENSOR
+
+!---tob
+          C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
+          C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
+!           C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+          C(3)=10.0_DP  !pass through material field 
+
+          PIOLA_TENSOR=0.0_DP
+
+          !invariants:
+          TEMP = MATMUL(AZL,AZL)  ! C^2
+          
+          I1 = AZL(1,1)+AZL(2,2)+AZL(3,3)
+          I2 = 0.5_DP*(I1**2.0_DP - (TEMP(1,1)+TEMP(2,2)+TEMP(3,3)))
+          I3 = Jznu**2.0_DP
+
 !           PIOLA_TENSOR=0.0_DP
 !           TEMP=0.0_DP
 !           
@@ -1606,24 +1658,7 @@ CONTAINS
 !           PIOLA_TENSOR=PIOLA_TENSOR+(2.0_DP*C(3)*(Jznu-1.0_DP)+P)*Jznu*AZU
 ! 
 !           !Don't forget, it's wrt C so there is a factor of 2 - but not for the pressure !!??
-!           PIOLA_TENSOR=2.0_DP*PIOLA_TENSOR
-
-!---tob
-          C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
-          C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
-!           C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-          C(3)=10.0_DP  !pass through material field 
-
-          PIOLA_TENSOR=0.0_DP
-
-          !invariants:
-          TEMP = MATMUL(AZL,AZL)  ! C^2
-          
-          I1 = AZL(1,1)+AZL(2,2)+AZL(3,3)
-          I2 = 0.5_DP*(I1**2.0_DP - (TEMP(1,1)+TEMP(2,2)+TEMP(3,3)))
-          I3 = Jznu**2.0_DP
-
-          TEMP_1 = C(1)*I3**(-1.0_DP/3.0_DP) + C(2)*I3**(-2.0_DP/3.0_DP)*I1
+!           PIOLA_TENSOR=2.0_DP*PIOLA_TENSOR          TEMP_1 = C(1)*I3**(-1.0_DP/3.0_DP) + C(2)*I3**(-2.0_DP/3.0_DP)*I1
 
           TEMP_2 = -C(2)*I3**(-2.0_DP/3.0_DP)
 
