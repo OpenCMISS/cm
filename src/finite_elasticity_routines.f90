@@ -94,6 +94,9 @@ MODULE FINITE_ELASTICITY_ROUTINES
   INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX=8 !<c2 parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
   !>@}
 
+!   LOGICAL:: WRITE_IP_INFO_IS_TRUE
+
+
   !Module types
 
   !Module variables
@@ -737,7 +740,7 @@ CONTAINS
     REAL(DP) :: THICKNESS ! for elastic membrane
     REAL(DP) :: DARCY_MASS_INCREASE,DARCY_VOL_INCREASE,DARCY_RHO_0_F  !coupling with Darcy model
     REAL(DP) :: Mfact, bfact, p0fact
-    REAL(DP) :: X_COORD_GAUSS, Y_COORD_GAUSS, X_COORD, Y_COORD, TOL_GAUSS
+    REAL(DP) :: X_COORD_GAUSS, Y_COORD_GAUSS, Z_COORD_GAUSS, X_COORD, Y_COORD, Z_COORD, TOL_GAUSS
 
 
     CALL ENTERS("FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
@@ -882,8 +885,8 @@ CONTAINS
 
             !Calculate Sigma=1/Jznu.FTF', the Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-              & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-              & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
+              & MATERIALS_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT, &
+              & CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
 
             IF(DIAGNOSTICS1) THEN
               CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
@@ -896,6 +899,17 @@ CONTAINS
               CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
 
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
+
+!---tob
+!               Z_COORD_GAUSS = -10.0_DP
+!               Z_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(3,1)
+!               TOL_GAUSS = 1.0_DP
+! 
+!               IF(ABS(Z_COORD-Z_COORD_GAUSS)<TOL_GAUSS) THEN
+!                 DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + 1.0e-05_DP
+!               ENDIF
+!---toe
+
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
             ENDIF
 
@@ -978,7 +992,7 @@ CONTAINS
 !             Y_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
 !             TOL_GAUSS = 0.1_DP
 ! 
-!             IF(ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
+!             IF(WRITE_IP_INFO_IS_TRUE.AND.ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
 !               CALL WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
 !                 & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
 !                 & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
@@ -1018,8 +1032,8 @@ CONTAINS
 
             !Calculate Cauchy stress tensor at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-              & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-              & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
+              & MATERIALS_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT, &
+              & CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
 
             !Calculate dF/DZ at the gauss point
             CALL FINITE_ELASTICITY_GAUSS_DFDZ(DEPENDENT_INTERPOLATED_POINT,ELEMENT_NUMBER,gauss_idx,NUMBER_OF_DIMENSIONS, &
@@ -1346,13 +1360,13 @@ CONTAINS
 !       & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
 
   SUBROUTINE FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-      & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-      & ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
+      & MATERIALS_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT, &
+      & CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: EQUATIONS_SET !<A pointer to the equations set 
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DARCY_DEPENDENT_INTERPOLATED_POINT
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DARCY_DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT
     REAL(DP), INTENT(OUT) :: CAUCHY_TENSOR(:,:)
     REAL(DP), INTENT(OUT) :: Jznu !Determinant of deformation gradient tensor (AZL)
     REAL(DP), INTENT(IN) :: DZDNU(3,3)
@@ -1372,6 +1386,8 @@ CONTAINS
     REAL(DP) :: a, B(3,3), Q !Parameters for orthotropic laws
     REAL(DP) :: DARCY_MASS_INCREASE  !coupled elasticity Darcy
     INTEGER(INTG) :: DARCY_MASS_INCREASE_ENTRY !position of mass-increase entry in dependent-variable vector
+    REAL(DP) :: C3
+    REAL(DP) :: Z_COORD_GAUSS, Z_COORD, TOL_GAUSS
 
     !CALL ENTERS("FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR",ERR,ERROR,*999)
     EQUATIONS_SET_SUBTYPE = EQUATIONS_SET%SUBTYPE
@@ -1607,78 +1623,21 @@ CONTAINS
           !Don't forget, it's wrt C so there is a factor of 2 - but not for the pressure !!??
           PIOLA_TENSOR=2.0_DP*PIOLA_TENSOR
 
-!---tob
-          C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
-          C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
-!           C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-          C(3)=10.0_DP  !pass through material field 
-
-          PIOLA_TENSOR=0.0_DP
-
-          !invariants:
-          TEMP = MATMUL(AZL,AZL)  ! C^2
-          
-          I1 = AZL(1,1)+AZL(2,2)+AZL(3,3)
-          I2 = 0.5_DP*(I1**2.0_DP - (TEMP(1,1)+TEMP(2,2)+TEMP(3,3)))
-          I3 = Jznu**2.0_DP
-
-!           PIOLA_TENSOR=0.0_DP
-!           TEMP=0.0_DP
-!           
-!           C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
-!           C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
-! !           C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-!           C(3)=10.0_DP
-! 
-!           !J1 term: del(J1)/del(C)=J^(-2/3)*I-2/3*I_1*J^(-2/3)*C^-1
-!           TEMPTERM=Jznu**(-2.0_DP/3.0_DP)
-!           TEMP(1,1)=TEMPTERM
-!           TEMP(2,2)=TEMPTERM
-!           TEMP(3,3)=TEMPTERM
-!           I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
-!           PIOLA_TENSOR=C(1)* (TEMP-2.0_DP/3.0_DP*I1*TEMPTERM*AZU)
-! 
-!           !J2 term: del(J2)/del(C)=J^(-4/3)*del(I2)/del(C) -4/3*I_2*J^(-4/3)*C^-1
-!           TEMP=MATMUL(AZL,AZL)  ! C^2
-!           I2=0.5_DP*(I1**2.0_DP-(TEMP(1,1)+TEMP(2,2)+TEMP(3,3)))
-!           TEMPTERM=Jznu**(-4.0_DP/3.0_DP)
-!           !TEMP is now del(I2)/del(C)
-!           TEMP(1,1)=AZL(2,2)+AZL(3,3)
-!           TEMP(1,2)=-2.0_DP*AZL(1,2)
-!           TEMP(1,3)=-2.0_DP*AZL(1,3)
-!           TEMP(2,1)=TEMP(1,2)
-!           TEMP(2,2)=AZL(1,1)+AZL(3,3)
-!           TEMP(2,3)=-2.0_DP*AZL(2,3)
-!           TEMP(3,1)=TEMP(1,3)
-!           TEMP(3,2)=TEMP(2,3)
-!           TEMP(3,3)=AZL(1,1)+AZL(2,2)
-!           PIOLA_TENSOR=PIOLA_TENSOR+C(2)* (TEMPTERM*TEMP-4.0_DP/3.0_DP*I2*TEMPTERM*AZU)
-!           
-!           !J (det(F)) term: (2.C3.(J-1)+lambda)*J.C^-1
-!           PIOLA_TENSOR=PIOLA_TENSOR+(2.0_DP*C(3)*(Jznu-1.0_DP)+P)*Jznu*AZU
-! 
-!           !Don't forget, it's wrt C so there is a factor of 2 - but not for the pressure !!??
-!           PIOLA_TENSOR=2.0_DP*PIOLA_TENSOR          TEMP_1 = C(1)*I3**(-1.0_DP/3.0_DP) + C(2)*I3**(-2.0_DP/3.0_DP)*I1
-
-          TEMP_2 = -C(2)*I3**(-2.0_DP/3.0_DP)
-
-          TEMP_3 = -1.0_DP/3.0_DP*C(1)*I1*I3**(-1.0_DP/3.0_DP) - 2.0_DP/3.0_DP*C(2)*I2*I3**(-2.0_DP/3.0_DP)
-
-          PIOLA_TENSOR = TEMP_2 * AZL + TEMP_3 * AZU
-
-          DO i=1,3
-            PIOLA_TENSOR(i,i) = PIOLA_TENSOR(i,i) + TEMP_1
-          ENDDO
-
-          PIOLA_TENSOR = 2.0_DP * PIOLA_TENSOR
-
-          PIOLA_TENSOR = PIOLA_TENSOR + (2.0_DP*C(3)*(Jznu-1.0_DP)-P)*Jznu*AZU  !plus or minus P ?
-!---toe
 
           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
         END SELECT
 
         DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
+
+!---tob
+!         Z_COORD_GAUSS = -10.0_DP
+!         Z_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(3,1)
+!         TOL_GAUSS = 1.0_DP
+! 
+!         IF(ABS(Z_COORD-Z_COORD_GAUSS)<TOL_GAUSS) THEN
+!           DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + 1.0e-05_DP
+!         ENDIF
+!---toe
 
         CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
 
@@ -3750,6 +3709,7 @@ CONTAINS
                             IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
                             ENDIF
+!                             CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                           ENDIF
                         ENDIF 
                       ENDIF 
@@ -3772,10 +3732,18 @@ CONTAINS
                           CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                             & ERR,ERROR,*999)
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                         ENDIF
                       ENDIF
                     ENDIF
 
+!---tob
+!                     IF(MOD(CURRENT_LOOP_ITERATION+1,50)==0)  THEN   
+!                       WRITE_IP_INFO_IS_TRUE = .TRUE.
+!                     ELSE
+!                       WRITE_IP_INFO_IS_TRUE = .FALSE.
+!                     ENDIF
+!---toe
 
                   ENDDO
                 ENDIF
@@ -4523,6 +4491,7 @@ CONTAINS
     REAL(DP) :: DARCY_VELOCITY(3)
     REAL(DP) :: OUTPUT_VECTOR(5) !z, Jznu, LM, w-velocity component, volume_increase
     REAL(DP) :: OUTPUT_MATRIX(1,5) !z, Jznu, LM, w-velocity component, volume_increase
+    REAL(DP) :: Z_COORD_GAUSS, TOL_GAUSS
 
     INTEGER(INTG) :: DARCY_MASS_INCREASE_ENTRY !position of mass-increase entry in dependent-variable vector
 
@@ -4616,6 +4585,16 @@ CONTAINS
         DARCY_VELOCITY(2) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
         DARCY_VELOCITY(3) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(3,NO_PART_DERIV)
 
+!---tob
+!         Z_COORD_GAUSS = -10.0_DP
+!         Z_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(3,1)
+!         TOL_GAUSS = 1.0_DP
+! 
+!         IF(ABS(Z_COORD-Z_COORD_GAUSS)<TOL_GAUSS) THEN
+!           DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + 1.0e-05_DP
+!         ENDIF
+!---toe
+
         !Parameters settings for coupled elasticity Darcy INRIA model:
         CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
 
@@ -4702,27 +4681,14 @@ CONTAINS
 !         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dW_add_dVolIncrease = ",dW_add_dVolIncrease,ERR,ERROR,*999)
 
         OUTPUT_MATRIX(1,1) = Z_COORD
-        OUTPUT_MATRIX(1,2) = Jznu
-        OUTPUT_MATRIX(1,3) = P
-        OUTPUT_MATRIX(1,4) = DARCY_VELOCITY(3)
-        OUTPUT_MATRIX(1,5) = DARCY_VOL_INCREASE
-
-!         write(*,*)'OUTPUT_VECTOR = ',OUTPUT_VECTOR
-
-!         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,5,5, &
-!           & 0,OUTPUT_VECTOR, &
-!           & '(" Z_COORD, Jznu, P, DARCY_VELOCITY(3), DARCY_VOL_INCREASE = ",5(X,E13.6))', &
-!           & '0(5(X,E13.6))',ERR,ERROR,*999)
-! 
-! 
-!         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,5,5,0,OUTPUT_VECTOR, &
-!           & '(" OUTPUT_VECTOR = ",5(X,E13.6))','0(5(X,E13.6))', &
-!           & ERR,ERROR,*999)
-
+        OUTPUT_MATRIX(1,2) = DARCY_VOL_INCREASE
+        OUTPUT_MATRIX(1,3) = Jznu
+        OUTPUT_MATRIX(1,4) = P
+        OUTPUT_MATRIX(1,5) = DARCY_VELOCITY(3)
 
         CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,1,1,1,5,5,0, &
           & OUTPUT_MATRIX,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
-          & '("    z, J, lambda, w, dV ','(",I1,",:)',' :",5(X,E13.6))', &
+          & '("    z, dV, J, lambda, w ','(",I1,",:)',' :",5(X,E13.6))', &
           & '(1X,5(X,E13.6))',ERR,ERROR,*999)
 
 
