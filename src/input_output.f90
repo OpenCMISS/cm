@@ -3224,8 +3224,7 @@ CONTAINS
     final=current+(NUMBER_FIRST-1)*DELTA
     IF(final>LAST_IDX) final=LAST_IDX
 
-    !The following call breaks the code, but only when running in the optimized mode - Why ???
-!     WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR(count),count=current,final,DELTA)
+    WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR(count),count=current,final,DELTA)
     CALL WRITE_STR(ID,ERR,ERROR,*999)
     DO WHILE(final<LAST_IDX) !more stuff to do
       current=final+DELTA
