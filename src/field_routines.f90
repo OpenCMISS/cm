@@ -7877,7 +7877,8 @@ CONTAINS
       IF(ERR/=0) GOTO 999
       my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
       IF(ERR/=0) GOTO 999
-      !Calculate the number of global and local degrees of freedom for the field variables and components
+      !Calculate the number of global and local degrees of freedom for the field variables and components. Each field variable
+      !component has a set of DOFs so loop over the components for each variable component and count up the DOFs.
       DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
         NUMBER_OF_CONSTANT_DOFS=0
         NUMBER_OF_ELEMENT_DOFS=0
@@ -7941,6 +7942,7 @@ CONTAINS
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDDO !component_idx
+        !Allocate the DOF to parameters (nodes, elements, gauss, components etc.) maps. 
         FIELD%VARIABLES(variable_idx)%NUMBER_OF_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS
         FIELD%VARIABLES(variable_idx)%TOTAL_NUMBER_OF_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS
         FIELD%VARIABLES(variable_idx)%NUMBER_OF_GLOBAL_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS
@@ -7979,10 +7981,12 @@ CONTAINS
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable local dofs offsets.",ERR,ERROR,*999)
       ALLOCATE(VARIABLE_GHOST_DOFS_OFFSETS(0:DECOMPOSITION%NUMBER_OF_DOMAINS-1),STAT=ERR)
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable ghost dofs offsets.",ERR,ERROR,*999)
+      !We want to ensure that the ghost DOFs are at the end so loop over the DOFs in two passes. The first pass will process
+      !the local DOFs for each variable component and the second pass will process the ghost DOFs for each variable component.
       IF(NUMBER_OF_COMPUTATIONAL_NODES==1) THEN
-        domain_type_stop=1
+        domain_type_stop=1 !Local only
       ELSE
-        domain_type_stop=2
+        domain_type_stop=2 !Local+Ghosts
       ENDIF
       !Calculate the local and global numbers and set up the mappings
       DO variable_idx=1,FIELD%NUMBER_OF_VARIABLES
@@ -7998,6 +8002,12 @@ CONTAINS
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dofs mapping global to local map.",ERR,ERROR,*999)
           FIELD_VARIABLE_DOFS_MAPPING%NUMBER_OF_GLOBAL=FIELD%VARIABLES(variable_idx)%NUMBER_OF_GLOBAL_DOFS
         ENDIF
+        !The ordering of the DOFs with respect to components is arbitrary. Allow for two orderings: The first ordering is that
+        !all the DOFs from one component are processed before all the DOFs of the next component. This is known as "separated"
+        !component DOF ordering. The second ordering is to process all the components for a particular parameter (e.g., node)
+        !and then process all the components for the next parameter. This is known as "contiguous" component DOF ordering.
+        !Continguous component ordering only works if each of the components has the same DOF structure. For this reason
+        !separate component ordering is the default.
         SELECT CASE(FIELD%VARIABLES(variable_idx)%DOF_ORDER_TYPE)
         CASE(FIELD_SEPARATED_COMPONENT_DOF_ORDER)
           !Loop over the domain types. Here domain_type_idx=1 for the non-ghosted dofs and =2 for the ghosted dofs.
@@ -8274,7 +8284,8 @@ CONTAINS
                 IF(domain_type_idx==1) THEN ! domain_type_idx==1 -> non ghosts
                   !Allocate parameter to dof map for this field variable component
                   DOFS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
-                  ! GAUSS_POINT_PARAM2DOF_MAP(ng,ne). The field variable dof number of ng'th Gauss point in the ne'th element based parameter for this field variable component. 
+                  !GAUSS_POINT_PARAM2DOF_MAP(ng,ne). The field variable dof number of ng'th Gauss point in the ne'th element
+                  !based parameter for this field variable component. 
                   ALLOCATE(FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP(&
                    & MAX_NGP,DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
 
@@ -8392,6 +8403,8 @@ CONTAINS
             ENDDO !component_idx
           ENDDO !domain_type_idx
         CASE(FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER)
+          !Handle the case where all components for a particular DOF parameter are processed before all the component of the next
+          !parameter.
           VARIABLE_LOCAL_DOFS_OFFSETS=0
           VARIABLE_GLOBAL_DOFS_OFFSET=0
           VARIABLE_GHOST_DOFS_OFFSETS=0

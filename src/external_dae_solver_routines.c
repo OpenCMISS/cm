@@ -72,8 +72,11 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				double *InitialStep,
 				const int OnlyOneModelIndex,
 				int *ModelsData,
+				int NumberOfState,
 				double *StateData,
+				int NumberOfParameters,
 				double *ParametersData,
+				int NumberOfIntermediate,
 				double *IntermediateData,
 				int *err)
 {

@@ -113,7 +113,7 @@ MODULE BASIS_ROUTINES
   !>@}
 
   !> \addtogroup BASIS_ROUTINES_QuadratureSchemes BASIS_ROUTINES::QuadratureSchemes
-  !> \brief Quadrature scheme parameters
+  !> \brief Quadrature scheme parameters. NOTE: Quadratures schemes have not been implemented yet. For now you should just use the BASIS_DEFAULT_QUADRATURE_SCHEME.
   !> \see BASIS_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES=4 !<The number of currently defined quadrature schemes \see BASIS_ROUTINES_QuadratureSchemes,BASIS_ROUTINES
@@ -1367,6 +1367,7 @@ CONTAINS
         BASIS%DEGENERATE=.FALSE.
         BASIS%NUMBER_OF_COLLAPSED_XI=0
         DO ni=1,BASIS%NUMBER_OF_XI
+          !Set up the interpolation types, orders and number of nodes in each xi from the user specified interpolation xi.
           SELECT CASE(BASIS%INTERPOLATION_XI(ni))
           CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
             BASIS%INTERPOLATION_TYPE(ni)=BASIS_LAGRANGE_INTERPOLATION
@@ -1405,6 +1406,7 @@ CONTAINS
         ENDDO !ni
         !If a degenerate (collapsed) basis recalculate the number of nodes from the maximum posible number of nodes
         IF(BASIS%DEGENERATE) THEN
+          !Calculate the NODE_AT_COLLAPSE array.
           ALLOCATE(NODE_AT_COLLAPSE(NUMBER_OF_NODES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate at collapse",ERR,ERROR,*999)
           POSITION=1
@@ -1985,7 +1987,10 @@ CONTAINS
             ENDDO !nn3
           ENDDO !ni1
 
+!!THIS CODE BELOW NEEDS TO BE TESTED AND CHECKED.
 
+!!FROM HERE
+          
          !Find the faces
          nn4=1
          ef=0           !element face counter
@@ -2033,8 +2038,7 @@ CONTAINS
                BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
                BASIS%LOCAL_FACE_XI_DIRECTION(ef)=ni1  
             ENDIF
-            
-            
+           
             nn1=1
             LOCAL_NODE_COUNT=0
             IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI0) THEN
@@ -2076,6 +2080,8 @@ CONTAINS
             ENDDO !ef
          ENDDO !ni1
 
+!! TO HERE
+         
       CASE DEFAULT
           CALL FLAG_ERROR("Invalid number of xi directions.",ERR,ERROR,*999)
         END SELECT
@@ -2291,6 +2297,8 @@ CONTAINS
             DO ni2=1,ni-1
               FACE_XI2(1)=OTHER_XI_DIRECTIONS3(ni2,2,1)
               FACE_XI2(2)=OTHER_XI_DIRECTIONS3(ni2,3,1)
+
+!!TODO FIX THIS
               !Going to disable the test below, as it results in error in collapsed elements and doesn't save much time
 !               IF(BASIS%INTERPOLATION_XI(FACE_XI2(1))==BASIS%INTERPOLATION_XI(FACE_XI(1)).AND. &
 !                 & BASIS%INTERPOLATION_XI(FACE_XI2(2))==BASIS%INTERPOLATION_XI(FACE_XI(2)).AND. &
@@ -2298,7 +2306,8 @@ CONTAINS
 !                 & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(2))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))) THEN
 !                 FACE_BASIS_DONE=.TRUE.
 !                 EXIT
-!               ENDIF
+              !               ENDIF
+              
             ENDDO !ni2
             IF(FACE_BASIS_DONE) THEN
               BASIS%FACE_BASES(ni)%PTR=>BASIS%FACE_BASES(ni2)%PTR

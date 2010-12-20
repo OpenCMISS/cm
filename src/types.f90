@@ -1204,7 +1204,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<A pointer to the decomposition of the mesh for which the field is defined on.
     INTEGER(INTG) :: NUMBER_OF_VARIABLES !<The number of variable types in the field. Old CMISS name NCT(nr,nx)
     TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: VARIABLE_TYPE_MAP(:) !<VARIABLE_TYPE_MAP(variable_idx). The map from the available field variable types to the field variable types that are defined for the field. variable_idx varies from 1 to FIELD_ROUTINES::FIELD_NUMBER_OF_VARIABLE_TYPES. If the particular field variable type has not been defined on the field then the VARIABLE_TYPE_MAP will be NULL. \see FIELD_ROUTINES_VariableTypes
-    TYPE(FIELD_VARIABLE_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx) .The array of field variables. 
+    TYPE(FIELD_VARIABLE_TYPE), ALLOCATABLE :: VARIABLES(:) !<VARIABLES(variable_idx). The array of field variables. 
     TYPE(FIELD_SCALINGS_TYPE) :: SCALINGS !<The scaling parameters for the field
     TYPE(FIELD_TYPE), POINTER :: GEOMETRIC_FIELD !<A pointer to the geometric field that this field uses. If the field itself is a geometric field then this will be a pointer back to itself.
     TYPE(FIELD_GEOMETRIC_PARAMETERS_TYPE), POINTER :: GEOMETRIC_FIELD_PARAMETERS !<If the field is a geometric field the pointer to the geometric parameters (lines, areas, volumes etc.). If the field is not a geometric field the pointer is NULL.
@@ -1233,6 +1233,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information for an element matrix.
   TYPE ELEMENT_MATRIX_TYPE
     INTEGER(INTG) :: EQUATIONS_MATRIX_NUMBER !<The equations matrix number that this element matrix belongs to.
+    INTEGER(INTG) :: STRUCTURE_TYPE !<The structure type of the element matrix. \see EQUATIONS_MATRICES_ROUTINES_EquationsMatrixStructureTypes,EQUATIONS_MATRICES_ROUTINES
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The current number of rows in the element matrix.
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The current number of columns in the element matrix.
     INTEGER(INTG) :: MAX_NUMBER_OF_ROWS !<The maximum (allocated) number of rows in the element matrix.
@@ -1366,6 +1367,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
   END TYPE VAR_TO_EQUATIONS_MATRICES_MAP_TYPE
 
+  !>Contains information for mapping an equations matrix to a field variable.
   TYPE EQUATIONS_MATRIX_TO_VAR_MAP_TYPE
     INTEGER(INTG) :: MATRIX_NUMBER !<The equations matrix number
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX !<A pointer to the equations matrix
@@ -1377,6 +1379,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the column dofs domain mapping for the matrix variable
   END TYPE EQUATIONS_MATRIX_TO_VAR_MAP_TYPE
 
+  !>Contains information for mapping field variables to the dynamic matrices in the equations set of the mapping
   TYPE EQUATIONS_MAPPING_DYNAMIC_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG) :: NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES !<The number of dynamic equations matrices in this mapping
@@ -1391,7 +1394,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VAR_MAPS(:) !<EQUATIONS_MATRIX_TO_VAR_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:) !<EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(row_idx). The row mappings for the row_idx'th row of the equations matrices to the dynamic variable.
   END TYPE EQUATIONS_MAPPING_DYNAMIC_TYPE
-  
+
+  !>Contains information for mapping field variables to the linear matrices in the equations set of the mapping
   TYPE EQUATIONS_MAPPING_LINEAR_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices in this mapping
@@ -1402,7 +1406,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_MATRIX_TO_VAR_MAP_TYPE), ALLOCATABLE :: EQUATIONS_MATRIX_TO_VAR_MAPS(:) !<EQUATIONS_MATRIX_TO_VAR_MAPS(matrix_idx). The mappings for the matrix_idx'th equations matrix.
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:,:) !<EQUATIONS_ROW_TO_VARIABLE_DOFS_MAPS(row_idx,variable_type_idx). The row mappings for the row_idx'th row of the equations matrices to the variable_type_idx'th variable.
   END TYPE EQUATIONS_MAPPING_LINEAR_TYPE
-  
+
+  !>Contains the mapping from the Jacobian back to the nonlinear residual variable.
   TYPE EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE
     INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this equations matrix
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable that is mapped to this equations matrix
@@ -1421,11 +1426,14 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
   END TYPE VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE
 
+  !>Contains information on the equations mapping for nonlinear matrices i.e., how a field variable is mapped to the residual
+  !vector, and how that field variable is mapped to the rows and columns of the associated Jacobian matrix of the equations set
+  !of this equations mapping.
   TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
-    TYPE(VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE) :: VAR_TO_JACOBIAN_MAP
-    TYPE(EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE) :: JACOBIAN_TO_VAR_MAP
-    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE
+    TYPE(VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE) :: VAR_TO_JACOBIAN_MAP !<The mapping of the residual variable to the Jacobain matrix
+    TYPE(EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE) :: JACOBIAN_TO_VAR_MAP !<The mapping from the Jacobian matrix back to the residual variable.
+    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE !<The field variable type of the residual field variable.
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: RESIDUAL_VARIABLE !<A pointer to the variable that is mapped to the residual vector for nonlinear problems.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
     REAL(DP) :: RESIDUAL_COEFFICIENT !<The multiplicative coefficient applied to the residual vector
@@ -1433,6 +1441,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.   
   END TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
 
+  !>Contains information on the equations mapping for a RHS i.e., how a field variable is mapped to the RHS vector for
+  !the equations set of this equations mapping.
   TYPE EQUATIONS_MAPPING_RHS_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The variable type number mapped to the RHS vector
@@ -1442,7 +1452,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: RHS_DOF_TO_EQUATIONS_ROW_MAP(:) !<RHS_DOF_TO_EQUATIONS_ROW_MAP(residual_dof_idx). The mapping from the rhs_dof_idx'th RHS dof in the rhs variable to the equations row.   
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RHS_DOF_MAP(:) !<EQUATIONS_ROW_TO_RHS_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the RHS dof.   
   END TYPE EQUATIONS_MAPPING_RHS_TYPE
-  
+
+  !>Contains information on the equations mapping for a source i.e., how a field variable is mapped to the source vector for
+  !the equations set of this equations mapping.
   TYPE EQUATIONS_MAPPING_SOURCE_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG) :: SOURCE_VARIABLE_TYPE !<The variable type number mapped from the source vector
@@ -1452,7 +1464,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: SOURCE_DOF_TO_EQUATIONS_ROW_MAP(:) !<SOURCE_DOF_TO_EQUATIONS_ROW_MAP(source_dof_idx). The mapping from the source_dof_idx'th source dof in the source variable to the equations row.   
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_SOURCE_DOF_MAP(:) !<EQUATIONS_ROW_TO_SOURCE_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.
   END TYPE EQUATIONS_MAPPING_SOURCE_TYPE
-  
+
+  !>Contains information on the create values cache for the equations mapping. Because we do not want to allocate and deallocate
+  !large data structures as the equations mapping options are changed between create start and create finish we cache the
+  !important information and the allocate and process the data structures at create finish.
   TYPE EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE
     INTEGER(INTG) :: NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES !<The number of dynamic matrices in the equations mapping
     INTEGER(INTG) :: DYNAMIC_STIFFNESS_MATRIX_NUMBER !<The dynamic matrix number corresponding to the dynamic stiffness matrix
@@ -1471,6 +1486,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP) :: SOURCE_COEFFICIENT !<The coefficient multiplying the source vector.
   END TYPE EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE
 
+  !>Contains information on the equations mapping i.e., how field variable DOFS are mapped to the rows and columns of a number
+  !of equations matrices.
   TYPE EQUATIONS_MAPPING_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations for this equations mapping
     LOGICAL :: EQUATIONS_MAPPING_FINISHED !<Is .TRUE. if the equations mapping has finished being created, .FALSE. if not.
@@ -2086,6 +2103,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(CELLML_ENVIRONMENTS_TYPE), POINTER :: ENVIRONMENTS !<A pointer back to the CellML environments.
     LOGICAL :: CELLML_FINISHED !<Is .TRUE. if the environment has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_OF_MODELS !< The number of models defined in the CellML environment
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_STATE !<The maximum number of state variables across all models.
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_PARAMETERS !<The maximum number of parameters variables across all models.
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_INTERMEDIATE !<The maximum number of intermediate variables across all models.
     TYPE(CELLML_MODEL_PTR_TYPE), ALLOCATABLE :: MODELS(:) !< MODELS(model_idx). The array of pointers to the models.
     TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: FIELD_MAPS !<A pointer the information on CellML<-->Field maps.
     TYPE(CELLML_MODELS_FIELD_TYPE), POINTER :: MODELS_FIELD !<A pointer to the models field information.

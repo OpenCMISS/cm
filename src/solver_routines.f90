@@ -47,6 +47,7 @@ MODULE SOLVER_ROUTINES
 
   USE BASE_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
+  USE CELLML_MODEL_DEFINITION
   USE CMISS_CELLML
   USE CMISS_PETSC
   USE COMP_ENVIRONMENT
@@ -305,19 +306,22 @@ MODULE SOLVER_ROUTINES
   INTERFACE
 
     SUBROUTINE SOLVER_DAE_EXTERNAL_INTEGRATE(NUMBER_OF_DOFS,START_TIME,END_TIME,INITIAL_STEP, &
-      & ONLY_ONE_MODEL_INDEX,MODELS_DATA,STATE_DATA,PARAMETERS_DATA,INTERMEDIATE_DATA,ERR) &
-      & BIND(C, NAME="SolverDAEExternalIntegrate")
+      & ONLY_ONE_MODEL_INDEX,MODELS_DATA,NUMBER_OF_STATE,STATE_DATA,NUMBER_OF_PARAMETERS, &
+      & PARAMETERS_DATA,NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR) BIND(C, NAME="SolverDAEExternalIntegrate")
       
       USE ISO_C_BINDING
 
-      INTEGER(C_INT), INTENT(IN) :: NUMBER_OF_DOFS
-      REAL(C_DOUBLE), INTENT(IN) :: START_TIME
-      REAL(C_DOUBLE), INTENT(IN) :: END_TIME
+      INTEGER(C_INT), VALUE, INTENT(IN) :: NUMBER_OF_DOFS
+      REAL(C_DOUBLE), VALUE, INTENT(IN) :: START_TIME
+      REAL(C_DOUBLE), VALUE, INTENT(IN) :: END_TIME
       REAL(C_DOUBLE), INTENT(INOUT) :: INITIAL_STEP
-      INTEGER(C_INT), INTENT(IN) :: ONLY_ONE_MODEL_INDEX
+      INTEGER(C_INT), VALUE, INTENT(IN) :: ONLY_ONE_MODEL_INDEX
       INTEGER(C_INT), INTENT(IN) :: MODELS_DATA(*)
+      INTEGER(C_INT), VALUE, INTENT(IN) :: NUMBER_OF_STATE
       REAL(C_DOUBLE), INTENT(INOUT) :: STATE_DATA(*)
+      INTEGER(C_INT), VALUE, INTENT(IN) :: NUMBER_OF_PARAMETERS
       REAL(C_DOUBLE), INTENT(IN) :: PARAMETERS_DATA(*)
+      INTEGER(C_INT), VALUE, INTENT(IN) :: NUMBER_OF_INTERMEDIATE     
       REAL(C_DOUBLE), INTENT(OUT) :: INTERMEDIATE_DATA(*)
       INTEGER(C_INT), INTENT(OUT) :: ERR
       
@@ -1388,36 +1392,118 @@ CONTAINS
   !
 
   !>Integrate using a forward Euler differential-algebraic equation solver.
-!  SUBROUTINE SOLVER_DAE_EULER_FORWARD_INTEGRATE(FORWARD_EULER_SOLVER,N,START_TIME,END_TIME,TIME_INCREMENT,MODELS_DATA, &
-!    & NUMBER_STATES,STATE_DATA,NUMBER_PARAMETERS,PARAMETERS_DATA,NUMBER_INTERMEDIATE,INTERMEDIATE_DATA,ERR,ERROR,*)
+  SUBROUTINE SOLVER_DAE_EULER_FORWARD_INTEGRATE(FORWARD_EULER_SOLVER,CELLML,N,START_TIME,END_TIME,TIME_INCREMENT, &
+    & ONLY_ONE_MODEL_INDEX,MODELS_DATA,NUMBER_STATES,STATE_DATA,NUMBER_PARAMETERS,PARAMETERS_DATA,NUMBER_INTERMEDIATE, &
+    & INTERMEDIATE_DATA,ERR,ERROR,*)
 
-!    !Argument variables
-!    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer the forward Euler differential-algebraic equation solver to integrate
-!    INTEGER(INTG), INTENT(IN) :: N !<The number of degrees-of-freedom
-!    REAL(DP), INTENT(IN) :: START_TIME !<The start time for the integration
-!    REAL(DP), INTENT(IN) :: END_TIME !<The end time for the integration
-!    REAL(DP), INTENT(INOUT) :: TIME_INCREMENT !<The (initial) time increment for the integration
-!    INTEGER(INTG), INTENT(IN) :: MODELS_DATA(N) !<MODELS_DATA(dof_idx). The models data for the dof_idx'th dof.
-!    INTEGER(INTG), INTENT(IN) :: NUMBER_STATES !<The maximum number of state variables per dof
-!    REAL(DP), INTENT(INOUT) :: STATE_DATA(NUMBER_STATES,N) !<STATE_DATA(state_idx,dof_idx). The state data for the state_idx'th state variable of the dof_idx'th dof. state_idx varies from 1..NUMBER_STATES.
-!    INTEGER(INTG), INTENT(IN) :: NUMBER_PARAMETERS !<The maximum number of parameter variables per dof.
-!    REAL(DP), INTENT(IN) :: PARAMETERS_DATA(NUMBER_PARAMETERS,N) !<PARAMETERS_DATA(parameter_idx,dof_idx). The parameters data for the parameter_idx'th parameter variable of the dof_idx'th dof. parameter_idx varies from 1..NUMBER_PARAMETERS.
-!    INTEGER(INTG), INTENT(IN) :: NUMBER_INTERMEDIATE !<The maximum number of intermediate variables per dof.
-!    REAL(DP), INTENT(OUT) :: INTERMEDIATE_DATA(NUMBER_INTERMEDIATE,N) !<INTERMEDIATE_DATA(intermediate_idx,dof_idx). The intermediate values data for the intermediate_idx'th intermediate variable of the dof_idx'th dof. intermediate_idx varies from 1.NUMBER_INTERMEDIATE    
-!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-!    !Local Variables
-!    REAL(DP) :: RATES(NUMBER_STATES)
+    !Argument variables
+    TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer the forward Euler differential-algebraic equation solver to integrate
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to integrate the equations for.
+    INTEGER(INTG), INTENT(IN) :: N !<The number of degrees-of-freedom
+    REAL(DP), INTENT(IN) :: START_TIME !<The start time for the integration
+    REAL(DP), INTENT(IN) :: END_TIME !<The end time for the integration
+    REAL(DP), INTENT(INOUT) :: TIME_INCREMENT !<The (initial) time increment for the integration
+    INTEGER(INTG), INTENT(IN) :: ONLY_ONE_MODEL_INDEX !<If only one model is used in the models data the index of that model. 0 otherwise.
+    INTEGER(INTG), POINTER :: MODELS_DATA(:) !<MODELS_DATA(dof_idx). The models data for the dof_idx'th dof.
+    INTEGER(INTG), INTENT(IN) :: NUMBER_STATES !<The maximum number of state variables per dof
+    REAL(DP), POINTER :: STATE_DATA(:) !<STATE_DATA(state_idx,dof_idx). The state data for the state_idx'th state variable of the dof_idx'th dof. state_idx varies from 1..NUMBER_STATES.
+    INTEGER(INTG), INTENT(IN) :: NUMBER_PARAMETERS !<The maximum number of parameter variables per dof.
+    REAL(DP), POINTER :: PARAMETERS_DATA(:) !<PARAMETERS_DATA(parameter_idx,dof_idx). The parameters data for the parameter_idx'th parameter variable of the dof_idx'th dof. parameter_idx varies from 1..NUMBER_PARAMETERS.
+    INTEGER(INTG), INTENT(IN) :: NUMBER_INTERMEDIATE !<The maximum number of intermediate variables per dof.
+    REAL(DP), POINTER :: INTERMEDIATE_DATA(:) !<INTERMEDIATE_DATA(intermediate_idx,dof_idx). The intermediate values data for the intermediate_idx'th intermediate variable of the dof_idx'th dof. intermediate_idx varies from 1.NUMBER_INTERMEDIATE    
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,model_idx
+    REAL(DP) :: RATES(NUMBER_STATES),TIME
+    TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-!    CALL ENTERS("SOLVER_DAE_EULER_FORWARD_INTEGRATE",ERR,ERROR,*999)
+    CALL ENTERS("SOLVER_DAE_EULER_FORWARD_INTEGRATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FORWARD_EULER_SOLVER)) THEN
+      IF(ASSOCIATED(CELLML)) THEN
+        IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+          CALL FIELD_DOF_ORDER_TYPE_GET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*999)
+          IF(DOF_ORDER_TYPE==FIELD_SEPARATED_COMPONENT_DOF_ORDER) THEN
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            !Dof components are separated. Will need to copy data to temporary arrays.
+            IF(ONLY_ONE_MODEL_INDEX==0) THEN
+              !Mulitple models              
+            ELSE
+              !One one model is used.          
+            ENDIF
+          ELSE
+            !Dof components are continguous. Can pass data directly.
+            IF(ONLY_ONE_MODEL_INDEX==0) THEN
+              !Mulitple models
+              TIME=START_TIME
+              DO WHILE(TIME<=END_TIME)
+                DO dof_idx=1,N
+                  model_idx=MODELS_DATA(dof_idx)
+                  MODEL=>CELLML%MODELS(model_idx)%PTR
+                  IF(ASSOCIATED(MODEL)) THEN
+#ifdef USECELLML                    
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA((dof_idx-1)*NUMBER_STATES+1: &
+                      & (dof_idx-1)*NUMBER_STATES),RATES,INTERMEDIATE_DATA((dof_idx-1)*NUMBER_INTERMEDIATE+1:(dof_idx-1)* &
+                      & NUMBER_INTERMEDIATE),PARAMETERS_DATA((dof_idx-1)*NUMBER_PARAMETERS+1:(dof_idx-1)*NUMBER_PARAMETERS))
+#else
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+                    STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)= &
+                      & STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)+TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                  ELSE
+                    LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF                  
+                ENDDO !dof_idx
+                TIME=TIME+TIME_INCREMENT
+              ENDDO !time              
+            ELSE
+              !One one model is used.
+              MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
+              IF(ASSOCIATED(MODEL)) THEN
+                TIME=START_TIME
+                DO WHILE(TIME<=END_TIME)
+                  DO dof_idx=1,N
+#ifdef USECELLML                    
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA((dof_idx-1)*NUMBER_STATES+1: &
+                      & (dof_idx-1)*NUMBER_STATES),RATES,INTERMEDIATE_DATA((dof_idx-1)*NUMBER_INTERMEDIATE+1:(dof_idx-1)* &
+                      & NUMBER_INTERMEDIATE),PARAMETERS_DATA((dof_idx-1)*NUMBER_PARAMETERS+1:(dof_idx-1)*NUMBER_PARAMETERS))
+#else
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+                    STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)= &
+                      & STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)+TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                  ENDDO !dof_idx
+                  TIME=TIME+TIME_INCREMENT
+                ENDDO !time
+              ELSE
+                LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("Forward Euler solver is not associated.",ERR,ERROR,*999)
+    ENDIF
         
-!    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INTEGRATE")
-!    RETURN
-!999 CALL ERRORS("SOLVER_DAE_EULER_FORWARD_INTEGRATE",ERR,ERROR)    
-!    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INTEGRATE")
-!    RETURN 1
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INTEGRATE")
+    RETURN
+999 CALL ERRORS("SOLVER_DAE_EULER_FORWARD_INTEGRATE",ERR,ERROR)    
+    CALL EXITS("SOLVER_DAE_EULER_FORWARD_INTEGRATE")
+    RETURN 1
    
-!  END SUBROUTINE SOLVER_DAE_EULER_FORWARD_INTEGRATE
+  END SUBROUTINE SOLVER_DAE_EULER_FORWARD_INTEGRATE
 
   !
   !================================================================================================================================
@@ -1440,7 +1526,7 @@ CONTAINS
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
     TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
-    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD
+    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1458,25 +1544,77 @@ CONTAINS
             IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
               DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
                 CELLML_ENVIRONMENT=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
-                IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN
+                IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN                  
                   CELLML_MODELS_FIELD=>CELLML_ENVIRONMENT%MODELS_FIELD
                   IF(ASSOCIATED(CELLML_MODELS_FIELD)) THEN
                     MODELS_FIELD=>CELLML_MODELS_FIELD%MODELS_FIELD
                     IF(ASSOCIATED(MODELS_FIELD)) THEN
-                    
+
+!!TODO: Maybe move this getting of fields earlier up the DAE solver chain? For now keep here.
+                      
                       !Make sure CellML fields have been updated to the current value of any mapped fields
                       CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
-                      
+
+                      NULLIFY(MODELS_VARIABLE)
                       CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
                       CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & MODELS_DATA,ERR,ERROR,*999)
                       
-                      !CALL SOLVER_DAE_EULER_FORWARD_INTEGRATE(FORWARD_EULER_SOLVER,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS, &
-                      !  & DAE_SOLVER%START_TIME,DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP,MODELS_DATA,STATE_DATA, &
-                      !  & PARAMETERS_DATA,INTERMEDIATE_DATA,ERR,ERROR,*999)
+                      !Get the state information if this environment has any.
+                      IF(ASSOCIATED(CELLML_ENVIRONMENT%STATE_FIELD)) THEN
+                        STATE_FIELD=>CELLML_ENVIRONMENT%STATE_FIELD%STATE_FIELD
+                        IF(ASSOCIATED(STATE_FIELD)) THEN
+                          CALL FIELD_PARAMETER_SET_DATA_GET(STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & STATE_DATA,ERR,ERROR,*999)
+                        ELSE
+                          NULLIFY(STATE_DATA)
+                        ENDIF
+                      ELSE
+                        NULLIFY(STATE_DATA)
+                      ENDIF
                       
+                      !Get the parameters information if this environment has any.
+                      IF(ASSOCIATED(CELLML_ENVIRONMENT%PARAMETERS_FIELD)) THEN
+                        PARAMETERS_FIELD=>CELLML_ENVIRONMENT%PARAMETERS_FIELD%PARAMETERS_FIELD
+                        IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
+                          CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & PARAMETERS_DATA,ERR,ERROR,*999)
+                        ELSE
+                          NULLIFY(PARAMETERS_DATA)
+                        ENDIF
+                      ELSE
+                        NULLIFY(PARAMETERS_DATA)
+                      ENDIF
+                      
+                      !Get the intermediate information if this environment has any.
+                      IF(ASSOCIATED(CELLML_ENVIRONMENT%INTERMEDIATE_FIELD)) THEN
+                        INTERMEDIATE_FIELD=>CELLML_ENVIRONMENT%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
+                        IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
+                          CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                            & INTERMEDIATE_DATA,ERR,ERROR,*999)                            
+                        ELSE
+                          NULLIFY(INTERMEDIATE_DATA)
+                        ENDIF
+                      ELSE
+                        NULLIFY(INTERMEDIATE_DATA)
+                      ENDIF
+
+                      !Integrate these CellML equations
+                      CALL SOLVER_DAE_EULER_FORWARD_INTEGRATE(FORWARD_EULER_SOLVER,CELLML_ENVIRONMENT,MODELS_VARIABLE% &
+                        & TOTAL_NUMBER_OF_DOFS,DAE_SOLVER%START_TIME,DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP, &
+                        & CELLML_ENVIRONMENT%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,MODELS_DATA,CELLML_ENVIRONMENT% &
+                        & MAXIMUM_NUMBER_OF_STATE,STATE_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS, &
+                        & PARAMETERS_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR,ERROR,*999)
+                      
+                      !Restore field data
                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & MODELS_DATA,ERR,ERROR,*999)
+                      IF(ASSOCIATED(STATE_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                        & FIELD_VALUES_SET_TYPE,STATE_DATA,ERR,ERROR,*999)                    
+                      IF(ASSOCIATED(PARAMETERS_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(PARAMETERS_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,PARAMETERS_DATA,ERR,ERROR,*999)                    
+                      IF(ASSOCIATED(INTERMEDIATE_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(INTERMEDIATE_FIELD, &
+                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,INTERMEDIATE_DATA,ERR,ERROR,*999)
                       
                       !Make sure fields have been updated to the current value of any mapped CellML fields
                       CALL CELLML_CELLML_TO_FIELD_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
@@ -1503,7 +1641,6 @@ CONTAINS
           ELSE
             CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
           ENDIF
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -2065,6 +2202,7 @@ CONTAINS
         NULLIFY(SOLVER%DAE_SOLVER%ADAMS_MOULTON_SOLVER)
         NULLIFY(SOLVER%DAE_SOLVER%BDF_SOLVER)
         NULLIFY(SOLVER%DAE_SOLVER%RUSH_LARSON_SOLVER)
+        NULLIFY(SOLVER%DAE_SOLVER%EXTERNAL_SOLVER)
         !Default to an Euler differential equation solver
         CALL SOLVER_DAE_EULER_INITIALISE(SOLVER%DAE_SOLVER,ERR,ERROR,*999)
         SOLVER%DAE_SOLVER%DAE_SOLVE_TYPE=SOLVER_DAE_EULER
@@ -2639,13 +2777,10 @@ CONTAINS
     REAL(DP), POINTER :: INTERMEDIATE_DATA(:),PARAMETERS_DATA(:),STATE_DATA(:)
     TYPE(CELLML_TYPE), POINTER :: CELLML_ENVIRONMENT
     TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
-    TYPE(CELLML_MODELS_FIELD_TYPE), POINTER :: CELLML_MODELS_FIELD
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
-    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_DAE_EXTERNAL_SOLVE",ERR,ERROR,*999)
@@ -2666,7 +2801,9 @@ CONTAINS
                                            
                     !Make sure CellML fields have been updated to the current value of any mapped fields
                     CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
-                    
+
+                    NULLIFY(MODELS_VARIABLE)
+                    CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
                     CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & MODELS_DATA,ERR,ERROR,*999)
                     
@@ -2712,7 +2849,9 @@ CONTAINS
                     !Call the external solver to integrate these CellML equations
                     CALL SOLVER_DAE_EXTERNAL_INTEGRATE(MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS,DAE_SOLVER%START_TIME, &
                       & DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP,CELLML_ENVIRONMENT%MODELS_FIELD% &
-                      & ONLY_ONE_MODEL_INDEX,MODELS_DATA,STATE_DATA,PARAMETERS_DATA,INTERMEDIATE_DATA,ERR)
+                      & ONLY_ONE_MODEL_INDEX,MODELS_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_STATE,STATE_DATA, &
+                      & CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS,PARAMETERS_DATA,CELLML_ENVIRONMENT% &
+                      & MAXIMUM_NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR)
                     IF(ERR/=0) THEN
                       ERROR="Error from external solver integrate."
                       GOTO 999
