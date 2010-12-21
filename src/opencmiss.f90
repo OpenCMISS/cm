@@ -226,7 +226,7 @@ MODULE OPENCMISS
   !>Contains information on an embedded mesh
   TYPE CMISSMeshEmbeddingType
     PRIVATE
-    TYPE(MESH_EMBEDDING_TYPE), POINTER :: EMBEDDING
+    TYPE(MESH_EMBEDDING_TYPE), POINTER :: MESH_EMBEDDING
   END TYPE CMISSMeshEmbeddingType
 
   !>Contains information on the nodes defined on a region.
@@ -3559,6 +3559,7 @@ MODULE OPENCMISS
  
   !>Creates an embedding of one mesh in another
   INTERFACE CMISSMeshEmbeddingCreate
+    MODULE PROCEDURE CMISSMeshEmbeddingCreateNumber
     MODULE PROCEDURE CMISSMeshEmbeddingCreateObj
   END INTERFACE
 
@@ -3573,7 +3574,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshEmbeddingPushDataObj
   END INTERFACE
 
-  PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetChildNodePosition, CMISSMeshEmbeddingType, CMISSMeshEmbeddingPushData
+  !INTERFACE CMISSMeshEmbeddingSetGaussPointData
+   !MODULE PROCEDURE CMISSMeshEmbeddingSetGaussPointDataObj
+  !END INTERFACE
+
+  PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetChildNodePosition, CMISSMeshEmbeddingType
+
+  PUBLIC CMISSEmbeddedMeshTypeInitialise, CMISSMeshEmbeddingPushData!, CMISSMeshEmbeddingSetGaussPointData
 
   PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
  
@@ -30506,13 +30513,96 @@ CONTAINS
 !! MESH EMBEDDING ROUTINES
 !!
 !!==================================================================================================================================
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a EmbeddedMeshType object.
+  SUBROUTINE CMISSEmbeddedMeshTypeInitialise(MeshEmbedding,Err)
+    !Argument variables
+    TYPE(CMISSMeshEmbeddingType), INTENT(OUT) ::  MeshEmbedding !<The  MeshEmbeddingType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSEmbeddedMeshTypeInitialise",Err,ERROR,*999)
+    
+    NULLIFY(MeshEmbedding%MESH_EMBEDDING)
+
+    CALL EXITS("CMISSEmbeddedMeshTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSEmbeddedMeshTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSEmbeddedMeshTypeInitialise")    
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEmbeddedMeshTypeInitialise
+
+  !
+  !================================================================================================================================
+  !
+!>Creates a mesh embedding
+  SUBROUTINE CMISSMeshEmbeddingCreateNumber(RegionOneUserNumber,RegionTwoUserNumber,MeshEmbedding,ParentMeshUserNumber, &
+    & ChildMeshUserNumber,Err)
+    
+    TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
+    TYPE(REGION_TYPE), POINTER :: REGION1, REGION2
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(MESH_TYPE), POINTER :: PARENTMESH,CHILDMESH
+    INTEGER(INTG), INTENT(IN) :: ParentMeshUserNumber, ChildMeshUserNumber  !<The user number of the mesh.
+    INTEGER(INTG), INTENT(IN) :: RegionOneUserNumber, RegionTwoUserNumber !<The user number of the region containing the mesh.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+
+    CALL ENTERS("CMISSMeshEmbeddingCreateNumber",Err,ERROR,*999)
+
+    NULLIFY(REGION1)
+    NULLIFY(REGION2)
+    NULLIFY(PARENTMESH)
+    NULLIFY(CHILDMESH)
+
+    CALL REGION_USER_NUMBER_FIND(RegionOneUserNumber,REGION1,Err,ERROR,*999)
+    CALL REGION_USER_NUMBER_FIND(RegionTwoUserNumber,REGION2,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION1)) THEN
+      CALL MESH_USER_NUMBER_FIND(ParentMeshUserNumber,REGION1,PARENTMESH,Err,ERROR,*999)
+      IF(ASSOCIATED(REGION2)) THEN
+        CALL MESH_USER_NUMBER_FIND(ChildMeshUserNumber,REGION2,CHILDMESH,Err,ERROR,*999)
+        IF(ASSOCIATED(PARENTMESH).AND.ASSOCIATED(CHILDMESH)) THEN
+          CALL MESH_EMBEDDING_CREATE(MeshEmbedding%MESH_EMBEDDING,PARENTMESH,CHILDMESH,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="Meshes with user number of "//TRIM(NUMBER_TO_VSTRING(ParentMeshUserNumber,"*",Err,ERROR))// &
+              & " and "//TRIM(NUMBER_TO_VSTRING(ChildMeshUserNumber,"*",Err,ERROR))//  " do not exist."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionTwoUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionOneUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshEmbeddingCreateNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshEmbeddingCreateNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshEmbeddingCreateNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSMeshEmbeddingCreateNumber
+
+  !  
+  !================================================================================================================================
+  !  
 
   !>Creates a mesh embedding
   SUBROUTINE CMISSMeshEmbeddingCreateObj(MeshEmbedding, ParentMesh, ChildMesh, Err)
     TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
     TYPE(CMISSMeshType), INTENT(IN) :: ParentMesh, ChildMesh   !<The parent and child meshes
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    CALL MESH_EMBEDDING_CREATE(MeshEmbedding%EMBEDDING,ParentMesh%MESH,ChildMesh%MESH,Err,ERROR,*999)
+    CALL MESH_EMBEDDING_CREATE(MeshEmbedding%MESH_EMBEDDING,ParentMesh%MESH,ChildMesh%MESH,Err,ERROR,*999)
 999 RETURN
   END SUBROUTINE CMISSMeshEmbeddingCreateObj
 
@@ -30527,9 +30617,13 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: NodeNumbers(:)  !<Node numbers in child mesh
     REAL(DP), INTENT(IN)      :: XiCoords(:,:)   !<Xi coordinates of embedded nodes wrt parent element
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    CALL MESH_EMBEDDING_SET_CHILD_NODE_POSITION(MeshEmbedding%EMBEDDING,ElementNumber, NodeNumbers, XiCoords, Err, ERROR, *999)
+    CALL MESH_EMBEDDING_SET_CHILD_NODE_POSITION(MeshEmbedding%MESH_EMBEDDING,ElementNumber, NodeNumbers, XiCoords, Err, ERROR, *999)
 999 RETURN
   END SUBROUTINE CMISSMeshEmbeddingSetChildNodePositionObj
+
+  !  
+  !================================================================================================================================
+  !  
 
   !>Pushes data to embedded mesh. Will generally be used at library and not API level. /TODO: Parameter set etc, function name?
   SUBROUTINE CMISSMeshEmbeddingPushDataObj(MeshEmbedding, ParentField, ParentComponent, ChildField, ChildComponent, Err)
@@ -30537,12 +30631,31 @@ CONTAINS
     TYPE(CMISSFieldType), POINTER, INTENT(IN) :: ParentField, ChildField  !<Fields associated with parent and child mesh to get/set data from
     INTEGER(INTG), INTENT(IN) :: ParentComponent, ChildComponent  !<Component numbers in respective fields
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    CALL MESH_EMBEDDING_PUSH_DATA(MeshEmbedding%EMBEDDING,ParentField%FIELD, ParentComponent, ChildField%FIELD, ChildComponent,&
-      & Err, ERROR, *999)
+    CALL MESH_EMBEDDING_PUSH_DATA(MeshEmbedding%MESH_EMBEDDING,ParentField%FIELD, ParentComponent, ChildField%FIELD, & 
+      & ChildComponent, Err, ERROR, *999)
 999 RETURN
   END SUBROUTINE CMISSMeshEmbeddingPushDataObj
 
-
+!  
+  !================================================================================================================================
+  !  
+!  
+!   !>Sets the positions of a Gauss point of the parent mesh in terms of element/xi coordinated in the child mesh
+!    SUBROUTINE CMISSMeshEmbeddingSetGaussPointDataObj(MeshEmbedding, ParentElementNumber,ParentXiCoords, &
+!       & GaussPointNumber, ChildElementNumber,ChildXiCoords, Err) 
+!     TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
+!     INTEGER(INTG), INTENT(IN) :: ParentElementNumber   !<Parent element number
+!     INTEGER(INTG), INTENT(IN) :: ChildElementNumber   !<Parent element number
+!     INTEGER(INTG), INTENT(IN) :: GaussPointNumber                  !<Gauss point number in this element
+!     REAL(DP), INTENT(IN)      :: ParentXiCoords(:,:)   !<Xi coordinates of embedded nodes wrt parent element
+!     REAL(DP), INTENT(IN)      :: ChildXiCoords(:,:)   !<Xi coordinates of embedded nodes wrt Child element
+!     INTEGER(INTG), INTENT(OUT) :: ERR           !<The error code
+! 
+!     CALL MESH_EMBEDDING_SET_GAUSS_POINT_DATA(MeshEmbedding%MESH_EMBEDDING, ParentElementNumber, GaussPointNumber,&
+!     & ParentXiCoords, ChildElementNumber, ChildXiCoords,ERR,ERROR,*999)
+! 999 RETURN
+!    END SUBROUTINE CMISSMeshEmbeddingSetGaussPointDataObj
+! ! 
 
 !!==================================================================================================================================
 !!

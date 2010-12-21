@@ -8422,13 +8422,44 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DECOMPOSITION_NODE_DOMAIN_GET
 
+!
+  !================================================================================================================================
+  !
+
+  !>Initialises the embedded meshes.
+  SUBROUTINE EMBEDDED_MESH_INITIALISE(MESH_EMBEDDING,ERR,ERROR,*)
+
+    !Argument variables
+    !TYPE(MESH_EMBEDDING_TYPE), INTENT(INOUT) :: MESH_EMBEDDING !<Mesh embedding to initialise
+    TYPE(MESH_EMBEDDING_TYPE), POINTER :: MESH_EMBEDDING !<Mesh embedding to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("EMBEDDED_MESH_INITIALISE",ERR,ERROR,*998)
+    ALLOCATE(MESH_EMBEDDING,STAT=ERR)
+    NULLIFY(MESH_EMBEDDING%PARENT_MESH)
+    NULLIFY(MESH_EMBEDDING%CHILD_MESH)
+    
+    CALL EXITS("EMBEDDED_MESH_INITIALISE")
+    RETURN
+!999 CALL EMBEDDED_MESH_FINALISE(MESH_EMBEDDING,DUMMY_ERR,DUMMY_ERROR,*998)
+998 CALL ERRORS("EMBEDDED_MESH_INITIALISE",ERR,ERROR)
+    CALL EXITS("EMBEDDED_MESH_INITIALISE")
+    RETURN 1
+  END SUBROUTINE EMBEDDED_MESH_INITIALISE
+
+  !
   !
   !================================================================================================================================
   !
 
   !>Creates an embedding of one mesh in another
   SUBROUTINE MESH_EMBEDDING_CREATE(MESH_EMBEDDING, PARENT_MESH, CHILD_MESH,ERR,ERROR,*)
-    TYPE(MESH_EMBEDDING_TYPE), INTENT(INOUT) :: MESH_EMBEDDING !<Mesh embedding to create.
+!    TYPE(MESH_EMBEDDING_TYPE), INTENT(INOUT) :: MESH_EMBEDDING !<Mesh embedding to create.
+    TYPE(MESH_EMBEDDING_TYPE), POINTER :: MESH_EMBEDDING !<Mesh embedding to create.
     TYPE(MESH_TYPE), POINTER, INTENT(IN) :: PARENT_MESH !<The parent mesh
     TYPE(MESH_TYPE), POINTER, INTENT(IN) :: CHILD_MESH  !<The child mesh
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -8437,14 +8468,18 @@ CONTAINS
     INTEGER(INTG) :: NGP = 0, ne
 
     CALL ENTERS("MESH_EMBEDDING_CREATE",ERR,ERROR,*999) 
+    
+    WRITE(*,*) 'parent mesh', PARENT_MESH%NUMBER_OF_ELEMENTS
+    WRITE(*,*) 'child mesh', child_MESH%NUMBER_OF_ELEMENTS
+    CALL EMBEDDED_MESH_INITIALISE(MESH_EMBEDDING,ERR,ERROR,*999)
 
     DO ne=1,PARENT_MESH%NUMBER_OF_ELEMENTS
       NGP = MAX(NGP,PARENT_MESH%TOPOLOGY(1)%PTR%ELEMENTS%ELEMENTS(ne)%BASIS%QUADRATURE%&
         & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS)
     ENDDO !ne
 
-    MESH_EMBEDDING%PARENT_MESH = PARENT_MESH
-    MESH_EMBEDDING%CHILD_MESH  = CHILD_MESH
+    MESH_EMBEDDING%PARENT_MESH => PARENT_MESH
+    MESH_EMBEDDING%CHILD_MESH  => CHILD_MESH
     ALLOCATE(MESH_EMBEDDING%CHILD_NODE_XI_POSITION(PARENT_MESH%NUMBER_OF_ELEMENTS),STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate child node positions.",ERR,ERROR,*999)
     ALLOCATE(MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(NGP,PARENT_MESH%NUMBER_OF_ELEMENTS),STAT=ERR)
@@ -8454,6 +8489,10 @@ CONTAINS
     CALL EXITS("MESH_EMBEDDING_CREATE")
     RETURN 1
   END SUBROUTINE MESH_EMBEDDING_CREATE
+
+  !
+  !================================================================================================================================
+  !
 
   !>Sets the positions of nodes in the child mesh for one element in the parent mesh
   SUBROUTINE MESH_EMBEDDING_SET_CHILD_NODE_POSITION(MESH_EMBEDDING, ELEMENT_NUMBER, NODE_NUMBERS, XI_COORDS,ERR,ERROR,*)
@@ -8482,6 +8521,9 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MESH_EMBEDDING_SET_CHILD_NODE_POSITION
 
+  !
+  !================================================================================================================================
+  !
 
   !>Sets the positions of a Gauss point of the parent mesh in terms of element/xi coordinated in the child mesh
   SUBROUTINE MESH_EMBEDDING_SET_GAUSS_POINT_DATA(MESH_EMBEDDING, PARENT_ELEMENT_NUMBER, GAUSSPT_NUMBER,&
@@ -8489,10 +8531,10 @@ CONTAINS
     TYPE(MESH_EMBEDDING_TYPE), INTENT(INOUT) :: MESH_EMBEDDING   !<The mesh embedding object
     INTEGER(INTG), INTENT(IN) :: PARENT_ELEMENT_NUMBER           !<Element number in the parent mesh
     INTEGER(INTG), INTENT(IN) :: GAUSSPT_NUMBER                  !<Gauss point number in this element
-    INTEGER(INTG), INTENT(IN) :: PARENT_XI_COORD(:)              !<Xi coordinate in parent element
+    REAL(DP), INTENT(IN) :: PARENT_XI_COORD(:)              !<Xi coordinate in parent element
 
     INTEGER(INTG), INTENT(IN) :: CHILD_ELEMENT_NUMBER !<Element number in the child mesh
-    INTEGER(INTG), INTENT(IN) :: CHILD_XI_COORD(:)    !<Xi coordinate in child element
+    REAL(DP), INTENT(IN) :: CHILD_XI_COORD(:)    !<Xi coordinate in child element
 
     INTEGER(INTG), INTENT(OUT) :: ERR           !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR  !<The error string
@@ -8520,8 +8562,9 @@ CONTAINS
   END SUBROUTINE MESH_EMBEDDING_SET_GAUSS_POINT_DATA
 
 
-
-
+!   !
+!   !================================================================================================================================
+!   !
 
 END MODULE MESH_ROUTINES
 
