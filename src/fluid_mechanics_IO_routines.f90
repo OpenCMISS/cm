@@ -214,6 +214,12 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
 
 
   !Interfaces
+  INTERFACE FLUID_MECHANICS_IO_READ_CMHEART
+    MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART1
+    MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART2
+  END INTERFACE !FLUID_MECHANICS_IO_READ_CMHEART
+
+
   PUBLIC FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS_ITERATION
   PUBLIC FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS
   PUBLIC FLUID_MECHANICS_IO_READ_DATA
@@ -2183,7 +2189,7 @@ CONTAINS
   !
 
   !> Reads in information defined by cmheart input file format.
-  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART(EXPORT,ERR)
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART1(EXPORT,ERR)
 
     !Argument variables
     TYPE (EXPORT_CONTAINER):: EXPORT  
@@ -2193,7 +2199,7 @@ CONTAINS
     TYPE (EXPORT_CONTAINER):: TMP  
     ! INTEGER(INTG):: test 
 
-    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART",ERR,ERROR,*999)
+    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART1",ERR,ERROR,*999)
     WRITE(*,*)' '
     WRITE(*,*)'Importing CMHEART information...'
     WRITE(*,*)' '
@@ -2281,13 +2287,138 @@ CONTAINS
       CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART")
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART1")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART")
+999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART1",ERR,ERROR)    
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART1")
     RETURN
 
-  END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART1
+
+
+  ! OK
+  !================================================================================================================================
+  !
+
+
+  !> Reads in information defined by cmheart input file format.
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART2(EXPORT1,EXPORT2,ERR)
+
+    !Argument variables
+    TYPE (EXPORT_CONTAINER):: EXPORT1,EXPORT2
+    INTEGER(INTG) :: ERR !<The error code
+    TYPE(VARYING_STRING):: ERROR !<The error string
+    !Local Variables
+    TYPE (EXPORT_CONTAINER):: TMP  
+    INTEGER(INTG):: I
+
+    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR,*999)
+    WRITE(*,*)' '
+    WRITE(*,*)'Importing CMHEART information...'
+    WRITE(*,*)' '
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Run from bin directory if input needed.",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"REMEMBER: M,V,P need to be defined as required by cmHeart!",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+!     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Press ENTER to start.",ERR,ERROR,*999)
+!     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+!     READ(*,*)
+
+
+    DO I=1,2
+      IF(I==1) THEN
+        OPEN(UNIT=42, FILE='./input/CMHEART1.inp',STATUS='old')
+      ELSE
+        OPEN(UNIT=42, FILE='./input/CMHEART2.inp',STATUS='old')
+      ENDIF
+
+      CALL FLUID_MECHANICS_IO_READ_AUX
+      CALL FLUID_MECHANICS_IO_READ_NODES
+      CALL FLUID_MECHANICS_IO_READ_ELEMENTS
+
+      IF(.NOT.ALLOCATED(OPENCMISS_ELEM_M)) ALLOCATE(OPENCMISS_ELEM_M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)), & 
+        & STAT=ALLOC_ERROR)
+      IF(.NOT.ALLOCATED(OPENCMISS_ELEM_V))ALLOCATE(OPENCMISS_ELEM_V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)), &
+        & STAT=ALLOC_ERROR)
+      IF(.NOT.ALLOCATED(OPENCMISS_ELEM_P))ALLOCATE(OPENCMISS_ELEM_P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)), &
+        & STAT=ALLOC_ERROR)
+
+      CALL FLUID_MECHANICS_IO_MAKE_UNIQUE
+      CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_M,MESH_INFO(1)%T,NumberOfElementsDefined(1), & 
+        & NumberOfNodesPerElement(1),1)
+      CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_V,MESH_INFO(2)%T,NumberOfElementsDefined(2), & 
+        & NumberOfNodesPerElement(2),2)
+      CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_P,MESH_INFO(3)%T,NumberOfElementsDefined(3), & 
+        & NumberOfNodesPerElement(3),3)
+      WRITE(*,*)' '
+      WRITE(*,*)'Import finished successfully...', I
+      WRITE(*,*)' '
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Export finished successfully...",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+
+      IF(ALLOC_ERROR.NE.0) THEN
+        CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      END IF
+
+      ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
+
+      TMP%M=OPENCMISS_ELEM_M
+      TMP%V=OPENCMISS_ELEM_V
+      TMP%P=OPENCMISS_ELEM_P
+      TMP%N=OPENCMISS_NODE_COORD
+      TMP%D=DIMEN
+      TMP%F=BASE_INFO%n_B
+      TMP%ID_M=1
+      TMP%ID_V=2
+      TMP%ID_P=3
+      TMP%IT_M=OPENCMISS_INTERPOLATION(1)
+      TMP%IT_V=OPENCMISS_INTERPOLATION(2)
+      TMP%IT_P=OPENCMISS_INTERPOLATION(3)
+  
+      IF (BASE_INFO%HEXA==1) THEN
+      !LAGRANGIAN BASIS
+        TMP%IT_T=1
+      ELSE 
+      ! SIMPLEX BASIS
+        TMP%IT_T=2
+      END IF
+
+      TMP%E_M=NumberOfElementsDefined(1)
+      TMP%E_V=NumberOfElementsDefined(2)
+      TMP%E_P=NumberOfElementsDefined(3)
+      TMP%E_T=NumberOfElementsDefined(3)
+      TMP%EN_M=NumberOfNodesPerElement(1)
+      TMP%EN_V=NumberOfNodesPerElement(2)
+      TMP%EN_P=NumberOfNodesPerElement(3)
+      TMP%EN_T=TMP%EN_M+TMP%EN_V+TMP%EN_P
+      TMP%N_M=ArrayOfNodesDefined(1)
+      TMP%N_V=ArrayOfNodesDefined(2)
+      TMP%N_P=ArrayOfNodesDefined(3)
+      TMP%N_T=TMP%N_M+TMP%N_V+TMP%N_P
+
+      IF(I==1) THEN
+        EXPORT1=TMP
+      ELSE
+        EXPORT2=TMP
+      ENDIF
+
+      IF(ALLOC_ERROR.NE.0) THEN
+        CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      END IF
+    ENDDO
+
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR)    
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+    RETURN
+
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART2
 
 
   ! OK
