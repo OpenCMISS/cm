@@ -94,7 +94,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
   INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX=8 !<c2 parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
   !>@}
 
-!   LOGICAL:: WRITE_IP_INFO_IS_TRUE
+  LOGICAL:: WRITE_IP_INFO_IS_TRUE
 
 
   !Module types
@@ -986,17 +986,17 @@ CONTAINS
             ENDIF
 
 !---tob
-!             X_COORD_GAUSS = 0.33_DP
-!             Y_COORD_GAUSS = 0.33_DP
-!             X_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
-!             Y_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
-!             TOL_GAUSS = 0.1_DP
-! 
-!             IF(WRITE_IP_INFO_IS_TRUE.AND.ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
-!               CALL WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
-!                 & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-!                 & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
-!             ENDIF
+            X_COORD_GAUSS = 0.33_DP
+            Y_COORD_GAUSS = 0.33_DP
+            X_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
+            Y_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
+            TOL_GAUSS = 0.1_DP
+
+            IF(WRITE_IP_INFO_IS_TRUE.AND.ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
+              CALL WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
+                & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
+                & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
+            ENDIF
 !---toe
 
           ENDDO !gauss_idx
@@ -3710,7 +3710,7 @@ CONTAINS
                             IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
                             ENDIF
-!                             CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                           ENDIF
                         ENDIF 
                       ENDIF 
@@ -3733,17 +3733,17 @@ CONTAINS
                           CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                             & ERR,ERROR,*999)
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-!                           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                         ENDIF
                       ENDIF
                     ENDIF
 
 !---tob
-!                     IF(MOD(CURRENT_LOOP_ITERATION+1,50)==0)  THEN   
-!                       WRITE_IP_INFO_IS_TRUE = .TRUE.
-!                     ELSE
-!                       WRITE_IP_INFO_IS_TRUE = .FALSE.
-!                     ENDIF
+                    IF(MOD(CURRENT_LOOP_ITERATION+1,50)==0)  THEN   
+                      WRITE_IP_INFO_IS_TRUE = .TRUE.
+                    ELSE
+                      WRITE_IP_INFO_IS_TRUE = .FALSE.
+                    ENDIF
 !---toe
 
                   ENDDO
@@ -4434,7 +4434,8 @@ CONTAINS
     CALL ENTERS("GET_DARCY_FINITE_ELASTICITY_PARAMETERS",ERR,ERROR,*999)
 
 
-    DARCY_RHO_0_F = 1.0E-03_DP
+!     DARCY_RHO_0_F = 1.0E-03_DP
+    DARCY_RHO_0_F = 1.0_DP
 !     Mfact = 2.18E05_DP
     Mfact = 2.18E00_DP
     bfact = 1.0_DP

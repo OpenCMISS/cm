@@ -3090,25 +3090,36 @@ CONTAINS
 !-----------------------------------------------------------------------------------------------------------------------------------
           
           !Scale factor adjustment
-          !Change to: DEPENDENT_BASIS_1,2
-          !\todo: Still to incorporate the damping_matrix part
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
             CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-            mhs=0          
+            mhs=0
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
               !Loop over element rows
-              DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                mhs=mhs+1                    
+              MESH_COMPONENT_1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+              DEPENDENT_BASIS_1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_1)%PTR% &
+                & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+              DO ms=1,DEPENDENT_BASIS_1%NUMBER_OF_ELEMENT_PARAMETERS
+                mhs=mhs+1
                 nhs=0
-                IF(STIFFNESS_MATRIX%UPDATE_MATRIX) THEN
+                 IF(STIFFNESS_MATRIX%UPDATE_MATRIX.OR.DAMPING_MATRIX%UPDATE_MATRIX) THEN
                   !Loop over element columns
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                    MESH_COMPONENT_2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                    DEPENDENT_BASIS_2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_2)%PTR% &
+                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    DO ns=1,DEPENDENT_BASIS_2%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
-                      STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
-                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
+                      IF(STIFFNESS_MATRIX%UPDATE_MATRIX)THEN 
+                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
+                      END IF
+                      IF(DAMPING_MATRIX%UPDATE_MATRIX)THEN 
+                        DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
+                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
+                      END IF
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
@@ -3945,7 +3956,8 @@ CONTAINS
                    IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY)THEN
                    !call only analytic update and DO NOT call the other standard pre-solve routines as the mesh does not require deformation
                      CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999) 
-                   ELSE
+                   ENDIF
+                  ELSE
                    !default 
                      !--- 1.1 Transfer solid displacement to Darcy geometric field
                      CALL DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999) 
@@ -3956,7 +3968,6 @@ CONTAINS
   ! ! !                 !i n   p r i n c i p l e   c u r r e n t l y   d o   n o t   n e e d   t o   u p d a t e   B C s
   ! ! !                 !--- 1.3 Apply both normal and moving mesh boundary conditions
   ! ! !                 CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
-                   ENDIF
                   ENDIF
                  ENDIF
                 ENDIF
@@ -4943,7 +4954,11 @@ CONTAINS
 
                 !\todo: Make conditional: Only for: EquationsSetIncompressibleElasticityDrivenDarcySubtype 
                 !Correction to mass increase to account for velocity boundary condition
-                CALL DARCY_EQUATION_POST_SOLVE_ADD_MASS_CORRECTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!                 CALL DARCY_EQUATION_POST_SOLVE_ADD_MASS_CORRECTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+
+!---tob
+!                 CALL DARCY_EQUATION_POST_SOLVE_CORRECT_MASS_INCREASE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+!---toe
 
               END IF
             CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
@@ -7615,17 +7630,27 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP, CONTROL_LOOP_SOLID
 !     TYPE(VARYING_STRING) :: LOCAL_ERROR
 !     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DARCY_INTERPOLATED_POINT
+!     TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
+!     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+!     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
+!     TYPE(DOMAIN_NODES_TYPE), POINTER :: NODES_DOMAIN
+!     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+!     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_FIELD_DARCY_VARIABLE
 ! 
 !     REAL(DP), POINTER :: MESH_DISPLACEMENT_VALUES(:),SOLUTION_VALUES_SOLID(:)
-!     REAL(DP), POINTER :: DUMMY_VALUES2(:)
-!     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA,CORRECTION
-!     REAL(DP) :: Jacobian, DARCY_RHO_0_F, DIV_VEL_BC, DIV_VEL, CORRECTION
+!     REAL(DP), POINTER :: DUMMY_VALUES2(:), NUMERICAL_VALUES(:)
+!     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT,ALPHA
+!     REAL(DP) :: Jacobian, DARCY_RHO_0_F, DIV_VEL_BC, DIV_VEL, CORRECTION, VALUES(1)
 ! 
+!     REAL(DP) :: POSITION(4) !<POSITION(coordinate_idx), on exit the geometric position of the node
+!     REAL(DP) :: NORMAL(4) !<NORMAL(coordinate_idx), on exit the normal vector
+!     REAL(DP) :: TANGENTS(4,2) !<TANGENTS(coordinate_idx,tangent_idx), on exit the tangent vectors for the tangent_idx'th tangent at the node. There are number_of_xi-1 tangent vectors.
 ! 
 ! !     INTEGER(INTG) :: NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_FINITE_ELASTICITY,NUMBER_OF_COMPONENTS_GEOMETRIC_FIELD_DARCY
 !     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_DOFS,NDOFS_TO_PRINT,dof_number,loop_idx
 !     INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION
-!     INTEGER(INTG) :: node_idx, coord_idx, derivative_idx2
+!     INTEGER(INTG) :: node_idx, coord_idx, var_idx, deriv_idx, derivative_idx2, component_idx, local_ny
+!     INTEGER(INTG) :: MESH_COMPONENT, COMPONENT_NUMBER, variable_type
 ! 
 ! 
 !     CALL ENTERS("DARCY_EQUATION_POST_SOLVE_CORRECT_MASS_INCREASE",ERR,ERROR,*999)
@@ -7636,6 +7661,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !     NULLIFY(SOLUTION_VALUES_SOLID)
 !     NULLIFY(ROOT_CONTROL_LOOP)
 !     NULLIFY(CONTROL_LOOP_SOLID)
+!     NULLIFY(DECOMPOSITION_TOPOLOGY)
+!     NULLIFY(DECOMPOSITION)
 ! 
 !     IF(ASSOCIATED(CONTROL_LOOP)) THEN
 !       CONTROL_TIME_LOOP=>CONTROL_LOOP
@@ -7692,6 +7719,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !                           IF(DEPENDENT_FIELD_DARCY%DEPENDENT_TYPE==FIELD_DEPENDENT_TYPE) THEN
 !                             DECOMPOSITION=>DEPENDENT_FIELD_DARCY%DECOMPOSITION
 !                             IF(ASSOCIATED(DECOMPOSITION)) THEN
+! !                               DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
 !                               DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
 !                               IF(ASSOCIATED(DECOMPOSITION_TOPOLOGY)) THEN
 !                                 !Loop over the variables
@@ -7705,9 +7733,12 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !                                     !Loop over the components
 ! !                                     DO component_idx=1,DEPENDENT_FIELD_DARCY%VARIABLES(var_idx)%NUMBER_OF_COMPONENTS
 ! 
-!                                     component_idx = 4_INTG  !Interpolate at the nodes of the mass increase
+!                                     component_idx = 4  !Interpolate at the nodes of the mass increase
 ! 
-!                                       MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(component_idx)%MESH_COMPONENT_NUMBER
+! !                                       MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(component_idx)%MESH_COMPONENT_NUMBER
+! 
+!                                       MESH_COMPONENT=DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)%MESH_COMPONENT_NUMBER
+! 
 !                                       DOMAIN=>DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)%DOMAIN
 !                                       IF(ASSOCIATED(DOMAIN)) THEN
 !                                         DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
@@ -7735,14 +7766,25 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !                                                   !Interpolate DARCY DEPENDENT FIELD at the nodes of the mass increase
 !                                                   !  (returns derivative in physical space)
 ! 
-!                                                   node_idx = dof_number ! ??? I loop anyway over the nodes
-!                                                   COMPONENT_NUMBER = 4_INTG  !Interpolate at the nodes of the mass increase
+!                                                   !node_idx = dof_number ! ??? I loop anyway over the nodes
+!                                                   COMPONENT_NUMBER = 4  !Interpolate at the nodes of the mass increase
 ! 
-!                                                   CALL FIELD_INTERPOLATE_NODE(FIRST_PART_DERIV,FIELD_VALUES_SET_TYPE,COMPONENT_NUMBER,node_idx, &
-!                                                     & DARCY_INTERPOLATED_POINT,ERR,ERROR,*999)
+! !                                                   CALL FIELD_INTERPOLATE_NODE(FIRST_PART_DERIV,FIELD_VALUES_SET_TYPE, &
+! !                                                     & COMPONENT_NUMBER,node_idx,DARCY_INTERPOLATED_POINT,ERR,ERROR,*999)
+! 
+! 
+!                      COMPONENT_NUMBER = 4
+!                      CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(DEPENDENT_FIELD_DARCY,variable_type, &
+!                        & COMPONENT_NUMBER,node_idx, &
+!                        & POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
+! 
+! 
+!                      write(*,*)'node_idx = ',node_idx
+!                      write(*,*)'local_ny = ',local_ny
+!                      write(*,*)'POSITION = ',POSITION
 ! 
 !                                                   DIV_VEL = 0.0_DP
-!                                                   DO coord_idx=1,GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS !CHECK
+!                                                   DO coord_idx=1,3  !GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS !CHECK
 !                                                     derivative_idx2=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(coord_idx) !2,4,7      
 !                                                     DIV_VEL = DIV_VEL + DARCY_INTERPOLATED_POINT%VALUES(coord_idx,derivative_idx2)
 !                                                   ENDDO
@@ -7796,7 +7838,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !                               CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
 !                             ENDIF
 !                           ELSE
-!                             LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD_DARCY%USER_NUMBER,"*",ERR,ERROR))// &
+!                             LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(DEPENDENT_FIELD_DARCY%USER_NUMBER,"*",ERR,ERROR))//&
 !                               & " is not a dependent field."
 !                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
 !                           ENDIF
@@ -7819,9 +7861,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !                   CALL FLAG_ERROR("Darcy solver equations are not associated.",ERR,ERROR,*999)
 !                 END IF
 ! 
-! 
-! 
-! ---
 ! 
 ! 
 !                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD_DARCY, &
@@ -7887,7 +7926,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_TIME_LOOP
 
-    REAL(DP), POINTER :: ACTUAL_VALUES(:), DUMMY_VALUES1(:)
+    REAL(DP), POINTER :: ACTUAL_VALUES(:), FIELD_INITIAL_VALUES(:), DUMMY_VALUES1(:)
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
@@ -7895,13 +7934,23 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     INTEGER(INTG) :: dof_number, dof_number_mass, loop_idx
     INTEGER(INTG) :: NUMBER_OF_DOFS, NDOFS_TO_PRINT
 
+    INTEGER(INTG) :: COMPONENT_NUMBER, LOCAL_NODE_NUMBER
+
     REAL(DP) :: MASS_CORRECTION, VEL_CORRECTION
     REAL(DP) :: JACOBIAN, DARCY_RHO_0_F, DOTTED_WITH_NORMAL, AREA_ELEMENT, ACTUAL_VELOCITY, VELOCITY_BC
+
+    REAL(DP) :: POSITION(3) !<POSITION(coordinate_idx), on exit the geometric position of the node
+    REAL(DP) :: NORMAL(3) !<NORMAL(coordinate_idx), on exit the normal vector
+    REAL(DP) :: TANGENTS(3,2) !<TANGENTS(coordinate_idx,tangent_idx), on exit the tangent vectors for the tangent_idx'th tangent at the node. There are number_of_xi-1 tangent vectors.
+
 
     CALL ENTERS("DARCY_EQUATION_POST_SOLVE_ADD_MASS_CORRECTION",ERR,ERROR,*999)
 
     NULLIFY(ACTUAL_VALUES)
+    NULLIFY(FIELD_INITIAL_VALUES)
     NULLIFY(DUMMY_VALUES1)
+    NULLIFY(DEPENDENT_FIELD)
+
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CONTROL_TIME_LOOP=>CONTROL_LOOP
@@ -7981,13 +8030,12 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                           & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
 !                                         IF( BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE ) THEN
                                         IF( BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FREE ) THEN
-
                                           dof_number_mass = dof_number !BC flag on mass_increase DOF
 
                                           ! Determine the correction to the mass increase for Darcy dependent field (u, v, w; m)
                                           ! This may yet have to be adjusted in terms of parameter values ...
                                           JACOBIAN = 1.0_DP
-                                          DARCY_RHO_0_F = 1.0E-03_DP
+                                          DARCY_RHO_0_F = 1.0E-03_DP !should be obtained from parameter file instead !!
                                           DOTTED_WITH_NORMAL = 1.0_DP
                                           AREA_ELEMENT = 5.0_DP**2.0_DP / (16.0_DP**2.0_DP) !surface / nodes in that surface
 
@@ -8001,12 +8049,14 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
 !                                           MASS_CORRECTION = 1.0E-04_DP
 
-                                          write(*,*)'VEL_CORRECTION = ',VEL_CORRECTION
-                                          write(*,*)'MASS_CORRECTION = ',MASS_CORRECTION
+!                                           write(*,*)'dof_number_mass = ',dof_number_mass
+!         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof_number_mass = ",dof_number_mass,ERR,ERROR,*999)
+!                                           write(*,*)'VEL_CORRECTION = ',VEL_CORRECTION
+!                                           write(*,*)'MASS_CORRECTION = ',MASS_CORRECTION
                                           NULLIFY( DUMMY_VALUES1 )
                                           CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                             & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                          write(*,*)'mass (BEFORE) = ',DUMMY_VALUES1(dof_number_mass)
+!                                           write(*,*)'mass (BEFORE) = ',DUMMY_VALUES1(dof_number_mass)
 
                                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD, & 
                                             & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number_mass, & 
@@ -8021,7 +8071,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                           NULLIFY( DUMMY_VALUES1 )
                                           CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                             & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                          write(*,*)'mass (AFTER) = ',DUMMY_VALUES1(dof_number_mass)
+!                                           write(*,*)'mass (AFTER) = ',DUMMY_VALUES1(dof_number_mass)
                                         ELSE
                                           ! do nothing
                                         END IF
