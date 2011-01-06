@@ -5902,8 +5902,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: DIMS,INDEX_MATCH
     INTEGER(INTG) :: nic,component_idx,derivative_idx,xi_idx,element,element_idx,local_node,local_node_idx
-!     REAL(DP) :: XI(3), VEC(3), DXDXI(3,3) ! Note VEC, DXDXI sizes are fixed, but it doesn't matter so much
-    REAL(DP) :: XI(3), VEC(3), DXDXI(4,3) ! Note VEC, DXDXI sizes are fixed, but it doesn't matter so much
+    REAL(DP) :: XI(3), VEC(3), DXDXI(3,3) ! Note VEC, DXDXI sizes are fixed, but it doesn't matter so much
     INTEGER(INTG) :: tangent_idx,tangent_xi_idx
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -5930,7 +5929,8 @@ CONTAINS
           IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
             CALL FIELD_VARIABLE_GET(FIELD,VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
             IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-              DIMS=FIELD_VARIABLE%NUMBER_OF_COMPONENTS !\TODO: clean this up
+              DIMS=GEOMETRIC_FIELD%VARIABLES(1)%NUMBER_OF_COMPONENTS !\TODO: clean this up
+!               DIMS=FIELD_VARIABLE%NUMBER_OF_COMPONENTS !\TODO: clean this up
               IF(COMPONENT_NUMBER>=1.AND.COMPONENT_NUMBER<=DIMS) THEN
                 DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                 IF(ASSOCIATED(DOMAIN)) THEN
