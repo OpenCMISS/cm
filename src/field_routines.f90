@@ -607,7 +607,7 @@ MODULE FIELD_ROUTINES
   
   PUBLIC FIELD_VARIABLE_TYPES_CHECK,FIELD_VARIABLE_TYPES_GET,FIELD_VARIABLE_TYPES_SET,FIELD_VARIABLE_TYPES_SET_AND_LOCK
 
-  PUBLIC MESH_EMBEDDING_PUSH_DATA, MESH_EMBEDDING_PULL_GAUSS_POINT_DATA
+  PUBLIC MESH_EMBEDDING_PUSH_DATA, MESH_EMBEDDING_PULL_GAUSS_POINT_DATA, FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD
    
 CONTAINS
 
@@ -23821,6 +23821,8 @@ CONTAINS
 
     ELEMENTS=>MESH_EMBEDDING%CHILD_MESH%TOPOLOGY(1)%PTR%ELEMENTS
 
+    basis=>mesh_embedding%child_mesh%topology(1)%ptr%elements%elements(1)%basis
+
     DO E=1,MESH_EMBEDDING%PARENT_MESH%NUMBER_OF_ELEMENTS    
       NGP = BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
       DO GP=1,NGP
@@ -23844,5 +23846,45 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MESH_EMBEDDING_PULL_GAUSS_POINT_DATA
 
+ !
+  !================================================================================================================================
+  !
 
+ !>Returns from the given parameter set a double precision value for the specified gauss point of a field variable component. \see OPENCMISS::CMISSFieldParameterSetGetGaussPoint
+  SUBROUTINE FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD(MESH_EMBEDDING,COMPONENT_NUMBER,NGP,COORD_VALUE, &
+    & ERR,ERROR,*)
+    
+    TYPE(MESH_EMBEDDING_TYPE), INTENT(INOUT) :: MESH_EMBEDDING !<The mesh embedding object
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER  !<Component
+    INTEGER(INTG), INTENT(OUT) :: NGP
+    REAL(DP), INTENT(OUT) :: COORD_VALUE(:)
+    INTEGER(INTG), INTENT(OUT) :: ERR              !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR     !<The error string
+  
+   
+    !Local variables
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    INTEGER(INTG) :: GP
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD",ERR,ERROR,*999)
+
+    ELEMENTS=>MESH_EMBEDDING%PARENT_MESH%TOPOLOGY(1)%PTR%ELEMENTS
+
+    basis=>mesh_embedding%child_mesh%topology(1)%ptr%elements%elements(1)%basis
+    NGP = BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
+    
+    !NGP = meshembedding%mesh_embedding%child_mesh%topology(1)%ptr%elements%elements(1)%basis&
+     !&%quadrature%quadrature_scheme_map(1)%ptr%number_of_gauss
+    DO GP = 1,NGP
+    COORD_VALUE(GP) = BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%&
+       &GAUSS_POSITIONS(COMPONENT_NUMBER,GP)
+    ENDDO
+
+999 CALL ERRORS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD
+!========================================================================================================================================
 END MODULE FIELD_ROUTINES

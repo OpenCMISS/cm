@@ -3582,11 +3582,17 @@ MODULE OPENCMISS
    MODULE PROCEDURE CMISSMeshEmbeddingPullGaussPointDataObj
   END INTERFACE
 
+   INTERFACE CMISSFieldParameterSetGetGaussPointCoord
+    MODULE PROCEDURE CMISSFieldParameterSetGetGaussPointCoordObj
+   END INTERFACE
+
   PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetChildNodePosition, CMISSMeshEmbeddingType
 
   PUBLIC CMISSEmbeddedMeshTypeInitialise, CMISSMeshEmbeddingSetGaussPointData
   
   PUBLIC CMISSMeshEmbeddingPushData, CMISSMeshEmbeddingPullGaussPointData
+  
+  PUBLIC CMISSFieldParameterSetGetGaussPointCoord
 
   PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
  
@@ -30662,8 +30668,7 @@ CONTAINS
      & ParentXiCoords, ChildElementNumber, ChildXiCoords,Err,ERROR,*999)
  999 RETURN
     END SUBROUTINE CMISSMeshEmbeddingSetGaussPointDataObj
-! ! 
-  
+! !   
   !================================================================================================================================
   !  
 !   !>Sets the positions of a Gauss point of the parent mesh in terms of element/xi coordinated in the child mesh
@@ -30672,12 +30677,35 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: ParentField, ChildField  !<Fields associated with parent and child mesh to get/set data from
     INTEGER(INTG), INTENT(IN) :: ParentComponent, ChildComponent  !<Component numbers in respective fields
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
     CALL MESH_EMBEDDING_PULL_GAUSS_POINT_DATA(MeshEmbedding%MESH_EMBEDDING,ParentField%FIELD, ParentComponent, &
       &  ChildField%FIELD,ChildComponent, Err, ERROR, *999)
 999 RETURN
     END SUBROUTINE CMISSMeshEmbeddingPullGaussPointDataObj
-! ! 
+! !
+  !================================================================================================================================
+  !  
+   SUBROUTINE CMISSFieldParameterSetGetGaussPointCoordObj(MeshEmbedding,ComponentNumber,NumberOfGaussPoints, &
+     & Coords,Err)
 
+    !Argument variables
+    TYPE(CMISSMeshEmbeddingType), INTENT(INOUT) :: MeshEmbedding !<The embedding
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber
+    INTEGER(INTG), INTENT(OUT) :: NumberOfGaussPoints
+    REAL(DP), INTENT(OUT)      :: Coords(:)   !<Xi coordinates of embedded nodes wrt Child element
+    INTEGER(INTG), INTENT(OUT) :: Err           !<The error code
+    !Local variables
+  
+    CALL ENTERS("CMISSFieldParameterSetGetGaussPointCoordObj",Err,ERROR,*999)
+ 
+    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD(MeshEmbedding%MESH_EMBEDDING,ComponentNumber, &
+      & NumberofGaussPoints,COORDS,ERR,ERROR,*999)
+
+    CALL EXITS("CMISSFieldParameterSetGetGaussPointCoordObj")
+
+999 RETURN
+    
+  END SUBROUTINE CMISSFieldParameterSetGetGaussPointCoordObj
 !!==================================================================================================================================
 !!
 !! INTERFACE_ROUTINES
