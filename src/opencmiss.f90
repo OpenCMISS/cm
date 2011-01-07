@@ -4439,6 +4439,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemPGMElasticityDarcySubtype = PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE !<PGM Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticElasticityTransientDarcySubtype = &
     & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE !<Quasistatic Elasticity Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype = &
+    & PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE !<Quasistatic Elasticity Transient Darcy Material Solve problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionDiffusionSubtype = & 
     & PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = & 
@@ -4553,7 +4555,7 @@ MODULE OPENCMISS
     & CMISSProblemControlWhileLoopType,CMISSProblemControlLoadIncrementLoopType 
 
   PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
-   & CMISSProblemQuasistaticElasticityTransientDarcySubtype, &
+   & CMISSProblemQuasistaticElasticityTransientDarcySubtype,CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype, &
    & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
    & CMISSProblemStandardMultiCompartmentTransportSubtype
 
