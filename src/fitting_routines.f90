@@ -809,7 +809,8 @@ CONTAINS
           CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
           !Loop over gauss points
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-            CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+!             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+            CALL FIELD_INTERPOLATE_GAUSS(SECOND_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(SECOND_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
@@ -871,20 +872,25 @@ CONTAINS
                       IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE.OR. &
                         & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE) THEN
                         IF(mh==nh) THEN 
-                          !This stiffness matrix contribution is without "integration" means ng=nd in fact!
+                          !This stiffness matrix contribution is without "integration" means ng=nd in fact = least square!
                           SUM = SUM + PGM * PGN
                         ENDIF
+                        !
+!                         IF(mh==nh) THEN 
+!                           !This stiffness matrix happens with "integration" so the integral error is reduced!
+!                           SUM = SUM + PGM * PGN * RWG
+!                         ENDIF
 !REDUCED SOBOLEV SMOOTHING
                           !This stiffness matrix contribution is with "integration" means ng=ng in fact!
                           SUM = SUM +    ( &
-                            & TAU_PARAM* ( &
+                            & TAU_PARAM*2.0_DP* ( &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3,ng)) +&
-                            & KAPPA_PARAM* ( &
+                            & KAPPA_PARAM*2.0_DP* ( &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S1,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S1,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S2,ng)* &
@@ -896,7 +902,9 @@ CONTAINS
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S3,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S3,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S3,ng)* &
-                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng)))* RWG
+                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng))) !&
+! no weighting either?
+!                             & * RWG
 
                         EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
                           & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM
@@ -911,14 +919,14 @@ CONTAINS
 !REDUCED SOBOLEV SMOOTHING
                           !This stiffness matrix contribution is with "integration" means ng=ng in fact!
                           SUM = SUM +    ( &
-                            & TAU_PARAM* ( &
+                            & TAU_PARAM*2.0_DP* ( &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S3,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S3,ng)) +&
-                            & KAPPA_PARAM* ( &
+                            & KAPPA_PARAM*2.0_DP* ( &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S1,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S1,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S2,ng)* &
@@ -930,7 +938,9 @@ CONTAINS
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S1_S3,ng)* &
                             & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S1_S3,ng)+ &
                             & QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PART_DERIV_S2_S3,ng)* &
-                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng)))* RWG
+                            & QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PART_DERIV_S2_S3,ng))) !& 
+! no weighting either?
+!                             & * RWG
 
                           EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
                             & EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM

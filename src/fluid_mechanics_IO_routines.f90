@@ -180,7 +180,10 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeZValue 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeUValue 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeVValue 
-  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeWValue 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeWValue
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeUValueORG  
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeVValueORG
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeWValueORG
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue2  
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeMIValue ! Mass increase for coupled elasticity Darcy INRIA model
@@ -267,6 +270,9 @@ CONTAINS
     IF (ALLOCATED(NodeUValue)) DEALLOCATE(NodeUValue)
     IF (ALLOCATED(NodeVValue)) DEALLOCATE(NodeVValue)
     IF (ALLOCATED(NodeWValue)) DEALLOCATE(NodeWValue)
+    IF (ALLOCATED(NodeUValueORG)) DEALLOCATE(NodeUValueORG)
+    IF (ALLOCATED(NodeVValueORG)) DEALLOCATE(NodeVValueORG)
+    IF (ALLOCATED(NodeWValueORG)) DEALLOCATE(NodeWValueORG)
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodePValue2)) DEALLOCATE(NodePValue2)
     IF (ALLOCATED(NodeMIValue)) DEALLOCATE(NodeMIValue)
@@ -383,6 +389,9 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeUValue)) ALLOCATE(NodeUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeVValue)) ALLOCATE(NodeVValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeUValueORG)) ALLOCATE(NodeUValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeVValueORG)) ALLOCATE(NodeVValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeWValueORG)) ALLOCATE(NodeWValueORG(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue2)) ALLOCATE(NodePValue2(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMIValue)) ALLOCATE(NodeMIValue(NodesPerMeshComponent(1)))
@@ -748,6 +757,9 @@ CONTAINS
     IF (ALLOCATED(NodeUValue)) DEALLOCATE(NodeUValue)
     IF (ALLOCATED(NodeVValue)) DEALLOCATE(NodeVValue)
     IF (ALLOCATED(NodeWValue)) DEALLOCATE(NodeWValue)
+    IF (ALLOCATED(NodeUValueORG)) DEALLOCATE(NodeUValueORG)
+    IF (ALLOCATED(NodeVValueORG)) DEALLOCATE(NodeVValueORG)
+    IF (ALLOCATED(NodeWValueORG)) DEALLOCATE(NodeWValueORG)
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
     IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
@@ -855,6 +867,9 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeUValue)) ALLOCATE(NodeUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeVValue)) ALLOCATE(NodeVValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeUValueORG)) ALLOCATE(NodeUValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeVValueORG)) ALLOCATE(NodeVValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeWValueORG)) ALLOCATE(NodeWValueORG(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
@@ -1390,6 +1405,9 @@ CONTAINS
     IF (ALLOCATED(NodeUValue)) DEALLOCATE(NodeUValue)
     IF (ALLOCATED(NodeVValue)) DEALLOCATE(NodeVValue)
     IF (ALLOCATED(NodeWValue)) DEALLOCATE(NodeWValue)
+    IF (ALLOCATED(NodeUValueORG)) DEALLOCATE(NodeUValueORG)
+    IF (ALLOCATED(NodeWValueORG)) DEALLOCATE(NodeVValueORG)
+    IF (ALLOCATED(NodeVValueORG)) DEALLOCATE(NodeWValueORG)
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
     IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
@@ -1483,6 +1501,9 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeXValue)) ALLOCATE(NodeXValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeYValue)) ALLOCATE(NodeYValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeZValue)) ALLOCATE(NodeZValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeUValueORG)) ALLOCATE(NodeUValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeVValueORG)) ALLOCATE(NodeVValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeWValueORG)) ALLOCATE(NodeWValueORG(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeUValue)) ALLOCATE(NodeUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeVValue)) ALLOCATE(NodeVValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
@@ -1541,28 +1562,41 @@ CONTAINS
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
+        IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE))THEN 
+          NodeUValue(K)=0.0_DP
+          NodeVValue(K)=0.0_DP
+        ELSE
 !         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-!         NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
-!           & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
+          NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+            & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K)
 ! !         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-!         NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
-!           & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+          NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+            & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+        ENDIF
 
         parameter_set_idx = 2
-        NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+        NodeUValueORG(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
           & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
         parameter_set_idx = 3
-        NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+        NodeVValueORG(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
           & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
 
         IF(NumberOfDimensions==3)THEN
           parameter_set_idx = 4
-          NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          NodeWValueORG(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
-! 
+
+          IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE))THEN 
+            NodeWValue(K)=0.0_DP
+          ELSE! 
 ! !           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
-!           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
-!             & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+            NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+              & variables(var_idx)%parameter_sets%parameter_sets(2)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+          END IF
         END IF
 
 
@@ -1578,6 +1612,7 @@ CONTAINS
           & .OR. (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
               & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
               & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
                 & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           parameter_set_idx = 1 
           NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
@@ -1620,6 +1655,11 @@ CONTAINS
     IF(NumberOfVariableComponents==1)NumberOfVariableComponents=NumberOfDimensions+1
     IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=3
     IF(NumberOfMaterialComponents==4)NumberOfMaterialComponents=3
+    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS &
+      & .AND.EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE &
+      & .AND.EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) THEN
+         NumberOfVariableComponents=NumberOfVariableComponents+NumberOfDimensions
+    ENDIF 
 
 
     NumberOfFieldComponent(1)=NumberOfDimensions
@@ -1800,7 +1840,15 @@ CONTAINS
         END IF
         IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
           & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+          & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE)) THEN
+          WRITE(14,'("    ", es25.16 )')NodeUValueORG(I)
+          WRITE(14,'("    ", es25.16 )')NodeVValueORG(I)
+          WRITE(14,'("    ", es25.16 )')NodeWValueORG(I)
+        END IF
+        IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
           & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
+          & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
           & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           WRITE(14,'("    ", es25.16 )')NodePValue(I)
           WRITE(14,'("    ", es25.16 )')NodeLabelValue(I)
@@ -1820,7 +1868,8 @@ CONTAINS
       WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
       WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
 
-      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+      IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)) THEN
         WRITE(14,'("    ", es25.16 )')NodeEValue(I)
         WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
         WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
