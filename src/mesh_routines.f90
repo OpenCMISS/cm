@@ -8529,7 +8529,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets the positions of a Gauss point of the parent mesh in terms of element/xi coordinated in the child mesh
+  !>Sets the positions of a Gauss point of the parent mesh in terms of element/xi coordinate in the child mesh
   SUBROUTINE MESH_EMBEDDING_SET_GAUSS_POINT_DATA(MESH_EMBEDDING, PARENT_ELEMENT_NUMBER, GAUSSPT_NUMBER,&
     & PARENT_XI_COORD, CHILD_ELEMENT_NUMBER, CHILD_XI_COORD,ERR,ERROR,*)
     TYPE(MESH_EMBEDDING_TYPE), INTENT(INOUT) :: MESH_EMBEDDING   !<The mesh embedding object

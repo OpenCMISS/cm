@@ -193,7 +193,8 @@ CONTAINS
     INTEGER:: INDEPENDENT_FIELD_NUMBER_OF_VARIABLES, INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS
     INTEGER:: NUMBER_OF_DIMENSIONS, GEOMETRIC_COMPONENT_NUMBER
     INTEGER:: MATERIAL_FIELD_NUMBER_OF_VARIABLES, MATERIAL_FIELD_NUMBER_OF_COMPONENTS
-    INTEGER:: MESH_COMPONENT,MATERIAL_FIELD_NUMBER_OF_U_VAR_COMPONENTS,MATERIAL_FIELD_NUMBER_OF_V_VAR_COMPONENTS
+    INTEGER:: MESH_COMPONENT,MATERIAL_FIELD_NUMBER_OF_U_VAR_COMPONENTS,MATERIAL_FIELD_NUMBER_OF_V_VAR_COMPONENTS, &
+            & MATERIAL_FIELD_NUMBER_OF_U1_VAR_COMPONENTS
     INTEGER:: i,component_idx
 
     INTEGER(INTG) :: num_var,num_var_count,NUMBER_OF_MATERIALS_COUPLING_COMPONENTS          
@@ -1005,10 +1006,10 @@ CONTAINS
                   !Auto-created / default is node_based_interpolation: that's an expensive default ...
                   !Maybe default should be constant; node_based should be requested by the user \todo
                   DO i = 1, MATERIAL_FIELD_NUMBER_OF_COMPONENTS
-                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & i,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & i,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & i,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                   END DO
 
                   !Default the field scaling to that of the geometric field
@@ -1049,14 +1050,18 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
-          !Materials field needs an extra variable type to store the coupling coefficients
+          !Materials field needs two extra variable types
+          !The V variable type stores the Darcy coupling coefficients that govern flux between compartments
+          !The U1 variable type stores the parameters for the constitutive laws that determine the partial pressure in each compartment
+          !For a first attempt at this, it will be assumed that the functional form of this law is the same for each compartment, with only the paramenters varying (default will be three components)
             EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
             CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
               & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
             Ncompartments=EQUATIONS_SET_FIELD_DATA(2)
-            MATERIAL_FIELD_NUMBER_OF_VARIABLES = 2
+            MATERIAL_FIELD_NUMBER_OF_VARIABLES = 3
             MATERIAL_FIELD_NUMBER_OF_U_VAR_COMPONENTS = 2
             MATERIAL_FIELD_NUMBER_OF_V_VAR_COMPONENTS = Ncompartments
+            MATERIAL_FIELD_NUMBER_OF_U1_VAR_COMPONENTS = 3
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -1077,7 +1082,7 @@ CONTAINS
                   CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD, &
                     & MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                   CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_V_VARIABLE_TYPE/),ERR,ERROR,*999)
+                    & FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE/),ERR,ERROR,*999)
                   CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -1086,26 +1091,38 @@ CONTAINS
                     & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                     & FIELD_DP_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                    & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                    & FIELD_DP_TYPE,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & MATERIAL_FIELD_NUMBER_OF_U_VAR_COMPONENTS,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                     & MATERIAL_FIELD_NUMBER_OF_V_VAR_COMPONENTS,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                    & MATERIAL_FIELD_NUMBER_OF_U1_VAR_COMPONENTS,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)                
 
                   !Auto-created / default is node_based_interpolation: that's an expensive default ...
                   !Maybe default should be constant; node_based should be requested by the user \todo
                   DO i = 1, MATERIAL_FIELD_NUMBER_OF_U_VAR_COMPONENTS
-                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & i,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & i,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & i,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                   END DO
                   DO i = 1, MATERIAL_FIELD_NUMBER_OF_V_VAR_COMPONENTS
-                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
-                      & i,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
                       & i,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
+                      & i,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  END DO
+                  DO i = 1, MATERIAL_FIELD_NUMBER_OF_U1_VAR_COMPONENTS
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                      & i,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                      & i,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                   END DO
 
                   !Default the field scaling to that of the geometric field
@@ -1115,19 +1132,24 @@ CONTAINS
                   !Check the user specified field
                   CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                   CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_V_VARIABLE_TYPE/),ERR,ERROR,*999)
+                    & FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE/),ERR,ERROR,*999)
                   CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                     & ERR,ERROR,*999)
+                  CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                    & ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                      & MATERIAL_FIELD_NUMBER_OF_U_VAR_COMPONENTS,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE, &
                      & MATERIAL_FIELD_NUMBER_OF_V_VAR_COMPONENTS,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE, &
+                     & MATERIAL_FIELD_NUMBER_OF_U1_VAR_COMPONENTS,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
@@ -1144,6 +1166,10 @@ CONTAINS
                   ENDDO
                   DO i=1,MATERIAL_FIELD_NUMBER_OF_V_VAR_COMPONENTS
                     CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE, i, 0.0_DP, ERR, ERROR, *999)
+                  ENDDO
+                  DO i=1,MATERIAL_FIELD_NUMBER_OF_U1_VAR_COMPONENTS
+                    CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U1_VARIABLE_TYPE, &
                       & FIELD_VALUES_SET_TYPE, i, 0.0_DP, ERR, ERROR, *999)
                   ENDDO
                 ENDIF
@@ -1641,6 +1667,19 @@ CONTAINS
                             & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
                           CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
                             & (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
+                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)THEN
+                              ALLOCATE(COUPLING_MATRIX_STORAGE_TYPE(Ncompartments-1))
+                              ALLOCATE(COUPLING_MATRIX_STRUCTURE_TYPE(Ncompartments-1))
+                              DO num_var=1,Ncompartments-1
+                               COUPLING_MATRIX_STORAGE_TYPE(num_var)=DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE
+                               COUPLING_MATRIX_STRUCTURE_TYPE(num_var)=EQUATIONS_MATRIX_FEM_STRUCTURE
+                              ENDDO                    
+                              CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
+                                & COUPLING_MATRIX_STORAGE_TYPE, &
+                                & ERR,ERROR,*999)      
+                              CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                                COUPLING_MATRIX_STRUCTURE_TYPE,ERR,ERROR,*999)
+                            ENDIF  
                         CASE DEFAULT
                           LOCAL_ERROR="The equations matrices sparsity type of "// &
                             & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -1745,7 +1784,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Local Variables
-    INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,idxdim,ki
+    INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,idxdim,ki,num_var_count
     INTEGER(INTG) :: my_compartment,Ncompartments,imatrix
     INTEGER(INTG) :: component_idx,xi_idx,derivative_idx
     INTEGER(INTG) :: MESH_COMPONENT_1, MESH_COMPONENT_2
@@ -1844,7 +1883,8 @@ CONTAINS
         CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-          & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE,EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE)
+          & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE,EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE, &
+          & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
 !!TODO: move these and scale factor adjustment out once generalised Darcy is put in.
           !Store all these in equations matrices/somewhere else?????
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -1930,6 +1970,39 @@ CONTAINS
 
             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+          CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
+            EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+            CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+
+            my_compartment = EQUATIONS_SET_FIELD_DATA(1)
+            Ncompartments  = EQUATIONS_SET_FIELD_DATA(2)
+
+            LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+            LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+
+            num_var_count=0
+            DO imatrix = 1,Ncompartments
+             IF(imatrix/=my_compartment)THEN
+              num_var_count=num_var_count+1
+              COUPLING_MATRICES(num_var_count)%PTR=>LINEAR_MATRICES%MATRICES(num_var_count)%PTR
+              FIELD_VARIABLES(num_var_count)%PTR=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(num_var_count)%VARIABLE
+              FIELD_VAR_TYPES(num_var_count)=FIELD_VARIABLES(num_var_count)%PTR%VARIABLE_TYPE
+              !write(*,*) FIELD_VAR_TYPES(num_var_count)
+              COUPLING_MATRICES(num_var_count)%PTR%ELEMENT_MATRIX%MATRIX=0.0_DP
+             ENDIF
+            END DO
+
+            DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+            STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
+            DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
+         
+            DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+            FIELD_VARIABLE=>DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+            FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+
+            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+            DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
           END SELECT
 
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
@@ -1944,7 +2017,8 @@ CONTAINS
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. &
+           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
             ELASTICITY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
@@ -1954,7 +2028,8 @@ CONTAINS
           ENDIF
 
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
-          CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+          CASE(EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
+             & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
             NUMBER_OF_VEL_PRESS_COMPONENTS = FIELD_VARIABLE%NUMBER_OF_COMPONENTS - 1  !last component: mass increase
           CASE DEFAULT
             NUMBER_OF_VEL_PRESS_COMPONENTS = FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -1966,7 +2041,8 @@ CONTAINS
 
 
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
-                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. & 
+             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
               !------------------------------------------------------------------------------
               !--- begin: Compute the Jacobian of the mapping
 
@@ -2093,6 +2169,11 @@ CONTAINS
               ENDDO
             ENDIF
 
+            !For multi-compartment model - determine pressure from partial derivative of constitutive law
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
+              write(*,*) 'NEED CONSTITUTIVE LAWS HERE!!!!'
+            ENDIF
+
 
 !             RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
 
@@ -2208,6 +2289,81 @@ CONTAINS
 !                           END IF
 !---toe
                         END IF
+                      ! matrices for multi-compartment poroelastic equations
+                      CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
+                        !velocity test function, velocity trial function
+                        IF(mh==nh.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
+                          !within this conditional: mh==nh anyway
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+                        !-------------------------------------------------------------------------------------------------------------
+                        !mass-increase test function, velocity trial function
+                        ELSE IF(mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS.AND.nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+
+                          SUM = 0.0_DP
+
+                          PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                          DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                            PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                          ENDDO !mi
+
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            PGNSI(ni)=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          ENDDO !ni
+
+                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
+                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
+                          ENDDO !ni
+
+                          STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                            & SUM * RWG
+                        ENDIF
+                        !=====================================================================================================================
+                        !DAMPING_MATRIX
+                        IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
+                          !MASS-INCREASE test function, mass-increase trial function
+                          IF(mh==nh.AND.nh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+                            PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                            PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                            SUM = 0.0_DP 
+
+                            !To integrate the mass-increase term in the reference configuration, we divide by Jxy.
+                            SUM = PGM * PGN / (Jxy * DARCY_RHO_0_F)
+
+                            DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+                              & SUM * RWG
+                          END IF
+!---tob
+!                           !Try out adding the inertia term ...
+!                           IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
+!                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+!                             PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+! 
+!                             SUM = 0.0_DP 
+! 
+!                             SUM = PGM*PGN*DARCY_RHO_0_F
+! 
+!                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
+!                               & SUM * RWG
+!                           END IF
+!---toe
+                        END IF
+
 
                       !=================================================================================
                       !    d e f a u l t   :   M A T R I C E S
@@ -2499,7 +2655,104 @@ CONTAINS
 
                     END IF
                     !-------------------------------------------------------------------------------------------------------------
+                  CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
+                    !-----------------------------------------------------------------------------------------------------------------
+                    !velocity test function
+                    IF( mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS ) THEN
 
+                      SUM = 0.0_DP
+
+                      PGM = QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+                      !Term arising from the moving mesh with mesh velocity given
+                      DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                        SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
+                      ENDDO
+
+                      !Term arising from the pressure / Lagrange Multiplier of elasticity (given):
+                      DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                        SUM = SUM - PGM * GRAD_LM_PRESSURE(mi) * &
+                          & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,mh)
+                      ENDDO !mi
+
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+
+                    !-----------------------------------------------------------------------------------------------------------------
+                    !mass-increase test function
+                    ELSE IF( mh==FIELD_VARIABLE%NUMBER_OF_COMPONENTS ) THEN
+
+                      SUM = 0.0_DP
+
+                      PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+
+                      !Terms arising from the moving mesh with mesh velocity given
+!                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
+                      DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                        PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+                          SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
+                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
+                          SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
+                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
+                        ENDDO !ni
+                      ENDDO !mi
+
+                      ! n o   s o u r c e
+                      SOURCE = 0.0_DP
+
+! !---tob
+!                       ! u n i f o r m   s o u r c e
+!                       SOURCE = 2.0_DP
+! !---toe
+
+!---tob
+!                       IF(.FALSE.) THEN
+!                         ! s o u r c e   i n   t h e   f o r m   o f   a   h a l f s p h e r e
+!                         !Distribution of sources (arteries) and sinks (veins) for the C U B E
+!                         X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
+!                         X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
+!                         X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
+! 
+!                         LENGTH_SCALE = 1.0_DP
+! 
+!                         SOURCE_1_X = (/0.0_DP, 0.0_DP, -10.0_DP/) * LENGTH_SCALE
+!                         SOURCE_1_R = 4.0_DP * LENGTH_SCALE
+!                         SOURCE_1_I = 10.0_DP
+!                         !
+! !                         SOURCE_2_X = (/-5.0, 5.0, -5.0/) * LENGTH_SCALE
+! !                         SOURCE_2_R = 1.0_DP * LENGTH_SCALE
+! !                         SOURCE_2_I = 1.0_DP
+! !                         !
+! !                         SOURCE_3_X = (/5.0, -5.0, -5.0/) * LENGTH_SCALE
+! !                         SOURCE_3_R = 1.0_DP * LENGTH_SCALE
+! !                         SOURCE_3_I = -1.0_DP 
+! 
+!                         IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
+!                           & <=SOURCE_1_R**2.0_DP ) THEN
+!                           SOURCE = SOURCE_1_I
+!                         END IF
+!                         !
+! !                         IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
+! !                           & <=SOURCE_2_R**2.0_DP ) THEN
+! !                           SOURCE = SOURCE_2_I
+! !                         END IF
+! !                         !
+! !                         IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
+! !                           & <=SOURCE_3_R**2.0_DP ) THEN
+! !                           SOURCE = SOURCE_3_I
+! !                         END IF
+!                       END IF
+!---toe
+
+                      SUM = SUM + PGM * SOURCE
+
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
+
+                    ELSE
+
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = 0.0_DP
+
+                    END IF
                   !=================================================================================
                   !    d e f a u l t   :   R H S
                   CASE DEFAULT
@@ -6601,73 +6854,80 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                              EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)=CURRENT_TIME
 !                              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                              variable_type=DEPENDENT_FIELD%VARIABLES(2*eqnset_idx-1)%VARIABLE_TYPE
+                              !variable_type=DEPENDENT_FIELD%VARIABLES(2*eqnset_idx-1)%VARIABLE_TYPE
+                              variable_type=FIELD_V_VARIABLE_TYPE
                               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                                DO component_idx=4,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
-                                    & FIELD_NODE_BASED_INTERPOLATION) THEN
-                                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                                    IF(ASSOCIATED(DOMAIN)) THEN
-                                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                          !Loop over the local nodes excluding the ghosts.
-                                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                          CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
-                                             & FIELD_VALUES_SET_TYPE,1,node_idx,4,MASS_INCREASE,ERR,ERROR,*999)
-                                          CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                             & FIELD_VALUES_SET_TYPE,1,node_idx,4,0.1*MASS_INCREASE,ERR,ERROR,*999)
-                                          write(*,*) MASS_INCREASE
+!                                DO component_idx=4,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
 
-                                            !!TODO \todo We should interpolate the geometric field here and the node position.
-!                                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-!                                               local_ny= & 
-!                                           & GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
-!                                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-!                                             ENDDO !dim_idx
-!                                             !Loop over the derivatives
-!                                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-!                                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-!                                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
-! !                                               CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X, & 
-! !                                                 & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX, &
-! !                                                 & ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
-!                                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-!                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
-!                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-!                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
-! !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% & 
-! !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-! !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
-! !                                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-! !                                                  & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
-! !                                                  & VALUE,ERR,ERROR,*999)
-! !                                               ENDIF
+
+                               CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                                 & FIELD_VALUES_SET_TYPE,4,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                 & FIELD_VALUES_SET_TYPE,4,ERR,ERROR,*999)
+
+!                                   IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
+!                                     & FIELD_NODE_BASED_INTERPOLATION) THEN
+!                                     DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+!                                     IF(ASSOCIATED(DOMAIN)) THEN
+!                                       IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+!                                         DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+!                                         IF(ASSOCIATED(DOMAIN_NODES)) THEN
+!                                           !Loop over the local nodes excluding the ghosts.
+!                                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+!                                           CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+!                                              & FIELD_VALUES_SET_TYPE,1,node_idx,4,MASS_INCREASE,ERR,ERROR,*999)
+!                                           CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+!                                              & FIELD_VALUES_SET_TYPE,1,node_idx,4,0.1*MASS_INCREASE,ERR,ERROR,*999)
+!                                           write(*,*) MASS_INCREASE
 ! 
-! !                                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-! !                                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-!                                                   !If we are a boundary node then set the analytic value on the boundary
-! !                                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-! !                                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-! !                                                ENDIF
-! !                                              ENDIF
-!                                             ENDDO !deriv_idx
-                                          ENDDO !node_idx
-                                        ELSE
-                                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ELSE
-                                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
-                                      ENDIF
-                                    ELSE
-                                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
-                                    ENDIF
-                                  ELSE
-                                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
-                                  ENDIF
-                                ENDDO !component_idx
+!                                             !!TODO \todo We should interpolate the geometric field here and the node position.
+! !                                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
+! !                                               local_ny= & 
+! !                                           & GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+! !                                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+! !                                             ENDDO !dim_idx
+! !                                             !Loop over the derivatives
+! !                                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+! !                                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+! !                                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
+! ! !                                               CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X, & 
+! ! !                                                 & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX, &
+! ! !                                                 & ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
+! !                                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+! !                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+! !                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+! !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+! ! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+! ! !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% & 
+! ! !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+! ! !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
+! ! !                                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+! ! !                                                  & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
+! ! !                                                  & VALUE,ERR,ERROR,*999)
+! ! !                                               ENDIF
+! ! 
+! ! !                                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
+! ! !                                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+! !                                                   !If we are a boundary node then set the analytic value on the boundary
+! ! !                                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
+! ! !                                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+! ! !                                                ENDIF
+! ! !                                              ENDIF
+! !                                             ENDDO !deriv_idx
+!                                           ENDDO !node_idx
+!                                         ELSE
+!                                           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+!                                         ENDIF
+!                                       ELSE
+!                                         CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+!                                       ENDIF
+!                                     ELSE
+!                                       CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+!                                     ENDIF
+!                                   ELSE
+!                                     CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+!                                   ENDIF
+!                                 ENDDO !component_idx
                                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
                                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &

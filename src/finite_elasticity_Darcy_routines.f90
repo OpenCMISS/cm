@@ -875,7 +875,7 @@ CONTAINS
   !================================================================================================================================
   !
  
-  !>Sets up the finite elasticity Darcy  problem pre-solve.
+  !>Sets up the finite elasticity Darcy problem pre-solve.
   SUBROUTINE ELASTICITY_DARCY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables

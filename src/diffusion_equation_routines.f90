@@ -1436,10 +1436,10 @@ CONTAINS
                   DO component_idx=1,NUMBER_OF_DIMENSIONS
                     CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                      & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & component_idx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                   ENDDO !component_idx
                   !Default the source materials components to the first component geometric interpolation with constant interpolation
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE .OR. &
