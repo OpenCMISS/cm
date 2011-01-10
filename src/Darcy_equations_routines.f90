@@ -1796,16 +1796,7 @@ CONTAINS
     REAL(DP):: dfdJfact !dfdJfact = f'(Jxy) of the INRIA model
 
     REAL(DP):: SOURCE_1_X(3), SOURCE_1_R, SOURCE_1_I
-    REAL(DP):: SOURCE_2_X(3), SOURCE_2_R, SOURCE_2_I
-    REAL(DP):: SOURCE_3_X(3), SOURCE_3_R, SOURCE_3_I
 
-!     REAL(DP):: SOURCE_4_X(3), SOURCE_4_R, SOURCE_4_I
-!     REAL(DP):: SOURCE_5_X(3), SOURCE_5_R, SOURCE_5_I
-!     REAL(DP):: SOURCE_6_X(3), SOURCE_6_R, SOURCE_6_I
-! 
-!     REAL(DP):: SOURCE_7_X(3), SOURCE_7_R, SOURCE_7_I
-!     REAL(DP):: SOURCE_8_X(3), SOURCE_8_R, SOURCE_8_I
-! 
     REAL(DP):: LENGTH_SCALE
 
     LOGICAL :: STABILIZED
@@ -2033,35 +2024,11 @@ CONTAINS
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI, &
               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
-            !--- Set mesh velocity and derivative
-            SELECT CASE(EQUATIONS_SET%SUBTYPE)
-            CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-              & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-              & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
-              !--- Calculate 'GEOMETRIC_INTERP_PARAMETERS' from 'FIELD_MESH_VELOCITY_SET_TYPE'
-              !\todo: Flipping 'GEOMETRIC_INTERP_PARAMETERS' back and forth is wasteful inside Gauss point loop -
-              !   Bypass this by either accomodating mesh_velocity in independent_field or setting up additional interp_parameters
-              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER, &
-                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
-                & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
-              DO component_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                MESH_VEL(component_idx)=GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,NO_PART_DERIV)
-                DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                  derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
-                  !--- mesh velocity derivative wrt. element coordinates xi
-                  MESH_VEL_DERIV(component_idx,xi_idx)=GEOMETRIC_INTERPOLATED_POINT%VALUES(component_idx,derivative_idx)
-                ENDDO
-              ENDDO
-              !--- Calculate 'GEOMETRIC_INTERP_PARAMETERS' from 'FIELD_VALUES_SET_TYPE'
-              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
-                & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
-            CASE DEFAULT
-              MESH_VEL(:) = 0.0_DP
-              MESH_VEL_DERIV(:,:) = 0.0_DP
-            END SELECT
+            !--- Calculate 'GEOMETRIC_INTERP_PARAMETERS' from 'FIELD_VALUES_SET_TYPE'
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
+              & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
 
 
 !==========================================================================================
@@ -2069,41 +2036,6 @@ CONTAINS
             MESH_VEL(:) = 0.0_DP
             MESH_VEL_DERIV(:,:) = 0.0_DP
 !==========================================================================================
-
-
-            IF(DIAGNOSTICS1) THEN
-              IF(idebug3) THEN
-                MESH_VEL_DERIV_PHYS(:,:) = 0.0_DP
-                DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                  DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                    DO ki=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                      MESH_VEL_DERIV_PHYS(mi,ni) = MESH_VEL_DERIV_PHYS(mi,ni) + &
-                        & MESH_VEL_DERIV(mi,ki) * EQUATIONS%INTERPOLATION% &
-                        & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ki,ni)
-                    ENDDO !ki
-                  ENDDO !ni
-                ENDDO !mi
-
-                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,3,0,GEOMETRIC_INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV), &
-                  & '(" GEOMETRIC_INTERPOLATED_POINT%VALUES(:,NO_PART_DERIV) = ",3(X,E13.6))','0(3(X,E13.6))', &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,3,0,MESH_VEL, &
-                  & '(" MESH_VEL = ",3(X,E13.6))','0(3(X,E13.6))', &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"",ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,3,0,MESH_VEL_DERIV_PHYS(1,:), &
-                  & '(" MESH_VEL_DERIV_PHYS(1,:) = ",3(X,E13.6))','0(3(X,E13.6))', &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,3,0,MESH_VEL_DERIV_PHYS(2,:), &
-                  & '(" MESH_VEL_DERIV_PHYS(2,:) = ",3(X,E13.6))','0(3(X,E13.6))', &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,3,0,MESH_VEL_DERIV_PHYS(3,:), &
-                  & '(" MESH_VEL_DERIV_PHYS(3,:) = ",3(X,E13.6))','0(3(X,E13.6))', &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"",ERR,ERROR,*999)
-                idebug3 = .FALSE.
-              ENDIF
-            ENDIF
 
 
 !             !--- Material Settings ---!
@@ -2115,15 +2047,7 @@ CONTAINS
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
               & MATERIALS_INTERPOLATED_POINT,ERR,ERROR,*999)
 
-            POROSITY = MATERIALS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
-
-            GRAD_POROSITY(:) = 0.0_DP
-            DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
-              derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
-              !porosity gradient wrt. element coordinates xi
-              GRAD_POROSITY(xi_idx) = MATERIALS_INTERPOLATED_POINT%VALUES(1,derivative_idx)
-            ENDDO
-
+!             POROSITY = MATERIALS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
 
 !==========================================================================================
             !***  Try w-formulation  ***!
@@ -2133,45 +2057,6 @@ CONTAINS
 
 
             PERM_OVER_VIS_PARAM = MATERIALS_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
-!---tob:
-!             IF( DARCY%TESTCASE == 6 ) THEN
-!               !Alter permeability for modeling of ischemic region
-!               X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-!               X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-!               X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
-! 
-!               IF( (X(2)<0.0_DP).AND.(X(3)>=0.89_DP) ) THEN
-!                 PERM_OVER_VIS_PARAM = PERM_OVER_VIS_PARAM / 100.0_DP
-!               END IF
-! 
-! !               X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-! !               X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-! !               X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
-! ! 
-! !               SOURCE_7_X = (/0.0, 0.0, 0.0/) * LENGTH_SCALE
-! !               SOURCE_7_R = 0.4_DP !* LENGTH_SCALE
-! !               SOURCE_7_I = +0.1_DP
-! ! 
-! !               IF( (X(1)-SOURCE_7_X(1))**2.0_DP + (X(2)-SOURCE_7_X(2))**2.0_DP + (X(3)-SOURCE_7_X(3))**2.0_DP &
-! !                 & <=SOURCE_7_R**2.0_DP ) THEN
-! !                 PERM_OVER_VIS_PARAM = PERM_OVER_VIS_PARAM / 1000.0_DP
-! !               END IF
-!             ELSE IF( DARCY%TESTCASE == 11 ) THEN
-!               X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-!               X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-!               X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
-! 
-!               !Node 2701 (middle):
-!               SOURCE_7_X = (/8.38758450000000044E-002, 0.18070105000000000, 4.93491049999999973E-002/) * LENGTH_SCALE
-!               SOURCE_7_R = 0.02_DP * LENGTH_SCALE
-!               SOURCE_7_I = +0.1_DP
-! 
-!               IF( (X(1)-SOURCE_7_X(1))**2.0_DP + (X(2)-SOURCE_7_X(2))**2.0_DP + (X(3)-SOURCE_7_X(3))**2.0_DP &
-!                 & <=SOURCE_7_R**2.0_DP ) THEN
-!                 PERM_OVER_VIS_PARAM = PERM_OVER_VIS_PARAM / 4.0_DP
-!               END IF
-!             END IF
-!---toe:
             PERM_TENSOR_OVER_VIS(:,:) = 0.0_DP
             PERM_TENSOR_OVER_VIS(1,1) = PERM_OVER_VIS_PARAM
             PERM_TENSOR_OVER_VIS(2,2) = PERM_OVER_VIS_PARAM
@@ -2583,11 +2468,6 @@ CONTAINS
                       ! n o   s o u r c e
                       SOURCE = 0.0_DP
 
-! !---tob
-!                       ! u n i f o r m   s o u r c e
-!                       SOURCE = 2.0_DP
-! !---toe
-
 !---tob
 !                       IF(.FALSE.) THEN
 !                         ! s o u r c e   i n   t h e   f o r m   o f   a   h a l f s p h e r e
@@ -2601,29 +2481,11 @@ CONTAINS
 !                         SOURCE_1_X = (/0.0_DP, 0.0_DP, -10.0_DP/) * LENGTH_SCALE
 !                         SOURCE_1_R = 4.0_DP * LENGTH_SCALE
 !                         SOURCE_1_I = 10.0_DP
-!                         !
-! !                         SOURCE_2_X = (/-5.0, 5.0, -5.0/) * LENGTH_SCALE
-! !                         SOURCE_2_R = 1.0_DP * LENGTH_SCALE
-! !                         SOURCE_2_I = 1.0_DP
-! !                         !
-! !                         SOURCE_3_X = (/5.0, -5.0, -5.0/) * LENGTH_SCALE
-! !                         SOURCE_3_R = 1.0_DP * LENGTH_SCALE
-! !                         SOURCE_3_I = -1.0_DP 
 ! 
 !                         IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
 !                           & <=SOURCE_1_R**2.0_DP ) THEN
 !                           SOURCE = SOURCE_1_I
 !                         END IF
-!                         !
-! !                         IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
-! !                           & <=SOURCE_2_R**2.0_DP ) THEN
-! !                           SOURCE = SOURCE_2_I
-! !                         END IF
-! !                         !
-! !                         IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
-! !                           & <=SOURCE_3_R**2.0_DP ) THEN
-! !                           SOURCE = SOURCE_3_I
-! !                         END IF
 !                       END IF
 !---toe
 
@@ -2696,11 +2558,6 @@ CONTAINS
                       ! n o   s o u r c e
                       SOURCE = 0.0_DP
 
-! !---tob
-!                       ! u n i f o r m   s o u r c e
-!                       SOURCE = 10.0_DP
-! !---toe
-
 !---tob
 !                       IF(.FALSE.) THEN
 !                         ! s o u r c e   i n   t h e   f o r m   o f   a   h a l f s p h e r e
@@ -2714,161 +2571,14 @@ CONTAINS
 !                         SOURCE_1_X = (/0.0_DP, 0.0_DP, -10.0_DP/) * LENGTH_SCALE
 !                         SOURCE_1_R = 4.0_DP * LENGTH_SCALE
 !                         SOURCE_1_I = 1.0_DP
-!                         !
-! !                         SOURCE_2_X = (/-5.0, 5.0, -5.0/) * LENGTH_SCALE
-! !                         SOURCE_2_R = 1.0_DP * LENGTH_SCALE
-! !                         SOURCE_2_I = 1.0_DP
-! !                         !
-! !                         SOURCE_3_X = (/5.0, -5.0, -5.0/) * LENGTH_SCALE
-! !                         SOURCE_3_R = 1.0_DP * LENGTH_SCALE
-! !                         SOURCE_3_I = -1.0_DP 
 ! 
 !                         IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
 !                           & <=SOURCE_1_R**2.0_DP ) THEN
 !                           SOURCE = SOURCE_1_I
 !                         END IF
-!                         !
-! !                         IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
-! !                           & <=SOURCE_2_R**2.0_DP ) THEN
-! !                           SOURCE = SOURCE_2_I
-! !                         END IF
-! !                         !
-! !                         IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
-! !                           & <=SOURCE_3_R**2.0_DP ) THEN
-! !                           SOURCE = SOURCE_3_I
-! !                         END IF
 !                       END IF
 !---toe
 
-!                       IF( DARCY%TESTCASE == 3 ) THEN
-!                         SOURCE = BETA_PARAM * P_SINK_PARAM
-!                       ELSE IF( DARCY%TESTCASE == 5 .OR. DARCY%TESTCASE == 6 ) THEN
-!                         !Distribution of sources (arteries) and sinks (veins) for the C U B E
-!                         X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-!                         X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-!                         X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
-! 
-!                         SOURCE_1_X = (/-0.4_DP,-0.9_DP,-0.4_DP/)
-!                         SOURCE_1_R = 0.3_DP
-!                         SOURCE_1_I = -20.0_DP
-!                         !
-!                         SOURCE_2_X = (/0.9_DP,0.4_DP,-0.4_DP/)
-!                         SOURCE_2_R = 0.3_DP
-!                         SOURCE_2_I = 10.0_DP
-!                         !
-!                         SOURCE_3_X = (/0.4_DP,0.4_DP,0.9_DP/)
-!                         SOURCE_3_R = 0.3_DP
-!                         SOURCE_3_I = 10.0_DP
-! 
-!                         IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
-!                           & <=SOURCE_1_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_1_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
-!                           & <=SOURCE_2_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_2_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
-!                           & <=SOURCE_3_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_3_I
-!                         END IF
-!                       ELSE IF( DARCY%TESTCASE == 10 .OR. DARCY%TESTCASE == 11 ) THEN
-!                         !Distribution of sources (arteries) and sinks (veins) for the L E F T   V E N T R I C L E
-!                         X(1) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)
-!                         X(2) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
-!                         X(3) = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,1)
-! 
-!                         LENGTH_SCALE = 1000.0_DP
-! 
-!                         ! Top: 2592, 2634, 3441
-!                         !
-!                         !Node 2592 (top, 7o' clock):
-!                         SOURCE_1_X = (/0.12469570000000001, 0.15406560000000000, 9.50000000000000011E-002/) * LENGTH_SCALE
-!                         SOURCE_1_R = 0.03_DP * LENGTH_SCALE
-!                         SOURCE_1_I = 0.0_DP 
-!                         !
-!                         !Node 2634 (top, 5o' clock):
-!                         SOURCE_2_X = (/0.12138850000000000, 0.19423494999999996, 9.50000000000000011E-002/) * LENGTH_SCALE
-!                         SOURCE_2_R = 0.03_DP * LENGTH_SCALE
-!                         SOURCE_2_I = 0.0_DP
-!                         !
-!                         !Node 3441 (top, 11o'clock): 
-!                         SOURCE_3_X = (/9.34197299999999925E-002, 0.15824404999999997, 9.50000000000000011E-002/) * LENGTH_SCALE
-!                         SOURCE_3_R = 0.03_DP * LENGTH_SCALE
-!                         SOURCE_3_I = 0.0_DP 
-! 
-!                         !Bottom: 2283, 2405, 2486
-!                         !
-!                         !Node 2283 (bottom, 8o'clock):
-!                         SOURCE_4_X = (/0.11039010350099999, 0.15022144345490002, 1.96579095723937516E-002/) * LENGTH_SCALE
-!                         SOURCE_4_R = 0.1_DP * LENGTH_SCALE
-!                         SOURCE_4_I = +0.01_DP
-!                         !
-!                         !Node 2405 (bottom):
-!                         SOURCE_5_X = (/0.11705838437500005, 0.15714326562500008, 9.13646035937500968E-003/) * LENGTH_SCALE
-!                         SOURCE_5_R = 0.1_DP * LENGTH_SCALE
-!                         SOURCE_5_I = +0.01_DP
-!                         !
-!                         !Node 2486 (bottom):
-!                         SOURCE_6_X = (/0.10104060500000001, 0.17055360000000000, 8.67250500000000049E-003/) * LENGTH_SCALE
-!                         SOURCE_6_R = 0.1_DP * LENGTH_SCALE
-!                         SOURCE_6_I = +0.01_DP
-! 
-!                         !Middle: 2701, 3537
-!                         !
-!                         !Node 2701 (middle):
-!                         SOURCE_7_X = (/8.38758450000000044E-002, 0.18070105000000000, 4.93491049999999973E-002/) * LENGTH_SCALE
-!                         SOURCE_7_R = 0.015_DP * LENGTH_SCALE
-!                         SOURCE_7_I = +0.1_DP
-!                         !
-!                         !Node 3537 (middle):
-!                         SOURCE_8_X = (/0.11467114375000002, 0.15206807187500018, 5.08069359375000404E-002/) * LENGTH_SCALE
-!                         SOURCE_8_R = 0.015_DP * LENGTH_SCALE
-!                         SOURCE_8_I = -0.13_DP
-! 
-! 
-!                         IF( (X(1)-SOURCE_1_X(1))**2.0_DP + (X(2)-SOURCE_1_X(2))**2.0_DP + (X(3)-SOURCE_1_X(3))**2.0_DP &
-!                           & <=SOURCE_1_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_1_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_2_X(1))**2.0_DP + (X(2)-SOURCE_2_X(2))**2.0_DP + (X(3)-SOURCE_2_X(3))**2.0_DP &
-!                           & <=SOURCE_2_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_2_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_3_X(1))**2.0_DP + (X(2)-SOURCE_3_X(2))**2.0_DP + (X(3)-SOURCE_3_X(3))**2.0_DP &
-!                           & <=SOURCE_3_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_3_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_4_X(1))**2.0_DP + (X(2)-SOURCE_4_X(2))**2.0_DP + (X(3)-SOURCE_4_X(3))**2.0_DP &
-!                           & <=SOURCE_4_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_4_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_5_X(1))**2.0_DP + (X(2)-SOURCE_5_X(2))**2.0_DP + (X(3)-SOURCE_5_X(3))**2.0_DP &
-!                           & <=SOURCE_5_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_5_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_6_X(1))**2.0_DP + (X(2)-SOURCE_6_X(2))**2.0_DP + (X(3)-SOURCE_6_X(3))**2.0_DP &
-!                           & <=SOURCE_6_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_6_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_7_X(1))**2.0_DP + (X(2)-SOURCE_7_X(2))**2.0_DP + (X(3)-SOURCE_7_X(3))**2.0_DP &
-!                           & <=SOURCE_7_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_7_I
-!                         END IF
-!                         !
-!                         IF( (X(1)-SOURCE_8_X(1))**2.0_DP + (X(2)-SOURCE_8_X(2))**2.0_DP + (X(3)-SOURCE_8_X(3))**2.0_DP &
-!                           & <=SOURCE_8_R**2.0_DP ) THEN
-!                           SOURCE = SOURCE_8_I
-!                         END IF
-!                       END IF
 
                       SUM = SUM + PGM * SOURCE
 

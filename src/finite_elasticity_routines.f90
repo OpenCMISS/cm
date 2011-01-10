@@ -900,16 +900,6 @@ CONTAINS
 
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
 
-!---tob
-!               Z_COORD_GAUSS = -10.0_DP
-!               Z_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(3,1)
-!               TOL_GAUSS = 1.0_DP
-! 
-!               IF(ABS(Z_COORD-Z_COORD_GAUSS)<TOL_GAUSS) THEN
-!                 DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + 1.0e-05_DP
-!               ENDIF
-!---toe
-
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
             ENDIF
 
@@ -985,7 +975,7 @@ CONTAINS
               ENDIF
             ENDIF
 
-!---tob
+!---Write out some data at selected integration points:-------
             X_COORD_GAUSS = 0.33_DP
             Y_COORD_GAUSS = 0.33_DP
             X_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
@@ -997,7 +987,7 @@ CONTAINS
                 & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
                 & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
             ENDIF
-!---toe
+!-------------------------------------------------------------
 
           ENDDO !gauss_idx
 
@@ -1356,9 +1346,6 @@ CONTAINS
   !
 
   !>Evaluates the Cauchy stress tensor at a given Gauss point
-!   SUBROUTINE FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
-!       & MATERIALS_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
-
   SUBROUTINE FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT, &
       & MATERIALS_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT, &
       & CAUCHY_TENSOR,Jznu,DZDNU,ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
@@ -1550,10 +1537,10 @@ CONTAINS
         PIOLA_TENSOR=PIOLA_TENSOR+2.0_DP*C(3)*(I3-SQRT(I3))*AZU
       ELSEIF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
         & EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
-        !Starting point for both models is above compressible form of 2nd PK tensor
         SELECT CASE (EQUATIONS_SET_SUBTYPE)
         CASE (EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) !Nearly incompressible
           C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
+          !Starting point for this models is above compressible form of 2nd PK tensor
           !Adjust for the modified Ciarlet-Geymonat expression: Eq.(22) of the INRIA paper
           ! Question is: What deviation is to be penalized : (J-1) or (J-1-m/rho) ??? Probably the latter !
           ! However, m/rho is a given 'constant' and, upon differentiation, drops out.
@@ -1564,9 +1551,6 @@ CONTAINS
 ! ! !           !Constitutive model: W=c1*(I1-3)+c2*(I2-3)+p*(I3-1) 
 ! ! !           ! The term 'p*(I3-1)' gives rise to: '2p I3 AZU'
 ! ! !           ! Retain I3 = J^2, since J ~ 1 + m/rho /= 1 
-! ! !           IF(DIAGNOSTICS1) THEN
-! ! !             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  I3 = ",I3,ERR,ERROR,*999)
-! ! !           ENDIF
 ! ! !           !\ToDo: Check: Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it ???
 ! ! !           DO i=1,3
 ! ! !            DO j=1,3
@@ -1627,30 +1611,20 @@ CONTAINS
           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
         END SELECT
 
-        DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
-
-!---tob
-!         Z_COORD_GAUSS = -10.0_DP
-!         Z_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(3,1)
-!         TOL_GAUSS = 1.0_DP
+!         DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
 ! 
-!         IF(ABS(Z_COORD-Z_COORD_GAUSS)<TOL_GAUSS) THEN
-!           DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + 1.0e-05_DP
+!         CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
+! 
+!         IF(DIAGNOSTICS1) THEN
+!           CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+!             & 3,3,PIOLA_TENSOR,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR','(",I1,",:)',' :",3(X,E13.6))', &
+!             & '(17X,3(X,E13.6))',ERR,ERROR,*999)
+!           CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
+!             & 3,3,PIOLA_TENSOR_ADDITION, &
+!             & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR_ADDITION','(",I1,",:)',' :",3(X,E13.6))', &
+!             & '(17X,3(X,E13.6))',ERR,ERROR,*999)
 !         ENDIF
-!---toe
-
-        CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
-
-        IF(DIAGNOSTICS1) THEN
-          CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-            & 3,3,PIOLA_TENSOR,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR','(",I1,",:)',' :",3(X,E13.6))', &
-            & '(17X,3(X,E13.6))',ERR,ERROR,*999)
-          CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-            & 3,3,PIOLA_TENSOR_ADDITION, &
-            & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR_ADDITION','(",I1,",:)',' :",3(X,E13.6))', &
-            & '(17X,3(X,E13.6))',ERR,ERROR,*999)
-        ENDIF
-
+! 
 !         PIOLA_TENSOR = PIOLA_TENSOR + PIOLA_TENSOR_ADDITION
       ENDIF
 
@@ -4375,8 +4349,6 @@ CONTAINS
 
     DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
 
-!     write(*,*)'DARCY_MASS_INCREASE(2) = ',DARCY_MASS_INCREASE
-
     Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
     IF( ABS(Jznu) < 1.0E-10_DP ) THEN
       CALL FLAG_ERROR("EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION: ABS(Jznu) < 1.0E-10_DP",ERR,ERROR,*999)
@@ -4588,16 +4560,6 @@ CONTAINS
         DARCY_VELOCITY(1) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
         DARCY_VELOCITY(2) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
         DARCY_VELOCITY(3) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(3,NO_PART_DERIV)
-
-!---tob
-!         Z_COORD_GAUSS = -10.0_DP
-!         Z_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(3,1)
-!         TOL_GAUSS = 1.0_DP
-! 
-!         IF(ABS(Z_COORD-Z_COORD_GAUSS)<TOL_GAUSS) THEN
-!           DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + 1.0e-05_DP
-!         ENDIF
-!---toe
 
         !Parameters settings for coupled elasticity Darcy INRIA model:
         CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
