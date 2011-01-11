@@ -137,7 +137,7 @@ MODULE TYPES
     REAL(DP), ALLOCATABLE :: GAUSS_POSITIONS(:,:) !<GAUSS_POSITIONS(nic,ng). The positions in the nic'th xi coordinate of Gauss point ng. Old CMISS name XIG(ni,ng,nb).
     REAL(DP), ALLOCATABLE :: GAUSS_WEIGHTS(:) !<GAUSS_WEIGHTS(ng). The weight applied to Gauss point ng. Old CMISS name WG(ng,nb).
     REAL(DP), ALLOCATABLE :: GAUSS_BASIS_FNS(:,:,:) !<GAUSS_BASIS_FNS(ns,nu,ng). The value of the basis functions evaluated at Gauss point ng for the nu'th derivative of the basis function associated with the ns'th element parameter. Old CMISS name PG(ns,nu,ng,nb)
-    !Face gauss stuff
+    !Quadrature information at faces
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_FACE_GAUSS(:) !<NUMBER_OF_FACE_GAUSS(:) number of gauss points in each local face of the element
     REAL(DP), ALLOCATABLE :: FACE_GAUSS_BASIS_FNS(:,:,:,:) !<FACE_GAUSS_BASIS_FNS(ns,nu,ng,naf)
     REAL(DP), ALLOCATABLE :: FACE_GAUSS_POSITIONS(:,:,:) !<FACE_GAUSS_POSITIONS(nic,ng,naf)
@@ -158,7 +158,7 @@ MODULE TYPES
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), ALLOCATABLE :: QUADRATURE_SCHEME_MAP(:) !<QUADRATURE_SCHEME_MAP(scheme_idx). The pointer map to the defined quadrature schemes. The size of array is given by BASIS_ROUTINES::BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES. If the quadrature scheme is not defined for the particular type then the array element is NULL. \see BASIS_ROUTINES_QuadratureSchemes.
     INTEGER(INTG) :: NUMBER_OF_SCHEMES !<The number of quadrature schemes defined for this quadrature
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), POINTER :: SCHEMES(:) !<SCHEMES(scheme_idx). The array of pointers to the quadrature schemes defined for the basis. scheme_idx must be between 1 and QUADRATURE_TYPE::NUMBER_OF_SCHEMES.
-    LOGICAL :: EVALUATE_FACE_GAUSS=.FALSE. !< should this be here??
+    LOGICAL :: EVALUATE_FACE_GAUSS=.FALSE. !! \todo should this be here??
   END TYPE QUADRATURE_TYPE
 
   !
@@ -174,7 +174,7 @@ MODULE TYPES
 
   !> Contains all information about a basis .
   TYPE BASIS_TYPE
-!!TODO: Add in different sub types for the different types of bases???
+    !\todo Add in different sub types for the different types of bases???
     INTEGER(INTG) :: USER_NUMBER !<The user defined identifier for the basis. The user number must be unique.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number for the basis i.e., the position indentifier for the list of bases defined.
     INTEGER(INTG) :: FAMILY_NUMBER !<The family number for the basis. A basis has a number of sub-bases attached which make a basis family. The main parent basis is the basis defined by the user and it will have a family number of 0. The sub-bases of the parent basis will be the line and face bases that make up the basis. These will have different family numbers.
@@ -195,7 +195,7 @@ MODULE TYPES
     TYPE(QUADRATURE_TYPE) :: QUADRATURE !<The quadrature schemes for the basis.
     INTEGER(INTG) :: NUMBER_OF_PARTIAL_DERIVATIVES !<The number of partial derivatives for the basis. Old CMISS name NUT(nbf)
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of local nodes in the basis. Old CMISS name NNT(nbf)
-!!TODO: 
+    !\todo
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_XIC(:) !<NUMBER_OF_NODES_XIC(nic). The number of local nodes in the nic'th coordinate in the basis. Old CMISS name IBT(2,ni,nb).
     INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS  !<The number of element parameters in the basis. Old CMISS name NST(nbf). 
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives at any node in the basis. Old CMISS name NKT(0,nbf)
@@ -320,8 +320,8 @@ MODULE TYPES
 
   !>Contains information about a node.
   TYPE NODE_TYPE
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of node.
-    INTEGER(INTG) :: USER_NUMBER !<The user defined number of node.
+    INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the node.
+    INTEGER(INTG) :: USER_NUMBER !<The user defined number of the node.
     TYPE(VARYING_STRING) :: LABEL !<A string label for the node
   END TYPE NODE_TYPE
 
@@ -360,6 +360,9 @@ MODULE TYPES
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
     INTEGER(INTG), ALLOCATABLE :: MESH_ELEMENT_NODES(:) !<MESH_ELEMENT_NODES(nn). The mesh node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ELEMENT_NODES(:) !<GLOBAL_ELEMENT_NODES(nn). The global node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
+  !#######################################################VERSIONS START########################################################
+    INTEGER(INTG), ALLOCATABLE :: USER_ELEMENT_NODE_VERSIONS(:,:) !< USER_ELEMENT_NODE_VERSIONS(derivative_idx,element_node_idx).  The version number for the nn'th user node's nk'th derivative. Size of array dependent on the maximum number of derivatives for the basis of the specified element.
+  !#######################################################VERSIONS END##########################################################
     INTEGER(INTG), ALLOCATABLE :: USER_ELEMENT_NODES(:) !<USER_ELEMENT_NODES(nn). The user node number in the mesh of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
     TYPE(MESH_ADJACENT_ELEMENT_TYPE), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<ADJACENT_ELEMENTS(-nic:nic). The adjacent elements information in the nic'th xi coordinate direction. Note that -nic gives the adjacent element before the element in the nic'th direction and +nic gives the adjacent element after the element in the nic'th direction. The ni=0 index will give the information on the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
     !INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
@@ -376,15 +379,29 @@ MODULE TYPES
     TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the mesh global element number to the mesh user element number.
   END TYPE MESH_ELEMENTS_TYPE
 
+  !#######################################################VERSIONS START########################################################
+  !>Contains the information for a node derivative of a mesh.
+  TYPE MESH_NODE_DERIVATIVE_TYPE
+    INTEGER(INTG) :: NUMBER_OF_VERSIONS !The number of global versions at the node for the mesh.
+    INTEGER(INTG), ALLOCATABLE :: USER_VERSION_NUMBERS(:) !The user version index of the nk'th global derivative for the node.
+    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !The global dof version index (nv) in the domain of the nk'th global derivative for the node.
+    INTEGER(INTG) :: GLOBAL_DERIVATIVE_INDEX !The global derivative index of the nk'th global derivative for the node.
+    INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX !The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+  END TYPE MESH_NODE_DERIVATIVE_TYPE
+  !#######################################################VERSIONS END##########################################################
+
   !>Contains the topology information for a global node of a mesh.
   TYPE MESH_NODE_TYPE
     INTEGER(INTG) :: MESH_NUMBER !<The mesh node number in the mesh.
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global node number in the mesh.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
     INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the mesh. Old CMISS name NKT(nj,np).
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_DERIVATIVE_INDEX(:) !<GLOBAL_DERIVATIVE_INDEX(nk). The global derivative index of the nk'th global derivative for the node.
-    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The global dof derivative index (ny) in the domain of the nk'th global derivative for the node.
+!  !#######################################################VERSIONS START########################################################
+    TYPE(MESH_NODE_DERIVATIVE_TYPE), ALLOCATABLE :: DERIVATIVES(:) !<DERIVATIVES(derivative_idx)
+!  !#######################################################VERSIONS END##########################################################
+    !INTEGER(INTG), ALLOCATABLE :: GLOBAL_DERIVATIVE_INDEX(:) !TODO delete this !<GLOBAL_DERIVATIVE_INDEX(nk). The global derivative index of the nk'th global derivative for the node.
+    !INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !TODO delete this <PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+    !INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !TODO delete this!<DOF_INDEX(nk). The global dof derivative index (ny) in the domain of the nk'th global derivative for the node.
     INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the mesh. Old CMISS name NENP(np,0,0:nr).
     INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The global element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
     LOGICAL :: BOUNDARY_NODE !<Is .TRUE. if the mesh node is on the boundary of the mesh, .FALSE. if not.
@@ -519,8 +536,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: GENERATED_TYPE !<The type of the generated mesh. \see GENERATED_MESH_ROUTINES_GeneratedMeshTypes,GENERATED_MESH_ROUTINES
     TYPE(GENERATED_MESH_REGULAR_TYPE), POINTER :: REGULAR_MESH !<A pointer to the regular generated mesh information if the generated mesh is a regular mesh, NULL if not.
     TYPE(GENERATED_MESH_CYLINDER_TYPE), POINTER :: CYLINDER_MESH !<A pointer to the cylinder generate mesh information if the generated mesh is a cylinder mesh, NULL if not.
-     TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH !<A pointer to the ellipsoid generate mesh information if the generated mesh is a ellipsoid mesh, NULL if not.
-     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that has been generated.
+    TYPE(GENERATED_MESH_ELLIPSOID_TYPE), POINTER :: ELLIPSOID_MESH !<A pointer to the ellipsoid generate mesh information if the generated mesh is a ellipsoid mesh, NULL if not.
+    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh that has been generated.
   END TYPE GENERATED_MESH_TYPE
   
   !>A buffer type to allow for an array of pointers to a GENERATED_MESH_TYPE.
@@ -547,7 +564,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain.
     INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of degrees-of-freedom (excluding ghost dofs) in the domain.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<The total number of degrees-of-freedom (including ghost dofs) in the domain.
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:,:) !<DOF_INDEX(i,ny). The index for the ny'th degree-of-freedom. When i=1 DOF_INDEX will give the global derivative number (nk) associated with the dof. When i=2 DOF_INDEX will give the local node number (np) associated with the dof.
+  !#######################################################VERSIONS START########################################################
+    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:,:) !<DOF_INDEX(i,ny). The index for the ny'th degree-of-freedom. When i=1 DOF_INDEX will give the global derivative version number (version_idx) associated with the dof. When i=2 DOF_INDEX will give the global derivative number (derivative_idx) associated with the dof. When i=3 DOF_INDEX will give the local node number (node_idx) associated with the dof.
+  !#######################################################VERSIONS END##########################################################
   END TYPE DOMAIN_DOFS_TYPE
 
   !>Contains the information for a line in a domain.
@@ -555,7 +574,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER !<The line number in the domain.
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the line.
     INTEGER(INTG), ALLOCATABLE :: NODES_IN_LINE(:) !<NODES_IN_LINE(nn). The local node number in the domain of the nn'th local node in the line. Old CMISS name NPL(2..5,nj,nl).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_LINE(:,:) !<DERIVATIVES_IN_LINE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the line. Old CMISS name NPL(4..5,nj,nl).
+  !#######################################################VERSIONS START########################################################
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_LINE(:,:,:) !<DERIVATIVES_IN_LINE(i,local_derivative_idx,local_node_idx). When i=1 DERIVATIVES_IN_LINE will give the global derivative number of the local_derivative_idx'th local derivative for the local_node_idx'th local node in the line, When i=2 DERIVATIVES_IN_LINE will give the global derivative version number of the local_derivative_idx'th local derivative for the local_node_idx'th local node in the line. Old CMISS name NPL(4..5,nj,nl).
+  !#######################################################VERSIONS END##########################################################
     LOGICAL :: BOUNDARY_LINE !<Is .TRUE. if the line is on the boundary of the mesh for the domain, .FALSE. if not.
     INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the line is on
   END TYPE DOMAIN_LINE_TYPE
@@ -579,7 +600,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: XI_DIRECTION2 !<The second xi direction of the face. \todo move this to the decomposition face type
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the face.
     INTEGER(INTG), ALLOCATABLE :: NODES_IN_FACE(:) !<NODES_IN_FACE(nn). The local node number in the domain of the nn'th local node in the face. Old CMISS name NPNF(nn,nbf).
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_FACE(:,:) !<DERIVATIVES_IN_FACE(nk,nn). The global derivative number of the local derivative nk for the local node nn in the face.
+  !#######################################################VERSIONS START########################################################
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_FACE(:,:,:) !<DERIVATIVES_IN_FACE(i,local_derivative_idx,local_node_idx). When i=1 DERIVATIVES_IN_FACE will give the global derivative number of the local derivative_idx'th local derivative for the local_node_idx'th local node in the face, When i=2 DERIVATIVES_IN_FACE will give the global derivative version number of the local derivative_idx'th local derivative for the local_node_idx'th local node in the face.
+  !#######################################################VERSIONS END##########################################################
     LOGICAL :: BOUNDARY_FACE !<Is .TRUE. if the face is on the boundary of the mesh for the domain, .FALSE. if not.
     INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the face is on
   END TYPE DOMAIN_FACE_TYPE
@@ -600,8 +623,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE DOMAIN_ELEMENT_TYPE
     INTEGER(INTG) :: NUMBER !<The local element number in the domain.
     TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis function for the element.
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:) !<ELEMENT_NODES(nn). The local node number in the domain of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:) !<ELEMENT_DERIVATIVES(nk,nn). The global derivative number of the local derivative nk for the local node nn in the element. Old CMISS name NKJE(nk,nn,nj,ne).
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:) !<ELEMENT_NODES(element_node_idx). The local node number in the domain of the nn'th local node in the element. Old CMISS name NPNE(nn,nbf,ne).
+  !#######################################################VERSIONS START########################################################
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_DERIVATIVES(:,:,:) !<ELEMENT_DERIVATIVES(i,local_derivative_idx,local_element_node_idx).  When i=1 ELEMENT_DERIVATIVES will give the global derivative number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. When i=2 ELEMENT_DERIVATIVES will give the version number of the local_derivative_idx'th local derivative for the local_element_node_idx'th local node in the element. Old CMISS name NKJE(nk,nn,nj,ne).
+  !#######################################################VERSIONS END##########################################################
   END TYPE DOMAIN_ELEMENT_TYPE
   
   !>Contains the topology information for the elements of a domain.
@@ -613,6 +638,19 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS !<The maximum number of element parameters (ns) for all the elements in the domain.
   END TYPE DOMAIN_ELEMENTS_TYPE
 
+  !#######################################################VERSIONS START########################################################
+  !>Contains the topology information for a local node derivative of a domain.
+  !TODO: Create initialize and finalize routines
+  TYPE DOMAIN_NODE_DERIVATIVE_TYPE
+    INTEGER(INTG) :: NUMBER_OF_VERSIONS !The number of global versions at the node for the mesh.
+    INTEGER(INTG), ALLOCATABLE :: USER_VERSION_NUMBERS(:) !The user version index of the nk'th global derivative for the node.
+    INTEGER(INTG), ALLOCATABLE :: LOCAL_VERSION_NUMBERS(:) !The local version index of the local nk'th global derivative for the node in the domain.
+    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !The local dof derivative version index in the domain of the nk'th global derivative for the node.
+    INTEGER(INTG) :: GLOBAL_DERIVATIVE_INDEX !The global derivative index of the nk'th global derivative for the node.
+    INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX !The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+  END TYPE DOMAIN_NODE_DERIVATIVE_TYPE
+  !#######################################################VERSIONS END##########################################################
+
   !>Contains the topology information for a local node of a domain.
   TYPE DOMAIN_NODE_TYPE
     INTEGER(INTG) :: LOCAL_NUMBER !<The local node number in the domain.
@@ -620,9 +658,12 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global number for the node i.e., the node number in the list of nodes for the region.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
     INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the domain. Old CMISS name NKT(nj,np)
-    INTEGER(INTG), ALLOCATABLE :: GLOBAL_DERIVATIVE_INDEX(:) !<GLOBAL_DERIVATIVE_INDEX(nk). The global derivative index of the nk'th global derivative for the node.
-    INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !<PARTIAL_DERIVATIVE_INDEX(nk). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The local dof derivative index (ny) in the domain of the nk'th global derivative for the node.
+!  !#######################################################VERSIONS START########################################################
+    TYPE(DOMAIN_NODE_DERIVATIVE_TYPE), ALLOCATABLE :: DERIVATIVES(:) !<DERIVATIVES(derivative_idx)
+!  !#######################################################VERSIONS END##########################################################
+    !INTEGER(INTG), ALLOCATABLE :: GLOBAL_DERIVATIVE_INDEX(:) !TODO delete this!<GLOBAL_DERIVATIVE_INDEX(derivative_idx). The global derivative index of the nk'th global derivative for the node.
+    !INTEGER(INTG), ALLOCATABLE :: PARTIAL_DERIVATIVE_INDEX(:) !TODO delete this!<PARTIAL_DERIVATIVE_INDEX(derivative_idx). The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+    !INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !<DOF_INDEX(nk). The local dof derivative index (local_derivative_idx) in the domain of the nk'th global derivative for the node.
     INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the domain. Old CMISS name NENP(np,0,0:nr).
     INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The local element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
     INTEGER(INTG) :: NUMBER_OF_NODE_LINES !<The number of lines surrounding the node in the domain.
@@ -645,7 +686,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE DOMAIN_TOPOLOGY_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this topology information.
     TYPE(DOMAIN_NODES_TYPE), POINTER :: NODES !<The pointer to the topology information for the nodes of this domain.
-    TYPE(DOMAIN_DOFS_TYPE), POINTER :: DOFS !<The pointer to the topology information for the dofs of this domain.
+    TYPE(DOMAIN_DOFS_TYPE), POINTER :: DOFS !<The pointer to the topology information for the dofs of this domain. /todo think about getting rid of domain dofs
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this domain.
     TYPE(DOMAIN_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this domain.
     TYPE(DOMAIN_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this domain.
@@ -719,7 +760,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix
     INTEGER(INTG) :: BASE_TAG_NUMBER !<The base number for the MPI tag numbers that will be used to communicate the distributed matrix data amongst the domains. The base tag number can be thought of as the identification number for the distributed matrix object.
     TYPE(MATRIX_TYPE), POINTER :: MATRIX !<A pointer to the matrix to store the rows corresponding to this domain.
-!    type(LinkedList),pointer :: list(:) 
+!   TYPE(LINKEDLIST),POINTER :: LIST(:) !< \todo Comment
   END TYPE DISTRIBUTED_MATRIX_CMISS_TYPE
 
   !>Contains information for a PETSc distributed matrix
@@ -737,9 +778,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: OFFDIAGONAL_NUMBER_NON_ZEROS(:) !<OFFDIAGONAL_NUMBER_NON_ZEROS(i). The number of non-zeros in the off diagonal part of the the i'th row
     INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix.
     INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix.
-    type(LinkedList),pointer :: list(:) 
+    TYPE(LINKEDLIST),POINTER :: LIST(:) !< \todo Comment
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
-    REAL(DP), POINTER :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix. Is this used???
+    REAL(DP), POINTER :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix. \todo Is this used???
     LOGICAL :: USE_OVERRIDE_MATRIX !<Is .TRUE. if the override matrix is to be used instead of the standard matrix
     TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
     TYPE(PETSC_MAT_TYPE) :: OVERRIDE_MATRIX !<The PETSc override matrix
@@ -791,7 +832,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: MAXIMUM_COLUMN_INDICES_PER_ROW !<The maximum number of column indicies for the rows.
     INTEGER(INTG), ALLOCATABLE :: ROW_INDICES(:) !<ROW_INDICES(i). The row indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
     INTEGER(INTG), ALLOCATABLE :: COLUMN_INDICES(:) !<COLUMN_INDICES(i). The column indices for the matrix storage scheme. \see MATRIX_VECTOR_MatrixStorageStructures
-    type(LinkedList),pointer :: list(:) 
+    TYPE(LINKEDLIST),POINTER :: LIST(:) !\todo Comment
     INTEGER(INTG), ALLOCATABLE :: DATA_INTG(:) !<DATA_INTG(i). The integer data for an integer matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
     REAL(SP), ALLOCATABLE :: DATA_SP(:) !<DATA_SP(i). The real data for a single precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
     REAL(DP), ALLOCATABLE :: DATA_DP(:) !<DATA_DP(i). The real data for a double precision matrix. The i'th component contains the data for the i'th matrix data stored on the domain.
@@ -927,8 +968,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: GLOBAL_NUMBER !<The corresponding global element number in the mesh of the local element number in the decomposition.
     INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the element.
     TYPE(DECOMPOSITION_ADJACENT_ELEMENT_TYPE), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<ADJACENT_ELEMENTS(-nic:nic). The adjacent elements information in the nic'th xi coordinate direction. Note that -nic gives the adjacent element before the element in the nic'th direction and +nic gives the adjacent element after the element in the nic'th direction. The ni=0 index will give the information on the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
-    !INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
-    !INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    !\todo INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_ADJACENT_ELEMENTS(:) !<NUMBER_OF_ADJACENT_ELEMENTS(-ni:ni). The number of elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent element before the element in the ni'th direction and +ni gives the adjacent element after the element in the ni'th direction. The ni=0 index should be 1 for the current element. Old CMISS name NXI(-ni:ni,0:nei,ne).
+    !\todo INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:,:) !<ADJACENT_ELEMENTS(nei,-ni:ni). The local element numbers of the elements adjacent to this element in the ni'th xi direction. Note that -ni gives the adjacent elements before the element in the ni'th direction and +ni gives the adjacent elements after the element in the ni'th direction. The ni=0 index should give the current element number. Old CMISS name NXI(-ni:ni,0:nei,ne).
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_LINES(:) !<ELEMENT_LINES(nae). The local decomposition line number corresponding to the nae'th local line of the element. Old CMISS name NLL(nae,ne). 
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_FACES(:) !<ELEMENT_FACES(nae). The local decomposition face number corresponding to the nae'th local face of the element. Old CMISS name NLL(nae,ne). 
     LOGICAL :: BOUNDARY_ELEMENT !<Is .TRUE. if the element is on the boundary of the mesh for the domain, .FALSE. if not.
@@ -1080,26 +1121,72 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_DOFS !<The number of Gauss point based degrees-of-freedom in the field dofs.
     INTEGER(INTG), ALLOCATABLE :: CONSTANT_DOF2PARAM_MAP(:) !<CONSTANT_DOF2PARAM_MAP(nyy). The mapping from constant field dofs to field parameters for the nyy'th constant field dof. The DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_DOF2PARAM_MAP(:,:) !<ELEMENT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from element based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
-    INTEGER(INTG), ALLOCATABLE :: NODE_DOF2PARAM_MAP(:,:) !<NODE_DOF2PARAM_MAP(i=1..3,nyy). The mapping from node based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the derivative number (nk) of the field parameter. When i=2 the DOF2PARAM_MAP gives the node number (np) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
+  !#######################################################VERSIONS START########################################################
+    INTEGER(INTG), ALLOCATABLE :: NODE_DOF2PARAM_MAP(:,:) !<NODE_DOF2PARAM_MAP(i=1..4,nyy). The mapping from node based field dofs to field parameters for the nyy'th constant field dof. When i=1 the DOF2PARAM_MAP gives the version number (version_idx) of the field parameter. When i=2 the DOF2PARAM_MAP gives the derivative number (derivative_idx) of the field parameter. When i=3 the DOF2PARAM_MAP gives the node number (node_idx) of the field parameter. When i=4 the DOF2PARAM_MAP gives the component number (component_idx) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.
+  !#######################################################VERSIONS END##########################################################
     INTEGER(INTG), ALLOCATABLE :: GRID_POINT_DOF2PARAM_MAP(:,:) !<GRID_POINT_DOF2PARAM_MAP(i=1..2,nyy). The mapping from grid point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the grid point number (nq) of the field parameter. When i=2 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
     INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_DOF2PARAM_MAP(:,:) !<GAUSS_POINT_DOF2PARAM_MAP(i=1..3,nyy). The mapping from Gauss point based field dofs to field parameters for the nyy'th grid point field dof. When i=1 the DOF2PARAM_MAP gives the Gauss point number (ng) of the field parameter. When i=2 the DOF2PARAM_MAP gives the element number (ne) of the field parameter. When i=3 the DOF2PARAM_MAP gives the component number (nh) of the field parameter. The nyy value for a particular field dof (ny) is given by the DOF_TYPE component of this type.  
   END TYPE FIELD_DOF_TO_PARAM_MAP_TYPE
 
+  !#######################################################VERSIONS START########################################################
+
+  !>A type to hold the mapping from a field node derivative's versions to field dof numbers for a particular field variable component.
+  TYPE FIELD_NODE_PARAM_TO_DOF_MAP_DERIVATIVE_TYPE
+    INTEGER(INTG) :: NUMBER_OF_VERSIONS !<The number of versions for the node derivative parameters of this field variable component.
+    INTEGER(INTG), ALLOCATABLE :: VERSIONS(:) !<NODE_PARAM2DOF_MAP%NODES%(node_idx)%DERIVATIVES(derivative_idx)%VERSIONS(version_idx). The field variable dof number of the node_idx'th node's derivative_idx'th derivative's version_idx'th version.
+  END TYPE FIELD_NODE_PARAM_TO_DOF_MAP_DERIVATIVE_TYPE
+
+  !>A type to hold the mapping from a field node's derivative to field dof numbers for a particular field variable component.
+  TYPE FIELD_NODE_PARAM_TO_DOF_MAP_NODE_TYPE
+    INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of derivatives for the node parameter of this field variable component.
+    TYPE(FIELD_NODE_PARAM_TO_DOF_MAP_DERIVATIVE_TYPE), ALLOCATABLE :: DERIVATIVES(:) ! The mapping from field node derivative parameter to a dof
+  END TYPE FIELD_NODE_PARAM_TO_DOF_MAP_NODE_TYPE
+
+  !>A type to hold the mapping from field nodes to field dof numbers for a particular field variable component.
+  TYPE FIELD_NODE_PARAM_TO_DOF_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_NODE_PARAMETERS !<The number of node based field parameters for this field variable component.
+    TYPE(FIELD_NODE_PARAM_TO_DOF_MAP_NODE_TYPE), ALLOCATABLE :: NODES(:)  ! The mapping from field node parameter to a dof
+  END TYPE FIELD_NODE_PARAM_TO_DOF_MAP_TYPE
+
+  !>A type to hold the mapping from field elements to field dof numbers for a particular field variable component.
+  TYPE FIELD_ELEMENT_PARAM_TO_DOF_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS !<The number of element based field parameters for this field variable component.
+    INTEGER(INTG), ALLOCATABLE :: ELEMENTS(:) !<ELEMENT_PARAM2DOF_MAP%ELEMENTS(element_idx). The field variable dof number of the element_idx'th element based parameter for this field variable component. \todo Allow for multiple element parameters per element.
+  END TYPE FIELD_ELEMENT_PARAM_TO_DOF_MAP_TYPE
+
+  !>A type to hold the mapping from field grid points to field dof numbers for a particular field variable component.
+  TYPE FIELD_GRID_POINT_PARAM_TO_DOF_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_GRID_POINT_PARAMETERS !<The number of grid point based field parameters for this field variable component.
+    INTEGER(INTG), ALLOCATABLE :: GRID_POINTS(:) !<GRID_POINT_PARAM2DOF_MAP%GRID_POINTS(grid_point_idx). The field variable dof number of the grid_point_idx'th point based parameter for this field variable component. 
+  END TYPE FIELD_GRID_POINT_PARAM_TO_DOF_MAP_TYPE
+
+  !>A type to hold the mapping from field Gauss points to field dof numbers for a particular field variable component.
+  TYPE FIELD_GAUSS_POINT_PARAM_TO_DOF_MAP_TYPE
+    INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_PARAMETERS !<The number of Gauss point based field parameters for this field variable component.
+    INTEGER(INTG), ALLOCATABLE :: GAUSS_POINTS(:,:) !<GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx). The field variable dof number of the gauss_point_idx'th Gauss point in the element_idx'th element based parameter for this field variable component. 
+  END TYPE FIELD_GAUSS_POINT_PARAM_TO_DOF_MAP_TYPE
+
   !>A type to hold the mapping from field parameters (nodes, elements, etc) to field dof numbers for a particular field variable component.
   TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
-    INTEGER(INTG) :: NUMBER_OF_CONSTANT_PARAMETERS !<The number of constant field parameters for this field variable component. Note: this is currently always 1 but is
-  !###      included for completeness and to allow for multiple constants per field variable component in the future.
-    INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS !<The number of element based field parameters for this field variable component.
-    INTEGER(INTG) :: NUMBER_OF_NODE_PARAMETERS !<The number of node based field parameters for this field variable component.
-    INTEGER(INTG) :: MAX_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives for the node parameters for this field variable component. It is the size of the first index of the NODE_PARAM2DOF_MAP component of this type.
-    INTEGER(INTG) :: NUMBER_OF_GRID_POINT_PARAMETERS !<The number of grid point based field parameters for this field variable component.
-    INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_PARAMETERS !<The number of Gauss point based field parameters for this field variable component.
-    INTEGER(INTG) :: CONSTANT_PARAM2DOF_MAP !<The field variable dof number of the constant parameter for this field variable component. 
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAM2DOF_MAP(:) !<ELEMENT_PARAM2DOF_MAP(elem_idx). The field variable dof number of the elem_idx'th element based parameter for this field variable component. \todo Allow for multiple element parameters per element.
-    INTEGER(INTG), ALLOCATABLE :: NODE_PARAM2DOF_MAP(:,:) !<NODE_PARAM2DOF_MAP(deriv_idx,node_idx). The field variable dof number of the deriv_idx'th derivative of the node_idx'th nnpode based parameter for this field variable component. Note: because the first index of this array is set to the maximum number of derivatives per node this array wastes memory if there are nodes with a smaller number of derivatives than the maximum. \todo Don't allocate too much memory if there are different numbers of derivatives for different nodes.
-    INTEGER(INTG), ALLOCATABLE :: GRID_POINT_PARAM2DOF_MAP(:) !<GRID_POINT_PARAM2DOF_MAP(nq). The field variable dof number of nq'th point based parameter for this field variable component.
-    INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_PARAM2DOF_MAP(:,:) !<GAISS_POINT_PARAM2DOF_MAP(ng,ne). The field variable dof number of ng'th Gauss point in the ne'th element based parameter for this field variable component.
+    INTEGER(INTG) :: NUMBER_OF_CONSTANT_PARAMETERS !<The number of constant field parameters for this field variable component. Note: this is currently always 1 but is included for completeness and to allow for multiple constants per field variable component in the future.
+    INTEGER(INTG) :: CONSTANT_PARAM2DOF_MAP !<The field variable dof number of the constant parameter for this field variable component.
+    TYPE(FIELD_ELEMENT_PARAM_TO_DOF_MAP_TYPE) :: ELEMENT_PARAM2DOF_MAP !> A type to hold the mapping from field element parameters to field dof numbers
+    TYPE(FIELD_NODE_PARAM_TO_DOF_MAP_TYPE) :: NODE_PARAM2DOF_MAP !> A type to hold the mapping from field node parameters to field dof numbers
+    TYPE(FIELD_GRID_POINT_PARAM_TO_DOF_MAP_TYPE) :: GRID_POINT_PARAM2DOF_MAP !> A type to hold the mapping from grid point element parameters to field dof numbers
+    TYPE(FIELD_GAUSS_POINT_PARAM_TO_DOF_MAP_TYPE) :: GAUSS_POINT_PARAM2DOF_MAP !> A type to hold the mapping from field gauss point parameters to field dof numbers
+    !INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAM2DOF_MAP(:) !TODO: DELETE THIS !<ELEMENT_PARAM2DOF_MAP(ne). The field variable dof number of the ne'th element based parameter for this field variable component. \todo Allow for multiple element parameters per element.
+    !INTEGER(INTG), ALLOCATABLE :: NODE_PARAM2DOF_MAP(:,:) !TODO: DELETE THIS !<NODE_PARAM2DOF_MAP(nk,np). The field variable dof number of the nk'th derivative of the np'th node based parameter for this field variable component. Note: because the first index of this array is set to the maximum number of derivatives per node this array wastes memory if there are nodes with a smaller number of derivatives than the maximum. \todo Don't allocate too much memory if there are different numbers of derivatives for different nodes.
+    !INTEGER(INTG), ALLOCATABLE :: GRID_POINT_PARAM2DOF_MAP(:) !TODO: DELETE THIS!<GRID_POINT_PARAM2DOF_MAP(nq). The field variable dof number of grid_point_idx'th point based parameter for this field variable component.
+    !INTEGER(INTG), ALLOCATABLE :: GAUSS_POINT_PARAM2DOF_MAP(:,:) !TODO: DELETE THIS!<GAUSS_POINT_PARAM2DOF_MAP(ng,ne). The field variable dof number of ng'th Gauss point in the ne'th element based parameter for this field variable component.
+    !INTEGER(INTG) :: NUMBER_OF_ELEMENT_PARAMETERS !TODO: DELETE THIS!<The number of element based field parameters for this field variable component.
+    !INTEGER(INTG) :: NUMBER_OF_NODE_PARAMETERS !TODO: DELETE THIS - moved inside FIELD_NODE_PARAM_TO_DOF_MAP_TYPE!<The number of node based field parameters for this field variable component.
+    !INTEGER(INTG) :: MAX_NUMBER_OF_DERIVATIVES !TODO: DELETE THIS - NOT NECESSARY ANY MORE <The maximum number of derivatives for the node parameters for this field variable component. It is the size of the first index of the NODE_PARAM2DOF_MAP component of this type.
+    !INTEGER(INTG) :: NUMBER_OF_GRID_POINT_PARAMETERS !TODO: DELETE THIS!<The number of grid point based field parameters for this field variable component.
+    !INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_PARAMETERS !TODO: DELETE THIS!<The number of Gauss point based field parameters for this field variable component.
+    !TODO: Gets deleted: !INTEGER(INTG) :: MAX_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives for the node parameters for this field variable component. It is the size of the first index of the NODE_PARAM2DOF_MAP component of this type.
   END TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
+
+  !#######################################################VERSIONS END##########################################################
 
   !>Contains information for a component of a field variable.
   TYPE FIELD_VARIABLE_COMPONENT_TYPE
@@ -1714,7 +1801,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: ANALYTIC_FINISHED !<Is .TRUE. if the analytic setup for the problem has finished being created, .FALSE. if not.
     LOGICAL :: ANALYTIC_FIELD_AUTO_CREATED !<Is .TRUE. if the analytic field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD !<A pointer to the analytic field for the equations set if one is defined. If no source is defined the pointer is NULL.
-    REAL(DP) :: ANALYTIC_USER_PARAMS(20)  !<A small array that can be used to hold various parameters often required in analytic problems. 
+    REAL(DP) :: ANALYTIC_USER_PARAMS(20)  !<A small array that can be used to hold various parameters often required in analytic problems. \todo should this be allocated?
   END TYPE EQUATIONS_SET_ANALYTIC_TYPE
 
   TYPE EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE
@@ -1952,8 +2039,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   
   !>Contains information on a mesh connectivity point
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
-    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx)
-    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx)
+    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx) !\todo Comment
+    REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx) !\todo Comment
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
 
   !>Contains information on the coupling between meshes in an interface
