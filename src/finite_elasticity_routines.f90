@@ -3643,7 +3643,7 @@ CONTAINS
                   !Make sure the equations sets are up to date
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-
+                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
                     CONTROL_TIME_LOOP=>CONTROL_LOOP
                     DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
                       IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
@@ -3720,7 +3720,7 @@ CONTAINS
                       WRITE_IP_INFO_IS_TRUE = .FALSE.
                     ENDIF
 !---toe
-
+                   ENDIF
                   ENDDO
                 ENDIF
               ENDIF

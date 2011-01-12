@@ -5056,75 +5056,148 @@ CONTAINS
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                   !Make sure the equations sets are up to date
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                    CONTROL_TIME_LOOP=>CONTROL_LOOP
-                    DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
-                      IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-                        CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
-                        OUTPUT_ITERATION_NUMBER=CONTROL_TIME_LOOP%TIME_LOOP%OUTPUT_NUMBER
-                        EXIT
+                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                   IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE)THEN
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)THEN
+                      CONTROL_TIME_LOOP=>CONTROL_LOOP
+                      DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
+                        IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+                          CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
+                          OUTPUT_ITERATION_NUMBER=CONTROL_TIME_LOOP%TIME_LOOP%OUTPUT_NUMBER
+                          EXIT
+                        ENDIF
+                        IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
+                          CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
+                        ELSE
+                          CURRENT_LOOP_ITERATION=0
+                          OUTPUT_ITERATION_NUMBER=0
+                        ENDIF
+                      ENDDO
+                      IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
+                        SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
                       ENDIF
-                      IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
-                        CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
-                      ELSE
-                        CURRENT_LOOP_ITERATION=0
-                        OUTPUT_ITERATION_NUMBER=0
-                      ENDIF
-                    ENDDO
-                    IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
-                      SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
-                    ENDIF
 
-                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-                      IF(CONTROL_TIME_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
-                        IF(CURRENT_LOOP_ITERATION<10) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                          WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
-                        END IF
-                        FILE=OUTPUT_FILE
-                        METHOD="FORTRAN"
-                        EXPORT_FIELD=.TRUE.
-                        IF(EXPORT_FIELD) THEN          
-                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export fields ...",ERR,ERROR,*999)
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                       IF(OUTPUT_ITERATION_NUMBER/=0) THEN
+                        IF(CONTROL_TIME_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
+                          IF(CURRENT_LOOP_ITERATION<10) THEN
+                            WRITE(OUTPUT_FILE, '("T_STEP_000",I0,"_C",I0)') CURRENT_LOOP_ITERATION, equations_set_idx
+                          ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                            WRITE(OUTPUT_FILE,'("T_STEP_00",I0,"_C",I0)') CURRENT_LOOP_ITERATION, equations_set_idx
+                          ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                            WRITE(OUTPUT_FILE,'("T_STEP_0",I0,"_C",I0)') CURRENT_LOOP_ITERATION, equations_set_idx
+                          ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                            WRITE(OUTPUT_FILE,'("T_STEP_",I0,"_C",I0)') CURRENT_LOOP_ITERATION, equations_set_idx
+                          END IF
+                          FILE=OUTPUT_FILE
+                          METHOD="FORTRAN"
+                          EXPORT_FIELD=.TRUE.
+                          IF(EXPORT_FIELD) THEN          
+                            IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export fields ...",ERR,ERROR,*999)
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                              ENDIF
+                              CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                                & ERR,ERROR,*999)
+                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy all fields exported ...",ERR,ERROR,*999)
+                              ENDIF
                             ENDIF
+                          ENDIF 
+                        ENDIF 
+                       ENDIF
+
+
+                      !Subiteration intermediate solutions / iterates output:
+                       IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
+                        IF(CURRENT_LOOP_ITERATION<10) THEN
+                          IF(SUBITERATION_NUMBER<10) THEN
+                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                          ELSE IF(SUBITERATION_NUMBER<100) THEN
+                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                          END IF
+                          FILE=OUTPUT_FILE
+                          METHOD="FORTRAN"
+                          EXPORT_FIELD=.TRUE.
+                          IF(EXPORT_FIELD) THEN
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
                               & ERR,ERROR,*999)
-                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy all fields exported ...",ERR,ERROR,*999)
-                            ENDIF
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                           ENDIF
-                        ENDIF 
-                      ENDIF 
-                    ENDIF
-
-
-                    !Subiteration intermediate solutions / iterates output:
-                    IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
-                      IF(CURRENT_LOOP_ITERATION<10) THEN
-                        IF(SUBITERATION_NUMBER<10) THEN
-                          WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-                        ELSE IF(SUBITERATION_NUMBER<100) THEN
-                          WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-                        END IF
-                        FILE=OUTPUT_FILE
-                        METHOD="FORTRAN"
-                        EXPORT_FIELD=.TRUE.
-                        IF(EXPORT_FIELD) THEN
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
-                          CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                            & ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                         ENDIF
+                       ENDIF
+                    ELSE !for single compartment (i.e. standary Darcy flow) equations sets
+                      CONTROL_TIME_LOOP=>CONTROL_LOOP
+                      DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
+                        IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+                          CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
+                          OUTPUT_ITERATION_NUMBER=CONTROL_TIME_LOOP%TIME_LOOP%OUTPUT_NUMBER
+                          EXIT
+                        ENDIF
+                        IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
+                          CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
+                        ELSE
+                          CURRENT_LOOP_ITERATION=0
+                          OUTPUT_ITERATION_NUMBER=0
+                        ENDIF
+                      ENDDO
+                      IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
+                        SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
                       ENDIF
+
+                       IF(OUTPUT_ITERATION_NUMBER/=0) THEN
+                        IF(CONTROL_TIME_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
+                          IF(CURRENT_LOOP_ITERATION<10) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_000",I0)') CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_00",I0)') CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_0",I0)') CURRENT_LOOP_ITERATION
+                          ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
+                            WRITE(OUTPUT_FILE,'("TIME_STEP_",I0)') CURRENT_LOOP_ITERATION
+                          END IF
+                          FILE=OUTPUT_FILE
+                          METHOD="FORTRAN"
+                          EXPORT_FIELD=.TRUE.
+                          IF(EXPORT_FIELD) THEN          
+                            IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export fields ...",ERR,ERROR,*999)
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                              ENDIF
+                              CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                                & ERR,ERROR,*999)
+                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy all fields exported ...",ERR,ERROR,*999)
+                              ENDIF
+                            ENDIF
+                          ENDIF 
+                        ENDIF 
+                       ENDIF
+
+
+                      !Subiteration intermediate solutions / iterates output:
+                       IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
+                        IF(CURRENT_LOOP_ITERATION<10) THEN
+                          IF(SUBITERATION_NUMBER<10) THEN
+                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                          ELSE IF(SUBITERATION_NUMBER<100) THEN
+                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                          END IF
+                          FILE=OUTPUT_FILE
+                          METHOD="FORTRAN"
+                          EXPORT_FIELD=.TRUE.
+                          IF(EXPORT_FIELD) THEN
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
+                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                              & ERR,ERROR,*999)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                          ENDIF
+                        ENDIF
+                       ENDIF
                     ENDIF
+                   ENDIF
                   ENDDO
                 ENDIF
               ENDIF
