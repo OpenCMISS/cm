@@ -5112,9 +5112,11 @@ CONTAINS
                        IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
                         IF(CURRENT_LOOP_ITERATION<10) THEN
                           IF(SUBITERATION_NUMBER<10) THEN
-                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SB_0",I0,"_C",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER, &
+                              & equations_set_idx
                           ELSE IF(SUBITERATION_NUMBER<100) THEN
-                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SB_",I0,"_C",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER, &
+                              & equations_set_idx
                           END IF
                           FILE=OUTPUT_FILE
                           METHOD="FORTRAN"
