@@ -1798,7 +1798,7 @@ CONTAINS
     INTEGER(INTG) :: NDOFS, NUMBER_OF_VEL_PRESS_COMPONENTS
     INTEGER(INTG) :: FIELD_VAR_TYPES(99)
     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
-    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),PGM,PGN
+    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),PGM,PGN,COUPLING_PARAM
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS_1, DEPENDENT_BASIS_2
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -1814,7 +1814,8 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
 
     TYPE(FIELD_VARIABLE_PTR_TYPE) :: FIELD_VARIABLES(99)
-    TYPE(EQUATIONS_MATRIX_PTR_TYPE) :: COUPLING_MATRICES(99) 
+    TYPE(EQUATIONS_MATRIX_PTR_TYPE) :: COUPLING_MATRICES(99)
+    REAL(DP), ALLOCATABLE :: PRESSURE_COEFF(:),PRESSURE(:),GRAD_PRESSURE(:,:)
 
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME_1, QUADRATURE_SCHEME_2
@@ -1824,7 +1825,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: ELASTICITY_DEPENDENT_INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    REAL(DP):: SOURCE
+    REAL(DP):: SOURCE,INTER_COMP_SOURCE,INTER_COMP_PERM
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
 
     REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3), DARCY_RHO_0_F
@@ -1984,7 +1985,8 @@ CONTAINS
 
             my_compartment = EQUATIONS_SET_FIELD_DATA(1)
             Ncompartments  = EQUATIONS_SET_FIELD_DATA(2)
-
+            !These linear matrices are actually only required if we are coupling the momentum terms too
+            !If it is just a mass coupling, then all of the additional terms are placed in the RHS of the mass-increase equation
             LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
             LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
 
@@ -1995,7 +1997,6 @@ CONTAINS
               COUPLING_MATRICES(num_var_count)%PTR=>LINEAR_MATRICES%MATRICES(num_var_count)%PTR
               FIELD_VARIABLES(num_var_count)%PTR=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(num_var_count)%VARIABLE
               FIELD_VAR_TYPES(num_var_count)=FIELD_VARIABLES(num_var_count)%PTR%VARIABLE_TYPE
-              !write(*,*) FIELD_VAR_TYPES(num_var_count)
               COUPLING_MATRICES(num_var_count)%PTR%ELEMENT_MATRIX%MATRIX=0.0_DP
              ENDIF
             END DO
@@ -2010,6 +2011,17 @@ CONTAINS
 
             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+
+              ALLOCATE(PRESSURE_COEFF(Ncompartments))
+              
+              ALLOCATE(PRESSURE(Ncompartments))
+              ALLOCATE(GRAD_PRESSURE(3,Ncompartments))
+              PRESSURE = 0.0_DP
+              GRAD_PRESSURE = 0.0_DP
+              PRESSURE_COEFF(1)=0.5_DP 
+              PRESSURE_COEFF(2)=0.5_DP
+              !PRESSURE_COEFF(3)=0.2_DP
+              !PRESSURE_COEFF(3)=0.1_DP
           END SELECT
 
           GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
@@ -2023,6 +2035,13 @@ CONTAINS
             & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & MATERIALS_INTERP_PARAMETERS(FIELD_U1_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          ENDIF
+
 
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. &
            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
@@ -2126,10 +2145,18 @@ CONTAINS
 
 
             !--- Interpolate materials field
+            !Get the Darcy permeability
             MATERIALS_INTERPOLATED_POINT => EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
               & MATERIALS_INTERPOLATED_POINT,ERR,ERROR,*999)
-
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
+            !Get the intercompartmental permeabilities
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            !Get the material parameters for the constitutive law for each Darcy compartment (for determining the partial pressures)
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & MATERIALS_INTERP_POINT(FIELD_U1_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            ENDIF
 !             POROSITY = MATERIALS_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
 
 !==========================================================================================
@@ -2178,7 +2205,31 @@ CONTAINS
 
             !For multi-compartment model - determine pressure from partial derivative of constitutive law
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-              write(*,*) 'NEED CONSTITUTIVE LAWS HERE!!!!'
+              write(*,*) 'NEED CONSTITUTIVE LAWS HERE!!!! THE FOLLOWING IS PLACEHOLDER ONLY!'
+              !BEGIN PLACEHOLDER
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
+                & ELASTICITY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
+              !Mind the sign !!!
+              LM_PRESSURE = -ELASTICITY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV)
+              DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
+                !gradient wrt. element coordinates xi
+                GRAD_LM_PRESSURE(xi_idx) = -ELASTICITY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,derivative_idx)
+              ENDDO
+              !loop over compartments to determine the pressure in each one - this could be quite inefficient, as it will be calculated several times over
+              !unless calculate the pressures in a pre-solve and store them in extra components/variables of the dependent field
+              !these pressures should really be known immediately after the finite elasticity solve and not determined here
+              !END PLACEHOLDER
+              !The following pressure_coeff matrix is just for testing purposes and ultimately will be replaced with functions and materials field parameters (for present, sum of
+              !coefficients should be 1).
+
+              DO imatrix=1,Ncompartments
+
+                PRESSURE(imatrix) =  PRESSURE_COEFF(imatrix)*LM_PRESSURE
+                DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
+                  GRAD_PRESSURE(xi_idx,imatrix) = PRESSURE_COEFF(imatrix)*GRAD_LM_PRESSURE(xi_idx)
+                ENDDO
+              ENDDO
             ENDIF
 
 
@@ -2672,13 +2723,18 @@ CONTAINS
                       PGM = QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
                       !Term arising from the moving mesh with mesh velocity given
-                      DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                        SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                      ENDDO
+                      !COMMENTED OUT ON 13/01/11 - will be removed in due course
+!                       DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+!                         SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
+!                       ENDDO
 
                       !Term arising from the pressure / Lagrange Multiplier of elasticity (given):
+                      !TO DO- need to read different grad p depending on the compartment of interest
                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                        SUM = SUM - PGM * GRAD_LM_PRESSURE(mi) * &
+!                         SUM = SUM - PGM * GRAD_LM_PRESSURE(mi) * &
+!                           & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,mh)
+                        !this is the pressure gradient for the appropriate compartment
+                        SUM = SUM - PGM * GRAD_PRESSURE(mi,my_compartment) * &
                           & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,mh)
                       ENDDO !mi
 
@@ -2693,18 +2749,21 @@ CONTAINS
                       PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
                       !Terms arising from the moving mesh with mesh velocity given
+                      !COMMENTED OUT ON 13/01/11 - will be removed in due course
 !                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                      DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                        PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                          SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                        ENDDO !ni
-                      ENDDO !mi
+!                       DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+!                         PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
+!                         DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
+!                           !COMMENTED OUT ON 13/01/11 - will be removed in due course
+!                           SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
+!                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
+!                           SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
+!                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
+!                         ENDDO !ni
+!                       ENDDO !mi
 
                       ! n o   s o u r c e
+                      !source terms need to be converted to use source field & vector
                       SOURCE = 0.0_DP
 
 ! !---tob
@@ -2750,8 +2809,18 @@ CONTAINS
 ! !                         END IF
 !                       END IF
 !---toe
+                     !Add in the source/sink terms due to the pressure difference between compartments
+                     DO imatrix=1,Ncompartments
+                       IF(imatrix/=my_compartment) THEN
+                       !Interpolate the coupling material parameter from the V variable type of the materials field
+                       INTER_COMP_PERM=0.0_DP
+                       !Source term is coefficient*(p(my_compartment) - p(imatrix))
+                       INTER_COMP_SOURCE=INTER_COMP_PERM*PRESSURE(my_compartment) - PRESSURE(imatrix)
+                       ENDIF
+                     ENDDO
+                       
 
-                      SUM = SUM + PGM * SOURCE
+                      SUM = SUM + PGM * SOURCE + PGM * INTER_COMP_SOURCE
 
                       RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
 
@@ -2872,6 +2941,80 @@ CONTAINS
                 END IF
               ENDDO !ms
             ENDDO !mh
+
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
+            !Calculate the momentum coupling matrices
+
+              !Loop over element rows
+              mhs=0
+              DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS !field_variable is the variable associated with the equations set under consideration
+
+                MESH_COMPONENT_1 = FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                DEPENDENT_BASIS_1 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_1)%PTR% &
+                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                QUADRATURE_SCHEME_1 => DEPENDENT_BASIS_1%QUADRATURE% &
+                  & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN * &
+                  & QUADRATURE_SCHEME_1%GAUSS_WEIGHTS(ng)
+
+                DO ms=1,DEPENDENT_BASIS_1%NUMBER_OF_ELEMENT_PARAMETERS
+                  mhs=mhs+1
+
+                  num_var_count=0
+                  DO imatrix = 1,Ncompartments
+                  IF(imatrix/=my_compartment)THEN
+                    num_var_count=num_var_count+1
+
+!need to test for the case where imatrix==mycompartment
+!the coupling terms then needs to be added into the stiffness matrix
+                    IF(COUPLING_MATRICES(num_var_count)%PTR%UPDATE_MATRIX) THEN
+
+!                       !Loop over element columns
+                      nhs=0
+! !                       DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                      DO nh=1,FIELD_VARIABLES(num_var_count)%PTR%NUMBER_OF_COMPONENTS
+
+                        MESH_COMPONENT_2 = FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                        DEPENDENT_BASIS_2 => DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT_2)%PTR% &
+                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        !--- We cannot use two different quadrature schemes here !!!
+                        QUADRATURE_SCHEME_2 => DEPENDENT_BASIS_2%QUADRATURE% &
+                         & QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                        !RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * &
+                        !  & QUADRATURE_SCHEME_2%GAUSS_WEIGHTS(ng)
+
+                        DO ns=1,DEPENDENT_BASIS_2%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+
+!                           !-------------------------------------------------------------------------------------------------------------
+!                           !concentration test function, concentration trial function
+!                           !For now, this is only a dummy implementation - this still has to be properly set up.
+!                           IF(mh==nh.AND.nh<NUMBER_OF_VEL_PRESS_COMPONENTS) THEN ! don't need this for diffusion equation
+
+!                             SUM = 0.0_DP
+
+                            PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                            PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                            !Get the coupling coefficients 
+                              COUPLING_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR% &
+                                & VALUES(imatrix,NO_PART_DERIV)
+
+!                              SUM = SUM + COUPLING_PARAM * PGM * PGN
+ 
+                             COUPLING_MATRICES(num_var_count)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
+                               & COUPLING_MATRICES(num_var_count)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) + & 
+                               & COUPLING_PARAM * PGM * PGN * RWG
+!                           ENDIF
+ 
+                        ENDDO !ns
+                      ENDDO !nh
+                    ENDIF
+                   ENDIF
+                  ENDDO !imatrix
+                ENDDO !ms
+              ENDDO !mh
+            ENDIF
 
 
             !-----------------------------------------------------------------------------------------------------------------------------------
@@ -4168,7 +4311,6 @@ CONTAINS
 !---toe
                               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                                 FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-!                                 write(*,*)'FIELD_VAR_TYPE = ',FIELD_VAR_TYPE
                                 !--- Store the initial DEPENDENT field values
                                 ALPHA = 1.0_DP
                                 CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
