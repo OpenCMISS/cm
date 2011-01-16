@@ -2009,8 +2009,11 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(VARYING_STRING) :: MODEL_ID !<The ID of the model.
     TYPE(C_PTR) :: PTR !< The handle for the actual C++ CellML model definition object
     INTEGER(INTG) :: NUMBER_OF_STATE !<The number of state variables in the CellML model.
+    TYPE(VARYING_STRING), ALLOCATABLE :: STATE_VARIABLE_ID(:) !<STATE_VARIABLE_ID(state_variable_idx). The ID for the state_variable_idx'th state variable.
     INTEGER(INTG) :: NUMBER_OF_INTERMEDIATE !<The number of intermediate variables in the CellML model.
+    TYPE(VARYING_STRING), ALLOCATABLE :: INTERMEDIATE_VARIABLE_ID(:) !<INTERMEDIATE_VARIABLE_ID(intermediate_variable_idx). The ID for the intermediate_variable_idx'th intermediate variable.
     INTEGER(INTG) :: NUMBER_OF_PARAMETERS !<The number of parameters in the CellML model.
+    TYPE(VARYING_STRING), ALLOCATABLE :: PARAMETER_VARIABLE_ID(:) !<PARAMETER_VARIABLE_ID(parameter_variable_idx). The ID for the parameter_variable_idx'th parameter variable.
  END TYPE CELLML_MODEL_TYPE
 
   !>A buffer type to allow for an array of pointers to a CELLML_MODEL_TYPE

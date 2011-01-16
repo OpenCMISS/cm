@@ -47,7 +47,7 @@ MODULE SOLVER_ROUTINES
 
   USE BASE_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
-  !USE CELLML_MODEL_DEFINITION
+  USE CELLML_MODEL_DEFINITION
   USE CMISS_CELLML
   USE CMISS_PETSC
   USE COMP_ENVIRONMENT
@@ -1428,14 +1428,14 @@ CONTAINS
           IF(DOF_ORDER_TYPE==FIELD_SEPARATED_COMPONENT_DOF_ORDER) THEN
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             !Dof components are separated. Will need to copy data to temporary arrays.
-            IF(ONLY_ONE_MODEL_INDEX==0) THEN
+            IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
               !Mulitple models              
             ELSE
               !One one model is used.          
             ENDIF
           ELSE
             !Dof components are continguous. Can pass data directly.
-            IF(ONLY_ONE_MODEL_INDEX==0) THEN
+            IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
               !Mulitple models
               TIME=START_TIME
               DO WHILE(TIME<=END_TIME)
