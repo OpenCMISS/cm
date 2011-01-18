@@ -2625,17 +2625,17 @@ CONTAINS
                   !Only one model so optimise
                   MODEL=>CELLML%MODELS(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX)%PTR
                   IF(ASSOCIATED(MODEL)) THEN
-                    DO state_component_idx=1,MODEL%NUMBER_OF_STATE
-                      VARIABLE_ID = "membrane/V"
-                      ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE(MODEL%PTR,VARIABLE_ID,INITIAL_VALUE)
-                      IF(ERR /= 0) THEN
-                        !problem getting the initial value
-                        LOCAL_ERROR="Failed to get an initial value for variable "//VARIABLE_ID//"."
-                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                      CALL FIELD_COMPONENT_VALUES_INITIALISE(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,state_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
-                    ENDDO !state_component_idx
+                    !DO state_component_idx=1,MODEL%NUMBER_OF_STATE
+                    !  VARIABLE_ID = "membrane/Vm"
+                    !  ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE(MODEL%PTR,VARIABLE_ID,INITIAL_VALUE)
+                    !  IF(ERR /= 0) THEN
+                    !    !problem getting the initial value
+                    !    LOCAL_ERROR="Failed to get an initial value for variable "//VARIABLE_ID//"."
+                    !   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    !  ENDIF
+                    !  CALL FIELD_COMPONENT_VALUES_INITIALISE(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    !    & FIELD_VALUES_SET_TYPE,state_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
+                    !ENDDO !state_component_idx
                   ELSE
                     LOCAL_ERROR="The model is not associated for model index "// &
                       & TRIM(NUMBER_TO_VSTRING(CELLML%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
@@ -2652,17 +2652,17 @@ CONTAINS
                       model_idx=MODELS_DATA(source_dof_idx)
                       MODEL=>CELLML%MODELS(model_idx)%PTR
                       IF(ASSOCIATED(MODEL)) THEN
-                        DO state_component_idx=1,MODEL%NUMBER_OF_STATE
-                          VARIABLE_ID = "membrane/V"
-                          ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE(MODEL%PTR,VARIABLE_ID,INITIAL_VALUE)
-                          IF(ERR /= 0) THEN
-                            !Problem getting the initial value
-                            LOCAL_ERROR="Failed to get an initial value for variable "//VARIABLE_ID//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          ENDIF
-                          CALL CELLML_FIELD_VARIABLE_SOURCE_DOF_SET_CONSTANT(STATE_VARIABLE,FIELD_VALUES_SET_TYPE,source_dof_idx, &
-                            & state_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
-                        ENDDO !state_component_idx
+                        !DO state_component_idx=1,MODEL%NUMBER_OF_STATE
+                        !  VARIABLE_ID = "membrane/V"
+                        !  ERR = CELLML_MODEL_DEFINITION_GET_INITIAL_VALUE(MODEL%PTR,VARIABLE_ID,INITIAL_VALUE)
+                        !  IF(ERR /= 0) THEN
+                        !    !Problem getting the initial value
+                        !    LOCAL_ERROR="Failed to get an initial value for variable "//VARIABLE_ID//"."
+                        !    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        !  ENDIF
+                        !  CALL CELLML_FIELD_VARIABLE_SOURCE_DOF_SET_CONSTANT(STATE_VARIABLE,FIELD_VALUES_SET_TYPE,source_dof_idx, &
+                        !    & state_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
+                        !ENDDO !state_component_idx
                       ELSE
                         LOCAL_ERROR="The model is not associated for model index "// &
                           & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
