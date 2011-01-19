@@ -1064,7 +1064,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLStateFieldGetObj
   END INTERFACE !CMISSCellMLStateFieldGet
 
-  !>Returns the component for a given CellML field that corresponds to the speicifed CellML URI. 
+  !>Returns the component for a given CellML field that corresponds to the specified CellML variable ID.
   INTERFACE CMISSCellMLFieldComponentGet
     MODULE PROCEDURE CMISSCellMLFieldComponentGetNumberC
     MODULE PROCEDURE CMISSCellMLFieldComponentGetObjC
@@ -12553,15 +12553,17 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a character string URI for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLFieldComponentGetNumberC(RegionUserNumber,CellMLUserNumber,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a character string VariableID for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldComponentGetNumberC(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,CellMLFieldType,&
+  & VariableID,FieldComponent,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map fom.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The variable ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -12576,7 +12578,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
           & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -12602,20 +12604,21 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a character string URI for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLFieldComponentGetObjC(CellML,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a character string variable ID for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldComponentGetObjC(CellML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err)
   
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSCellMLFieldComponentGetObjC",Err,ERROR,*999)
  
-    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
 
     CALL EXITS("CMISSCellMLFieldComponentGetObjC")
     RETURN
@@ -12630,15 +12633,17 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a varying string URI for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLFieldComponentGetNumberVS(RegionUserNumber,CellMLUserNumber,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a varying string variable ID for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldComponentGetNumberVS(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,CellMLFieldType,&
+  & VariableID,FieldComponent,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -12653,7 +12658,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
           & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -12678,20 +12683,21 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a varying string URI for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLFieldComponentGetObjVS(CellML,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a varying string variable ID for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldComponentGetObjVS(CellML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err)
   
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSCellMLFieldComponentGetObjVS",Err,ERROR,*999)
  
-    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
 
     CALL EXITS("CMISSCellMLFieldComponentGetObjVS")
     RETURN

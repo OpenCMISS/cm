@@ -101,6 +101,11 @@ MODULE CMISS_CELLML
  
   !Interfaces
 
+  !> Map a CellML variable type from OpenCMISS(cellml) to a CellML field type \see CELLML_FieldTypes,CMISS_CELLML
+  INTERFACE MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE
+    MODULE PROCEDURE MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG
+  END INTERFACE !MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE
+
   INTERFACE CELLML_MODEL_IMPORT
     MODULE PROCEDURE CELLML_MODEL_IMPORT_C
     MODULE PROCEDURE CELLML_MODEL_IMPORT_VS
@@ -130,6 +135,8 @@ MODULE CMISS_CELLML
     MODULE PROCEDURE CELLML_FIELD_COMPONENT_GET_C
     MODULE PROCEDURE CELLML_FIELD_COMPONENT_GET_VS
   END INTERFACE !CELLML_FIELD_COMPONENT_GET
+
+  PUBLIC MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE
 
   PUBLIC CELLML_MODELS_FIELD,CELLML_STATE_FIELD,CELLML_INTERMEDIATE_FIELD,CELLML_PARAMETERS_FIELD
 
@@ -402,7 +409,7 @@ CONTAINS
           DO model_idx=1,CELLML%NUMBER_OF_MODELS
             write(*,*) 'model_idx = ',model_idx
             CELLML_MODEL => CELLML%MODELS(model_idx)%PTR
-            CALL CELLML_MODEL_DEFINITION_SET_SAVE_TEMP_FILES(CELLML_MODEL%PTR,1)
+            !CALL CELLML_MODEL_DEFINITION_SET_SAVE_TEMP_FILES(CELLML_MODEL%PTR,1)
             ERROR_CODE = CELLML_MODEL_DEFINITION_INSTANTIATE(CELLML_MODEL%PTR)
             IF(ERROR_CODE /= 0) THEN
               LOCAL_ERROR="Error instantiating CellML model index "//TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//"."
@@ -1510,7 +1517,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
-    INTEGER(INTG) :: CELLML_FIELD_TYPE,CELLML_VARIABLE_NUMBER,map_idx
+    INTEGER(INTG) :: CELLML_VARIABLE_TYPE,CELLML_FIELD_TYPE,CELLML_VARIABLE_NUMBER,map_idx
     TYPE(CELLML_FIELD_MAPS_TYPE), POINTER :: CELLML_FIELD_MAPS
     TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
     TYPE(CELLML_MODEL_MAP_TYPE), POINTER :: NEW_CELLML_MODEL_MAP
@@ -1521,6 +1528,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     CHARACTER(256) :: C_NAME
     INTEGER(INTG) :: C_NAME_L
+    INTEGER(C_INT) :: ERROR_C
     
     CALL ENTERS("CELLML_CREATE_CELLML_TO_FIELD_MAP_C",ERR,ERROR,*999)
 
@@ -1544,14 +1552,20 @@ CONTAINS
                   CELLML_MODEL_MAPS=>CELLML_FIELD_MAPS%MODEL_MAPS(MODEL_INDEX)%PTR
                   IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
                     !All input arguments are ok.
-                    
-                    !For now assume that it is a state field being mapped.
-!!TODO: Sort out field type.                   
-                    CELLML_FIELD_TYPE=CELLML_STATE_FIELD
-                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
+                    ! get the type of the variable being mapped
+                    ERROR_C = CELLML_MODEL_DEFINITION_GET_VARIABLE_TYPE(CELLML_MODEL%PTR,VARIABLE_ID,CELLML_VARIABLE_TYPE)
+                    IF(ERROR_C /= 0) THEN
+                      LOCAL_ERROR="Failed to get the type of CellML variable: "// &
+                      & VARIABLE_ID// &
+                      & "; with the error code: "// &
+                      & TRIM(NUMBER_TO_VSTRING(ERROR_C,"*",ERR,ERROR))
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    CELLML_FIELD_TYPE=MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE(CELLML_VARIABLE_TYPE,ERR,ERROR)
+                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
                       & ERR,ERROR,*999)
-                    C_NAME_L = LEN_TRIM(VARIABLE_ID)
-                    WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
+                    !C_NAME_L = LEN_TRIM(VARIABLE_ID)
+                    !WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
                     !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
                     !Now check that the mapped field is consistent with the other mapped fields for the model.
                     IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
@@ -1589,10 +1603,17 @@ CONTAINS
                         & INTERPOLATION_TYPE
                     ENDIF
                     !Everything is OK so create the model map field.
-                    !For now assume that it is a state field being mapped.
-!!TODO: Sort out field type.                   
-                    CELLML_FIELD_TYPE=CELLML_STATE_FIELD
-                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
+                    ! get the type of the variable being mapped
+                    ERROR_C = CELLML_MODEL_DEFINITION_GET_VARIABLE_TYPE(CELLML_MODEL%PTR,VARIABLE_ID,CELLML_VARIABLE_TYPE)
+                    IF(ERROR_C /= 0) THEN
+                      LOCAL_ERROR="Failed to get the type of CellML variable: "// &
+                      & VARIABLE_ID// &
+                      & "; with the error code: "// &
+                      & TRIM(NUMBER_TO_VSTRING(ERROR_C,"*",ERR,ERROR))
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    CELLML_FIELD_TYPE=MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE(CELLML_VARIABLE_TYPE,ERR,ERROR)
+                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
                       & ERR,ERROR,*999)
                     NULLIFY(NEW_CELLML_MODEL_MAP)
                     CALL CELLML_MODEL_MAP_INITIALISE(NEW_CELLML_MODEL_MAP,ERR,ERROR,*999)
@@ -1754,6 +1775,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     CHARACTER(256) :: C_NAME
     INTEGER(INTG) :: C_NAME_L
+    INTEGER(C_INT) :: ERROR_C
+    INTEGER(INTG) :: CELLML_VARIABLE_TYPE
+    REAL(DP) :: INITIAL_VALUE
     
     CALL ENTERS("CELLML_CREATE_FIELD_TO_CELLML_MAP_C",ERR,ERROR,*999)
 
@@ -1777,15 +1801,20 @@ CONTAINS
                   CELLML_MODEL_MAPS=>CELLML_FIELD_MAPS%MODEL_MAPS(MODEL_INDEX)%PTR
                   IF(ASSOCIATED(CELLML_MODEL_MAPS)) THEN
                     !All input arguments are ok.
-                    !TEMP!!!
-                    
-                    !For now assume that it is a state field being mapped.
-!!TODO: Sort out field type.                   
-                    CELLML_FIELD_TYPE=CELLML_STATE_FIELD
-                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
+                    ! get the type of the variable being mapped
+                    ERROR_C = CELLML_MODEL_DEFINITION_GET_VARIABLE_TYPE(CELLML_MODEL%PTR,VARIABLE_ID,CELLML_VARIABLE_TYPE)
+                    IF(ERROR_C /= 0) THEN
+                      LOCAL_ERROR="Failed to get the type of CellML variable: "// &
+                      & VARIABLE_ID// &
+                      & "; with the error code: "// &
+                      & TRIM(NUMBER_TO_VSTRING(ERROR_C,"*",ERR,ERROR))
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    CELLML_FIELD_TYPE=MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE(CELLML_VARIABLE_TYPE,ERR,ERROR)
+                    CALL CELLML_FIELD_COMPONENT_GET(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,VARIABLE_ID,CELLML_VARIABLE_NUMBER, &
                       & ERR,ERROR,*999)
-                    C_NAME_L = LEN_TRIM(VARIABLE_ID)
-                    WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
+                    !C_NAME_L = LEN_TRIM(VARIABLE_ID)
+                    !WRITE(C_NAME,'(A,A)') C_NAME(1:C_NAME_L),C_NULL_CHAR
                     !CELLML_VARIABLE_NUMBER=CELLML_MODEL_DEFINITION_ADD_MAPPING_TO_FIELD(CELLML_MODEL%PTR,C_NAME)
                     !Now check that the mapped field is consistent with the other mapped fields for the model.
                     IF(ASSOCIATED(CELLML_FIELD_MAPS%SOURCE_GEOMETRIC_FIELD)) THEN
@@ -2688,7 +2717,7 @@ CONTAINS
         CALL FLAG_ERROR("CellML environment state field is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("CellML environement is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
     ENDIF
 
 #else
@@ -2837,26 +2866,44 @@ CONTAINS
   !=================================================================================================================================
   !
 
-  !>Find the component ID in the given field for the variable defined by the given URI in the provided CellML environment.
-  !! This generic routine will be used to map variable URI's in CellML models to components in the various fields defined in the CellML models defined for the provided CellML environment.
+  !>Find the component ID in the given field for the variable defined by the given variable ID in the provided CellML environment.
+  !! This generic routine will be used to map variable ID's in CellML models to components in the various fields defined in the CellML models defined for the provided CellML environment.
   !! - may need to also provide a FIELD_VARIABLE_NUMBER (always 1?) for completeness
-  !! - is the model URI also needed?
-  SUBROUTINE CELLML_FIELD_COMPONENT_GET_C(CELLML,CELLML_FIELD_TYPE,URI,COMPONENT_USER_NUMBER,ERR,ERROR,*)
+  !! - is the model ID also needed?
+  !! - because the CellML fields should all be set up to allow direct use in the CellML code, the component number matches the index of the given variable in its associated array in the CellML generated code - with the +1 to swap to a Fortran index.
+  SUBROUTINE CELLML_FIELD_COMPONENT_GET_C(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,VARIABLE_ID,COMPONENT_USER_NUMBER,ERR,ERROR,*)
     !Argument variables
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object from which to get the field component.
+    INTEGER(INTG), INTENT(IN) :: MODEL_INDEX !<The index of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CELLML_FIELD_TYPE !<The type of CellML field type to get the component for. \see CELLML_FieldTypes,CMISS_CELLML
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI of the model variable which needs to be located in the provided field.
-    INTEGER(INTG), INTENT(OUT) :: COMPONENT_USER_NUMBER !<On return, the field component for the model variable defined by the given URI.
+    CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_ID !<The ID of the model variable which needs to be located in the provided field.
+    INTEGER(INTG), INTENT(OUT) :: COMPONENT_USER_NUMBER !<On return, the field component for the model variable defined by the given ID.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
+    INTEGER(INTG) :: CELLML_VARIABLE_INDEX
+    INTEGER(C_INT) :: ERROR_C
+    TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CELLML_FIELD_COMPONENT_GET_C",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
-!!todo: FIX THIS
-    COMPONENT_USER_NUMBER=1
+    IF(ASSOCIATED(CELLML)) THEN
+      CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
+      IF(ASSOCIATED(CELLML_MODEL)) THEN
+        ERROR_C = CELLML_MODEL_DEFINITION_GET_VARIABLE_INDEX(CELLML_MODEL%PTR,VARIABLE_ID,CELLML_VARIABLE_INDEX)
+        IF(ERROR_C /= 0) THEN
+          LOCAL_ERROR="Failed to get the index for CellML variable: "// &
+            & VARIABLE_ID//"; with the error code: "//TRIM(NUMBER_TO_VSTRING(ERROR_C,"*",ERR,ERROR))
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+        COMPONENT_USER_NUMBER=CELLML_VARIABLE_INDEX+1
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+    ENDIF
 
 #else
 
@@ -2875,16 +2922,17 @@ CONTAINS
   !=================================================================================================================================
   !
 
-  !>Find the component ID in the given field for the variable defined by the given URI in the provided CellML environment.
-  !! This generic routine will be used to map variable URI's in CellML models to components in the various fields defined in the CellML models defined for the provided CellML environment.
+  !>Find the component ID in the given field for the variable defined by the given variable ID in the provided CellML environment.
+  !! This generic routine will be used to map variable ID's in CellML models to components in the various fields defined in the CellML models defined for the provided CellML environment.
   !! - may need to also provide a FIELD_VARIABLE_NUMBER (always 1?) for completeness
-  !! - is the model URI also needed?
-  SUBROUTINE CELLML_FIELD_COMPONENT_GET_VS(CELLML,CELLML_FIELD_TYPE,URI,COMPONENT_USER_NUMBER,ERR,ERROR,*)
+  !! - is the model ID also needed?
+  SUBROUTINE CELLML_FIELD_COMPONENT_GET_VS(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,VARIABLE_ID,COMPONENT_USER_NUMBER,ERR,ERROR,*)
     !Argument variables
     TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object from which to get the field component.
+    INTEGER(INTG), INTENT(IN) :: MODEL_INDEX !<The index of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CELLML_FIELD_TYPE !<The type of CellML field type to get the component for. \see CELLML_FieldTypes,CMISS_CELLML
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI of the model variable which needs to be located in the provided field.
-    INTEGER(INTG), INTENT(OUT) :: COMPONENT_USER_NUMBER !<On return, the field component for the model variable defined by the given URI.
+    TYPE(VARYING_STRING), INTENT(IN) :: VARIABLE_ID !<The ID of the model variable which needs to be located in the provided field.
+    INTEGER(INTG), INTENT(OUT) :: COMPONENT_USER_NUMBER !<On return, the field component for the model variable defined by the given ID.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     !Local variables
@@ -2893,8 +2941,7 @@ CONTAINS
 
 #ifdef USECELLML
 
-!!todo: FIX THIS
-    COMPONENT_USER_NUMBER=1
+    CALL CELLML_FIELD_COMPONENT_GET(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,CHAR(VARIABLE_ID),COMPONENT_USER_NUMBER,ERR,ERROR,*999)
 
 #else
 
@@ -3816,5 +3863,44 @@ CONTAINS
   !
   !================================================================================================================================
   !
+
+  !> Maps a CellML variable type to a CellML field type (\see CELLML_FieldTypes,CMISS_CELLML)
+  FUNCTION MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG(CELLML_VARIABLE_TYPE,ERR,ERROR)
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: CELLML_VARIABLE_TYPE !<The CellML variable type to map.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    INTEGER(INTG) :: MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    ! CellML variable types in OpenCMISS(cellml)/CellMLModelDefinitionF.h:
+    !   state=1; known=2; wanted=3.
+    !   independent=4 - but untested and maybe not working yet.
+    CALL ENTERS("MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG",ERR,ERROR,*999)
+    SELECT CASE(CELLML_VARIABLE_TYPE)
+    CASE(1)
+      MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG=CELLML_STATE_FIELD
+    CASE(2)
+      MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG=CELLML_PARAMETERS_FIELD
+    CASE(3)
+      MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG=CELLML_INTERMEDIATE_FIELD
+    CASE(4)
+      LOCAL_ERROR="CellML variable type "//TRIM(NUMBER_TO_VSTRING(CELLML_VARIABLE_TYPE,"*",ERR,ERROR))//&
+      & " (independent variable) support not yet implemented"
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    CASE DEFAULT
+      LOCAL_ERROR="CellML variable type "//TRIM(NUMBER_TO_VSTRING(CELLML_VARIABLE_TYPE,"*",ERR,ERROR))//&
+      & " is invalid or not implemented"
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    END SELECT
+    CALL EXITS("MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG")
+    RETURN
+999 CALL ERRORS("MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG",ERR,ERROR)
+    CALL EXITS("MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG")
+    RETURN
+
+  END FUNCTION MAP_CELLML_VARIABLE_TYPE_TO_FIELD_TYPE_INTG
 
 END MODULE CMISS_CELLML
