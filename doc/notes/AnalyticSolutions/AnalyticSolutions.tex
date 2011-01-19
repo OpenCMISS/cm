@@ -10,3 +10,64 @@
 
 \subsection{Diffusion Equation}
 
+\subsection{Hamilton-Jacobi Equation}
+
+\subsubsection{Anisotropic Eikonal Solver}
+
+Available analyticsolutions in the Hamilton-Jacobi Equations of Anisotropic Eikonal solver are as below:
+
+
+\textbf{Analytic Solution 1:} Solving with $a_{ij}=\delta_{ij}$ and function $f(x,y)=1$. The computational domain is $\Omega=[-1,1]^2$, and $\partial\Omega$ is a source point at the origin with coordinates $(0,0)$. The exact solution is $$\phi(x,y)=\sqrt{x^2+y^2}$$
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=0.75\textwidth]{../latex/epsfiles/HJE/FigEx1Res.eps}
+  \caption{Analytic Solution 1 results.}
+  \label{fig:Ex1}
+\end{figure}
+
+
+\textbf{Analytic Solution 2:} Solving with $a_{ij}=\delta_{ij}$ and $$f(x,y)=2\pi \sqrt{10[\cos{(2\pi x)}\sin{(2\pi y)}]^2+[\sin{(2\pi x)}\cos{(2\pi y)}]^2}$$ The boundary is given by $\partial\Omega=\{(\frac{1}{4},\frac{1}{4}),(\frac{3}{4},\frac{3}{4}),(\frac{3}{4},\frac{1}{4}),(\frac{1}{4},\frac{3}{4}),(\frac{1}{2},\frac{1}{2})\}=\{1,1,-1,-1,0\}$, which consists of five isolated points. The computational domain is $\Omega=[0,1]^2$. $\phi(x,y)=0$ is prescribed at the boundary of the unit square. The exact solution for this case is $$\phi(x,y)=\sin{(2\pi x)} \sin{(2\pi y)}$$
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=0.75\textwidth]{../latex/epsfiles/HJE/FigEx2Res.eps}
+  \caption{Analytic Solution 2 results.}
+  \label{fig:Ex2}
+\end{figure}
+
+
+\textbf{Analytic Solution 3:} Solving with $a_{ij}=\delta_{ij}$ and $$f(x,y,z)=\frac{\pi}{2} \sqrt{\sin^2{(\pi + \frac{\pi}{2}x)}+\sin^2{(\pi + \frac{\pi}{2}y)}+\sin^2{(\pi + \frac{\pi}{2}z)}}$$ The computational domain is $\Omega=[-1,1]$ in $x$ and $y$ direction and $\Omega=[-1,1]^3$ at $z$ direction. The inflow boundary $\partial\Omega$ is a source at the origin $(0,0,0)$. The exact solution for this problem is $$\phi(x,y,z)=\cos{(\pi + \frac{\pi}{2}x})+\cos{(\pi + \frac{\pi}{2}y})+\cos{(\pi + \frac{\pi}{2}z})$$
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=0.75\textwidth]{../latex/epsfiles/HJE/FigEx3Res.eps}
+  \caption{Analytic Solution 3 results.}
+  \label{fig:Ex3}
+\end{figure}
+
+
+\textbf{Two Element Example:} Solving with anisotropic case for two element domain with constant function $f(x,y)=1$ along fiber directions and $f(x,y)=10$ in plane of isotropy.
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=0.75\textwidth]{../latex/epsfiles/HJE/FigEx4Res.eps}
+  \caption{Two Element Example results.}
+  \label{fig:Ex4}
+\end{figure}
+
+
+\subsubsection{Geodesic Solver}
+
+\noindent The analyticsolutions for Geodesic solver which is included in the library is:
+
+\textbf{GeodesicEx1} Solving within a cubic mesh domain, the aim is to find the geodesic path between one corner of the cube and one point on a face of the cube using this algorithm.
+Depending on the application the Geodesic nodes list and Geodesic path lengths is available.
+
+\begin{figure}[h]
+  \centering
+    \includegraphics[width=0.4\textwidth]{../latex/epsfiles/HJE/FigGeodesicExRes.eps}
+  \caption{Geodesic path from the example.}
+  \label{fig:GeodesicEx}
+\end{figure}
+

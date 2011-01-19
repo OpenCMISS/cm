@@ -29,3 +29,15 @@
 \section{Eigenproblem Solvers}
 
 \section{Optimisation Solvers}
+
+\section{Fast Marching Solver}
+
+\noindent Currently OpenCMISS uses Fast Marching Methods (FMM) for solving Hamilton-Jacobi Equations. FMM was introduced by Sethian to Hamilton-Jacobi equations of static type by a finite difference discretization up-wind scheme \cite{sethian:1996}. This method allows speeding up the convergence of the classical iterative finite difference scheme. It computes the approximate solution in a finite number of steps and the complexity behaves as $O(N\ln N)$ where $N$ is the total number of nodes \cite{mauch:2003}. This method stands on two steps including selection of the proper wavefront point to continue marching and then calculation and updating unknown variable for its surroundings (See Figure \ref{fig:FMM}).
+
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=0.75\textwidth]{../latex/epsfiles/HJE/FigFMM.eps}
+  \caption{Schematic of FMM.}
+  \label{fig:FMM}
+\end{figure}
+

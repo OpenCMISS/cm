@@ -611,6 +611,41 @@ The \emph{contravariant metric tensor} from $\vect{x}$ to $\vect{\xi}$ coordinat
 
 \subsection{Wave Equation}
 
+\subsection{Hamilton-Jacobi Equation}
+\noindent The Hamilton-Jacobi Equation (HJE) is a formulation of mechanics in which the motion of a particle can be represented as a wave. In physics, the HJE is also a reformulation of classical mechanics and, equivalent to other formulations such as Newton's laws of motion, Lagrangian mechanics and Hamiltonian mechanics. This equation is in the form of
+\begin{eqnarray}
+\left\{ \begin{array}{lcl} \phi_t + \mathcal{H}(x_i,\delby{\phi}{x_{i}},t) = 0 & \mbox{for} & (x_{i},t)\in\Omega\times(0,t_f) \\ \phi(x_i,0) = \phi_0(x_i)  & \mbox{for} & x_i\in\partial\Omega \end{array}\right.
+\end{eqnarray}
+where in static case 
+\begin{eqnarray}
+\left\{ \begin{array}{lcl} \mathcal{H}(x_i,\delby{\phi}{x_{i}}) = 0 & \mbox{for} & x_i\in\Omega \\ \phi(x_i) = \phi_0(x_i)  & \mbox{for} & x_i\in\partial\Omega \end{array}\right. 
+\end{eqnarray}
+Here $\phi$ is the solution to the problem, $x_i$ is the coordinate component, and $\Omega$ and $\partial\Omega$ are the domain and domain boundary indicators, respectively.
+HJE equations have abundant applications, such as in optimal control, image processing, computer vision, geometric optics, fluid dynamics, geodesics and wave propagation \cite{sethian:1999}.
+
+\noindent Currently OpenCMISS uses Fast Marching Methods (FMM) for solving HJE in the domain. FMM was introduced by Sethian to Hamilton-Jacobi equations of static type by a finite difference discretization up-wind scheme \cite{sethian:1996}. This method allows speeding up the convergence of the classical iterative finite difference scheme. It computes the approximate solution in a finite number of steps and the complexity behaves as $O(N\ln N)$ where $N$ is the total number of nodes \cite{mauch:2003}. This method stands on two steps including selection of the proper wavefront point to continue marching and then calculation and updating unknown variable for its surroundings (See Figure \ref{fig:FMM}).
+
+\begin{figure}[h!]
+  \centering
+    \includegraphics[width=0.75\textwidth]{../latex/epsfiles/HJE/FigFMM.eps}
+  \caption{Schematic of FMM.}
+  \label{fig:FMM}
+\end{figure}
+
+Following equations of Hamilton-Jacobi type are implemented in OpenCMISS.
+
+\subsubsection{Anisotropic Eikonal Equation}
+
+An important member of the Hamilton-Jacobi equations is the so called Eikonal equation, which can be described in anisotropic format as 
+\begin{equation}
+\mathcal{H}(x_i,\delby{\phi}{x_{i}}) = a_{ij}\delby{\phi}{x_{i}}\delby{\phi}{x_{j}} - f^2(x_i).
+\end{equation}
+Where $a_{ij}$ is anisothropy coefficient and $f(x)$ is a positive function. Typically, such a problem describes the evolution of a closed curve as a function of time with speed $f(x)$ in the normal direction at a point $x$ on the curve. The speed function is specified, and the time at which the contour crosses a point $x$ is obtained by solving the equation. The algorithm is similar to Dijkstra's algorithm and uses the fact that information only flows outward from the seeding area. There are two solvers for this equation; one considers input data $a_{ij}$ and $f(x)$ at nodes and another on lines.
+
+\subsubsection{Geodesic Equation}
+
+Geodesic solver to calculate the shortest path between two nodes in a grid is a member of the Hamilton-Jacobi equations, which can be described as $$ \mathcal{H}(x_i,\delby{\phi}{x_{i}}) = \delby{\phi}{x_{i}} - 1.$$ Geodesic equations calculate the geodesic curve to give the lowest cost path based on the mesh that connects two points of the domain together. This Geodesic solver is based on Dijkstra's algorithm and is implemented as a modification of FMM solver. It is possible also to define a cost function $f$ on the path between nodes and to find the optimum path that minimizes the cost in going between two points in the manifold.
+
 \subsection{Diffusion Equation}
 
 \subsection{Advection-Diffusion Equation}
