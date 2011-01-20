@@ -1411,6 +1411,7 @@ $(OBJECT_DIR)/field_routines.o	:	$(SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/coordinate_routines.o \
+	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/domain_mappings.o \
 	$(OBJECT_DIR)/kinds.o \

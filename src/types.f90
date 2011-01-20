@@ -547,6 +547,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<A pointer to the domain.
     INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of degrees-of-freedom (excluding ghost dofs) in the domain.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<The total number of degrees-of-freedom (including ghost dofs) in the domain.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<The number of global degrees-of-freedom in the domains.
     INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:,:) !<DOF_INDEX(i,ny). The index for the ny'th degree-of-freedom. When i=1 DOF_INDEX will give the global derivative number (nk) associated with the dof. When i=2 DOF_INDEX will give the local node number (np) associated with the dof.
   END TYPE DOMAIN_DOFS_TYPE
 
@@ -609,6 +610,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this elements topology information.
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements (excluding ghost elements) in this domain topology.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS !<The total number of elements (including ghost elements) in this domain topology.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_ELEMENTS !<The number of global elements in this domain topology.
     TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of topology information for the elements of this domain. ELEMENTS(ne) contains the topological information for the ne'th local elements of the domain. \todo Change this to allocatable???
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS !<The maximum number of element parameters (ns) for all the elements in the domain.
   END TYPE DOMAIN_ELEMENTS_TYPE
@@ -637,8 +639,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN !<The pointer to the domain for this nodes topology information.
     INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes (excluding ghost nodes) in this domain topology.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_NODES !<The total number of nodes (including ghost nodes) in this domain topology.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_NODES !<The number of global nodes in this domain topology.
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives over the nodes in this domain topology.
     TYPE(DOMAIN_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of this domain. NODES(np) contains the topological information for the np'th local node of the domain. \todo Change this to allocatable???
+    TYPE(TREE_TYPE), POINTER :: NODES_TREE !<A tree mapping the domain local number to the region nodes user number.
   END TYPE DOMAIN_NODES_TYPE
 
   !>Contains the topology information for a domain
@@ -937,8 +941,11 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains the topology information for the elements of a decomposition.
   TYPE DECOMPOSITION_ELEMENTS_TYPE
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this elements topology information.
+    INTEGER(INTG) :: NUMBER_OF_ELEMENTS !<The number of elements excluding ghost elements in this decomposition topology.
     INTEGER(INTG) :: TOTAL_NUMBER_OF_ELEMENTS !<The total number of elements in this decomposition topology.
+    INTEGER(INTG) :: NUMBER_OF_GLOBAL_ELEMENTS !<The number of global elements in this decomposition topology.
     TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of topology information for the elements of this decomposition. ELEMENTS(ne) contains the topological information for the ne'th local element of the decomposition. \todo Change this to allocatable???
+    TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the decomposition local element number to the decomposition user element number.
   END TYPE DECOMPOSITION_ELEMENTS_TYPE
 
    !>Contains the topology information for a decomposition
