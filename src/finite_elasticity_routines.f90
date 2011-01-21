@@ -1541,7 +1541,8 @@ CONTAINS
     REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),P,ACTIVTIME
     REAL(DP) :: I1,I2,I3            !Invariants, if needed
     REAL(DP) :: TEMP(3,3),TEMPTERM  !Temporary variables
-    REAL(DP) :: TEMP_1, TEMP_2, TEMP_3
+    REAL(DP) :: TEMP_1, TEMP_2
+    REAL(DP) :: CONTRIBUTION_1, CONTRIBUTION_2, CONTRIBUTION_3
     REAL(DP) :: PIOLA_TENSOR_ADDITION(3,3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP), DIMENSION (:), POINTER :: C !Parameters for constitutive laws
@@ -1742,21 +1743,9 @@ CONTAINS
           DARCY_MASS_INCREASE_ENTRY = 5 !fifth entry
         CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
            &  EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) !Incompressible
-! ! !           !Constitutive model: W=c1*(I1-3)+c2*(I2-3)+p*(I3-1) 
-! ! !           ! The term 'p*(I3-1)' gives rise to: '2p I3 AZU'
-! ! !           ! Retain I3 = J^2, since J ~ 1 + m/rho /= 1 
-! ! !           !\ToDo: Check: Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it ???
-! ! !           DO i=1,3
-! ! !            DO j=1,3
-! ! !              !\todo: Check which form to use. Recall: I3 = (1 + m/rho)^2 here !
-! ! ! !              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 2.0_DP*P*I3*AZU(i,j)
-! ! ! !              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + P*SQRT(I3)*AZU(i,j)
-! ! !              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 2.0_DP*P*AZU(i,j)
-! ! ! !              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) - 2.0_DP*P*AZU(i,j)
-! ! !              !\todo: Since J is no longer one for poromechanics, it needs to be taken into account !!!
-! ! !            ENDDO
-! ! !           ENDDO
-! ! !           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
+          !Constitutive model: W=c1*(I1-3)+c2*(I2-3)+p*(I3-1) 
+          ! The term 'p*(I3-1)' gives rise to: '2p I3 AZU'
+          ! Retain I3 = J^2, since J ~ 1 + m/rho /= 1 
 !         CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE)
           !Constitutive model: W=C1*(J1-3)+C2*(J2-3)+C3*(J-1)^2+lambda.(J-1-m/rho)
           !J1 and J2 are the modified invariants, adjusted for volume change (J1=I1*J^(-2/3), J2=I2*J^(-4/3))
@@ -1785,11 +1774,14 @@ CONTAINS
           TEMPTERM=Jznu**(-4.0_DP/3.0_DP)
           !TEMP is now del(I2)/del(C)
           TEMP(1,1)=AZL(2,2)+AZL(3,3)
-          TEMP(1,2)=-2.0_DP*AZL(1,2)
-          TEMP(1,3)=-2.0_DP*AZL(1,3)
+!           TEMP(1,2)=-2.0_DP*AZL(1,2)
+          TEMP(1,2)=-1.0_DP*AZL(1,2)
+!           TEMP(1,3)=-2.0_DP*AZL(1,3)
+          TEMP(1,3)=-1.0_DP*AZL(1,3)
           TEMP(2,1)=TEMP(1,2)
           TEMP(2,2)=AZL(1,1)+AZL(3,3)
-          TEMP(2,3)=-2.0_DP*AZL(2,3)
+!           TEMP(2,3)=-2.0_DP*AZL(2,3)
+          TEMP(2,3)=-1.0_DP*AZL(2,3)
           TEMP(3,1)=TEMP(1,3)
           TEMP(3,2)=TEMP(2,3)
           TEMP(3,3)=AZL(1,1)+AZL(2,2)
@@ -1803,6 +1795,51 @@ CONTAINS
 
 
           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
+
+
+!=== begin: Alternative implementation (gives the same result as the one above):
+
+          I1 = AZL(1,1) + AZL(2,2) + AZL(3,3)
+
+          TEMP = MATMUL(AZL,AZL)  ! C^2
+          I2 = 0.5_DP*( I1**2.0_DP - ( TEMP(1,1)+TEMP(2,2)+TEMP(3,3) ) )
+
+          I3 = DETERMINANT(AZL,ERR,ERROR)
+
+          TEMP_1 = I3**(-1.0_DP / 3.0_DP)
+
+          TEMP_2 = I3**(-2.0_DP / 3.0_DP)
+
+          CONTRIBUTION_1 =  C(1) * TEMP_1 + C(2) * TEMP_2 * I1
+
+          CONTRIBUTION_2 = -C(2) * TEMP_2
+
+          CONTRIBUTION_3 = -1.0_DP / 3.0_DP * C(1) * I1 * TEMP_1 - 2.0_DP / 3.0_DP * C(2) * I2 * TEMP_2
+
+          PIOLA_TENSOR = 0.0_DP
+
+          DO i=1,3
+            PIOLA_TENSOR(i,i) = PIOLA_TENSOR(i,i) + CONTRIBUTION_1
+            DO j=1,3
+              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + CONTRIBUTION_2 * AZL(i,j) + CONTRIBUTION_3 * AZU(i,j)
+            ENDDO
+          ENDDO
+
+          !Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it
+          !MIND that using "+ P * Jznu * AZU(i,j)" in the constitutive law
+          ! implies a minus sign in the GRAD_LM_PRESSURE term in DARCY_EQUATION_FINITE_ELEMENT_CALCULATE
+          DO i=1,3
+            DO j=1,3
+              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 1.0_DP * P * Jznu * AZU(i,j) &
+                & + 2.0_DP * C(3) * (Jznu-1.0_DP) * Jznu * AZU(i,j)
+            ENDDO
+          ENDDO
+
+          PIOLA_TENSOR = 2.0_DP * PIOLA_TENSOR
+
+!=== end: Alternative implementation
+
+
         END SELECT
 
 !         DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
@@ -3753,7 +3790,7 @@ CONTAINS
               ! output data
               CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_NO_SUBTYPE)
-              !CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a finite elasticity problem class."

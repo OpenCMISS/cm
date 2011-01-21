@@ -379,7 +379,10 @@ CONTAINS
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
-    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+!     IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+
+    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(MAX(NumberOfMeshComponents,NumberOfElements)))
+
     IF(.NOT.ALLOCATED(NodesPerMeshComponent)) ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
     MaxNodesPerElement=0
 
@@ -390,8 +393,16 @@ CONTAINS
     END DO
 
 
-    MaxNodesPerElement=NodesPerElement(1)
+!     MaxNodesPerElement=NodesPerElement(1)
     MaxNodesPerMeshComponent=NodesPerMeshComponent(1)
+
+
+    DO I=1,NumberOfElements
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+      MaxNodesPerElement=MAX(NodesPerElement(1),NodesPerElement(I))
+    END DO
+
 
     IF(.NOT.ALLOCATED(XI_COORDINATES))  ALLOCATE(XI_COORDINATES(NumberOfDimensions))
     IF(.NOT.ALLOCATED(COORDINATES)) ALLOCATE(COORDINATES(NumberOfDimensions))
@@ -415,8 +426,10 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeEValue)) ALLOCATE(NodeEValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeSIGMAValue)) ALLOCATE(NodeSIGMAValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
-    IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
+!     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,MaxNodesPerElement))
+!     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,MaxNodesPerElement))
 
     !chrm, 20.08.09
     IF(.NOT.ALLOCATED(NodeUValue_analytic)) ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
@@ -441,7 +454,13 @@ CONTAINS
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
+
         ELEMENT_NUMBER=I
 !        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
 !          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
@@ -722,7 +741,8 @@ CONTAINS
     NumberOfFieldComponent(3)=NumberOfMaterialComponents
 
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
         ElementNodes(I,J)=REGION%meshes%meshes(1)%ptr%topology(1)% &
           & ptr%elements%elements(I)%global_element_nodes(J)
         ElementNodesScales(I,J)=1.0000000000000000E+00
@@ -1998,38 +2018,59 @@ CONTAINS
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
     ! CHARACTER*60 ELEM_TYPE
-    INTEGER(INTG):: I,J,K
+    INTEGER(INTG):: I,J,K,KK
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR
+    LOGICAL:: OUTPUT_FLAG
 
     FILENAME="./output/"//NAME//".exelem"
     OPEN(UNIT=5, FILE=CHAR(FILENAME),STATUS='unknown')
     WRITE(5,*) 'Group name: OpenCMISS'
+
+
+  DO KK = 1,NumberOfElements
+
+    !write out the running header only once #NodesPerElement is changing
+    IF( KK == 1 ) THEN
+      OUTPUT_FLAG = .TRUE.
+    ELSE IF( KK > 1 .AND. NodesPerElement(KK).NE.NodesPerElement(KK-1) ) THEN
+      OUTPUT_FLAG = .TRUE.
+    ELSE 
+      OUTPUT_FLAG = .FALSE.
+    END IF
+
+    IF( OUTPUT_FLAG ) THEN
  
     IF(lagrange_simplex==2) THEN
       IF(NumberOfDimensions==2) THEN
         WRITE(5,*) 'Shape.  Dimension=',TRIM(NMs(NumberOfDimensions)),', simplex(2)*simplex'
         IF(MaxNodesPerElement==3) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==6) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF (MaxNodesPerElement== 10 ) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' q.simplex(2)*q.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' q.simplex(2)*q.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' q.simplex(2)*q.simplex, #Scale factors= ', NodesPerElement(KK)
         ENDIF
       ELSE IF(NumberOfDimensions==3) THEN
         WRITE(5,*) 'Shape.  Dimension=',TRIM(NMs(NumberOfDimensions)),', simplex(2;3)*simplex*simplex'
         IF(MaxNodesPerElement==4) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF (MaxNodesPerElement== 10 ) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==20) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(KK)
         ENDIF      
       ELSE
         WRITE(5,*) '#Scale factor sets= 0'
@@ -2038,27 +2079,35 @@ CONTAINS
       WRITE(5,*) 'Shape.  Dimension= ',TRIM(NMs(NumberOfDimensions))
       WRITE(5,*) '#Scale factor sets= 1'
       IF(NumberOfDimensions==1) THEN
-           WRITE(5,*) 'q.Lagrange, #Scale factors=',NodesPerElement(1)
+!            WRITE(5,*) 'q.Lagrange, #Scale factors=',NodesPerElement(1)
+           WRITE(5,*) 'q.Lagrange, #Scale factors=',NodesPerElement(KK)
       ELSE IF (NumberOfDimensions==2) THEN
         IF(MaxNodesPerElement==4) THEN
-          WRITE(5,*) 'l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==9) THEN
-          WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==16) THEN
-          WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(KK)
         END IF
       ELSE
         IF(MaxNodesPerElement==8) THEN
-          WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==27) THEN
-          WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==64) THEN
-          WRITE(5,*) 'c.Lagrange*c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'c.Lagrange*c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'c.Lagrange*c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(KK)
         END IF
       END IF
     END IF
 
-    WRITE(5,*) '#Nodes= ',TRIM(NMs(NodesPerElement(1)))
+!     WRITE(5,*) '#Nodes= ',TRIM(NMs(NodesPerElement(1)))
+    WRITE(5,*) '#Nodes= ',TRIM(NMs(NodesPerElement(KK)))
     WRITE(5,*) '#Fields= ',TRIM(Nms(NumberOfFields))
 
     DO I=1,NumberOfFields
@@ -2216,10 +2265,16 @@ CONTAINS
       END DO
     END DO
 
-    IF(lagrange_simplex==2) THEN
-      IF(.NOT.ALLOCATED(SimplexOutputHelp)) ALLOCATE(SimplexOutputHelp(NodesPerElement(1)))
+    END IF !write out the running header only once #NodesPerElement is changing
 
-      DO K = 1,NumberOfElements
+
+    IF(lagrange_simplex==2) THEN
+!       IF(.NOT.ALLOCATED(SimplexOutputHelp)) ALLOCATE(SimplexOutputHelp(NodesPerElement(1)))
+      IF(.NOT.ALLOCATED(SimplexOutputHelp)) ALLOCATE(SimplexOutputHelp(NodesPerElement(KK)))
+
+!       DO K = 1,NumberOfElements
+      K = KK
+
         IF(NumberOfDimensions==2)THEN
           SimplexOutputHelp(1)=ElementNodes(K,1)
           SimplexOutputHelp(2)=ElementNodes(K,4)
@@ -2244,19 +2299,29 @@ CONTAINS
         WRITE(5,*) '   Nodes:'
         WRITE(5,*) '   ', SimplexOutputHelp
         WRITE(5,*) '   Scale factors:'
-        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
-      END DO
+!         WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
+        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(K))
+!       END DO
 
     ELSE IF (lagrange_simplex==1) THEN
 
-      DO K = 1,NumberOfElements
+!       DO K = 1,NumberOfElements
+      K = KK
+
         WRITE(5,*) 'Element:     ', K,' 0  0'
         WRITE(5,*) '   Nodes:'
-        WRITE(5,*) '   ', ElementNodes(K,1:NodesPerElement(1))
+!         WRITE(5,*) '   ', ElementNodes(K,1:NodesPerElement(1))
+        WRITE(5,*) '   ', ElementNodes(K,1:NodesPerElement(K))
         WRITE(5,*) '   Scale factors:'
-        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
-      END DO
+!         WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
+        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(K))
+!       END DO
     END IF
+
+
+  ENDDO
+
+
 
     WRITE(5,*) ' '
     CLOSE(5)

@@ -803,6 +803,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressureIncremented = BOUNDARY_CONDITION_PRESSURE_INCREMENTED
 
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCorrectionMassIncrease = BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionImpermeableWall = BOUNDARY_CONDITION_IMPERMEABLE_WALL
   !>@}
   !>@}
   
@@ -870,7 +871,7 @@ MODULE OPENCMISS
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
     & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall,CMISSBoundaryConditionMovedWallIncremented, &
-    & CMISSBoundaryConditionCorrectionMassIncrease
+    & CMISSBoundaryConditionCorrectionMassIncrease,CMISSBoundaryConditionImpermeableWall
 
   PUBLIC CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionNeumannIntegrated,CMISSBoundaryConditionDirichlet
   PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented

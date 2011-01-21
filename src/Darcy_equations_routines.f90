@@ -2196,6 +2196,8 @@ CONTAINS
               CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
                 & ELASTICITY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
               !Mind the sign !!!
+              !The minus sign derives from the convention of using "+ P * Jznu * AZU(i,j)"
+              ! in the constitutive law in FINITE_ELASTICITY_GAUSS_CAUCHY_TENSOR
               LM_PRESSURE = -ELASTICITY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
               DO xi_idx=1,DEPENDENT_BASIS%NUMBER_OF_XI
                 derivative_idx=PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(xi_idx) !2,4,7      
@@ -4084,8 +4086,10 @@ CONTAINS
                      CALL DARCY_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
   
   ! ! !                 !i n   p r i n c i p l e   c u r r e n t l y   d o   n o t   n e e d   t o   u p d a t e   B C s
-  ! ! !                 !--- 1.3 Apply both normal and moving mesh boundary conditions
-  ! ! !                 CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
+  ! ! !              !unless:
+  ! ! !              !--- 1.3 Apply both normal and moving mesh boundary conditions, OR:
+  ! ! !              !--- 1.3 (Iteratively) Render the boundary impermeable (ellipsoid, general curvilinear mesh)
+  ! ! !              CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
                   ENDIF
                  ENDIF
                 ENDIF
@@ -4320,7 +4324,7 @@ CONTAINS
                                 ALPHA = 1.0_DP
                                 CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                   & FIELD_VALUES_SET_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
-                                 write(*,*) "copying shmopying"
+
                                 IF(DIAGNOSTICS1) THEN
                                   NULLIFY(INITIAL_VALUES)
                                   CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
@@ -4695,11 +4699,15 @@ CONTAINS
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: BOUNDARY_CONDITION_CHECK_VARIABLE
     INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
-    INTEGER(INTG) :: NDOFS_TO_PRINT
+    INTEGER(INTG) :: NDOFS_TO_PRINT, COMPONENT_NUMBER
 
 !     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
 !     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
 !     INTEGER(INTG) :: FIELD_VAR_TYPE
+
+    REAL(DP) :: POSITION(3) !<POSITION(coordinate_idx), on exit the geometric position of the node
+    REAL(DP) :: NORMAL(3) !<NORMAL(coordinate_idx), on exit the normal vector
+    REAL(DP) :: TANGENTS(3,2) !<TANGENTS(coordinate_idx,tangent_idx), on exit the tangent vectors for the tangent_idx'th tangent at the node. There are number_of_xi-1 tangent vectors.
 
 
     CALL ENTERS("DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
@@ -4828,6 +4836,84 @@ CONTAINS
                                         & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                                       CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
                                         & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+
+! !---begin: impermeability BC
+! 
+!                                   !make sure that: FIELD_VAR_TYPE == FIELD_V_VARIABLE_TYPE
+!                                   DEPENDENT_FIELD_DARCY_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR
+!                                   IF(ASSOCIATED(DEPENDENT_FIELD_DARCY_VARIABLE)) THEN
+! 
+!                                     component_idx = 3
+! 
+!                                       MESH_COMPONENT=DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)%MESH_COMPONENT_NUMBER
+! 
+!                                       DOMAIN=>DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+!                                       IF(ASSOCIATED(DOMAIN)) THEN
+!                                         DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+!                                         IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+!                                           SELECT CASE(DEPENDENT_FIELD_DARCY%VARIABLES(var_idx)%COMPONENTS(component_idx)% &
+!                                             & INTERPOLATION_TYPE)
+!                                           CASE(FIELD_NODE_BASED_INTERPOLATION)
+!                                             NODES_DOMAIN=>DOMAIN_TOPOLOGY%NODES
+!                                             IF(ASSOCIATED(NODES_DOMAIN)) THEN
+!                                               DO node_idx=1,NODES_DOMAIN%NUMBER_OF_NODES
+!                                                 DO deriv_idx=1,NODES_DOMAIN%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+!                                                   local_ny=DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)% &
+!                                                     & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+!                                                   VALUES(1)=NUMERICAL_VALUES(local_ny)
+! 
+!                                                   !node_idx = dof_number ! ??? I loop anyway over the nodes
+!                                                   COMPONENT_NUMBER = 4  !Interpolate at the nodes of the mass increase
+! 
+!                      COMPONENT_NUMBER = 4
+!                      CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(DEPENDENT_FIELD_DARCY,variable_type, &
+!                        & COMPONENT_NUMBER,node_idx, &
+!                        & POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
+! 
+! 
+!                                                 ENDDO !deriv_idx
+!                                               ENDDO !node_idx
+!                                             ELSE
+!                                               CALL FLAG_ERROR("Nodes domain topology is not associated.",ERR,ERROR,*999)
+!                                             ENDIF                     
+!                                           CASE(DEFAULT)
+!                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+!                                           END SELECT
+!                                         ELSE
+!                                           CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+!                                         ENDIF
+!                                       ELSE
+!                                         CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+!                                       ENDIF
+!                                   ELSE
+!                                     CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+!                                   ENDIF
+!                                 ENDDO !var_idx
+! 
+! 
+! !loop over components: iComp
+! !  loop over number of nodes for that component (mesh component)
+! !    how do we get the dof then (without assumptions on the ordering) ? 
+! 
+!                                         ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_IMPERMEABLE_WALL) THEN
+!                                           !--- Render the boundary impermeable
+! 
+!                      write(*,*)'dof_number (impermeable) = ',dof_number
+!                      COMPONENT_NUMBER = 3
+!                      CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+!                        & COMPONENT_NUMBER,dof_number, &  !dof_number ok ???
+!                        & POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
+!                      write(*,*)'POSITION = ',POSITION
+!                      write(*,*)'NORMAL = ',NORMAL
+! 
+! !                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+! !                                             & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
+! !                                             & INITIAL_VALUES(dof_number),ERR,ERROR,*999)
+! 
+! 
+! !---end: impermeability BC
+
 
                                       IF(DIAGNOSTICS1) THEN
                                         NDOFS_TO_PRINT = SIZE(MESH_VELOCITY_VALUES,1)
