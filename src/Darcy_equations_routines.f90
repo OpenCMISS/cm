@@ -1026,13 +1026,12 @@ CONTAINS
                   !Check the user specified field
                   CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
                   CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
                   CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
@@ -1352,7 +1351,8 @@ CONTAINS
           CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
+            & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               !Do nothing
@@ -1826,7 +1826,7 @@ CONTAINS
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: ELASTICITY_DEPENDENT_INTERPOLATED_POINT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    REAL(DP):: SOURCE,INTER_COMP_SOURCE,INTER_COMP_PERM
+    REAL(DP):: SOURCE,INTER_COMP_SOURCE,INTER_COMP_PERM_1,INTER_COMP_PERM_2
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
 
     REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3), DARCY_RHO_0_F
@@ -2019,8 +2019,8 @@ CONTAINS
               ALLOCATE(GRAD_PRESSURE(3,Ncompartments))
               PRESSURE = 0.0_DP
               GRAD_PRESSURE = 0.0_DP
-              PRESSURE_COEFF(1)=0.5_DP 
-              PRESSURE_COEFF(2)=0.5_DP
+              PRESSURE_COEFF(1)=1.0_DP 
+              PRESSURE_COEFF(2)=0.0_DP
               !PRESSURE_COEFF(3)=0.2_DP
               !PRESSURE_COEFF(3)=0.1_DP
           END SELECT
@@ -2814,9 +2814,12 @@ CONTAINS
                      DO imatrix=1,Ncompartments
                        IF(imatrix/=my_compartment) THEN
                        !Interpolate the coupling material parameter from the V variable type of the materials field
-                       INTER_COMP_PERM=0.0_DP
+                        INTER_COMP_PERM_1=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR% &
+                          & VALUES(my_compartment,NO_PART_DERIV)
+                        INTER_COMP_PERM_2=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR% &
+                          & VALUES(imatrix,NO_PART_DERIV)
                        !Source term is coefficient*(p(my_compartment) - p(imatrix))
-                       INTER_COMP_SOURCE=INTER_COMP_PERM*PRESSURE(my_compartment) - PRESSURE(imatrix)
+                       INTER_COMP_SOURCE=-INTER_COMP_PERM_1*PRESSURE(my_compartment) + INTER_COMP_PERM_2*PRESSURE(imatrix)
                        ENDIF
                      ENDDO
                        
@@ -4250,7 +4253,7 @@ CONTAINS
     REAL(DP), POINTER :: INITIAL_VALUES(:)
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: NDOFS_TO_PRINT
+    INTEGER(INTG) :: NDOFS_TO_PRINT,equations_set_idx
 
 
     CALL ENTERS("DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA",ERR,ERROR,*999)
@@ -4277,7 +4280,8 @@ CONTAINS
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                   IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR  
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
                       SELECT CASE(EQUATIONS_SET%SUBTYPE)
                         CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE)
@@ -4316,7 +4320,7 @@ CONTAINS
                                 ALPHA = 1.0_DP
                                 CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                   & FIELD_VALUES_SET_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
-
+                                 write(*,*) "copying shmopying"
                                 IF(DIAGNOSTICS1) THEN
                                   NULLIFY(INITIAL_VALUES)
                                   CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
@@ -4347,6 +4351,7 @@ CONTAINS
                     ELSE
                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
+                   ENDDO
                   ELSE
                     CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -4741,7 +4746,8 @@ CONTAINS
                             ! do nothing ???
                           CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
                             & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+                            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                             IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy update boundary conditions ... ",ERR,ERROR,*999)
                             ENDIF
@@ -4752,7 +4758,7 @@ CONTAINS
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                 EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-!---tob
+!---tob                          
                                   SELECT CASE(EQUATIONS_SET%SUBTYPE)
                                   CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
                                     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
@@ -4760,7 +4766,8 @@ CONTAINS
                                   ! '1' associated with linear matrix
                                   CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE, &
                                       & EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                                      & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+                                      & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
+                                      & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                                     FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                                   END SELECT
 !---toe
@@ -5206,7 +5213,7 @@ CONTAINS
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                   !Make sure the equations sets are up to date
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR   
                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE)THEN
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)THEN
                       CONTROL_TIME_LOOP=>CONTROL_LOOP
@@ -6691,7 +6698,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                             ! do nothing ???
                           CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
                             & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+                            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
+                            & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy post solve determine Darcy velocity ... ",ERR,ERROR,*999)
                             DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                             GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
@@ -6704,7 +6712,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                   FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                                   ! '1' associated with linear matrix
                                 CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                                    & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
+                                    & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
+                                    & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                                   FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                                 END SELECT
 
@@ -6859,7 +6868,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP) :: ALPHA
-    INTEGER(INTG) :: FIELD_VAR_TYPE
+    INTEGER(INTG) :: FIELD_VAR_TYPE,equations_set_idx
 
 
     CALL ENTERS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE",ERR,ERROR,*999)
@@ -6887,7 +6896,9 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                   IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                    !loop over the equations sets
+                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR                    
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
                       SELECT CASE(EQUATIONS_SET%SUBTYPE)
                         CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE)
@@ -6939,6 +6950,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                     ELSE
                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
+                   ENDDO
                   ELSE
                     CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -7330,7 +7342,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     REAL(DP), PARAMETER :: RESIDUAL_TOLERANCE_ABSOLUTE=1.0E-10_DP
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,equations_set_idx
     INTEGER(INTG) :: COMPUTATIONAL_NODE_NUMBER
 
 
@@ -7363,9 +7375,11 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                   IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                    IF(ASSOCIATED(EQUATIONS)) THEN
-                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+!                     EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+!                     IF(ASSOCIATED(EQUATIONS)) THEN
+!                       EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR 
                       IF(ASSOCIATED(EQUATIONS_SET)) THEN
                         SELECT CASE(EQUATIONS_SET%SUBTYPE)
                           CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE,EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, &
@@ -7465,9 +7479,10 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                       ELSE
                         CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                       END IF
-                    ELSE
-                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                    END IF                
+                     ENDDO
+!                     ELSE
+!                       CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+!                     END IF                
                   ELSE
                     CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -7529,7 +7544,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     REAL(DP) :: RESIDUAL_NORM,AITKEN_PARAM,ACCELERATED_VALUE
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS
+    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,equations_set_idx
 
 
     CALL ENTERS("DARCY_EQUATION_ACCELERATE_CONVERGENCE",ERR,ERROR,*999)
@@ -7556,9 +7571,11 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                   IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                    IF(ASSOCIATED(EQUATIONS)) THEN
-                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                    EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR                    
+!                     EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+!                     IF(ASSOCIATED(EQUATIONS)) THEN
+!                       EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                       IF(ASSOCIATED(EQUATIONS_SET)) THEN
                         SELECT CASE(EQUATIONS_SET%SUBTYPE)
                           CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE,EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, &
@@ -7643,9 +7660,10 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                       ELSE
                         CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                       END IF
-                    ELSE
-                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                    END IF                
+                    ENDDO
+!                     ELSE
+!                       CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+!                     END IF                
                   ELSE
                     CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
