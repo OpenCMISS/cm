@@ -2010,6 +2010,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE !< Orthotropic Costa constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetCompressibleFiniteElasticitySubtype= &
     & EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransverseIsotropicGuccioneSubtype = &
+    & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype= &
     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE !<Incompressible version for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityDarcyInriaModelSubtype= &
@@ -2368,7 +2370,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetCompressibleFiniteElasticitySubtype,CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype, &
     & CMISSEquationsSetElasticityDarcyInriaModelSubtype,CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype, &
     & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype,CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype, &
-    & CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype, &
+    & CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype,CMISSEquationsSetTransverseIsotropicGuccioneSubtype, &
     & CMISSEquationsSetMembraneSubtype, CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
