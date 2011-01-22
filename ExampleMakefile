@@ -54,24 +54,24 @@
 
 ifndef OPENCMISSEXTRAS_ROOT
   OPENCMISSEXTRAS_ROOT := ../../opencmissextras
-  EXTERNAL_CM_ROOT := $(CURDIR)/../../opencmissextras/cm/external
-  EXTERNAL_CELLML_ROOT := $(CURDIR)/../../opencmissextras/cellml
-else
-  EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
-  EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
 endif
+
+
+EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
+EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
+EXTERNAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
+EXTERNAL_COMMON_ROOT := ${OPENCMISSEXTRAS_ROOT}/common
+EXTERNAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
 
 ifndef GLOBAL_ROOT
   $(error GLOBAL_ROOT is not setup)
 else
-  include $(GLOBAL_ROOT)/utils/Makefile.inc
   GLOBAL_CELLML_ROOT := $(GLOBAL_ROOT)/../cellml
 endif
 
+include $(EXTERNAL_UTILS_ROOT)/Makefile.inc
+
 #----------------------------------------------------------------------------------------------------------------------------------
-ifndef LIBRARY_VERSION
-  LIBRARY_VERSION := old
-endif
 
 ifndef MPI
   MPI := mpich2
@@ -79,6 +79,10 @@ endif
 
 ifndef USECELLML
   USECELLML := false
+endif
+
+ifndef USEFIELDML
+  USEFIELDML := false
 endif
 
 ifeq ($(MPI),mpich2)
@@ -98,10 +102,14 @@ else
     ifeq ($(MPI),openmpi)
       MPI := openmpi
     else
-          $(error unknown MPI type - $(MPI))
-        endif
+      ifeq ($(MPI),poe)
+        MPI := poe
+      else
+        $(error unknown MPI type - $(MPI))
       endif
     endif
+  endif
+endif
 
 ifeq ($(MPIPROF),true)
   ifeq ($(MPI),intel)
@@ -124,39 +132,56 @@ endif
 
 EXAMPLE_ROOT = $(GLOBAL_ROOT)/examples/$(EXAMPLE_PATH)$(EXAMPLE_NAME)
 
-BASE_EXE_NAME = $(BASE_EXAMPLE_NAME)
-MAIN_SOURCE_DIR = $(GLOBAL_ROOT)/src
-EXAMPLE_SOURCE_DIR = $(EXAMPLE_ROOT)/src
-ifeq ($(LIBRARY_VERSION),new)
-  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-else
-  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
-endif
-MODULE_DIR := $(OBJECT_DIR)
-ifeq ($(LIBRARY_VERSION),new)
-  EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-  EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-else
-  EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)
-  EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
-endif
-EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(LIBRARY_VERSION),new)
-  EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-else
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)$(COMPILER_SUFFIX)
+  ifdef COMPILER_VERSION
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
+    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
+    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    MAIN_OBJECT_DIR := $(GLOBAL_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    INC_DIR := $(GLOBAL_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    LIB_DIR := $(GLOBAL_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+  else
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
+    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
+    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    MAIN_OBJECT_DIR := $(GLOBAL_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    INC_DIR := $(GLOBAL_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
+    LIB_DIR := $(GLOBAL_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
+    EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
   endif
-  EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
+    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
+    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   else# windows
     EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   endif
+  OBJECT_DIR := $(EXAMPLE_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+  INC_DIR := $(GLOBAL_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
+  LIB_DIR := $(GLOBAL_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
+  EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
 endif
+MAIN_SOURCE_DIR := $(GLOBAL_ROOT)/src
+BASE_EXE_NAME = $(BASE_EXAMPLE_NAME)
+BASE_LIB_NAME = OpenCMISS
+EXAMPLE_SOURCE_DIR = $(EXAMPLE_ROOT)/src
+MODULE_DIR := $(OBJECT_DIR)
+INC_NAME := opencmiss.mod
+INCLUDE := $(INC_DIR)/$(INC_NAME)
+LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
+LIBRARY := $(LIB_DIR)/$(LIB_NAME)
+EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
 
 C_INCLUDE_DIRS := $(MAIN_SOURCE_DIR) \
   $(EXAMPLE_SOURCE_DIR) 
@@ -206,6 +231,10 @@ ifneq ($(MP),false)
   CFLAGS += $(MP_FLGS)
   FFLAGS += $(MP_FLGS)
 endif
+ifneq ($(TAUPROF),false)
+  CPPFLAGS += -DTAUPROF #Necessary?
+  FPPFLAGS += -DTAUPROF
+endif
 ARFLAGS = -cr
 # suboption lists
 CFL_FLGS =#	flags for C fortran and linking
@@ -234,12 +263,11 @@ ifeq ($(OPERATING_SYSTEM),linux)
   OPTCF_FLGS =# Use separate flags for fortran and c
   olist_args = $1
 
-  #Default Compilers. Note that if COMPILER is not set then the default is intel (see OPENCMISS_ROOT/cm/utils/make.inc)
-  #if icc/ifort not found then falls back to the gnu compilers below
   CC = gcc
   FC = gfortran
 
   ifeq ($(COMPILER),intel)
+
     #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
     ifneq (,$(shell icc -V 2>&1 | grep -i intel))
       CC = icc
@@ -247,28 +275,15 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
       FC = ifort
     endif
-  else
-    ifeq ($(COMPILER),gnu) #Default
-      #pass
-    else
-      ifeq ($(COMPILER),ibm)
-        FC = xlf90_r
-        CC = xlc_r
-      else
-        $(error invalid COMPILER specification)
-      endif
-    endif
+
   endif	
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
-    C_FLGS += -pipe
+    C_FLGS += -pipe -m$(ABI)
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGC_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# not i686 nor ia64
-      C_FLGS += -m$(ABI)
-    endif
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         C_FLGS += -march=nocona
@@ -281,12 +296,13 @@ ifeq ($(OPERATING_SYSTEM),linux)
         OPTC_FLGS += -momit-leaf-frame-pointer
       endif
     else
-      C_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
+      C_FLGS += -g -pg -fprofile-arcs -ftest-coverage
+      ELFLGS += -g -pg -fprofile-arcs -ftest-coverage
     endif
   endif
   ifeq ($(CC),icc)
     # Turn on all warnings
-    C_FLGS += -Wall
+    C_FLGS += -Wall -m$(ABI)
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -336,7 +352,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
   ifeq ($(FC),gfortran)
     #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -fno-second-underscore -Wall -x f95-cpp-input
+    F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input
     # Restrict line length to 132
     F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
@@ -344,10 +360,6 @@ ifeq ($(OPERATING_SYSTEM),linux)
     # Position independent code is actually only required for objects
     # in shared libraries but debug version may be built as shared libraries.
     DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
-      F_FLGS += -m$(ABI)
-      ELFLAGS += -m$(ABI)
-    endif
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         F_FLGS += -march=nocona
@@ -360,26 +372,23 @@ ifeq ($(OPERATING_SYSTEM),linux)
         OPTF_FLGS += -momit-leaf-frame-pointer
       endif
     else
-      F_FLGS += -g -pg# -fprofile-arcs -ftest-coverage
-      ELFLAGS += -pg
+      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
+      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
     endif
+    ELFLAGS += -m$(ABI)
   endif
   ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -std=f2003
-    DBGF_FLGS += -fPIC
-    ifeq ($(filter $(INSTRUCTION),i686 ia64),)# i686 nor ia64
-      F_FLGS += -m$(ABI)
-      ELFLAGS += -m$(ABI)
-    endif
+    F_FLAGS += -m$(ABI) -fno-second-underscore -Wall -std=f2003
     DBGF_FLGS += -O0 -fbounds-check
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    ELFLAGS += -m$(ABI)
     #$(error g95 not implemented)
   endif
   ifeq ($(FC),ifort)
     # turn on preprocessing,
     # turn on warnings,
     # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all 
+    F_FLGS += -cpp -warn all -m$(ABI)
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
@@ -415,7 +424,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
       endif
     endif
 #    MP_FLGS = -openmp
-    ELFLAGS += -nofor_main -traceback
+    ELFLAGS += -nofor_main -m$(ABI) -traceback
   endif
   ifeq ($(filter-out xlf%,$(FC)),)# xlf* fortran compiler
     F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90
@@ -524,179 +533,172 @@ ifeq ($(call olist_args,test),)
 endif
 
 #TAO
-TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
+TAO_LIBRARIES =#
 TAO_LIB_PATH =#
-TAO_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(DEBUG),false)
-    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-opt/ )
-  else
-    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-debug/ )
-  endif
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
+  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    ifeq ($(DEBUG),false)
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-opt/ )
-    else
-      TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-debug/ )
-    endif
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
   else# windows
     TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    TAO_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
   endif
 endif
 
 #PETSc
-PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
-if (,$(PETSC_TSLIB))
-  PETSC_LIBRARIES = -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
-else
-  PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
-endif
+PETSC_LIBRARIES =#
 PETSC_LIB_PATH =#
-PETSC_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(DEBUG),false)
-    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-opt/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/linux-gnu-c-opt/ )
+  PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
+  ifeq (,$(PETSC_TSLIB))
+    PETSC_LIBRARIES = -lpetsc -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl #Prob newer version of PETSc which has rolled all the libraries into one.
   else
-    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/linux-gnu-c-debug/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/linux-gnu-c-debug/ )
+    PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++ -ldl
   endif
+  PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
   ifeq ($(ABI),64)
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib64/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib64/openmotif/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib64/openmotif/ )
   else
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/lib/openmotif/ )
-    PETSC_LIB_PATH +=  $(addprefix -L, /usr/lib/openmotif/ )
   endif
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    ifeq ($(DEBUG),false)
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-opt/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/aix-5.3.0.0-c-opt/ )
+    PETSC_TSLIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libpetscts.a )
+    ifeq (,$(PETSC_TSLIB))
+      PETSC_LIBRARIES = -lpetsc #Prob newer version of PETSc which has rolled all the libraries into one.
     else
-      PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/aix-5.3.0.0-c-debug/ )
-      PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/aix-5.3.0.0-c-debug/ )
+      PETSC_LIBRARIES = -lpetscts -lpetscsnes -lpetscksp -lpetscdm -lpetscmat -lpetscvec -lpetsc -lpetsccontrib -lMrm -lXmu -lXm -lXt -lX11 -lstdc++
     endif
+    PETSC_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
     PETSC_LIB_PATH += $(addprefix -L, /usr/X11R6/lib/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
   endif
 endif
 
 #SUNDIALS
-SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
+SUNDIALS_LIBRARIES =#
 SUNDIALS_LIB_PATH =#
-SUNDIALS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SUNDIALS_LIBRARIES = -lsundials_cvode -lsundials_nvecparallel -lsundials_nvecserial
   SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     SUNDIALS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     SUNDIALS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    SUNDIALS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
   endif
 endif
 
 #HYPRE
-HYPRE_LIBRARIES = -lHYPRE
+HYPRE_LIBRARIES =#
 HYPRE_LIB_PATH =#
-HYPRE_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  HYPRE_LIBRARIES = -lHYPRE
   HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     HYPRE_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     HYPRE_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    HYPRE_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
+  endif
+endif
+
+#PaStiX
+PASTIX_LIBRARIES =#
+PASTIX_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  PASTIX_LIBRARIES = -lpastix
+  PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  PASTIX_LIBRARIES = -lpastix
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    PASTIX_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#Scotch
+SCOTCH_LIBRARIES =#
+SCOTCH_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SCOTCH_LIBRARIES = -lptscotch -lptscotcherr -lptscotcherrexit -lscotch -lscotcherr -lscotcherrexit
+  SCOTCH_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  SCOTCH_LIBRARIES = -lptscotch -lptscotchexit -lptscotcherrexit -lptscotchparmetis
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    SCOTCH_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    SCOTCH_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#SuperLU_DIST
+SUPERLU_LIBRARIES =#
+SUPERLU_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SUPERLU_LIBRARIES = -lsuperlu_dist
+  SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  SUPERLU_LIBRARIES = -lsuperlu_dist
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    SUPERLU_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
 endif
 
 #MUMPS
-MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
+MUMPS_LIBRARIES =#
 MUMPS_LIB_PATH =#
-MUMPS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  MUMPS_LIBRARIES = -ldmumps -lmumps_common -lpord
   MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     MUMPS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     MUMPS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    MUMPS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
   endif
 endif
 
 #ScaLAPACK
-SCALAPACK_LIBRARIES = -lscalapack 
+SCALAPACK_LIBRARIES =#
 SCALAPACK_LIB_PATH =#
-SCALAPACK_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SCALAPACK_LIBRARIES = -lscalapack 
   SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     SCALAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     SCALAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    SCALAPACK_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
   endif
 endif
 
 #BLACS
-BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77 
+BLACS_LIBRARIES =#
 BLACS_LIB_PATH =#
-BLACS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  BLACS_LIBRARIES = -lblacs -lblacsC -lblacsF77 -lblacs -lblacsC -lblacsF77 
   BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     BLACS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else# windows
     BLACS_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    BLACS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
   endif
 endif
 
 #ParMETIS
 PARMETIS_LIBRARIES = -lparmetis -lmetis
 PARMETIS_LIB_PATH =#
-PARMETIS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   PARMETIS_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
@@ -707,23 +709,64 @@ else
   endif
 endif
 
+#TAU/PAPI
+TAU_LIBRARIES =#
+TAU_LIB_PATH =#
+ifeq ($(TAUPROF),true)
+  TAU_LIBRARIES += -ltau-memory-phase-papi-mpi -l:libpapi.a -l:libpfm.a
+  ifeq ($(ABI),32) 
+    TAU_LIB_PATH += -L$(EXTERNAL_CM_DIR)/lib
+  else
+    TAU_LIB_PATH = -L$(EXTERNAL_CM_DIR)/lib -L$(EXTERNAL_CM_DIR)/lib64
+  endif
+endif
+
 #CELLML
 CELLML_LIBRARIES =#
 CELLML_LIB_PATH =#
 ifeq ($(USECELLML),true)
-  CELLML_LIBRARIES += -loccellml -lxml2
+  CELLML_LIBRARIES += -loccellml -lcellml -lccgs -lcevas -lcuses -lmalaes -lvacss -lannotools -lxml2
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
-    CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+    ifdef COMPILER_VERSION
+     CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/lib/ )
+    else
+      CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
+    endif
     CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+    CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
   else
     ifeq ($(OPERATING_SYSTEM),aix)# AIX
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
-	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
     else# windows
          CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/lib/ )
-	 CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_CELLML_DIR)/lib/ )
+         CELLML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
+    endif
   endif
 endif
+
+#FIELDML
+FIELDML_LIBRARIES =#
+FIELDML_LIB_PATH =#
+ifeq ($(USEFIELDML),true)
+  FIELDML_LIBRARIES += -lfieldml -lxml2
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+    FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
+    FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
+      FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
+    else# windows
+      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
+      FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
+      FIELDML_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_FIELDML_DIR)/include/ )
+    endif
+  endif
 endif
 
 #MPI
@@ -736,8 +779,14 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifeq ($(MPIPROF),true)
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
-    MPI_LIBRARIES += -lmpich -lpthread -lrt
+    MPL_LIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libmpl* )
+    MPI_LIBRARIES += -lmpich
+    ifneq (,$(MPL_LIB))
+      MPI_LIBRARIES += -lmpl
+    endif
+    MPI_LIBRARIES += -lpthread -lrt
     MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else
     ifeq ($(MPI),intel)
       ifeq ($(MPIPROF),true)
@@ -763,16 +812,17 @@ else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     MPI_LIBRARIES = -lmpi
     MPI_LIB_PATH += $(addprefix -L, /usr/lpp/ppe.poe/lib/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
   else# windows
     MPI_LIBRARIES = -lmpichf90 -lmpich -lpthread -lrt
     MPI_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
   endif
 endif
 
 #BLAS/lapack
 BLAS_LIB_PATH =#
 BLAS_LIBRARIES =#
-BLAS_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   BLAS_LIBRARIES = -llapack -lblas 
 else
@@ -783,24 +833,29 @@ else
   endif
 endif
 
-EXTERNAL_LIBRARIES = $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH = $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
-EXTERNAL_INCLUDE_PATH = $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPCK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
+OPENCMISS_LIBRARY = $(LIBRARY)
+OPENCMISS_INCLUDE_PATH = $(addprefix -I, $(INC_DIR) )
+
+EXTERNAL_LIBRARIES = $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
+EXTERNAL_LIB_PATH = $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
+EXTERNAL_INCLUDE_PATH = $(strip $(MPI_INCLUDE_PATH) )
 
 ifeq ($(USECELLML),true)
   EXTERNAL_LIBRARIES += $(CELLML_LIBRARIES)
   EXTERNAL_LIB_PATH += $(CELLML_LIB_PATH)
 endif
 
-CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
-FPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
+ifeq ($(USEFIELDML),true)
+  EXTERNAL_LIBRARIES += $(FIELDML_LIBRARIES)
+  EXTERNAL_LIB_PATH += $(FIELDML_LIB_PATH)
+  EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
+endif
+
+FPPFLAGS += $(OPENCMISS_INCLUDE_PATH) $(EXTERNAL_INCLUDE_PATH)
 
 ELFLAGS += $(EXTERNAL_LIB_PATH)
 
 .SUFFIXES:	.f90	.c
-
-$(OBJECT_DIR)/%.o : $(MAIN_SOURCE_DIR)/%.f90
-	( cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
 
 $(OBJECT_DIR)/%.o : $(EXAMPLE_SOURCE_DIR)/%.f90
 	( cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
@@ -809,104 +864,10 @@ $(OBJECT_DIR)/%.o : $(EXAMPLE_SOURCE_DIR)/../input/%.f90
 	( cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
 # end changed krittian
 
-$(OBJECT_DIR)/%.o : $(MAIN_SOURCE_DIR)/%.c
-	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
-
 $(OBJECT_DIR)/%.o : $(EXAMPLE_SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
-OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o \
-	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
-	$(OBJECT_DIR)/analytic_analysis_routines.o \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/bioelectric_routines.o \
-	$(OBJECT_DIR)/biodomain_equation_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/blas.o \
-	$(OBJECT_DIR)/classical_field_routines.o \
-	$(OBJECT_DIR)/cmiss.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/cmiss_parmetis.o \
-	$(OBJECT_DIR)/cmiss_petsc.o \
-	$(OBJECT_DIR)/cmiss_petsc_types.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-	$(OBJECT_DIR)/Darcy_equations_routines.o \
-	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
-	$(OBJECT_DIR)/data_point_routines.o \
-	$(OBJECT_DIR)/data_projection_routines.o \
-	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
-	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
-	$(OBJECT_DIR)/diffusion_equation_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/distributed_matrix_vector_IO.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/elasticity_routines.o \
-	$(OBJECT_DIR)/electromechanics_routines.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/equations_set_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/field_IO_routines.o \
-	$(OBJECT_DIR)/finite_elasticity_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/FieldExport.o \
-	$(OBJECT_DIR)/fitting_routines.o \
-	$(OBJECT_DIR)/generated_mesh_routines.o \
-	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
-	$(OBJECT_DIR)/history_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/interface_routines.o \
-	$(OBJECT_DIR)/interface_conditions_routines.o \
-	$(OBJECT_DIR)/interface_conditions_constants.o \
-	$(OBJECT_DIR)/interface_equations_routines.o \
-	$(OBJECT_DIR)/interface_mapping_routines.o \
-	$(OBJECT_DIR)/interface_matrices_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/Laplace_equations_routines.o \
-	$(OBJECT_DIR)/linear_elasticity_routines.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/maths.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/mesh_routines.o \
-	$(OBJECT_DIR)/multi_compartment_transport_routines.o \
-	$(OBJECT_DIR)/multi_physics_routines.o \
-	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/Poisson_equations_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/problem_routines.o \
-	$(OBJECT_DIR)/region_routines.o \
-	$(OBJECT_DIR)/Stokes_equations_routines.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/solver_mapping_routines.o \
-	$(OBJECT_DIR)/solver_matrices_routines.o \
-	$(OBJECT_DIR)/sorting.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/test_framework_routines.o \
-	$(OBJECT_DIR)/timer_c.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/trees.o \
-	$(OBJECT_DIR)/types.o 
-
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_aix.o
-  else# windows
-    MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_windows.o
-  endif
-endif
-
-OBJECTS += $(MACHINE_OBJECTS)
+OBJECTS = $(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o 
 
 main: preliminaries \
 	$(EXECUTABLE)
@@ -920,1065 +881,29 @@ $(OBJECT_DIR) :
 $(EXE_DIR) :
 	mkdir -p $@; 
 
-$(EXECUTABLE) : $(OBJECTS) 
-	$(EXE_LINK) -o $@ $(OBJECTS) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
+$(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
+	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
+
+$(OPENCMISS_LIBRARY) :
+	( cd $(GLOBAL_ROOT); $(MAKE) )
+
 
 # Place the list of dependencies for the objects here.
 #
 # ----------------------------------------------------------------------------
 
-ifeq ($(OPERATING_SYSTEM),aix)
 
-   #Need to disable argument list checking for MPI calls which may have multiple types for the same parameters
-   $(OBJECT_DIR)/computational_environment.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
-   $(OBJECT_DIR)/distributed_matrix_vector.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
-   $(OBJECT_DIR)/field_IO_routines.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+$(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME).f90
 
-   #Need to disable argument list checking for c interface modules to allow for the c->fortran char->integer string conversion
-   $(OBJECT_DIR)/timer_c.o : DBGCF_FLGS = -qfullpath -C -qflttrap=inv:en
+run : main
+	$(EXECUTABLE)
 
-endif
+callgrindrun : main
+	valgrind --tool=callgrind $(EXECUTABLE)
 
-$(OBJECT_DIR)/advection_diffusion_equation_routines.o	:	$(MAIN_SOURCE_DIR)/advection_diffusion_equation_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
+massifrun : main
+	valgrind --tool=massif $(EXECUTABLE)
 
-$(OBJECT_DIR)/analytic_analysis_routines.o  : $(MAIN_SOURCE_DIR)/analytic_analysis_routines.f90 \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/base_routines.o	:	$(MAIN_SOURCE_DIR)/base_routines.f90 \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(MACHINE_OBJECTS)
-
-$(OBJECT_DIR)/basis_routines.o	:	$(MAIN_SOURCE_DIR)/basis_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/blas.o	:	$(MAIN_SOURCE_DIR)/blas.f90 \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/bioelectric_routines.o	:	$(MAIN_SOURCE_DIR)/bioelectric_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/biodomain_equation_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/biodomain_equation_routines.o	:	$(MAIN_SOURCE_DIR)/biodomain_equation_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/boundary_condition_routines.o  : $(MAIN_SOURCE_DIR)/boundary_condition_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/classical_field_routines.o	:	$(MAIN_SOURCE_DIR)/classical_field_routines.f90 \
-	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/diffusion_equation_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/fitting_routines.o \
-	$(OBJECT_DIR)/Helmholtz_equations_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/Laplace_equations_routines.o \
-	$(OBJECT_DIR)/Poisson_equations_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o \
-	$(MACHINE_OBJECTS)
-
-$(OBJECT_DIR)/cmiss.o	:	$(MAIN_SOURCE_DIR)/cmiss.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-	$(OBJECT_DIR)/generated_mesh_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/problem_routines.o \
-	$(OBJECT_DIR)/region_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o \
-	$(MACHINE_OBJECTS)
-
-$(OBJECT_DIR)/cmiss_cellml.o	:	$(MAIN_SOURCE_DIR)/cmiss_cellml.f90 \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o \
-	$(MACHINE_OBJECTS)
-
-$(OBJECT_DIR)/cmiss_mpi.o	:	$(MAIN_SOURCE_DIR)/cmiss_mpi.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/strings.o
-
-$(OBJECT_DIR)/cmiss_parmetis.o	:	$(MAIN_SOURCE_DIR)/cmiss_parmetis.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o
-
-$(OBJECT_DIR)/cmiss_petsc.o	:	$(MAIN_SOURCE_DIR)/cmiss_petsc.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/cmiss_petsc_types.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/cmiss_petsc_types.o	:	$(MAIN_SOURCE_DIR)/cmiss_petsc_types.f90 \
-	$(OBJECT_DIR)/kinds.o 
-
-$(OBJECT_DIR)/computational_environment.o	:	$(MAIN_SOURCE_DIR)/computational_environment.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/cmiss_petsc.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o
-
-$(OBJECT_DIR)/constants.o	:	$(MAIN_SOURCE_DIR)/constants.f90 \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/control_loop_routines.o	:	$(MAIN_SOURCE_DIR)/control_loop_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/coordinate_routines.o	:	$(MAIN_SOURCE_DIR)/coordinate_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/maths.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/Darcy_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Darcy_equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/data_point_routines.o	:	$(MAIN_SOURCE_DIR)/data_point_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/trees.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(MAIN_SOURCE_DIR)/finite_elasticity_Darcy_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/Darcy_equations_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/data_projection_routines.o	:	$(MAIN_SOURCE_DIR)/data_projection_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/sorting.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/trees.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o	:	$(MAIN_SOURCE_DIR)/diffusion_advection_diffusion_routines.f90 \
-	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/diffusion_equation_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/diffusion_diffusion_routines.o	:	$(MAIN_SOURCE_DIR)/diffusion_diffusion_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/diffusion_equation_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/diffusion_equation_routines.o	:	$(MAIN_SOURCE_DIR)/diffusion_equation_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/distributed_matrix_vector.o	:	$(MAIN_SOURCE_DIR)/distributed_matrix_vector.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/cmiss_petsc.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/distributed_matrix_vector_IO.o	:	$(MAIN_SOURCE_DIR)/distributed_matrix_vector_IO.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/domain_mappings.o	:	$(MAIN_SOURCE_DIR)/domain_mappings.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/elasticity_routines.o	:	$(MAIN_SOURCE_DIR)/elasticity_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/finite_elasticity_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/linear_elasticity_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/electromechanics_routines.o	:	$(MAIN_SOURCE_DIR)/electromechanics_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/equations_routines.o	:	$(MAIN_SOURCE_DIR)/equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/equations_mapping_routines.o	:	$(MAIN_SOURCE_DIR)/equations_mapping_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/equations_matrices_routines.o	:	$(MAIN_SOURCE_DIR)/equations_matrices_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/equations_set_constants.o	:	$(MAIN_SOURCE_DIR)/equations_set_constants.f90 \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/equations_set_routines.o	:	$(MAIN_SOURCE_DIR)/equations_set_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/bioelectric_routines.o \
-	$(OBJECT_DIR)/classical_field_routines.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/elasticity_routines.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/multi_physics_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/field_routines.o	:	$(MAIN_SOURCE_DIR)/field_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/mesh_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/field_IO_routines.o	:	$(MAIN_SOURCE_DIR)/field_IO_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(MAIN_SOURCE_DIR)/FieldExportConstants.h \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/lists.o \
-	$(MACHINE_OBJECTS) \
-	$(OBJECT_DIR)/mesh_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/region_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/finite_elasticity_routines.o	:	$(MAIN_SOURCE_DIR)/finite_elasticity_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/maths.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/Darcy_equations_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/Navier_Stokes_equations_routines.o \
-	$(OBJECT_DIR)/Stokes_equations_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/fluid_mechanics_IO_routines.o	:	$(MAIN_SOURCE_DIR)/fluid_mechanics_IO_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o\
-	$(OBJECT_DIR)/kinds.o\
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/FieldExport.o	:	$(MAIN_SOURCE_DIR)/FieldExport.c \
-	$(MAIN_SOURCE_DIR)/FieldExportConstants.h
-
-$(OBJECT_DIR)/input_output.o	:	$(MAIN_SOURCE_DIR)/input_output.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/strings.o
-
-$(OBJECT_DIR)/interface_routines.o	:	$(MAIN_SOURCE_DIR)/interface_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/generated_mesh_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/interface_conditions_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/mesh_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/interface_conditions_constants.o	:	$(MAIN_SOURCE_DIR)/interface_conditions_constants.f90 \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/interface_conditions_routines.o	:	$(MAIN_SOURCE_DIR)/interface_conditions_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/interface_conditions_constants.o \
-	$(OBJECT_DIR)/interface_equations_routines.o \
-	$(OBJECT_DIR)/interface_mapping_routines.o \
-	$(OBJECT_DIR)/interface_matrices_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/interface_equations_routines.o	:	$(MAIN_SOURCE_DIR)/interface_equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/interface_mapping_routines.o \
-	$(OBJECT_DIR)/interface_matrices_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/interface_mapping_routines.o	:	$(MAIN_SOURCE_DIR)/interface_mapping_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/interface_conditions_constants.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/interface_matrices_routines.o	:	$(MAIN_SOURCE_DIR)/interface_matrices_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/fitting_routines.o	:	$(MAIN_SOURCE_DIR)/fitting_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/Darcy_equations_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/generated_mesh_routines.o	:	$(MAIN_SOURCE_DIR)/generated_mesh_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-  $(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/mesh_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/Helmholtz_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Helmholtz_equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/history_routines.o	:	$(MAIN_SOURCE_DIR)/history_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/iso_varying_string.o	:	$(MAIN_SOURCE_DIR)/iso_varying_string.f90 
-
-$(OBJECT_DIR)/kinds.o	:	$(MAIN_SOURCE_DIR)/kinds.f90
-
-$(OBJECT_DIR)/Laplace_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Laplace_equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/linear_elasticity_routines.o	:	$(MAIN_SOURCE_DIR)/linear_elasticity_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/lists.o	:	$(MAIN_SOURCE_DIR)/lists.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o
-
-$(OBJECT_DIR)/machine_constants_aix.o	:	$(MAIN_SOURCE_DIR)/machine_constants_aix.f90 \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/machine_constants_linux.o	:	$(MAIN_SOURCE_DIR)/machine_constants_linux.f90 \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/machine_constants_windows.o	:	$(MAIN_SOURCE_DIR)/machine_constants_windows.f90 \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/maths.o	:	$(MAIN_SOURCE_DIR)/maths.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o
-
-$(OBJECT_DIR)/matrix_vector.o	:	$(MAIN_SOURCE_DIR)/matrix_vector.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/mesh_routines.o	:	$(MAIN_SOURCE_DIR)/mesh_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/cmiss_parmetis.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/trees.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/multi_compartment_transport_routines.o	:	$(MAIN_SOURCE_DIR)/multi_compartment_transport_routines.f90 \
-	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/diffusion_equation_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/multi_physics_routines.o	:	$(MAIN_SOURCE_DIR)/multi_physics_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
-	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
-	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/multi_compartment_transport_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/Navier_Stokes_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Navier_Stokes_equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-
-$(OBJECT_DIR)/node_routines.o	:	$(MAIN_SOURCE_DIR)/node_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/trees.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/Poisson_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Poisson_equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/problem_constants.o	:	$(MAIN_SOURCE_DIR)/problem_constants.f90 \
-	$(OBJECT_DIR)/kinds.o
-
-$(OBJECT_DIR)/problem_routines.o	:	$(MAIN_SOURCE_DIR)/problem_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/classical_field_routines.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/elasticity_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/equations_set_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/multi_physics_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/solver_matrices_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/region_routines.o	:	$(MAIN_SOURCE_DIR)/region_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-	$(OBJECT_DIR)/data_point_routines.o \
-	$(OBJECT_DIR)/equations_set_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/interface_routines.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/mesh_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/solver_routines.o	:	$(MAIN_SOURCE_DIR)/solver_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/cmiss_petsc.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/solver_mapping_routines.o \
-	$(OBJECT_DIR)/solver_matrices_routines.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/solver_mapping_routines.o	:	$(MAIN_SOURCE_DIR)/solver_mapping_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/solver_matrices_routines.o	:	$(MAIN_SOURCE_DIR)/solver_matrices_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/sorting.o	:	$(MAIN_SOURCE_DIR)/sorting.f90 \
-  $(OBJECT_DIR)/base_routines.o \
-  $(OBJECT_DIR)/constants.o \
-  $(OBJECT_DIR)/kinds.o \
-  $(OBJECT_DIR)/iso_varying_string.o
-
-$(OBJECT_DIR)/Stokes_equations_routines.o	:	$(MAIN_SOURCE_DIR)/Stokes_equations_routines.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_mapping_routines.o \
-	$(OBJECT_DIR)/equations_matrices_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/fluid_mechanics_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o
-
-$(OBJECT_DIR)/strings.o	:	$(MAIN_SOURCE_DIR)/strings.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o
-
-$(OBJECT_DIR)/test_framework_routines.o	:	$(MAIN_SOURCE_DIR)/test_framework_routines.f90 \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/matrix_vector.o \
-	$(OBJECT_DIR)/strings.o
-
-$(OBJECT_DIR)/timer_c.o		:	$(MAIN_SOURCE_DIR)/timer_c.c 
-
-$(OBJECT_DIR)/timer_f.o	:	$(MAIN_SOURCE_DIR)/timer_f.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o
-
-$(OBJECT_DIR)/trees.o	:	$(MAIN_SOURCE_DIR)/trees.f90 \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/strings.o
-
-$(OBJECT_DIR)/types.o	:	$(MAIN_SOURCE_DIR)/types.f90 \
-	$(OBJECT_DIR)/cmiss_petsc_types.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/trees.o
-
-
-$(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME).f90 \
-	$(OBJECT_DIR)/analytic_analysis_routines.o \
-	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/basis_routines.o \
-	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/cmiss.o \
-	$(OBJECT_DIR)/cmiss_mpi.o \
-	$(OBJECT_DIR)/computational_environment.o \
-	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/control_loop_routines.o \
-	$(OBJECT_DIR)/coordinate_routines.o \
-	$(OBJECT_DIR)/distributed_matrix_vector.o \
-	$(OBJECT_DIR)/domain_mappings.o \
-	$(OBJECT_DIR)/equations_routines.o \
-	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/equations_set_routines.o \
-	$(OBJECT_DIR)/field_routines.o \
-	$(OBJECT_DIR)/field_IO_routines.o \
-	$(OBJECT_DIR)/input_output.o \
-	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/kinds.o \
-	$(OBJECT_DIR)/lists.o \
-	$(OBJECT_DIR)/mesh_routines.o \
-	$(OBJECT_DIR)/node_routines.o \
-	$(OBJECT_DIR)/problem_constants.o \
-	$(OBJECT_DIR)/problem_routines.o \
-	$(OBJECT_DIR)/region_routines.o \
-	$(OBJECT_DIR)/solver_routines.o \
-	$(OBJECT_DIR)/test_framework_routines.o \
-	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o 
 
 # ----------------------------------------------------------------------------
 #
@@ -2066,6 +991,16 @@ help:
 	@echo
 	@echo "	externallibs"
 	@echo "		Compile the external libraries."
+	@echo
+	@echo "	run"
+	@echo "		Run the executable."
+	@echo
+	@echo "	massifrun"
+	@echo "		Run the executable with valgrid massif."
+	@echo
+	@echo "	callgrindrun"
+	@echo "		Run the executable with valgrid callgrind."
+	@echo
 	@echo
 	@echo "	test"
 	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
