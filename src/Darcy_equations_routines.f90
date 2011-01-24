@@ -2020,8 +2020,8 @@ CONTAINS
               ALLOCATE(GRAD_PRESSURE(3,Ncompartments))
               PRESSURE = 0.0_DP
               GRAD_PRESSURE = 0.0_DP
-              PRESSURE_COEFF(1)=1.0_DP 
-              PRESSURE_COEFF(2)=0.0_DP
+              PRESSURE_COEFF(1)=0.5_DP 
+              PRESSURE_COEFF(2)=0.5_DP
               !PRESSURE_COEFF(3)=0.2_DP
               !PRESSURE_COEFF(3)=0.1_DP
           END SELECT
@@ -7512,7 +7512,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                   RESIDUAL_NORM = SQRT(RESIDUAL_NORM / NUMBER_OF_DOFS)
 
                                   IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
-                                    IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER>=2) THEN !Omitt initialised solution
+                                    IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER>=2) THEN !Omit initialised solution
                                       IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER==2) THEN
                                       RESIDUAL_NORM_0 = RESIDUAL_NORM
                                       WRITE(23,*) 'RESIDUAL_NORM_0 = ',RESIDUAL_NORM_0
