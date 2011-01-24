@@ -8,7 +8,6 @@ parse the output
 import subprocess
 import os,sys,errno
 import shutil
-import re
 
 def mkdire(path):
     """Make directory, including parents, and ignore error if it already exists"""
@@ -88,11 +87,12 @@ class CmProfile():
     def parse_results(self,tool,function_list=[]):
         self.results[tool]={}
         results=self.results[tool]
+        flatprocs=flatten(self.num_procs)
         if tool == "callgrind":
             results['totals'] = {}
             for func in function_list:
-                results[func] = {}
-            for procs in flatten(self.num_procs):
+                results[func] = [0.0]*len(flatprocs)
+            for (i,procs) in enumerate(flatprocs):
                 test_outputdir=self.outputdir+os.sep+str(procs)
                 callgrindfiles=[f for f in os.listdir(test_outputdir) if f.startswith('callgrind.out.')]
                 for f in callgrindfiles:
@@ -100,18 +100,57 @@ class CmProfile():
                     subprocess.call('callgrind_annotate --inclusive=yes '+test_outputdir+os.sep+f+' > '+test_outputdir+os.sep+'annotate.'+f,shell=True)
                 annotatedfiles=['annotate.'+f for f in callgrindfiles]
                 #get average total number of instructions
-                results['totals'][procs]=self.__getcgtotal(test_outputdir,callgrindfiles)
+                results['totals'][i]=self.__getcgtotal(test_outputdir,callgrindfiles)
                 for func in function_list:
                     #get average for functions
-                    results[func][procs]=self.__getcgfunction(test_outputdir,annotatedfiles,callgrindfiles,func)
+                    results[func][i]=self.__getcgfunction(test_outputdir,annotatedfiles,callgrindfiles,func)
         elif tool == "massif":
-            raise RuntimeError, "Not implemented"
+            results['totals'] = {}
+            for func in function_list:
+                results[func] = [0.0]*len(flatprocs)
+            for (i,procs) in enumerate(flatprocs):
+                test_outputdir=self.outputdir+os.sep+str(procs)
+                massiffiles=[f for f in os.listdir(test_outputdir) if f.startswith('massif.out.')]
+                results['totals'][i]=self.__getmassiftotal(test_outputdir,massiffiles)
+                for func in function_list:
+                    results[func][i]=self.__getmassiffunction(test_outputdir,massiffiles,func)
         elif tool == "time":
             raise RuntimeError, "Not implemented"
         else:
             raise RuntimeError, "Invalid tool specified"
 
+    def __getmassiftotal(self,dir,files):
+        """Get the total peak memory usage from massif output"""
+        values=[]
+        for f in files:
+            output=open(dir+os.sep+f,'r')
+            for l in output.readlines():
+                if l.find("mem_heap_B=")==0:
+                    mem_usage=int(l.strip().split('=')[1])
+                if l.find("heap_tree=peak")==0:
+                    values.append(mem_usage)
+                    break
+        if len(values)>0:
+            return float(sum(values))/float(len(values))
+        else: return None
+
+    def __getmassiffunction(self,dir,files,func):
+        """Find the maximum memory used by a function from the massif output"""
+        values=[]
+        for f in files:
+            output=open(dir+os.sep+f,'r')
+            func_values=[]
+            for l in output.readlines():
+                if l.find(func) > -1:
+                    func_values.append(int(l.split()[1]))
+            if len(func_values)>0:
+                values.append(max(func_values))
+        if len(values)>0:
+            return float(sum(values))/float(len(values))
+        else: return None
+
     def __getcgtotal(self,dir,callgrindfiles):
+        """Get the average total number of CPU instructions from callgrind output"""
         values=[]
         for f in callgrindfiles:
             cgoutput=open(dir+os.sep+f,'r')
@@ -121,10 +160,11 @@ class CmProfile():
                     break
             cgoutput.close()
         if len(values)>0:
-            return sum(values)/len(values)
+            return float(sum(values))/float(len(values))
         else: return None
 
     def __getcgfunction(self,dir,annotatedfiles,callgrindfiles,func):
+        """Get the average number of CPU instructions from callgrind output for a function"""
         values=[]
         for (a,c) in zip(annotatedfiles,callgrindfiles):
             value=0
@@ -132,8 +172,7 @@ class CmProfile():
             cgoutput=open(dir+os.sep+c,'r')
             # look in callgrind annotate output first
             for l in aoutput.readlines():
-                m = re.search(func,l)
-                if m:
+                if l.find(func) > -1:
                     value = int(l.split()[0].replace(',',''))
                     break
             if not value:
@@ -144,14 +183,13 @@ class CmProfile():
                         step-=1
                     elif step==0:
                         line = l.split()
-                        if len(line) == 2:
+                        if len(line) == 2 and line[0] in ('*','0'):
                             value = int(line[1])
                         break
                         # if it wasn't found then we'd have to sum up all the subroutines called from
                         # this subroutine, but we won't bother
                     else:
-                        m = re.search(func,l)
-                        if m:
+                        if l.find(func) > -1:
                             # skip 1 line to get second line after function name
                             step = 1
             if value:
@@ -159,30 +197,35 @@ class CmProfile():
             aoutput.close()
             cgoutput.close()
         if len(values)>0:
-            return sum(values)/len(values)
+            return float(sum(values))/float(len(values))
         else: return None
 
     def write_results(self,outputfile):
         """Output csv file with results"""
         output=open(outputfile,'w')
         output.write(',')
-        for procs in flatten(self.num_procs):
+        flatprocs=flatten(self.num_procs)
+        for procs in flatprocs:
             output.write(str(procs)+',')
         output.write('\n')
         for tool in self.results.keys():
             output.write('"'+tool+'"\n')
-            for func in self.results[tool].keys():
+            #output totals in first row
+            if self.results[tool].has_key('totals'):
+                func='totals'
                 output.write('"'+func+'",')
-                for procs in flatten(self.num_procs):
-                    output.write(str(self.results[tool][func][procs])+',')
+                for i in range(len(flatprocs)):
+                    output.write(str(self.results[tool][func][i])+',')
                 output.write('\n')
+            for func in self.results[tool].keys():
+                #now output other functions
+                if func != 'totals':
+                    output.write('"'+func+'",')
+                    for i in range(len(flatprocs)):
+                        output.write(str(self.results[tool][func][i])+',')
+                    output.write('\n')
             output.write('\n')
         output.close()
-
-    def plot_results(self,plotdir):
-        """Plot results and save plots as pngs in plotdir"""
-        import matplotlib as plot
-        raise RuntimeError, "Not implemented"
 
 if __name__ == "__main__":
     #example usage
@@ -196,8 +239,9 @@ if __name__ == "__main__":
     profiler = CmProfile(num_procs,outputdir,source,executable,options)
     profiler.savesettings()
     profiler.runtest('callgrind')
+    profiler.runtest('massif')
 
-    funclist=["generated_mesh_create_finish",
+    cg_funclist=["generated_mesh_create_finish",
         "decomposition_create_finish",
         "generated_mesh_geometric_parameters_calculate",
         "boundary_conditions_create_finish",
@@ -207,5 +251,12 @@ if __name__ == "__main__":
         "cmiss_finalise",
         "problem_solver_equations_create_finish",
         "field_create_finish"]
-    profiler.parse_results('callgrind',funclist)
+    massif_funclist=[ "__field_routines_MOD_field_mappings_calculate", "__mesh_routines_MOD_mesh_topology_elements_adjacent_elements_calculate",
+        "__mesh_routines_MOD_mesh_topology_nodes_calculate", "__mesh_routines_MOD_decomposition_topology_lines_calculate",
+        "__mesh_routines_MOD_mesh_topology_elements_create_start", "__mesh_routines_MOD_decomp_topology_elem_adjacent_elem_calculate",
+        "__mesh_routines_MOD_domain_topology_initialise_from_mesh", "__lists_MOD_list_initialise", "__mesh_routines_MOD_domain_mappings_nodes_dofs_calculate",
+        "__solver_mapping_routines_MOD_solver_mapping_calculate" ]
+    profiler.parse_results('callgrind',cg_funclist)
+    profiler.parse_results('massif',massif_funclist)
+
     profiler.write_results(outputdir+os.sep+'output.csv')
