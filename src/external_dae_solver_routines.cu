@@ -1,5 +1,5 @@
 /* \file
- * $Id$
+ * $Id: external_dae_solver_routines.c 1836 2010-12-20 17:25:14Z chrispbradley $
  * \author Chris Bradley
  * \brief This file provides the routines for solving differential-algebraic equations with an external solver.
  *.
@@ -61,11 +61,13 @@ SolverDAEExternalIntegrate     Solves the differential-algebraic equation.
 #include <stdlib.h>
 
 #include "external_dae_solver_routines.h"
+#include "cuda_solver_routines.cu"
 
 /* Type definitions */
 
 /* Function Definitions */
-
+extern "C"
+{
 void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				const double StartTime,
 				const double EndTime,
@@ -81,8 +83,12 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				int *err)
 {
 
-  printf("Hello World!\n");
-     
-}
+	unsigned int timesteps = 10;
 
+	printf("start %f end %f int step %f dofs %d", StartTime, EndTime, InitialStep[0], NumberOfDofs);
+
+	solve(StateData, StartTime, EndTime, timesteps, NumberOfDofs, 1024, 10, 2, NULL);
+
+}
+}
 
