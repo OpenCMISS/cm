@@ -350,7 +350,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
         F_FLGS += -march=nocona
       endif
     endif
-    DBGF_FLGS += -O0 -fbounds-check
+    DBGF_FLGS += -O0 -fcheck=all -ffpe-trap=invalid,zero
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
     #OPTF_FLGS = -g -O3 -Wuninitialized -funroll-all-loops
     ifeq ($(PROF),false)

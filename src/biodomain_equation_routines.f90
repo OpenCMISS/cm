@@ -1764,12 +1764,12 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               ELSE
                 !Use the conductivity tensor in geometric coordinates
-                DO nj=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                DO nj=1,GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS
                   CONDUCTIVITY(nj,nj)=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(nj+2,1)
                 ENDDO !nj
               ENDIF
               !Compute basis dPhi/dx terms
-              DO nj=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+              DO nj=1,GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS
                 DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                   DPHIDX(nj,ms)=0.0_DP
                   DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
