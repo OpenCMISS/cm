@@ -350,7 +350,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
         F_FLGS += -march=nocona
       endif
     endif
-    DBGF_FLGS += -O0 -fcheck=all -ffpe-trap=invalid,zero
+    DBGF_FLGS += -O0 -ffpe-trap=invalid,zero
+    ifdef COMPILER_VERSION
+      ifeq ($(COMPILER_VERSION),4.5)
+        DBGF_FLGS += -fcheck=all
+      endif
+    endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
     #OPTF_FLGS = -g -O3 -Wuninitialized -funroll-all-loops
     ifeq ($(PROF),false)
@@ -766,6 +771,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
+	$(OBJECT_DIR)/cmiss_c.o \
 	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/cmiss_parmetis.o \
@@ -1050,6 +1056,8 @@ $(OBJECT_DIR)/cmiss.o	:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o \
 	$(MACHINE_OBJECTS)
+
+$(OBJECT_DIR)/cmiss_c.o	:	$(SOURCE_DIR)/cmiss_c.c 
 
 $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/base_routines.o \

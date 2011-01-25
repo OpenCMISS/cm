@@ -51,9 +51,10 @@
 !> The top level cmiss module.
 MODULE CMISS
 
+  USE ISO_C_BINDING
+  
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
-!  USE CMISS_CELLML
   USE COMP_ENVIRONMENT
   USE CONSTANTS
   USE COORDINATE_ROUTINES
@@ -61,6 +62,7 @@ MODULE CMISS
   USE ISO_VARYING_STRING
   USE KINDS
   USE MACHINE_CONSTANTS
+  USE MPI
   USE PROBLEM_ROUTINES
   USE REGION_ROUTINES
   USE STRINGS
@@ -94,6 +96,19 @@ MODULE CMISS
   INTEGER(INTG), SAVE :: CMISS_ERROR_HANDLING_MODE !<The current error handling mode for OpenCMISS \see CMISS_ErrorHandlingModes
  
   !Interfaces
+
+  INTERFACE
+
+    SUBROUTINE CMISSInitFatalHandler() BIND(C,NAME="CMISSInitFatalHandler")
+    END SUBROUTINE CMISSINITFATALHANDLER
+
+    SUBROUTINE CMISSResetFatalHandler() BIND(C,NAME="CMISSResetFatalHandler")
+    END SUBROUTINE CMISSRESETFATALHANDLER
+    
+    SUBROUTINE CMISSSetFatalHandler() BIND(C,NAME="CMISSSetFatalHandler")
+    END SUBROUTINE CMISSSETFATALHANDLER
+
+  END INTERFACE
 
   PUBLIC CMISS_MAJOR_VERSION,CMISS_MINOR_VERSION,CMISS_REVISION_VERSION,CMISS_BUILD_VERSION
 
@@ -181,8 +196,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error code
     !Local Variables
 
-    !Finalise the CellML environments
-!    CALL CELLML_ENVIRONMENTS_FINALISE(ERR,ERROR,*999)
     !Finalise the problems
     CALL PROBLEMS_FINALISE(ERR,ERROR,*999)
     !Finalise the regions
@@ -191,6 +204,8 @@ CONTAINS
     CALL COORDINATE_SYSTEMS_FINALISE(ERR,ERROR,*999)
     !Finalise bases
     CALL BASES_FINALISE(ERR,ERROR,*999)
+    !Reset the signal handler
+    CALL CMISSResetFatalHandler()
     !Finalise computational enviroment
     CALL COMPUTATIONAL_ENVIRONMENT_FINALISE(ERR,ERROR,*999)
     !Finalise the base routines
@@ -221,6 +236,9 @@ CONTAINS
     CALL BASE_ROUTINES_INITIALISE(ERR,ERROR,*999)
     !Intialise the computational environment
     CALL COMPUTATIONAL_ENVIRONMENT_INITIALISE(ERR,ERROR,*999)
+    !Setup signal handling
+    CALL CMISSInitFatalHandler()
+    CALL CMISSSetFatalHandler()
     IF(ASSOCIATED(WORLD_REGION)) THEN
       CALL FLAG_ERROR("World region is already associated.",ERR,ERROR,*999)
     ELSE
@@ -232,8 +250,6 @@ CONTAINS
       CALL REGIONS_INITIALISE(WORLD_REGION,ERR,ERROR,*999)
       !Initialise the problems
       CALL PROBLEMS_INITIALISE(ERR,ERROR,*999)
-      !Initialise the CellML environments
-!      CALL CELLML_ENVIRONMENTS_INITIALISE(ERR,ERROR,*999)
       
       !Write out the CMISS version
       IF(COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
@@ -248,7 +264,7 @@ CONTAINS
         
         WRITE(*,'(A)') CHAR(VERSION_STRING)
 
-     ENDIF
+      ENDIF
     ENDIF
     
     RETURN
@@ -273,7 +289,8 @@ CONTAINS
 999 RETURN
 
   END SUBROUTINE CMISS_WRITE_ERROR
-  
+
+  !
   !================================================================================================================================
   !
 
@@ -284,7 +301,8 @@ CONTAINS
     INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
     !Local Variables
-
+    INTEGER(INTG) :: MPI_IERROR
+    
     SELECT CASE(CMISS_ERROR_HANDLING_MODE)
     CASE(CMISS_RETURN_ERROR_CODE)
       !Do nothing
@@ -292,6 +310,7 @@ CONTAINS
       CALL WRITE_ERROR(ERR,ERROR,*999)
     CASE(CMISS_TRAP_ERROR)
       CALL WRITE_ERROR(ERR,ERROR,*999)
+      CALL MPI_ABORT(MPI_COMM_WORLD,ERR,MPI_IERROR)
       STOP
     CASE DEFAULT
       !Do nothing
