@@ -4073,6 +4073,7 @@ MODULE OPENCMISS
   INTERFACE CMISSMeshCreateStart
     MODULE PROCEDURE CMISSMeshCreateStartNumber
     MODULE PROCEDURE CMISSMeshCreateStartObj
+    MODULE PROCEDURE CMISSMeshCreateStartInterfaceObj
   END INTERFACE !CMISSMeshCreateStart
 
   !>Destroys a mesh. 
@@ -4248,6 +4249,7 @@ MODULE OPENCMISS
   INTERFACE CMISSNodesCreateStart
     MODULE PROCEDURE CMISSNodesCreateStartNumber
     MODULE PROCEDURE CMISSNodesCreateStartObj
+    MODULE PROCEDURE CMISSNodesCreateStartInterfaceObj
   END INTERFACE !CMISSNodesCreateStart
     
   !>Destroys nodes.
@@ -34692,6 +34694,38 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
+
+  !>Starts the creation of a mesh for a mesh identified by an object.
+  SUBROUTINE CMISSMeshCreateStartInterfaceObj(MeshUserNumber,INTERFACE,NumberOfDimensions,Mesh,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface containing the mesh to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: NumberOfDimensions !<The number of dimensions for the mesh.
+    TYPE(CMISSMeshType), INTENT(OUT) :: Mesh !<On return, the created mesh.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSMeshCreateStartInterfaceObj",Err,ERROR,*999)
+ 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Mesh Create')
+#endif
+
+    CALL MESH_CREATE_START(MeshUserNumber,Interface%INTERFACE,NumberOfDimensions,Mesh%MESH,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSMeshCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshCreateStartInterfaceObj
+
+  !  
+  !================================================================================================================================
+  !  
   
   !>Destroys a mesh identified by a user number.
   SUBROUTINE CMISSMeshDestroyNumber(RegionUserNumber,MeshUserNumber,Err)
@@ -36172,6 +36206,37 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSNodesCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of a nodes in a region for nodes identified by an object.
+  SUBROUTINE CMISSNodesCreateStartInterfaceObj(INTERFACE,NumberOfNodes,Nodes,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface to start the creation of nodes on.
+    INTEGER(INTG), INTENT(IN) :: NumberOfNodes !<The number of nodes to create.
+    TYPE(CMISSNodesType), INTENT(IN) :: Nodes !<On return, the created nodes.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSNodesCreateStartInterfaceObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Nodes Create')
+#endif
+
+    CALL NODES_CREATE_START(Interface%INTERFACE,NumberOfNodes,Nodes%NODES,Err,ERROR,*999)
+
+    CALL EXITS("CMISSNodesCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSNodesCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSNodesCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSNodesCreateStartInterfaceObj
 
   !  
   !================================================================================================================================
