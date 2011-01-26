@@ -731,7 +731,7 @@ endif
 CELLML_LIBRARIES =#
 CELLML_LIB_PATH =#
 ifeq ($(USECELLML),true)
-  CELLML_LIBRARIES += -loccellml -lcellml -lccgs -lcevas -lcuses -lmalaes -lvacss -lannotools -lxml2
+  CELLML_LIBRARIES += -loccellml -lcellml -lccgs -lcevas -lcuses -lmalaes -lvacss -lannotools -lxml2 -lz
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifdef COMPILER_VERSION
      CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/lib/ )
@@ -757,7 +757,7 @@ endif
 FIELDML_LIBRARIES =#
 FIELDML_LIB_PATH =#
 ifeq ($(USEFIELDML),true)
-  FIELDML_LIBRARIES += -lfieldml -lxml2
+  FIELDML_LIBRARIES += -lfieldml -lxml2 -lz
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
     FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )
