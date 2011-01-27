@@ -1793,7 +1793,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Local Variables
-    INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,idxdim,ki,num_var_count
+    INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,idxdim,ki,num_var_count,idx_tensor
     INTEGER(INTG) :: my_compartment,Ncompartments,imatrix
     INTEGER(INTG) :: component_idx,xi_idx,derivative_idx
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER, global_element_idx, var2, var2_type, NUMBER_OF_IMPERMEABILITY_CONDITIONS
@@ -2228,7 +2228,17 @@ CONTAINS
               ENDIF
             ENDIF
 
-            CALL INVERT(PERM_TENSOR_OVER_VIS,VIS_OVER_PERM_TENSOR,Jmat,ERR,ERROR,*999) 
+            Jmat = DETERMINANT(PERM_TENSOR_OVER_VIS,ERR,ERROR)
+            IF(Jmat>ZERO_TOLERANCE) THEN
+              CALL INVERT(PERM_TENSOR_OVER_VIS,VIS_OVER_PERM_TENSOR,Jmat,ERR,ERROR,*999) 
+            ELSE 
+              VIS_OVER_PERM_TENSOR = 0.0_DP
+              DO idx_tensor=1,3
+                VIS_OVER_PERM_TENSOR(idx_tensor,idx_tensor) = 1.0_DP / ZERO_TOLERANCE
+              END DO
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
+                & "WARNING: Jmat<ZERO_TOLERANCE - Thus setting VIS_OVER_PERM_TENSOR(i,i) = 1.0_DP / ZERO_TOLERANCE",ERR,ERROR,*999)
+            END IF
 
 
             !Two parameters that are used only for TESTCASE==3: VenousCompartment problem: Exclude this, too specific ???
