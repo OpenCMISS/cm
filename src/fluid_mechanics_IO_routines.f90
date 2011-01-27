@@ -223,7 +223,6 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm4Value 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm5Value 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm6Value 
-  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm7Value 
 
   REAL(DP):: ScaleFactorsPerElementNodes(10,10)
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::OPENCMISS_NODE_COORD
@@ -313,7 +312,6 @@ CONTAINS
     IF (ALLOCATED(NodePerm4Value)) DEALLOCATE(NodePerm4Value) 
     IF (ALLOCATED(NodePerm5Value)) DEALLOCATE(NodePerm5Value) 
     IF (ALLOCATED(NodePerm6Value)) DEALLOCATE(NodePerm6Value) 
-    IF (ALLOCATED(NodePerm7Value)) DEALLOCATE(NodePerm7Value) 
 
     !chrm, 20.08.09
     IF (ALLOCATED(NodeUValue_analytic)) DEALLOCATE(NodeUValue_analytic)
@@ -462,7 +460,6 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodePerm4Value)) ALLOCATE(NodePerm4Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePerm5Value)) ALLOCATE(NodePerm5Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePerm6Value)) ALLOCATE(NodePerm6Value(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(NodePerm7Value)) ALLOCATE(NodePerm7Value(NodesPerMeshComponent(1)))
 
     !chrm, 20.08.09
     IF(.NOT.ALLOCATED(NodeUValue_analytic)) ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
@@ -707,8 +704,6 @@ CONTAINS
               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+5*NodesPerMeshComponent(1))
             NodePerm6Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+6*NodesPerMeshComponent(1))
-            NodePerm7Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+7*NodesPerMeshComponent(1))
           END IF
         ELSE !default to FIELD_CONSTANT_INTERPOLATION
           NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
@@ -2116,7 +2111,6 @@ CONTAINS
           WRITE(14,'("    ", es25.16 )')NodePerm4Value(I)
           WRITE(14,'("    ", es25.16 )')NodePerm5Value(I)
           WRITE(14,'("    ", es25.16 )')NodePerm6Value(I)
-          WRITE(14,'("    ", es25.16 )')NodePerm7Value(I)
       END IF
 
 
