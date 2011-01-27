@@ -1851,6 +1851,8 @@ CONTAINS
 
     REAL(DP):: SOURCE_1_X(3), SOURCE_1_R, SOURCE_1_I
 
+    REAL(DP):: SINK_STRENGTH, SOURCE_STRENGTH
+
     REAL(DP):: LENGTH_SCALE
 
     LOGICAL :: STABILIZED
@@ -2237,7 +2239,7 @@ CONTAINS
                 VIS_OVER_PERM_TENSOR(idx_tensor,idx_tensor) = 1.0e10_DP
               END DO
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
-                & "WARNING: Jmat<ZERO_TOLERANCE - Thus setting VIS_OVER_PERM_TENSOR(i,i) = 1.0_DP / ZERO_TOLERANCE",ERR,ERROR,*999)
+                & "WARNING: Jmat<ZERO_TOLERANCE - Thus setting VIS_OVER_PERM_TENSOR(i,i) = 1.0e10_DP",ERR,ERROR,*999)
             END IF
 
 
@@ -2737,8 +2739,33 @@ CONTAINS
                         ENDDO !ni
                       ENDDO !mi
 
-                      ! n o   s o u r c e
+                      !------------------------------------------------------
+                      ! begin: SOURCE AND SINK TERMS FOR THE euHEART DELIVERABLE 
+                      ! (hard-coded; will be cleaned up after deadline)
+
                       SOURCE = 0.0_DP
+
+                      SINK_STRENGTH = -1.0_DP  !uniform sink (mind the sign)
+                      SOURCE = SOURCE + SINK_STRENGTH
+
+                      IF( ELEMENT_NUMBER == 149 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 89 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 449 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 269 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 29 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE 
+                        SOURCE_STRENGTH = 0.0_DP
+                      END IF
+
+                      SOURCE = SOURCE + SOURCE_STRENGTH
+
+                      ! end: SOURCE AND SINK TERMS FOR THE euHEART DELIVERABLE 
+                      !------------------------------------------------------
 
 !---tob
 !                       IF(.FALSE.) THEN
