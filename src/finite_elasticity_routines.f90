@@ -2638,6 +2638,17 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
                   & NUMBER_OF_DARCY_COMPONENTS,ERR,ERROR,*999)
 
+                !Check that the impermeability flag values set type is created here?? 
+                !\todo: Decide whether these set_types is to be created by user or automatically..
+                IF(.not.ASSOCIATED(EQUATIONS_SET_SETUP%FIELD%VARIABLES(4)%PARAMETER_SETS% &
+                  & SET_TYPE(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE)%PTR)) THEN
+                    LOCAL_ERROR="Variable 4 of type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
+                      & FIELD%VARIABLES(4)% &
+                      & VARIABLE_TYPE,"*",ERR,ERROR))//" does not have an impermeable flag values set type associated."
+!                     write(*,*) char(LOCAL_ERROR) ! this is temporary
+!                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                   !Elasticity:
@@ -2696,6 +2707,9 @@ CONTAINS
                  & FIELD_RELATIVE_VELOCITY_SET_TYPE,ERR,ERROR,*999)
               CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                  & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+              CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
+                 & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -2867,6 +2881,18 @@ CONTAINS
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,VARIABLE_TYPES(num_var),FIELD_DP_TYPE,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,VARIABLE_TYPES(num_var),NUMBER_OF_COMPONENTS, &
                     & ERR,ERROR,*999)
+
+!                   !Check that the impermeability flag values set type is created here?? 
+!                   !\todo: Decide whether these set_types is to be created by user or automatically..
+!                   !'4' is valid only for the single compartment model - What to use for the multi-compartment one ?
+!                   IF(.not.ASSOCIATED(EQUATIONS_SET_SETUP%FIELD%VARIABLES(4)%PARAMETER_SETS% &
+!                     & SET_TYPE(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE)%PTR)) THEN
+!                       LOCAL_ERROR="Variable 4 of type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
+!                         & FIELD%VARIABLES(4)% &
+!                         & VARIABLE_TYPE,"*",ERR,ERROR))//" does not have an impermeable flag values set type associated."
+! !                       write(*,*) char(LOCAL_ERROR) ! this is temporary
+! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                   ENDIF
                 ENDDO
 
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
