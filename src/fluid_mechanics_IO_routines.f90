@@ -218,6 +218,13 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeWValue_error
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue_error
 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm2Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm3Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm4Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm5Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm6Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm7Value 
+
   REAL(DP):: ScaleFactorsPerElementNodes(10,10)
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::OPENCMISS_NODE_COORD
 
@@ -300,6 +307,13 @@ CONTAINS
     IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
+
+    IF (ALLOCATED(NodePerm2Value)) DEALLOCATE(NodePerm2Value) 
+    IF (ALLOCATED(NodePerm3Value)) DEALLOCATE(NodePerm3Value) 
+    IF (ALLOCATED(NodePerm4Value)) DEALLOCATE(NodePerm4Value) 
+    IF (ALLOCATED(NodePerm5Value)) DEALLOCATE(NodePerm5Value) 
+    IF (ALLOCATED(NodePerm6Value)) DEALLOCATE(NodePerm6Value) 
+    IF (ALLOCATED(NodePerm7Value)) DEALLOCATE(NodePerm7Value) 
 
     !chrm, 20.08.09
     IF (ALLOCATED(NodeUValue_analytic)) DEALLOCATE(NodeUValue_analytic)
@@ -442,6 +456,13 @@ CONTAINS
     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,MaxNodesPerElement))
 !     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,MaxNodesPerElement))
+
+    IF(.NOT.ALLOCATED(NodePerm2Value)) ALLOCATE(NodePerm2Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm3Value)) ALLOCATE(NodePerm3Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm4Value)) ALLOCATE(NodePerm4Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm5Value)) ALLOCATE(NodePerm5Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm6Value)) ALLOCATE(NodePerm6Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm7Value)) ALLOCATE(NodePerm7Value(NodesPerMeshComponent(1)))
 
     !chrm, 20.08.09
     IF(.NOT.ALLOCATED(NodeUValue_analytic)) ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
@@ -670,6 +691,24 @@ CONTAINS
                   & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
               END IF
             END IF
+          END IF
+
+          IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+            !--- Remaining tensor material data of permeability tensor
+            NodePerm2Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+            NodePerm3Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+3*NodesPerMeshComponent(1))
+            NodePerm4Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+4*NodesPerMeshComponent(1))
+            NodePerm5Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+5*NodesPerMeshComponent(1))
+            NodePerm6Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+6*NodesPerMeshComponent(1))
+            NodePerm7Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+7*NodesPerMeshComponent(1))
           END IF
         ELSE !default to FIELD_CONSTANT_INTERPOLATION
           NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
@@ -2066,6 +2105,18 @@ CONTAINS
             WRITE(14,'("    ", es25.16 )')NodeKappaValue(I)
           END IF
         END IF
+      END IF
+
+      IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+        & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+          !--- Remaining tensor material data of permeability tensor
+          WRITE(14,'("    ", es25.16 )')NodePerm2Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm3Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm4Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm5Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm6Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm7Value(I)
       END IF
 
 

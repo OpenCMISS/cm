@@ -2234,7 +2234,7 @@ CONTAINS
             ELSE 
               VIS_OVER_PERM_TENSOR = 0.0_DP
               DO idx_tensor=1,3
-                VIS_OVER_PERM_TENSOR(idx_tensor,idx_tensor) = 1.0_DP / ZERO_TOLERANCE
+                VIS_OVER_PERM_TENSOR(idx_tensor,idx_tensor) = 1.0e10_DP
               END DO
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
                 & "WARNING: Jmat<ZERO_TOLERANCE - Thus setting VIS_OVER_PERM_TENSOR(i,i) = 1.0_DP / ZERO_TOLERANCE",ERR,ERROR,*999)
