@@ -150,9 +150,9 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   TYPE (ARRAY_PROBLEM_BASE) BASE_INFO
   TYPE (ARRAY_MESH) MESH_INFO(3)
   TYPE (DARCY_PARAMETERS) DARCY
-  TYPE(FIELD_TYPE), POINTER :: FIELD
-  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
-  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
+  TYPE(FIELD_TYPE), POINTER :: FIELD, MATERIAL_FIELD
+  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:),MATERIAL_INTERPOLATION_PARAMETERS(:)
+  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:),MATERIAL_INTERPOLATED_POINT(:)
 
 
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: NodesPerElement
@@ -474,14 +474,22 @@ CONTAINS
 
     CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
+    NULLIFY(MATERIAL_FIELD)
+
     FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
-    NULLIFY(INTERPOLATION_PARAMETERS)
-    NULLIFY(INTERPOLATED_POINT)
+    !material
+    MATERIAL_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field
+
+    NULLIFY(INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATION_PARAMETERS)
+    NULLIFY(INTERPOLATED_POINT,MATERIAL_INTERPOLATED_POINT)
     
-    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS &
-    & ,ERR,ERROR,*999)
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+
+    !material
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(MATERIAL_FIELD,MATERIAL_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(MATERIAL_INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATED_POINT,ERR,ERROR,*999)
 
     DO I=1,NumberOfElements
 
@@ -597,6 +605,15 @@ CONTAINS
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
+
+
+        !material
+        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+          & MATERIAL_INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
+          & ERR,ERROR,*999)
+
+
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
 !        NodeYValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
@@ -693,17 +710,25 @@ CONTAINS
           IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
             & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
               & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
-            !--- Remaining tensor material data of permeability tensor
-            NodePerm2Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
-            NodePerm3Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+3*NodesPerMeshComponent(1))
-            NodePerm4Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+4*NodesPerMeshComponent(1))
-            NodePerm5Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+5*NodesPerMeshComponent(1))
-            NodePerm6Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+6*NodesPerMeshComponent(1))
+!             !--- Remaining tensor material data of permeability tensor
+!             NodePerm2Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+!             NodePerm3Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+3*NodesPerMeshComponent(1))
+!             NodePerm4Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+4*NodesPerMeshComponent(1))
+!             NodePerm5Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+5*NodesPerMeshComponent(1))
+!             NodePerm6Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+6*NodesPerMeshComponent(1))
+
+            NodeMUValue(K)   =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
+            NodeRHOValue(K)  =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
+            NodePerm2Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+            NodePerm3Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+            NodePerm4Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(5,1)
+            NodePerm5Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(6,1)
+            NodePerm6Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(7,1)
           END IF
         ELSE !default to FIELD_CONSTANT_INTERPOLATION
           NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
