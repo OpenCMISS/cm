@@ -148,7 +148,9 @@ CONTAINS
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              !Default to version 1 of each node derivative
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                             ENDDO !dim_idx
                             !Loop over the derivatives
@@ -161,12 +163,12 @@ CONTAINS
                               CASE(EQUATIONS_SET_LINEAR_ELASTICITY_ONE_DIM_1)
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !pass
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !pass
                                   END SELECT
@@ -180,12 +182,12 @@ CONTAINS
                                 CASE(1) !u component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
@@ -193,7 +195,7 @@ CONTAINS
                                 CASE(2) !v component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
                                         BC_X_counter = BC_X_counter + 1
@@ -203,7 +205,7 @@ CONTAINS
                                       ENDIF
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
@@ -222,12 +224,12 @@ CONTAINS
                                 CASE(1) !u component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
@@ -235,12 +237,12 @@ CONTAINS
                                 CASE(2) !v component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN
                                         IF (ABS(X(1)-LENGTH) < GEOMETRIC_TOL) THEN
@@ -255,12 +257,12 @@ CONTAINS
                                 CASE(3) !w component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
@@ -280,12 +282,12 @@ CONTAINS
                                 CASE(1) !u component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
@@ -293,12 +295,12 @@ CONTAINS
                                 CASE(2) !v component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
@@ -306,12 +308,12 @@ CONTAINS
                                 CASE(3) !w component
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !pass
                                     END SELECT
@@ -365,7 +367,9 @@ CONTAINS
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              !Default to version 1 of each node derivative
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                             ENDDO !dim_idx
                             !Loop over the derivatives
@@ -385,7 +389,7 @@ CONTAINS
                                 SELECT CASE(variable_type)
                                 !!TODO set material parameters from material field
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     ANALYTIC_VALUE=(X(1)*(FORCE_X/FORCE_X_AREA))/E
                                     IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -396,12 +400,12 @@ CONTAINS
                                     ANALYTIC_VALUE=1.0_DP
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
                                       ANALYTIC_VALUE=-FORCE_X
@@ -416,8 +420,8 @@ CONTAINS
                                     ANALYTIC_VALUE=1.0_DP
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -442,7 +446,7 @@ CONTAINS
                                   SELECT CASE(variable_type)
                                   !!TODO set material parameters from material field
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=(-v_X*X(1)*(FORCE_Y/FORCE_Y_AREA))/E
                                       IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -457,12 +461,12 @@ CONTAINS
                                       ANALYTIC_VALUE=1.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S1)
@@ -473,8 +477,8 @@ CONTAINS
                                       ANALYTIC_VALUE=1.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -486,7 +490,7 @@ CONTAINS
                                 !v=Sigmay*y/E
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=(X(2)*(FORCE_Y/FORCE_Y_AREA))/E
                                       IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -501,12 +505,12 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
                                       !If node located on a line edge of mesh
@@ -532,8 +536,8 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -564,7 +568,7 @@ CONTAINS
                                 !u=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=(-v_X*X(1)*(FORCE_Y/FORCE_Y_AREA))/E
                                       IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -587,12 +591,12 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S1)
@@ -611,8 +615,8 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -624,7 +628,7 @@ CONTAINS
                                 !v=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=(X(2)*(FORCE_Y/FORCE_Y_AREA))/E
                                       IF (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -647,12 +651,12 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
                                       IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN !Apply Force BC
@@ -697,8 +701,8 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -710,7 +714,7 @@ CONTAINS
                                 !w=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=(-v_X*X(3)*(FORCE_Y/FORCE_Y_AREA))/E
                                       IF (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -733,12 +737,12 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S1)
@@ -757,8 +761,8 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -791,7 +795,7 @@ CONTAINS
                                 !u=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !ANALYTIC_VALUE=(-v_X*X(1)*(FORCE_Y/FORCE_Y_AREA))/E
                                       IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -814,12 +818,12 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S1)
@@ -838,8 +842,8 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -851,7 +855,7 @@ CONTAINS
                                 !v=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       !ANALYTIC_VALUE=(X(2)*(FORCE_Y/FORCE_Y_AREA))/E
                                       !IF (ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) THEN
@@ -874,12 +878,12 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                        & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                        & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
 !                                      IF (ABS(X(2)-WIDTH) < GEOMETRIC_TOL) THEN !Apply Force BC
@@ -924,8 +928,8 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                      & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -937,7 +941,7 @@ CONTAINS
                                 !w=
                                   SELECT CASE(variable_type)
                                   CASE(FIELD_U_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       ANALYTIC_VALUE=0.0_DP
                                       IF ((ABS(X(1)-0.0_DP) < GEOMETRIC_TOL) .AND. (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL)) THEN
@@ -963,12 +967,12 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                      & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       IF ((ABS(X(1)-LENGTH) < GEOMETRIC_TOL)  .AND.  (ABS(X(2)-0.0_DP) < GEOMETRIC_TOL) .AND. &
                                         (ABS(X(3)-0.0_DP) < GEOMETRIC_TOL)) THEN
@@ -992,8 +996,8 @@ CONTAINS
                                       ANALYTIC_VALUE=0.0_DP
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                        DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                        & " is invalid."
+                                      & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
@@ -1018,13 +1022,15 @@ CONTAINS
                                   & " is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
+                              !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,ANALYTIC_VALUE,ERR,ERROR,*999)
                               IF (SET_BC) THEN
+                                !Default to version 1 of each node derivative
                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                  & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                 WRITE(*,*) variable_type
                                 CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
                                   & BOUNDARY_CONDITION_FIXED,BC_VALUE,ERR,ERROR,*999)

@@ -2307,7 +2307,8 @@ CONTAINS
                                               !Loop over the derivatives
                                               DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                                 ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-                                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
+                                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
+                                                  & GLOBAL_DERIVATIVE_INDEX
                                                 MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
                                                 !Define MU_PARAM, density=1
                                                 MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
@@ -2326,8 +2327,9 @@ CONTAINS
                                                   & variable_type, & 
                                                   & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
                                                   & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
+                                                !Default to version 1 of each node derivative
                                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                                  & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                                   & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                                 BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
@@ -2433,8 +2435,9 @@ CONTAINS
                                       !Loop over the local nodes excluding the ghosts.
                                       DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                         DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                          !Default to version 1 of each node derivative
                                           local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                            & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
 ! xxxxxxxxxxxxxxxxxxxxxxxxx
                                           DISPLACEMENT_VALUE=0.0_DP
                                           BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
@@ -2513,8 +2516,9 @@ CONTAINS
                                       !Loop over the local nodes excluding the ghosts.
                                       DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                         DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                          !Default to version 1 of each node derivative
                                           local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                            & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                           BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                                             & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
                                           IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
@@ -2591,8 +2595,9 @@ CONTAINS
                                       !Loop over the local nodes excluding the ghosts.
                                       DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                         DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                          !Default to version 1 of each node derivative
                                           local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                            & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                           DISPLACEMENT_VALUE=0.0_DP
                                           BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                                             & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
@@ -2760,8 +2765,9 @@ CONTAINS
                                 !Loop over the local nodes excluding the ghosts.
                                 DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                   DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                    !Default to version 1 of each node derivative
                                     local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                      & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                      & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                     CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
                                       & MESH_DISPLACEMENT_VALUES(local_ny),ERR,ERROR,*999)
@@ -2868,8 +2874,9 @@ CONTAINS
                                   !Loop over the local nodes excluding the ghosts.
                                   DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                     DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                      !Default to version 1 of each node derivative
                                       local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                        & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                       CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                                         & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
                                         & MESH_DISPLACEMENT_VALUES(local_ny),ERR,ERROR,*999)
@@ -2992,8 +2999,9 @@ CONTAINS
                                       !Loop over the local nodes excluding the ghosts.
                                       DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                         DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                          !Default to version 1 of each node derivative
                                           local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                            & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
            !                             !Calculation of K values dependent on current mesh topology
                                           MESH_STIFF_VALUES(local_ny)=1.0_DP
                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT% & 
@@ -3398,7 +3406,7 @@ CONTAINS
                             !Loop over the derivatives
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
+                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX
                               CURRENT_TIME=0.0_DP
                               MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
                               !Define MU_PARAM, density=1
@@ -3417,8 +3425,9 @@ CONTAINS
                               CALL STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME,variable_type, & 
                                 & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
+                              !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                               IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN

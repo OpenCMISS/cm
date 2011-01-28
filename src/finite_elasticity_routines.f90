@@ -194,7 +194,8 @@ CONTAINS
                       !Need to test if this node is in current decomposition
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(INNER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,PIN,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -205,7 +206,8 @@ CONTAINS
                       !Need to test if this node is in current decomposition
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(OUTER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,POUT,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -219,9 +221,12 @@ CONTAINS
                         CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
                         IF(.NOT.NODE_EXISTS) CYCLE
                         CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        !Default to version 1 of each node derivative
+                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                          & DERIVATIVES(1)%VERSIONS(1)
                         DEFORMED_Z=GEOMETRIC_PARAMETERS(local_ny)*LAMBDA
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(TOP_NORMAL_XI),BOUNDARY_CONDITION_FIXED,DEFORMED_Z,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -231,7 +236,8 @@ CONTAINS
                       !Need to check this node exists in the current domain
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(BOTTOM_NORMAL_XI),BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -246,22 +252,28 @@ CONTAINS
                         CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
                         IF(.NOT.NODE_EXISTS) CYCLE
                         CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        !Default to version 1 of each node derivative
+                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                          & DERIVATIVES(1)%VERSIONS(1)
                         X(1)=GEOMETRIC_PARAMETERS(local_ny)
                           CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
                           IF(.NOT.NODE_EXISTS) CYCLE
                           CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                          !Default to version 1 of each node derivative
+                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                          & DERIVATIVES(1)%VERSIONS(1)
                         X(2)=GEOMETRIC_PARAMETERS(local_ny)
                         IF(ABS(X(1))<1E-7_DP) THEN
-                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                          !Default to version 1 of each node derivative
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                             & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
 !                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
 !                             & "FIXED IN X DIRECTION"
                           X_FIXED=.TRUE.
                         ENDIF
                         IF(ABS(X(2))<1E-7_DP) THEN
-                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                          !Default to version 1 of each node derivative
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                             & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
 !                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
 !                             & "FIXED IN Y DIRECTION"
@@ -318,7 +330,9 @@ CONTAINS
                                 DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                   !!TODO \todo We should interpolate the geometric field here and the node position.
                                   DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                    local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                                    !Default to version 1 of each node derivative
+                                    local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                      & NODES(local_node)%DERIVATIVES(1)%VERSIONS(1)
                                     X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                                   ENDDO !dim_idx
                                   !Loop over the derivatives
@@ -328,7 +342,7 @@ CONTAINS
                                       !Cylinder inflation, extension, torsion
                                       SELECT CASE(variable_type)
                                       CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           !Do all components at the same time (r,theta,z)->(x,y,z) & p
                                           CALL FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X, &
@@ -341,24 +355,24 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           !Not implemented, but don't want to cause an error so do nothing
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
@@ -374,8 +388,9 @@ CONTAINS
                                     END SELECT
                                     !Set the analytic solution to parameter set
                                     DO component_idx=1,NUMBER_OF_DIMENSIONS
+                                      !Default to version 1 of each node derivative
                                       local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                        & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                         & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,DEFORMED_X(component_idx),ERR,ERROR,*999)
                                     ENDDO
@@ -389,8 +404,9 @@ CONTAINS
                                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
                                         !\todo: test the domain node mappings pointer properly
                                         local_node=DOMAIN_PRESSURE%mappings%nodes%global_to_local_map(global_node)%local_number(1)
-                                        local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(deriv_idx, &
-                                          & local_node)
+                                        !Default to version 1 of each node derivative
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                          & NODES(local_node)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                         !Because p=2.lambda in this particular constitutive law, we'll assign half the 
                                         !hydrostatic pressure to the analytic array
                                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
@@ -599,7 +615,7 @@ CONTAINS
     REAL(DP),POINTER :: DATA(:) ! parameter_set vector
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR1
-    INTEGER(INTG) :: component_idx,local_ny,derivative_idx,derivative,node_idx,node,column
+    INTEGER(INTG) :: component_idx,local_ny,version,derivative_idx,derivative,node_idx,node,column
     INTEGER(INTG) :: DEPENDENT_NUMBER_OF_COMPONENTS
     INTEGER(INTG) :: DEPENDENT_COMPONENT_INTERPOLATION_TYPE
     REAL(DP) :: DELTA, ORIG_DEP_VAR ,xnorm
@@ -642,8 +658,10 @@ CONTAINS
             DO node_idx=1,BASIS%NUMBER_OF_NODES
               node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
               DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
-                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative,node)
+                derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
+                version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
+                  & DERIVATIVES(derivative)%VERSIONS(version)
                 ! one-sided finite difference
                 CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
                 CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
@@ -656,7 +674,7 @@ CONTAINS
               ENDDO !derivative_idx
             ENDDO !node_idx
           CASE (FIELD_ELEMENT_BASED_INTERPOLATION) ! element based
-            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(ELEMENT_NUMBER)
+            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ELEMENT_NUMBER)
             ! one-sided finite difference
             CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
             CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)

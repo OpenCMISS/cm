@@ -1014,7 +1014,7 @@ CONTAINS
         EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
         IF(ASSOCIATED(EQUATIONS_SET)) THEN
           IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
               CALL FIELD_COMPONENT_DOF_GET_CONSTANT(DEPENDENT_FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,local_ny,global_ny, &
                 & ERR,ERROR,*999)
@@ -1043,7 +1043,7 @@ CONTAINS
               CALL FLAG_ERROR("The equations set dependent field is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)              
+            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("The boundary conditions equations set is not associated.",ERR,ERROR,*999)
@@ -1092,7 +1092,7 @@ CONTAINS
         EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
         IF(ASSOCIATED(EQUATIONS_SET)) THEN
           IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
               CALL FIELD_COMPONENT_DOF_GET_CONSTANT(DEPENDENT_FIELD,VARIABLE_TYPE,COMPONENT_NUMBER,local_ny,global_ny, &
                 & ERR,ERROR,*999)
@@ -1121,7 +1121,7 @@ CONTAINS
               CALL FLAG_ERROR("The equations set dependent field is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)              
+            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("The boundary conditions equations set is not associated.",ERR,ERROR,*999)
@@ -1234,7 +1234,7 @@ CONTAINS
                             & TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))// &
                             & " is invalid. The dof should be between 1 and "// &
                             & TRIM(NUMBER_TO_VSTRING(DOMAIN_MAPPING%NUMBER_OF_LOCAL,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                            
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ENDDO !i
                     ELSE
@@ -1258,7 +1258,7 @@ CONTAINS
                 CALL FLAG_ERROR("The dependent field variable domain mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The equations set dependent field is not associated..",ERR,ERROR,*999)              
+              CALL FLAG_ERROR("The equations set dependent field is not associated..",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)
@@ -1394,7 +1394,7 @@ CONTAINS
                             & TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))// &
                             & " is invalid. The dof should be between 1 and "// &
                             & TRIM(NUMBER_TO_VSTRING(DOMAIN_MAPPING%NUMBER_OF_LOCAL,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                            
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ENDDO !i
                     ELSE
@@ -1418,7 +1418,7 @@ CONTAINS
                 CALL FLAG_ERROR("The dependent field variable domain mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The equations set dependent field is not associated..",ERR,ERROR,*999)              
+              CALL FLAG_ERROR("The equations set dependent field is not associated..",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)
@@ -1472,7 +1472,7 @@ CONTAINS
         EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
         IF(ASSOCIATED(EQUATIONS_SET)) THEN
           IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
               CALL FIELD_COMPONENT_DOF_GET_USER_ELEMENT(DEPENDENT_FIELD,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
                 & local_ny,global_ny,ERR,ERROR,*999)
@@ -1501,7 +1501,7 @@ CONTAINS
               CALL FLAG_ERROR("The equations set dependent field is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)              
+            CALL FLAG_ERROR("The equations set dependent field has not been finished.",ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("The boundary conditions equations set is not associated.",ERR,ERROR,*999)
@@ -1552,7 +1552,7 @@ CONTAINS
         EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
         IF(ASSOCIATED(EQUATIONS_SET)) THEN
           IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
               CALL FIELD_COMPONENT_DOF_GET_USER_ELEMENT(DEPENDENT_FIELD,VARIABLE_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
                 & local_ny,global_ny,ERR,ERROR,*999)
@@ -1603,12 +1603,13 @@ CONTAINS
   !
  
   !>Adds to the value of the specified constant and sets this as a boundary condition on the specified user node. \see OPENCMISS_CMISSBoundaryConditionsAddNode
-  SUBROUTINE BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
-    & CONDITION,VALUE,ERR,ERROR,*)
+  SUBROUTINE BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,VERSION_NUMBER,DERIVATIVE_NUMBER,USER_NODE_NUMBER, &
+    & COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
     !Argument variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to set the boundary condition for
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: VERSION_NUMBER !<The derivative version to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The derivative to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: USER_NODE_NUMBER !<The user node number to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to set the boundary condition at
@@ -1633,10 +1634,10 @@ CONTAINS
         EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
         IF(ASSOCIATED(EQUATIONS_SET)) THEN
           IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-              CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER, &
-                & COMPONENT_NUMBER,local_ny,global_ny,ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,VARIABLE_TYPE,VERSION_NUMBER,DERIVATIVE_NUMBER, &
+                & USER_NODE_NUMBER,COMPONENT_NUMBER,local_ny,global_ny,ERR,ERROR,*999)
               BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
               IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                 SELECT CASE(CONDITION)
@@ -1841,7 +1842,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: SET_NODES(:),FACES_IN_CALC(:),LINES_IN_CALC(:),DOFS_IN_CALC(:) !Lists of faces, line, nodes and dofs on domain of interest
     INTEGER(INTG), ALLOCATABLE :: FACES_IN_CALC_CORRECTED(:),LINES_IN_CALC_CORRECTED(:) !Lists of faces and lines on domain of interest corrected
     INTEGER(INTG) :: NUMBER_OF_SET_NODES,NUMBER_OF_FACES,NUMBER_OF_LINES,NUMBER_OF_FACES_CORRECTED,NUMBER_OF_LINES_CORRECTED
-    INTEGER(INTG) :: NUMBER_OF_SET_DOF,local_ny,nd,nn,nf,nl,nf1,nl1,M,N,i,j,ms,ns
+    INTEGER(INTG) :: NUMBER_OF_SET_DOF,local_ny,nd,nn,nf,nl,nf1,nl1,M,N,i,j,ms,ns,version
     INTEGER(INTG) :: derivative,NUMBER_DOFS_IN_FACE,NUMBER_DOFS_IN_LINE,TOTAL_NUMBER_OF_FACE_DOF
     INTEGER(INTG) :: TOTAL_NUMBER_OF_LINE_DOF,global_ny,MAX_NUMBER_DOFS_IN_FACE,MAX_NUMBER_DOFS_IN_LINE
     INTEGER(INTG) :: FACE_NUMBER,LINE_NUMBER,NODE_NUMBER,x_pos,NODE,face_local_node_index,line_local_node_index
@@ -1871,11 +1872,11 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS)) THEN
                 FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
                 TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY
-                IF(ASSOCIATED(TOPOLOGY)) THEN                        
+                IF(ASSOCIATED(TOPOLOGY)) THEN
                   DOMAIN_NODES=>TOPOLOGY%NODES
                   IF(ASSOCIATED(DOMAIN_NODES)) THEN
                     SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
-                    CASE(FIELD_NODE_BASED_INTERPOLATION)                      
+                    CASE(FIELD_NODE_BASED_INTERPOLATION)
                       IF(DEPENDENT_FIELD%DECOMPOSITION% &
                         & DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% &
                         & PTR%NUMBER_OF_DIMENSIONS==3) THEN
@@ -2011,16 +2012,14 @@ CONTAINS
                             DO nn=1,NUMBER_OF_SET_NODES
                               DOMAIN_NODE=>DOMAIN_NODES%NODES(SET_NODES(nn))
                               DO face_local_node_index=1,DOMAIN_NODE%NUMBER_OF_NODE_FACES
-
                                 DO nf1=1,DOMAIN_FACES%NUMBER_OF_FACES
                                   DOMAIN_FACE=>DOMAIN_FACES%FACES(nf1)
                                   IF(DOMAIN_FACE%NUMBER==DOMAIN_NODE%NODE_FACES(face_local_node_index)) THEN
                                     IF(DOMAIN_FACE%BOUNDARY_FACE) THEN
-
                                       CALL LIST_ITEM_ADD(FACES_LIST,DOMAIN_NODE% &
-                                                                & NODE_FACES(face_local_node_index),ERR,ERROR,*999)
+                                        & NODE_FACES(face_local_node_index),ERR,ERROR,*999)
                                       MAX_NUMBER_DOFS_IN_FACE=MAX(MAX_NUMBER_DOFS_IN_FACE,DOMAIN_FACE% & 
-                                                                            & BASIS%NUMBER_OF_ELEMENT_PARAMETERS)
+                                        & BASIS%NUMBER_OF_ELEMENT_PARAMETERS)
                                     ENDIF
                                   ENDIF
                                 ENDDO !nf1
@@ -2055,12 +2054,14 @@ CONTAINS
                                     DO face_local_deriv_index=1,DOMAIN_FACE%BASIS% &
                                                                 & NUMBER_OF_DERIVATIVES(face_local_node_index) !nnd
                                       IF(INCLUDE_FACE) THEN
-                                        DERIVATIVE=DOMAIN_FACE%DERIVATIVES_IN_FACE(face_local_deriv_index, &
-                                                                                 & face_local_node_index)
+                                        DERIVATIVE=DOMAIN_FACE%DERIVATIVES_IN_FACE(1,face_local_deriv_index, &
+                                          & face_local_node_index)
+                                        version=DOMAIN_FACE%DERIVATIVES_IN_FACE(2,face_local_deriv_index, &
+                                          & face_local_node_index)
                                         !Locate dof number on face
-                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)% &
-                                                             & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(DERIVATIVE,NODE)
-
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                          & NODE_PARAM2DOF_MAP%NODES(node)%DERIVATIVES(derivative)% & 
+                                          & VERSIONS(version)
                                         !Check if that dof is specified as either point or free
                                         DOF_LOCATED=.FALSE.
                                         DO i=1,NUMBER_OF_SET_DOF_POINT
@@ -2121,15 +2122,13 @@ CONTAINS
                                   DO face_local_node_index=1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES !nnf
 
                                     NODE=DOMAIN_FACE%NODES_IN_FACE(face_local_node_index)
-                                    DO face_local_deriv_index=1,DOMAIN_FACE%BASIS% &
-                                                                & NUMBER_OF_DERIVATIVES(face_local_node_index) !nnd
-
-                                      DERIVATIVE=DOMAIN_FACE%DERIVATIVES_IN_FACE(face_local_deriv_index, &
-                                                                               & face_local_node_index)
-                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)% &
-                                                           & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(DERIVATIVE,NODE)
-                                      x_pos = DOMAIN_FACE%BASIS%ELEMENT_PARAMETER_INDEX(face_local_deriv_index, &
-                                                                                      & face_local_node_index)
+                                    DO face_local_deriv_index=1,DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(face_local_node_index) !nnd
+                                      DERIVATIVE=DOMAIN_FACE%DERIVATIVES_IN_FACE(1,face_local_deriv_index,face_local_node_index)
+                                      version=DOMAIN_FACE%DERIVATIVES_IN_FACE(2,face_local_deriv_index,face_local_node_index)
+                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                        & NODES(node)%DERIVATIVES(derivative)%VERSIONS(version)
+                                      x_pos = DOMAIN_FACE%BASIS% &
+                                              & ELEMENT_PARAMETER_INDEX(face_local_deriv_index,face_local_node_index)
 
                                       CALL LIST_ITEM_ADD(DOFS_LIST,local_ny,ERR,ERROR,*999)
 
@@ -2508,14 +2507,13 @@ CONTAINS
                                   DO line_local_node_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES !nnl
                                     NODE=DOMAIN_LINE%NODES_IN_LINE(line_local_node_index)
                                     !Iterate over number of derivatives in line
-                                    DO line_local_deriv_index=1,DOMAIN_LINE%BASIS% &
-                                                                & NUMBER_OF_DERIVATIVES(line_local_node_index) !nnd
+                                    DO line_local_deriv_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(line_local_node_index) !nnd
                                       IF(INCLUDE_LINE) THEN
-                                        DERIVATIVE=DOMAIN_LINE%DERIVATIVES_IN_LINE(line_local_deriv_index, &
-                                                                                 & line_local_node_index)
-                                        !Locate dof number on line
-                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)% &
-                                                             & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(DERIVATIVE,NODE)
+                                        DERIVATIVE=DOMAIN_LINE%DERIVATIVES_IN_LINE(1,line_local_deriv_index,line_local_node_index)
+                                        version=DOMAIN_FACE%DERIVATIVES_IN_FACE(2,face_local_deriv_index,face_local_node_index)
+                                        !Locate dof number on face
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                          & NODES(node)%DERIVATIVES(derivative)%VERSIONS(version)
 
                                         !Check if that dof is specified as either point or free
                                         DOF_LOCATED=.FALSE.
@@ -2577,15 +2575,13 @@ CONTAINS
                                   DO line_local_node_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES !nnl
 
                                     NODE=DOMAIN_LINE%NODES_IN_LINE(line_local_node_index)
-                                    DO line_local_deriv_index=1,DOMAIN_LINE%BASIS% &
-                                                                & NUMBER_OF_DERIVATIVES(line_local_node_index) !nnd
-
-                                      DERIVATIVE=DOMAIN_LINE%DERIVATIVES_IN_LINE(line_local_deriv_index, &
-                                                                               & line_local_node_index)
-                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)% &
-                                                             & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(DERIVATIVE,NODE)
-                                      x_pos = DOMAIN_LINE%BASIS%ELEMENT_PARAMETER_INDEX(line_local_deriv_index, &
-                                                                                      & line_local_node_index)
+                                    DO line_local_deriv_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(line_local_node_index) !nnd
+                                      DERIVATIVE=DOMAIN_LINE%DERIVATIVES_IN_LINE(1,line_local_deriv_index,line_local_node_index)
+                                      version=DOMAIN_FACE%DERIVATIVES_IN_FACE(2,face_local_deriv_index,face_local_node_index)
+                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                        & NODES(node)%DERIVATIVES(derivative)%VERSIONS(version)
+                                      x_pos = DOMAIN_LINE%BASIS% &
+                                        & ELEMENT_PARAMETER_INDEX(line_local_deriv_index,line_local_node_index)
 
                                       CALL LIST_ITEM_ADD(DOFS_LIST,local_ny,ERR,ERROR,*999)
 
@@ -3417,12 +3413,13 @@ CONTAINS
   !
 
   !>Sets a boundary condition on the specified user node. \see OPENCMISS_CMISSBoundaryConditionsSetNode
-  SUBROUTINE BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER,COMPONENT_NUMBER, &
-    & CONDITION,VALUE,ERR,ERROR,*)
+  SUBROUTINE BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VARIABLE_TYPE,VERSION_NUMBER,DERIVATIVE_NUMBER,USER_NODE_NUMBER, &
+    & COMPONENT_NUMBER,CONDITION,VALUE,ERR,ERROR,*)
     
     !Argument variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary conditions to set the boundary condition for
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The variable type to set the boundary condition at
+    INTEGER(INTG), INTENT(IN) :: VERSION_NUMBER !<The derivative version to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The derivative to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: USER_NODE_NUMBER !<The user node number to set the boundary condition at
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to set the boundary condition at
@@ -3450,10 +3447,10 @@ CONTAINS
         EQUATIONS_SET=>BOUNDARY_CONDITIONS%EQUATIONS_SET
         IF(ASSOCIATED(EQUATIONS_SET)) THEN
           IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD           
+            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
             IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-              CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,VARIABLE_TYPE,DERIVATIVE_NUMBER,USER_NODE_NUMBER, &
-                & COMPONENT_NUMBER,local_ny,global_ny,ERR,ERROR,*999)
+              CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,VARIABLE_TYPE,VERSION_NUMBER,DERIVATIVE_NUMBER, &
+                & USER_NODE_NUMBER,COMPONENT_NUMBER,local_ny,global_ny,ERR,ERROR,*999)
               BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
               IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                 SELECT CASE(CONDITION)

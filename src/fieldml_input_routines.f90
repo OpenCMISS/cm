@@ -923,7 +923,7 @@ CONTAINS
     
     !Locals
     INTEGER(C_INT) :: fieldHandle, templateHandle, nodalDofsHandle, domainHandle
-    INTEGER(INTG) :: componentNumber, templateComponentNumber, nodeNumber, fieldDimensions, meshNodeCount
+    INTEGER(INTG) :: versionNumber,componentNumber, templateComponentNumber, nodeNumber, fieldDimensions, meshNodeCount
     INTEGER(INTG), ALLOCATABLE :: componentNumbers(:)
     LOGICAL :: nodeExists
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: buffer(:)
@@ -987,8 +987,10 @@ CONTAINS
           CALL FieldmlUtil_CheckError( "Error checking mesh node existance", err, errorString, *999 )
   
           IF( nodeExists ) THEN
+            !Default to version 1 of each node derivative (value hardcoded in loop)
+            versionNumber = 1
             CALL CMISSFieldParameterSetUpdateNode( field, CMISSFieldUVariableType,CMISSFieldValuesSetType, & 
-              & CMISSNoGlobalDerivative, nodeNumber, componentNumber, buffer( componentNumber ), err )
+              & versionNumber,CMISSNoGlobalDerivative, nodeNumber, componentNumber, buffer( componentNumber ), err )
             CALL FieldmlUtil_CheckError( "Error set nodal dof value", err, errorString, *999 )
           ENDIF
         ENDDO

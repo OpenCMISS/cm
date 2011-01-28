@@ -602,7 +602,7 @@ CONTAINS
     !Locals
     INTEGER(C_INT) :: domainHandle, real1DHandle, nodeCount
     INTEGER(C_INT), TARGET :: dummy(0)
-    INTEGER(INTG) :: componentCount, i, j, interpolationType
+    INTEGER(INTG) :: versionNumber,componentCount, i, j, interpolationType
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
     TYPE(C_PTR) :: writer
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: dBuffer(:)
@@ -660,8 +660,10 @@ CONTAINS
         IF( isNodeBased(j) ) THEN
           CALL CMISSMeshNodeExists( mesh, meshComponentNumbers(j), i, nodeExists, err )
           IF( nodeExists ) THEN
+            !Default to version 1 of each node derivative (value hardcoded in loop)
+            versionNumber = 1
             CALL CMISSFieldParameterSetGetNode( field, variableType, CMISSFieldValuesSetType, & 
-              & CMISSNoGlobalDerivative, i, fieldComponentNumbers(j), dValue, err )
+              & versionNumber,CMISSNoGlobalDerivative, i, fieldComponentNumbers(j), dValue, err )
           ENDIF
           CALL FieldmlUtil_CheckError( "Cannot get nodal dof value", err, errorString, *999 )
         ENDIF

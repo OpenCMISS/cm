@@ -120,7 +120,9 @@ MODULE MESH_ROUTINES
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET
 
-  PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET
+  PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET
+
+  PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_GET
 
@@ -230,7 +232,7 @@ CONTAINS
       CALL DECOMPOSITION_ELEMENT_DOMAIN_CALCULATE(DECOMPOSITION,ERR,ERROR,*999)
       !Initialise the topology information for this decomposition
       CALL DECOMPOSITION_TOPOLOGY_INITIALISE(DECOMPOSITION,ERR,ERROR,*999)
-      !Initialise the domain for this computational node            
+      !Initialise the domain for this computational node
       CALL DOMAIN_INITIALISE(DECOMPOSITION,ERR,ERROR,*999)
       !Calculate the decomposition topology
       CALL DECOMPOSITION_TOPOLOGY_CALCULATE(DECOMPOSITION,ERR,ERROR,*999)
@@ -556,9 +558,9 @@ CONTAINS
           my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
           IF(ERR/=0) GOTO 999
           
-          SELECT CASE(DECOMPOSITION%DECOMPOSITION_TYPE)          
+          SELECT CASE(DECOMPOSITION%DECOMPOSITION_TYPE)
           CASE(DECOMPOSITION_ALL_TYPE)
-            !Do nothing. Decomposition checked below.          
+            !Do nothing. Decomposition checked below.
            CASE(DECOMPOSITION_CALCULATED_TYPE)
             !Calculate the general decomposition
 
@@ -1023,7 +1025,7 @@ CONTAINS
           ELSE
             CALL FLAG_ERROR("Can only have one domain for all decomposition type.",ERR,ERROR,*999)
           ENDIF
-        CASE(DECOMPOSITION_CALCULATED_TYPE,decomposition_user_defined_type)
+        CASE(DECOMPOSITION_CALCULATED_TYPE,DECOMPOSITION_USER_DEFINED_TYPE)
           IF(NUMBER_OF_DOMAINS>=1) THEN
             !wolfye???<=?
             IF(NUMBER_OF_DOMAINS<=DECOMPOSITION%MESH%NUMBER_OF_ELEMENTS) THEN
@@ -1114,7 +1116,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: nic
+    INTEGER(INTG) :: nic !\todo add comment
 
     CALL ENTERS("DECOMPOSITION_TOPOLOGY_ELEMENT_FINALISE",ERR,ERROR,*999)
 
@@ -1833,8 +1835,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,ne,ne2,nae,nae2,nn,nnl,nk,nl,nl2,np,np2,elem_idx,node_idx,node_idx2,NODES_IN_LINE(4), &
-      & NUMBER_OF_LINES,MAX_NUMBER_OF_LINES,NEW_MAX_NUMBER_OF_LINES,LINE_NUMBER,COUNT
+    INTEGER(INTG) :: component_idx,element_idx,surrounding_element_idx,basis_local_line_idx, &
+      & surrounding_element_basis_local_line_idx,element_local_node_idx,basis_local_line_node_idx,derivative_idx,version_idx, &
+      & local_line_idx,surrounding_element_local_line_idx,node_idx,local_node_idx,elem_idx,line_end_node_idx,basis_node_idx, &
+      & NODES_IN_LINE(4),NUMBER_OF_LINES,MAX_NUMBER_OF_LINES,NEW_MAX_NUMBER_OF_LINES,LINE_NUMBER,COUNT
     INTEGER(INTG), ALLOCATABLE :: NODES_NUMBER_OF_LINES(:)
     INTEGER(INTG), POINTER :: TEMP_LINES(:,:),NEW_TEMP_LINES(:,:)
     REAL(DP) :: APPROX_DIMENSION
@@ -1902,42 +1906,44 @@ CONTAINS
                       NUMBER_OF_LINES=0
                       TEMP_LINES=0
                       !Loop over the elements in the topology
-                      DO ne=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                        DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
-                        DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
+                      DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                        DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(element_idx)
+                        DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(element_idx)
                         BASIS=>DOMAIN_ELEMENT%BASIS
                         ALLOCATE(DECOMPOSITION_ELEMENT%ELEMENT_LINES(BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element element lines.",ERR,ERROR,*999)
                         !Loop over the local lines of the element
-                        DO nae=1,BASIS%NUMBER_OF_LOCAL_LINES
+                        DO basis_local_line_idx=1,BASIS%NUMBER_OF_LOCAL_LINES
                           !Calculate the topology node numbers that make up the line
                           NODES_IN_LINE=0
-                          DO nnl=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)
-                            NODES_IN_LINE(nnl)=DOMAIN_ELEMENT%ELEMENT_NODES(BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae))
-                          ENDDO !nnl
+                          DO basis_local_line_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)
+                            NODES_IN_LINE(basis_local_line_node_idx)=DOMAIN_ELEMENT%ELEMENT_NODES( &
+                              & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                          ENDDO !basis_local_line_node_idx
                           !Try and find a previously created line that matches in the adjacent elements
                           FOUND=.FALSE.
-                          np=NODES_IN_LINE(1)
-                          DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-                            ne2=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
-                            IF(ne2/=ne) THEN
-                              IF(ALLOCATED(DECOMPOSITION_ELEMENTS%ELEMENTS(ne2)%ELEMENT_LINES)) THEN
-                                BASIS2=>DOMAIN_ELEMENTS%ELEMENTS(ne2)%BASIS
-                                DO nae2=1,BASIS2%NUMBER_OF_LOCAL_LINES
-                                  nl=DECOMPOSITION_ELEMENTS%ELEMENTS(ne2)%ELEMENT_LINES(nae2)
-                                  IF(ALL(NODES_IN_LINE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae))== &
-                                    & TEMP_LINES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae),nl))) THEN
+                          node_idx=NODES_IN_LINE(1)
+                          DO elem_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_SURROUNDING_ELEMENTS
+                            surrounding_element_idx=DOMAIN_NODES%NODES(node_idx)%SURROUNDING_ELEMENTS(elem_idx)
+                            IF(surrounding_element_idx/=element_idx) THEN
+                              IF(ALLOCATED(DECOMPOSITION_ELEMENTS%ELEMENTS(surrounding_element_idx)%ELEMENT_LINES)) THEN
+                                BASIS2=>DOMAIN_ELEMENTS%ELEMENTS(surrounding_element_idx)%BASIS
+                                DO surrounding_element_basis_local_line_idx=1,BASIS2%NUMBER_OF_LOCAL_LINES
+                                  local_line_idx=DECOMPOSITION_ELEMENTS%ELEMENTS(surrounding_element_idx)% &
+                                    & ELEMENT_LINES(surrounding_element_basis_local_line_idx)
+                                  IF(ALL(NODES_IN_LINE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx))== &
+                                    & TEMP_LINES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx),local_line_idx))) THEN
                                     FOUND=.TRUE.
                                     EXIT
                                   ENDIF
-                                ENDDO !nae2
+                                ENDDO !surrounding_element_basis_local_line_idx
                                 IF(FOUND) EXIT
                               ENDIF
                             ENDIF
                           ENDDO !elem_idx
                           IF(FOUND) THEN
                             !Line has already been created
-                            DECOMPOSITION_ELEMENT%ELEMENT_LINES(nae)=nl
+                            DECOMPOSITION_ELEMENT%ELEMENT_LINES(basis_local_line_idx)=local_line_idx
                           ELSE
                             !Line has not been created
                             IF(NUMBER_OF_LINES==MAX_NUMBER_OF_LINES) THEN
@@ -1954,20 +1960,21 @@ CONTAINS
                             ENDIF
                             NUMBER_OF_LINES=NUMBER_OF_LINES+1
                             TEMP_LINES(:,NUMBER_OF_LINES)=NODES_IN_LINE
-                            DECOMPOSITION_ELEMENT%ELEMENT_LINES(nae)=NUMBER_OF_LINES
-                            DO nnl=1,SIZE(NODES_IN_LINE,1)
-                              IF(NODES_IN_LINE(nnl)/=0) &
-                                & NODES_NUMBER_OF_LINES(NODES_IN_LINE(nnl))=NODES_NUMBER_OF_LINES(NODES_IN_LINE(nnl))+1
-                            ENDDO !nnl
+                            DECOMPOSITION_ELEMENT%ELEMENT_LINES(basis_local_line_idx)=NUMBER_OF_LINES
+                            DO basis_local_line_node_idx=1,SIZE(NODES_IN_LINE,1)
+                              IF(NODES_IN_LINE(basis_local_line_node_idx)/=0) &
+                                & NODES_NUMBER_OF_LINES(NODES_IN_LINE(basis_local_line_node_idx))= &
+                                & NODES_NUMBER_OF_LINES(NODES_IN_LINE(basis_local_line_node_idx))+1
+                            ENDDO !basis_local_line_node_idx
                           ENDIF
-                        ENDDO !nae
-                      ENDDO !ne
+                        ENDDO !basis_local_line_idx
+                      ENDDO !element_idx
                       !Allocate the line arrays and set them from the LINES and NODE_LINES arrays
-                      DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
-                        ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_LINES(NODES_NUMBER_OF_LINES(np)),STAT=ERR)
+                      DO node_idx=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                        ALLOCATE(DOMAIN_NODES%NODES(node_idx)%NODE_LINES(NODES_NUMBER_OF_LINES(node_idx)),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node lines array.",ERR,ERROR,*999)
-                        DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES=0
-                      ENDDO !np
+                        DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_LINES=0
+                      ENDDO !node_idx
                       DEALLOCATE(NODES_NUMBER_OF_LINES)
                       ALLOCATE(DECOMPOSITION_LINES%LINES(NUMBER_OF_LINES),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition topology lines.",ERR,ERROR,*999)
@@ -1975,54 +1982,68 @@ CONTAINS
                       ALLOCATE(DOMAIN_LINES%LINES(NUMBER_OF_LINES),STAT=ERR)
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain topology lines.",ERR,ERROR,*999)
                       DOMAIN_LINES%NUMBER_OF_LINES=NUMBER_OF_LINES
-                      DO nl=1,DOMAIN_LINES%NUMBER_OF_LINES
-                        CALL DECOMPOSITION_TOPOLOGY_LINE_INITIALISE(DECOMPOSITION_LINES%LINES(nl),ERR,ERROR,*999)
-                        CALL DOMAIN_TOPOLOGY_LINE_INITIALISE(DOMAIN_LINES%LINES(nl),ERR,ERROR,*999)
-                        DO nnl=1,SIZE(TEMP_LINES,1)
-                          IF(TEMP_LINES(nnl,nl)/=0) THEN
-                            np=TEMP_LINES(nnl,nl)
-                            DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES=DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES+1
-                            DOMAIN_NODES%NODES(np)%NODE_LINES(DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES)=nl
+                      DO local_line_idx=1,DOMAIN_LINES%NUMBER_OF_LINES
+                        CALL DECOMPOSITION_TOPOLOGY_LINE_INITIALISE(DECOMPOSITION_LINES%LINES(local_line_idx),ERR,ERROR,*999)
+                        CALL DOMAIN_TOPOLOGY_LINE_INITIALISE(DOMAIN_LINES%LINES(local_line_idx),ERR,ERROR,*999)
+                        DO basis_local_line_node_idx=1,SIZE(TEMP_LINES,1)
+                          IF(TEMP_LINES(basis_local_line_node_idx,local_line_idx)/=0) THEN
+                            node_idx=TEMP_LINES(basis_local_line_node_idx,local_line_idx)
+                            DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_LINES=DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_LINES+1
+                            DOMAIN_NODES%NODES(node_idx)%NODE_LINES(DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_LINES)= &
+                              & local_line_idx
                           ENDIF
-                        ENDDO !nnl  
-                      ENDDO !nl
-                      DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                        DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
-                        DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                        ENDDO !basis_local_line_node_idx  
+                      ENDDO !local_line_idx
+                      DO element_idx=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                        DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(element_idx)
+                        DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(element_idx)
                         BASIS=>DOMAIN_ELEMENT%BASIS
-                        DO nae=1,BASIS%NUMBER_OF_LOCAL_LINES
-                          LINE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_LINES(nae)
+                        DO basis_local_line_idx=1,BASIS%NUMBER_OF_LOCAL_LINES
+                          LINE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_LINES(basis_local_line_idx)
                           DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(LINE_NUMBER)
                           DOMAIN_LINE=>DOMAIN_LINES%LINES(LINE_NUMBER)
                           DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS=DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS+1
                           IF(.NOT.ASSOCIATED(DOMAIN_LINE%BASIS)) THEN
                             DECOMPOSITION_LINE%NUMBER=LINE_NUMBER
                             DOMAIN_LINE%NUMBER=LINE_NUMBER
-                            DOMAIN_LINE%ELEMENT_NUMBER=ne !Needs checking
-                            DECOMPOSITION_LINE%XI_DIRECTION=BASIS%LOCAL_LINE_XI_DIRECTION(nae)
+                            DOMAIN_LINE%ELEMENT_NUMBER=element_idx !Needs checking
+                            DECOMPOSITION_LINE%XI_DIRECTION=BASIS%LOCAL_LINE_XI_DIRECTION(basis_local_line_idx)
                             DOMAIN_LINE%BASIS=>BASIS%LINE_BASES(DECOMPOSITION_LINE%XI_DIRECTION)%PTR
-                            ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
+                            ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)),STAT=ERR)
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line nodes in line.",ERR,ERROR,*999)
-                            ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
-                              & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
+  !#######################################################VERSIONS START########################################################
+                            ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(2,DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                              & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)),STAT=ERR)
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line derivatives in line.",ERR,ERROR,*999)
-                            DOMAIN_LINE%NODES_IN_LINE=TEMP_LINES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae),LINE_NUMBER)
-                            DO nnl=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)
-                              DOMAIN_LINE%DERIVATIVES_IN_LINE(1,nnl)=NO_GLOBAL_DERIV
+                            DOMAIN_LINE%NODES_IN_LINE=TEMP_LINES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx), &
+                              & LINE_NUMBER)
+                            DO basis_local_line_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)
+                              !Set derivative number of u (NO_GLOBAL_DERIV) for the domain line
+                              DOMAIN_LINE%DERIVATIVES_IN_LINE(1,1,basis_local_line_node_idx)=NO_GLOBAL_DERIV
+                              !Set version number of u (NO_GLOBAL_DERIV) for the domain line
+                              version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
+                                & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                              DOMAIN_LINE%DERIVATIVES_IN_LINE(2,1,basis_local_line_node_idx)=version_idx
                               IF(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                nk=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,nae), &
-                                  & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae))
-                                DOMAIN_LINE%DERIVATIVES_IN_LINE(2,nnl)=nk
+                                derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                  & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
+                                  & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                DOMAIN_LINE%DERIVATIVES_IN_LINE(1,2,basis_local_line_node_idx)=derivative_idx
+                                version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                  & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
+                                  & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
+      !#######################################################VERSIONS END##########################################################
                               ENDIF
-                            ENDDO !nn
+                            ENDDO !basis_local_line_node_idx
                           ENDIF
-                        ENDDO !nae
-                      ENDDO !ne
+                        ENDDO !basis_local_line_idx
+                      ENDDO !element_idx
                       DEALLOCATE(TEMP_LINES)
                       !Calculate adjacent lines and the surrounding elements for each line
-                      DO nl=1,DECOMPOSITION_LINES%NUMBER_OF_LINES
-                        DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(nl)
-                        DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
+                      DO local_line_idx=1,DECOMPOSITION_LINES%NUMBER_OF_LINES
+                        DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(local_line_idx)
+                        DOMAIN_LINE=>DOMAIN_LINES%LINES(local_line_idx)
                         BASIS=>DOMAIN_LINE%BASIS
                         IF(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
                           DECOMPOSITION_LINE%BOUNDARY_LINE=.TRUE.
@@ -2038,38 +2059,38 @@ CONTAINS
                         DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS=0
                         DECOMPOSITION_LINE%ADJACENT_LINES=0
                         !Loop over the nodes at each end of the line
-                        DO node_idx=0,1
+                        DO line_end_node_idx=0,1
                           FOUND=.FALSE.
-                          np=DOMAIN_LINE%NODES_IN_LINE(node_idx*(BASIS%NUMBER_OF_NODES-1)+1)
+                          node_idx=DOMAIN_LINE%NODES_IN_LINE(line_end_node_idx*(BASIS%NUMBER_OF_NODES-1)+1)
                           !Loop over the elements surrounding the node.
-                          DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-                            ne=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
-                            DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
-                            DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                          DO elem_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_SURROUNDING_ELEMENTS
+                            element_idx=DOMAIN_NODES%NODES(node_idx)%SURROUNDING_ELEMENTS(elem_idx)
+                            DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(element_idx)
+                            DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(element_idx)
                             !Loop over the local lines of the element
-                            DO nae=1,DOMAIN_ELEMENT%BASIS%NUMBER_OF_LOCAL_LINES
-                              nl2=DECOMPOSITION_ELEMENT%ELEMENT_LINES(nae)
-                              IF(nl2/=nl) THEN
-                                DECOMPOSITION_LINE2=>DECOMPOSITION_LINES%LINES(nl2)
-                                DOMAIN_LINE2=>DOMAIN_LINES%LINES(nl2)
+                            DO basis_local_line_idx=1,DOMAIN_ELEMENT%BASIS%NUMBER_OF_LOCAL_LINES
+                              surrounding_element_local_line_idx=DECOMPOSITION_ELEMENT%ELEMENT_LINES(basis_local_line_idx)
+                              IF(surrounding_element_local_line_idx/=local_line_idx) THEN
+                                DECOMPOSITION_LINE2=>DECOMPOSITION_LINES%LINES(surrounding_element_local_line_idx)
+                                DOMAIN_LINE2=>DOMAIN_LINES%LINES(surrounding_element_local_line_idx)
                                 IF(DECOMPOSITION_LINE2%XI_DIRECTION==DECOMPOSITION_LINE%XI_DIRECTION) THEN
                                   !Lines run in the same direction.
                                   BASIS2=>DOMAIN_LINE2%BASIS
-                                  IF(node_idx==0) THEN
-                                    np2=DOMAIN_LINE2%NODES_IN_LINE(BASIS2%NUMBER_OF_NODES)
+                                  IF(line_end_node_idx==0) THEN
+                                    local_node_idx=DOMAIN_LINE2%NODES_IN_LINE(BASIS2%NUMBER_OF_NODES)
                                   ELSE
-                                    np2=DOMAIN_LINE2%NODES_IN_LINE(1)
+                                    local_node_idx=DOMAIN_LINE2%NODES_IN_LINE(1)
                                   ENDIF
-                                  IF(np2==np) THEN
+                                  IF(local_node_idx==node_idx) THEN
                                     !The node at the 'other' end of this line matches the node at the current end of the line.
                                     !Check it is not a coexistant line running the other way
                                     IF(BASIS2%INTERPOLATION_ORDER(1)==BASIS%INTERPOLATION_ORDER(1)) THEN
                                       COUNT=0
-                                      DO node_idx2=1,BASIS%NUMBER_OF_NODES
-                                        IF(DOMAIN_LINE2%NODES_IN_LINE(node_idx2)== &
-                                          & DOMAIN_LINE%NODES_IN_LINE(BASIS2%NUMBER_OF_NODES-node_idx2+1)) &
+                                      DO basis_node_idx=1,BASIS%NUMBER_OF_NODES
+                                        IF(DOMAIN_LINE2%NODES_IN_LINE(basis_node_idx)== &
+                                          & DOMAIN_LINE%NODES_IN_LINE(BASIS2%NUMBER_OF_NODES-basis_node_idx+1)) &
                                           & COUNT=COUNT+1
-                                      ENDDO !node_idx
+                                      ENDDO !basis_node_idx
                                       IF(COUNT<BASIS%NUMBER_OF_NODES) THEN
                                         FOUND=.TRUE.
                                         EXIT
@@ -2081,25 +2102,25 @@ CONTAINS
                                   ENDIF
                                 ENDIF
                               ENDIF
-                            ENDDO !nae
+                            ENDDO !basis_local_line_idx
                             IF(FOUND) EXIT
                           ENDDO !element_idx
-                          IF(FOUND) DECOMPOSITION_LINE%ADJACENT_LINES(node_idx)=nl2
-                        ENDDO !node_idx
-                      ENDDO !nl
+                          IF(FOUND) DECOMPOSITION_LINE%ADJACENT_LINES(line_end_node_idx)=surrounding_element_local_line_idx
+                        ENDDO !line_end_node_idx
+                      ENDDO !local_line_idx
                       !Set the surrounding elements
-                      DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                        DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
-                        DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                      DO element_idx=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                        DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(element_idx)
+                        DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(element_idx)
                         BASIS=>DOMAIN_ELEMENT%BASIS
-                        DO nae=1,BASIS%NUMBER_OF_LOCAL_LINES
-                          LINE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_LINES(nae)
+                        DO basis_local_line_idx=1,BASIS%NUMBER_OF_LOCAL_LINES
+                          LINE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_LINES(basis_local_line_idx)
                           DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(LINE_NUMBER)
                           DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS=DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS+1
-                          DECOMPOSITION_LINE%SURROUNDING_ELEMENTS(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS)=ne
-                          DECOMPOSITION_LINE%ELEMENT_LINES(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS)=nae
-                        ENDDO !nae
-                      ENDDO !ne
+                          DECOMPOSITION_LINE%SURROUNDING_ELEMENTS(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS)=element_idx
+                          DECOMPOSITION_LINE%ELEMENT_LINES(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS)=basis_local_line_idx
+                        ENDDO !basis_local_line_idx
+                      ENDDO !element_idx
                     ELSE
                       CALL FLAG_ERROR("Domain topology lines is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -2137,54 +2158,69 @@ CONTAINS
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of lines array.",ERR,ERROR,*999)
                             NODES_NUMBER_OF_LINES=0
                             !Loop over the lines in the topology
-                            DO nl=1,DECOMPOSITION_LINES%NUMBER_OF_LINES
-                              DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(nl)
-                              DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
+                            DO local_line_idx=1,DECOMPOSITION_LINES%NUMBER_OF_LINES
+                              DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(local_line_idx)
+                              DOMAIN_LINE=>DOMAIN_LINES%LINES(local_line_idx)
                               IF(DECOMPOSITION_LINE%NUMBER_OF_SURROUNDING_ELEMENTS>0) THEN
-                                ne=DECOMPOSITION_LINE%SURROUNDING_ELEMENTS(1)
-                                nae=DECOMPOSITION_LINE%ELEMENT_LINES(1)
-                                CALL DOMAIN_TOPOLOGY_LINE_INITIALISE(DOMAIN_LINES%LINES(nl),ERR,ERROR,*999)
-                                DOMAIN_LINE%NUMBER=nl
-                                DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
+                                element_idx=DECOMPOSITION_LINE%SURROUNDING_ELEMENTS(1)
+                                basis_local_line_idx=DECOMPOSITION_LINE%ELEMENT_LINES(1)
+                                CALL DOMAIN_TOPOLOGY_LINE_INITIALISE(DOMAIN_LINES%LINES(local_line_idx),ERR,ERROR,*999)
+                                DOMAIN_LINE%NUMBER=local_line_idx
+                                DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(element_idx)
                                 BASIS=>DOMAIN_ELEMENT%BASIS
                                 DOMAIN_LINE%ELEMENT_NUMBER=DOMAIN_ELEMENT%NUMBER
                                 DOMAIN_LINE%BASIS=>BASIS%LINE_BASES(DECOMPOSITION_LINE%XI_DIRECTION)%PTR
-                                ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
+                                ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)), &
+                                  & STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in line.",ERR,ERROR,*999)
-                                ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
-                                  & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)),STAT=ERR)
+  !#######################################################VERSIONS START########################################################
+                                ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(2,DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                                  & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)),STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivatives in line.",ERR,ERROR,*999)
-                                DO nnl=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(nae)
-                                  nn=BASIS%NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae)
-                                  np=DOMAIN_ELEMENT%ELEMENT_NODES(nn)
-                                  DOMAIN_LINE%NODES_IN_LINE(nnl)=np
-                                  DOMAIN_LINE%DERIVATIVES_IN_LINE(1,nnl)=NO_GLOBAL_DERIV
+                                DO basis_local_line_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)
+                                  element_local_node_idx=BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx, &
+                                    & basis_local_line_idx)
+                                  node_idx=DOMAIN_ELEMENT%ELEMENT_NODES(element_local_node_idx)
+                                  DOMAIN_LINE%NODES_IN_LINE(basis_local_line_node_idx)=node_idx
+                                  !Set derivative number of u (NO_GLOBAL_DERIV) for the domain line
+                                  DOMAIN_LINE%DERIVATIVES_IN_LINE(1,1,basis_local_line_node_idx)=NO_GLOBAL_DERIV
+                                  !Set version number of u (NO_GLOBAL_DERIV) for the domain line
+                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
+                                    & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                  DOMAIN_LINE%DERIVATIVES_IN_LINE(2,1,basis_local_line_node_idx)=version_idx
                                   IF(DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                    nk=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,nae),nn)
-                                    DOMAIN_LINE%DERIVATIVES_IN_LINE(2,nnl)=nk
+                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
+                                      & element_local_node_idx)
+                                    DOMAIN_LINE%DERIVATIVES_IN_LINE(1,2,basis_local_line_node_idx)=derivative_idx
+                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
+                                      & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
+                                    DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
                                   ENDIF
-                                  NODES_NUMBER_OF_LINES(np)=NODES_NUMBER_OF_LINES(np)+1
-                                ENDDO !nnl
+                                  NODES_NUMBER_OF_LINES(node_idx)=NODES_NUMBER_OF_LINES(node_idx)+1
+      !#######################################################VERSIONS END##########################################################
+                                ENDDO !basis_local_line_node_idx
                               ELSE
                                 CALL FLAG_ERROR("Line is not surrounded by any elements?",ERR,ERROR,*999)
-                              ENDIF                              
-                            ENDDO !nl
-                            DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
-                              ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_LINES(NODES_NUMBER_OF_LINES(np)),STAT=ERR)
+                              ENDIF
+                            ENDDO !local_line_idx
+                            DO node_idx=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                              ALLOCATE(DOMAIN_NODES%NODES(node_idx)%NODE_LINES(NODES_NUMBER_OF_LINES(node_idx)),STAT=ERR)
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node lines.",ERR,ERROR,*999)
-                              DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES=0
-                            ENDDO !np
+                              DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_LINES=0
+                            ENDDO !node_idx
                             DEALLOCATE(NODES_NUMBER_OF_LINES)
-                            DO nl=1,DOMAIN_LINES%NUMBER_OF_LINES
-                              DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
+                            DO local_line_idx=1,DOMAIN_LINES%NUMBER_OF_LINES
+                              DOMAIN_LINE=>DOMAIN_LINES%LINES(local_line_idx)
                               BASIS=>DOMAIN_LINE%BASIS
-                              DO nnl=1,BASIS%NUMBER_OF_NODES
-                                np=DOMAIN_LINE%NODES_IN_LINE(nnl)
-                                DOMAIN_NODE=>DOMAIN_NODES%NODES(np)
+                              DO basis_local_line_node_idx=1,BASIS%NUMBER_OF_NODES
+                                node_idx=DOMAIN_LINE%NODES_IN_LINE(basis_local_line_node_idx)
+                                DOMAIN_NODE=>DOMAIN_NODES%NODES(node_idx)
                                 DOMAIN_NODE%NUMBER_OF_NODE_LINES=DOMAIN_NODE%NUMBER_OF_NODE_LINES+1
-                                DOMAIN_NODE%NODE_LINES(DOMAIN_NODE%NUMBER_OF_NODE_LINES)=nl
-                              ENDDO !nnl
-                            ENDDO !nl
+                                DOMAIN_NODE%NODE_LINES(DOMAIN_NODE%NUMBER_OF_NODE_LINES)=local_line_idx
+                              ENDDO !basis_local_line_node_idx
+                            ENDDO !local_line_idx
                           ELSE
                             CALL FLAG_ERROR("Domain lines is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -2223,9 +2259,9 @@ CONTAINS
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Decomposition topology lines:",ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of mesh components = ",MESH%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of lines = ",DECOMPOSITION_LINES%NUMBER_OF_LINES,ERR,ERROR,*999)
-      DO nl=1,DECOMPOSITION_LINES%NUMBER_OF_LINES
-        DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(nl)
-        DOMAIN_LINE=>DOMAIN_LINES%LINES(nl)
+      DO local_line_idx=1,DECOMPOSITION_LINES%NUMBER_OF_LINES
+        DECOMPOSITION_LINE=>DECOMPOSITION_LINES%LINES(local_line_idx)
+        DOMAIN_LINE=>DOMAIN_LINES%LINES(local_line_idx)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Line number = ",DECOMPOSITION_LINE%NUMBER,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Xi direction = ",DECOMPOSITION_LINE%XI_DIRECTION,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of surrounding elements = ", &
@@ -2240,7 +2276,7 @@ CONTAINS
         DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Mesh component : ",component_idx,ERR,ERROR,*999)
           DOMAIN=>DECOMPOSITION%DOMAIN(component_idx)%PTR
-          DOMAIN_LINE=>DOMAIN%TOPOLOGY%LINES%LINES(nl)
+          DOMAIN_LINE=>DOMAIN%TOPOLOGY%LINES%LINES(local_line_idx)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis user number = ",DOMAIN_LINE%BASIS%USER_NUMBER, &
             & ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis family number = ",DOMAIN_LINE%BASIS%FAMILY_NUMBER, &
@@ -2253,13 +2289,22 @@ CONTAINS
             & ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES,4,4,DOMAIN_LINE%NODES_IN_LINE, &
             & '("        Nodes in line        :",4(X,I8))','(30X,4(X,I8))',ERR,ERROR,*999)
-          DO nnl=1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Node : ",nnl,ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(nnl),4,4,DOMAIN_LINE% &
-              & DERIVATIVES_IN_LINE(:,nnl),'("            Derivatives in line  :",4(X,I8))','(34X,4(X,I8))',ERR,ERROR,*999)
-          ENDDO !nnl
+          DO basis_local_line_node_idx=1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Node : ",basis_local_line_node_idx,ERR,ERROR,*999)
+  !#######################################################VERSIONS START########################################################
+            !/TODO::Loop over local_derivative index so this output makes more sense !<DERIVATIVES_IN_LINE(i,local_derivative_idx,local_node_idx)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
+              & DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_line_node_idx),4,4, &
+              & DOMAIN_LINE%DERIVATIVES_IN_LINE(1,:,basis_local_line_node_idx),'("            Derivatives in line  :",4(X,I8))', &
+              & '(34X,4(X,I8))',ERR,ERROR,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
+              & DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_line_node_idx),4,4, &
+              & DOMAIN_LINE%DERIVATIVES_IN_LINE(2,:,basis_local_line_node_idx), &
+              & '("            Derivatives Versions in line  :",4(X,I8))','(34X,4(X,I8))',ERR,ERROR,*999)
+      !#######################################################VERSIONS END##########################################################
+          ENDDO !basis_local_line_node_idx
         ENDDO !component_idx
-      ENDDO !nl
+      ENDDO !local_line_idx
     ENDIF
     
     CALL EXITS("DECOMPOSITION_TOPOLOGY_LINES_CALCULATE")
@@ -2411,8 +2456,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: component_idx,ne,ne2,nae,nae2,nn,nnf,nk,nf,np,elem_idx,NODES_IN_FACE(16),NUMBER_OF_FACES, &
-      & MAX_NUMBER_OF_FACES,NEW_MAX_NUMBER_OF_FACES,FACE_NUMBER!,NODE_COUNT,node_idx1,node_idx2,node_idx3,node_idx4,nf2,np2
+    INTEGER(INTG) :: component_idx,ne,surrounding_element_idx,basis_local_face_idx,surrounding_element_basis_local_face_idx, &
+      & element_local_node_idx,basis_local_face_node_idx,derivative_idx,version_idx,face_idx,node_idx,elem_idx,NODES_IN_FACE(16), &
+      & NUMBER_OF_FACES,MAX_NUMBER_OF_FACES,NEW_MAX_NUMBER_OF_FACES,FACE_NUMBER!,NODE_COUNT,node_idx1,node_idx2,node_idx3,node_idx4,nf2,np2
     INTEGER(INTG), ALLOCATABLE :: NODES_NUMBER_OF_FACES(:)
     INTEGER(INTG), POINTER :: TEMP_FACES(:,:),NEW_TEMP_FACES(:,:)
     LOGICAL :: FOUND
@@ -2482,37 +2528,39 @@ CONTAINS
                           ALLOCATE(DECOMPOSITION_ELEMENT%ELEMENT_FACES(BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element faces of element",ERR,ERROR,*999)
                           !Loop over the local faces of the element
-                          DO nae=1,BASIS%NUMBER_OF_LOCAL_FACES
+                          DO basis_local_face_idx=1,BASIS%NUMBER_OF_LOCAL_FACES
                             !Calculate the topology node numbers that make up the face
                             NODES_IN_FACE=0
                             !Check whether face has already been read out
-                            DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)
+                            DO basis_local_face_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)
                               !Read out node numbers of local face from ELEMENT_NODES
-                              NODES_IN_FACE(nnf)=DOMAIN_ELEMENT%ELEMENT_NODES(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,nae))
-                            ENDDO !nnf
+                              NODES_IN_FACE(basis_local_face_node_idx)=DOMAIN_ELEMENT%ELEMENT_NODES( &
+                                & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                            ENDDO !basis_local_face_node_idx
                             !Try and find a previously created face that matches in the adjacent elements
                             FOUND=.FALSE.
-                            np=NODES_IN_FACE(1)
-                            DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-                              ne2=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
-                              IF(ne2/=ne) THEN
-                                IF(ALLOCATED(DECOMPOSITION_ELEMENTS%ELEMENTS(ne2)%ELEMENT_FACES)) THEN
-                                  BASIS2=>DOMAIN_ELEMENTS%ELEMENTS(ne2)%BASIS
-                                  DO nae2=1,BASIS2%NUMBER_OF_LOCAL_FACES
-                                    nf=DECOMPOSITION_ELEMENTS%ELEMENTS(ne2)%ELEMENT_FACES(nae2)
-                                    IF(ALL(NODES_IN_FACE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae))== &
-                                      & TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae),nf))) THEN
+                            node_idx=NODES_IN_FACE(1)
+                            DO elem_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_SURROUNDING_ELEMENTS
+                              surrounding_element_idx=DOMAIN_NODES%NODES(node_idx)%SURROUNDING_ELEMENTS(elem_idx)
+                              IF(surrounding_element_idx/=ne) THEN
+                                IF(ALLOCATED(DECOMPOSITION_ELEMENTS%ELEMENTS(surrounding_element_idx)%ELEMENT_FACES)) THEN
+                                  BASIS2=>DOMAIN_ELEMENTS%ELEMENTS(surrounding_element_idx)%BASIS
+                                  DO surrounding_element_basis_local_face_idx=1,BASIS2%NUMBER_OF_LOCAL_FACES
+                                    face_idx=DECOMPOSITION_ELEMENTS%ELEMENTS(surrounding_element_idx)%ELEMENT_FACES( &
+                                      & surrounding_element_basis_local_face_idx)
+                                    IF(ALL(NODES_IN_FACE(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx))== &
+                                      & TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx),face_idx))) THEN
                                       FOUND=.TRUE.
                                       EXIT
                                     ENDIF
-                                  ENDDO !nae2
+                                  ENDDO !surrounding_element_basis_local_face_idx
                                   IF(FOUND) EXIT
                                 ENDIF
                               ENDIF
                             ENDDO !elem_idx
                             IF(FOUND) THEN
                               !Face has already been created
-                              DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)=nf
+                              DECOMPOSITION_ELEMENT%ELEMENT_FACES(basis_local_face_idx)=face_idx
                             ELSE
                               !Face has not been created
                               IF(NUMBER_OF_FACES==MAX_NUMBER_OF_FACES) THEN
@@ -2530,21 +2578,22 @@ CONTAINS
                               ENDIF
                               NUMBER_OF_FACES=NUMBER_OF_FACES+1
                               TEMP_FACES(:,NUMBER_OF_FACES)=NODES_IN_FACE(:)
-                              DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)=NUMBER_OF_FACES
-                              DO nnf=1,SIZE(NODES_IN_FACE,1)
-                                IF(NODES_IN_FACE(nnf)/=0) &
-                                 & NODES_NUMBER_OF_FACES(NODES_IN_FACE(nnf))=NODES_NUMBER_OF_FACES(NODES_IN_FACE(nnf))+1
-                              ENDDO !nnf
+                              DECOMPOSITION_ELEMENT%ELEMENT_FACES(basis_local_face_idx)=NUMBER_OF_FACES
+                              DO basis_local_face_node_idx=1,SIZE(NODES_IN_FACE,1)
+                                IF(NODES_IN_FACE(basis_local_face_node_idx)/=0) &
+                                  & NODES_NUMBER_OF_FACES(NODES_IN_FACE(basis_local_face_node_idx))= &
+                                  & NODES_NUMBER_OF_FACES(NODES_IN_FACE(basis_local_face_node_idx))+1
+                              ENDDO !basis_local_face_node_idx
                             ENDIF
-                          ENDDO !nae
+                          ENDDO !basis_local_face_idx
                         ENDDO !ne
 
                         !Allocate the face arrays and set them from the FACES and NODE_FACES arrays
-                        DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
-                          ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_FACES(NODES_NUMBER_OF_FACES(np)),STAT=ERR)
+                        DO node_idx=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                          ALLOCATE(DOMAIN_NODES%NODES(node_idx)%NODE_FACES(NODES_NUMBER_OF_FACES(node_idx)),STAT=ERR)
                           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node faces array",ERR,ERROR,*999)
-                          DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES=0
-                        ENDDO !np
+                          DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_FACES=0
+                        ENDDO !node_idx
                         DEALLOCATE(NODES_NUMBER_OF_FACES)
                         ALLOCATE(DECOMPOSITION_FACES%FACES(NUMBER_OF_FACES),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate decomposition topology faces",ERR,ERROR,*999)
@@ -2552,17 +2601,17 @@ CONTAINS
                         ALLOCATE(DOMAIN_FACES%FACES(NUMBER_OF_FACES),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain topology faces",ERR,ERROR,*999)
                         DOMAIN_FACES%NUMBER_OF_FACES=NUMBER_OF_FACES
-                        DO nf=1,DOMAIN_FACES%NUMBER_OF_FACES
-                          CALL DECOMPOSITION_TOPOLOGY_FACE_INITIALISE(DECOMPOSITION_FACES%FACES(nf),ERR,ERROR,*999)
-                          CALL DOMAIN_TOPOLOGY_FACE_INITIALISE(DOMAIN_FACES%FACES(nf),ERR,ERROR,*999)
-                          DO nnf=1,SIZE(TEMP_FACES,1)
-                            IF(TEMP_FACES(nnf,nf)/=0) THEN
-                              np=TEMP_FACES(nnf,nf)
-                              DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES=DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES+1
-                              DOMAIN_NODES%NODES(np)%NODE_FACES(DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES)=nf
+                        DO face_idx=1,DOMAIN_FACES%NUMBER_OF_FACES
+                          CALL DECOMPOSITION_TOPOLOGY_FACE_INITIALISE(DECOMPOSITION_FACES%FACES(face_idx),ERR,ERROR,*999)
+                          CALL DOMAIN_TOPOLOGY_FACE_INITIALISE(DOMAIN_FACES%FACES(face_idx),ERR,ERROR,*999)
+                          DO basis_local_face_node_idx=1,SIZE(TEMP_FACES,1)
+                            IF(TEMP_FACES(basis_local_face_node_idx,face_idx)/=0) THEN
+                              node_idx=TEMP_FACES(basis_local_face_node_idx,face_idx)
+                              DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_FACES=DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_FACES+1
+                              DOMAIN_NODES%NODES(node_idx)%NODE_FACES(DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_FACES)=face_idx
                             ENDIF
-                          ENDDO !nnf  
-                        ENDDO !nf
+                          ENDDO !basis_local_face_node_idx  
+                        ENDDO !face_idx
 
                         !Set nodes in face and derivatives of nodes in face for domain faces
                         DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
@@ -2570,8 +2619,8 @@ CONTAINS
                           DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
                           BASIS=>DOMAIN_ELEMENT%BASIS
                           !Loop over local faces of element
-                          DO nae=1,BASIS%NUMBER_OF_LOCAL_FACES
-                            FACE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)
+                          DO basis_local_face_idx=1,BASIS%NUMBER_OF_LOCAL_FACES
+                            FACE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_FACES(basis_local_face_idx)
                             DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(FACE_NUMBER)
                             DOMAIN_FACE=>DOMAIN_FACES%FACES(FACE_NUMBER)
                             DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS=DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS+1
@@ -2581,34 +2630,48 @@ CONTAINS
                               DOMAIN_FACE%ELEMENT_NUMBER=ne !! Needs checking
 !                              DECOMPOSITION_FACE%ELEMENT_NUMBER=DECOMPOSITION_ELEMENT%NUMBER
 !                              DOMAIN_FACE%ELEMENT_NUMBER=DOMAIN_ELEMENT%NUMBER
-                              DECOMPOSITION_FACE%XI_DIRECTION=BASIS%LOCAL_FACE_XI_DIRECTION(nae)
+                              DECOMPOSITION_FACE%XI_DIRECTION=BASIS%LOCAL_FACE_XI_DIRECTION(basis_local_face_idx)
                               DOMAIN_FACE%BASIS=>BASIS%FACE_BASES(ABS(DECOMPOSITION_FACE%XI_DIRECTION))%PTR
-                              ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+                              ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)), &
+                                & STAT=ERR)
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face nodes in face",ERR,ERROR,*999)
-                              ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
-                                & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+  !#######################################################VERSIONS START########################################################
+                              ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                                & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)),STAT=ERR)
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face derivatives in face",ERR,ERROR,*999)
                               !Set nodes in face based upon face number
-                              DOMAIN_FACE%NODES_IN_FACE=TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae),FACE_NUMBER)
+                              DOMAIN_FACE%NODES_IN_FACE=TEMP_FACES(1:BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx), &
+                                & FACE_NUMBER)
                               !Set derivatives of nodes in domain face from derivatives of nodes in element
-                              DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)
-                                DOMAIN_FACE%DERIVATIVES_IN_FACE(1,nnf)=NO_GLOBAL_DERIV
+                              DO basis_local_face_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)
+                                !Set derivative number of u (NO_GLOBAL_DERIV) for the domain face
+                                DOMAIN_FACE%DERIVATIVES_IN_FACE(1,1,basis_local_face_node_idx)=NO_GLOBAL_DERIV
+                                !Set version number of u (NO_GLOBAL_DERIV) for the domain face
+                                version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
+                                  & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                 IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                  nk=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(nnf,nae), &
-                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,nae))
-                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(2,nnf)=nk
+                                  derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                    & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
+                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(1,2,basis_local_face_node_idx)=derivative_idx
+                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                    & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
+                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(2,2,basis_local_face_node_idx)=version_idx
+      !#######################################################VERSIONS END##########################################################
                                 ENDIF
-                              ENDDO !nn
+                              ENDDO !basis_local_face_node_idx
                             ENDIF
-                          ENDDO !nae
+                          ENDDO !basis_local_face_idx
                         ENDDO !ne
 
                         DEALLOCATE(TEMP_FACES)
 ! Note: Adjacency will be left out of faces calculation for the time being
                         !Calculate adjacent faces and the surrounding elements for each face
-                        DO nf=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
-                          DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(nf)
-                          DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+                        DO face_idx=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
+                          DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(face_idx)
+                          DOMAIN_FACE=>DOMAIN_FACES%FACES(face_idx)
                           BASIS=>DOMAIN_FACE%BASIS
                           IF(DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS==1) THEN
                             DECOMPOSITION_FACE%BOUNDARY_FACE=.TRUE.
@@ -2629,24 +2692,24 @@ CONTAINS
 !                          DO node_idx1=0,1
 !                           DO node_idx2=0,1
 !                            FOUND=.FALSE.
-!                            np=DOMAIN_FACE%NODES_IN_FACE((node_idx2*BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION*(BASIS%NUMBER_OF_FACES-1))&
+!                            node_idx=DOMAIN_FACE%NODES_IN_FACE((node_idx2*BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION*(BASIS%NUMBER_OF_FACES-1))&
 !                                                                             &+(node_idx1*(BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION-1))+1)
                              !Loop over the elements surrounding the node.
-!                            DO elem_idx=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-!                              ne=DOMAIN_NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
+!                            DO elem_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_SURROUNDING_ELEMENTS
+!                              ne=DOMAIN_NODES%NODES(node_idx)%SURROUNDING_ELEMENTS(elem_idx)
 !                              DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
 !                              DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
                                !Loop over the local faces of the element
-!                              DO nae=1,DOMAIN_ELEMENT%BASIS%NUMBER_OF_LOCAL_FACES
-!                                nf2=DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)
-!                                IF(nf2/=nf) THEN
+!                              DO basis_local_face_idx=1,DOMAIN_ELEMENT%BASIS%NUMBER_OF_LOCAL_FACES
+!                                nf2=DECOMPOSITION_ELEMENT%ELEMENT_FACES(basis_local_face_idx)
+!                                IF(nf2/=face_idx) THEN
 !                                  DECOMPOSITION_FACE2=>DECOMPOSITION_FACES%FACES(nf2)
 !                                  DOMAIN_FACE2=>DOMAIN_FACES%FACES(nf2)
                                    !Check whether XI of face have same direction
-!                                  IF ((OTHER_XI_DIRECTIONS3(BASIS%LOCAL_FACE_XI_DIRECTION(nae),2,1)==&
-!                                     &OTHER_XI_DIRECTIONS3(BASIS2%LOCAL_FACE_XI_DIRECTION(nae),2,1)).OR.&
-!                                     &(OTHER_XI_DIRECTIONS3(BASIS%LOCAL_FACE_XI_DIRECTION(nae),3,1)==&
-!                                     &OTHER_XI_DIRECTIONS3(BASIS2%LOCAL_FACE_XI_DIRECTION(nae),3,1))) THEN
+!                                  IF ((OTHER_XI_DIRECTIONS3(BASIS%LOCAL_FACE_XI_DIRECTION(basis_local_face_idx),2,1)==&
+!                                     &OTHER_XI_DIRECTIONS3(BASIS2%LOCAL_FACE_XI_DIRECTION(basis_local_face_idx),2,1)).OR.&
+!                                     &(OTHER_XI_DIRECTIONS3(BASIS%LOCAL_FACE_XI_DIRECTION(basis_local_face_idx),3,1)==&
+!                                     &OTHER_XI_DIRECTIONS3(BASIS2%LOCAL_FACE_XI_DIRECTION(basis_local_face_idx),3,1))) THEN
                                      !Loop over nodes in face of surrounding element
 !                                    BASIS2=>DOMAIN_FACE2%BASIS
 !                                    IF(BASIS2%INTERPOLATION_ORDER(1)==BASIS%INTERPOLATION_ORDER(1)) THEN
@@ -2655,7 +2718,7 @@ CONTAINS
 !                                        DO node_idx4=1,BASIS%NUMBER_OF_NODES_IN_XI_DIRECTION
 !                                          np2=DOMAIN_FACE2%NODES_IN_FACE((node_idx4*(BASIS2%NUMBER_OF_FACES-1))&
 !                                                                      &+(node_idx3*(BASIS2%NUMBER_OF_NODES_IN_XI_DIRECTION-1))+1)
-!                                          IF(np2==np) NODE_COUNT=NODE_COUNT+1
+!                                          IF(np2==node_idx) NODE_COUNT=NODE_COUNT+1
 !                                        ENDDO !node_idx4
 !                                      ENDDO !node_idx3
 !                                      IF(NODE_COUNT<BASIS%NUMBER_OF_NODES) THEN
@@ -2665,28 +2728,28 @@ CONTAINS
 !                                    ENDIF
 !                                  ENDIF
 !                                ENDIF
-!                              ENDDO !nae
+!                              ENDDO !basis_local_face_idx
 !                                IF(FOUND) EXIT
 !                            ENDDO !elem_idx
 !                            IF(FOUND) DECOMPOSITION_FACE%ADJACENT_FACES(node_idx2)=nf2
 !                           ENDDO !node_idx2
 !                           IF(FOUND) DECOMPOSITION_FACE%ADJACENT_FACES(node_idx1)=nf2
 !                          ENDDO !node_idx1
-                        ENDDO !nf
+                        ENDDO !face_idx
 
                         !Set the surrounding elements
                         DO ne=1,DECOMPOSITION_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
                           DECOMPOSITION_ELEMENT=>DECOMPOSITION_ELEMENTS%ELEMENTS(ne)
                           DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
                           BASIS=>DOMAIN_ELEMENT%BASIS
-                          DO nae=1,BASIS%NUMBER_OF_LOCAL_FACES
-                            FACE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_FACES(nae)
+                          DO basis_local_face_idx=1,BASIS%NUMBER_OF_LOCAL_FACES
+                            FACE_NUMBER=DECOMPOSITION_ELEMENT%ELEMENT_FACES(basis_local_face_idx)
                             DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(FACE_NUMBER)
-                            DO nf=1,DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS
-                              DECOMPOSITION_FACE%SURROUNDING_ELEMENTS(nf)=ne
-                              DECOMPOSITION_FACE%ELEMENT_FACES(nf)=nae
+                            DO face_idx=1,DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS
+                              DECOMPOSITION_FACE%SURROUNDING_ELEMENTS(face_idx)=ne
+                              DECOMPOSITION_FACE%ELEMENT_FACES(face_idx)=basis_local_face_idx
                             ENDDO
-                          ENDDO !nae
+                          ENDDO !basis_local_face_idx
                         ENDDO !ne
                       ELSE
                         CALL FLAG_ERROR("Domain topology faces is not associated",ERR,ERROR,*999)
@@ -2728,55 +2791,70 @@ CONTAINS
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes number of faces array",ERR,ERROR,*999)
                             NODES_NUMBER_OF_FACES=0
                             !Loop over the faces in the topology
-                            DO nf=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
-                              DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(nf)
-                              DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+                            DO face_idx=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
+                              DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(face_idx)
+                              DOMAIN_FACE=>DOMAIN_FACES%FACES(face_idx)
                               IF(DECOMPOSITION_FACE%NUMBER_OF_SURROUNDING_ELEMENTS>0) THEN
                                 ne=DECOMPOSITION_FACE%SURROUNDING_ELEMENTS(1)
-                                nae=DECOMPOSITION_FACE%ELEMENT_FACES(1)
-                                CALL DOMAIN_TOPOLOGY_FACE_INITIALISE(DOMAIN_FACES%FACES(nf),ERR,ERROR,*999)
-                                DOMAIN_FACE%NUMBER=nf
+                                basis_local_face_idx=DECOMPOSITION_FACE%ELEMENT_FACES(1)
+                                CALL DOMAIN_TOPOLOGY_FACE_INITIALISE(DOMAIN_FACES%FACES(face_idx),ERR,ERROR,*999)
+                                DOMAIN_FACE%NUMBER=face_idx
                                 DOMAIN_ELEMENT=>DOMAIN_ELEMENTS%ELEMENTS(ne)
                                 BASIS=>DOMAIN_ELEMENT%BASIS
                                 DOMAIN_FACE%BASIS=>BASIS%FACE_BASES(ABS(DECOMPOSITION_FACE%XI_DIRECTION))%PTR
-                                ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+                                ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)), &
+                                  & STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in face",ERR,ERROR,*999)
-                                ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
-                                  & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)),STAT=ERR)
+  !#######################################################VERSIONS START########################################################
+                                ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                                  & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)),STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivatives in face",ERR,ERROR,*999)
                                 !Set derivatives of nodes in domain face from derivatives of nodes in element
-                                DO nnf=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(nae)
-                                  nn=BASIS%NODE_NUMBERS_IN_LOCAL_FACE(nnf,nae)
-                                  np=DOMAIN_ELEMENT%ELEMENT_NODES(nn)
-                                  DOMAIN_FACE%NODES_IN_FACE(nnf)=np
-                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(1,nnf)=NO_GLOBAL_DERIV
+                                DO basis_local_face_node_idx=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)
+                                  element_local_node_idx=BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx, &
+                                    & basis_local_face_idx)
+                                  node_idx=DOMAIN_ELEMENT%ELEMENT_NODES(element_local_node_idx)
+                                  DOMAIN_FACE%NODES_IN_FACE(basis_local_face_node_idx)=node_idx
+                                  !Set derivative number of u (NO_GLOBAL_DERIV) for the domain face
+                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(1,1,basis_local_face_node_idx)=NO_GLOBAL_DERIV
+                                  !Set version number of u (NO_GLOBAL_DERIV) for the domain face
+                                  version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(2,1, &
+                                    & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                  DOMAIN_FACE%DERIVATIVES_IN_FACE(2,1,basis_local_face_node_idx)=version_idx
                                   IF(DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES>1) THEN
-                                    nk=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(nnf,nae),nn)
-                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(2,nnf)=nk
+                                    derivative_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                      & 1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
+                                      & element_local_node_idx)
+                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(1,2,basis_local_face_node_idx)=derivative_idx
+                                    version_idx=DOMAIN_ELEMENT%ELEMENT_DERIVATIVES( &
+                                      & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
+                                      & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
+                                    DOMAIN_FACE%DERIVATIVES_IN_FACE(2,2,basis_local_face_node_idx)=version_idx
                                   ENDIF
-                                  NODES_NUMBER_OF_FACES(np)=NODES_NUMBER_OF_FACES(np)+1
-                                ENDDO !nnf
+                                  NODES_NUMBER_OF_FACES(node_idx)=NODES_NUMBER_OF_FACES(node_idx)+1
+      !#######################################################VERSIONS END##########################################################
+                                ENDDO !basis_local_face_node_idx
                               ELSE
                                 CALL FLAG_ERROR("Face is not surrounded by any elements?",ERR,ERROR,*999)
                               ENDIF                              
-                            ENDDO !nf
-                            DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
-                              ALLOCATE(DOMAIN_NODES%NODES(np)%NODE_FACES(NODES_NUMBER_OF_FACES(np)),STAT=ERR)
+                            ENDDO !face_idx
+                            DO node_idx=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+                              ALLOCATE(DOMAIN_NODES%NODES(node_idx)%NODE_FACES(NODES_NUMBER_OF_FACES(node_idx)),STAT=ERR)
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node faces",ERR,ERROR,*999)
-                              DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_FACES=0
-                            ENDDO !np
+                              DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_FACES=0
+                            ENDDO !node_idx
                             DEALLOCATE(NODES_NUMBER_OF_FACES)
-                            DO nf=1,DOMAIN_FACES%NUMBER_OF_FACES
-                              DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+                            DO face_idx=1,DOMAIN_FACES%NUMBER_OF_FACES
+                              DOMAIN_FACE=>DOMAIN_FACES%FACES(face_idx)
                               BASIS=>DOMAIN_FACE%BASIS
-                              DO nnf=1,BASIS%NUMBER_OF_NODES
-                                np=DOMAIN_FACE%NODES_IN_FACE(nnf)
-                                DOMAIN_NODE=>DOMAIN_NODES%NODES(np)
+                              DO basis_local_face_node_idx=1,BASIS%NUMBER_OF_NODES
+                                node_idx=DOMAIN_FACE%NODES_IN_FACE(basis_local_face_node_idx)
+                                DOMAIN_NODE=>DOMAIN_NODES%NODES(node_idx)
                                 DOMAIN_NODE%NUMBER_OF_NODE_FACES=DOMAIN_NODE%NUMBER_OF_NODE_FACES+1
                                 !Set the face numbers a node is on
-                                DOMAIN_NODE%NODE_FACES(DOMAIN_NODE%NUMBER_OF_NODE_FACES)=nf
-                              ENDDO !nnf
-                            ENDDO !nf
+                                DOMAIN_NODE%NODE_FACES(DOMAIN_NODE%NUMBER_OF_NODE_FACES)=face_idx
+                              ENDDO !basis_local_face_node_idx
+                            ENDDO !face_idx
                           ELSE
                             CALL FLAG_ERROR("Domain faces is not associated",ERR,ERROR,*999)
                           ENDIF
@@ -2814,9 +2892,9 @@ CONTAINS
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Decomposition topology faces:",ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of mesh components = ",MESH%NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of faces = ",DECOMPOSITION_FACES%NUMBER_OF_FACES,ERR,ERROR,*999)
-      DO nf=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
-        DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(nf)
-        DOMAIN_FACE=>DOMAIN_FACES%FACES(nf)
+      DO face_idx=1,DECOMPOSITION_FACES%NUMBER_OF_FACES
+        DECOMPOSITION_FACE=>DECOMPOSITION_FACES%FACES(face_idx)
+        DOMAIN_FACE=>DOMAIN_FACES%FACES(face_idx)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Face number = ",DECOMPOSITION_FACE%NUMBER,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Xi direction (Normal to Face) = &
                                                                          &",DECOMPOSITION_FACE%XI_DIRECTION,ERR,ERROR,*999)
@@ -2832,7 +2910,7 @@ CONTAINS
         DO component_idx=1,MESH%NUMBER_OF_COMPONENTS
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Mesh component : ",component_idx,ERR,ERROR,*999)
           DOMAIN=>DECOMPOSITION%DOMAIN(component_idx)%PTR
-          DOMAIN_FACE=>DOMAIN%TOPOLOGY%FACES%FACES(nf)
+          DOMAIN_FACE=>DOMAIN%TOPOLOGY%FACES%FACES(face_idx)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis user number = ",DOMAIN_FACE%BASIS%USER_NUMBER, &
             & ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Basis family number = ",DOMAIN_FACE%BASIS%FAMILY_NUMBER, &
@@ -2845,13 +2923,22 @@ CONTAINS
             & ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES,4,4,DOMAIN_FACE%NODES_IN_FACE, &
             & '("        Nodes in face        :",4(X,I8))','(30X,4(X,I8))',ERR,ERROR,*999)
-          DO nnf=1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Node : ",nnf,ERR,ERROR,*999)
-            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(nnf),4,4,DOMAIN_FACE% &
-              & DERIVATIVES_IN_FACE(:,nnf),'("            Derivatives in face  :",4(X,I8))','(34X,4(X,I8))',ERR,ERROR,*999)
-          ENDDO !nnf
+          DO basis_local_face_node_idx=1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Node : ",basis_local_face_node_idx,ERR,ERROR,*999)
+  !#######################################################VERSIONS START########################################################
+            !/TODO::Loop over local_derivative index so this output makes more sense !<DERIVATIVES_IN_LINE(i,local_derivative_idx,local_node_idx)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
+              & DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_face_node_idx),4,4,DOMAIN_FACE% &
+              & DERIVATIVES_IN_FACE(1,:,basis_local_face_node_idx),'("            Derivatives in face  :",4(X,I8))', &
+              & '(34X,4(X,I8))',ERR,ERROR,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
+              & DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_face_node_idx),4,4,DOMAIN_FACE% &
+              & DERIVATIVES_IN_FACE(2,:,basis_local_face_node_idx),'("            Derivatives Versions in face  :",4(X,I8))', &
+              & '(34X,4(X,I8))',ERR,ERROR,*999)
+      !#######################################################VERSIONS END##########################################################
+          ENDDO !basis_local_face_node_idx
         ENDDO !component_idx
-      ENDDO !nf
+      ENDDO !face_idx
     ENDIF
 
     CALL EXITS("DECOMPOSITION_TOPOLOGY_FACES_CALCULATE")
@@ -3164,6 +3251,7 @@ CONTAINS
 
     !Argument variables
     TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh to initialise the decompositions for
+
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -3269,7 +3357,7 @@ CONTAINS
             !DECOMPOSITION%DOMAIN(component_idx)%PTR%NUMBER_OF_MESH_DOFS=0
             NULLIFY(DECOMPOSITION%DOMAIN(component_idx)%PTR%MAPPINGS)
             NULLIFY(DECOMPOSITION%DOMAIN(component_idx)%PTR%TOPOLOGY)
-            CALL DOMAIN_MAPPINGS_INITIALISE(DECOMPOSITION%DOMAIN(component_idx)%PTR,ERR,ERROR,*999)        
+            CALL DOMAIN_MAPPINGS_INITIALISE(DECOMPOSITION%DOMAIN(component_idx)%PTR,ERR,ERROR,*999)
             CALL DOMAIN_TOPOLOGY_INITIALISE(DECOMPOSITION%DOMAIN(component_idx)%PTR,ERR,ERROR,*999)
           ENDDO !component_idx
         ENDIF
@@ -3733,8 +3821,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,no_adjacent_element,no_computational_node,no_ghost_node,adjacent_element,ghost_node, &
-      & NUMBER_OF_NODES_PER_DOMAIN,domain_idx,domain_idx2,domain_no,nk,np,ny,NUMBER_OF_DOMAINS,MAX_NUMBER_DOMAINS, &
-      & NUMBER_OF_GHOST_NODES,my_computational_node_number,number_computational_nodes,component_idx
+      & NUMBER_OF_NODES_PER_DOMAIN,domain_idx,domain_idx2,domain_no,node_idx,derivative_idx,version_idx,ny,NUMBER_OF_DOMAINS, &
+      & MAX_NUMBER_DOMAINS,NUMBER_OF_GHOST_NODES,my_computational_node_number,number_computational_nodes,component_idx
     INTEGER(INTG), ALLOCATABLE :: LOCAL_NODE_NUMBERS(:),LOCAL_DOF_NUMBERS(:),NODE_COUNT(:),NUMBER_INTERNAL_NODES(:), &
       & NUMBER_BOUNDARY_NODES(:)
     INTEGER(INTG), ALLOCATABLE :: DOMAINS(:),ALL_DOMAINS(:),GHOST_NODES(:)
@@ -3802,7 +3890,7 @@ CONTAINS
                   NUMBER_BOUNDARY_NODES=0
 
                   !For the first pass just determine the internal and boundary nodes
-                  DO np=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
+                  DO node_idx=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
                     NULLIFY(ADJACENT_DOMAINS_LIST)
                     CALL LIST_CREATE_START(ADJACENT_DOMAINS_LIST,ERR,ERROR,*999)
                     CALL LIST_DATA_TYPE_SET(ADJACENT_DOMAINS_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
@@ -3813,8 +3901,8 @@ CONTAINS
                     CALL LIST_DATA_TYPE_SET(ALL_ADJACENT_DOMAINS_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
                     CALL LIST_INITIAL_SIZE_SET(ALL_ADJACENT_DOMAINS_LIST,DECOMPOSITION%NUMBER_OF_DOMAINS,ERR,ERROR,*999)
                     CALL LIST_CREATE_FINISH(ALL_ADJACENT_DOMAINS_LIST,ERR,ERROR,*999)
-                    DO no_adjacent_element=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-                      adjacent_element=MESH_TOPOLOGY%NODES%NODES(np)%SURROUNDING_ELEMENTS(no_adjacent_element)
+                    DO no_adjacent_element=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_SURROUNDING_ELEMENTS
+                      adjacent_element=MESH_TOPOLOGY%NODES%NODES(node_idx)%SURROUNDING_ELEMENTS(no_adjacent_element)
                       domain_no=DECOMPOSITION%ELEMENT_DOMAIN(adjacent_element)
                       CALL LIST_ITEM_ADD(ADJACENT_DOMAINS_LIST,domain_no,ERR,ERROR,*999)
                       DO domain_idx=1,ELEMENTS_MAPPING%GLOBAL_TO_LOCAL_MAP(adjacent_element)%NUMBER_OF_DOMAINS
@@ -3836,70 +3924,112 @@ CONTAINS
                             EXIT
                           ENDIF
                         ENDDO !domain_idx2
-                        IF(.NOT.BOUNDARY_DOMAIN) CALL LIST_ITEM_ADD(GHOST_NODES_LIST(domain_no)%PTR,np,ERR,ERROR,*999)
+                        IF(.NOT.BOUNDARY_DOMAIN) CALL LIST_ITEM_ADD(GHOST_NODES_LIST(domain_no)%PTR,node_idx,ERR,ERROR,*999)
                       ENDDO !domain_idx
                     ENDIF
-                    ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
+                    ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map local number.",ERR,ERROR,*999)
-                    ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
+                    ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map domain number.",ERR,ERROR,*999)
-                    ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
+                    ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map local type.",ERR,ERROR,*999)
-                    DO nk=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                      ny=MESH_TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)
-                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local number.",ERR,ERROR,*999)
-                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map domain number.",ERR,ERROR,*999)
-                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local type.",ERR,ERROR,*999)
-                    ENDDO !nk
+                    DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                         !\todo DELETE THIS
+!                      ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
+!                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
+!                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local number.",ERR,ERROR,*999)
+!                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
+!                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map domain number.",ERR,ERROR,*999)
+!                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
+!                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local type.",ERR,ERROR,*999)
+                      DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                        ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                        ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local number.",ERR,ERROR,*999)
+                        ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
+
+
+
+
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map domain number.",ERR,ERROR,*999)
+                        ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
+                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local type.",ERR,ERROR,*999)
+                      ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                    ENDDO !derivative_idx
                     IF(NUMBER_OF_DOMAINS==1) THEN
                       !Node is an internal node
                       domain_no=DOMAINS(1)
                       NUMBER_INTERNAL_NODES(domain_no)=NUMBER_INTERNAL_NODES(domain_no)+1
                       !LOCAL_NODE_NUMBERS(domain_no)=LOCAL_NODE_NUMBERS(domain_no)+1
-                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%NUMBER_OF_DOMAINS=1
-                      !NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(1)=LOCAL_NODE_NUMBERS(DOMAINS(1))
-                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(1)=-1
-                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER(1)=DOMAINS(1) 
-                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
-                      DO nk=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                        ny=MESH_TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)
-                        !LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
-                        !DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=-1
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
-                      ENDDO !nk
+                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS=1
+                      !NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(1)=LOCAL_NODE_NUMBERS(DOMAINS(1))
+                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(1)=-1
+                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(1)=DOMAINS(1) 
+                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
+                      DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                         !\todo DELETE THIS
+!                        ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
+!                        !LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
+!                        !DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=-1
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
+                        DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                          ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=-1
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
+                        ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                      ENDDO !derivative_idx
                     ELSE
                       !Node is on the boundary of computational domains
-                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
-                      DO nk=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                        ny=MESH_TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
-                      ENDDO !nk
+                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
+                      DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                         !\todo DELETE THIS
+!                        ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
+                        DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                          ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
+                        ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                      ENDDO !derivative_idx
                       DO domain_idx=1,NUMBER_OF_DOMAINS
                         domain_no=DOMAINS(domain_idx)
                         !LOCAL_NODE_NUMBERS(domain_no)=LOCAL_NODE_NUMBERS(domain_no)+1
-                        !NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(domain_idx)=LOCAL_NODE_NUMBERS(domain_no)
-                        NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(domain_idx)=-1
-                        NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER(domain_idx)=domain_no
-                        NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
-                        DO nk=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                          ny=MESH_TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)
-                          !LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-                          !DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=LOCAL_DOF_NUMBERS(domain_no)
-                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=-1
-                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)=domain_no
-                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
-                        ENDDO !nk
+                        !NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(domain_idx)=LOCAL_NODE_NUMBERS(domain_no)
+                        NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(domain_idx)=-1
+                        NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(domain_idx)=domain_no
+                        NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
+                        DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                         !\todo DELETE THIS
+!                          ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
+!                          !LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
+!                          !DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=LOCAL_DOF_NUMBERS(domain_no)
+!                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=-1
+!                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)=domain_no
+!                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
+                          DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                            ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                            DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=-1
+                            DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)=domain_no
+                            DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
+                          ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                        ENDDO !derivative_idx
                       ENDDO !domain_idx
                     ENDIF
                     DEALLOCATE(DOMAINS) 
                     DEALLOCATE(ALL_DOMAINS)
-                  ENDDO !np
+                  ENDDO !node_idx
 
                   !For the second pass assign boundary nodes to one domain on the boundary and set local node numbers.
                   NUMBER_OF_NODES_PER_DOMAIN=FLOOR(REAL(MESH_TOPOLOGY%NODES%NUMBER_OF_NODES,DP)/ &
@@ -3907,53 +4037,72 @@ CONTAINS
                   ALLOCATE(DOMAIN%NODE_DOMAIN(MESH_TOPOLOGY%NODES%NUMBER_OF_NODES),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node domain",ERR,ERROR,*999)
                   DOMAIN%NODE_DOMAIN=-1
-                  DO np=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
-                    IF(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%NUMBER_OF_DOMAINS==1) THEN !Internal node
-                      domain_no=NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER(1)
-                      DOMAIN%NODE_DOMAIN(np)=domain_no
+                  DO node_idx=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
+                    IF(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS==1) THEN !Internal node
+                      domain_no=NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(1)
+                      DOMAIN%NODE_DOMAIN(node_idx)=domain_no
                       LOCAL_NODE_NUMBERS(domain_no)=LOCAL_NODE_NUMBERS(domain_no)+1
-                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(1)=LOCAL_NODE_NUMBERS(domain_no)
-                      DO nk=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                        ny=MESH_TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)
-                        LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
-                      ENDDO !nk
+                      NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(1)=LOCAL_NODE_NUMBERS(domain_no)
+                      DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                         !\todo DELETE THIS
+!                        ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
+!                        LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
+                        DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                          ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                          LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
+                        ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                      ENDDO !derivative_idx
                     ELSE !Boundary node
-                      NUMBER_OF_DOMAINS=NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%NUMBER_OF_DOMAINS
+                      NUMBER_OF_DOMAINS=NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS
                       DO domain_idx=1,NUMBER_OF_DOMAINS
-                        domain_no=NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER(domain_idx)
-                        IF(DOMAIN%NODE_DOMAIN(np)<0) THEN
+                        domain_no=NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(domain_idx)
+                        IF(DOMAIN%NODE_DOMAIN(node_idx)<0) THEN
                           IF((NUMBER_INTERNAL_NODES(domain_no)+NUMBER_BOUNDARY_NODES(domain_no)<NUMBER_OF_NODES_PER_DOMAIN).OR. &
-                            & (domain_idx==NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%NUMBER_OF_DOMAINS)) THEN
+                            & (domain_idx==NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS)) THEN
                             !Allocate the node to this domain
-                            DOMAIN%NODE_DOMAIN(np)=domain_no
+                            DOMAIN%NODE_DOMAIN(node_idx)=domain_no
                             NUMBER_BOUNDARY_NODES(domain_no)=NUMBER_BOUNDARY_NODES(domain_no)+1
                             LOCAL_NODE_NUMBERS(domain_no)=LOCAL_NODE_NUMBERS(domain_no)+1
                             !Reset the boundary information to be in the first domain index. The remaining domain indicies will
                             !be overwritten when the ghost nodes are calculated below. 
-                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%NUMBER_OF_DOMAINS=1                            
-                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER(1)=LOCAL_NODE_NUMBERS(domain_no)
-                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER(1)=domain_no
-                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
-                            DO nk=1,MESH_TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                              ny=MESH_TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)
-                              LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
-                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
-                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
-                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
-                            ENDDO !nk
+                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS=1
+                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(1)=LOCAL_NODE_NUMBERS(domain_no)
+                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(1)=domain_no
+                            NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
+                            DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                         !\todo DELETE THIS
+!                              ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
+!                              LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
+!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
+!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
+!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
+!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
+                              DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                                ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                                LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
+                                DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
+                                DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
+                                DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
+                                DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
+                              ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                            ENDDO !derivative_idx
                           ELSE
                             !The node as already been assigned to a domain so it must be a ghost node in this domain
-                            CALL LIST_ITEM_ADD(GHOST_NODES_LIST(domain_no)%PTR,np,ERR,ERROR,*999)
+                            CALL LIST_ITEM_ADD(GHOST_NODES_LIST(domain_no)%PTR,node_idx,ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           !The node as already been assigned to a domain so it must be a ghost node in this domain
-                          CALL LIST_ITEM_ADD(GHOST_NODES_LIST(domain_no)%PTR,np,ERR,ERROR,*999)
+                          CALL LIST_ITEM_ADD(GHOST_NODES_LIST(domain_no)%PTR,node_idx,ERR,ERROR,*999)
                         ENDIF
                       ENDDO !domain_idx
                     ENDIF
-                  ENDDO !np
+                  ENDDO !node_idx
                   DEALLOCATE(NUMBER_INTERNAL_NODES)
                   
                   !Calculate ghost node and dof mappings
@@ -3973,20 +4122,37 @@ CONTAINS
                       NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(ghost_node)%LOCAL_TYPE( &
                         & NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(ghost_node)%NUMBER_OF_DOMAINS)= &
                         & DOMAIN_LOCAL_GHOST
-                      DO nk=1,MESH_TOPOLOGY%NODES%NODES(ghost_node)%NUMBER_OF_DERIVATIVES
-                        ny=MESH_TOPOLOGY%NODES%NODES(ghost_node)%DOF_INDEX(nk)
-                        LOCAL_DOF_NUMBERS(domain_idx)=LOCAL_DOF_NUMBERS(domain_idx)+1
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS= &
-                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS+1
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER( &
-                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
-                          & LOCAL_DOF_NUMBERS(domain_idx)
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER( &
-                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)=domain_idx
-                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE( &
-                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
-                          & DOMAIN_LOCAL_GHOST                        
-                      ENDDO !nk
+                      DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(ghost_node)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                         !\todo DELETE THIS
+!                        ny=MESH_TOPOLOGY%NODES%NODES(ghost_node)%DOF_INDEX(derivative_idx)
+!                        LOCAL_DOF_NUMBERS(domain_idx)=LOCAL_DOF_NUMBERS(domain_idx)+1
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS= &
+!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS+1
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER( &
+!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
+!                          & LOCAL_DOF_NUMBERS(domain_idx)
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER( &
+!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)=domain_idx
+!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE( &
+!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
+!                          & DOMAIN_LOCAL_GHOST
+                        DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                          ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                          LOCAL_DOF_NUMBERS(domain_idx)=LOCAL_DOF_NUMBERS(domain_idx)+1
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS= &
+                            & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS+1
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER( &
+                            & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
+                            & LOCAL_DOF_NUMBERS(domain_idx)
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER( &
+                            & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)=domain_idx
+                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE( &
+                            & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
+                            & DOMAIN_LOCAL_GHOST
+                        ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                      ENDDO !derivative_idx
                     ENDDO !no_ghost_node
                     DEALLOCATE(GHOST_NODES)
                   ENDDO !domain_idx
@@ -3995,19 +4161,19 @@ CONTAINS
                   ALLOCATE(NODE_COUNT(0:number_computational_nodes-1),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node count.",ERR,ERROR,*999)
                   NODE_COUNT=0
-                  DO np=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
-                    no_computational_node=DOMAIN%NODE_DOMAIN(np)
+                  DO node_idx=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
+                    no_computational_node=DOMAIN%NODE_DOMAIN(node_idx)
                     IF(no_computational_node>=0.AND.no_computational_node<number_computational_nodes) THEN
                       NODE_COUNT(no_computational_node)=NODE_COUNT(no_computational_node)+1
                     ELSE
                       LOCAL_ERROR="The computational node number of "// &
                         & TRIM(NUMBER_TO_VSTRING(no_computational_node,"*",ERR,ERROR))// &
-                        & " for node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))// &
+                        & " for node number "//TRIM(NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR))// &
                         & " is invalid. The computational node number must be between 0 and "// &
                         & TRIM(NUMBER_TO_VSTRING(number_computational_nodes-1,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                  ENDDO !np
+                  ENDDO !node_idx
                   DO no_computational_node=0,number_computational_nodes-1
                     IF(NODE_COUNT(no_computational_node)==0) THEN
                       LOCAL_ERROR="Invalid decomposition. There are no nodes in computational node "// &
@@ -4048,32 +4214,32 @@ CONTAINS
     
     IF(DIAGNOSTICS1) THEN
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Node decomposition :",ERR,ERROR,*999)
-      DO np=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Node = ",np,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Domain = ",DOMAIN%NODE_DOMAIN(np),ERR,ERROR,*999)
-      ENDDO !np
+      DO node_idx=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Node = ",node_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Domain = ",DOMAIN%NODE_DOMAIN(node_idx),ERR,ERROR,*999)
+      ENDDO !node_idx
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Node mappings :",ERR,ERROR,*999)
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Global to local map :",ERR,ERROR,*999)
-      DO np=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global node = ",np,ERR,ERROR,*999)
+      DO node_idx=1,MESH_TOPOLOGY%NODES%NUMBER_OF_NODES
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global node = ",node_idx,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of domains  = ", &
-          & NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%NUMBER_OF_DOMAINS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)% &
-          & NUMBER_OF_DOMAINS,8,8,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_NUMBER, &
+          & NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS,ERR,ERROR,*999)
+        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)% &
+          & NUMBER_OF_DOMAINS,8,8,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER, &
           & '("      Local number :",8(X,I7))','(20X,8(X,I7))',ERR,ERROR,*999)      
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)% &
-            & NUMBER_OF_DOMAINS,8,8,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%DOMAIN_NUMBER, &
+        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)% &
+            & NUMBER_OF_DOMAINS,8,8,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER, &
             & '("      Domain number:",8(X,I7))','(20X,8(X,I7))',ERR,ERROR,*999)      
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)% &
-          & NUMBER_OF_DOMAINS,8,8,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(np)%LOCAL_TYPE, &
+        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)% &
+          & NUMBER_OF_DOMAINS,8,8,NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE, &
           & '("      Local type   :",8(X,I7))','(20X,8(X,I7))',ERR,ERROR,*999)      
-      ENDDO !np     
+      ENDDO !node_idx     
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Local to global map :",ERR,ERROR,*999)
-      DO np=1,NODES_MAPPING%TOTAL_NUMBER_OF_LOCAL
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Local node = ",np,ERR,ERROR,*999)
+      DO node_idx=1,NODES_MAPPING%TOTAL_NUMBER_OF_LOCAL
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Local node = ",node_idx,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Global node = ", &
-          & NODES_MAPPING%LOCAL_TO_GLOBAL_MAP(np),ERR,ERROR,*999)
-      ENDDO !np
+          & NODES_MAPPING%LOCAL_TO_GLOBAL_MAP(node_idx),ERR,ERROR,*999)
+      ENDDO !node_idx
       IF(DIAGNOSTICS2) THEN
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Internal nodes :",ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of internal nodes = ", &
@@ -4138,7 +4304,7 @@ CONTAINS
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Local dof = ",ny,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Global dof = ", &
           & DOFS_MAPPING%LOCAL_TO_GLOBAL_MAP(ny),ERR,ERROR,*999)
-      ENDDO !np
+      ENDDO !node_idx
       IF(DIAGNOSTICS2) THEN
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Internal dofs :",ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of internal dofs = ", &
@@ -4284,6 +4450,7 @@ CONTAINS
     CALL ENTERS("DOMAIN_TOPOLOGY_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
+      !Find maximum number of element parameters for all elements in the domain toplogy
       TOPOLOGY%ELEMENTS%MAXIMUM_NUMBER_OF_ELEMENT_PARAMETERS=-1
       DO ne=1,TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
         BASIS=>TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
@@ -4294,6 +4461,7 @@ CONTAINS
           CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDDO !ne
+      !Find maximum number of derivatives for all nodes in the domain toplogy
       TOPOLOGY%NODES%MAXIMUM_NUMBER_OF_DERIVATIVES=-1
       DO np=1,TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES
         IF(TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES>TOPOLOGY%NODES%MAXIMUM_NUMBER_OF_DERIVATIVES) &
@@ -4324,7 +4492,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: local_element,global_element,local_node,global_node,ne,nn,nk,nkk,np,ny,component_idx
+    INTEGER(INTG) :: local_element,global_element,local_node,global_node,version_idx,derivative_idx,node_idx,dof_idx,component_idx
+    INTEGER(INTG) :: ne,nn,nkk
     LOGICAL :: FOUND
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(MESH_TYPE), POINTER :: MESH
@@ -4356,12 +4525,15 @@ CONTAINS
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain nodes nodes",ERR,ERROR,*999)
               DOMAIN_NODES%NUMBER_OF_NODES=DOMAIN%MAPPINGS%NODES%NUMBER_OF_LOCAL
               DOMAIN_NODES%TOTAL_NUMBER_OF_NODES=DOMAIN%MAPPINGS%NODES%TOTAL_NUMBER_OF_LOCAL
-              ALLOCATE(DOMAIN_DOFS%DOF_INDEX(2,DOMAIN%MAPPINGS%DOFS%TOTAL_NUMBER_OF_LOCAL),STAT=ERR)
+  !#######################################################VERSIONS START########################################################
+              ALLOCATE(DOMAIN_DOFS%DOF_INDEX(3,DOMAIN%MAPPINGS%DOFS%TOTAL_NUMBER_OF_LOCAL),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain dofs dof index",ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
               DOMAIN_DOFS%NUMBER_OF_DOFS=DOMAIN%MAPPINGS%DOFS%NUMBER_OF_LOCAL
               DOMAIN_DOFS%TOTAL_NUMBER_OF_DOFS=DOMAIN%MAPPINGS%DOFS%TOTAL_NUMBER_OF_LOCAL
               !Loop over the domain nodes and calculate the parameters from the mesh nodes
-              ny=0
+              dof_idx=0
+
               DO local_node=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                 CALL DOMAIN_TOPOLOGY_NODE_INITIALISE(DOMAIN_NODES%NODES(local_node),ERR,ERROR,*999)
                 global_node=DOMAIN%MAPPINGS%NODES%LOCAL_TO_GLOBAL_MAP(local_node)
@@ -4372,22 +4544,42 @@ CONTAINS
                 DOMAIN_NODES%NODES(local_node)%NUMBER_OF_SURROUNDING_ELEMENTS=0
                 NULLIFY(DOMAIN_NODES%NODES(local_node)%SURROUNDING_ELEMENTS)
                 DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES=MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES
-                ALLOCATE(DOMAIN_NODES%NODES(local_node)%GLOBAL_DERIVATIVE_INDEX( &
-                  & MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999)
-                DOMAIN_NODES%NODES(local_node)%GLOBAL_DERIVATIVE_INDEX=MESH_NODES%NODES(global_node)%GLOBAL_DERIVATIVE_INDEX
-                ALLOCATE(DOMAIN_NODES%NODES(local_node)%PARTIAL_DERIVATIVE_INDEX( &
-                  & MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node partial derivative index.",ERR,ERROR,*999)
-                DOMAIN_NODES%NODES(local_node)%PARTIAL_DERIVATIVE_INDEX=MESH_NODES%NODES(global_node)%PARTIAL_DERIVATIVE_INDEX
-                ALLOCATE(DOMAIN_NODES%NODES(local_node)%DOF_INDEX(MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node dof index.",ERR,ERROR,*999)
-                DO nk=1,DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES
-                  ny=ny+1
-                  DOMAIN_NODES%NODES(local_node)%DOF_INDEX(nk)=ny
-                  DOMAIN_DOFS%DOF_INDEX(1,ny)=nk
-                  DOMAIN_DOFS%DOF_INDEX(2,ny)=local_node
-                ENDDO !nk
+                !ALLOCATE(DOMAIN_NODES%NODES(local_node)%GLOBAL_DERIVATIVE_INDEX( &
+                !  & MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
+                !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999)
+                !DOMAIN_NODES%NODES(local_node)%GLOBAL_DERIVATIVE_INDEX=MESH_NODES%NODES(global_node)%GLOBAL_DERIVATIVE_INDEX !TODO: VERSIONS Delete line
+                !ALLOCATE(DOMAIN_NODES%NODES(local_node)%PARTIAL_DERIVATIVE_INDEX( &
+                !  & MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
+                !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node partial derivative index.",ERR,ERROR,*999)
+                !DOMAIN_NODES%NODES(local_node)%PARTIAL_DERIVATIVE_INDEX=MESH_NODES%NODES(global_node)%PARTIAL_DERIVATIVE_INDEX !TODO: VERSIONS Delete line
+                !ALLOCATE(DOMAIN_NODES%NODES(local_node)%DOF_INDEX(MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR)
+                !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node dof index.",ERR,ERROR,*999)
+  !#######################################################VERSIONS START########################################################
+                ALLOCATE(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain node derivatives.",ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                DO derivative_idx=1,DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                  CALL DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE( &
+                    & DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
+                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX= & 
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX
+                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX= &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
+                  DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS= & 
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                  ALLOCATE(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%DOF_INDEX( &
+                    & MESH_NODES%NODES(global_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node dervative versions dof index.",ERR,ERROR,*999)
+                  DO version_idx=1,DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                    dof_idx=dof_idx+1
+                    DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)=dof_idx
+                    DOMAIN_DOFS%DOF_INDEX(1,dof_idx)=version_idx
+                    DOMAIN_DOFS%DOF_INDEX(2,dof_idx)=derivative_idx
+                    DOMAIN_DOFS%DOF_INDEX(3,dof_idx)=local_node
+                  ENDDO !version_idx
+  !#######################################################VERSIONS END##########################################################
+                ENDDO !derivative_idx
                 DOMAIN_NODES%NODES(local_node)%BOUNDARY_NODE=MESH_NODES%NODES(global_node)%BOUNDARY_NODE
               ENDDO !local_node
               !Loop over the domain elements and renumber from the mesh elements
@@ -4395,31 +4587,39 @@ CONTAINS
                 CALL DOMAIN_TOPOLOGY_ELEMENT_INITIALISE(DOMAIN_ELEMENTS%ELEMENTS(local_element),ERR,ERROR,*999)
                 global_element=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(local_element)
                 BASIS=>MESH_ELEMENTS%ELEMENTS(global_element)%BASIS
-                DOMAIN_ELEMENTS%ELEMENTS(local_element)%BASIS=>BASIS                
+                DOMAIN_ELEMENTS%ELEMENTS(local_element)%BASIS=>BASIS
                 ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element nodes",ERR,ERROR,*999)
-                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+  !#######################################################VERSIONS START########################################################
+                ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                   & BASIS%NUMBER_OF_NODES),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element derivatives",ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
                 DO nn=1,BASIS%NUMBER_OF_NODES
                   global_node=MESH_ELEMENTS%ELEMENTS(global_element)%MESH_ELEMENT_NODES(nn)
                   local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(global_node)%LOCAL_NUMBER(1)
                   DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_NODES(nn)=local_node
-                  DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                  DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                     !Find equivalent node derivative by matching partial derivative index
+  !#######################################################VERSIONS START########################################################
+                    !/todo Take a look at this later- is it needed?
                     FOUND=.FALSE.
                     DO nkk=1,DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES
-                      IF(DOMAIN_NODES%NODES(local_node)%PARTIAL_DERIVATIVE_INDEX(nkk)==BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn)) THEN
+                      IF(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(nkk)%PARTIAL_DERIVATIVE_INDEX == &
+                        & BASIS%PARTIAL_DERIVATIVE_INDEX(derivative_idx,nn)) THEN
                         FOUND=.TRUE.
                         EXIT
                       ENDIF
                     ENDDO !nkk
                     IF(FOUND) THEN
-                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(nk,nn)=nkk
+                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(1,derivative_idx,nn)=nkk
+                      DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,derivative_idx,nn) = & 
+                        & MESH_ELEMENTS%ELEMENTS(global_element)%USER_ELEMENT_NODE_VERSIONS(derivative_idx,nn)
+  !#######################################################VERSIONS END##########################################################
                     ELSE
                       CALL FLAG_ERROR("Could not find equivalent node derivative",ERR,ERROR,*999)
                     ENDIF
-                  ENDDO !nk
+                  ENDDO !derivative_idx
                 ENDDO !nn
               ENDDO !local_element
             ELSE
@@ -4427,6 +4627,7 @@ CONTAINS
             ENDIF
           ELSE
             CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+
           ENDIF
         ELSE
           CALL FLAG_ERROR("Domain mapping is not associated",ERR,ERROR,*999)
@@ -4442,35 +4643,41 @@ CONTAINS
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Initialised domain topology :",ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total number of domain nodes = ",DOMAIN_NODES%TOTAL_NUMBER_OF_NODES, &
         & ERR,ERROR,*999)
-      DO np=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Node number = ",DOMAIN_NODES%NODES(np)%LOCAL_NUMBER,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node mesh number = ",DOMAIN_NODES%NODES(np)%MESH_NUMBER, &
+      DO node_idx=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Node number = ",DOMAIN_NODES%NODES(node_idx)%LOCAL_NUMBER, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node global number = ",DOMAIN_NODES%NODES(np)%GLOBAL_NUMBER, &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node mesh number = ",DOMAIN_NODES%NODES(node_idx)%MESH_NUMBER, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node user number = ",DOMAIN_NODES%NODES(np)%USER_NUMBER, &
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node global number = ",DOMAIN_NODES%NODES(node_idx)%GLOBAL_NUMBER, &
+          & ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node user number = ",DOMAIN_NODES%NODES(node_idx)%USER_NUMBER, &
           & ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of derivatives = ", &
-          & DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES,8,8, &
-          & DOMAIN_NODES%NODES(np)%GLOBAL_DERIVATIVE_INDEX,'("      Global derivative index(nk) :",8(X,I2))','(36X,8(X,I2))', &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES,8,8, &
-          & DOMAIN_NODES%NODES(np)%PARTIAL_DERIVATIVE_INDEX,'("      Partial derivative index(nk) :",8(X,I2))','(36X,8(X,I2))', &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES,4,4, &
-          & DOMAIN_NODES%NODES(np)%DOF_INDEX,'("      Degree-of-freedom index(nk)  :",4(X,I9))','(36X,4(X,I9))', &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Boundary node = ",DOMAIN_NODES%NODES(np)%BOUNDARY_NODE,ERR,ERROR,*999)
-     ENDDO !np
+          & DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
+  !#######################################################VERSIONS START########################################################
+        DO derivative_idx=1,DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node local derivative number = ",derivative_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Global derivative index = ", &
+            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Partial derivative index = ", &
+            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
+            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS,4,4, &
+            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX, &
+            & '("        Degree-of-freedom index(version_idx)  :",4(X,I9))','(36X,4(X,I9))',ERR,ERROR,*999)
+        ENDDO !derivative_idx
+  !#######################################################VERSIONS END##########################################################
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Boundary node = ", &
+          & DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE,ERR,ERROR,*999)
+     ENDDO !node_idx
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total Number of domain dofs = ",DOMAIN_DOFS%TOTAL_NUMBER_OF_DOFS, &
         & ERR,ERROR,*999)
-      DO ny=1,DOMAIN_DOFS%TOTAL_NUMBER_OF_DOFS
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Dof number = ",ny,ERR,ERROR,*999)
+      DO dof_idx=1,DOMAIN_DOFS%TOTAL_NUMBER_OF_DOFS
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Dof number = ",dof_idx,ERR,ERROR,*999)
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,2,2,2, &
-          & DOMAIN_DOFS%DOF_INDEX(:,ny),'("    Degree-of-freedom index :",2(X,I9))','(29X,2(X,I9))', &
+          & DOMAIN_DOFS%DOF_INDEX(:,dof_idx),'("    Degree-of-freedom index :",2(X,I9))','(29X,2(X,I9))', &
           & ERR,ERROR,*999)
-      ENDDO !ny
+      ENDDO !dof_idx
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Total number of domain elements = ", &
         & DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS,ERR,ERROR,*999)
       DO ne=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
@@ -4486,9 +4693,18 @@ CONTAINS
         DO nn=1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number = ",nn,ERR,ERROR,*999)
           CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_DERIVATIVES(nn),8,8, &
-            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(:,nn), &
-            & '("        Element derivatives(nk) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
+            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,:,nn), &
+            & '("        Element derivatives(derivative_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
         ENDDO !nn
+  !#######################################################VERSIONS START########################################################
+        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Element versions :",ERR,ERROR,*999)
+        DO nn=1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number = ",nn,ERR,ERROR,*999)
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_DERIVATIVES(nn),8,8, &
+            & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,:,nn), &
+            & '("        Element derivatives(version_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
+        ENDDO !nn
+  !#######################################################VERSIONS END##########################################################
       ENDDO !ne
     ENDIF
     
@@ -5027,6 +5243,62 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !#######################################################VERSIONS START########################################################
+
+  !>Finalises the given domain topology node derivative and deallocates all memory.
+  SUBROUTINE DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE_DERIVATIVE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DOMAIN_NODE_DERIVATIVE_TYPE) :: NODE_DERIVATIVE !<The domain node to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE",ERR,ERROR,*999)
+
+    IF(ALLOCATED(NODE_DERIVATIVE%USER_VERSION_NUMBERS)) DEALLOCATE(NODE_DERIVATIVE%USER_VERSION_NUMBERS)
+    IF(ALLOCATED(NODE_DERIVATIVE%LOCAL_VERSION_NUMBERS)) DEALLOCATE(NODE_DERIVATIVE%LOCAL_VERSION_NUMBERS)
+    IF(ALLOCATED(NODE_DERIVATIVE%DOF_INDEX)) DEALLOCATE(NODE_DERIVATIVE%DOF_INDEX)
+
+    CALL EXITS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE")
+    RETURN
+999 CALL ERRORS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE",ERR,ERROR)
+    CALL EXITS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE")
+    RETURN 1
+  END SUBROUTINE DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the given mesh topology node.
+  SUBROUTINE DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE(NODE_DERIVATIVE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DOMAIN_NODE_DERIVATIVE_TYPE) :: NODE_DERIVATIVE !<The domain node to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE",ERR,ERROR,*999)
+
+    NODE_DERIVATIVE%NUMBER_OF_VERSIONS=0
+    NODE_DERIVATIVE%GLOBAL_DERIVATIVE_INDEX=0
+    NODE_DERIVATIVE%PARTIAL_DERIVATIVE_INDEX=0
+
+    CALL EXITS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE")
+    RETURN
+999 CALL ERRORS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE",ERR,ERROR)
+    CALL EXITS("DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE")
+    RETURN 1
+  END SUBROUTINE DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE
+
+  !#######################################################VERSIONS END##########################################################
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finalises the given domain topology node and deallocates all memory.
   SUBROUTINE DOMAIN_TOPOLOGY_NODE_FINALISE(NODE,ERR,ERROR,*)
 
@@ -5035,11 +5307,17 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: derivative_idx
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_FINALISE",ERR,ERROR,*999)
 
-    IF(ALLOCATED(NODE%GLOBAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%GLOBAL_DERIVATIVE_INDEX)
-    IF(ALLOCATED(NODE%PARTIAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%PARTIAL_DERIVATIVE_INDEX)
+!  !#######################################################VERSIONS START########################################################
+    DO derivative_idx=1,NODE%NUMBER_OF_DERIVATIVES
+       CALL DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
+    ENDDO !derivative_idx
+    !IF(ALLOCATED(NODE%GLOBAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%GLOBAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
+    !IF(ALLOCATED(NODE%PARTIAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%PARTIAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
+!  !#######################################################VERSIONS END##########################################################
     IF(ASSOCIATED(NODE%SURROUNDING_ELEMENTS)) DEALLOCATE(NODE%SURROUNDING_ELEMENTS)
     IF(ALLOCATED(NODE%NODE_LINES)) DEALLOCATE(NODE%NODE_LINES)
  
@@ -6054,9 +6332,10 @@ CONTAINS
       !Calculate the elements surrounding the nodes in a mesh
       !IF(SURROUNDING_ELEMENTS_CALCULATE) THEN
         CALL MESH_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
-      !ENDIF
-      !Calculate the number of derivatives at each nodes in a mesh
+      !Calculate the number of derivatives at each node in a mesh
       CALL MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
+      !Calculate the number of versions for each derivative at each node in a mesh
+      CALL MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
       !Calculate the elements surrounding the elements in the mesh
       !IF(SURROUNDING_ELEMENTS_CALCULATE) THEN
         CALL MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*999)
@@ -6202,22 +6481,33 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: np,nk,NUMBER_OF_DOFS
+    INTEGER(INTG) :: node_idx,derivative_idx,version_idx,NUMBER_OF_DOFS
 
     CALL ENTERS("MESH_TOPOLOGY_DOFS_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TOPOLOGY)) THEN
-      IF(ASSOCIATED(TOPOLOGY%NODES)) THEN        
+      IF(ASSOCIATED(TOPOLOGY%NODES)) THEN
         IF(ASSOCIATED(TOPOLOGY%DOFS)) THEN
           NUMBER_OF_DOFS=0
-          DO np=1,TOPOLOGY%NODES%NUMBER_OF_NODES
-            ALLOCATE(TOPOLOGY%NODES%NODES(np)%DOF_INDEX(TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology node dof index",ERR,ERROR,*999)
-            DO nk=1,TOPOLOGY%NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-              NUMBER_OF_DOFS=NUMBER_OF_DOFS+1
-              TOPOLOGY%NODES%NODES(np)%DOF_INDEX(nk)=NUMBER_OF_DOFS
-            ENDDO !nk
-          ENDDO !np
+          DO node_idx=1,TOPOLOGY%NODES%NUMBER_OF_NODES
+!  !#######################################################VERSIONS START########################################################
+             !\todo DELETE THIS
+!            ALLOCATE(TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES),STAT=ERR)
+!            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology node dof index",ERR,ERROR,*999)
+            DO derivative_idx=1,TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+               !\todo DELETE THIS
+!              NUMBER_OF_DOFS=NUMBER_OF_DOFS+1
+!              TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)=NUMBER_OF_DOFS
+              ALLOCATE(TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX( &
+                & TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology node derivative version dof index",ERR,ERROR,*999)
+              DO version_idx=1,TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                NUMBER_OF_DOFS=NUMBER_OF_DOFS+1
+                TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)=NUMBER_OF_DOFS
+              ENDDO !version_idx
+!  !#######################################################VERSIONS END##########################################################
+            ENDDO !derivative_idx
+          ENDDO !node_idx
           TOPOLOGY%DOFS%NUMBER_OF_DOFS=NUMBER_OF_DOFS
         ELSE
           CALL FLAG_ERROR("Topology dofs is not assocaited",ERR,ERROR,*999)
@@ -6424,6 +6714,12 @@ CONTAINS
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global element nodes",ERR,ERROR,*999)
                     ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODES=1
                     ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES=1
+  !#######################################################VERSIONS START########################################################
+                    ALLOCATE(ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
+                      & BASIS%NUMBER_OF_NODES),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global element nodes versions",ERR,ERROR,*999)
+                    ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS = 1
+  !#######################################################VERSIONS END##########################################################
                   ENDDO !ne
                 ELSE
                   CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
@@ -6895,6 +7191,99 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  !#######################################################VERSIONS START########################################################
+
+  !>Changes/sets an element node's version for a mesh element identified by a given global number. \todo specify by user number not global number \see OPENCMISS::CMISSMeshElementsNodesSet
+  SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GLOBAL_NUMBER,ELEMENTS,VERSION_NUMBER,DERIVATIVE_NUMBER, &
+      & USER_ELEMENT_NODE_INDEX,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number of the element to set the nodes for
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS !<A pointer to the elements to set \todo before number?
+    INTEGER(INTG), INTENT(IN) :: VERSION_NUMBER !<The version number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The derivative number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: USER_ELEMENT_NODE_INDEX !< The node index of the specified element node to set a version for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Local Variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(NODES_TYPE), POINTER :: NODES
+    TYPE(REGION_TYPE), POINTER :: PARENT_REGION,REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ELEMENTS)) THEN
+      IF(ELEMENTS%ELEMENTS_FINISHED) THEN
+        CALL FLAG_ERROR("Elements have been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=ELEMENTS%NUMBER_OF_ELEMENTS) THEN
+          IF(USER_ELEMENT_NODE_INDEX>=1.AND.USER_ELEMENT_NODE_INDEX<=ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES) THEN
+            IF(ASSOCIATED(ELEMENTS%MESH)) THEN
+              REGION=>ELEMENTS%MESH%REGION
+              IF(ASSOCIATED(REGION)) THEN
+                NODES=>REGION%NODES
+              ELSE
+                INTERFACE=>ELEMENTS%MESH%INTERFACE
+                IF(ASSOCIATED(INTERFACE)) THEN
+                  NODES=>INTERFACE%NODES
+                  PARENT_REGION=>INTERFACE%PARENT_REGION
+                  IF(.NOT.ASSOCIATED(PARENT_REGION)) CALL FLAG_ERROR("Mesh interface has no parent region.",ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Elements mesh has no associated region or interface.",ERR,ERROR,*999)
+                ENDIF    
+              ENDIF
+              IF(DERIVATIVE_NUMBER>=1.AND.DERIVATIVE_NUMBER<=ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS% &
+                & NUMBER_OF_DERIVATIVES(USER_ELEMENT_NODE_INDEX)) THEN !Check if the specified derivative exists
+                IF(VERSION_NUMBER>=1) THEN !Check if the specified version is greater than 1
+                  ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODE_VERSIONS(DERIVATIVE_NUMBER,USER_ELEMENT_NODE_INDEX) & 
+                    & = VERSION_NUMBER
+                  !TODO: There is redunancy in USER_ELEMENT_NODE_VERSIONS since it was allocated in MESH_TOPOLOGY_ELEMENTS_CREATE_START based on MAXIMUM_NUMBER_OF_DERIVATIVES for that elements basis:ALLOCATE(ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES,BASIS%NUMBER_OF_NODES),STAT=ERR)
+                ELSE
+                  LOCAL_ERROR="The specified node version number of "//TRIM(NUMBER_TO_VSTRING(VERSION_NUMBER,"*", & 
+                    & ERR,ERROR))//" is invalid. The element node index should be greater than 1."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The specified node derivative number of "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", & 
+                  & ERR,ERROR))//" is invalid. The element node derivative index should be between 1 and "// &
+                  & TRIM(NUMBER_TO_VSTRING(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_DERIVATIVES(USER_ELEMENT_NODE_INDEX), &
+                  & "*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified element node index of "//TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NODE_INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The element node index should be between 1 and "// &
+              & TRIM(NUMBER_TO_VSTRING(ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%BASIS%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified global element number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
+            & " is invalid. The global element number should be between 1 and "// &
+            & TRIM(NUMBER_TO_VSTRING(ELEMENTS%NUMBER_OF_ELEMENTS,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Elements is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET")
+    RETURN
+999 CALL ERRORS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET",ERR,ERROR)    
+    CALL EXITS("MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET")
+    RETURN 1
+    
+  END SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !#######################################################VERSIONS END##########################################################
+
  !>Calculates the element numbers surrounding an element in a mesh topology.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
@@ -6990,6 +7379,7 @@ CONTAINS
                   NULLIFY(NODE_MATCH_LIST)
                   CALL LIST_CREATE_START(NODE_MATCH_LIST,ERR,ERROR,*999)
                   CALL LIST_DATA_TYPE_SET(NODE_MATCH_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
+
                   CALL LIST_INITIAL_SIZE_SET(NODE_MATCH_LIST,16,ERR,ERROR,*999)
                   CALL LIST_CREATE_FINISH(NODE_MATCH_LIST,ERR,ERROR,*999)
                   IF(direction_index==-1) THEN
@@ -7622,13 +8012,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: derivative_idx
 
     CALL ENTERS("MESH_TOPOLOGY_NODE_FINALISE",ERR,ERROR,*999)
 
+!  !#######################################################VERSIONS START########################################################
+    DO derivative_idx=1,NODE%NUMBER_OF_DERIVATIVES
+       CALL MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
+    ENDDO !derivative_idx
+!  !#######################################################VERSIONS END##########################################################
     IF(ASSOCIATED(NODE%SURROUNDING_ELEMENTS)) DEALLOCATE(NODE%SURROUNDING_ELEMENTS)
-    IF(ALLOCATED(NODE%GLOBAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%GLOBAL_DERIVATIVE_INDEX)
-    IF(ALLOCATED(NODE%PARTIAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%PARTIAL_DERIVATIVE_INDEX)
-    IF(ALLOCATED(NODE%DOF_INDEX)) DEALLOCATE(NODE%DOF_INDEX)
+    !IF(ALLOCATED(NODE%GLOBAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%GLOBAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
+    !IF(ALLOCATED(NODE%PARTIAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%PARTIAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
   
     CALL EXITS("MESH_TOPOLOGY_NODE_FINALISE")
     RETURN
@@ -7768,7 +8163,7 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !nn
-                ENDDO !ne                  
+                ENDDO !ne
               ENDIF
             ELSE
               IF(ASSOCIATED(REGION)) THEN
@@ -7818,6 +8213,61 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !#######################################################VERSIONS START########################################################
+
+  !>Finalises the given mesh topology node. 
+  SUBROUTINE MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE_DERIVATIVE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MESH_NODE_DERIVATIVE_TYPE) :: NODE_DERIVATIVE !<The mesh node to finalise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE",ERR,ERROR,*999)
+
+    IF(ALLOCATED(NODE_DERIVATIVE%USER_VERSION_NUMBERS)) DEALLOCATE(NODE_DERIVATIVE%USER_VERSION_NUMBERS)
+    IF(ALLOCATED(NODE_DERIVATIVE%DOF_INDEX)) DEALLOCATE(NODE_DERIVATIVE%DOF_INDEX)
+
+    CALL EXITS("MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE")
+    RETURN
+999 CALL ERRORS("MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE",ERR,ERROR)
+    CALL EXITS("MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE")
+    RETURN 1
+  END SUBROUTINE MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the given mesh topology node.
+  SUBROUTINE MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE(NODE_DERIVATIVE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MESH_NODE_DERIVATIVE_TYPE) :: NODE_DERIVATIVE !<The mesh node to initialise
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE",ERR,ERROR,*999)
+
+    NODE_DERIVATIVE%NUMBER_OF_VERSIONS=0
+    NODE_DERIVATIVE%GLOBAL_DERIVATIVE_INDEX=0
+    NODE_DERIVATIVE%PARTIAL_DERIVATIVE_INDEX=0
+
+    CALL EXITS("MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE")
+    RETURN
+999 CALL ERRORS("MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE",ERR,ERROR)
+    CALL EXITS("MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE")
+    RETURN 1
+  END SUBROUTINE MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE
+
+  !#######################################################VERSIONS END##########################################################
+
+  !
+  !================================================================================================================================
+  !
+
   !>Calculates the number of derivatives at each node in a topology.
   SUBROUTINE MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
@@ -7826,7 +8276,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: elem_idx,global_deriv,MAX_NUMBER_OF_DERIVATIVES,ne,nk,nn,np,NUMBER_OF_DERIVATIVES
+    INTEGER(INTG) :: elem_idx,global_deriv,MAX_NUMBER_OF_DERIVATIVES,ne,derivative_idx,nn,node_idx,NUMBER_OF_DERIVATIVES
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVES(:)
     LOGICAL :: FOUND
     TYPE(LIST_TYPE), POINTER :: NODE_DERIVATIVE_LIST
@@ -7843,32 +8293,33 @@ CONTAINS
         IF(ASSOCIATED(TOPOLOGY%NODES)) THEN
           NODES=>TOPOLOGY%NODES
           !Loop over the mesh nodes
-          DO np=1,NODES%NUMBER_OF_NODES
-            !Calculate the number of derivatives at each node. This needs to be calculated by looking at the mesh elements
-            !as we may have an adjacent element in another domain with a higher order basis.
+          DO node_idx=1,NODES%NUMBER_OF_NODES
+            !VERSIONS - revert comment back to original
+            !Calculate the number of derivatives and versions at each node. This needs to be calculated by looking at the mesh elements
+            !as we may have an adjacent element in another domain with a higher order basis also with versions.
             NULLIFY(NODE_DERIVATIVE_LIST)
             CALL LIST_CREATE_START(NODE_DERIVATIVE_LIST,ERR,ERROR,*999)
             CALL LIST_DATA_TYPE_SET(NODE_DERIVATIVE_LIST,LIST_INTG_TYPE,ERR,ERROR,*999)
             CALL LIST_INITIAL_SIZE_SET(NODE_DERIVATIVE_LIST,8,ERR,ERROR,*999)
             CALL LIST_CREATE_FINISH(NODE_DERIVATIVE_LIST,ERR,ERROR,*999)
             MAX_NUMBER_OF_DERIVATIVES=-1
-            DO elem_idx=1,NODES%NODES(np)%NUMBER_OF_SURROUNDING_ELEMENTS
-              ne=NODES%NODES(np)%SURROUNDING_ELEMENTS(elem_idx)
+            DO elem_idx=1,NODES%NODES(node_idx)%NUMBER_OF_SURROUNDING_ELEMENTS
+              ne=NODES%NODES(node_idx)%SURROUNDING_ELEMENTS(elem_idx)
               BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
               !Find the local node corresponding to this node
               FOUND=.FALSE.
               DO nn=1,BASIS%NUMBER_OF_NODES
-                IF(ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn)==np) THEN
+                IF(ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn)==node_idx) THEN
                   FOUND=.TRUE.
                   EXIT
                 ENDIF
               ENDDO !nn
               IF(FOUND) THEN
-                DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-                  CALL LIST_ITEM_ADD(NODE_DERIVATIVE_LIST,BASIS%PARTIAL_DERIVATIVE_INDEX(nk,nn),ERR,ERROR,*999)
-                ENDDO !nk
-                IF(BASIS%NUMBER_OF_DERIVATIVES(nn)>MAX_NUMBER_OF_DERIVATIVES) &
-                  & MAX_NUMBER_OF_DERIVATIVES=BASIS%NUMBER_OF_DERIVATIVES(nn)
+                DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                  CALL LIST_ITEM_ADD(NODE_DERIVATIVE_LIST,BASIS%PARTIAL_DERIVATIVE_INDEX(derivative_idx,nn),ERR,ERROR,*999)
+                ENDDO !derivative_idx
+                IF(BASIS%NUMBER_OF_DERIVATIVES(nn)>MAX_NUMBER_OF_DERIVATIVES)MAX_NUMBER_OF_DERIVATIVES= &
+                  & BASIS%NUMBER_OF_DERIVATIVES(nn)
               ELSE
                 CALL FLAG_ERROR("Could not find local node.",ERR,ERROR,*999)
               ENDIF
@@ -7876,31 +8327,42 @@ CONTAINS
             CALL LIST_REMOVE_DUPLICATES(NODE_DERIVATIVE_LIST,ERR,ERROR,*999)
             CALL LIST_DETACH_AND_DESTROY(NODE_DERIVATIVE_LIST,NUMBER_OF_DERIVATIVES,DERIVATIVES,ERR,ERROR,*999)
             IF(NUMBER_OF_DERIVATIVES==MAX_NUMBER_OF_DERIVATIVES) THEN
-              NODES%NODES(np)%NUMBER_OF_DERIVATIVES=MAX_NUMBER_OF_DERIVATIVES
-              ALLOCATE(NODES%NODES(np)%GLOBAL_DERIVATIVE_INDEX(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999)
-              ALLOCATE(NODES%NODES(np)%PARTIAL_DERIVATIVE_INDEX(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node partial derivative index.",ERR,ERROR,*999)
-              DO nk=1,NUMBER_OF_DERIVATIVES                
-                NODES%NODES(np)%PARTIAL_DERIVATIVE_INDEX(nk)=DERIVATIVES(nk)
-                global_deriv=PARTIAL_DERIVATIVE_GLOBAL_DERIVATIVE_MAP(DERIVATIVES(nk))
+  !#######################################################VERSIONS START########################################################
+              !Set up the node derivatives.
+              ALLOCATE(NODES%NODES(node_idx)%DERIVATIVES(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR)
+  !#######################################################VERSIONS END##########################################################
+              NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES=MAX_NUMBER_OF_DERIVATIVES
+              !ALLOCATE(NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
+              !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999) !TODO: VERSIONS Delete line
+              !ALLOCATE(NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
+              !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node partial derivative index.",ERR,ERROR,*999) !TODO: VERSIONS Delete line
+              DO derivative_idx=1,NUMBER_OF_DERIVATIVES
+  !#######################################################VERSIONS START########################################################
+                CALL MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE(NODES%NODES(node_idx)%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
+                NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX = DERIVATIVES(derivative_idx)
+  !#######################################################VERSIONS END##########################################################
+                !NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX(derivative_idx)=DERIVATIVES(derivative_idx) !TODO: VERSIONS Delete line
+                global_deriv=PARTIAL_DERIVATIVE_GLOBAL_DERIVATIVE_MAP(DERIVATIVES(derivative_idx))
                 IF(global_deriv/=0) THEN
-                   NODES%NODES(np)%GLOBAL_DERIVATIVE_INDEX(nk)=global_deriv
+                  !NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(derivative_idx)=global_deriv !TODO: VERSIONS Delete line
+  !#######################################################VERSIONS START########################################################
+                  NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX=global_deriv
+  !#######################################################VERSIONS END##########################################################
                 ELSE
-                  LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(DERIVATIVES(nk),"*",ERR,ERROR))// &
-                    & " for derivative number "//TRIM(NUMBER_TO_VSTRING(nk,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(DERIVATIVES(derivative_idx),"*", &
+                    & ERR,ERROR))//" for derivative number "//TRIM(NUMBER_TO_VSTRING(derivative_idx,"*",ERR,ERROR))// &
                     & " does not have a corresponding global derivative."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-              ENDDO !nk
+              ENDDO !derivative_idx
               DEALLOCATE(DERIVATIVES)
             ELSE
               LOCAL_ERROR="Invalid mesh configuration. User node "// &
-                & TRIM(NUMBER_TO_VSTRING(NODES%NODES(np)%USER_NUMBER,"*",ERR,ERROR))// &
+                & TRIM(NUMBER_TO_VSTRING(NODES%NODES(node_idx)%USER_NUMBER,"*",ERR,ERROR))// &
                 & " has inconsistent derivative directions."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            ENDIF            
-          ENDDO !np
+            ENDIF
+          ENDDO !node_idx
         ELSE
           CALL FLAG_ERROR("Mesh topology nodes is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -7913,17 +8375,26 @@ CONTAINS
    
     IF(DIAGNOSTICS1) THEN
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of mesh global nodes = ",NODES%NUMBER_OF_NODES,ERR,ERROR,*999)
-      DO np=1,NODES%NUMBER_OF_NODES
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh global node number = ",np,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of derivatives = ",NODES%NODES(np)%NUMBER_OF_DERIVATIVES, &
-          & ERR,ERROR,*999)        
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES%NODES(np)%NUMBER_OF_DERIVATIVES,8,8, &
-          & NODES%NODES(np)%GLOBAL_DERIVATIVE_INDEX,'("    Global derivative index(nk) :",8(X,I2))','(36X,8(X,I2))', &
+      DO node_idx=1,NODES%NUMBER_OF_NODES
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh global node number = ",node_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of derivatives = ",NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES%NODES(np)%NUMBER_OF_DERIVATIVES,8,8, &
-          & NODES%NODES(np)%PARTIAL_DERIVATIVE_INDEX,'("    Partial derivative index(nk) :",8(X,I2))','(36X,8(X,I2))', &
-          & ERR,ERROR,*999)
-      ENDDO !np
+  !#######################################################VERSIONS START########################################################
+        DO derivative_idx=1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+          !TODO: change output string below so that it writes out derivative_idx index as well
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global derivative index(derivative_idx) = ", &
+            & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Partial derivative index(derivative_idx) = ", &
+            & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
+        ENDDO !derivative_idx
+  !#######################################################VERSIONS END##########################################################
+        !CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,8,8, & !TODO: VERSIONS Delete line
+        !  & NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX,'("    Global derivative index(derivative_idx) :",8(X,I2))', &
+        !  & '(36X,8(X,I2))',ERR,ERROR,*999) !TODO: VERSIONS Delete line
+        !CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,8,8, & !TODO: VERSIONS Delete line
+        !  & NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX,'("    Partial derivative index(derivative_idx) :",8(X,I2))', &
+        !  & '(36X,8(X,I2))',ERR,ERROR,*999) !TODO: VERSIONS Delete line
+      ENDDO !node_idx
     ENDIF
     
     CALL EXITS("MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE")
@@ -7936,9 +8407,124 @@ CONTAINS
    
   END SUBROUTINE MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE
 
+  !#######################################################VERSIONS END##########################################################
+
   !
   !================================================================================================================================
   !
+
+
+  !>Calculates the number of versions at each node in a topology.
+  SUBROUTINE MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<A pointer to the mesh topology to calculate the versions at each node for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: NUMBER_OF_VERSIONS,ne,nn,derivative_idx,node_idx
+    INTEGER(INTG), ALLOCATABLE :: VERSIONS(:)
+    TYPE(LIST_PTR_TYPE), POINTER :: NODE_VERSION_LIST(:,:)
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
+    TYPE(MESH_NODES_TYPE), POINTER :: NODES
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    
+    CALL ENTERS("MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE",ERR,ERROR,*999)
+
+     IF(ASSOCIATED(TOPOLOGY)) THEN
+      IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
+        ELEMENTS=>TOPOLOGY%ELEMENTS
+        IF(ASSOCIATED(TOPOLOGY%NODES)) THEN
+          NODES=>TOPOLOGY%NODES
+          !Loop over the mesh elements
+          !Calculate the number of versions at each node. This needs to be calculated by looking at all the mesh elements
+          !as we may have an adjacent elements in another domain with a higher order basis along with different versions being assigned to its derivatives.
+          !TODO: See if there are any constraints that can be applied to restrict the amount of memory being allocated here
+          ALLOCATE(NODE_VERSION_LIST(MAXIMUM_GLOBAL_DERIV_NUMBER,NODES%NUMBER_OF_NODES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node version list.",ERR,ERROR,*999)
+          DO node_idx=1,NODES%NUMBER_OF_NODES
+            DO derivative_idx=1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+              NULLIFY(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR)
+              CALL LIST_CREATE_START(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,ERR,ERROR,*999)
+              CALL LIST_DATA_TYPE_SET(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,LIST_INTG_TYPE,ERR,ERROR,*999)
+              CALL LIST_INITIAL_SIZE_SET(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,8,ERR,ERROR,*999)
+              CALL LIST_CREATE_FINISH(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,ERR,ERROR,*999)
+            ENDDO!derivative_idx
+          ENDDO!node_idx
+          DO ne=1,ELEMENTS%NUMBER_OF_ELEMENTS
+            BASIS=>ELEMENTS%ELEMENTS(ne)%BASIS
+            DO nn=1,BASIS%NUMBER_OF_NODES
+              DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                CALL LIST_ITEM_ADD(NODE_VERSION_LIST(derivative_idx,ELEMENTS%ELEMENTS(ne)%MESH_ELEMENT_NODES(nn))%PTR, & 
+                  & ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS(derivative_idx,nn),ERR,ERROR,*999)
+              ENDDO!derivative_idx
+            ENDDO!nn
+          ENDDO!ne
+          DO node_idx=1,NODES%NUMBER_OF_NODES
+            DO derivative_idx=1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+              CALL LIST_REMOVE_DUPLICATES(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,ERR,ERROR,*999)
+              CALL LIST_DETACH_AND_DESTROY(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,NUMBER_OF_VERSIONS,VERSIONS, &
+                & ERR,ERROR,*999)
+              NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS = NUMBER_OF_VERSIONS
+              ALLOCATE(NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS(NUMBER_OF_VERSIONS),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999)
+              !Possible bug in LIST_REMOVE_DUPLICATES, when it comes time to LIST_DETACH_AND_DESTROY the deleted list values are still present. Or is this how lists are supposed to work - you shift the deleted one to the end of the list and just change the number of list values to -1 
+              NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS = VERSIONS(1:NUMBER_OF_VERSIONS)
+              DEALLOCATE(VERSIONS)
+            ENDDO!derivative_idx
+          ENDDO!node_idx
+        ELSE
+          CALL FLAG_ERROR("Mesh topology nodes is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Mesh topology elements is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Mesh topology is not associated.",ERR,ERROR,*999)
+    ENDIF
+   
+    IF(DIAGNOSTICS1) THEN
+      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of mesh global nodes = ",NODES%NUMBER_OF_NODES,ERR,ERROR,*999)
+      DO node_idx=1,NODES%NUMBER_OF_NODES
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh global node number = ",node_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of derivatives = ", &
+          & NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
+        DO derivative_idx=1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+          !TODO: change output string below so that it writes out derivative_idx index as well
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global derivative index(derivative_idx) = ", &
+            & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Partial derivative index(derivative_idx) = ", &
+            & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
+            & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS,8,8, &
+            & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS, & 
+            & '("    User Version index(derivative_idx,:) :",8(X,I2))','(36X,8(X,I2))',ERR,ERROR,*999)
+        ENDDO!derivative_idx
+      ENDDO !node_idx
+    ENDIF
+    
+    CALL EXITS("MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE")
+    RETURN
+999 IF(ALLOCATED(VERSIONS)) DEALLOCATE(VERSIONS)
+    DO node_idx=1,NODES%NUMBER_OF_NODES
+      DO derivative_idx=1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+        IF(ASSOCIATED(NODE_VERSION_LIST)) THEN
+          CALL LIST_DESTROY(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,ERR,ERROR,*998)
+        ENDIF
+      ENDDO !derivative_idx
+    ENDDO !node_idx
+998 CALL ERRORS("MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE",ERR,ERROR)
+    CALL EXITS("MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE")
+    RETURN 1
+   
+  END SUBROUTINE MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE
+
+  !#######################################################VERSIONS END##########################################################
+
+  !
+  !================================================================================================================================
+  !
+
 
   !>Calculates the element numbers surrounding a node for a mesh.
   SUBROUTINE MESH_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)

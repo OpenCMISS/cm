@@ -2532,12 +2532,13 @@ CONTAINS
   !
 
   !>Get absolute error value for the node in a field specified by a user number compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,DerivativeNumber,NodeNumber, &
-    & ComponentNumber,VariableNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetNodeNum")
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VersionNumber,DerivativeNumber, &
+    & NodeNumber, ComponentNumber,VariableNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetNodeNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the field for analytic error analysis.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number, for C, of the field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<Derivative version number, for C, of the field to calculate the analytic error analysis for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<Derivative number, for C, of the field to calculate the analytic error analysis for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<Node number, for C, of the field to calculate the analytic error analysis for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<Component number, for C, of the field to calculate the analytic error analysis for.
@@ -2547,7 +2548,7 @@ CONTAINS
     INTEGER(C_INT) :: CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum !<Error code.
     !Local variable
 
-    CALL CMISSAnalyticAnalysisAbsoluteErrorGetNode(RegionUserNumber,FieldUserNumber,DerivativeNumber,NodeNumber, &
+    CALL CMISSAnalyticAnalysisAbsoluteErrorGetNode(RegionUserNumber,FieldUserNumber,VersionNumber,DerivativeNumber,NodeNumber, &
       & ComponentNumber,VariableNumber,Value, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCNum)
 
     RETURN
@@ -2559,11 +2560,12 @@ CONTAINS
   !
 
   !>Get absolute error value for the node in a field identified by an object compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr(FieldPtr,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber, &
-    & Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetNode")
+  FUNCTION CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr(FieldPtr,VersionNumber,DerivativeNumber,NodeNumber,ComponentNumber, &
+    & VariableNumber, Value) BIND(C, NAME = "CMISSAnalyticAnalysisAbsoluteErrorGetNode")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<Derivative version number, for C, of the field to calculate the analytic error analysis for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<Derivative number, for C, of the field to calculate the analytic error analysis for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<Node number, for C, of the field to calculate the analytic error analysis for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<Component number, for C, of the field to calculate the analytic error analysis for.
@@ -2578,8 +2580,8 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSAnalyticAnalysisAbsoluteErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableNumber, &
-          & Value, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr)
+        CALL CMISSAnalyticAnalysisAbsoluteErrorGetNode(Field,VersionNumber,DerivativeNumber,NodeNumber,ComponentNumber, &
+          & VariableNumber, Value, CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr)
       ELSE
         CMISSAnalyticAnalysisAbsoluteErrorGetNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -2596,12 +2598,13 @@ CONTAINS
   ! 
 
   !>Get percentage error value for the node in a field specified by a user number compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
-    & NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNodeNum")
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber, NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNodeNum")
 
   !Argument Variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number, for C.
@@ -2611,8 +2614,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSAnalyticAnalysisPercentageErrorGetNodeCNum !<Error Code.
     !Local variables
 
-    CALL CMISSAnalyticAnalysisPercentageErrorGetNode(RegionUserNumber, FieldUserNumber, DerivativeNumber, NodeNumber, &
-      & ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCNum)
+    CALL CMISSAnalyticAnalysisPercentageErrorGetNode(RegionUserNumber, FieldUserNumber, VersionNumber, DerivativeNumber, &
+      & NodeNumber, ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCNum)
 
     RETURN
 
@@ -2623,11 +2626,12 @@ CONTAINS
   !  
 
   !>Get percentage error value for the node in a field identified by an object compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr(FieldPtr,DerivativeNumber,NodeNumber,ComponentNumber,VariableType,Value)&
-    & BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNode")
+  FUNCTION CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr(FieldPtr,VersionNumber,DerivativeNumber,NodeNumber,ComponentNumber, &
+    & VariableType,Value) BIND(C, NAME = "CMISSAnalyticAnalysisPercentageErrorGetNode")
   
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
@@ -2642,8 +2646,8 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSAnalyticAnalysisPercentageErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableType, &
-          & Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr)
+        CALL CMISSAnalyticAnalysisPercentageErrorGetNode(Field,VersionNumber,DerivativeNumber,NodeNumber,ComponentNumber, &
+          & VariableType, Value, CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr)
       ELSE
         CMISSAnalyticAnalysisPercentageErrorGetNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -2660,12 +2664,13 @@ CONTAINS
   ! 
 
   !>Get relative error value for the node in a field specified by a user number compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
-    & NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNodeNum")
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCNum(RegionUserNumber,FieldUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber, NodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNodeNum")
   
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
@@ -2674,8 +2679,8 @@ CONTAINS
     !Function variable
     INTEGER(C_INT) :: CMISSAnalyticAnalysisRelativeErrorGetNodeCNum !<Error code.
 
-    CALL CMISSAnalyticAnalysisRelativeErrorGetNode(RegionUserNumber, FieldUserNumber, DerivativeNumber, NodeNumber, &
-      & ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCNum)
+    CALL CMISSAnalyticAnalysisRelativeErrorGetNode(RegionUserNumber, FieldUserNumber, VersionNumber, DerivativeNumber, &
+      & NodeNumber, ComponentNumber, VariableType, Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCNum)
 
     RETURN
 
@@ -2686,11 +2691,12 @@ CONTAINS
   !  
 
   !>Get relative error value for the node in a field identified by an object compared to the analytic value for C.
-  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr(FieldPtr,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value)&
-    & BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNode")
+  FUNCTION CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr(FieldPtr,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+    & ComponentNumber,Value) BIND(C, NAME = "CMISSAnalyticAnalysisRelativeErrorGetNode")
   
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to calculate the analytic error analysis for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeNumber !<The node number for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number for C.
@@ -2705,8 +2711,8 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSAnalyticAnalysisRelativeErrorGetNode(Field,DerivativeNumber,NodeNumber,ComponentNumber,VariableType, &
-          & Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr)
+        CALL CMISSAnalyticAnalysisRelativeErrorGetNode(Field,VersionNumber,DerivativeNumber,NodeNumber,ComponentNumber, &
+          & VariableType, Value, CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr)
       ELSE
         CMISSAnalyticAnalysisRelativeErrorGetNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5248,13 +5254,14 @@ CONTAINS
   !
 
   !>Adds the value to the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by a user number for C.
-  FUNCTION CMISSBoundaryConditionsAddNodeCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber, &
-    & NodeUserNumber,ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNodeNum")
+  FUNCTION CMISSBoundaryConditionsAddNodeCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber, NodeUserNumber,ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNodeNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number of the element to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field to add the boundary condition at, for C.
@@ -5264,8 +5271,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsAddNodeCNum !<Error Code.
     !Local variables
 
-    CALL CMISSBoundaryConditionsAddNode(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber,NodeUserNumber, &
-      & ComponentNumber,Condition,Value, CMISSBoundaryConditionsAddNodeCNum)
+    CALL CMISSBoundaryConditionsAddNode(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber,DerivativeNumber, &
+      & NodeUserNumber, ComponentNumber,Condition,Value, CMISSBoundaryConditionsAddNodeCNum)
 
     RETURN
 
@@ -5276,12 +5283,13 @@ CONTAINS
   !
 
   !>Adds to the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object for C.
-  FUNCTION CMISSBoundaryConditionsAddNodeCPtr(BoundaryConditionsPtr,VariableType,DerivativeNumber,NodeUserNumber,ComponentNumber, &
-    & Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNode")
+  FUNCTION CMISSBoundaryConditionsAddNodeCPtr(BoundaryConditionsPtr,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+    & ComponentNumber, Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNode")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to add the node to.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number of the element to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field to add the boundary condition at, for C.
@@ -5296,8 +5304,8 @@ CONTAINS
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsAddNode(BoundaryConditions, VariableType, DerivativeNumber,NodeUserNumber,ComponentNumber, &
-          & Condition, Value, CMISSBoundaryConditionsAddNodeCPtr)
+        CALL CMISSBoundaryConditionsAddNode(BoundaryConditions, VariableType, VersionNumber, DerivativeNumber,NodeUserNumber, &
+          & ComponentNumber, Condition, Value, CMISSBoundaryConditionsAddNodeCPtr)
       ELSE
         CMISSBoundaryConditionsAddNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5314,13 +5322,14 @@ CONTAINS
   !
 
   !>Sets the value of the specified node as a boundary condition on the specified node for boundary conditions identified by a user number for C.
-  FUNCTION CMISSBoundaryConditionsSetNodeCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber, &
-    & NodeUserNumber,ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNodeNum")
+  FUNCTION CMISSBoundaryConditionsSetNodeCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber, NodeUserNumber,ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNodeNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number of the element to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at, for C.
@@ -5330,8 +5339,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsSetNodeCNum !<Error Code.
     !Local variables
 
-    CALL CMISSBoundaryConditionsSetNode(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber,NodeUserNumber, &
-      & ComponentNumber,Condition,Value, CMISSBoundaryConditionsSetNodeCNum)
+    CALL CMISSBoundaryConditionsSetNode(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber,DerivativeNumber, &
+      & NodeUserNumber, ComponentNumber,Condition,Value, CMISSBoundaryConditionsSetNodeCNum)
 
     RETURN
 
@@ -5342,12 +5351,13 @@ CONTAINS
   !
 
   !>Sets the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object for C.
-  FUNCTION CMISSBoundaryConditionsSetNodeCPtr(BoundaryConditionsPtr,VariableType,DerivativeNumber,NodeUserNumber,ComponentNumber, &
-    & Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNode")
+  FUNCTION CMISSBoundaryConditionsSetNodeCPtr(BoundaryConditionsPtr,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+    & ComponentNumber, Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNode")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set the node to.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: NodeUserNumber !<The user number of the element to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at, for C.
@@ -5362,8 +5372,8 @@ CONTAINS
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsSetNode(BoundaryConditions, VariableType, DerivativeNumber,NodeUserNumber,ComponentNumber, &
-          & Condition,Value, CMISSBoundaryConditionsSetNodeCPtr)
+        CALL CMISSBoundaryConditionsSetNode(BoundaryConditions, VariableType, VersionNumber, DerivativeNumber,NodeUserNumber, &
+          & ComponentNumber, Condition,Value, CMISSBoundaryConditionsSetNodeCPtr)
       ELSE
         CMISSBoundaryConditionsSetNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -13496,14 +13506,15 @@ CONTAINS
   !
 
   !>Adds the given integer value to an node in the given parameter set for field variable component for a field identified by a user number, for C.
-  FUNCTION CMISSFieldParameterSetAddNodeIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeIntgNum")
+  FUNCTION CMISSFieldParameterSetAddNodeIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber, UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13512,7 +13523,7 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,&
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber,DerivativeNumber,&
     & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeIntgCNum)
 
     RETURN
@@ -13524,13 +13535,14 @@ CONTAINS
   !
 
   !>Adds the given integer value to an node in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeIntg")
+  FUNCTION CMISSFieldParameterSetAddNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber, ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13544,7 +13556,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
         & ComponentNumber, Value, CMISSFieldParameterSetAddNodeIntgCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeIntgCPtr = CMISSErrorConvertingPointer
@@ -13564,14 +13576,15 @@ CONTAINS
   !
 
   !>Adds the given single precision value to an node in the given parameter set for field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddNodeSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeSPNum")
+  FUNCTION CMISSFieldParameterSetAddNodeSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber, UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13580,7 +13593,7 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
     & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeSPCNum)
 
     RETURN
@@ -13592,13 +13605,14 @@ CONTAINS
   !
 
   !>Adds the given single precision value to an node in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddNodeSPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  FUNCTION CMISSFieldParameterSetAddNodeSPCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13612,7 +13626,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
         & ComponentNumber, Value, CMISSFieldParameterSetAddNodeSPCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeSPCPtr = CMISSErrorConvertingPointer
@@ -13630,14 +13644,15 @@ CONTAINS
   !
 
   !>Adds the given double precision value to an node in the given parameter set for field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddNodeDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeDPNum")
+  FUNCTION CMISSFieldParameterSetAddNodeDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber, UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13646,7 +13661,7 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
     & UserNodeNumber,ComponentNumber,Value,CMISSFieldParameterSetAddNodeDPCNum)
 
     RETURN
@@ -13658,13 +13673,14 @@ CONTAINS
   !
 
   !>Adds the given double precision value to an node in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddNodeDPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  FUNCTION CMISSFieldParameterSetAddNodeDPCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13678,7 +13694,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
         & ComponentNumber, Value, CMISSFieldParameterSetAddNodeDPCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeDPCPtr = CMISSErrorConvertingPointer
@@ -13696,14 +13712,15 @@ CONTAINS
   !
 
   !>Adds the given logical value to an node in the given parameter set for field variable component for a field identified by a user number for C.
-  FUNCTION CMISSFieldParameterSetAddNodeLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeLNum")
+  FUNCTION CMISSFieldParameterSetAddNodeLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber, UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13712,8 +13729,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetAddNodeLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,&
-    & ComponentNumber,Value==CMISSTrue,CMISSFieldParameterSetAddNodeLCNum)
+    CALL CMISSFieldParameterSetAddNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber, ComponentNumber,Value==CMISSTrue,CMISSFieldParameterSetAddNodeLCNum)
 
     RETURN
 
@@ -13724,13 +13741,14 @@ CONTAINS
   !
 
   !>Adds the given logical value to an node in the given parameter set for field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetAddNodeLCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-    & Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeL")
+  FUNCTION CMISSFieldParameterSetAddNodeLCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber, Value) BIND(C, NAME = "CMISSFieldParameterSetAddNodeL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr  !<C pointer to the field to add the value to the node in the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node in the field parameter set for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to add the value to for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber  !<The component number of the field variable to add the value to the node in the field parameter set for, for C.
@@ -13744,8 +13762,8 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, ComponentNumber, &
-        & Value==CMISSTrue, CMISSFieldParameterSetAddNodeLCPtr)
+        CALL CMISSFieldParameterSetAddNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
+        & ComponentNumber, Value==CMISSTrue, CMISSFieldParameterSetAddNodeLCPtr)
       ELSE
         CMISSFieldParameterSetAddNodeLCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -15099,13 +15117,14 @@ CONTAINS
 
   !>Returns from the given parameter set an integer value for the specified node and derivative of a field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetGetNodeIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntgNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C..
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15114,8 +15133,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeIntgCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-      & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeIntgCNum)
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, VersionNumber, &
+      & DerivativeNumber, UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeIntgCNum)
 
     RETURN
 
@@ -15126,13 +15145,14 @@ CONTAINS
   !
 
   !>Returns from the given parameter set an integer value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntg")
+  FUNCTION CMISSFieldParameterSetGetNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber, ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15146,7 +15166,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeIntgCPtr)
       ELSE
         CMISSFieldParameterSetGetNodeIntgCPtr = CMISSErrorConvertingPointer
@@ -15165,13 +15185,14 @@ CONTAINS
 
   !>Returns from the given parameter set a single precision value for the specified node and derivative of a field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetGetNodeSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeSPNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15180,8 +15201,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeSPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-      &UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeSPCNum)
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, VersionNumber, &
+      & DerivativeNumber, UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeSPCNum)
 
     RETURN
 
@@ -15192,13 +15213,14 @@ CONTAINS
   !
 
   !>Returns from the given parameter set a single precision value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeSPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  FUNCTION CMISSFieldParameterSetGetNodeSPCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15212,7 +15234,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeSPCPtr)
       ELSE
         CMISSFieldParameterSetGetNodeSPCPtr = CMISSErrorConvertingPointer
@@ -15231,13 +15253,14 @@ CONTAINS
 
   !>Returns from the given parameter set a double precision value for the specified node and derivative of a field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetGetNodeDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeDPNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15246,8 +15269,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeDPCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-      & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeDPCNum)
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, VersionNumber, & 
+      & DerivativeNumber, UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeDPCNum)
 
     RETURN
 
@@ -15258,13 +15281,14 @@ CONTAINS
   !
 
   !>Returns from the given parameter set a double precision value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeDPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  FUNCTION CMISSFieldParameterSetGetNodeDPCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15278,7 +15302,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeDPCPtr)
       ELSE
         CMISSFieldParameterSetGetNodeDPCPtr = CMISSErrorConvertingPointer
@@ -15297,13 +15321,14 @@ CONTAINS
 
   !>Returns from the given parameter set a logical value for the specified node and derivative of a field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetGetNodeLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeLNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15312,8 +15337,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetGetNodeLCNum !<Error Code.
     !Local variables
 
-    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, DerivativeNumber, &
-      & UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeLCNum)
+    CALL CMISSFieldParameterSetGetNode(RegionUserNumber, FieldUserNumber, VariableType, FieldSetType, VersionNumber, &
+      & DerivativeNumber, UserNodeNumber, ComponentNumber,Value, CMISSFieldParameterSetGetNodeLCNum)
 
     IF(Value==CMISSTrue) THEN
       Value = 1
@@ -15330,13 +15355,14 @@ CONTAINS
   !
 
   !>Returns from the given parameter set a logical value for the specified node and derivative of a field variable component for a field identified by an object for C.
-  FUNCTION CMISSFieldParameterSetGetNodeLCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  FUNCTION CMISSFieldParameterSetGetNodeLCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetGetNodeL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to get the nodal value from the field parameter set.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set, for C.
@@ -15350,7 +15376,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetGetNode(Field, VariableType, FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value, CMISSFieldParameterSetGetNodeLCPtr)
         IF(Value==CMISSTrue) THEN
           Value = 1
@@ -15936,13 +15962,15 @@ CONTAINS
 
   !>Updates the given parameter set with the given integer value for the node and derivative of the field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetUpdateNodeIntgCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntgNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value) & 
+    & BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntgNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -15951,8 +15979,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeIntgCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
-      & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeIntgCNum)
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, VersionNumber, &
+      & DerivativeNumber, UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeIntgCNum)
 
     RETURN
 
@@ -15964,13 +15992,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given integer value for the node and derivative of the field variable component for a field identified by an object for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntg")
+  FUNCTION CMISSFieldParameterSetUpdateNodeIntgCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber, ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeIntg")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -15984,7 +16013,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber,Value,CMISSFieldParameterSetUpdateNodeIntgCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeIntgCPtr = CMISSErrorConvertingPointer
@@ -16003,13 +16032,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given single precision value for the node and derivative of the field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetUpdateNodeSPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSPNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -16018,8 +16048,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeSPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
-      & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeSPCNum)
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, VersionNumber, &
+      & DerivativeNumber, UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeSPCNum)
 
     RETURN
 
@@ -16031,13 +16061,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given single precision value for the node and derivative of the field variable component for a field identified by an object, for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeSPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSP")
+  FUNCTION CMISSFieldParameterSetUpdateNodeSPCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber, ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeSP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -16051,7 +16082,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeSPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeSPCPtr = CMISSErrorConvertingPointer
@@ -16070,13 +16101,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given double precision value for the node and derivative of the field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetUpdateNodeDPCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDPNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value)  BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDPNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -16085,8 +16117,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeDPCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber, &
-      & UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeDPCNum)
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, VersionNumber, &
+      & DerivativeNumber, UserNodeNumber, ComponentNumber, Value, CMISSFieldParameterSetUpdateNodeDPCNum)
 
     RETURN
 
@@ -16098,13 +16130,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given double precision value for the node and derivative of the field variable component for a field identified by an object for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeDPCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDP")
+  FUNCTION CMISSFieldParameterSetUpdateNodeDPCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber, ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeDP")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -16118,7 +16151,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value,CMISSFieldParameterSetUpdateNodeDPCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeDPCPtr = CMISSErrorConvertingPointer
@@ -16137,13 +16170,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given logical value for the node and derivative of the field variable component for a field identified by a user number for C.
   FUNCTION CMISSFieldParameterSetUpdateNodeLCNum(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeLNum")
+    & VersionNumber, DerivativeNumber,UserNodeNumber,ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeLNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -16152,8 +16186,8 @@ CONTAINS
     INTEGER(C_INT) :: CMISSFieldParameterSetUpdateNodeLCNum !<Error Code.
     !Local variable
 
-    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, DerivativeNumber,&
-      & UserNodeNumber, ComponentNumber, Value==CMISSTrue, CMISSFieldParameterSetUpdateNodeLCNum)
+    CALL CMISSFieldParameterSetUpdateNode(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, VersionNumber, &
+      & DerivativeNumber, UserNodeNumber, ComponentNumber, Value==CMISSTrue, CMISSFieldParameterSetUpdateNodeLCNum)
 
     RETURN
 
@@ -16165,13 +16199,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given logical value for the node and derivative of the field variable component for a field identified by an object for C.
 
-  FUNCTION CMISSFieldParameterSetUpdateNodeLCPtr(FieldPtr,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeL")
+  FUNCTION CMISSFieldParameterSetUpdateNodeLCPtr(FieldPtr,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber, ComponentNumber,Value) BIND(C, NAME = "CMISSFieldParameterSetUpdateNodeL")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the field to finishe the parameter set update for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for, for C. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set, for C.
@@ -16185,7 +16220,7 @@ CONTAINS
     IF(C_ASSOCIATED(FieldPtr)) THEN
       CALL C_F_POINTER(FieldPtr, Field)
       IF(ASSOCIATED(Field)) THEN
-        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, DerivativeNumber, UserNodeNumber, &
+        CALL CMISSFieldParameterSetUpdateNode(Field,VariableType,FieldSetType, VersionNumber, DerivativeNumber, UserNodeNumber, &
           & ComponentNumber, Value==CMISSTrue,CMISSFieldParameterSetUpdateNodeLCPtr)
       ELSE
         CMISSFieldParameterSetUpdateNodeLCPtr = CMISSErrorConvertingPointer

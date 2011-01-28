@@ -42,7 +42,7 @@
 !> the terms of any one of the MPL, the GPL or the LGPL.
 !>
 
-!>TThis module handles all routines pertaining to diffusion coupled to diffusion.
+!>This module handles all routines pertaining to diffusion coupled to diffusion.
 
 
 MODULE DIFFUSION_DIFFUSION_ROUTINES

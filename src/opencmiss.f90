@@ -2853,6 +2853,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldUnitScaling = FIELD_UNIT_SCALING !<The field has unit scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldArcLengthScaling = FIELD_ARC_LENGTH_SCALING !<The field has arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldArithmeticMeanScaling = FIELD_ARITHMETIC_MEAN_SCALING !<The field has arithmetic mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldGeometricMeanScaling = FIELD_GEOMETRIC_MEAN_SCALING !<The field has geometric mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldHarmonicMeanScaling = FIELD_HARMONIC_MEAN_SCALING !<The field has geometric mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
   !>@}
   !>@}
@@ -4150,6 +4151,14 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElementsNodesSetObj
   END INTERFACE !CMISSMeshElementsNodesSet
 
+  !#######################################################VERSIONS START########################################################
+  !>Sets/changes a node version for an element in a mesh. 
+  INTERFACE CMISSMeshElementsNodeVersionSet
+    MODULE PROCEDURE CMISSMeshElementsNodeVersionSetNumber
+    MODULE PROCEDURE CMISSMeshElementsNodeVersionSetObj
+  END INTERFACE !CMISSMeshElementsNodeVersionSet
+  !#######################################################VERSIONS END##########################################################
+
   !>Returns the element user number for an element in a mesh. 
   INTERFACE CMISSMeshElementsUserNumberGet
     MODULE PROCEDURE CMISSMeshElementsUserNumberGetNumber
@@ -4213,10 +4222,10 @@ MODULE OPENCMISS
   PUBLIC CMISSMeshElementsNodesGet,CMISSMeshElementsNodesSet
 
   PUBLIC CMISSMeshElementsUserNumberGet,CMISSMeshElementsUserNumberSet
-
-  PUBLIC CMISSMeshNodeExists,CMISSMeshElementExists
   
-  PUBLIC CMISSDecompositionNodeDomainGet
+  PUBLIC CMISSMeshNodeExists,CMISSMeshElementExists
+
+  PUBLIC CMISSDecompositionNodeDomainGet,CMISSMeshElementsNodeVersionSet 
 
   PUBLIC CMISSMeshSurroundingElementsCalculateSet
 
@@ -4286,6 +4295,14 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSNodesUserNumberSetNumber
     MODULE PROCEDURE CMISSNodesUserNumberSetObj
   END INTERFACE !CMISSNodesUserNumberSet
+
+!  !#######################################################VERSIONS START########################################################
+!  !>Sets number of versions for a node identified by a given global number and component. 
+!  INTERFACE CMISSNodesNumberOfVersionsSet
+!    MODULE PROCEDURE CMISSNodesNumberOfVersionsSetNumber
+!    MODULE PROCEDURE CMISSNodesNumberOfVersionsSetObj
+!  END INTERFACE !CMISSNodesNumberOfVersionsSet
+!  !#######################################################VERSIONS END##########################################################
 
   PUBLIC CMISSNodesCreateFinish,CMISSNodesCreateStart
 
@@ -7181,12 +7198,13 @@ CONTAINS
   ! 
 
   !>Get absolute error value for the node in a field specified by a user number compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
-    & NodeNumber,ComponentNumber,Value,Err)
+  SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber,NodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<derivative version number
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
@@ -7206,8 +7224,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value,ERR, &
-          & ERROR,*999)
+        CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+          & ComponentNumber,Value,ERR,ERROR,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -7232,11 +7250,12 @@ CONTAINS
   !  
 
   !>Get absolute error value for the node in a field identified by an object compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj(Field,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
-    & Err)
+  SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj(Field,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+    & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<derivative version number
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
@@ -7247,8 +7266,8 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj",Err,ERROR,*999)
     
-    CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(Field%FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
-      & ERR,ERROR,*999)
+    CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(Field%FIELD,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+      & ComponentNumber,Value,ERR,ERROR,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj")
 
@@ -7265,12 +7284,13 @@ CONTAINS
   ! 
 
   !>Get percentage error value for the node in a field specified by a user number compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisPercentageErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
-    & NodeNumber,ComponentNumber,Value,Err)
+  SUBROUTINE CMISSAnalyticAnalysisPercentageErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber,NodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<derivative version number
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
@@ -7290,8 +7310,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value,ERR, &
-          & ERROR,*999)
+        CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(FIELD,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+          & ComponentNumber,Value,ERR,ERROR,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -7316,11 +7336,12 @@ CONTAINS
   !  
 
   !>Get percentage error value for the node in a field identified by an object compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisPercentageErrorGetNodeObj(Field,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
-    & Err)
+  SUBROUTINE CMISSAnalyticAnalysisPercentageErrorGetNodeObj(Field,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+    & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<derivative version number
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
@@ -7331,8 +7352,8 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj",Err,ERROR,*999)
     
-    CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(Field%FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
-      & ERR,ERROR,*999)
+    CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(Field%FIELD,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+      & ComponentNumber,Value,ERR,ERROR,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj")
 
@@ -7350,12 +7371,13 @@ CONTAINS
   ! 
 
   !>Get relative error value for the node in a field specified by a user number compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisRelativeErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,DerivativeNumber, & 
-    & NodeNumber,ComponentNumber,Value,Err)
+  SUBROUTINE CMISSAnalyticAnalysisRelativeErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber,NodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<derivative version number
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
@@ -7375,8 +7397,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value,ERR, &
-          & ERROR,*999)
+        CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(FIELD,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+          & ComponentNumber,Value,ERR,ERROR,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -7401,11 +7423,12 @@ CONTAINS
   !  
 
   !>Get relative error value for the node in a field identified by an object compared to the analytic value.
-  SUBROUTINE CMISSAnalyticAnalysisRelativeErrorGetNodeObj(Field,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
-    & Err)
+  SUBROUTINE CMISSAnalyticAnalysisRelativeErrorGetNodeObj(Field,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+    & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<derivative version number
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<derivative number
     INTEGER(INTG), INTENT(IN) :: NodeNumber !<node number
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<component number
@@ -7416,8 +7439,8 @@ CONTAINS
 
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj",Err,ERROR,*999)
     
-    CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(Field%FIELD,VariableType,DerivativeNumber,NodeNumber,ComponentNumber,Value, &
-      & ERR,ERROR,*999)
+    CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(Field%FIELD,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
+      & ComponentNumber,Value,ERR,ERROR,*999)
 
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj")
 
@@ -10407,13 +10430,14 @@ CONTAINS
   !
   
   !>Adds the value to the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by a user number.
-  SUBROUTINE CMISSBoundaryConditionsAddNodeNumber(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber, &
-    & NodeUserNumber,ComponentNumber,Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsAddNodeNumber(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber,NodeUserNumber,ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The user number of the node derivative version to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to add the boundary condition at.
@@ -10436,8 +10460,8 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VariableType,DerivativeNumber,NodeUserNumber,ComponentNumber, &
-          & Condition,Value,Err,ERROR,*999)
+        CALL BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+          & ComponentNumber,Condition,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10462,12 +10486,13 @@ CONTAINS
   !
   
   !>Adds to the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsAddNodeObj(BoundaryConditions,VariableType,DerivativeNumber,NodeUserNumber,ComponentNumber, &
-    & Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsAddNodeObj(BoundaryConditions,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+    & ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The user number of the node derivative version to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at.
@@ -10478,8 +10503,8 @@ CONTAINS
 
     CALL ENTERS("CMISSBoundaryConditionsAddNodeObj",Err,ERROR,*999)
     
-    CALL BOUNDARY_CONDITIONS_ADD_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,DerivativeNumber,NodeUserNumber, &
-      & ComponentNumber,Condition,Value,Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_ADD_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber, &
+      & NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsAddNodeObj")
     RETURN
@@ -10495,13 +10520,14 @@ CONTAINS
   !
 
   !>Sets the value of the specified node as a boundary condition on the specified node for boundary conditions identified by a user number.
-  SUBROUTINE CMISSBoundaryConditionsSetNodeNumber(RegionUserNumber,EquationsSetUserNumber,VariableType,DerivativeNumber, &
-    & NodeUserNumber,ComponentNumber,Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsSetNodeNumber(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber, &
+    & DerivativeNumber,NodeUserNumber,ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The user number of the node derivative version to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at.
@@ -10524,8 +10550,8 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VariableType,DerivativeNumber,NodeUserNumber,ComponentNumber, &
-          & Condition,Value,Err,ERROR,*999)
+        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+          & ComponentNumber,Condition,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10550,12 +10576,13 @@ CONTAINS
   !
   
   !>Sets the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsSetNodeObj(BoundaryConditions,VariableType,DerivativeNumber,NodeUserNumber,ComponentNumber, &
-    & Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsSetNodeObj(BoundaryConditions,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+    & ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to set the node to.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The user number of the node derivative version to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at.
@@ -10566,8 +10593,8 @@ CONTAINS
   
     CALL ENTERS("CMISSBoundaryConditionsSetNodeObj",Err,ERROR,*999)
     
-    CALL BOUNDARY_CONDITIONS_SET_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,DerivativeNumber,NodeUserNumber, &
-      & ComponentNumber,Condition,Value,Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_SET_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber, &
+      & NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsSetNodeObj")
     RETURN
@@ -24733,14 +24760,15 @@ CONTAINS
   !   
 
   !>Adds the given integer value to an node in the given parameter set for field variable component for a field identified by a user number.
-  SUBROUTINE CMISSFieldParameterSetAddNodeIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value,Err)
+  SUBROUTINE CMISSFieldParameterSetAddNodeIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -24759,8 +24787,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -24785,13 +24813,14 @@ CONTAINS
   !  
  
   !>Adds the given integer value to an node in the given parameter set for field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetAddNodeIntgObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetAddNodeIntgObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -24801,8 +24830,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetAddNodeIntgObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber,Value, &
-      & Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetAddNodeIntgObj")
     RETURN
@@ -24818,14 +24847,15 @@ CONTAINS
   !   
 
   !>Adds the given single precision value to an node in the given parameter set for field variable component for a field identified by a user number.
-  SUBROUTINE CMISSFieldParameterSetAddNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value,Err)
+  SUBROUTINE CMISSFieldParameterSetAddNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -24844,8 +24874,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -24870,13 +24900,14 @@ CONTAINS
   !  
  
   !>Adds the given single precision value to an node in the given parameter set for field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetAddNodeSPObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetAddNodeSPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -24886,7 +24917,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetAddNodeSPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
       & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetAddNodeSPObj")
@@ -24903,14 +24934,15 @@ CONTAINS
   !   
 
   !>Adds the given double precision value to an node in the given parameter set for field variable component for a field identified by a user number.
-  SUBROUTINE CMISSFieldParameterSetAddNodeDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value,Err)
+  SUBROUTINE CMISSFieldParameterSetAddNodeDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -24929,8 +24961,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -24955,13 +24987,14 @@ CONTAINS
   !  
  
   !>Adds the given double precision value to an node in the given parameter set for field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetAddNodeDPObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetAddNodeDPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -24971,7 +25004,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetAddNodeDPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
       & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetAddNodeDPObj")
@@ -24988,14 +25021,15 @@ CONTAINS
   !   
 
   !>Adds the given logical value to an node in the given parameter set for field variable component for a field identified by a user number.
-  SUBROUTINE CMISSFieldParameterSetAddNodeLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,DerivativeNumber, &
-    & UserNodeNumber,ComponentNumber,Value,Err)
+  SUBROUTINE CMISSFieldParameterSetAddNodeLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -25014,8 +25048,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_ADD_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -25040,13 +25074,14 @@ CONTAINS
   !  
  
   !>Adds the given logical value to an node in the given parameter set for field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetAddNodeLObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-    & Value,Err)
+  SUBROUTINE CMISSFieldParameterSetAddNodeLObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+    & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to add the value to the node in the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to add the value to the node in the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to add the value to the node. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The node derivative version number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The node derivative number of the node to add the value to.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to add the value to.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to add the value to the node to in the field parameter set.
@@ -25056,8 +25091,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetAddNodeLObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetAddNodeLObj")
     RETURN
@@ -26456,13 +26491,14 @@ CONTAINS
 
   !>Returns from the given parameter set an integer value for the specified node and derivative of a field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetGetNodeIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26481,8 +26517,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26507,13 +26543,14 @@ CONTAINS
   !  
  
   !>Returns from the given parameter set an integer value for the specified node and derivative of a field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetGetNodeIntgObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetGetNodeIntgObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,VALUE,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26523,8 +26560,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetGetNodeIntgObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetGetNodeIntgObj")
     RETURN
@@ -26541,13 +26578,14 @@ CONTAINS
 
   !>Returns from the given parameter set a single precision value for the specified node and derivative of a field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetGetNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26566,8 +26604,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26592,13 +26630,14 @@ CONTAINS
   !  
  
   !>Returns from the given parameter set a single precision value for the specified node and derivative of a field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetGetNodeSPObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetGetNodeSPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26608,8 +26647,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetGetNodeSPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetGetNodeSPObj")
     RETURN
@@ -26626,13 +26665,14 @@ CONTAINS
 
   !>Returns from the given parameter set a double precision value for the specified node and derivative of a field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetGetNodeDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26651,8 +26691,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26677,13 +26717,14 @@ CONTAINS
   !  
  
   !>Returns from the given parameter set a double precision value for the specified node and derivative of a field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetGetNodeDPObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetGetNodeDPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26693,8 +26734,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetGetNodeDPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetGetNodeDPObj")
     RETURN
@@ -26711,13 +26752,14 @@ CONTAINS
 
   !>Returns from the given parameter set a logical value for the specified node and derivative of a field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetGetNodeLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26736,8 +26778,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -26762,13 +26804,14 @@ CONTAINS
   !  
  
   !>Returns from the given parameter set a logical value for the specified node and derivative of a field variable component for a field identified by an object.
-  SUBROUTINE CMISSFieldParameterSetGetNodeLObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetGetNodeLObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the nodal value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the nodal value from the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to get the nodal value from. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to get the value from the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to get the nodal value from the field parameter set.
@@ -26778,8 +26821,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetGetNodeLObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetGetNodeLObj")
     RETURN
@@ -27546,13 +27589,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given integer value for the node and derivative of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetUpdateNodeIntgNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27571,8 +27615,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -27598,13 +27642,14 @@ CONTAINS
  
   !>Updates the given parameter set with the given integer value for the node and derivative of the field variable component for a field identified by an object.
 
-  SUBROUTINE CMISSFieldParameterSetUpdateNodeIntgObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value,Err)
+  SUBROUTINE CMISSFieldParameterSetUpdateNodeIntgObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27614,8 +27659,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeIntgObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeIntgObj")
     RETURN
@@ -27632,13 +27677,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given single precision value for the node and derivative of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetUpdateNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27657,8 +27703,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -27684,13 +27730,14 @@ CONTAINS
  
   !>Updates the given parameter set with the given single precision value for the node and derivative of the field variable component for a field identified by an object.
 
-  SUBROUTINE CMISSFieldParameterSetUpdateNodeSPObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetUpdateNodeSPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27700,8 +27747,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeSPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeSPObj")
     RETURN
@@ -27718,13 +27765,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given double precision value for the node and derivative of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetUpdateNodeDPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27743,8 +27791,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -27770,13 +27818,14 @@ CONTAINS
  
   !>Updates the given parameter set with the given double precision value for the node and derivative of the field variable component for a field identified by an object.
 
-  SUBROUTINE CMISSFieldParameterSetUpdateNodeDPObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetUpdateNodeDPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27786,8 +27835,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeDPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeDPObj")
     RETURN
@@ -27804,13 +27853,14 @@ CONTAINS
 
   !>Updates the given parameter set with the given logical value for the node and derivative of the field variable component for a field identified by a user number.
   SUBROUTINE CMISSFieldParameterSetUpdateNodeLNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType, &
-    & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
+    & VersionNumber,DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27829,8 +27879,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-          & Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+          & ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -27856,13 +27906,14 @@ CONTAINS
  
   !>Updates the given parameter set with the given logical value for the node and derivative of the field variable component for a field identified by an object.
 
-  SUBROUTINE CMISSFieldParameterSetUpdateNodeLObj(Field,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber, &
+  SUBROUTINE CMISSFieldParameterSetUpdateNodeLObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
     & ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to update the nodal value for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to update the nodal value for the field parameter set. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the field to update the nodal value for. \see OPENCMISS_FieldParameterSetTypes
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The derivative version number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number of the field variable component to update for the field parameter set.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the field variable to update the nodal value for the field parameter set.
@@ -27872,8 +27923,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeLObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,DerivativeNumber,UserNodeNumber,ComponentNumber, &
-      & Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+      & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeLObj")
     RETURN
@@ -35685,7 +35736,94 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSMeshElementsNodesSetObj
+
+  !  
+  !================================================================================================================================
+  !  
+  !#######################################################VERSIONS START########################################################
+  !>Sets/changes the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
+  SUBROUTINE CMISSMeshElementsNodeVersionSetNumber(RegionUserNumber,MeshUserNumber,GlobalElementNumber,VersionNumber, &
+    & DerivativeNumber,ElementNodeIndex,MeshComponentNumber,Err)
   
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The version number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: ElementNodeIndex !<The node index of the specified element node to set a version for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to set the element nodes for.
+
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSMeshElementsNodeVersionSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(MESH_ELEMENTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,MeshComponentNumber,MESH_ELEMENTS,Err,ERROR,*999)
+        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MESH_ELEMENTS,VersionNumber,DerivativeNumber, &
+          & ElementNodeIndex,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshElementsNodeVersionSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsNodeVersionSetNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsNodeVersionSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsNodeVersionSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the element nodes for an element in a mesh identified by an object. \todo should the global element number be a user number?
+  SUBROUTINE CMISSMeshElementsNodeVersionSetObj(MeshElements,GlobalElementNumber,VersionNumber,DerivativeNumber,ElementNodeIndex, &
+    & Err)
+  
+    !Argument variables
+    TYPE(CMISSMeshElementsType), INTENT(IN) :: MeshElements !<The mesh elements to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The version number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: ElementNodeIndex !<The node index of the specified element node to set a version for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSMeshElementsNodeVersionSetObj",Err,ERROR,*999)
+ 
+    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MeshElements%MESH_ELEMENTS,VersionNumber, &
+       & DerivativeNumber,ElementNodeIndex,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshElementsNodeVersionSetObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsNodeVersionSetObj",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsNodeVersionSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsNodeVersionSetObj
+  !#######################################################VERSIONS END##########################################################
   !  
   !================================================================================================================================
   !  
@@ -36693,6 +36831,80 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSNodesUserNumberSetObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+!  !#######################################################VERSIONS START########################################################
+
+!  !>Sets number of versions for a given user node number's, derivative, identified by user number.
+!  SUBROUTINE CMISSNodesNumberOfVersionsSetNumber(RegionUserNumber,NodeUserNumber,DerivativeNumber, &
+!    & NumberOfVersions,Err)
+!  
+!    !Argument variables
+!    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the nodes to set the number of versions for.
+!    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to set the number of versions for.
+!    INTEGER(INTG), INTENT(IN) :: DerivativeNumber  !<The nk'th derivative to set the number of versions for.
+!    INTEGER(INTG), INTENT(IN) :: NumberOfVersions !<The number of versions for the nk'th derivative of the specifed user node number to set.
+!    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!    !Local variables
+!    TYPE(NODES_TYPE), POINTER :: NODES
+!    TYPE(REGION_TYPE), POINTER :: REGION
+!    TYPE(VARYING_STRING) :: LOCAL_ERROR
+!    
+!    CALL ENTERS("CMISSNodesNumberOfVersionsSetNumber",Err,ERROR,*999)
+! 
+!    NULLIFY(REGION)
+!    NULLIFY(NODES)
+!    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+!    IF(ASSOCIATED(REGION)) THEN
+!      CALL REGION_NODES_GET(REGION,NODES,Err,ERROR,*999)
+!      CALL NODES_NUMBER_OF_VERSIONS_SET(NODES,NodeUserNumber,DerivativeNumber,NumberOfVersions,Err,ERROR,*999)
+!    ELSE
+!      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+!        & " does not exist."
+!      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+!    ENDIF
+
+!    CALL EXITS("CMISSNodesNumberOfVersionsSetNumber")
+!    RETURN
+!999 CALL ERRORS("CMISSNodesNumberOfVersionsSetNumber",Err,ERROR)
+!    CALL EXITS("CMISSNodesNumberOfVersionsSetNumber")
+!    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!    RETURN
+!    
+!  END SUBROUTINE CMISSNodesNumberOfVersionsSetNumber
+
+!  !  
+!  !================================================================================================================================
+!  !  
+! 
+!  !>Sets number of versions for a given user node number's, derivative, identified by an object. \todo this should be user number
+!  SUBROUTINE CMISSNodesNumberOfVersionsSetObj(Nodes,NodeUserNumber,DerivativeNumber,NumberOfVersions,Err)
+!  
+!    !Argument variables
+!    TYPE(CMISSNodesType), INTENT(IN) :: Nodes !<The nodes to set the number of versions for.
+!    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to set the number of versions for.
+!    INTEGER(INTG), INTENT(IN) :: DerivativeNumber  !<The nk'th derivative to set the number of versions for.
+!    INTEGER(INTG), INTENT(IN) :: NumberOfVersions !<The number of versions for the nk'th derivative of the specifed user node number to set.
+!    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+!    !Local variables
+!  
+!    CALL ENTERS("CMISSNodesNumberOfVersionsSetObj",Err,ERROR,*999)
+! 
+!    CALL NODES_NUMBER_OF_VERSIONS_SET(Nodes%NODES,NodeUserNumber,DerivativeNumber,NumberOfVersions,Err,ERROR,*999)
+
+!    CALL EXITS("CMISSNodesNumberOfVersionsSetObj")
+!    RETURN
+!999 CALL ERRORS("CMISSNodesNumberOfVersionsSetObj",Err,ERROR)
+!    CALL EXITS("CMISSNodesNumberOfVersionsSetObj")
+!    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+!    RETURN
+!    
+!  END SUBROUTINE CMISSNodesNumberOfVersionsSetObj
+
+!  !#######################################################VERSIONS END##########################################################
 
 !!==================================================================================================================================
 !!

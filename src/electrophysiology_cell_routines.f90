@@ -183,9 +183,11 @@ contains
     do i=1,ncells
       !   field ->   y
       do d=1,celldim
-        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+        !Default to version 1 of each node derivative
+        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))
       end do
-      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+      !Default to version 1 of each node derivative
+      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))
       
       t = t0
       do while (t < t1 - 1e-6)
@@ -201,7 +203,8 @@ contains
       !   y -> field  
       do d=1,celldim
  !       call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
-        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
+        !Default to version 1 of each node derivative
+        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1)) = y(d)
       end do
     end do
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
@@ -391,10 +394,12 @@ contains
     CALL FIELD_PARAMETER_SET_DATA_GET(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
     do i=1,ncells
-      d = CELLS_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)
+      !Default to version 1 of each node derivative
+      d = CELLS_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1)
       y => celldata(d:d+celldim-1)
       prev_v = y(1)
-      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+      !Default to version 1 of each node derivative
+      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))
       
   
       t = t0
@@ -427,7 +432,8 @@ contains
         t = t + dt
       end do
       if(prev_v < 0 .and. y(1) > 0) then ! store activation times, where else?
-        activdata(ACTIV_VARIABLE%COMPONENTS(7)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))=t1
+        !Default to version 1 of each node derivative
+        activdata(ACTIV_VARIABLE%COMPONENTS(7)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))=t1
       end if
     end do ! for cells
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)

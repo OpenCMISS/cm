@@ -521,10 +521,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-   INTEGER(INTG) ::  column_derivative,column_idx,column_component_idx,column_local_derivative_idx,column_local_node_idx, &
-     & column_node,DUMMY_ERR,domain_element,global_column,global_row,interface_element_idx, &
+   INTEGER(INTG) :: column_version,column_derivative,column_idx,column_component_idx,column_local_derivative_idx, &
+     & column_local_node_idx, column_node,DUMMY_ERR,domain_element,global_column,global_row,interface_element_idx, &
      & INTERFACE_MESH_INDEX,local_column,local_row,MATRIX_NUMBER,NUMBER_OF_COLUMNS,NUMBER_OF_ROWS,row_component_idx, &
-     & row_derivative,row_local_derivative_idx,row_idx,row_local_node_idx,row_node,TRANSPOSE_NUMBER_OF_NON_ZEROS
+     & row_version,row_derivative,row_local_derivative_idx,row_idx,row_local_node_idx,row_node,TRANSPOSE_NUMBER_OF_NON_ZEROS
     INTEGER(INTG), ALLOCATABLE :: COLUMNS(:),TRANSPOSE_COLUMNS(:)
     REAL(DP) :: SPARSITY
     TYPE(BASIS_TYPE), POINTER :: COLUMN_BASIS,ROW_BASIS
@@ -636,9 +636,12 @@ CONTAINS
                                                   DO column_local_derivative_idx=1,COLUMN_BASIS% &
                                                     & NUMBER_OF_DERIVATIVES(column_local_node_idx)
                                                     column_derivative=COLUMN_DOMAIN_ELEMENTS%ELEMENTS(interface_element_idx)% &
-                                                      & ELEMENT_DERIVATIVES(column_local_derivative_idx,column_local_node_idx)
+                                                      & ELEMENT_DERIVATIVES(1,column_local_derivative_idx,column_local_node_idx)
+                                                    column_version=COLUMN_DOMAIN_ELEMENTS%ELEMENTS(interface_element_idx)% &
+                                                      & ELEMENT_DERIVATIVES(2,column_local_derivative_idx,column_local_node_idx)
                                                     local_column=COLUMN_VARIABLE%COMPONENTS(column_component_idx)% &
-                                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(column_derivative,column_node)
+                                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(column_node)% &
+                                                      & DERIVATIVES(column_derivative)%VERSIONS(column_version)
                                                     global_column=COLUMN_DOFS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                     !Loop over the components in the dependent variable
                                                     DO row_component_idx=1,ROW_VARIABLE%NUMBER_OF_COMPONENTS
@@ -658,7 +661,7 @@ CONTAINS
                                                           & ELEMENTS_CONNECTIVITY(interface_element_idx,INTERFACE_MESH_INDEX)% &
                                                           & COUPLED_MESH_ELEMENT_NUMBER
                                                         local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)%PARAM_TO_DOF_MAP% &
-                                                          & ELEMENT_PARAM2DOF_MAP(domain_element)
+                                                          & ELEMENT_PARAM2DOF_MAP%ELEMENTS(domain_element)
                                                         CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_row)%PTR,global_column, &
                                                           & ERR,ERROR,*999)
                                                         IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
@@ -679,9 +682,12 @@ CONTAINS
                                                           DO row_local_derivative_idx=1,ROW_BASIS% &
                                                             & NUMBER_OF_DERIVATIVES(row_local_node_idx)
                                                             row_derivative=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
-                                                              & ELEMENT_DERIVATIVES(row_local_derivative_idx,row_local_node_idx)
-                                                            local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)%PARAM_TO_DOF_MAP% &
-                                                              & NODE_PARAM2DOF_MAP(row_derivative,row_node)
+                                                              & ELEMENT_DERIVATIVES(1,row_local_derivative_idx,row_local_node_idx)
+                                                            row_version=ROW_DOMAIN_ELEMENTS%ELEMENTS(domain_element)% &
+                                                              & ELEMENT_DERIVATIVES(2,row_local_derivative_idx,row_local_node_idx)
+                                                            local_row=ROW_VARIABLE%COMPONENTS(row_component_idx)% &
+                                                              & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(row_node)% &
+                                                              & DERIVATIVES(row_derivative)%VERSIONS(row_version)
                                                             CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_row)%PTR,global_column, &
                                                               & ERR,ERROR,*999)
                                                             IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN

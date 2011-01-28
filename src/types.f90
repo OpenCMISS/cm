@@ -577,6 +577,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !#######################################################VERSIONS START########################################################
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVES_IN_LINE(:,:,:) !<DERIVATIVES_IN_LINE(i,local_derivative_idx,local_node_idx). When i=1 DERIVATIVES_IN_LINE will give the global derivative number of the local_derivative_idx'th local derivative for the local_node_idx'th local node in the line, When i=2 DERIVATIVES_IN_LINE will give the global derivative version number of the local_derivative_idx'th local derivative for the local_node_idx'th local node in the line. Old CMISS name NPL(4..5,nj,nl).
   !#######################################################VERSIONS END##########################################################
+  !#######################################################VERSIONS END##########################################################
     LOGICAL :: BOUNDARY_LINE !<Is .TRUE. if the line is on the boundary of the mesh for the domain, .FALSE. if not.
     INTEGER(INTG) :: ELEMENT_NUMBER !<The element number of the element on which the line is on
   END TYPE DOMAIN_LINE_TYPE
@@ -1185,6 +1186,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     !INTEGER(INTG) :: NUMBER_OF_GAUSS_POINT_PARAMETERS !TODO: DELETE THIS!<The number of Gauss point based field parameters for this field variable component.
     !TODO: Gets deleted: !INTEGER(INTG) :: MAX_NUMBER_OF_DERIVATIVES !<The maximum number of derivatives for the node parameters for this field variable component. It is the size of the first index of the NODE_PARAM2DOF_MAP component of this type.
   END TYPE FIELD_PARAM_TO_DOF_MAP_TYPE
+
+  !#######################################################VERSIONS END##########################################################
 
   !#######################################################VERSIONS END##########################################################
 

@@ -2052,7 +2052,7 @@ CONTAINS
             CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
               PETSC_MATRIX%NUMBER_NON_ZEROS=PETSC_MATRIX%M*PETSC_MATRIX%GLOBAL_N
               PETSC_MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=PETSC_MATRIX%GLOBAL_N
-              PETSC_MATRIX%DATA_SIZE=PETSC_MATRIX%NUMBER_NON_ZEROS            
+              PETSC_MATRIX%DATA_SIZE=PETSC_MATRIX%NUMBER_NON_ZEROS
               !Set up the Local to Global mappings
               ALLOCATE(PETSC_MATRIX%GLOBAL_ROW_NUMBERS(PETSC_MATRIX%M),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global row numbers for PETSc distributed matrix.",ERR,ERROR,*999)
@@ -4928,6 +4928,7 @@ CONTAINS
                                             CASE DEFAULT
                                               LOCAL_ERROR="The matrix storage type of "// &
                                                 & TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+
                                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                             END SELECT
                                           CASE(DISTRIBUTED_MATRIX_VECTOR_L_TYPE)
@@ -7965,6 +7966,7 @@ CONTAINS
                   ELSE
                     LOCAL_ERROR="Index "//TRIM(NUMBER_TO_VSTRING(INDICES(i),"*",ERR,ERROR))// &
                       & " is invalid. The index must be between 1 and "// &
+
                       & TRIM(NUMBER_TO_VSTRING(DISTRIBUTED_VECTOR%CMISS%DATA_SIZE,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF

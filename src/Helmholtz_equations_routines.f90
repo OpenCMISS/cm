@@ -154,7 +154,8 @@ CONTAINS
                               DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                 !!TODO \todo We should interpolate the geometric field here and the node position.
                                 DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                  local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                                  local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                    & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                                   X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                                 ENDDO !dim_idx
                                 !Loop over the derivatives
@@ -164,7 +165,7 @@ CONTAINS
                                     !u=cos(k*x/sqrt(2))*sin(k*y/sqrt(2))
                                     SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                       CASE(NO_GLOBAL_DERIV)
                                         VALUE=COS(mu*X(1))*SIN(mu*X(2))
                                       CASE(GLOBAL_DERIV_S1)
@@ -175,12 +176,12 @@ CONTAINS
                                         VALUE=-mu*mu*SIN(mu*X(1))*COS(mu*X(2))
                                       CASE DEFAULT
                                         LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                          DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                          & " is invalid."
+                                          & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                          & ERR,ERROR))//" is invalid."
                                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                       CASE(NO_GLOBAL_DERIV)
                                         VALUE=0.0_DP !!TODO
                                       CASE(GLOBAL_DERIV_S1)
@@ -191,8 +192,8 @@ CONTAINS
                                         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                       CASE DEFAULT
                                         LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                          DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                          & " is invalid."
+                                          & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                          & ERR,ERROR))//" is invalid."
                                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE DEFAULT
@@ -207,7 +208,7 @@ CONTAINS
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                     & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                   IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
