@@ -2238,8 +2238,8 @@ CONTAINS
               DO idx_tensor=1,3
                 VIS_OVER_PERM_TENSOR(idx_tensor,idx_tensor) = 1.0e10_DP
               END DO
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
-                & "WARNING: Jmat<ZERO_TOLERANCE - Thus setting VIS_OVER_PERM_TENSOR(i,i) = 1.0e10_DP",ERR,ERROR,*999)
+!               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
+!                 & "WARNING: Jmat<ZERO_TOLERANCE - Thus setting VIS_OVER_PERM_TENSOR(i,i) = 1.0e10_DP",ERR,ERROR,*999)
             END IF
 
 
@@ -2745,19 +2745,19 @@ CONTAINS
 
                       SOURCE = 0.0_DP
 
-                      SINK_STRENGTH = -1.0_DP  !uniform sink (mind the sign)
+                      SINK_STRENGTH = -0.016666_DP  !uniform sink (mind the sign)
                       SOURCE = SOURCE + SINK_STRENGTH
 
                       IF( ELEMENT_NUMBER == 149 ) THEN
-                        SOURCE_STRENGTH = 0.5_DP
+                        SOURCE_STRENGTH = 8.86_DP
                       ELSE IF( ELEMENT_NUMBER == 89 ) THEN
-                        SOURCE_STRENGTH = 0.5_DP
+                        SOURCE_STRENGTH = 6.46_DP
                       ELSE IF( ELEMENT_NUMBER == 449 ) THEN
-                        SOURCE_STRENGTH = 0.5_DP
+                        SOURCE_STRENGTH = 3.08_DP
                       ELSE IF( ELEMENT_NUMBER == 269 ) THEN
-                        SOURCE_STRENGTH = 0.5_DP
+                        SOURCE_STRENGTH = 2.85_DP
                       ELSE IF( ELEMENT_NUMBER == 29 ) THEN
-                        SOURCE_STRENGTH = 0.5_DP
+                        SOURCE_STRENGTH = 3.18_DP
                       ELSE 
                         SOURCE_STRENGTH = 0.0_DP
                       END IF
@@ -8620,7 +8620,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
         ENDIF
 
         IF(IMPERMEABLE_BC) THEN
-          write(*,*)'ELEMENT_NUMBER WITH AN IMPERMEABLE FACE = ',ELEMENT_NUMBER
+          !write(*,*)'ELEMENT_NUMBER WITH AN IMPERMEABLE FACE = ',ELEMENT_NUMBER
 
           !Grab some other pointers
           DOMAIN_FACE=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)
