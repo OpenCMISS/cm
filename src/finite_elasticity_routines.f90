@@ -4376,7 +4376,7 @@ CONTAINS
                             ENDIF
                             IF(SUBITERATION_NUMBER==0) THEN
                               DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                              IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                              IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
                                 BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
                                 IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                   EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
@@ -4407,6 +4407,8 @@ CONTAINS
                                      IF(.NOT.ALLOCATED(NEW_PRESSURE_VALUES)) ALLOCATE(NEW_PRESSURE_VALUES(DEPENDENT_NUMBER_OF_DOFS))
 
                                       NEW_PRESSURE_VALUES = ALPHA * CURRENT_PRESSURE_VALUES
+
+!                                       write(*,*)'NEW_PRESSURE_VALUES = ',NEW_PRESSURE_VALUES
 
                                       UPDATE_PRESSURE = .FALSE.
                                       DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
@@ -4455,7 +4457,7 @@ CONTAINS
                                   CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
                                 END IF
                               ELSE
-                                CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
                               END IF
                             ELSE
                                 !do nothing
