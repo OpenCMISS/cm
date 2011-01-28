@@ -350,7 +350,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
         F_FLGS += -march=nocona
       endif
     endif
-    DBGF_FLGS += -O0 -fbounds-check
+    DBGF_FLGS += -O0 -ffpe-trap=invalid,zero
+    ifdef COMPILER_VERSION
+      ifeq ($(COMPILER_VERSION),4.5)
+        DBGF_FLGS += -fcheck=all
+      endif
+    endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
     #OPTF_FLGS = -g -O3 -Wuninitialized -funroll-all-loops
     ifeq ($(PROF),false)
@@ -658,7 +663,6 @@ MOD_FIELDML_TARGET = #
 ifeq ($(USEFIELDML),true)
   MOD_FIELDML_TARGET = MOD_FIELDML
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
-    FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/include/ )
     ifdef COMPILER_VERSION
       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/include/ )
     else
@@ -666,10 +670,8 @@ ifeq ($(USEFIELDML),true)
     endif
   else
     ifeq ($(OPERATING_SYSTEM),aix)# AIX
-         FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
        FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
     else# windows
-         FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
        FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
     endif
   endif
@@ -770,6 +772,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/blas.o \
 	$(OBJECT_DIR)/classical_field_routines.o \
 	$(OBJECT_DIR)/cmiss.o \
+	$(OBJECT_DIR)/cmiss_c.o \
 	$(OBJECT_DIR)/cmiss_cellml.o \
 	$(OBJECT_DIR)/cmiss_mpi.o \
 	$(OBJECT_DIR)/cmiss_parmetis.o \
@@ -1054,6 +1057,8 @@ $(OBJECT_DIR)/cmiss.o	:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o \
 	$(MACHINE_OBJECTS)
+
+$(OBJECT_DIR)/cmiss_c.o	:	$(SOURCE_DIR)/cmiss_c.c 
 
 $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/base_routines.o \

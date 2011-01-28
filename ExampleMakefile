@@ -365,7 +365,12 @@ ifeq ($(OPERATING_SYSTEM),linux)
         F_FLGS += -march=nocona
       endif
     endif
-    DBGF_FLGS += -O0 -fbounds-check
+    DBGF_FLGS += -O0 -ffpe-trap=invalid,zero -fbacktrace
+    ifdef COMPILER_VERSION
+      ifeq ($(COMPILER_VERSION),4.5)
+        DBGF_FLGS += -fcheck=all
+      endif
+    endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
     ifeq ($(PROF),false)
       ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
@@ -725,7 +730,7 @@ endif
 CELLML_LIBRARIES =#
 CELLML_LIB_PATH =#
 ifeq ($(USECELLML),true)
-  CELLML_LIBRARIES += -loccellml -lcellml -lccgs -lcevas -lcuses -lmalaes -lvacss -lannotools -lxml2
+  CELLML_LIBRARIES += -loccellml -lcellml -lccgs -lcevas -lcuses -lmalaes -lvacss -lannotools -lxml2 -lz
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifdef COMPILER_VERSION
      CELLML_LIB_PATH += $(addprefix -L, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/lib/ )
@@ -751,7 +756,7 @@ endif
 FIELDML_LIBRARIES =#
 FIELDML_LIB_PATH =#
 ifeq ($(USEFIELDML),true)
-  FIELDML_LIBRARIES += -lfieldml -lxml2
+  FIELDML_LIBRARIES += -lfieldml -lxml2 -lz
   ifeq ($(OPERATING_SYSTEM),linux)# Linux
     FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_FIELDML_DIR)/lib/ )
     FIELDML_LIB_PATH += $(addprefix -L, $(EXTERNAL_COMMON_DIR)/lib/ )

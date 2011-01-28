@@ -150,6 +150,7 @@ class HtmlOutput(Plugin):
         description = ''
         if str(test).find('test_build_library')!=-1 :
           description='Building the library'
+          self.current = ResultTree(self.current)
         if str(test).find('test_example')!=-1 :
           if list(test.test.arg)[0]=='build' :
             for k in range(0,len(self.testLevelsInner)) :

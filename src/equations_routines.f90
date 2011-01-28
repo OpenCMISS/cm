@@ -481,7 +481,7 @@ CONTAINS
 
     !Argument variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to get the linearity for
-    INTEGER(INTG), INTENT(OUT) :: LINEARITY_TYPE !<On exit, the linearity type of the equations
+    INTEGER(INTG), INTENT(OUT) :: LINEARITY_TYPE !<On exit, the linearity type of the equations. \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -514,7 +514,7 @@ CONTAINS
 
     !Argument variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations to set the linearity for
-    INTEGER(INTG), INTENT(IN) :: LINEARITY_TYPE !<The linearity type to set \see EQUATIONS_ROUTINES_LinearityTypes,EQUATIONS_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: LINEARITY_TYPE !<The linearity type to set \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

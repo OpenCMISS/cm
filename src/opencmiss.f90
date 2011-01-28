@@ -2847,6 +2847,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSMeanPredictedAccelerationSetType = FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE !<The parameter set corresponding to the mean predicited acceleration values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldPressureValuesSetType = FIELD_PRESSURE_VALUES_SET_TYPE !<The parameter set corresponding to the surface pressure values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldPreviousPressureSetType = FIELD_PREVIOUS_PRESSURE_SET_TYPE !<The parameter set corresponding to the previous surface pressure values (at time T). \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldImpermeableFlagValuesSetType = FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE !<The parameter set corresponding to the impermeable flag values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldScalingTypes OPENCMISS::Field::ScalingTypes
   !> \brief Field scaling type parameters
@@ -3314,7 +3315,8 @@ MODULE OPENCMISS
     & CMISSPreviousValuesSetType,CMISSMeanPredictedDisplacementSetType,CMISSFieldVelocityValuesSetType, &
     & CMISSFieldInitialVelocitySetType,CMISSFieldPreviousVelocitySetType,CMISSFieldMeanPredictedVelocitySetType, &
     & CMISSFieldAccelerationValuesSetType,CMISSInitialAccelerationSetType,CMISSFieldPreviousAccelerationSetType, &
-    & CMISSMeanPredictedAccelerationSetType, CMISSFieldPressureValuesSetType, CMISSFieldPreviousPressureSetType
+    & CMISSMeanPredictedAccelerationSetType, CMISSFieldPressureValuesSetType, CMISSFieldPreviousPressureSetType, &
+    & CMISSFieldImpermeableFlagValuesSetType
 
   PUBLIC CMISSFieldNoScaling,CMISSFieldUnitScaling,CMISSFieldArcLengthScaling,CMISSFieldArithmeticMeanScaling, &
     & CMISSFieldHarmonicMeanScaling
@@ -3404,7 +3406,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldIONodesExportVSVSObj
   END INTERFACE !CMISSFieldIONodesExport
 
-  PUBLIC CMISSFieldIOElementsExport,CMISSFieldIONodesExport
+  PUBLIC CMISSFieldIOElementsExport,CMISSFieldIONodesExport,CMISSFieldIOFieldsImport
   
 !!==================================================================================================================================
 !!
@@ -4073,6 +4075,7 @@ MODULE OPENCMISS
   INTERFACE CMISSMeshCreateStart
     MODULE PROCEDURE CMISSMeshCreateStartNumber
     MODULE PROCEDURE CMISSMeshCreateStartObj
+    MODULE PROCEDURE CMISSMeshCreateStartInterfaceObj
   END INTERFACE !CMISSMeshCreateStart
 
   !>Destroys a mesh. 
@@ -4248,6 +4251,7 @@ MODULE OPENCMISS
   INTERFACE CMISSNodesCreateStart
     MODULE PROCEDURE CMISSNodesCreateStartNumber
     MODULE PROCEDURE CMISSNodesCreateStartObj
+    MODULE PROCEDURE CMISSNodesCreateStartInterfaceObj
   END INTERFACE !CMISSNodesCreateStart
     
   !>Destroys nodes.
@@ -29082,6 +29086,51 @@ CONTAINS
     
   END SUBROUTINE CMISSFieldIONodesExportVSVSObj
 
+    !
+  !================================================================================================================================
+  !
+
+  !> Import mesh from file \todo number method
+  SUBROUTINE CMISSFieldIOFieldsImport(FileName, Method, Region, Mesh, MeshUserNumber, Decomposition, &
+    & DecompositionUserNumber, DecompositionMethod, FieldValuesSetType, FieldScalingType, Err)
+    !Argument variables
+    CHARACTER(LEN=*), INTENT(IN):: FileName !<name of input
+    CHARACTER(LEN=*), INTENT(IN) :: Method !<method used for import
+    TYPE(CMISSRegionType), INTENT(INOUT) :: Region !<region
+    TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<mesh type
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<user number for mesh
+    TYPE(CMISSDecompositionType), INTENT(INOUT) :: Decomposition !< decompistion
+    INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<user number for decompistion
+    INTEGER(INTG), INTENT(IN) :: DecompositionMethod !<decompistion method
+    INTEGER(INTG), INTENT(IN) :: FieldValuesSetType
+    INTEGER(INTG), INTENT(IN) :: FieldScalingType
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local variables
+    TYPE(VARYING_STRING) :: VFileName
+    TYPE(VARYING_STRING) :: VMethod
+    INTEGER(INTG) :: FileNameLength
+    INTEGER(INTG) :: MethodLength
+
+    CALL ENTERS("CMISSFieldIOFieldsImport",Err,ERROR,*999)
+
+    FileNameLength = LEN_TRIM(FileName)
+    VFileName = FileName(1:FileNameLength)
+    MethodLength = LEN_TRIM(Method)
+    VMethod = Method(1:MethodLength)
+
+    CALL FIELD_IO_FIELDS_IMPORT(VFileName, VMethod, Region%REGION, Mesh%MESH, MeshUserNumber, Decomposition%DECOMPOSITION, &
+    & DecompositionUserNumber, DecompositionMethod, FieldValuesSetType, FieldScalingType, Err, ERROR, *999)
+
+    CALL EXITS("CMISSFieldIOFieldsImport")
+    RETURN
+999 CALL ERRORS("CMISSFieldIOFieldsImport",Err,ERROR)
+    CALL EXITS("CMISSFieldIOFieldsImport")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSFieldIOFieldsImport
+
+
 !!==================================================================================================================================
 !!
 !! GENERATED_MESH_ROUTINES
@@ -34692,6 +34741,38 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
+
+  !>Starts the creation of a mesh for a mesh identified by an object.
+  SUBROUTINE CMISSMeshCreateStartInterfaceObj(MeshUserNumber,INTERFACE,NumberOfDimensions,Mesh,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface containing the mesh to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: NumberOfDimensions !<The number of dimensions for the mesh.
+    TYPE(CMISSMeshType), INTENT(OUT) :: Mesh !<On return, the created mesh.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSMeshCreateStartInterfaceObj",Err,ERROR,*999)
+ 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Mesh Create')
+#endif
+
+    CALL MESH_CREATE_START(MeshUserNumber,Interface%INTERFACE,NumberOfDimensions,Mesh%MESH,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSMeshCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshCreateStartInterfaceObj
+
+  !  
+  !================================================================================================================================
+  !  
   
   !>Destroys a mesh identified by a user number.
   SUBROUTINE CMISSMeshDestroyNumber(RegionUserNumber,MeshUserNumber,Err)
@@ -36172,6 +36253,37 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSNodesCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of a nodes in a region for nodes identified by an object.
+  SUBROUTINE CMISSNodesCreateStartInterfaceObj(INTERFACE,NumberOfNodes,Nodes,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface to start the creation of nodes on.
+    INTEGER(INTG), INTENT(IN) :: NumberOfNodes !<The number of nodes to create.
+    TYPE(CMISSNodesType), INTENT(IN) :: Nodes !<On return, the created nodes.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSNodesCreateStartInterfaceObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Nodes Create')
+#endif
+
+    CALL NODES_CREATE_START(Interface%INTERFACE,NumberOfNodes,Nodes%NODES,Err,ERROR,*999)
+
+    CALL EXITS("CMISSNodesCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSNodesCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSNodesCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSNodesCreateStartInterfaceObj
 
   !  
   !================================================================================================================================

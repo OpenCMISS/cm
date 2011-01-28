@@ -374,7 +374,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: TEST_CASE_MIXED_NEUMANN_DIRICHLET_7=16 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   INTEGER(INTG), PARAMETER :: TEST_CASE_NEUMANN_CUBIC=17 !<Test case setup to test Neumann Boundary Conditions with Poisson example
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1=18 !<u=tbd, Pressure Poisson Equation (PPE) analytic
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2=19 !<u=tbd, Pressure Poisson Equation (PPE) with input data
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2=19 !<u=tbd, Pressure Poisson Equation (PPE) without input data
 
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DiffusionAnalyticFunctionTypes

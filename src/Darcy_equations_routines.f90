@@ -1026,12 +1026,13 @@ CONTAINS
                   !Check the user specified field
                   CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                   CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
                   CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
+!                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
+!                     & MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
@@ -1792,9 +1793,10 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Local Variables
-    INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,idxdim,ki,num_var_count
+    INTEGER(INTG) :: FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,idxdim,ki,num_var_count,idx_tensor
     INTEGER(INTG) :: my_compartment,Ncompartments,imatrix
     INTEGER(INTG) :: component_idx,xi_idx,derivative_idx
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER, global_element_idx, var2, var2_type, NUMBER_OF_IMPERMEABILITY_CONDITIONS
     INTEGER(INTG) :: MESH_COMPONENT_1, MESH_COMPONENT_2
     INTEGER(INTG) :: NDOFS, NUMBER_OF_VEL_PRESS_COMPONENTS
     INTEGER(INTG) :: FIELD_VAR_TYPES(99)
@@ -1813,6 +1815,10 @@ CONTAINS
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX, DAMPING_MATRIX
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,EQUATIONS_SET_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(MESH_ELEMENT_TYPE), POINTER :: MESH_ELEMENT
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
 
     TYPE(FIELD_VARIABLE_PTR_TYPE) :: FIELD_VARIABLES(99)
     TYPE(EQUATIONS_MATRIX_PTR_TYPE) :: COUPLING_MATRICES(99)
@@ -1844,6 +1850,8 @@ CONTAINS
     REAL(DP):: dfdJfact !dfdJfact = f'(Jxy) of the INRIA model
 
     REAL(DP):: SOURCE_1_X(3), SOURCE_1_R, SOURCE_1_I
+
+    REAL(DP):: SINK_STRENGTH, SOURCE_STRENGTH
 
     REAL(DP):: LENGTH_SCALE
 
@@ -1883,6 +1891,8 @@ CONTAINS
     NULLIFY(REFERENCE_GEOMETRIC_INTERPOLATED_POINT)
     NULLIFY(ELASTICITY_DEPENDENT_INTERPOLATION_PARAMETERS)
     NULLIFY(ELASTICITY_DEPENDENT_INTERPOLATED_POINT)
+    NULLIFY(DECOMPOSITION,MESH_ELEMENT)
+    NULLIFY(BOUNDARY_CONDITIONS,BOUNDARY_CONDITIONS_VARIABLE)
 
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -1903,6 +1913,7 @@ CONTAINS
           EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
           RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+
 
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
@@ -1929,6 +1940,20 @@ CONTAINS
 
             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+
+            !Stuff used to check if this element is on the mesh boundary
+            DECOMPOSITION => DEPENDENT_FIELD%DECOMPOSITION
+            MESH_COMPONENT_NUMBER = DECOMPOSITION%MESH_COMPONENT_NUMBER
+            global_element_idx = DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS% &
+              & LOCAL_TO_GLOBAL_MAP(ELEMENT_NUMBER)
+            MESH_ELEMENT => DECOMPOSITION%MESH%TOPOLOGY(MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(global_element_idx)
+
+! !             var2=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_NUMBER ! number for 'DELVDELN'
+!             var2_type=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_TYPE ! number for 'DELVDELN'
+!             BOUNDARY_CONDITIONS => EQUATIONS_SET%BOUNDARY_CONDITIONS
+! !             BOUNDARY_CONDITIONS_VARIABLE => BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(var2)%PTR
+!             BOUNDARY_CONDITIONS_VARIABLE => BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(var2_type)%PTR
+!             NUMBER_OF_IMPERMEABILITY_CONDITIONS = BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_IMPERMEABILITY_CONDITIONS
 
           CASE(EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE)
             EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
@@ -2019,8 +2044,8 @@ CONTAINS
               ALLOCATE(GRAD_PRESSURE(3,Ncompartments))
               PRESSURE = 0.0_DP
               GRAD_PRESSURE = 0.0_DP
-              PRESSURE_COEFF(1)=1.0_DP 
-              PRESSURE_COEFF(2)=0.0_DP
+              PRESSURE_COEFF(1)=0.5_DP 
+              PRESSURE_COEFF(2)=0.5_DP
               !PRESSURE_COEFF(3)=0.2_DP
               !PRESSURE_COEFF(3)=0.1_DP
           END SELECT
@@ -2061,6 +2086,15 @@ CONTAINS
           CASE DEFAULT
             NUMBER_OF_VEL_PRESS_COMPONENTS = FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           END SELECT
+
+          !---------------------------------------------------------------------------------------------------------
+          !Invoke penalty term to enforce impermeable BC
+          !  should only be executed if THIS element lies on the surface 
+          !  (within the routine we check whether the element nodes have actually been set impermeable)
+          IF( MESH_ELEMENT%BOUNDARY_ELEMENT ) THEN
+            CALL DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+          ENDIF
+            !---------------------------------------------------------------------------------------------------------
 
           !--- Loop over gauss points
           !    Given that also materials field is interpolated, ensure sufficient number of Gauss points !!!
@@ -2167,11 +2201,23 @@ CONTAINS
 !==========================================================================================
 
 
-            PERM_OVER_VIS_PARAM = MATERIALS_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
-            PERM_TENSOR_OVER_VIS(:,:) = 0.0_DP
-            PERM_TENSOR_OVER_VIS(1,1) = PERM_OVER_VIS_PARAM
-            PERM_TENSOR_OVER_VIS(2,2) = PERM_OVER_VIS_PARAM
-            PERM_TENSOR_OVER_VIS(3,3) = PERM_OVER_VIS_PARAM
+!             PERM_OVER_VIS_PARAM = MATERIALS_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
+!             PERM_TENSOR_OVER_VIS(:,:) = 0.0_DP
+!             PERM_TENSOR_OVER_VIS(1,1) = PERM_OVER_VIS_PARAM
+!             PERM_TENSOR_OVER_VIS(2,2) = PERM_OVER_VIS_PARAM
+!             PERM_TENSOR_OVER_VIS(3,3) = PERM_OVER_VIS_PARAM
+
+            PERM_TENSOR_OVER_VIS(1,1) = MATERIALS_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
+            PERM_TENSOR_OVER_VIS(1,2) = MATERIALS_INTERPOLATED_POINT%VALUES(3,NO_PART_DERIV)
+            PERM_TENSOR_OVER_VIS(1,3) = MATERIALS_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV)
+            PERM_TENSOR_OVER_VIS(2,2) = MATERIALS_INTERPOLATED_POINT%VALUES(5,NO_PART_DERIV)
+            PERM_TENSOR_OVER_VIS(2,3) = MATERIALS_INTERPOLATED_POINT%VALUES(6,NO_PART_DERIV)
+            PERM_TENSOR_OVER_VIS(3,3) = MATERIALS_INTERPOLATED_POINT%VALUES(7,NO_PART_DERIV)
+
+            PERM_TENSOR_OVER_VIS(2,1) = PERM_TENSOR_OVER_VIS(1,2)
+            PERM_TENSOR_OVER_VIS(3,1) = PERM_TENSOR_OVER_VIS(1,3)
+            PERM_TENSOR_OVER_VIS(3,2) = PERM_TENSOR_OVER_VIS(2,3)
+
 
             IF(DIAGNOSTICS3) THEN
               IF(idebug2) THEN
@@ -2184,7 +2230,17 @@ CONTAINS
               ENDIF
             ENDIF
 
-            CALL INVERT(PERM_TENSOR_OVER_VIS,VIS_OVER_PERM_TENSOR,Jmat,ERR,ERROR,*999) 
+            Jmat = DETERMINANT(PERM_TENSOR_OVER_VIS,ERR,ERROR)
+            IF(Jmat>ZERO_TOLERANCE) THEN
+              CALL INVERT(PERM_TENSOR_OVER_VIS,VIS_OVER_PERM_TENSOR,Jmat,ERR,ERROR,*999) 
+            ELSE 
+              VIS_OVER_PERM_TENSOR = 0.0_DP
+              DO idx_tensor=1,3
+                VIS_OVER_PERM_TENSOR(idx_tensor,idx_tensor) = 1.0e10_DP
+              END DO
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE, &
+                & "WARNING: Jmat<ZERO_TOLERANCE - Thus setting VIS_OVER_PERM_TENSOR(i,i) = 1.0e10_DP",ERR,ERROR,*999)
+            END IF
 
 
             !Two parameters that are used only for TESTCASE==3: VenousCompartment problem: Exclude this, too specific ???
@@ -2350,6 +2406,7 @@ CONTAINS
 !                           END IF
 !---toe
                         END IF
+
                       ! matrices for multi-compartment poroelastic equations
                       CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                         !velocity test function, velocity trial function
@@ -2682,8 +2739,33 @@ CONTAINS
                         ENDDO !ni
                       ENDDO !mi
 
-                      ! n o   s o u r c e
+                      !------------------------------------------------------
+                      ! begin: SOURCE AND SINK TERMS FOR THE euHEART DELIVERABLE 
+                      ! (hard-coded; will be cleaned up after deadline)
+
                       SOURCE = 0.0_DP
+
+                      SINK_STRENGTH = -1.0_DP  !uniform sink (mind the sign)
+                      SOURCE = SOURCE + SINK_STRENGTH
+
+                      IF( ELEMENT_NUMBER == 149 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 89 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 449 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 269 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE IF( ELEMENT_NUMBER == 29 ) THEN
+                        SOURCE_STRENGTH = 0.5_DP
+                      ELSE 
+                        SOURCE_STRENGTH = 0.0_DP
+                      END IF
+
+                      SOURCE = SOURCE + SOURCE_STRENGTH
+
+                      ! end: SOURCE AND SINK TERMS FOR THE euHEART DELIVERABLE 
+                      !------------------------------------------------------
 
 !---tob
 !                       IF(.FALSE.) THEN
@@ -4836,85 +4918,6 @@ CONTAINS
                                         & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                                       CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
                                         & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-
-
-! !---begin: impermeability BC
-! 
-!                                   !make sure that: FIELD_VAR_TYPE == FIELD_V_VARIABLE_TYPE
-!                                   DEPENDENT_FIELD_DARCY_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR
-!                                   IF(ASSOCIATED(DEPENDENT_FIELD_DARCY_VARIABLE)) THEN
-! 
-!                                     component_idx = 3
-! 
-!                                       MESH_COMPONENT=DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)%MESH_COMPONENT_NUMBER
-! 
-!                                       DOMAIN=>DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-!                                       IF(ASSOCIATED(DOMAIN)) THEN
-!                                         DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
-!                                         IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
-!                                           SELECT CASE(DEPENDENT_FIELD_DARCY%VARIABLES(var_idx)%COMPONENTS(component_idx)% &
-!                                             & INTERPOLATION_TYPE)
-!                                           CASE(FIELD_NODE_BASED_INTERPOLATION)
-!                                             NODES_DOMAIN=>DOMAIN_TOPOLOGY%NODES
-!                                             IF(ASSOCIATED(NODES_DOMAIN)) THEN
-!                                               DO node_idx=1,NODES_DOMAIN%NUMBER_OF_NODES
-!                                                 DO deriv_idx=1,NODES_DOMAIN%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-!                                                   local_ny=DEPENDENT_FIELD_DARCY_VARIABLE%COMPONENTS(component_idx)% &
-!                                                     & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
-!                                                   VALUES(1)=NUMERICAL_VALUES(local_ny)
-! 
-!                                                   !node_idx = dof_number ! ??? I loop anyway over the nodes
-!                                                   COMPONENT_NUMBER = 4  !Interpolate at the nodes of the mass increase
-! 
-!                      COMPONENT_NUMBER = 4
-!                      CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(DEPENDENT_FIELD_DARCY,variable_type, &
-!                        & COMPONENT_NUMBER,node_idx, &
-!                        & POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
-! 
-! 
-!                                                 ENDDO !deriv_idx
-!                                               ENDDO !node_idx
-!                                             ELSE
-!                                               CALL FLAG_ERROR("Nodes domain topology is not associated.",ERR,ERROR,*999)
-!                                             ENDIF                     
-!                                           CASE(DEFAULT)
-!                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-!                                           END SELECT
-!                                         ELSE
-!                                           CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
-!                                         ENDIF
-!                                       ELSE
-!                                         CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
-!                                       ENDIF
-!                                   ELSE
-!                                     CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-!                                   ENDIF
-!                                 ENDDO !var_idx
-! 
-! 
-! !loop over components: iComp
-! !  loop over number of nodes for that component (mesh component)
-! !    how do we get the dof then (without assumptions on the ordering) ? 
-! 
-!                                         ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_IMPERMEABLE_WALL) THEN
-!                                           !--- Render the boundary impermeable
-! 
-!                      write(*,*)'dof_number (impermeable) = ',dof_number
-!                      COMPONENT_NUMBER = 3
-!                      CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-!                        & COMPONENT_NUMBER,dof_number, &  !dof_number ok ???
-!                        & POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
-!                      write(*,*)'POSITION = ',POSITION
-!                      write(*,*)'NORMAL = ',NORMAL
-! 
-! !                                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-! !                                             & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
-! !                                             & INITIAL_VALUES(dof_number),ERR,ERROR,*999)
-! 
-! 
-! !---end: impermeability BC
-
-
                                       IF(DIAGNOSTICS1) THEN
                                         NDOFS_TO_PRINT = SIZE(MESH_VELOCITY_VALUES,1)
                                         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
@@ -7511,7 +7514,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                   RESIDUAL_NORM = SQRT(RESIDUAL_NORM / NUMBER_OF_DOFS)
 
                                   IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
-                                    IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER>=2) THEN !Omitt initialised solution
+                                    IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER>=2) THEN !Omit initialised solution
                                       IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER==2) THEN
                                       RESIDUAL_NORM_0 = RESIDUAL_NORM
                                       WRITE(23,*) 'RESIDUAL_NORM_0 = ',RESIDUAL_NORM_0
@@ -8503,10 +8506,268 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
   !================================================================================================================================
   !
 
+  !\ToDo: enable this penalty formulation also for (quasi-)static; as made available in solver_routines
+
+  !Adds a penalty term to the equilibrium equations to enforce impermeability at certain boundaries
+  SUBROUTINE DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, INDEPENDENT_FIELD
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: DECOMP_ELEMENT
+    TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: DOMAIN_ELEMENT
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT
+    TYPE(DECOMPOSITION_FACE_TYPE), POINTER :: DECOMP_FACE
+    TYPE(DOMAIN_FACE_TYPE), POINTER :: DOMAIN_FACE
+    TYPE(BASIS_TYPE), POINTER :: FACE_BASIS,DEPENDENT_BASIS
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: FACE_QUADRATURE_SCHEME
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FACE_VELOCITY_INTERPOLATION_PARAMETERS
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FACE_INTERPOLATED_POINT
+    INTEGER(INTG) :: FIELD_VAR_V_TYPE,FIELD_VAR_DEL_V_DEL_N_TYPE,MESH_COMPONENT_NUMBER
+    INTEGER(INTG) :: element_face_idx,face_number,normal_component_idx,gauss_idx
+    INTEGER(INTG) :: FACE_NUMBER_OF_GAUSS_POINTS
+    INTEGER(INTG) :: component_idx_1,element_base_dof_idx_1,face_node_idx_1
+    INTEGER(INTG) :: node_derivative_idx_1,element_dof_idx_1,element_node_idx_1,parameter_idx_1
+    INTEGER(INTG) :: face_parameter_idx_1,face_node_derivative_idx_1
+    INTEGER(INTG) :: component_idx_2,element_base_dof_idx_2,face_node_idx_2
+    INTEGER(INTG) :: node_derivative_idx_2,element_dof_idx_2,element_node_idx_2,parameter_idx_2
+    INTEGER(INTG) :: face_parameter_idx_2,face_node_derivative_idx_2
+    INTEGER(INTG) :: var2
+
+    REAL(DP) :: GAUSS_WEIGHT,PRESSURE_GAUSS,NORMAL_PROJECTION_1,NORMAL_PROJECTION_2, PENALTY_PARAM
+    REAL(DP) :: DZDXI(3,3),DZDXIT(3,3),GIJL(3,3),GIJU(3,3),G,SQRT_G, PGM, PGN, SUM
+    LOGICAL :: IMPERMEABLE_BC
+
+    CALL ENTERS("DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY",ERR,ERROR,*999)
+
+    !Make this routine conditional on (STIFFNESS_MATRIX%UPDATE_MATRIX)
+
+    NULLIFY(EQUATIONS,DEPENDENT_FIELD,INDEPENDENT_FIELD)
+    NULLIFY(DYNAMIC_MATRICES,STIFFNESS_MATRIX,DECOMPOSITION)
+    NULLIFY(DECOMP_ELEMENT,DOMAIN_ELEMENT)
+    NULLIFY(GEOMETRIC_INTERPOLATION_PARAMETERS,GEOMETRIC_INTERPOLATED_POINT)
+    NULLIFY(DECOMP_FACE,DOMAIN_FACE)
+    NULLIFY(FACE_BASIS,DEPENDENT_BASIS,FACE_QUADRATURE_SCHEME,FACE_QUADRATURE_SCHEME)
+    NULLIFY(FACE_VELOCITY_INTERPOLATION_PARAMETERS,FACE_INTERPOLATED_POINT)
+
+    PENALTY_PARAM = 1.0e05_DP
+
+    !Grab pointers of interest
+    EQUATIONS=>EQUATIONS_SET%EQUATIONS
+    DYNAMIC_MATRICES=>EQUATIONS%EQUATIONS_MATRICES%DYNAMIC_MATRICES
+    STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
+    DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+    DECOMPOSITION  =>DEPENDENT_FIELD%DECOMPOSITION
+    DECOMP_ELEMENT=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)
+
+    INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
+
+!     MESH_COMPONENT_NUMBER=DECOMPOSITION%MESH_COMPONENT_NUMBER
+    MESH_COMPONENT_NUMBER = EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)% &
+      & VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+
+    DOMAIN_ELEMENT=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)
+
+    !Interpolation parameter for metric tensor
+    FIELD_VAR_V_TYPE=EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE%VARIABLE_TYPE
+    FIELD_VAR_DEL_V_DEL_N_TYPE=EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE
+    DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+
+! !     var2=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_NUMBER ! number for 'DELUDELN'
+!     var2=FIELD_VAR_DEL_V_DEL_N_TYPE
+
+    !Calculate penalty term to render surfaces impermeable: Loop over all faces
+    DO element_face_idx=1,DEPENDENT_BASIS%NUMBER_OF_LOCAL_FACES
+      face_number=DECOMP_ELEMENT%ELEMENT_FACES(element_face_idx)
+      DECOMP_FACE=>DECOMPOSITION%TOPOLOGY%FACES%FACES(face_number)
+
+      !Check if it's a boundary face
+      IF(DECOMP_FACE%BOUNDARY_FACE) THEN !!temporary until MESH_FACE (or equivalent) is available (decomp face includes ghost faces?)
+
+        !Grab normal xi direction of the face and the other two xi directions
+        normal_component_idx=ABS(DECOMP_FACE%XI_DIRECTION)  ! if xi=0, this can be a negative number
+!         FACE_COMPONENTS=OTHER_XI_DIRECTIONS3(normal_component_idx,2:3,1)  !Two xi directions for the current face
+        !\todo: will FACE_COMPONENTS be a problem with sector elements? Check this.
+
+        ! To find out which faces are set impermeable:
+        
+!         FACE_COMPONENTS=OTHER_XI_DIRECTIONS3(normal_component_idx,2:3,1)  !Two xi directions for the current face
+        !\todo: will FACE_COMPONENTS be a problem with sector elements? Check this.
+!         FACE_VELOCITY_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DEL_V_DEL_N_TYPE)%PTR
+!         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,face_number, &
+!           & FACE_VELOCITY_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+!         FACE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(var2)%PTR
 
 
+        FACE_VELOCITY_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
+        CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,face_number, &
+          & FACE_VELOCITY_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+        FACE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
 
 
+        !Check if impermeable boundary condition is defined on the face
+        IMPERMEABLE_BC=.FALSE.
+        IF(ANY(ABS(FACE_VELOCITY_INTERPOLATION_PARAMETERS%PARAMETERS(:,normal_component_idx))>ZERO_TOLERANCE)) THEN
+          IMPERMEABLE_BC=.TRUE.
+        ENDIF
+
+        IF(IMPERMEABLE_BC) THEN
+          write(*,*)'ELEMENT_NUMBER WITH AN IMPERMEABLE FACE = ',ELEMENT_NUMBER
+
+          !Grab some other pointers
+          DOMAIN_FACE=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)
+          FACE_BASIS=>DOMAIN_FACE%BASIS       
+          FACE_QUADRATURE_SCHEME=>FACE_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+          FACE_NUMBER_OF_GAUSS_POINTS=FACE_QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+
+          !A single FACE_BASIS and DEPENDENT_BASIS should suffice, since we only deal with terms
+          !  deriving from velocity test AND trial functions, and moreover use Galerkin, 
+          !  i.e. same basis functions for test and trial functions
+
+          !Start integrating
+          ! Note: As the code will look for P(appl) in the *normal* component to the face, the
+          !       initial assignment of P(appl) will have to be made appropriately during bc assignment
+!\todo: hopefully all quadrature stuff will always match up between face basis and local face stuff.
+! Annoying issue here that p(appl) is interpolated using the face_basis, while dZdXI has to be evaluated
+! using the 3D face interpolation... many variables are shared, probably supposed to be the same but I 
+! can't guarantee it and checking every single thing will be a fair bit of overhead
+          DO gauss_idx=1,FACE_NUMBER_OF_GAUSS_POINTS 
+            GAUSS_WEIGHT=FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)  !What happens with surface Jacobian ? SQRT_G ?
+!           RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+
+            !Interpolate delx_j/delxi_M = dZdxi at the face gauss point
+!             DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_V_TYPE)%PTR
+!             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+!               & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+!             DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_V_TYPE)%PTR
+!             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
+!               & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
+
+            !Use (deformed) Geometric field instead 
+            GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+              & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            GEOMETRIC_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+!             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+!               & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
+              & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
+
+!             DZDXI=DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
+            DZDXI=GEOMETRIC_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
+
+            !Calculate covariant metric tensor
+            CALL MATRIX_TRANSPOSE(DZDXI,DZDXIT,ERR,ERROR,*999)
+            CALL MATRIX_PRODUCT(DZDXIT,DZDXI,GIJL,ERR,ERROR,*999) !g_ij = dZdXI' * dZdXI
+            CALL INVERT(GIJL,GIJU,G,ERR,ERROR,*999) !g^ij = inv(g_ij), G=DET(GIJL)
+            SQRT_G=SQRT(G)
+
+            !--- L o o p   1 : over element rows -----------------------------------
+            !Loop over 3 components
+
+            DO component_idx_1=1,3
+              !Calculate g^3M*dZ_j/dxi_M
+              NORMAL_PROJECTION_1=dot_product(GIJU(normal_component_idx,:),DZDXI(component_idx_1,:))
+
+!               write(*,*)'NORMAL_PROJECTION_1 = ',NORMAL_PROJECTION_1
+
+              IF(ABS(NORMAL_PROJECTION_1)<ZERO_TOLERANCE) CYCLE !Makes it a bit quicker
+
+              element_base_dof_idx_1 = (component_idx_1-1) * DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+
+              DO face_node_idx_1=1,FACE_BASIS%NUMBER_OF_NODES !nnf
+                element_node_idx_1=DEPENDENT_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(face_node_idx_1,element_face_idx) !nn
+
+                DO face_node_derivative_idx_1=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx_1) !nkf
+                  node_derivative_idx_1=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_1, &
+                    & element_face_idx)
+
+                  parameter_idx_1=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(node_derivative_idx_1,element_node_idx_1)
+
+                  face_parameter_idx_1=FACE_BASIS%ELEMENT_PARAMETER_INDEX(face_node_derivative_idx_1,face_node_idx_1)
+
+                  element_dof_idx_1=element_base_dof_idx_1+parameter_idx_1
+
+                  !--- L o o p   2 : over element columns -----------------------------------
+                  !Loop over 3 components
+                  DO component_idx_2=1,3
+                    !Calculate g^3M*dZ_j/dxi_M
+                    NORMAL_PROJECTION_2=dot_product(GIJU(normal_component_idx,:),DZDXI(component_idx_2,:))
+                    IF(ABS(NORMAL_PROJECTION_2)<ZERO_TOLERANCE) CYCLE !Makes it a bit quicker
+
+!                     write(*,*)'NORMAL_PROJECTION_2 = ',NORMAL_PROJECTION_2
+
+                    element_base_dof_idx_2 = (component_idx_2-1) * DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+
+                    DO face_node_idx_2=1,FACE_BASIS%NUMBER_OF_NODES !nnf
+                      element_node_idx_2=DEPENDENT_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(face_node_idx_2,element_face_idx) !nn
+
+                      DO face_node_derivative_idx_2=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx_2) !nkf
+                        node_derivative_idx_2=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_2, &
+                          & element_face_idx)
+
+                        parameter_idx_2=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(node_derivative_idx_2,element_node_idx_2)
+
+                        face_parameter_idx_2=FACE_BASIS%ELEMENT_PARAMETER_INDEX(face_node_derivative_idx_2,face_node_idx_2)
+
+                        element_dof_idx_2=element_base_dof_idx_2+parameter_idx_2
+
+                        SUM = 0.0_DP
+
+!                         PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+!                         PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+                        PGM=FACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(face_parameter_idx_1,NO_PART_DERIV,gauss_idx)
+                        PGN=FACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(face_parameter_idx_2,NO_PART_DERIV,gauss_idx)
+
+                        SUM = SUM + PENALTY_PARAM * PGM * NORMAL_PROJECTION_1 * SQRT_G * &
+                                                  & PGN * NORMAL_PROJECTION_2 * SQRT_G 
+
+!                         write(*,*)'SUM = ',SUM
+
+!                         NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx_1)= &
+!                           & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx_1)+ &  ! sign: double -'s. p(appl) always opposite to normal
+!                           & GAUSS_WEIGHT*PRESSURE_GAUSS*NORMAL_PROJECTION* &
+!                           & PGM * &
+!                           & SQRT_G
+
+                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(element_dof_idx_1,element_dof_idx_2) = &
+                          & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(element_dof_idx_1,element_dof_idx_2) + &
+                          & SUM * GAUSS_WEIGHT  !* RWG includes (surface) Jacobian
+
+                      ENDDO !node_derivative_idx_2
+                    ENDDO !face_node_idx_2
+                  ENDDO !component_idx_2
+
+                ENDDO !node_derivative_idx_1
+              ENDDO !face_node_idx_1
+            ENDDO !component_idx_1
+
+          ENDDO !gauss_idx
+        ENDIF !IMPERMEABLE_BC
+      ENDIF !boundary face check
+    ENDDO !element_face_idx
+
+    CALL EXITS("DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY")
+    RETURN
+
+999 CALL ERRORS("DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY",ERR,ERROR)
+    CALL EXITS("DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY")
+    RETURN 1
+  END SUBROUTINE DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY
+
+  !
+  !================================================================================================================================
+  !
 
 
 END MODULE DARCY_EQUATIONS_ROUTINES
+
