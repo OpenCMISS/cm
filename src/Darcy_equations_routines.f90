@@ -2745,19 +2745,19 @@ CONTAINS
 
                       SOURCE = 0.0_DP
 
-                      SINK_STRENGTH = -0.016666_DP  !uniform sink (mind the sign)
+                      SINK_STRENGTH = -0.0016666_DP  !uniform sink (mind the sign)
                       SOURCE = SOURCE + SINK_STRENGTH
 
                       IF( ELEMENT_NUMBER == 149 ) THEN
-                        SOURCE_STRENGTH = 8.86_DP
+                        SOURCE_STRENGTH = 1.0607_DP
                       ELSE IF( ELEMENT_NUMBER == 89 ) THEN
-                        SOURCE_STRENGTH = 6.46_DP
+                        SOURCE_STRENGTH = 0.2833_DP
                       ELSE IF( ELEMENT_NUMBER == 449 ) THEN
-                        SOURCE_STRENGTH = 3.08_DP
+                        SOURCE_STRENGTH = 1.233_DP
                       ELSE IF( ELEMENT_NUMBER == 269 ) THEN
-                        SOURCE_STRENGTH = 2.85_DP
+                        SOURCE_STRENGTH = 4.3833_DP
                       ELSE IF( ELEMENT_NUMBER == 29 ) THEN
-                        SOURCE_STRENGTH = 3.18_DP
+                        SOURCE_STRENGTH = 1.033_DP
                       ELSE 
                         SOURCE_STRENGTH = 0.0_DP
                       END IF
