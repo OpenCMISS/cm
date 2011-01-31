@@ -82,8 +82,8 @@ ifndef USECELLML
 endif
 
 ifndef USEFIELDML
-#  USEFIELDML := false
-  USEFIELDML := true
+  USEFIELDML := false
+#  USEFIELDML := true
 endif
 
 ifeq ($(MPI),mpich2)
@@ -354,6 +354,9 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ifdef COMPILER_VERSION
       ifeq ($(COMPILER_VERSION),4.5)
         DBGF_FLGS += -fcheck=all
+      endif
+      ifeq ($(COMPILER_VERSION),4.4)
+        DBGF_FLGS += -fbounds-check
       endif
     endif
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
