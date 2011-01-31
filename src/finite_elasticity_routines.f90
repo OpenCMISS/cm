@@ -4449,22 +4449,22 @@ CONTAINS
                         SELECT CASE(EQUATIONS_SET%SUBTYPE)
                           CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
                             IF(CONTROL_LOOP%sub_loops(1)%ptr%loop_type==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
-                              write(*,*)'SUBITERATION_NUMBER = ',SUBITERATION_NUMBER
                               SUBITERATION_NUMBER=CONTROL_LOOP%sub_loops(1)%ptr%while_loop%iteration_number
+                              write(*,*)'SUBITERATION_NUMBER = ',SUBITERATION_NUMBER
                             ELSE
                                 CALL FLAG_ERROR("Could not find SUBITERATION_NUMBER.",ERR,ERROR,*999)
                             ENDIF
-                            IF(SUBITERATION_NUMBER==0) THEN
-                              DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                              IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                                BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
-                                IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                                  EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
-                                  IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
-                                      & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR
-                                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
 
+                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                              BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                              IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                                EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                                  BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
+                                    & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR
+                                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                    IF(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_CONDITION_USED) THEN
                                       CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                                         & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
 
@@ -4481,39 +4481,25 @@ CONTAINS
                                       DEPENDENT_NUMBER_OF_DOFS=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)% &
                                           & PTR%NUMBER_OF_DOFS
 
+                                      ALLOCATE(NEW_PRESSURE_VALUES(DEPENDENT_NUMBER_OF_DOFS))
+
+                                      !Linear increase of cavity pressure: just a test example prototype
+                                      !\todo: general time-dependent boundary condition input method?
                                       ALPHA = ( CURRENT_TIME + TIME_INCREMENT ) / CURRENT_TIME
-
-                                     IF (ALLOCATED(NEW_PRESSURE_VALUES)) DEALLOCATE(NEW_PRESSURE_VALUES)
-                                     IF(.NOT.ALLOCATED(NEW_PRESSURE_VALUES)) ALLOCATE(NEW_PRESSURE_VALUES(DEPENDENT_NUMBER_OF_DOFS))
-
                                       NEW_PRESSURE_VALUES = ALPHA * CURRENT_PRESSURE_VALUES
 
-!                                       write(*,*)'NEW_PRESSURE_VALUES = ',NEW_PRESSURE_VALUES
-
-                                      UPDATE_PRESSURE = .FALSE.
+                                      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update pressure BCs",ERR,ERROR,*999)
                                       DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
-                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
-                                        IF( BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_PRESSURE .OR. &
-                                          & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_PRESSURE_INCREMENTED ) THEN
-                                          UPDATE_PRESSURE = .TRUE.
-                                        END IF
-                                      END DO
+                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                          & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE,dof_number, & 
+                                          & NEW_PRESSURE_VALUES(dof_number),ERR,ERROR,*999)
+                                      ENDDO
+                                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                        & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                                        & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
 
-                                      IF( UPDATE_PRESSURE ) THEN
-                                       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update pressure BCs",ERR,ERROR,*999)
-                                        DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
-                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                            & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE,dof_number, & 
-                                            & NEW_PRESSURE_VALUES(dof_number),ERR,ERROR,*999)
-                                        END DO
-                                        CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                          & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                                          & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                      ENDIF
-
-                                      IF (ALLOCATED(NEW_PRESSURE_VALUES)) DEALLOCATE(NEW_PRESSURE_VALUES)
+                                      DEALLOCATE(NEW_PRESSURE_VALUES)
 
                                       IF(DIAGNOSTICS1) THEN
                                         NULLIFY( DUMMY_VALUES1 )
@@ -4527,21 +4513,22 @@ CONTAINS
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                                           & FIELD_PRESSURE_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
                                       ENDIF
-                                    ELSE
-                                      CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                                    END IF
+                                    ENDIF !Pressure_condition_used
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                                    & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
                                   ELSE
-                                    CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
-                                  ENDIF
+                                    CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                  END IF
                                 ELSE
-                                  CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
-                                END IF
+                                  CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                                ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
                               END IF
                             ELSE
-                                !do nothing
-                            ENDIF
+                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                            END IF
+
                           CASE DEFAULT
                             ! do nothing ???
 !                             LOCAL_ERROR="Equations set subtype " &

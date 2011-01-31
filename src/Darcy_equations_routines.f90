@@ -2863,26 +2863,26 @@ CONTAINS
                       ! begin: SOURCE AND SINK TERMS FOR THE euHEART DELIVERABLE 
                       ! (hard-coded; will be cleaned up after deadline)
 
-                      SOURCE = 0.0_DP
-
-                      SINK_STRENGTH = 0.0_DP !-0.0016666_DP  !uniform sink (mind the sign)
-                      SOURCE = SOURCE + SINK_STRENGTH
-
-                      IF( ELEMENT_NUMBER == 149 ) THEN
-                        SOURCE_STRENGTH = 1.0607e-1_DP
-                      ELSE IF( ELEMENT_NUMBER == 89 ) THEN
-                        SOURCE_STRENGTH = 0.2833e-1_DP
-                      ELSE IF( ELEMENT_NUMBER == 449 ) THEN
-                        SOURCE_STRENGTH = 1.233e-1_DP
-                      ELSE IF( ELEMENT_NUMBER == 269 ) THEN
-                        SOURCE_STRENGTH = 4.3833e-1_DP
-                      ELSE IF( ELEMENT_NUMBER == 29 ) THEN
-                        SOURCE_STRENGTH = 1.033e-1_DP
-                      ELSE 
-                        SOURCE_STRENGTH = 0.0_DP
-                      END IF
-
-                      SOURCE = SOURCE + SOURCE_STRENGTH
+!                       SOURCE = 0.0_DP
+! 
+!                       SINK_STRENGTH = 0.0_DP !-0.0016666_DP  !uniform sink (mind the sign)
+!                       SOURCE = SOURCE + SINK_STRENGTH
+! 
+!                       IF( ELEMENT_NUMBER == 149 ) THEN
+!                         SOURCE_STRENGTH = 1.0607e-1_DP
+!                       ELSE IF( ELEMENT_NUMBER == 89 ) THEN
+!                         SOURCE_STRENGTH = 0.2833e-1_DP
+!                       ELSE IF( ELEMENT_NUMBER == 449 ) THEN
+!                         SOURCE_STRENGTH = 1.233e-1_DP
+!                       ELSE IF( ELEMENT_NUMBER == 269 ) THEN
+!                         SOURCE_STRENGTH = 4.3833e-1_DP
+!                       ELSE IF( ELEMENT_NUMBER == 29 ) THEN
+!                         SOURCE_STRENGTH = 1.033e-1_DP
+!                       ELSE 
+!                         SOURCE_STRENGTH = 0.0_DP
+!                       END IF
+! 
+!                       SOURCE = SOURCE + SOURCE_STRENGTH
 
                       ! end: SOURCE AND SINK TERMS FOR THE euHEART DELIVERABLE 
                       !------------------------------------------------------
@@ -3172,7 +3172,7 @@ CONTAINS
                   ENDDO !ms
                 ENDDO !mh
               ENDIF
-            END IF
+            ENDIF
 
 
 
