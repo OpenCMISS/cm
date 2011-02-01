@@ -818,12 +818,6 @@ CONTAINS
           DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR
         ENDIF
 
-!         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-!         !Get the Darcy interpolation parameters for each of the field variables
-!            !NEED TO LOOP OVER VARIABLE TYPE
-!            DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR
-!         ENDIF
-
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
@@ -840,13 +834,6 @@ CONTAINS
             & DARCY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         ENDIF
 
-!         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-!         !Get the Darcy interpolation parameters for each of the field variables
-!            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-!             & DARCY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-!         ENDIF
-
-
         !Point interpolation pointer
         GEOMETRIC_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
         FIBRE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
@@ -858,16 +845,9 @@ CONTAINS
           DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR
         ENDIF
 
-!         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-!         !Get the Darcy interpolation parameters for each of the field variables
-!            !Again loop over variable types
-!            DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR
-!         ENDIF
-
-
-
-        !SELECT: Compressible or incompressible cases
+        !SELECT: Compressible or incompressible cases, or poro multicompartment
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        ! ---------------------------------------------------------------
         CASE(EQUATIONS_SET_NO_SUBTYPE,EQUATIONS_SET_MEMBRANE_SUBTYPE, EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE, &
           & EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE, EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE, &
           & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE, EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE, &
@@ -918,9 +898,7 @@ CONTAINS
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
               !Parameters settings for coupled elasticity Darcy INRIA model:
               CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
-
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
-
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
             ENDIF
 
@@ -995,9 +973,6 @@ CONTAINS
                 ENDIF
               ENDIF
             ENDIF
-
-!-------------------------------------------------------------
-
           ENDDO !gauss_idx
 
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
@@ -1005,6 +980,7 @@ CONTAINS
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
 
+        ! ---------------------------------------------------------------
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
         !keep the multi-compartment case separate for the time being until the formulation has been finalised, then perhaps
         !integrate within the single compartment case
@@ -1013,8 +989,7 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD,FIELD_U_VARIABLE_TYPE, &
             & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
 
-            Ncompartments  = EQUATIONS_SET_FIELD_DATA(2)
-
+          Ncompartments  = EQUATIONS_SET_FIELD_DATA(2)
 
           DO gauss_idx=1,DEPENDENT_NUMBER_OF_GAUSS_POINTS
             GAUSS_WEIGHTS=DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
@@ -1042,27 +1017,20 @@ CONTAINS
               CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
 
               DARCY_MASS_INCREASE = 0.0_DP
-              !Get number of compartments from equations set field
-              
-
               DO imatrix=1,Ncompartments
+                FIELD_VAR_TYPE=FIELD_V_VARIABLE_TYPE+FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(imatrix-1)
+                DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>&
+                  & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
 
-               FIELD_VAR_TYPE=FIELD_V_VARIABLE_TYPE+FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(imatrix-1)
-
-               DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>&
-               & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
-
-               CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
                   & DARCY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
 
-               DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
-               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
+                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
                   & DARCY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)               
 
-               DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV)
-
+                DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV)
               ENDDO             
-              !DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
 
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
 
@@ -1134,9 +1102,6 @@ CONTAINS
                     & (Jznu-1.0_DP-DARCY_VOL_INCREASE)
               ENDIF
             ENDIF
-
-!-------------------------------------------------------------
-
           ENDDO !gauss_idx
 
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
@@ -1144,6 +1109,7 @@ CONTAINS
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
 
+        ! ---------------------------------------------------------------
         CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   ! compressible problem (no pressure component)
 
           !Loop over gauss points and add up residuals
@@ -1204,8 +1170,8 @@ CONTAINS
           IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    !
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
-
         END SELECT
+
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -1769,50 +1735,6 @@ CONTAINS
 
 
           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
-
-
-!=== begin: Alternative implementation (gives the same result as the one above):
-
-          I1 = AZL(1,1) + AZL(2,2) + AZL(3,3)
-
-          TEMP = MATMUL(AZL,AZL)  ! C^2
-          I2 = 0.5_DP*( I1**2.0_DP - ( TEMP(1,1)+TEMP(2,2)+TEMP(3,3) ) )
-
-          I3 = DETERMINANT(AZL,ERR,ERROR)
-
-          TEMP_1 = I3**(-1.0_DP / 3.0_DP)
-
-          TEMP_2 = I3**(-2.0_DP / 3.0_DP)
-
-          CONTRIBUTION_1 =  C(1) * TEMP_1 + C(2) * TEMP_2 * I1
-
-          CONTRIBUTION_2 = -C(2) * TEMP_2
-
-          CONTRIBUTION_3 = -1.0_DP / 3.0_DP * C(1) * I1 * TEMP_1 - 2.0_DP / 3.0_DP * C(2) * I2 * TEMP_2
-
-          PIOLA_TENSOR = 0.0_DP
-
-          DO i=1,3
-            PIOLA_TENSOR(i,i) = PIOLA_TENSOR(i,i) + CONTRIBUTION_1
-            DO j=1,3
-              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + CONTRIBUTION_2 * AZL(i,j) + CONTRIBUTION_3 * AZU(i,j)
-            ENDDO
-          ENDDO
-
-          !Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it
-          !MIND that using "+ P * Jznu * AZU(i,j)" in the constitutive law
-          ! implies a minus sign in the GRAD_LM_PRESSURE term in DARCY_EQUATION_FINITE_ELEMENT_CALCULATE
-          DO i=1,3
-            DO j=1,3
-              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 1.0_DP * P * Jznu * AZU(i,j) &
-                & + 2.0_DP * C(3) * (Jznu-1.0_DP) * Jznu * AZU(i,j)
-            ENDDO
-          ENDDO
-
-          PIOLA_TENSOR = 2.0_DP * PIOLA_TENSOR
-
-!=== end: Alternative implementation
-
 
         END SELECT
 
@@ -3774,7 +3696,7 @@ CONTAINS
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
-              !Call divergence test only if finite element loop: THIS IS A TEMPORARY FIX
+              !Call divergence test only if finite element loop: THIS IS NOT A PROPER FIX
               IF(CONTROL_LOOP%SUB_LOOP_INDEX==1) THEN
                 CALL FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*999)
               ENDIF
@@ -4831,9 +4753,9 @@ CONTAINS
     CALL ENTERS("GET_DARCY_FINITE_ELASTICITY_PARAMETERS",ERR,ERROR,*999)
 
 
-!     DARCY_RHO_0_F = 1.0E-03_DP
+!   DARCY_RHO_0_F = 1.0E-03_DP
     DARCY_RHO_0_F = 1.0_DP
-!     Mfact = 2.18E05_DP
+!   Mfact = 2.18E05_DP
     Mfact = 2.18E00_DP
     bfact = 1.0_DP
     p0fact = 0.0_DP
