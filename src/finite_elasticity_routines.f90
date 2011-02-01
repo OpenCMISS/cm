@@ -48,6 +48,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
+  USE CMISS_PETSC
   USE COMP_ENVIRONMENT
   USE CONSTANTS
   USE CONTROL_LOOP_ROUTINES  
@@ -3789,7 +3790,7 @@ CONTAINS
 
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: I
+    INTEGER(INTG) :: I,CONVERGED_REASON
     TYPE(FIELD_TYPE), POINTER :: INDEPENDENT_FIELD
 
     CALL ENTERS("FINITE_ELASTICITY_POST_SOLVE",ERR,ERROR,*999)
@@ -3800,6 +3801,10 @@ CONTAINS
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
+              !Call divergence test only if finite element loop: THIS IS A TEMPORARY FIX
+              IF(CONTROL_LOOP%SUB_LOOP_INDEX==1) THEN
+                CALL FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*999)
+              ENDIF
               IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE.AND.SOLVER%GLOBAL_NUMBER==1) THEN
                 CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               END IF
@@ -4005,6 +4010,81 @@ CONTAINS
     CALL EXITS("FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA")
     RETURN 1
   END SUBROUTINE FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Instead of warning on nonlinear divergence, exit with error
+  SUBROUTINE FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*)
+    TYPE(SOLVER_TYPE), INTENT(IN) :: SOLVER
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    TYPE(NONLINEAR_SOLVER_TYPE),POINTER :: NONLINEAR_SOLVER
+    TYPE(NEWTON_SOLVER_TYPE),POINTER :: NEWTON_SOLVER
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE),POINTER :: LINESEARCH_SOLVER
+    INTEGER(INTG) :: CONVERGED_REASON
+    
+    CALL ENTERS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT",ERR,ERROR,*999)
+
+    NULLIFY(NONLINEAR_SOLVER,NEWTON_SOLVER,LINESEARCH_SOLVER)
+
+    NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+      CASE(SOLVER_NONLINEAR_NEWTON)
+        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+          SELECT CASE (NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
+          CASE(SOLVER_NEWTON_LINESEARCH)
+            LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+            IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+              CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
+                SELECT CASE(CONVERGED_REASON)
+                CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_MAX_IT)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search fail.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
+                    & ERR,ERROR,*999)
+                END SELECT
+            ELSE
+              CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_NEWTON_TRUSTREGION)
+            !Not yet implemented. Don't kick up a fuss, just exit
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+        !Not yet implemented. Don't kick up a fuss, just exit
+      CASE(SOLVER_NONLINEAR_SQP)
+        !Not yet implemented. Don't kick up a fuss, just exit
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT")
+    RETURN
+999 CALL ERRORS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT",ERR,ERROR)
+    CALL EXITS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT")
+    RETURN 1
+  END SUBROUTINE FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT
 
   !
   !================================================================================================================================
@@ -4369,22 +4449,22 @@ CONTAINS
                         SELECT CASE(EQUATIONS_SET%SUBTYPE)
                           CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
                             IF(CONTROL_LOOP%sub_loops(1)%ptr%loop_type==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
-                              write(*,*)'SUBITERATION_NUMBER = ',SUBITERATION_NUMBER
                               SUBITERATION_NUMBER=CONTROL_LOOP%sub_loops(1)%ptr%while_loop%iteration_number
+                              write(*,*)'SUBITERATION_NUMBER = ',SUBITERATION_NUMBER
                             ELSE
                                 CALL FLAG_ERROR("Could not find SUBITERATION_NUMBER.",ERR,ERROR,*999)
                             ENDIF
-                            IF(SUBITERATION_NUMBER==0) THEN
-                              DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                              IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                                BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
-                                IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                                  EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
-                                  IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
-                                      & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR
-                                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
 
+                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                            IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                              BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                              IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                                EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                                  BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
+                                    & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR
+                                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                    IF(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_CONDITION_USED) THEN
                                       CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                                         & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
 
@@ -4401,37 +4481,25 @@ CONTAINS
                                       DEPENDENT_NUMBER_OF_DOFS=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)% &
                                           & PTR%NUMBER_OF_DOFS
 
+                                      ALLOCATE(NEW_PRESSURE_VALUES(DEPENDENT_NUMBER_OF_DOFS))
+
+                                      !Linear increase of cavity pressure: just a test example prototype
+                                      !\todo: general time-dependent boundary condition input method?
                                       ALPHA = ( CURRENT_TIME + TIME_INCREMENT ) / CURRENT_TIME
-
-                                     IF (ALLOCATED(NEW_PRESSURE_VALUES)) DEALLOCATE(NEW_PRESSURE_VALUES)
-                                     IF(.NOT.ALLOCATED(NEW_PRESSURE_VALUES)) ALLOCATE(NEW_PRESSURE_VALUES(DEPENDENT_NUMBER_OF_DOFS))
-
                                       NEW_PRESSURE_VALUES = ALPHA * CURRENT_PRESSURE_VALUES
 
-                                      UPDATE_PRESSURE = .FALSE.
+                                      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update pressure BCs",ERR,ERROR,*999)
                                       DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
-                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
-                                        IF( BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_PRESSURE .OR. &
-                                          & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_PRESSURE_INCREMENTED ) THEN
-                                          UPDATE_PRESSURE = .TRUE.
-                                        END IF
-                                      END DO
+                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                          & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE,dof_number, & 
+                                          & NEW_PRESSURE_VALUES(dof_number),ERR,ERROR,*999)
+                                      ENDDO
+                                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                        & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                                        & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
 
-                                      IF( UPDATE_PRESSURE ) THEN
-                                       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update pressure BCs",ERR,ERROR,*999)
-                                        DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
-                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                            & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE,dof_number, & 
-                                            & NEW_PRESSURE_VALUES(dof_number),ERR,ERROR,*999)
-                                        END DO
-                                        CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                          & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                                          & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                      ENDIF
-
-                                      IF (ALLOCATED(NEW_PRESSURE_VALUES)) DEALLOCATE(NEW_PRESSURE_VALUES)
+                                      DEALLOCATE(NEW_PRESSURE_VALUES)
 
                                       IF(DIAGNOSTICS1) THEN
                                         NULLIFY( DUMMY_VALUES1 )
@@ -4445,21 +4513,22 @@ CONTAINS
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                                           & FIELD_PRESSURE_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
                                       ENDIF
-                                    ELSE
-                                      CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                                    END IF
+                                    ENDIF !Pressure_condition_used
+                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                                    & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
                                   ELSE
-                                    CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
-                                  ENDIF
+                                    CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                  END IF
                                 ELSE
-                                  CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
-                                END IF
+                                  CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                                ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
                               END IF
                             ELSE
-                                !do nothing
-                            ENDIF
+                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                            END IF
+
                           CASE DEFAULT
                             ! do nothing ???
 !                             LOCAL_ERROR="Equations set subtype " &

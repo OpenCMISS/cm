@@ -29096,8 +29096,8 @@ CONTAINS
     !Argument variables
     CHARACTER(LEN=*), INTENT(IN):: FileName !<name of input
     CHARACTER(LEN=*), INTENT(IN) :: Method !<method used for import
-    TYPE(CMISSRegionType), INTENT(INOUT) :: Region !<region
-    TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<mesh type
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<region
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<mesh type
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<user number for mesh
     TYPE(CMISSDecompositionType), INTENT(INOUT) :: Decomposition !< decompistion
     INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<user number for decompistion
