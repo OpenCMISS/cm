@@ -15000,7 +15000,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_idx,solver_dof_idx,solver_matrix_idx
+    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_idx,solver_dof_idx,solver_matrix_idx,var_idx
     REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
@@ -15032,19 +15032,18 @@ CONTAINS
                     SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
                     IF(ASSOCIATED(SOLVER_VECTOR)) THEN
                       !Get the solver variables data
-                      CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
-                      solver_dof_idx=1
-                      !DO equations_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                      !equations_idx=1
-                      DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
+                     CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
+                     solver_dof_idx=1
+                     equations_idx=1
+!                       DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
                         !Loop over the equations sets associated with this dof
-                        DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+!                         DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+!                           & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+                     DO var_idx=1,SOLVER_MAPPING%VARIABLES_LIST(1)%NUMBER_OF_VARIABLES
                       SELECT CASE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                         & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%EQUATIONS_TYPES(equations_idx))
                       CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
-                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_idx)%PTR
+                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%VARIABLES_LIST(1)%VARIABLES(var_idx)%VARIABLE
                         IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
                           DYNAMIC_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
                           NULLIFY(DEPENDENT_FIELD)
@@ -15064,8 +15063,8 @@ CONTAINS
                       END SELECT
                       CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                          & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                        ENDDO !equations_idx
-                      ENDDO !solver_dof_idx
+                     ENDDO !var_idx
+!                       ENDDO !solver_dof_idx
                     ELSE
                       CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
                     ENDIF
