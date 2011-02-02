@@ -4401,9 +4401,9 @@ CONTAINS
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                                           & FIELD_PRESSURE_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
                                       ENDIF
+                                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                                        & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
                                     ENDIF !Pressure_condition_used
-                                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                                    & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
                                   ELSE
                                     CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                   END IF
