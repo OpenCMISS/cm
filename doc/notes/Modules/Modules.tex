@@ -1,0 +1,250 @@
+\clearemptydoublepage
+\chapter{Modules}
+\label{cha:modules}
+
+\section{Definitions}
+\label{sec:definitions}
+
+\emph{Class}, \emph{type} and \emph{sub-type} - In \emph{OpenCMISS}, \emph{class} 
+is the broadest grouping, it is a means of identifying equations of a physics 
+type (for example: \emph{Fluid Mechanics}), \emph{type} refers to a particular 
+equation in that \emph{class} (for example: \emph{Navier Stokes}), and 
+\emph{sub-type} refers to an implementation of that equation (for example: 
+\emph{static Navier Stokes}). \\
+
+\noindent Variable, parameter and routine naming - \emph{OpenCMISS} uses descriptive variable, 
+parameter and routine names where possible, in addition to this, some of the variables have 
+legacy names from the old \emph{CMISS} code (for example, $nd$ for data, $ng$ for gauss, 
+etc), these are in process of being replaced with descriptive names. \\
+\linebreak
+\emph{Hex} and \emph{Tet} - In addition to \emph{Hex} (Hexahedral) elements, 
+\emph{OpenCMISS} can handle \emph{Tet} (Tetrahedral) elements, linear, quadratic 
+and cubic interpolation. It should be noted that \emph{cmgui}, whilst being 
+able to visualise \emph{Tet} elements, cannot handle \emph{Tet} elements with 
+cubic interpolation. \\
+\linebreak
+\emph{dof} - Degree of freedom \\
+\linebreak
+\emph{Modules} - A collection of subroutines organised into a functional file. \\
+\linebreak
+\emph{Example} program - The top level program set up by the user, containing mostly
+subroutine calls that call routines in the opencmiss module. \\
+\linebreak
+\emph{Units} - A functional unit is defined as the basic
+call unit between the calls of \emph{MODULENAME\_CREATE\_START} to 
+\emph{MODULENAME\_CREATE\_FINISH}. Further calls can be added between these calls to 
+override default set up settings. \\
+\linebreak
+\emph{MODULENAME\_CREATE\_START} - This routine initialises the object. \\
+\linebreak
+\emph{MODULENAME\_CREATE\_FINISH} - This routine complete the object creation. \\
+\linebreak
+\emph{MODULENAME\_DESTROY} - This routine either deallocates all allocated variables on an object,
+zeros parameters and nulls character strings, or calls a \emph{MODULENAME\_FINALISE} routine 
+that performs these operations.
+
+
+\section{Use of the cache}
+\label{sec:cache}
+
+\section{Diagnostics}
+\label{sec:diagnostics}
+
+\section{Library: \emph{CellML}}
+\label{sec:cellml}
+
+\section{Library: \emph{FieldML}}
+\label{sec:fieldml}
+
+\section{Module: \emph{base\_routines}}
+\label{sec:baseroutines}
+
+\section{Module: \emph{basis\_routines}}
+\label{sec:basisroutines}
+
+\section{Module: \emph{boundary\_condition\_routines}} 
+\label{sec:boundaryconditionroutines}
+
+\section{Module: \emph{classical\_field\_routines}}
+\label{sec:classicalfieldroutines}
+
+\section{Module: \emph{cmiss}}
+\label{sec:cmiss}
+
+\section{Module: \emph{cmiss\_petsc} \& \emph{cmiss\_parmetis}}
+\label{sec:cmisspetscandcmissparmetis}
+
+\section{Module: \emph{control\_loop\_routines}}
+\label{sec:controllooproutines}
+
+\section{Module: \emph{coordinate\_routines}}
+\label{sec:coordinateroutines}
+
+\section{Module: \emph{data\_point\_routines} \&  \\ 
+\emph{data\_projection\_routines}}
+\label{sec:dataprojectionroutines}
+
+\section{Module: \emph{distributed\_matrix\_vector}}
+\label{sec:distributedmatrixvector}
+
+\section{Module: \emph{domain\_mappings}} 
+\label{sec:domainmappings}
+
+\section{Module: \emph{equations\_mapping\_routines}}
+\label{sec:equationsmappingroutines}
+
+\section{Module: \emph{equations\_matrices\_routines}}
+\label{sec:equationsmatricesroutines}
+
+\section{Module: \emph{equations\_routines}}
+\label{sec:equationsroutines}
+
+\section{Module: \emph{equations\_set\_constants}}
+\label{sec:equationssetconstants}
+
+\section{Module: \emph{equations\_set\_routines}}
+\label{sec:equationssetroutines}
+
+\section{Module: \emph{field\_routines}}
+\label{sec:fieldroutines}
+
+\section{Module: \emph{finite\_element\_routines}}
+\label{sec:finiteelementroutines}
+
+This module is not currently used in \emph{OpenCMISS}.
+
+
+\section{Module: \emph{fitting\_routines}}
+\label{sec:fittingroutines}
+
+
+\section{Module: \emph{generated\_mesh\_routines}}
+\label{sec:generatedmeshroutines}
+
+
+\section{Interface modules}
+\label{sec:interfacemodules}
+
+
+\section{Module: \emph{kinds}}
+\label{sec:kinds}
+
+This module handles the different data types available in \emph{OpenCMISS}: 
+\emph{\_DP} (double precision), \emph{\_INTG} (integer), \emph{\_SP} (single 
+precision) or \emph{\_L} (logical). The \emph{\_} (a Fortran source term) 
+means a different \emph{kind} in Fortran. In addition to these data types, 
+a number of additional kinds are defined preceded by \emph{CMISS} these 
+are equal to a corresponding kind, for example: \emph{\_CMISSDP} is 
+equal to \emph{\_DP}. 
+
+
+\section{Module: \emph{lists}}
+\label{sec:lists}
+
+This module contains the routines for lists, lists are data structures that 
+allows the listing of items, their ordering and de-duplication.
+
+
+\section{Module: \emph{matrix\_vector}}
+\label{sec:matrixvector}
+
+
+\section{Module: \emph{mesh\_routines}}
+\label{sec:meshroutines}
+
+
+\section{Module: \\ \emph{multi\_compartment\_transport\_routines}}
+\label{sec:multicompartmenttransportroutines}
+
+
+\section{Module: \emph{multi\_physics\_routines}}
+\label{sec:multiphysicsroutines}
+
+The routines in this module are for dealing with coupled problems.
+
+
+\section{Module: \emph{node\_routines}}
+\label{sec:noderoutines}
+
+Nodes in \emph{OpenCMISS} store the nodal information. Nodes are 
+associated with either an interface or a region, and have both a global 
+and a user number (allowing the user to define their own numbering scheme 
+to the nodes). In \emph{OpenCMISS} nodes are just labels for dofs, they 
+do not have a position. The position in space of a dof is a property of 
+the field. Dofs are important in \emph{OpenCMISS}, they are the basic topological 
+unit, they are the basic unit by which matrices are indexed and 
+calculations performed.
+
+
+\section{Module: \emph{opencmiss}}
+\label{sec:opencmiss}
+
+The opencmiss module handles the bindings, the routines in this module act as 
+an interface layer between the calls from the example program and the main 
+\emph{OpenCMISS} library routines. The use of this layer allows the further 
+extension of the code to enable other languages to call the main library 
+routines (for example: \emph{C} and \emph{Python}).
+
+
+\section{Module: \emph{problem\_constants}}
+\label{sec:problemconstants}
+
+
+\section{Module: \emph{problem\_routines}}
+\label{sec:problemroutines}
+
+
+\section{Module: \emph{region\_routines}}
+\label{sec:regionroutines}
+
+
+\section{Module: \emph{solver\_mapping\_routines}}
+\label{sec:solvermappingroutines}
+
+
+\section{Module: \emph{solver\_matrices\_routines}}
+\label{sec:solvermatricesroutines}
+
+These routines handle the solver matrices which are the actually matrices to 
+be solved for the numerical problem. Solver matrices are used with the solvers, 
+either internal (the \emph{CMISS} solver) or external (\emph{PETSc}, 
+\emph{GMRES}) solvers.
+
+
+\section{Module: \emph{solver\_routines}}
+\label{sec:solverroutines}
+
+
+\section{Module: \emph{sorting}}
+\label{sec:sorting}
+
+This module contains the routines used for sorting. A number sorting methods 
+are available in \emph{OpenCMISS}: bubble, heap and shell sort. The default 
+sorting method is heap sort. The sort methods sorts lists into ascending order. 
+
+
+\section{Module: \emph{strings}}
+\label{sec:strings}
+
+This module contains the routines used for manipulating strings in 
+\emph{OpenCMISS}.
+
+
+\section{Module: \emph{trees}}
+\label{sec:trees}
+
+Binary search trees are used in \emph{OpenCMISS} to match a user-defined node 
+number to a global or a local number of a node. \emph{Red-black} binary trees 
+are used, as they have good order properties for lookups, searching and ordering, 
+and good worst case characteristics. Trees are composed of keys and data, the 
+search is made on the key and the return is whatever is required.
+
+Nodes have a user node number assigned by the user and a corresponding 
+global/local number that the program uses. User node numbers are used in the 
+example file to reference the nodes in the mesh, their use allows users flexibility 
+in their ordering and referencing of the nodes. Presently trees are only used for 
+nodes lookup.
+
+Trees are used in \emph{OpenCMISS} by two objects: the \emph{mesh object} uses 
+trees to lookup the global node number, whilst the \emph{domain object} uses trees 
+to lookup the local node number.

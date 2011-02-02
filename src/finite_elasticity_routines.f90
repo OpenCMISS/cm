@@ -95,9 +95,6 @@ MODULE FINITE_ELASTICITY_ROUTINES
   INTEGER(INTG), PARAMETER :: FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX=8 !<c2 parameter index \see FINITE_ELASTICITY_ROUTINES_AnalyticParamIndices, FINITE_ELASTICITY_ROUTINES
   !>@}
 
-  LOGICAL:: WRITE_IP_INFO_IS_TRUE
-
-
   !Module types
 
   !Module variables
@@ -115,7 +112,7 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SETUP, &
     & FINITE_ELASTICITY_POST_SOLVE,FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA, &
     & FINITE_ELASTICITY_PRE_SOLVE,FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP, &
-    & EVALUATE_CHAPELLE_FUNCTION, GET_DARCY_FINITE_ELASTICITY_PARAMETERS, WRITE_IP_INFO
+    & EVALUATE_CHAPELLE_FUNCTION, GET_DARCY_FINITE_ELASTICITY_PARAMETERS
 
 CONTAINS
 
@@ -821,12 +818,6 @@ CONTAINS
           DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR
         ENDIF
 
-!         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-!         !Get the Darcy interpolation parameters for each of the field variables
-!            !NEED TO LOOP OVER VARIABLE TYPE
-!            DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR
-!         ENDIF
-
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
@@ -843,13 +834,6 @@ CONTAINS
             & DARCY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         ENDIF
 
-!         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-!         !Get the Darcy interpolation parameters for each of the field variables
-!            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-!             & DARCY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-!         ENDIF
-
-
         !Point interpolation pointer
         GEOMETRIC_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
         FIBRE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
@@ -861,16 +845,9 @@ CONTAINS
           DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR
         ENDIF
 
-!         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-!         !Get the Darcy interpolation parameters for each of the field variables
-!            !Again loop over variable types
-!            DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR
-!         ENDIF
-
-
-
-        !SELECT: Compressible or incompressible cases
+        !SELECT: Compressible or incompressible cases, or poro multicompartment
         SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        ! ---------------------------------------------------------------
         CASE(EQUATIONS_SET_NO_SUBTYPE,EQUATIONS_SET_MEMBRANE_SUBTYPE, EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE, &
           & EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE, EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE, &
           & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE, EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE, &
@@ -921,9 +898,7 @@ CONTAINS
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
               !Parameters settings for coupled elasticity Darcy INRIA model:
               CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
-
               DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
-
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
             ENDIF
 
@@ -998,21 +973,6 @@ CONTAINS
                 ENDIF
               ENDIF
             ENDIF
-
-!---Write out some data at selected integration points:-------
-            X_COORD_GAUSS = 0.33_DP
-            Y_COORD_GAUSS = 0.33_DP
-            X_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
-            Y_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
-            TOL_GAUSS = 0.1_DP
-
-            IF(WRITE_IP_INFO_IS_TRUE.AND.ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
-              CALL WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
-                & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-                & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
-            ENDIF
-!-------------------------------------------------------------
-
           ENDDO !gauss_idx
 
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
@@ -1020,6 +980,7 @@ CONTAINS
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
 
+        ! ---------------------------------------------------------------
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
         !keep the multi-compartment case separate for the time being until the formulation has been finalised, then perhaps
         !integrate within the single compartment case
@@ -1028,8 +989,7 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD,FIELD_U_VARIABLE_TYPE, &
             & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
 
-            Ncompartments  = EQUATIONS_SET_FIELD_DATA(2)
-
+          Ncompartments  = EQUATIONS_SET_FIELD_DATA(2)
 
           DO gauss_idx=1,DEPENDENT_NUMBER_OF_GAUSS_POINTS
             GAUSS_WEIGHTS=DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)
@@ -1057,27 +1017,20 @@ CONTAINS
               CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
 
               DARCY_MASS_INCREASE = 0.0_DP
-              !Get number of compartments from equations set field
-              
-
               DO imatrix=1,Ncompartments
+                FIELD_VAR_TYPE=FIELD_V_VARIABLE_TYPE+FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(imatrix-1)
+                DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>&
+                  & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
 
-               FIELD_VAR_TYPE=FIELD_V_VARIABLE_TYPE+FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(imatrix-1)
-
-               DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>&
-               & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
-
-               CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
                   & DARCY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
 
-               DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
-               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
+                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
                   & DARCY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)               
 
-               DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV)
-
+                DARCY_MASS_INCREASE = DARCY_MASS_INCREASE + DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV)
               ENDDO             
-              !DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(4,NO_PART_DERIV) 
 
               DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
 
@@ -1149,21 +1102,6 @@ CONTAINS
                     & (Jznu-1.0_DP-DARCY_VOL_INCREASE)
               ENDIF
             ENDIF
-
-!---Write out some data at selected integration points:-------
-            X_COORD_GAUSS = 0.33_DP
-            Y_COORD_GAUSS = 0.33_DP
-            X_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
-            Y_COORD = GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
-            TOL_GAUSS = 0.1_DP
-
-            IF(WRITE_IP_INFO_IS_TRUE.AND.ABS(X_COORD-X_COORD_GAUSS)<TOL_GAUSS.AND.ABS(Y_COORD-Y_COORD_GAUSS)<TOL_GAUSS) THEN
-              CALL WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
-                & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-                & ELEMENT_NUMBER,gauss_idx,ERR,ERROR,*999)
-            ENDIF
-!-------------------------------------------------------------
-
           ENDDO !gauss_idx
 
           !Call surface pressure term here: should only be executed if THIS element has surface pressure on it (direct or incremented)
@@ -1171,6 +1109,7 @@ CONTAINS
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
 
+        ! ---------------------------------------------------------------
         CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   ! compressible problem (no pressure component)
 
           !Loop over gauss points and add up residuals
@@ -1231,8 +1170,8 @@ CONTAINS
           IF(MESH_ELEMENT%BOUNDARY_ELEMENT.AND.TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS>0) THEN    !
             CALL FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,var1,var2,ERR,ERROR,*999)
           ENDIF
-
         END SELECT
+
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -1796,50 +1735,6 @@ CONTAINS
 
 
           DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
-
-
-!=== begin: Alternative implementation (gives the same result as the one above):
-
-          I1 = AZL(1,1) + AZL(2,2) + AZL(3,3)
-
-          TEMP = MATMUL(AZL,AZL)  ! C^2
-          I2 = 0.5_DP*( I1**2.0_DP - ( TEMP(1,1)+TEMP(2,2)+TEMP(3,3) ) )
-
-          I3 = DETERMINANT(AZL,ERR,ERROR)
-
-          TEMP_1 = I3**(-1.0_DP / 3.0_DP)
-
-          TEMP_2 = I3**(-2.0_DP / 3.0_DP)
-
-          CONTRIBUTION_1 =  C(1) * TEMP_1 + C(2) * TEMP_2 * I1
-
-          CONTRIBUTION_2 = -C(2) * TEMP_2
-
-          CONTRIBUTION_3 = -1.0_DP / 3.0_DP * C(1) * I1 * TEMP_1 - 2.0_DP / 3.0_DP * C(2) * I2 * TEMP_2
-
-          PIOLA_TENSOR = 0.0_DP
-
-          DO i=1,3
-            PIOLA_TENSOR(i,i) = PIOLA_TENSOR(i,i) + CONTRIBUTION_1
-            DO j=1,3
-              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + CONTRIBUTION_2 * AZL(i,j) + CONTRIBUTION_3 * AZU(i,j)
-            ENDDO
-          ENDDO
-
-          !Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it
-          !MIND that using "+ P * Jznu * AZU(i,j)" in the constitutive law
-          ! implies a minus sign in the GRAD_LM_PRESSURE term in DARCY_EQUATION_FINITE_ELEMENT_CALCULATE
-          DO i=1,3
-            DO j=1,3
-              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 1.0_DP * P * Jznu * AZU(i,j) &
-                & + 2.0_DP * C(3) * (Jznu-1.0_DP) * Jznu * AZU(i,j)
-            ENDDO
-          ENDDO
-
-          PIOLA_TENSOR = 2.0_DP * PIOLA_TENSOR
-
-!=== end: Alternative implementation
-
 
         END SELECT
 
@@ -3801,7 +3696,7 @@ CONTAINS
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
-              !Call divergence test only if finite element loop: THIS IS A TEMPORARY FIX
+              !Call divergence test only if finite element loop: THIS IS NOT A PROPER FIX
               IF(CONTROL_LOOP%SUB_LOOP_INDEX==1) THEN
                 CALL FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*999)
               ENDIF
@@ -3957,34 +3852,27 @@ CONTAINS
                     ENDIF
 
                     !Subiteration intermediate solutions / iterates output:
-                    IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
-                      SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
-                      IF(CURRENT_LOOP_ITERATION<10) THEN
-                        IF(SUBITERATION_NUMBER<10) THEN
-                          WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-                        ELSE IF(SUBITERATION_NUMBER<100) THEN
-                          WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-                        END IF
-                        FILE=OUTPUT_FILE
-                        METHOD="FORTRAN"
-                        EXPORT_FIELD=.TRUE.
-                        IF(EXPORT_FIELD) THEN
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export subiterates ...",ERR,ERROR,*999)
-                          CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                            & ERR,ERROR,*999)
-                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                        ENDIF
-                      ENDIF
-                    ENDIF
+!                     IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
+!                       SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
+!                       IF(CURRENT_LOOP_ITERATION<10) THEN
+!                         IF(SUBITERATION_NUMBER<10) THEN
+!                           WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+!                         ELSE IF(SUBITERATION_NUMBER<100) THEN
+!                           WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+!                         END IF
+!                         FILE=OUTPUT_FILE
+!                         METHOD="FORTRAN"
+!                         EXPORT_FIELD=.TRUE.
+!                         IF(EXPORT_FIELD) THEN
+!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export subiterates ...",ERR,ERROR,*999)
+!                           CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                             & ERR,ERROR,*999)
+!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                         ENDIF
+!                       ENDIF
+!                     ENDIF
 
-!---tob
-                    IF(MOD(CURRENT_LOOP_ITERATION+1,50)==0)  THEN   
-                      WRITE_IP_INFO_IS_TRUE = .TRUE.
-                    ELSE
-                      WRITE_IP_INFO_IS_TRUE = .FALSE.
-                    ENDIF
-!---toe
                    ENDIF
                   ENDDO
                 ENDIF
@@ -4865,9 +4753,9 @@ CONTAINS
     CALL ENTERS("GET_DARCY_FINITE_ELASTICITY_PARAMETERS",ERR,ERROR,*999)
 
 
-!     DARCY_RHO_0_F = 1.0E-03_DP
+!   DARCY_RHO_0_F = 1.0E-03_DP
     DARCY_RHO_0_F = 1.0_DP
-!     Mfact = 2.18E05_DP
+!   Mfact = 2.18E05_DP
     Mfact = 2.18E00_DP
     bfact = 1.0_DP
     p0fact = 0.0_DP
@@ -4883,273 +4771,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-
-
-
-
-
-
-
-  !>Evaluates various data at an integration point for checking purposes
-  SUBROUTINE WRITE_IP_INFO(EQUATIONS_SET,DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT, &
-      & MATERIALS_INTERPOLATED_POINT,DARCY_DEPENDENT_INTERPOLATED_POINT,CAUCHY_TENSOR,Jznu,DZDNU, &
-      & ELEMENT_NUMBER,GAUSS_POINT_NUMBER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: EQUATIONS_SET !<A pointer to the equations set 
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DEPENDENT_INTERPOLATED_POINT,MATERIALS_INTERPOLATED_POINT
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: DARCY_DEPENDENT_INTERPOLATED_POINT,GEOMETRIC_INTERPOLATED_POINT
-    REAL(DP), INTENT(OUT) :: CAUCHY_TENSOR(:,:)
-    REAL(DP), INTENT(OUT) :: Jznu !Determinant of deformation gradient tensor
-    REAL(DP), INTENT(IN) :: DZDNU(3,3)
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER,GAUSS_POINT_NUMBER !<Element/Gauss point number
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: EQUATIONS_SET_SUBTYPE !<The equation subtype
-    INTEGER(INTG) :: i,j,PRESSURE_COMPONENT
-    REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),TEMP(3,3),TEMPTERM,I3,P,I1,ACTIVTIME
-    REAL(DP) :: AZLT(3,3),AZL2(3,3)
-    REAL(DP) :: PIOLA_TENSOR_ADDITION(3,3)
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    REAL(DP), DIMENSION (:), POINTER :: C !Parameters for constitutive laws
-    REAL(DP) :: a, B(3,3), Q !Parameters for orthotropic laws
-    REAL(DP) :: DARCY_MASS_INCREASE, DARCY_VOL_INCREASE !coupled elasticity Darcy
-    REAL(DP) :: StrainEnergy_hyp, StrainEnergy_add, StrainEnergy_total, dW_add_dVolIncrease
-    REAL(DP) :: I2, J1, J2, JJ
-    REAL(DP) :: DARCY_RHO_0_F, Mfact, bfact, p0fact
-    REAL(DP) :: ffact, dfdJfact
-    REAL(DP) :: X_COORD, Y_COORD, Z_COORD
-    REAL(DP) :: DARCY_VELOCITY(3)
-    REAL(DP) :: OUTPUT_VECTOR(5) !z, Jznu, LM, w-velocity component, volume_increase
-    REAL(DP) :: OUTPUT_MATRIX(1,5) !z, Jznu, LM, w-velocity component, volume_increase
-    REAL(DP) :: Z_COORD_GAUSS, TOL_GAUSS
-
-    INTEGER(INTG) :: DARCY_MASS_INCREASE_ENTRY !position of mass-increase entry in dependent-variable vector
-
-    !CALL ENTERS("WRITE_IP_INFO",ERR,ERROR,*999)
-    EQUATIONS_SET_SUBTYPE = EQUATIONS_SET%SUBTYPE
-
-    C => MATERIALS_INTERPOLATED_POINT%VALUES(:,1)
-
-    !AZL = F'*F (deformed covariant or right cauchy deformation tensor, C)
-    !AZU - deformed contravariant tensor; I3 = det(C)
-    !E = Green-Lagrange strain tensor = 0.5*(C-I)
-    !PIOLA_TENSOR is the second Piola-Kirchoff tensor (PK2 or S)
-    !P is the actual hydrostatic pressure, not double it
-
-    CALL MATRIX_TRANSPOSE(DZDNU,DZDNUT,ERR,ERROR,*999)
-    CALL MATRIX_PRODUCT(DZDNUT,DZDNU,AZL,ERR,ERROR,*999)
-
-    PRESSURE_COMPONENT=DEPENDENT_INTERPOLATED_POINT%INTERPOLATION_PARAMETERS%FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-    P=DEPENDENT_INTERPOLATED_POINT%VALUES(PRESSURE_COMPONENT,1)
-
-    CALL INVERT(AZL,AZU,I3,ERR,ERROR,*999)
-    E = 0.5_DP*AZL 
-    DO i=1,3
-      E(i,i)=E(i,i)-0.5_DP
-    ENDDO
-
-    SELECT CASE(EQUATIONS_SET_SUBTYPE)
-    CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-      & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
-      !Form of constitutive model is:
-      ! W=c1*(I1-3)+c2*(I2-3)+c3*(J-1)^2   (this is actually nearly incompressible)
-      C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
-      C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
-
-      PIOLA_TENSOR(1,1)=C(1)+C(2)*(AZL(2,2)+AZL(3,3))
-      PIOLA_TENSOR(1,2)=C(2)*(-AZL(2,1))
-      PIOLA_TENSOR(1,3)=C(2)*(-AZL(3,1))   
-      PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
-      PIOLA_TENSOR(2,2)=C(1)+C(2)*(AZL(3,3)+AZL(1,1))
-      PIOLA_TENSOR(2,3)=C(2)*(-AZL(3,2))     
-      PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
-      PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
-      PIOLA_TENSOR(3,3)=C(1)+C(2)*(AZL(1,1)+AZL(2,2))
-      PIOLA_TENSOR=PIOLA_TENSOR*2.0_DP
-
-      IF(DIAGNOSTICS1) THEN
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  C(1) = ",C(1),ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  C(2) = ",C(2),ERR,ERROR,*999)
-        CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-          & 3,3,AZL,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    AZL','(",I1,",:)',' :",3(X,E13.6))', &
-          & '(17X,3(X,E13.6))',ERR,ERROR,*999)
-      ENDIF
-
-      IF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) THEN
-        C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-        PIOLA_TENSOR=PIOLA_TENSOR+2.0_DP*C(3)*(I3-SQRT(I3))*AZU
-      ELSEIF(EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE.OR. &
-        & EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. &
-        & EQUATIONS_SET_SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
-        !Starting point for both models is above compressible form of 2nd PK tensor
-        SELECT CASE (EQUATIONS_SET_SUBTYPE)
-        CASE (EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) !Nearly incompressible
-          C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1)
-          !Adjust for the modified Ciarlet-Geymonat expression: Eq.(22) of the INRIA paper
-          ! Question is: What deviation is to be penalized : (J-1) or (J-1-m/rho) ??? Probably the latter !
-          ! However, m/rho is a given 'constant' and, upon differentiation, drops out.
-          ! But it is important to retain I3 = J^2, since J ~ 1 + m/rho /= 1
-        PIOLA_TENSOR=PIOLA_TENSOR+C(3)*(SQRT(I3)-1.0_DP)*AZU
-          DARCY_MASS_INCREASE_ENTRY = 5 !fifth entry
-        CASE (EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
-             & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) !Incompressible
-          !Constitutive model: W=c1*(I1-3)+c2*(I2-3)+p*(I3-1) 
-          ! The term 'p*(I3-1)' gives rise to: '2p I3 AZU'
-          ! Retain I3 = J^2, since J ~ 1 + m/rho /= 1 
-          IF(DIAGNOSTICS1) THEN
-            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  I3 = ",I3,ERR,ERROR,*999)
-          ENDIF
-          !\ToDo: Check: Add the volumetric part (as is done for incompressible Mooney-Rivlin above) and double it ???
-          DO i=1,3
-           DO j=1,3
-             !\todo: Check which form to use. Recall: I3 = (1 + m/rho)^2 here !
-!              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 2.0_DP*P*I3*AZU(i,j)
-!              PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + P*SQRT(I3)*AZU(i,j)
-             PIOLA_TENSOR(i,j) = PIOLA_TENSOR(i,j) + 2.0_DP*P*AZU(i,j)
-             !\todo: Since J is no longer one for poromechanics, it needs to be taken into account !!!
-           ENDDO
-          ENDDO
-          DARCY_MASS_INCREASE_ENTRY = 4 !fourth entry
-        END SELECT
-
-        DARCY_MASS_INCREASE = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(DARCY_MASS_INCREASE_ENTRY,NO_PART_DERIV)
-        DARCY_VELOCITY(1) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)
-        DARCY_VELOCITY(2) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
-        DARCY_VELOCITY(3) = DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(3,NO_PART_DERIV)
-
-        !Parameters settings for coupled elasticity Darcy INRIA model:
-        CALL GET_DARCY_FINITE_ELASTICITY_PARAMETERS(DARCY_RHO_0_F,Mfact,bfact,p0fact,ERR,ERROR,*999)
-
-        DARCY_VOL_INCREASE = DARCY_MASS_INCREASE / DARCY_RHO_0_F
-
-        CALL EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*999)
-
-        IF(DIAGNOSTICS1) THEN
-          CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-            & 3,3,PIOLA_TENSOR,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR','(",I1,",:)',' :",3(X,E13.6))', &
-            & '(17X,3(X,E13.6))',ERR,ERROR,*999)
-          CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-            & 3,3,PIOLA_TENSOR_ADDITION, &
-            & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    PIOLA_TENSOR_ADDITION','(",I1,",:)',' :",3(X,E13.6))', &
-            & '(17X,3(X,E13.6))',ERR,ERROR,*999)
-        ENDIF
-
-        PIOLA_TENSOR = PIOLA_TENSOR + PIOLA_TENSOR_ADDITION
-
-        !------------------------------------------------------------------------------------------------------------
-        ! Write out data
-        !------------------------------------------------------------------------------------------------------------
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  ELEMENT_NUMBER = ",ELEMENT_NUMBER,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  GAUSS_POINT_NUMBER = ",GAUSS_POINT_NUMBER,ERR,ERROR,*999)
-
-        X_COORD=GEOMETRIC_INTERPOLATED_POINT%VALUES(1,1)
-        Y_COORD=GEOMETRIC_INTERPOLATED_POINT%VALUES(2,1)
-        Z_COORD=GEOMETRIC_INTERPOLATED_POINT%VALUES(3,1)
-
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  X_COORD = ",X_COORD,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Y_COORD = ",Y_COORD,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Z_COORD = ",Z_COORD,ERR,ERROR,*999)
-
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DARCY_MASS_INCREASE = ",DARCY_MASS_INCREASE,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DARCY_VOL_INCREASE = ",DARCY_VOL_INCREASE,ERR,ERROR,*999)
-
-        Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Jznu = ",Jznu,ERR,ERROR,*999)
-
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Lagrange Multiplier (prev. iterate) = ",P,ERR,ERROR,*999)
-
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DARCY_VELOCITY(1, prev. subiterate) = ",DARCY_VELOCITY(1),ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DARCY_VELOCITY(2, prev. subiterate) = ",DARCY_VELOCITY(2),ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DARCY_VELOCITY(3, prev. subiterate) = ",DARCY_VELOCITY(3),ERR,ERROR,*999)
-
-!         CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,1,1,3, &
-!           & 3,3,AZL,WRITE_STRING_MATRIX_NAME_AND_INDICES,'("    AZL = F^transposed * F = C','(",I1,",:)',' :",3(X,E13.6))', &
-!           & '(17X,3(X,E13.6))',ERR,ERROR,*999)
-
-        !Compute the strain energy function W
-
-        CALL EVALUATE_CHAPELLE_FUNCTION(Jznu,ffact,dfdJfact,ERR,ERROR,*999)
-
-        CALL MATRIX_TRANSPOSE(AZL,AZLT,ERR,ERROR,*999)
-        CALL MATRIX_PRODUCT(AZLT,AZL,AZL2,ERR,ERROR,*999)
-
-        ! classical and reduced strain invariants
-        I1 = AZL(1,1) + AZL(2,2) + AZL(3,3) !trace(AZL)
-        I2 = 0.5 * ( I1**2.0_DP - (AZL2(1,1)+AZL2(2,2)+AZL2(3,3)) ) !trace(AZL2)
-        I3 = DETERMINANT(AZL,ERR,ERROR)**0.5_DP   !I3 = det(AZL)
-
-        J1 = I1 * I3**(-1.0_DP/3.0_DP)
-        J2 = I2 * I3**(-2.0_DP/3.0_DP)
-        JJ = I3**(1.0_DP/2.0_DP)
-
-        ! hyperelastic strain energy function
-        ! W=c1*(I1-3)+c2*(I2-3)  !!!+c3*(J-1)^2   (this is actually nearly incompressible)
-        StrainEnergy_hyp = C(1)*(J1-3.0_DP) + C(2)*(J2-3.0_DP) !+ K*(JJ-1) - K*log(JJ)
-
-        ! add terms pertaining to pore fluid
-!         StrainEnergy_add = - Mfact * bfact * (DARCY_MASS_INCREASE/DARCY_RHO_0_F) * (JJ-1.0_DP) * ffact + &
-!                            & 0.5_DP * Mfact * (DARCY_MASS_INCREASE/DARCY_RHO_0_F)**2.0_DP * ffact
-        StrainEnergy_add = 0.5_DP * Mfact * (DARCY_MASS_INCREASE/DARCY_RHO_0_F)**2.0_DP
-
-        StrainEnergy_total = StrainEnergy_hyp + StrainEnergy_add
-
-!         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  StrainEnergy_hyp = ",StrainEnergy_hyp,ERR,ERROR,*999)
-!         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  StrainEnergy_add = ",StrainEnergy_add,ERR,ERROR,*999)
-!         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  StrainEnergy_total = ",StrainEnergy_total,ERR,ERROR,*999)
-
-!         dW_add_dVolIncrease = - Mfact * bfact * (JJ-1.0_DP) * ffact + &
-!                            & 2.0_DP * 0.5_DP * Mfact * (DARCY_MASS_INCREASE/DARCY_RHO_0_F) * ffact
-! 
-!         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dW_add_dVolIncrease = ",dW_add_dVolIncrease,ERR,ERROR,*999)
-
-        OUTPUT_MATRIX(1,1) = Z_COORD
-        OUTPUT_MATRIX(1,2) = DARCY_VOL_INCREASE
-        OUTPUT_MATRIX(1,3) = Jznu
-        OUTPUT_MATRIX(1,4) = P
-        OUTPUT_MATRIX(1,5) = DARCY_VELOCITY(3)
-
-        CALL WRITE_STRING_MATRIX(DIAGNOSTIC_OUTPUT_TYPE,1,1,1,1,1,5,5,0, &
-          & OUTPUT_MATRIX,WRITE_STRING_MATRIX_NAME_AND_INDICES, &
-          & '("    z, dV, J, lambda, w ','(",I1,",:)',' :",5(X,E13.6))', &
-          & '(1X,5(X,E13.6))',ERR,ERROR,*999)
-
-
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  ",ERR,ERROR,*999)
-
-      ENDIF
-
-    CASE DEFAULT
-      LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-        & " is not valid for a finite elasticity equation type of an elasticity equation set class."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-    END SELECT
-
-    CALL MATRIX_PRODUCT(DZDNU,PIOLA_TENSOR,TEMP,ERR,ERROR,*999)
-    CALL MATRIX_PRODUCT(TEMP,DZDNUT,CAUCHY_TENSOR,ERR,ERROR,*999)
-    
-    Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
-    CAUCHY_TENSOR=CAUCHY_TENSOR/Jznu
-
-    NULLIFY(C)
-
-    !CALL EXITS("WRITE_IP_INFO")
-    RETURN
-999 CALL ERRORS("WRITE_IP_INFO",ERR,ERROR)
-    CALL EXITS("WRITE_IP_INFO")
-    RETURN 1
-  END SUBROUTINE WRITE_IP_INFO
-
-  !
-  !================================================================================================================================
-  !
-
-
-
-
-
 
 
 END MODULE FINITE_ELASTICITY_ROUTINES

@@ -151,9 +151,12 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   TYPE (ARRAY_MESH) MESH_INFO(3)
   TYPE (EXPORT_CONTAINER) TMP, TMP1
   TYPE (DARCY_PARAMETERS) DARCY
-  TYPE(FIELD_TYPE), POINTER :: FIELD, MATERIAL_FIELD
+  TYPE(FIELD_TYPE), POINTER :: FIELD, MATERIAL_FIELD, SOURCE_FIELD
   TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:),MATERIAL_INTERPOLATION_PARAMETERS(:)
   TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:),MATERIAL_INTERPOLATED_POINT(:)
+
+  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: SOURCE_INTERPOLATION_PARAMETERS(:)
+  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: SOURCE_INTERPOLATED_POINT(:)
 
 
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: NodesPerElement
@@ -164,8 +167,9 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: NumberOfVariableComponents
   INTEGER(INTG):: NumberOfMeshComponents
   INTEGER(INTG):: NumberOfMaterialComponents
+  INTEGER(INTG):: NumberOfSourceComponents
   INTEGER(INTG):: NumberOfNodesDefined
-  INTEGER(INTG):: NumberOfFieldComponent(3)
+  INTEGER(INTG):: NumberOfFieldComponent(4) !(3)
   INTEGER(INTG):: NumberOfElements
   INTEGER(INTG):: GlobalElementNumber(10)
   INTEGER(INTG):: MaxNodesPerElement
@@ -184,6 +188,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: parameter_set_idx
 
   LOGICAL :: DN
+
+  LOGICAL :: OUTPUT_SOURCE
 
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::ElementNodesScales
   REAL(DP), DIMENSION(:), ALLOCATABLE:: XI_COORDINATES,COORDINATES
@@ -224,6 +230,11 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm4Value 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm5Value 
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm6Value 
+
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue1 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue2 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue3 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue4 
 
   REAL(DP):: ScaleFactorsPerElementNodes(10,10)
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::OPENCMISS_NODE_COORD
@@ -313,6 +324,11 @@ CONTAINS
     IF (ALLOCATED(NodePerm4Value)) DEALLOCATE(NodePerm4Value) 
     IF (ALLOCATED(NodePerm5Value)) DEALLOCATE(NodePerm5Value) 
     IF (ALLOCATED(NodePerm6Value)) DEALLOCATE(NodePerm6Value) 
+
+    IF (ALLOCATED(NodeSourceValue1)) DEALLOCATE(NodeSourceValue1) 
+    IF (ALLOCATED(NodeSourceValue2)) DEALLOCATE(NodeSourceValue2) 
+    IF (ALLOCATED(NodeSourceValue3)) DEALLOCATE(NodeSourceValue3) 
+    IF (ALLOCATED(NodeSourceValue4)) DEALLOCATE(NodeSourceValue4) 
 
     !chrm, 20.08.09
     IF (ALLOCATED(NodeUValue_analytic)) DEALLOCATE(NodeUValue_analytic)
@@ -462,6 +478,11 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodePerm5Value)) ALLOCATE(NodePerm5Value(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePerm6Value)) ALLOCATE(NodePerm6Value(NodesPerMeshComponent(1)))
 
+    IF(.NOT.ALLOCATED(NodeSourceValue1)) ALLOCATE(NodeSourceValue1(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeSourceValue2)) ALLOCATE(NodeSourceValue2(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeSourceValue3)) ALLOCATE(NodeSourceValue3(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeSourceValue4)) ALLOCATE(NodeSourceValue4(NodesPerMeshComponent(1)))
+
     !chrm, 20.08.09
     IF(.NOT.ALLOCATED(NodeUValue_analytic)) ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeVValue_analytic)) ALLOCATE(NodeVValue_analytic(NodesPerMeshComponent(1)))
@@ -476,21 +497,42 @@ CONTAINS
     CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
     NULLIFY(MATERIAL_FIELD)
+    NULLIFY(SOURCE_FIELD)
 
     FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
     !material
     MATERIAL_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field
 
-    NULLIFY(INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATION_PARAMETERS)
-    NULLIFY(INTERPOLATED_POINT,MATERIAL_INTERPOLATED_POINT)
-    
+    !source field
+    OUTPUT_SOURCE = .FALSE.
+    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+      & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+          SOURCE_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field
+          IF( ASSOCIATED(SOURCE_FIELD) ) OUTPUT_SOURCE = .TRUE.
+    END IF
+
+    NULLIFY(INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATION_PARAMETERS,SOURCE_INTERPOLATION_PARAMETERS)
+    NULLIFY(INTERPOLATED_POINT,MATERIAL_INTERPOLATED_POINT,SOURCE_INTERPOLATED_POINT)
+
     CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
     !material
     CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(MATERIAL_FIELD,MATERIAL_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(MATERIAL_INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATED_POINT,ERR,ERROR,*999)
+
+    !source field
+    IF( OUTPUT_SOURCE ) THEN
+      CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(SOURCE_FIELD,SOURCE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINTS_INITIALISE(SOURCE_INTERPOLATION_PARAMETERS,SOURCE_INTERPOLATED_POINT,ERR,ERROR,*999)
+      NumberOfSourceComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+        & variables(1)%number_of_components
+
+      NumberOfFields = NumberOfFields + 1
+    END IF
+
 
     DO I=1,NumberOfElements
 
@@ -614,6 +656,14 @@ CONTAINS
         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
           & ERR,ERROR,*999)
 
+        !source field
+        IF( OUTPUT_SOURCE ) THEN
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+            & SOURCE_INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
+            & ERR,ERROR,*999)
+        END IF
+
 
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
@@ -691,10 +741,24 @@ CONTAINS
           & materials%materials_field%variables(1)%COMPONENTS(1)%INTERPOLATION_TYPE 
 
         IF(MATERIAL_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION)THEN
-          NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-          NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+
+          IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+            NodeMUValue(K)   =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
+            NodeRHOValue(K)  =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
+!           !--- Remaining tensor material data of permeability tensor
+            NodePerm2Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+            NodePerm3Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+            NodePerm4Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(5,1)
+            NodePerm5Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(6,1)
+            NodePerm6Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(7,1)
+          ELSE
+            NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+            NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+          END IF
 
           IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
             IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
@@ -711,26 +775,15 @@ CONTAINS
           IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
             & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
               & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
-!             !--- Remaining tensor material data of permeability tensor
-!             NodePerm2Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
-!             NodePerm3Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+3*NodesPerMeshComponent(1))
-!             NodePerm4Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+4*NodesPerMeshComponent(1))
-!             NodePerm5Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+5*NodesPerMeshComponent(1))
-!             NodePerm6Value(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-!               & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+6*NodesPerMeshComponent(1))
-
-            NodeMUValue(K)   =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
-            NodeRHOValue(K)  =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
-            NodePerm2Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
-            NodePerm3Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
-            NodePerm4Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(5,1)
-            NodePerm5Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(6,1)
-            NodePerm6Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(7,1)
+            !source field
+            IF( OUTPUT_SOURCE ) THEN
+              NodeSourceValue1(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
+              NodeSourceValue2(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
+              NodeSourceValue3(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+              NodeSourceValue4(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+            END IF
           END IF
+
         ELSE !default to FIELD_CONSTANT_INTERPOLATION
           NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
@@ -811,6 +864,14 @@ CONTAINS
     NumberOfFieldComponent(1)=NumberOfDimensions
     NumberOfFieldComponent(2)=NumberOfVariableComponents
     NumberOfFieldComponent(3)=NumberOfMaterialComponents
+
+    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+      & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+        IF( OUTPUT_SOURCE ) THEN
+          NumberOfFieldComponent(4)=NumberOfSourceComponents
+        END IF
+    END IF
 
     DO I=1,NumberOfElements
 !       DO J=1,NodesPerElement(1)
@@ -1906,6 +1967,7 @@ CONTAINS
     NumberOfFieldComponent(2)=NumberOfVariableComponents
     NumberOfFieldComponent(3)=NumberOfMaterialComponents
 
+
     DO I=1,NumberOfElements
 !       DO J=1,NodesPerElement(1)
       DO J=1,NodesPerElement(I)
@@ -2035,6 +2097,17 @@ CONTAINS
       ValueIndex=ValueIndex+1
     END DO
 
+
+    IF( OUTPUT_SOURCE ) THEN !Watch out that no numbering conflict occurs with Analytic: 4.)
+      WRITE(14,*) ' 4) source,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfSourceComponents))
+
+      DO I=1,NumberOfSourceComponents
+        WRITE(14,*)  '   ',TRIM(NMs(I)),'.  Value index= ',TRIM(NMs(ValueIndex)),',     #Derivatives= 0' 
+        ValueIndex=ValueIndex+1
+      END DO
+    END IF
+
+
     IF( ANALYTIC ) THEN
       WRITE(14,*) ' 4) exact,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfVariableComponents))
       DO I=1,NumberOfVariableComponents
@@ -2137,6 +2210,14 @@ CONTAINS
           WRITE(14,'("    ", es25.16 )')NodePerm4Value(I)
           WRITE(14,'("    ", es25.16 )')NodePerm5Value(I)
           WRITE(14,'("    ", es25.16 )')NodePerm6Value(I)
+
+          !source field
+          IF( OUTPUT_SOURCE ) THEN
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue1(I)
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue2(I)
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue3(I)
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue4(I)
+          END IF
       END IF
 
 
@@ -2333,6 +2414,8 @@ CONTAINS
         WRITE(5,*)' 2) general,  field,  rectangular cartesian, #Components= ',TRIM(NMs(NumberOfVariableComponents))
       ELSE IF(I==3) THEN
         WRITE(5,*)' 3) material,  field,  rectangular cartesian, #Components= ',TRIM(NMs(NumberOfMaterialComponents))
+      ELSE IF(I==4) THEN
+        WRITE(5,*)' 4) source,  field,  rectangular cartesian, #Components= ',TRIM(NMs(NumberOfSourceComponents))
       END IF
 
       DO J=1,NumberOfFieldComponent(I)
