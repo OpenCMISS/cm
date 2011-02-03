@@ -855,6 +855,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
+	$(OBJECT_DIR)/vtk_import_routines.o \
 	$(FIELDML_OBJECT) 
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
@@ -1416,8 +1417,8 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(SOURCE_DIR)/equations_set_routines.f9
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/external_dae_solver_routines.o : $(SOURCE_DIR)/external_dae_solver_routines.c \
-      $(SOURCE_DIR)/external_dae_solver_routines.h \
+$(OBJECT_DIR)/external_dae_solver_routines.o	:	$(SOURCE_DIR)/external_dae_solver_routines.c \
+	$(SOURCE_DIR)/external_dae_solver_routines.h 
 
 $(OBJECT_DIR)/field_routines.o	:	$(SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1455,7 +1456,8 @@ $(OBJECT_DIR)/field_IO_routines.o	:	$(SOURCE_DIR)/field_IO_routines.f90 \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
 	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
+	$(OBJECT_DIR)/types.o \
+	$(OBJECT_DIR)/vtk_import_routines.o
 
 $(OBJECT_DIR)/finite_elasticity_routines.o	:	$(SOURCE_DIR)/finite_elasticity_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -2125,6 +2127,9 @@ $(OBJECT_DIR)/types.o	:	$(SOURCE_DIR)/types.f90 \
 $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/vtk_import_routines.o	:	$(SOURCE_DIR)/vtk_import_routines.c \
+	$(SOURCE_DIR)/vtk_import_routines.h 
 
 # ----------------------------------------------------------------------------
 #

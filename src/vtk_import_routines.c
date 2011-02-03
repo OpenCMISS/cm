@@ -34,37 +34,37 @@ void readVTK(const char* filePath, double* points, int* numPoints, int* cells, i
 	fgets(buffer, 100, file);
 	fgets(buffer, 100, file);
 
-	FSCANF(file, "%*s %d %*s\n", &numPoints);
+	FSCANF(file, "%*s %d %*s\n", numPoints);
 
-	printf("Number of Points = %d\n", numPoints);
+	printf("Number of Points = %d\n", (*numPoints));
 
-	points = (double *) malloc(sizeof(double)*numPoints*3);
+	points = (double *) malloc(sizeof(double)*(*numPoints)*3);
 
-	while (count<numPoints*3) {
+	while (count<(*numPoints)*3) {
 		numLine = whiteSpaceCounter(file);
 		for (i=0; i<numLine; i++) {
-			FSCANF(file, "%f ", &points[count]);
+			FSCANF(file, "%lf ", &points[count]);
 			count++;
 		}
-		FSCANF(file, "%f\n", &points[count]);
+		FSCANF(file, "%lf\n", &points[count]);
 		count++;
 	}
 
 #ifdef _MSC_VER
 	FSCANF(file, "%s %d %*s\n", buffer, 6, &numCells);
 #else
-      FSCANF(file, "%s %d %*s\n", buffer, &numCells);
+      FSCANF(file, "%s %d %*s\n", buffer, numCells);
 #endif	
 
-	printf("Number of Cells = %d\n", numCells);
-	cells = (int *) malloc(sizeof(int)*numCells*4);
+	printf("Number of Cells = %d\n", (*numCells));
+	cells = (int *) malloc(sizeof(int)*(*numCells)*4);
 	
 	if (strncmp(buffer, cellString, 6)!=0) {
         fprintf(stderr, "Incorrectly formatted VTK file -\nCells description in the wrong place\n");
         exit(EXIT_FAILURE);
     }  
 
-	for (i=0; i<numCells; i++) {
+	for (i=0; i<(*numCells); i++) {
 		FSCANF(file, "%*d %d %d %d %d\n", &cells[i*4], &cells[i*4+1], &cells[i*4+2], &cells[i*4+3]);
 	}
 

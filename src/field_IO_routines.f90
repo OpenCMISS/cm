@@ -353,16 +353,16 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_DerivativeIndices
     END FUNCTION FieldExport_DerivativeIndices
 
-    SUBROUTINE ReadVTK(filePath, points, numPoints, cells, numCells) &
+    SUBROUTINE READ_VTK(filePath, points, numPoints, cells, numCells) &
     & BIND(C, NAME="readVTK")
       USE TYPES
       USE ISO_C_BINDING
-      CHARACTER(C_CHAR), INTENT(IN) :: filePath(*)
-      REAL(C_DOUBLE), INTENT(OUT) :: points(*)
-      INTEGER(C_INT), INTENT(OUT) :: numPoints(*)
-      INTEGER(C_INT), INTENT(OUT) :: cells(*)
-      INTEGER(C_INT), INTENT(OUT) :: numCells(*)
-    END SUBROUTINE ReadVTK
+      CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: filePath(*)
+      TYPE(C_PTR), INTENT(OUT):: points(*)
+      INTEGER(C_INT), INTENT(OUT) :: numPoints
+      TYPE(C_PTR), INTENT(OUT) :: cells(*)
+      INTEGER(C_INT), INTENT(OUT) :: numCells
+    END SUBROUTINE READ_VTK
 
   END INTERFACE
 
@@ -391,7 +391,7 @@ MODULE FIELD_IO_ROUTINES
     MODULE PROCEDURE CHECKED_DEALLOCATE_BASIS
   END INTERFACE !CHECKED_DEALLOCATE
 
-  PUBLIC :: FIELD_IO_FIELDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT
+  PUBLIC :: FIELD_IO_FIELDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT, READ_VTK
 
 
 CONTAINS

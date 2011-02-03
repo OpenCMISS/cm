@@ -3406,7 +3406,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldIONodesExportVSVSObj
   END INTERFACE !CMISSFieldIONodesExport
 
-  PUBLIC CMISSFieldIOElementsExport,CMISSFieldIONodesExport,CMISSFieldIOFieldsImport
+  PUBLIC CMISSFieldIOElementsExport,CMISSFieldIONodesExport,CMISSFieldIOFieldsImport, CMISSReadVTK
   
 !!==================================================================================================================================
 !!
@@ -29086,7 +29086,7 @@ CONTAINS
     
   END SUBROUTINE CMISSFieldIONodesExportVSVSObj
 
-    !
+  !
   !================================================================================================================================
   !
 
@@ -29127,9 +29127,48 @@ CONTAINS
     CALL EXITS("CMISSFieldIOFieldsImport")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
-
   END SUBROUTINE CMISSFieldIOFieldsImport
+  !
+  !================================================================================================================================
+  !
 
+  !> Import mesh from vtk file
+  SUBROUTINE CMISSReadVTK(filePath, points, numPoints, cells, numCells, Err)
+    !Argument variables
+    USE ISO_C_BINDING
+    CHARACTER(LEN=*), INTENT(IN) :: filePath
+    TYPE(C_PTR), INTENT(OUT) :: points(*)
+    INTEGER(C_INT), INTENT(OUT) :: numPoints
+    TYPE(C_PTR), INTENT(OUT) :: cells(*)
+    INTEGER(C_INT), INTENT(OUT) :: numCells
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local variables
+    INTEGER(C_INT) :: i,LENGTH
+    CHARACTER(LEN=1,KIND=C_CHAR) :: Cstring(256)
+
+    CALL ENTERS("CMISSReadVTK",Err,ERROR,*999)
+
+    IF(SIZE(Cstring,1)>LEN_TRIM(filePath)) THEN
+      LENGTH=LEN_TRIM(filePath)
+    ELSE
+      LENGTH=SIZE(Cstring,1)-1
+    ENDIF
+    DO i=1,LENGTH
+      Cstring(i)=filePath(i:i)
+    ENDDO !i
+    !Null terminate the string
+    Cstring(LENGTH+1)=C_NULL_CHAR
+
+    CALL READ_VTK(Cstring, points, numPoints, cells, numCells)
+
+    CALL EXITS("CMISSReadVTK")
+    RETURN
+999 CALL ERRORS("CMISSReadVTK",Err,ERROR)
+    CALL EXITS("CMISSReadVTK")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSReadVTK
 
 !!==================================================================================================================================
 !!
