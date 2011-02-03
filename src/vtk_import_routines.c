@@ -12,7 +12,7 @@ extern int whiteSpaceCounter(FILE*);
 
 const char* cellString = "CELLS"; 
 
-void readVTK(const char* filePath, double* points, int* numPoints, int* cells, int* numCells){
+void readVTK(const char* filePath, double** points, int* numPoints, int** cells, int* numCells){
 	int numLine = 0;
 	int index = 0;
 	int i;
@@ -38,15 +38,15 @@ void readVTK(const char* filePath, double* points, int* numPoints, int* cells, i
 
 	printf("Number of Points = %d\n", (*numPoints));
 
-	points = (double *) malloc(sizeof(double)*(*numPoints)*3);
+	(*points) = (double *) malloc(sizeof(double)*(*numPoints)*3);
 
 	while (count<(*numPoints)*3) {
 		numLine = whiteSpaceCounter(file);
 		for (i=0; i<numLine; i++) {
-			FSCANF(file, "%lf ", &points[count]);
+		  FSCANF(file, "%lf ", &((*points)[count]));
 			count++;
 		}
-		FSCANF(file, "%lf\n", &points[count]);
+		FSCANF(file, "%lf\n", &((*points)[count]));
 		count++;
 	}
 
@@ -57,7 +57,7 @@ void readVTK(const char* filePath, double* points, int* numPoints, int* cells, i
 #endif	
 
 	printf("Number of Cells = %d\n", (*numCells));
-	cells = (int *) malloc(sizeof(int)*(*numCells)*4);
+	(*cells) = (int *) malloc(sizeof(int)*(*numCells)*4);
 	
 	if (strncmp(buffer, cellString, 6)!=0) {
         fprintf(stderr, "Incorrectly formatted VTK file -\nCells description in the wrong place\n");
@@ -65,7 +65,7 @@ void readVTK(const char* filePath, double* points, int* numPoints, int* cells, i
     }  
 
 	for (i=0; i<(*numCells); i++) {
-		FSCANF(file, "%*d %d %d %d %d\n", &cells[i*4], &cells[i*4+1], &cells[i*4+2], &cells[i*4+3]);
+	  FSCANF(file, "%*d %d %d %d %d\n",&((*cells)[i*4]), &((*cells)[i*4+1]), &((*cells)[i*4+2]), &((*cells)[i*4+3]));
 	}
 
 	fclose(file);

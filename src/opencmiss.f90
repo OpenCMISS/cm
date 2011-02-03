@@ -29137,9 +29137,9 @@ CONTAINS
     !Argument variables
     USE ISO_C_BINDING
     CHARACTER(LEN=*), INTENT(IN) :: filePath
-    TYPE(C_PTR), INTENT(OUT) :: points(*)
+    TYPE(C_PTR), INTENT(OUT) :: points
     INTEGER(C_INT), INTENT(OUT) :: numPoints
-    TYPE(C_PTR), INTENT(OUT) :: cells(*)
+    TYPE(C_PTR), INTENT(OUT) :: cells
     INTEGER(C_INT), INTENT(OUT) :: numCells
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code
     !Local variables

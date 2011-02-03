@@ -358,9 +358,9 @@ MODULE FIELD_IO_ROUTINES
       USE TYPES
       USE ISO_C_BINDING
       CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: filePath(*)
-      TYPE(C_PTR), INTENT(OUT):: points(*)
+      TYPE(C_PTR), INTENT(OUT):: points
       INTEGER(C_INT), INTENT(OUT) :: numPoints
-      TYPE(C_PTR), INTENT(OUT) :: cells(*)
+      TYPE(C_PTR), INTENT(OUT) :: cells
       INTEGER(C_INT), INTENT(OUT) :: numCells
     END SUBROUTINE READ_VTK
 
