@@ -2997,28 +2997,29 @@ CONTAINS
               !Check the user specified field
               CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
               CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+              !Question:Better to leave it up for the user to play around?
               CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
               CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE/), &
-                & ERR,ERROR,*999)
+               & ERR,ERROR,*999)
               CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
               CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
-                & ERR,ERROR,*999)
+               & ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
               CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
               CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS, &
-                & ERR,ERROR,*999)
+               & ERR,ERROR,*999)
               CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,NUMBER_OF_COMPONENTS, &
-                & ERR,ERROR,*999)
+               & ERR,ERROR,*999)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                DO component_idx=1,NUMBER_OF_DIMENSIONS
-                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,component_idx, &
-                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,component_idx, &
-                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                ENDDO !component_idx
+                !DO component_idx=1,NUMBER_OF_DIMENSIONS
+                !  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,component_idx, &
+                !    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                !  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,component_idx, &
+                !    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                !ENDDO !component_idx
 
 !kmith :09.06.09 - Hydrostatic pressure could be node-based as well
 !                CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,4, &
@@ -3756,7 +3757,8 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_TIME_LOOP !<A pointer to the control time loop.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: TIME_LOOP !<A pointer to the control time loop.
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: WHILE_LOOP !<A pointer to the subiteration loop.
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(VARYING_STRING) :: METHOD !,FILE
     CHARACTER(14) :: FILE
@@ -3803,80 +3805,69 @@ CONTAINS
                   !Make sure the equations sets are up to date
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
-                    CONTROL_TIME_LOOP=>CONTROL_LOOP
-                    DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
-                      IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-                        EXIT
-                      ENDIF
-                      IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
-                        CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
-                      ELSE
-                        CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
+                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
+                      TIME_LOOP=>CONTROL_LOOP !Initialise time loop (load increment loop on first)
+                      !Move up to find outer time loop
+                      DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL-1
+                        IF(ASSOCIATED(TIME_LOOP%PARENT_LOOP)) THEN
+                          TIME_LOOP=>TIME_LOOP%PARENT_LOOP
+                        ELSE
+                          CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
+                      WHILE_LOOP=>TIME_LOOP%SUB_LOOPS(1)%PTR
+                      CURRENT_LOOP_ITERATION=TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
+                      OUTPUT_ITERATION_NUMBER=TIME_LOOP%TIME_LOOP%OUTPUT_NUMBER
 
-                    CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
-                    OUTPUT_ITERATION_NUMBER=CONTROL_TIME_LOOP%TIME_LOOP%OUTPUT_NUMBER
-
-                    IF(OUTPUT_ITERATION_NUMBER/=0) THEN
-                      IF(CONTROL_TIME_LOOP%TIME_LOOP%CURRENT_TIME<=CONTROL_TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
-                        IF(CURRENT_LOOP_ITERATION<10) THEN
-                          WRITE(OUTPUT_FILE,'("S_TIMESTP_000",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<100) THEN
-                          WRITE(OUTPUT_FILE,'("S_TIMESTP_00",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<1000) THEN
-                          WRITE(OUTPUT_FILE,'("S_TIMESTP_0",I0)') CURRENT_LOOP_ITERATION
-                        ELSE IF(CURRENT_LOOP_ITERATION<10000) THEN
-                          WRITE(OUTPUT_FILE,'("S_TIMESTP_",I0)') CURRENT_LOOP_ITERATION
-                        END IF
-                        FILE=OUTPUT_FILE
-  !                    FILE="TRANSIENT_OUTPUT"
-                        METHOD="FORTRAN"
-                        EXPORT_FIELD=.TRUE.
-                        IF(EXPORT_FIELD) THEN          
-                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ...",ERR,ERROR,*999)
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                      IF(WHILE_LOOP%WHILE_LOOP%CONTINUE_LOOP) THEN
+                        IF(TIME_LOOP%TIME_LOOP%CURRENT_TIME<=TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
+                          WRITE(OUTPUT_FILE,'("S_TIMESTP_",I4.4)') CURRENT_LOOP_ITERATION
+                          FILE=OUTPUT_FILE
+                          METHOD="FORTRAN"
+                          EXPORT_FIELD=.TRUE.
+                          IF(EXPORT_FIELD) THEN          
+                            IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
+                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ...",ERR,ERROR,*999)
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                              ENDIF
+                              CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                                & ERR,ERROR,*999)
+                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
+                              ENDIF
+                              CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                             ENDIF
-                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                              & ERR,ERROR,*999)
-                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
-                            ENDIF
-                            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                          ENDIF
-                        ENDIF 
-                      ENDIF 
-                    ENDIF
+                          ENDIF 
+                        ENDIF !stop_time
+                      ENDIF !continue_loop
 
-                    !Subiteration intermediate solutions / iterates output:
-!                     IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
-!                       SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
-!                       IF(CURRENT_LOOP_ITERATION<10) THEN
-!                         IF(SUBITERATION_NUMBER<10) THEN
-!                           WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-!                         ELSE IF(SUBITERATION_NUMBER<100) THEN
-!                           WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-!                         END IF
-!                         FILE=OUTPUT_FILE
-!                         METHOD="FORTRAN"
-!                         EXPORT_FIELD=.TRUE.
-!                         IF(EXPORT_FIELD) THEN
-!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export subiterates ...",ERR,ERROR,*999)
-!                           CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-!                             & ERR,ERROR,*999)
-!                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-!                           CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                       !Subiteration intermediate solutions / iterates output:
+!                       IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
+!                         SUBITERATION_NUMBER=CONTROL_LOOP%PARENT_LOOP%WHILE_LOOP%ITERATION_NUMBER
+!                         IF(CURRENT_LOOP_ITERATION<10) THEN
+!                           IF(SUBITERATION_NUMBER<10) THEN
+!                             WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+!                           ELSE IF(SUBITERATION_NUMBER<100) THEN
+!                             WRITE(OUTPUT_FILE,'("S_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+!                           END IF
+!                           FILE=OUTPUT_FILE
+!                           METHOD="FORTRAN"
+!                           EXPORT_FIELD=.TRUE.
+!                           IF(EXPORT_FIELD) THEN
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export subiterates ...",ERR,ERROR,*999)
+!                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                               & ERR,ERROR,*999)
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                             CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                           ENDIF
 !                         ENDIF
 !                       ENDIF
-!                     ENDIF
 
-                   ENDIF
-                  ENDDO
-                ENDIF
-              ENDIF
+                   ENDIF !EQUATIONS_SET_FINITE_ELASTICITY_TYPE
+                  ENDDO !equations_set_idx
+                ENDIF !Solver_mapping
+              ENDIF !Solver_equations
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a finite elasticity problem class."
