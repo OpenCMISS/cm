@@ -3712,6 +3712,10 @@ CONTAINS
             WRITE(INPUT_FILE,'("./input/motion/DISPLACEMENT_",I0,".dat")') TIME_STEP
           ENDIF
           OPEN(UNIT=TIME_STEP, FILE=INPUT_FILE,STATUS='unknown') 
+          READ(TIME_STEP,*) CHECK
+          IF(CHECK/=ENDI) THEN
+            STOP 'Error during data input - probably wrong Lagrangian/Hermite input file!'
+          ENDIF
           DO I=1,ENDI
             READ(TIME_STEP,*) INPUT_VALUES(I)
           ENDDO
