@@ -732,8 +732,7 @@ FPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
 
 ELFLAGS += $(EXTERNAL_LIB_PATH)
 
-.SUFFIXES:	.f90	.c  
-#.cu
+.SUFFIXES:	.f90	.c  .cu
 
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90
 	( cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
@@ -741,8 +740,8 @@ $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
-#(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.cu
-#	( cd $(OBJECT_DIR) ; nvcc  -gencode=arch=compute_10,code=\"sm_10,compute_10\"  -gencode=arch=compute_20,code=\"sm_20,compute_20\" --compile -m64 --compiler-options -fno-strict-aliasing --ptxas-options=-v  -I$(SOURCE_DIR) -I/usr/local/cuda/include -I/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/inc -I/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//inc --use_fast_math -DUNIX -O2 -o $@ -c $< )
+$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.cu
+	( cd $(OBJECT_DIR) ; nvcc  -gencode=arch=compute_10,code=\"sm_10,compute_10\"  -gencode=arch=compute_20,code=\"sm_20,compute_20\" --compile -m64 --compiler-options -fno-strict-aliasing --ptxas-options=-v  -I$(SOURCE_DIR) -I/usr/local/cuda/include -I/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/inc -I/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//inc --use_fast_math -DUNIX -O2 -o $@ -c $< )
 
 
 ifeq ($(USEFIELDML),true)
@@ -1417,7 +1416,7 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(SOURCE_DIR)/equations_set_routines.f9
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/external_dae_solver_routines.o	:	$(SOURCE_DIR)/external_dae_solver_routines.c \
+$(OBJECT_DIR)/external_dae_solver_routines.o	:	$(SOURCE_DIR)/external_dae_solver_routines.cu \
 	$(SOURCE_DIR)/external_dae_solver_routines.h 
 
 $(OBJECT_DIR)/field_routines.o	:	$(SOURCE_DIR)/field_routines.f90 \

@@ -190,44 +190,44 @@ static void CMISSFatalHandler(int sig,
 #if defined (SIGBUS)
     case SIGBUS:
       {
-	fprintf(stderr,">>FATAL ERROR: Bus error occured.\n");
+	fprintf(stderr,">>FATAL ERROR: Bus error occurred.\n");
      } break;
 #endif /* defined (SIGBUS) */
 #if defined (SIGEMT)
     case SIGEMT:
       {
-	fprintf(stderr,">>FATAL ERROR: EMT occured.\n");
+	fprintf(stderr,">>FATAL ERROR: EMT occurred.\n");
       } break;
 #endif /* defined (SIGEMT) */
     case SIGFPE:
       {
-	fprintf(stderr,">>FATAL ERROR: Floating point execption occured.\n");
+	fprintf(stderr,">>FATAL ERROR: Floating point execption occurred.\n");
       } break;
     case SIGILL:
       {
-	fprintf(stderr,">>FATAL ERROR: Illegal instruction occured.\n");
+	fprintf(stderr,">>FATAL ERROR: Illegal instruction occurred.\n");
       } break;
     case SIGINT:
       {
-	fprintf(stderr,">>FATAL ERROR: Interrupt occured.\n");
+	fprintf(stderr,">>FATAL ERROR: Interrupt occurred.\n");
       } break;
     case SIGABRT:
       {
-	fprintf(stderr,">>FATAL ERROR: Abort occured.\n");
+	fprintf(stderr,">>FATAL ERROR: Abort occurred.\n");
       } break;
     case SIGSEGV:
       {
-	fprintf(stderr,">>FATAL ERROR: Segment violation occured.\n");
+	fprintf(stderr,">>FATAL ERROR: Segment violation occurred.\n");
       } break;
 #if defined (SIGTRAP)
     case SIGTRAP:
       {
-	fprintf(stderr,">>FATAL ERROR: Trace trap occured.\n");
+	fprintf(stderr,">>FATAL ERROR: Trace trap occurred.\n");
       } break;
 #endif /* defined (SIGTRAP) */
     default:
       {
-	fprintf(stderr,">>FATAL ERROR: Unknown signal %d occured.\n",code);
+	fprintf(stderr,">>FATAL ERROR: Unknown signal %d occurred.\n",code);
       } break;
     }
 #endif

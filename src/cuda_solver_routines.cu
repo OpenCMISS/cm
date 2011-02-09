@@ -3,88 +3,110 @@
 
 #include <cutil_inline.h>
 
+//extern __shared__ double shared_array[];
+//const int algebraicCount = 25;
+//const int rateStateCount = 8;
+//const int constantCount = 0;
+//const double FLOPSPerFunction = 193.0f;
+//const int DEFAULT_TESTING_THREADS = 2000000;
+//const int sharedMemoryCellModel = 0;
+//const char* cellModelName = "LR R3";
+//
+//////////////////////////////////////////////////////////////////////////////////
+//// Cell Model Device Functions
+//////////////////////////////////////////////////////////////////////////////////
+//__device__ void computeRates(float VOI, double* DUMMY, double* STATES, double* ALGEBRAIC, double* RATES)
+//{
+//	ALGEBRAIC[0] = -25.5; // Add stimulus in proper
+//	ALGEBRAIC[1] = (0.32f*STATES[0]+15.0816f)/(1.0f - (expf(- 0.1f*STATES[0]-4.713f))); // 7 ops
+//
+//	if (STATES[0] < -40.0f) {
+//		ALGEBRAIC[2] = 0.135f*(expf(((80.0f+STATES[0])/- 6.8f))); // 4 ops
+//		ALGEBRAIC[3] = (( - 127140*(expf(0.2444f*STATES[0])) - 3.47400e-05*(expf(-0.04391f*STATES[0])))*(STATES[0]+37.78f))/(1.0f+(expf(0.311f*STATES[0]+24.64053))); // 14 ops
+//		ALGEBRAIC[9] = 3.56f*(expf(0.079f*STATES[0]))+ 310000*(expf(0.35f*STATES[0]));  // 7 ops
+//		ALGEBRAIC[10] = 0.1212f*(expf(-0.01052f*STATES[0]))/(1.0f+(expf(-0.1378f*STATES[0]-5.531292f))); // 8 ops
+//	} else {
+//		ALGEBRAIC[2] = 0.00000;
+//		ALGEBRAIC[3] = 0.00000;
+//		ALGEBRAIC[9] = 1.0f/( 0.13f*(1.0f+(expf(((STATES[0]+10.66f)/- 11.1f)))));
+//		ALGEBRAIC[10] = ( 0.3f*(expf(-2.53500e-07*STATES[0])))/(1.0f+(expf(-0.1f*STATES[0]-3.2f)));
+//	}
+//	if (STATES[0] < -100.0f) {
+//		ALGEBRAIC[16] = 2.837f*(expf(0.04f*STATES[0]+3.08f) - 1.0f)/((STATES[0]+77.0f)*(expf(0.04f*STATES[0]+1.4f))); // 11 ops
+//	} else {
+//		ALGEBRAIC[16] = 1.0f;
+//	}
+//
+//	ALGEBRAIC[4] = (0.095f*(expf(-0.01f*STATES[0] + 0.5f)))/(1.0f+(expf(-0.072*STATES[0] + 0.36f))); // 9 ops
+//	ALGEBRAIC[5] = (0.012f*(expf(-0.008f*STATES[0]-0.224f)))/(1.0f+(expf(0.15f*STATES[0]+4.2f))); // 9 ops
+//	ALGEBRAIC[6] = (0.0005f*(expf(0.083f*STATES[0]+4.15f)))/(1.0f+(expf(0.057f*STATES[0]+2.85f))); // 9 ops
+//	ALGEBRAIC[7] =  23*(powf(STATES[1], 3.0f))*STATES[2]*STATES[3]*(STATES[0] - 54.794463f); // 6 ops
+//	ALGEBRAIC[8] =  0.08f*(expf(-STATES[0]/11.0000)); // 3 ops
+//	ALGEBRAIC[11] = (0.07f*(expf(-0.017f*STATES[0]-0.748f)))/(1.0f+(expf(0.05f*STATES[0]+2.2f))); // 9 ops
+//	ALGEBRAIC[12] = (0.0065f*(expf(-0.02f*STATES[0]-0.6f)))/(1.0f+(expf(-0.2f*STATES[0]-6.0f))); // 9 ops
+//	ALGEBRAIC[13] = (0.0013f*(expf(-0.06f*STATES[0]-1.2f)))/(1.0f+(expf(-0.04f*STATES[0]-0.8f))); // 9 ops
+//	ALGEBRAIC[14] = 7.7f - 13.0287f*logf(STATES[4]); // 3 ops
+//	ALGEBRAIC[15] =  0.09f*STATES[5]*STATES[6]*(STATES[0] - ALGEBRAIC[14]); // 4 ops
+//	ALGEBRAIC[17] =  0.282f*STATES[7]*ALGEBRAIC[16]*(STATES[0] + 77.56758f); // 4 ops
+//	ALGEBRAIC[18] = 1.02f/(1.0f+(expf(0.2385f*STATES[0] + 6.83967915f))); // 4 ops
+//	ALGEBRAIC[19] = (0.49124f*(expf( 0.08032f *STATES[0] + 7.49939f) + expf(0.06175f*STATES[0] - 31.271255925f)))/(1.00000+expf(-0.514300*STATES[0] - 214.85137268791f)); // 13 ops
+//	ALGEBRAIC[20] = ALGEBRAIC[18]/(ALGEBRAIC[18]+ALGEBRAIC[19]); // 2 ops
+//	ALGEBRAIC[21] =  0.6047f*ALGEBRAIC[20]*(STATES[0] + 87.89290f); // 3 ops
+//	ALGEBRAIC[22] = 1.0f/(1.0f+(exp(((7.488f - STATES[0])/5.98f)))); // 5 ops
+//	ALGEBRAIC[23] =  0.0183f*ALGEBRAIC[22]*(STATES[0] + 87.89290f); // 3 ops
+//	ALGEBRAIC[24] =  0.03921f*STATES[0] +2.3475027f; // 3 ops
+//
+//	RATES[0] =  -(ALGEBRAIC[0]+ALGEBRAIC[7]+ALGEBRAIC[15]+ALGEBRAIC[17]+ALGEBRAIC[21]+ALGEBRAIC[23]+ALGEBRAIC[24]); // 7 ops
+//	RATES[1] =  ALGEBRAIC[1]*(1.00000 - STATES[1]) -  ALGEBRAIC[8]*STATES[1]; // 4 ops
+//	RATES[2] =  ALGEBRAIC[2]*(1.00000 - STATES[2]) -  ALGEBRAIC[9]*STATES[2]; // 4 ops
+//	RATES[3] =  ALGEBRAIC[3]*(1.00000 - STATES[3]) -  ALGEBRAIC[10]*STATES[3]; // 4 ops
+//	RATES[4] =  - 0.0001f*ALGEBRAIC[15]+ 0.000007f - 0.07f*STATES[4]; // 4 ops
+//	RATES[5] =  ALGEBRAIC[4]*(1.00000 - STATES[5]) -  ALGEBRAIC[11]*STATES[5]; // 4 ops
+//	RATES[6] =  ALGEBRAIC[5]*(1.00000 - STATES[6]) -  ALGEBRAIC[12]*STATES[6]; // 4 ops
+//	RATES[7] =  ALGEBRAIC[6]*(1.00000 - STATES[7]) -  ALGEBRAIC[13]*STATES[7]; // 4 ops
+//}
+
 extern __shared__ double shared_array[];
-const int algebraicCount = 25;
-const int rateStateCount = 8;
+const int rateStateCount = 2;
 const int constantCount = 0;
-const double FLOPSPerFunction = 193.0f;
-const int DEFAULT_TESTING_THREADS = 2000000;
+const int algebraicCount = 1;
+const double FLOPSPerFunction = 9.0f;
+const int DEFAULT_TESTING_THREADS = 20000000;
 const int sharedMemoryCellModel = 0;
-const char* cellModelName = "LR R3";
+const char* cellModelName = "FN R1";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Cell Model Device Functions
 ////////////////////////////////////////////////////////////////////////////////
-__device__ void computeRates(float VOI, double* DUMMY, double* STATES, double* ALGEBRAIC, double* RATES)
+__device__ void computeRates(double time, double* constants, double* states, double* algebraic, double* rates)
 {
-	ALGEBRAIC[0] = -25.5; // Add stimulus in proper
-	ALGEBRAIC[1] = (0.32f*STATES[0]+15.0816f)/(1.0f - (expf(- 0.1f*STATES[0]-4.713f))); // 7 ops
-
-	if (STATES[0] < -40.0f) {
-		ALGEBRAIC[2] = 0.135f*(expf(((80.0f+STATES[0])/- 6.8f))); // 4 ops
-		ALGEBRAIC[3] = (( - 127140*(expf(0.2444f*STATES[0])) - 3.47400e-05*(expf(-0.04391f*STATES[0])))*(STATES[0]+37.78f))/(1.0f+(expf(0.311f*STATES[0]+24.64053))); // 14 ops
-		ALGEBRAIC[9] = 3.56f*(expf(0.079f*STATES[0]))+ 310000*(expf(0.35f*STATES[0]));  // 7 ops
-		ALGEBRAIC[10] = 0.1212f*(expf(-0.01052f*STATES[0]))/(1.0f+(expf(-0.1378f*STATES[0]-5.531292f))); // 8 ops
-	} else {
-		ALGEBRAIC[2] = 0.00000;
-		ALGEBRAIC[3] = 0.00000;
-		ALGEBRAIC[9] = 1.0f/( 0.13f*(1.0f+(expf(((STATES[0]+10.66f)/- 11.1f)))));
-		ALGEBRAIC[10] = ( 0.3f*(expf(-2.53500e-07*STATES[0])))/(1.0f+(expf(-0.1f*STATES[0]-3.2f)));
-	}
-	if (STATES[0] < -100.0f) {
-		ALGEBRAIC[16] = 2.837f*(expf(0.04f*STATES[0]+3.08f) - 1.0f)/((STATES[0]+77.0f)*(expf(0.04f*STATES[0]+1.4f))); // 11 ops
-	} else {
-		ALGEBRAIC[16] = 1.0f;
-	}
-
-	ALGEBRAIC[4] = (0.095f*(expf(-0.01f*STATES[0] + 0.5f)))/(1.0f+(expf(-0.072*STATES[0] + 0.36f))); // 9 ops
-	ALGEBRAIC[5] = (0.012f*(expf(-0.008f*STATES[0]-0.224f)))/(1.0f+(expf(0.15f*STATES[0]+4.2f))); // 9 ops
-	ALGEBRAIC[6] = (0.0005f*(expf(0.083f*STATES[0]+4.15f)))/(1.0f+(expf(0.057f*STATES[0]+2.85f))); // 9 ops
-	ALGEBRAIC[7] =  23*(powf(STATES[1], 3.0f))*STATES[2]*STATES[3]*(STATES[0] - 54.794463f); // 6 ops
-	ALGEBRAIC[8] =  0.08f*(expf(-STATES[0]/11.0000)); // 3 ops
-	ALGEBRAIC[11] = (0.07f*(expf(-0.017f*STATES[0]-0.748f)))/(1.0f+(expf(0.05f*STATES[0]+2.2f))); // 9 ops
-	ALGEBRAIC[12] = (0.0065f*(expf(-0.02f*STATES[0]-0.6f)))/(1.0f+(expf(-0.2f*STATES[0]-6.0f))); // 9 ops
-	ALGEBRAIC[13] = (0.0013f*(expf(-0.06f*STATES[0]-1.2f)))/(1.0f+(expf(-0.04f*STATES[0]-0.8f))); // 9 ops
-	ALGEBRAIC[14] = 7.7f - 13.0287f*logf(STATES[4]); // 3 ops
-	ALGEBRAIC[15] =  0.09f*STATES[5]*STATES[6]*(STATES[0] - ALGEBRAIC[14]); // 4 ops
-	ALGEBRAIC[17] =  0.282f*STATES[7]*ALGEBRAIC[16]*(STATES[0] + 77.56758f); // 4 ops
-	ALGEBRAIC[18] = 1.02f/(1.0f+(expf(0.2385f*STATES[0] + 6.83967915f))); // 4 ops
-	ALGEBRAIC[19] = (0.49124f*(expf( 0.08032f *STATES[0] + 7.49939f) + expf(0.06175f*STATES[0] - 31.271255925f)))/(1.00000+expf(-0.514300*STATES[0] - 214.85137268791f)); // 13 ops
-	ALGEBRAIC[20] = ALGEBRAIC[18]/(ALGEBRAIC[18]+ALGEBRAIC[19]); // 2 ops
-	ALGEBRAIC[21] =  0.6047f*ALGEBRAIC[20]*(STATES[0] + 87.89290f); // 3 ops
-	ALGEBRAIC[22] = 1.0f/(1.0f+(exp(((7.488f - STATES[0])/5.98f)))); // 5 ops
-	ALGEBRAIC[23] =  0.0183f*ALGEBRAIC[22]*(STATES[0] + 87.89290f); // 3 ops
-	ALGEBRAIC[24] =  0.03921f*STATES[0] +2.3475027f; // 3 ops
-
-	RATES[0] =  -(ALGEBRAIC[0]+ALGEBRAIC[7]+ALGEBRAIC[15]+ALGEBRAIC[17]+ALGEBRAIC[21]+ALGEBRAIC[23]+ALGEBRAIC[24]); // 7 ops
-	RATES[1] =  ALGEBRAIC[1]*(1.00000 - STATES[1]) -  ALGEBRAIC[8]*STATES[1]; // 4 ops
-	RATES[2] =  ALGEBRAIC[2]*(1.00000 - STATES[2]) -  ALGEBRAIC[9]*STATES[2]; // 4 ops
-	RATES[3] =  ALGEBRAIC[3]*(1.00000 - STATES[3]) -  ALGEBRAIC[10]*STATES[3]; // 4 ops
-	RATES[4] =  - 0.0001f*ALGEBRAIC[15]+ 0.000007f - 0.07f*STATES[4]; // 4 ops
-	RATES[5] =  ALGEBRAIC[4]*(1.00000 - STATES[5]) -  ALGEBRAIC[11]*STATES[5]; // 4 ops
-	RATES[6] =  ALGEBRAIC[5]*(1.00000 - STATES[6]) -  ALGEBRAIC[12]*STATES[6]; // 4 ops
-	RATES[7] =  ALGEBRAIC[6]*(1.00000 - STATES[7]) -  ALGEBRAIC[13]*STATES[7]; // 4 ops
+	rates[1] =  0.005f*(states[0] - 3.0f*states[1]);
+	rates[0] =  ((states[0]*(states[0] - -0.08f)*(1.0f - states[0]) - states[1])+ algebraic[0]);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Cell Model Host Functions ////////// Should Not Be Needed Later /////////////
-////////////////////////////////////////////////////////////////////////////////
-void initProblem(int num_threads, double* STATES)
-{
-	int i;
-
-	STATES[0] = -84.3801107371;
-	STATES[1] = 0.00171338077730188;
-	STATES[2] = 0.982660523699656;
-	STATES[3] = 0.989108212766685;
-	STATES[4] = 0.00017948816388306;
-	STATES[5] = 0.00302126301779861;
-	STATES[6] = 0.999967936476325;
-	STATES[7] = 0.0417603108167287;
-
-	for (i=1; i<num_threads; i++)
-		memcpy(STATES + i*rateStateCount, STATES, rateStateCount*sizeof(double));
+void initProblem(int num_threads, double* STATES) {
+	printf("test\n\n\n\n\n\n");
 }
+
+//////////////////////////////////////////////////////////////////////////////////
+//// Cell Model Host Functions ////////// Should Not Be Needed Later /////////////
+//////////////////////////////////////////////////////////////////////////////////
+//void initProblem(int num_threads, double* STATES)
+//{
+//	int i;
+//
+//	STATES[0] = -84.3801107371;
+//	STATES[1] = 0.00171338077730188;
+//	STATES[2] = 0.982660523699656;
+//	STATES[3] = 0.989108212766685;
+//	STATES[4] = 0.00017948816388306;
+//	STATES[5] = 0.00302126301779861;
+//	STATES[6] = 0.999967936476325;
+//	STATES[7] = 0.0417603108167287;
+//
+//	for (i=1; i<num_threads; i++)
+//		memcpy(STATES + i*rateStateCount, STATES, rateStateCount*sizeof(double));
+//}
 
 const int DEFAULT_TESTING_TIMESTEPS = 1000;
 const double FLOPSPerTimeStep = 22.0f;
@@ -298,7 +320,7 @@ void solve(double* h_states, float startTime, float endTime, unsigned int timeSt
 
     // Setup execution parameters
     dim3  grid(num_blocks/num_streams/num_partitions, 1, 1);
-    printf("blox %d streams %d parts %d\n", num_blocks, num_streams, num_partitions);
+    //printf(" blox %d streams %d parts %d\n", num_blocks, num_streams, num_partitions);
     dim3  threads(threads_per_block, 1, 1);
 
 	if (timing_file) {
@@ -316,12 +338,11 @@ void solve(double* h_states, float startTime, float endTime, unsigned int timeSt
 		cutCreateTimer(&kernel_timer);
 		cutilCheckError(cutStartTimer(kernel_timer));
 		// Start kernel
-		printf("grid.x %d threads.x %d mem %d\n", grid.x, threads.x, sharedMem);
 		solveSystem<<<grid, threads, sharedMem>>>(timeSteps, stepSize, d_states);
 		checkCUDAError("Single Kernel Execution");
 		cutilSafeCall( cudaThreadSynchronize() );
 		// Stop kernel Timer 
-    cutilCheckError(cutStopTimer(kernel_timer));
+		cutilCheckError(cutStopTimer(kernel_timer));
 		cutilSafeCall( cudaMemcpy(h_paged_states, d_states, pagedMemorySize/num_streams, 
 			cudaMemcpyDeviceToHost) );
 		memcpy(h_states, h_paged_states, pagedMemorySize/num_streams);

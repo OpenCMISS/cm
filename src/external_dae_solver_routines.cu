@@ -83,11 +83,9 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				int *err)
 {
 
-	unsigned int timesteps = 10;
+	printf("start %f end %f steps %d\n", StartTime, EndTime, (int)((EndTime-StartTime)/InitialStep[0]));
 
-	printf("start %f end %f int step %f dofs %d", StartTime, EndTime, InitialStep[0], NumberOfDofs);
-
-	solve(StateData, StartTime, EndTime, timesteps, NumberOfDofs, 1024, 10, 2, NULL);
+	solve(StateData, StartTime, EndTime, (int)((EndTime-StartTime)/InitialStep[0]), NumberOfDofs, 1024, 10, 2, NULL);
 
 }
 }

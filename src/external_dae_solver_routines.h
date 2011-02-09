@@ -43,8 +43,8 @@
  *
  */
 
-//extern "C"
-//{
+extern "C"
+{
 void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				const double StartTime,
 				const double EndTime,
@@ -58,4 +58,4 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				int NumberOfIntermediate,
 				double *IntermediateData,
 				int *err);
-//}
+}

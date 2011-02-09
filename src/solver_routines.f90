@@ -2951,6 +2951,7 @@ CONTAINS
                       ENDIF
                     ELSE
                       NULLIFY(INTERMEDIATE_DATA)
+                      NULLIFY(INTERMEDIATE_FIELD)
                     ENDIF
 
                     !Call the external solver to integrate these CellML equations

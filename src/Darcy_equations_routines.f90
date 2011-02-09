@@ -3041,7 +3041,7 @@ CONTAINS
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. &
                     & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
 
-                      C_PARAM=EQUATIONS%INTERPOLATION%SOURCE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4, NO_PART_DERIV)
+                      C_PARAM=EQUATIONS%INTERPOLATION%SOURCE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(mh, NO_PART_DERIV)
 
                       !IF(ABS(C_PARAM)>1.0E-08) WRITE(*,*)'C_PARAM = ',C_PARAM
 
@@ -5375,26 +5375,27 @@ CONTAINS
 
 
                       !Subiteration intermediate solutions / iterates output:
-                       IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
-                        IF(CURRENT_LOOP_ITERATION<10) THEN
-                          IF(SUBITERATION_NUMBER<10) THEN
-                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SB_0",I0,"_C",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER, &
-                              & equations_set_idx
-                          ELSE IF(SUBITERATION_NUMBER<100) THEN
-                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SB_",I0,"_C",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER, &
-                              & equations_set_idx
-                          END IF
-                          FILE=OUTPUT_FILE
-                          METHOD="FORTRAN"
-                          EXPORT_FIELD=.TRUE.
-                          IF(EXPORT_FIELD) THEN
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
-                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                              & ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                          ENDIF
-                        ENDIF
-                       ENDIF
+!                        IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
+!                         IF(CURRENT_LOOP_ITERATION<10) THEN
+!                           IF(SUBITERATION_NUMBER<10) THEN
+!                             WRITE(OUTPUT_FILE,'("T_00",I0,"_SB_0",I0,"_C",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER, &
+!                               & equations_set_idx
+!                           ELSE IF(SUBITERATION_NUMBER<100) THEN
+!                             WRITE(OUTPUT_FILE,'("T_00",I0,"_SB_",I0,"_C",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER, &
+!                               & equations_set_idx
+!                           END IF
+!                           FILE=OUTPUT_FILE
+!                           METHOD="FORTRAN"
+!                           EXPORT_FIELD=.TRUE.
+!                           IF(EXPORT_FIELD) THEN
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
+!                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                               & ERR,ERROR,*999)
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                           ENDIF
+!                         ENDIF
+!                        ENDIF
+
                     ELSE !for single compartment (i.e. standary Darcy flow) equations sets
                       CONTROL_TIME_LOOP=>CONTROL_LOOP
                       DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
@@ -5445,25 +5446,26 @@ CONTAINS
                        ENDIF
 
 
-                      !Subiteration intermediate solutions / iterates output:
-                       IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
-                        IF(CURRENT_LOOP_ITERATION<10) THEN
-                          IF(SUBITERATION_NUMBER<10) THEN
-                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-                          ELSE IF(SUBITERATION_NUMBER<100) THEN
-                            WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
-                          END IF
-                          FILE=OUTPUT_FILE
-                          METHOD="FORTRAN"
-                          EXPORT_FIELD=.TRUE.
-                          IF(EXPORT_FIELD) THEN
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
-                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                              & ERR,ERROR,*999)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                          ENDIF
-                        ENDIF
-                       ENDIF
+!                       !Subiteration intermediate solutions / iterates output:
+!                        IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists
+!                         IF(CURRENT_LOOP_ITERATION<10) THEN
+!                           IF(SUBITERATION_NUMBER<10) THEN
+!                             WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_000",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+!                           ELSE IF(SUBITERATION_NUMBER<100) THEN
+!                             WRITE(OUTPUT_FILE,'("T_00",I0,"_SUB_00",I0)') CURRENT_LOOP_ITERATION,SUBITERATION_NUMBER
+!                           END IF
+!                           FILE=OUTPUT_FILE
+!                           METHOD="FORTRAN"
+!                           EXPORT_FIELD=.TRUE.
+!                           IF(EXPORT_FIELD) THEN
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy export subiterates ...",ERR,ERROR,*999)
+!                             CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+!                               & ERR,ERROR,*999)
+!                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+!                           ENDIF
+!                         ENDIF
+!                        ENDIF
+
                     ENDIF
                    ENDIF
                   ENDDO
