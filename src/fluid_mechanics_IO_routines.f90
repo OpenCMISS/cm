@@ -2793,7 +2793,7 @@ CONTAINS
 !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Press ENTER to start.",ERR,ERROR,*999)
 !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 !     READ(*,*)
-    OPEN(UNIT=42, FILE='./input/CMHEART_MESH.inp',STATUS='old')
+    OPEN(UNIT=42, FILE='./input/CMHEART_MESH1.inp',STATUS='old')
 
     CALL FLUID_MECHANICS_IO_READ_AUX
     CALL FLUID_MECHANICS_IO_READ_NODES
@@ -2873,7 +2873,7 @@ CONTAINS
     !Now read boundary information from CMHEART
     OPEN(UNIT=42, FILE='./input/CMHEART_BC.inp',STATUS='old')
       CALL FLUID_MECHANICS_IO_READ_BC
-      BC_TMP=BC
+      BC=BC_TMP
     CLOSE(42)
 
     CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
@@ -2960,51 +2960,51 @@ CONTAINS
         CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
       END IF
 
-      ALLOCATE(TMP1%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP1%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP1%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP1%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
 
-      TMP1%M=OPENCMISS_ELEM_M
-      TMP1%V=OPENCMISS_ELEM_V
-      TMP1%P=OPENCMISS_ELEM_P
-      TMP1%N=OPENCMISS_NODE_COORD
-      TMP1%D=DIMEN
-      TMP1%F=BASE_INFO%n_B
-      TMP1%ID_M=1
-      TMP1%ID_V=2
-      TMP1%ID_P=3
-      TMP1%IT_M=OPENCMISS_INTERPOLATION(1)
-      TMP1%IT_V=OPENCMISS_INTERPOLATION(2)
-      TMP1%IT_P=OPENCMISS_INTERPOLATION(3)
+      TMP%M=OPENCMISS_ELEM_M
+      TMP%V=OPENCMISS_ELEM_V
+      TMP%P=OPENCMISS_ELEM_P
+      TMP%N=OPENCMISS_NODE_COORD
+      TMP%D=DIMEN
+      TMP%F=BASE_INFO%n_B
+      TMP%ID_M=1
+      TMP%ID_V=2
+      TMP%ID_P=3
+      TMP%IT_M=OPENCMISS_INTERPOLATION(1)
+      TMP%IT_V=OPENCMISS_INTERPOLATION(2)
+      TMP%IT_P=OPENCMISS_INTERPOLATION(3)
   
       IF (BASE_INFO%HEXA==1) THEN
       !LAGRANGIAN BASIS
-        TMP1%IT_T=1
+        TMP%IT_T=1
       ELSE 
       ! SIMPLEX BASIS
-        TMP1%IT_T=2
+        TMP%IT_T=2
       END IF
 
-      TMP1%E_M=NumberOfElementsDefined(1)
-      TMP1%E_V=NumberOfElementsDefined(2)
-      TMP1%E_P=NumberOfElementsDefined(3)
-      TMP1%E_T=NumberOfElementsDefined(3)
-      TMP1%EN_M=NumberOfNodesPerElement(1)
-      TMP1%EN_V=NumberOfNodesPerElement(2)
-      TMP1%EN_P=NumberOfNodesPerElement(3)
-      TMP1%EN_T=TMP1%EN_M+TMP1%EN_V+TMP1%EN_P
-      TMP1%N_M=ArrayOfNodesDefined(1)
-      TMP1%N_V=ArrayOfNodesDefined(2)
-      TMP1%N_P=ArrayOfNodesDefined(3)
-      TMP1%N_T=TMP1%N_M+TMP1%N_V+TMP1%N_P
+      TMP%E_M=NumberOfElementsDefined(1)
+      TMP%E_V=NumberOfElementsDefined(2)
+      TMP%E_P=NumberOfElementsDefined(3)
+      TMP%E_T=NumberOfElementsDefined(3)
+      TMP%EN_M=NumberOfNodesPerElement(1)
+      TMP%EN_V=NumberOfNodesPerElement(2)
+      TMP%EN_P=NumberOfNodesPerElement(3)
+      TMP%EN_T=TMP%EN_M+TMP%EN_V+TMP%EN_P
+      TMP%N_M=ArrayOfNodesDefined(1)
+      TMP%N_V=ArrayOfNodesDefined(2)
+      TMP%N_P=ArrayOfNodesDefined(3)
+      TMP%N_T=TMP%N_M+TMP%N_V+TMP%N_P
 
       IF(I==1) THEN
-        EXPORT1=TMP1
+        EXPORT1=TMP
       ELSE IF (I==2) THEN
-        EXPORT2=TMP1
+        EXPORT2=TMP
       ELSE IF (I==3) THEN
-        EXPORT3=TMP1
+        EXPORT3=TMP
       ENDIF
 
       IF(ALLOC_ERROR.NE.0) THEN
