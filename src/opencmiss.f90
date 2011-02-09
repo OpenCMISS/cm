@@ -803,6 +803,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressureIncremented = BOUNDARY_CONDITION_PRESSURE_INCREMENTED
 
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCorrectionMassIncrease = BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
+  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionImpermeableWall = BOUNDARY_CONDITION_IMPERMEABLE_WALL
   !>@}
   !>@}
   
@@ -870,7 +871,7 @@ MODULE OPENCMISS
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
   PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
     & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall,CMISSBoundaryConditionMovedWallIncremented, &
-    & CMISSBoundaryConditionCorrectionMassIncrease
+    & CMISSBoundaryConditionCorrectionMassIncrease,CMISSBoundaryConditionImpermeableWall
 
   PUBLIC CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionNeumannIntegrated,CMISSBoundaryConditionDirichlet
   PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented
@@ -1064,7 +1065,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLStateFieldGetObj
   END INTERFACE !CMISSCellMLStateFieldGet
 
-  !>Returns the component for a given CellML field that corresponds to the speicifed CellML URI. 
+  !>Returns the component for a given CellML field that corresponds to the specified CellML variable ID.
   INTERFACE CMISSCellMLFieldComponentGet
     MODULE PROCEDURE CMISSCellMLFieldComponentGetNumberC
     MODULE PROCEDURE CMISSCellMLFieldComponentGetObjC
@@ -2010,6 +2011,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE !< Orthotropic Costa constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetCompressibleFiniteElasticitySubtype= &
     & EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransverseIsotropicGuccioneSubtype = &
+    & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype= &
     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE !<Incompressible version for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityDarcyInriaModelSubtype= &
@@ -2368,7 +2371,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetCompressibleFiniteElasticitySubtype,CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype, &
     & CMISSEquationsSetElasticityDarcyInriaModelSubtype,CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype, &
     & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype,CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype, &
-    & CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype, &
+    & CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype,CMISSEquationsSetTransverseIsotropicGuccioneSubtype, &
     & CMISSEquationsSetMembraneSubtype, CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype, &
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
@@ -2844,6 +2847,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSMeanPredictedAccelerationSetType = FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE !<The parameter set corresponding to the mean predicited acceleration values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldPressureValuesSetType = FIELD_PRESSURE_VALUES_SET_TYPE !<The parameter set corresponding to the surface pressure values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSFieldPreviousPressureSetType = FIELD_PREVIOUS_PRESSURE_SET_TYPE !<The parameter set corresponding to the previous surface pressure values (at time T). \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSFieldImpermeableFlagValuesSetType = FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE !<The parameter set corresponding to the impermeable flag values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldScalingTypes OPENCMISS::Field::ScalingTypes
   !> \brief Field scaling type parameters
@@ -3312,7 +3316,8 @@ MODULE OPENCMISS
     & CMISSPreviousValuesSetType,CMISSMeanPredictedDisplacementSetType,CMISSFieldVelocityValuesSetType, &
     & CMISSFieldInitialVelocitySetType,CMISSFieldPreviousVelocitySetType,CMISSFieldMeanPredictedVelocitySetType, &
     & CMISSFieldAccelerationValuesSetType,CMISSInitialAccelerationSetType,CMISSFieldPreviousAccelerationSetType, &
-    & CMISSMeanPredictedAccelerationSetType, CMISSFieldPressureValuesSetType, CMISSFieldPreviousPressureSetType
+    & CMISSMeanPredictedAccelerationSetType, CMISSFieldPressureValuesSetType, CMISSFieldPreviousPressureSetType, &
+    & CMISSFieldImpermeableFlagValuesSetType
 
   PUBLIC CMISSFieldNoScaling,CMISSFieldUnitScaling,CMISSFieldArcLengthScaling,CMISSFieldArithmeticMeanScaling, &
     & CMISSFieldHarmonicMeanScaling
@@ -4071,6 +4076,7 @@ MODULE OPENCMISS
   INTERFACE CMISSMeshCreateStart
     MODULE PROCEDURE CMISSMeshCreateStartNumber
     MODULE PROCEDURE CMISSMeshCreateStartObj
+    MODULE PROCEDURE CMISSMeshCreateStartInterfaceObj
   END INTERFACE !CMISSMeshCreateStart
 
   !>Destroys a mesh. 
@@ -4254,6 +4260,7 @@ MODULE OPENCMISS
   INTERFACE CMISSNodesCreateStart
     MODULE PROCEDURE CMISSNodesCreateStartNumber
     MODULE PROCEDURE CMISSNodesCreateStartObj
+    MODULE PROCEDURE CMISSNodesCreateStartInterfaceObj
   END INTERFACE !CMISSNodesCreateStart
     
   !>Destroys nodes.
@@ -12580,15 +12587,17 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a character string URI for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLFieldComponentGetNumberC(RegionUserNumber,CellMLUserNumber,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a character string VariableID for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldComponentGetNumberC(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,CellMLFieldType,&
+  & VariableID,FieldComponent,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map fom.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The variable ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -12603,7 +12612,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
           & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -12629,20 +12638,21 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a character string URI for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLFieldComponentGetObjC(CellML,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a character string variable ID for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldComponentGetObjC(CellML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err)
   
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    CHARACTER(LEN=*), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    CHARACTER(LEN=*), INTENT(IN) :: VariableID !<The ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSCellMLFieldComponentGetObjC",Err,ERROR,*999)
  
-    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
 
     CALL EXITS("CMISSCellMLFieldComponentGetObjC")
     RETURN
@@ -12657,15 +12667,17 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a varying string URI for a CellML environment identified by a user number.
-  SUBROUTINE CMISSCellMLFieldComponentGetNumberVS(RegionUserNumber,CellMLUserNumber,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a varying string variable ID for a CellML environment identified by a user number.
+  SUBROUTINE CMISSCellMLFieldComponentGetNumberVS(RegionUserNumber,CellMLUserNumber,CellMLModelUserNumber,CellMLFieldType,&
+  & VariableID,FieldComponent,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the CellML environment.
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CELLML_TYPE), POINTER :: CELLML
@@ -12680,7 +12692,7 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL CELLML_USER_NUMBER_FIND(CellMLUserNumber,REGION,CELLML,Err,ERROR,*999)
       IF(ASSOCIATED(CELLML)) THEN
-        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+        CALL CELLML_FIELD_COMPONENT_GET(CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A CellML environment with an user number of "//TRIM(NUMBER_TO_VSTRING(CellMLUserNumber,"*",Err,ERROR))// &
           & " does not exist in region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -12705,20 +12717,21 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the field component number that corresponds to a varying string URI for a CellML environment identified by an object.
-  SUBROUTINE CMISSCellMLFieldComponentGetObjVS(CellML,CellMLFieldType,URI,FieldComponent,Err)
+  !>Returns the field component number that corresponds to a varying string variable ID for a CellML environment identified by an object.
+  SUBROUTINE CMISSCellMLFieldComponentGetObjVS(CellML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err)
   
     !Argument variables
     TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment to get the field component for.
+    INTEGER(INTG), INTENT(IN) :: CellMLModelUserNumber !<The user number of the CellML model to map from.
     INTEGER(INTG), INTENT(IN) :: CellMLFieldType !<The type of CellML field to get the component for. \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-    TYPE(VARYING_STRING), INTENT(IN) :: URI !<The URI to get the corresponding field component for.
-    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the URI.
+    TYPE(VARYING_STRING), INTENT(IN) :: VariableID !<The ID to get the corresponding field component for.
+    INTEGER(INTG), INTENT(OUT) :: FieldComponent !<On return, the field component corresponding to the ID.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
     CALL ENTERS("CMISSCellMLFieldComponentGetObjVS",Err,ERROR,*999)
  
-    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLFieldType,URI,FieldComponent,Err,ERROR,*999)
+    CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLModelUserNumber,CellMLFieldType,VariableID,FieldComponent,Err,ERROR,*999)
 
     CALL EXITS("CMISSCellMLFieldComponentGetObjVS")
     RETURN
@@ -34734,6 +34747,38 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
+
+  !>Starts the creation of a mesh for a mesh identified by an object.
+  SUBROUTINE CMISSMeshCreateStartInterfaceObj(MeshUserNumber,INTERFACE,NumberOfDimensions,Mesh,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of.
+    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface containing the mesh to start the creation of.
+    INTEGER(INTG), INTENT(IN) :: NumberOfDimensions !<The number of dimensions for the mesh.
+    TYPE(CMISSMeshType), INTENT(OUT) :: Mesh !<On return, the created mesh.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSMeshCreateStartInterfaceObj",Err,ERROR,*999)
+ 
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Mesh Create')
+#endif
+
+    CALL MESH_CREATE_START(MeshUserNumber,Interface%INTERFACE,NumberOfDimensions,Mesh%MESH,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSMeshCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshCreateStartInterfaceObj
+
+  !  
+  !================================================================================================================================
+  !  
   
   !>Destroys a mesh identified by a user number.
   SUBROUTINE CMISSMeshDestroyNumber(RegionUserNumber,MeshUserNumber,Err)
@@ -36301,6 +36346,37 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSNodesCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Starts the creation of a nodes in a region for nodes identified by an object.
+  SUBROUTINE CMISSNodesCreateStartInterfaceObj(INTERFACE,NumberOfNodes,Nodes,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface to start the creation of nodes on.
+    INTEGER(INTG), INTENT(IN) :: NumberOfNodes !<The number of nodes to create.
+    TYPE(CMISSNodesType), INTENT(IN) :: Nodes !<On return, the created nodes.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSNodesCreateStartInterfaceObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('Nodes Create')
+#endif
+
+    CALL NODES_CREATE_START(Interface%INTERFACE,NumberOfNodes,Nodes%NODES,Err,ERROR,*999)
+
+    CALL EXITS("CMISSNodesCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSNodesCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSNodesCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSNodesCreateStartInterfaceObj
 
   !  
   !================================================================================================================================

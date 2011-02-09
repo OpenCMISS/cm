@@ -2,7 +2,7 @@
 !> $Id$
 !> \author Sebastian Krittian
 !> \brief This module handles some mesh/parameter input routines and cmgui output routines for fluid mechanics
-!> routines and should be eventually replaces by field_IO_routines.f90
+!> routines and should be eventually replaces by field_IO_routines.f90 
 !>
 !> \section LICENSE
 !>
@@ -133,14 +133,30 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
     LOGICAL :: STAB, DEBUG, ANALYTIC
   END TYPE DARCY_PARAMETERS
 
+  TYPE COUPLING_PARAMETERS
+    INTEGER:: NUMBER_OF_COUPLINGS
+    INTEGER, POINTER:: INTERFACE_ELEMENT_NUMBER(:)
+    INTEGER, POINTER:: INTERFACE_ELEMENT_LOCAL_NODE(:)
+    INTEGER:: MESH1_ID
+    INTEGER, POINTER:: MESH1_ELEMENT_NUMBER(:)  
+    REAL(DP), POINTER:: MESH1_ELEMENT_XI(:,:)
+    INTEGER:: MESH2_ID
+    INTEGER, POINTER:: MESH2_ELEMENT_NUMBER(:)  
+    REAL(DP), POINTER:: MESH2_ELEMENT_XI(:,:)
+  END TYPE COUPLING_PARAMETERS
+
   !Module variables
 
   TYPE (ARRAY_PROBLEM_BASE) BASE_INFO
   TYPE (ARRAY_MESH) MESH_INFO(3)
+  TYPE (EXPORT_CONTAINER) TMP, TMP1
   TYPE (DARCY_PARAMETERS) DARCY
-  TYPE(FIELD_TYPE), POINTER :: FIELD
-  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
-  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
+  TYPE(FIELD_TYPE), POINTER :: FIELD, MATERIAL_FIELD, SOURCE_FIELD
+  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:),MATERIAL_INTERPOLATION_PARAMETERS(:)
+  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:),MATERIAL_INTERPOLATED_POINT(:)
+
+  TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: SOURCE_INTERPOLATION_PARAMETERS(:)
+  TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: SOURCE_INTERPOLATED_POINT(:)
 
 
   INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: NodesPerElement
@@ -151,8 +167,9 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: NumberOfVariableComponents
   INTEGER(INTG):: NumberOfMeshComponents
   INTEGER(INTG):: NumberOfMaterialComponents
+  INTEGER(INTG):: NumberOfSourceComponents
   INTEGER(INTG):: NumberOfNodesDefined
-  INTEGER(INTG):: NumberOfFieldComponent(3)
+  INTEGER(INTG):: NumberOfFieldComponent(4) !(3)
   INTEGER(INTG):: NumberOfElements
   INTEGER(INTG):: GlobalElementNumber(10)
   INTEGER(INTG):: MaxNodesPerElement
@@ -171,6 +188,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   INTEGER(INTG):: parameter_set_idx
 
   LOGICAL :: DN
+
+  LOGICAL :: OUTPUT_SOURCE
 
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::ElementNodesScales
   REAL(DP), DIMENSION(:), ALLOCATABLE:: XI_COORDINATES,COORDINATES
@@ -206,6 +225,17 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeWValue_error
   REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePValue_error
 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm2Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm3Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm4Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm5Value 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodePerm6Value 
+
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue1 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue2 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue3 
+  REAL(DP), DIMENSION(:), ALLOCATABLE:: NodeSourceValue4 
+
   REAL(DP):: ScaleFactorsPerElementNodes(10,10)
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::OPENCMISS_NODE_COORD
 
@@ -219,7 +249,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   !Interfaces
   INTERFACE FLUID_MECHANICS_IO_READ_CMHEART
     MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART1
-    MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART2
+    MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART3
   END INTERFACE !FLUID_MECHANICS_IO_READ_CMHEART
 
 
@@ -228,9 +258,9 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   PUBLIC FLUID_MECHANICS_IO_READ_DATA
 
   PUBLIC FLUID_MECHANICS_IO_WRITE_CMGUI
-  PUBLIC FLUID_MECHANICS_IO_READ_CMHEART
-  PUBLIC EXPORT_CONTAINER
-  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS
+  PUBLIC FLUID_MECHANICS_IO_READ_CMHEART, FLUID_MECHANICS_IO_READ_CMHEART_FINISH
+  PUBLIC EXPORT_CONTAINER,COUPLING_PARAMETERS
+  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE
   PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK
 
 
@@ -254,9 +284,11 @@ CONTAINS
     INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG):: I,J,K
+    INTEGER(INTG):: I,J,K,icompartment
     INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
+    INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
@@ -286,6 +318,17 @@ CONTAINS
     IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
+
+    IF (ALLOCATED(NodePerm2Value)) DEALLOCATE(NodePerm2Value) 
+    IF (ALLOCATED(NodePerm3Value)) DEALLOCATE(NodePerm3Value) 
+    IF (ALLOCATED(NodePerm4Value)) DEALLOCATE(NodePerm4Value) 
+    IF (ALLOCATED(NodePerm5Value)) DEALLOCATE(NodePerm5Value) 
+    IF (ALLOCATED(NodePerm6Value)) DEALLOCATE(NodePerm6Value) 
+
+    IF (ALLOCATED(NodeSourceValue1)) DEALLOCATE(NodeSourceValue1) 
+    IF (ALLOCATED(NodeSourceValue2)) DEALLOCATE(NodeSourceValue2) 
+    IF (ALLOCATED(NodeSourceValue3)) DEALLOCATE(NodeSourceValue3) 
+    IF (ALLOCATED(NodeSourceValue4)) DEALLOCATE(NodeSourceValue4) 
 
     !chrm, 20.08.09
     IF (ALLOCATED(NodeUValue_analytic)) DEALLOCATE(NodeUValue_analytic)
@@ -336,9 +379,19 @@ CONTAINS
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
           var_idx = 3
           FIELD_VAR_TYPE = FIELD_V_VARIABLE_TYPE
+        CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
+           EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+           icompartment=EQUATIONS_SET_FIELD_DATA(1)
+           var_idx = 3+2*(icompartment-1)
+           FIELD_VAR_TYPE=FIELD_V_VARIABLE_TYPE+(FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(icompartment-1))
         END SELECT
       END SELECT
     END SELECT
+
+   
+
 
     parameter_set_idx = 1
     SELECT CASE(EQUATIONS_SET%CLASS)
@@ -367,7 +420,10 @@ CONTAINS
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
-    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+!     IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+
+    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(MAX(NumberOfMeshComponents,NumberOfElements)))
+
     IF(.NOT.ALLOCATED(NodesPerMeshComponent)) ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
     MaxNodesPerElement=0
 
@@ -378,8 +434,16 @@ CONTAINS
     END DO
 
 
-    MaxNodesPerElement=NodesPerElement(1)
+!     MaxNodesPerElement=NodesPerElement(1)
     MaxNodesPerMeshComponent=NodesPerMeshComponent(1)
+
+
+    DO I=1,NumberOfElements
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+      MaxNodesPerElement=MAX(NodesPerElement(1),NodesPerElement(I))
+    END DO
+
 
     IF(.NOT.ALLOCATED(XI_COORDINATES))  ALLOCATE(XI_COORDINATES(NumberOfDimensions))
     IF(.NOT.ALLOCATED(COORDINATES)) ALLOCATE(COORDINATES(NumberOfDimensions))
@@ -403,8 +467,21 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeEValue)) ALLOCATE(NodeEValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeSIGMAValue)) ALLOCATE(NodeSIGMAValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
-    IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
+!     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,MaxNodesPerElement))
+!     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,MaxNodesPerElement))
+
+    IF(.NOT.ALLOCATED(NodePerm2Value)) ALLOCATE(NodePerm2Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm3Value)) ALLOCATE(NodePerm3Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm4Value)) ALLOCATE(NodePerm4Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm5Value)) ALLOCATE(NodePerm5Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePerm6Value)) ALLOCATE(NodePerm6Value(NodesPerMeshComponent(1)))
+
+    IF(.NOT.ALLOCATED(NodeSourceValue1)) ALLOCATE(NodeSourceValue1(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeSourceValue2)) ALLOCATE(NodeSourceValue2(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeSourceValue3)) ALLOCATE(NodeSourceValue3(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeSourceValue4)) ALLOCATE(NodeSourceValue4(NodesPerMeshComponent(1)))
 
     !chrm, 20.08.09
     IF(.NOT.ALLOCATED(NodeUValue_analytic)) ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
@@ -419,17 +496,52 @@ CONTAINS
 
     CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
+    NULLIFY(MATERIAL_FIELD)
+    NULLIFY(SOURCE_FIELD)
+
     FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
-    NULLIFY(INTERPOLATION_PARAMETERS)
-    NULLIFY(INTERPOLATED_POINT)
-    
-    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS &
-    & ,ERR,ERROR,*999)
+    !material
+    MATERIAL_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field
+
+    !source field
+    OUTPUT_SOURCE = .FALSE.
+    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+      & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+          SOURCE_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field
+          IF( ASSOCIATED(SOURCE_FIELD) ) OUTPUT_SOURCE = .TRUE.
+    END IF
+
+    NULLIFY(INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATION_PARAMETERS,SOURCE_INTERPOLATION_PARAMETERS)
+    NULLIFY(INTERPOLATED_POINT,MATERIAL_INTERPOLATED_POINT,SOURCE_INTERPOLATED_POINT)
+
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
+    !material
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(MATERIAL_FIELD,MATERIAL_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(MATERIAL_INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATED_POINT,ERR,ERROR,*999)
+
+    !source field
+    IF( OUTPUT_SOURCE ) THEN
+      CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(SOURCE_FIELD,SOURCE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINTS_INITIALISE(SOURCE_INTERPOLATION_PARAMETERS,SOURCE_INTERPOLATED_POINT,ERR,ERROR,*999)
+      NumberOfSourceComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field% &
+        & variables(1)%number_of_components
+
+      NumberOfFields = NumberOfFields + 1
+    END IF
+
+
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
+
         ELEMENT_NUMBER=I
 !        XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(1)%ptr%equations%interpolation% &
 !          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION%equations_sets% &
@@ -536,6 +648,23 @@ CONTAINS
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
           & INTERPOLATION_PARAMETERS(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
         CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr,ERR,ERROR,*999)
+
+
+        !material
+        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+          & MATERIAL_INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
+          & ERR,ERROR,*999)
+
+        !source field
+        IF( OUTPUT_SOURCE ) THEN
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+            & SOURCE_INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
+            & ERR,ERROR,*999)
+        END IF
+
+
         NodeXValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%geometry%geometric_field%variables(1) &
           & %parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
 !        NodeYValue(K)=REGION%equations_sets%equations_sets(1)%ptr%geometry%geometric_field%variables(1) &
@@ -553,11 +682,13 @@ CONTAINS
         !If geometry uses a quadratic mesh, but Darcy velocity and mass increase only a linear one,
         !   then we do need to interpolate the velocities and mass increase on the geometric mesh
         IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) ) THEN
+          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) ) THEN
+          IF ((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) .OR. &
+          & (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)) THEN
             NodeUValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(1,1)
             NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
             NodeWValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
+          ENDIF
         ELSE
 !           NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
@@ -610,21 +741,49 @@ CONTAINS
           & materials%materials_field%variables(1)%COMPONENTS(1)%INTERPOLATION_TYPE 
 
         IF(MATERIAL_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION)THEN
-          NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-          NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+
+          IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+            NodeMUValue(K)   =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
+            NodeRHOValue(K)  =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
+!           !--- Remaining tensor material data of permeability tensor
+            NodePerm2Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+            NodePerm3Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+            NodePerm4Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(5,1)
+            NodePerm5Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(6,1)
+            NodePerm6Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(7,1)
+          ELSE
+            NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+            NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+          END IF
 
           IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
             IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
               IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
               & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+              & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
                 NodeKappaValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
                   & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
               END IF
             END IF
           END IF
+
+          IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+            !source field
+            IF( OUTPUT_SOURCE ) THEN
+              NodeSourceValue1(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
+              NodeSourceValue2(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
+              NodeSourceValue3(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+              NodeSourceValue4(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+            END IF
+          END IF
+
         ELSE !default to FIELD_CONSTANT_INTERPOLATION
           NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
@@ -646,7 +805,8 @@ CONTAINS
             IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
               IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
               & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+              & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
                 NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
                   & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
               END IF
@@ -705,8 +865,17 @@ CONTAINS
     NumberOfFieldComponent(2)=NumberOfVariableComponents
     NumberOfFieldComponent(3)=NumberOfMaterialComponents
 
+    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+      & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+        IF( OUTPUT_SOURCE ) THEN
+          NumberOfFieldComponent(4)=NumberOfSourceComponents
+        END IF
+    END IF
+
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
         ElementNodes(I,J)=REGION%meshes%meshes(1)%ptr%topology(1)% &
           & ptr%elements%elements(I)%global_element_nodes(J)
         ElementNodesScales(I,J)=1.0000000000000000E+00
@@ -741,9 +910,11 @@ CONTAINS
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG):: I,J,K
+    INTEGER(INTG):: I,J,K,icompartment
     INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
+    INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS",ERR,ERROR,*999)
 
@@ -761,9 +932,15 @@ CONTAINS
     IF (ALLOCATED(NodeVValueORG)) DEALLOCATE(NodeVValueORG)
     IF (ALLOCATED(NodeWValueORG)) DEALLOCATE(NodeWValueORG)
     IF (ALLOCATED(NodePValue)) DEALLOCATE(NodePValue)
+    IF (ALLOCATED(NodePValue2)) DEALLOCATE(NodePValue2)
+    IF (ALLOCATED(NodeMIValue)) DEALLOCATE(NodeMIValue)
     IF (ALLOCATED(NodeMUValue)) DEALLOCATE(NodeMUValue)
     IF (ALLOCATED(NodeLabelValue)) DEALLOCATE(NodeLabelValue)
     IF (ALLOCATED(NodeRHOValue)) DEALLOCATE(NodeRHOValue)
+    IF (ALLOCATED(NodeA0Value)) DEALLOCATE(NodeA0Value)
+    IF (ALLOCATED(NodeH0Value)) DEALLOCATE(NodeH0Value)
+    IF (ALLOCATED(NodeEValue)) DEALLOCATE(NodeEValue)
+    IF (ALLOCATED(NodeSIGMAValue)) DEALLOCATE(NodeSIGMAValue)
     IF (ALLOCATED(NodeKappaValue)) DEALLOCATE(NodeKappaValue)
     IF (ALLOCATED(ElementNodesScales)) DEALLOCATE(ElementNodesScales)
     IF (ALLOCATED(ElementNodes)) DEALLOCATE(ElementNodes)
@@ -817,6 +994,13 @@ CONTAINS
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
           var_idx = 3
           FIELD_VAR_TYPE = FIELD_V_VARIABLE_TYPE
+        CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
+           EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+           icompartment=EQUATIONS_SET_FIELD_DATA(1)
+           var_idx = 3+2*(icompartment-1)
+           FIELD_VAR_TYPE=FIELD_V_VARIABLE_TYPE+(FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(icompartment-1))
         END SELECT
       END SELECT
     END SELECT
@@ -839,13 +1023,19 @@ CONTAINS
 ! Hack for ALE... to be removed later
     NumberOfFields=3
     NumberOfDimensions=REGION%coordinate_system%number_of_dimensions
+!     NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+!       & variables(1)%number_of_components
     NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-      & variables(1)%number_of_components
+      & variables(var_idx)%number_of_components
+
     NumberOfMaterialComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
-    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+!     IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+
+    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(MAX(NumberOfMeshComponents,NumberOfElements)))
+
     IF(.NOT.ALLOCATED(NodesPerMeshComponent)) ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
     MaxNodesPerElement=0
 
@@ -856,8 +1046,16 @@ CONTAINS
     END DO
 
 
-    MaxNodesPerElement=NodesPerElement(1)
+!     MaxNodesPerElement=NodesPerElement(1)
     MaxNodesPerMeshComponent=NodesPerMeshComponent(1)
+
+
+    DO I=1,NumberOfElements
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+      MaxNodesPerElement=MAX(NodesPerElement(1),NodesPerElement(I))
+    END DO
+
 
     IF(.NOT.ALLOCATED(XI_COORDINATES))  ALLOCATE(XI_COORDINATES(NumberOfDimensions))
     IF(.NOT.ALLOCATED(COORDINATES)) ALLOCATE(COORDINATES(NumberOfDimensions))
@@ -871,12 +1069,20 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeVValueORG)) ALLOCATE(NodeVValueORG(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeWValueORG)) ALLOCATE(NodeWValueORG(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodePValue2)) ALLOCATE(NodePValue2(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeMIValue)) ALLOCATE(NodeMIValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeRHOValue)) ALLOCATE(NodeRHOValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeA0Value)) ALLOCATE(NodeA0Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeH0Value)) ALLOCATE(NodeH0Value(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeEValue)) ALLOCATE(NodeEValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeSIGMAValue)) ALLOCATE(NodeSIGMAValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeKappaValue)) ALLOCATE(NodeKappaValue(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
-    IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
+!     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,MaxNodesPerElement))
+!     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
+    IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,MaxNodesPerElement))
 
     !chrm, 20.08.09
     IF(.NOT.ALLOCATED(NodeUValue_analytic)) ALLOCATE(NodeUValue_analytic(NodesPerMeshComponent(1)))
@@ -901,7 +1107,13 @@ CONTAINS
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
+
         ELEMENT_NUMBER=I
         XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
@@ -972,16 +1184,18 @@ CONTAINS
           & materials%materials_field%variables(1)%COMPONENTS(1)%INTERPOLATION_TYPE 
 
         IF(MATERIAL_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION)THEN
-          NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+          NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-          NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+          NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+
           IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
             IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
               IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
               & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
-                NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+              & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
+                NodeKappaValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
                   & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
               END IF
             END IF
@@ -1029,7 +1243,8 @@ CONTAINS
     NumberOfFieldComponent(3)=NumberOfMaterialComponents
 
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
         ElementNodes(I,J)=REGION%meshes%meshes(1)%ptr%topology(1)% &
           & ptr%elements%elements(I)%global_element_nodes(J)
         ElementNodesScales(I,J)=1.0000000000000000E+00
@@ -1046,6 +1261,7 @@ CONTAINS
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS
+
 
 
   ! OK
@@ -1309,6 +1525,68 @@ CONTAINS
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_DATA_ENCAS
 
+  ! OK
+  !================================================================================================================================
+  !
+
+
+  !> Executes nodes writing process.
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE(NAME,start_time_step,number_of_timesteps,time_increment)
+
+    IMPLICIT NONE
+
+    INTEGER:: I,J,start_time_step,number_of_timesteps
+    DOUBLE PRECISION:: time_increment,time
+
+    CHARACTER(9), INTENT(IN) :: NAME !<the prefix name of file.
+    TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
+!     CHARACTER :: FILENAME !<the prefix name of file.
+    INTEGER(INTG) :: ERR
+    TYPE(VARYING_STRING):: ERROR 
+
+
+    FILENAME="./output/"//NAME//".case"
+    OPEN(UNIT=87, FILE=CHAR(FILENAME),STATUS='unknown')
+
+    WRITE(87,*)'FORMAT' 
+    WRITE(87,*)'type:  ensight gold'
+    WRITE(87,*)''
+    WRITE(87,*)'GEOMETRY'
+    WRITE(87,*)'model:      ./OpenCMISS.geo'
+    WRITE(87,*)''
+    WRITE(87,*)'VARIABLE'
+    WRITE(87,*)''
+    WRITE(87,*)'scalar per node:  1  Magnitude OpenCMISS.Magnitude_**'
+    WRITE(87,*)'scalar per node:  1  Speed_SumSquares OpenCMISS.Speed_SumSquares_**'
+    WRITE(87,*)'scalar per node:  1  Pressure OpenCMISS.Pressure_**'
+    WRITE(87,*)'vector per node:  1  Velocity OpenCMISS.Velocity_**'  
+    WRITE(87,*)''
+    WRITE(87,*)'TIME'
+    WRITE(87,*)'time set: 1 Model'
+    WRITE(87,*)'number of steps: ',  number_of_timesteps
+    WRITE(87,*)'filename start number:      ',  start_time_step
+    WRITE(87,*)'filename increment:         1'
+    WRITE(87,'(" time values:")',ADVANCE="NO")
+    J=1
+    DO I=1,number_of_timesteps
+      J=J+1
+      time=I*time_increment
+      WRITE(87,'(e13.5)',ADVANCE="NO")time
+      IF(J==8) THEN
+        WRITE(87,*) ' '
+        J=0
+      ENDIF
+    ENDDO
+  
+  CLOSE(87)
+  
+
+    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Encas PPE master...",ERR,ERROR,*999)
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE",ERR,ERROR)    
+    RETURN
+
+  END SUBROUTINE FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE
 
 
   ! OK
@@ -1390,8 +1668,11 @@ CONTAINS
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG):: I,J,K
+    INTEGER(INTG):: I,J,K,icompartment
+    INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
+    INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK",ERR,ERROR,*999)
 
@@ -1476,13 +1757,19 @@ CONTAINS
 ! Hack for ALE... to be removed later
     NumberOfFields=3
     NumberOfDimensions=REGION%coordinate_system%number_of_dimensions
+!     NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+!       & variables(1)%number_of_components
     NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
-      & variables(1)%number_of_components
+      & variables(var_idx)%number_of_components
+
     NumberOfMaterialComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
       & variables(1)%number_of_components
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
-    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+!     IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
+
+    IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(MAX(NumberOfMeshComponents,NumberOfElements)))
+
     IF(.NOT.ALLOCATED(NodesPerMeshComponent)) ALLOCATE(NodesPerMeshComponent(NumberOfMeshComponents))
     MaxNodesPerElement=0
 
@@ -1493,20 +1780,28 @@ CONTAINS
     END DO
 
 
-    MaxNodesPerElement=NodesPerElement(1)
+!     MaxNodesPerElement=NodesPerElement(1)
     MaxNodesPerMeshComponent=NodesPerMeshComponent(1)
+
+
+    DO I=1,NumberOfElements
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+      MaxNodesPerElement=MAX(NodesPerElement(1),NodesPerElement(I))
+    END DO
+
 
     IF(.NOT.ALLOCATED(XI_COORDINATES))  ALLOCATE(XI_COORDINATES(NumberOfDimensions))
     IF(.NOT.ALLOCATED(COORDINATES)) ALLOCATE(COORDINATES(NumberOfDimensions))
     IF(.NOT.ALLOCATED(NodeXValue)) ALLOCATE(NodeXValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeYValue)) ALLOCATE(NodeYValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeZValue)) ALLOCATE(NodeZValue(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(NodeUValueORG)) ALLOCATE(NodeUValueORG(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(NodeVValueORG)) ALLOCATE(NodeVValueORG(NodesPerMeshComponent(1)))
-    IF(.NOT.ALLOCATED(NodeWValueORG)) ALLOCATE(NodeWValueORG(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeUValue)) ALLOCATE(NodeUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeVValue)) ALLOCATE(NodeVValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeWValue)) ALLOCATE(NodeWValue(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeUValueORG)) ALLOCATE(NodeUValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeVValueORG)) ALLOCATE(NodeVValueORG(NodesPerMeshComponent(1)))
+    IF(.NOT.ALLOCATED(NodeWValueORG)) ALLOCATE(NodeWValueORG(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue)) ALLOCATE(NodePValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeMUValue)) ALLOCATE(NodeMUValue(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodeLabelValue)) ALLOCATE(NodeLabelValue(NodesPerMeshComponent(1)))
@@ -1526,7 +1821,13 @@ CONTAINS
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+
+      NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
+        & %ptr%topology%elements%elements(I)%basis%number_of_element_parameters
+
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
+
         ELEMENT_NUMBER=I
 ! ! !         XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
 ! ! !           & geometric_interp_parameters(FIELD_U_VARIABLE_TYPE)%ptr%bases(1)%ptr%node_position_index(J,1)-1.0)/(REGION% &
@@ -1666,8 +1967,10 @@ CONTAINS
     NumberOfFieldComponent(2)=NumberOfVariableComponents
     NumberOfFieldComponent(3)=NumberOfMaterialComponents
 
+
     DO I=1,NumberOfElements
-      DO J=1,NodesPerElement(1)
+!       DO J=1,NodesPerElement(1)
+      DO J=1,NodesPerElement(I)
         ElementNodes(I,J)=REGION%meshes%meshes(1)%ptr%topology(1)% &
           & ptr%elements%elements(I)%global_element_nodes(J)
         ElementNodesScales(I,J)=1.0000000000000000E+00
@@ -1712,7 +2015,7 @@ CONTAINS
     WRITE(81,*)'Absolute Pressure' 
     WRITE(81,*)'part'
     WRITE(81,*)'        1'
-    WRITE(81,*)'coordinates'
+    WRITE(81,*)'block'
     DO I = 1,NodesPerMeshComponent(1)
       WRITE(81,'(e12.5)')NodePValue(I)
     ENDDO
@@ -1793,6 +2096,17 @@ CONTAINS
       WRITE(14,*)  '   ',TRIM(NMs(I)),'.  Value index= ',TRIM(NMs(ValueIndex)),',     #Derivatives= 0' 
       ValueIndex=ValueIndex+1
     END DO
+
+
+    IF( OUTPUT_SOURCE ) THEN !Watch out that no numbering conflict occurs with Analytic: 4.)
+      WRITE(14,*) ' 4) source,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfSourceComponents))
+
+      DO I=1,NumberOfSourceComponents
+        WRITE(14,*)  '   ',TRIM(NMs(I)),'.  Value index= ',TRIM(NMs(ValueIndex)),',     #Derivatives= 0' 
+        ValueIndex=ValueIndex+1
+      END DO
+    END IF
+
 
     IF( ANALYTIC ) THEN
       WRITE(14,*) ' 4) exact,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfVariableComponents))
@@ -1880,10 +2194,30 @@ CONTAINS
         IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
           IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
             & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-            & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+            & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+            & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
             WRITE(14,'("    ", es25.16 )')NodeKappaValue(I)
           END IF
         END IF
+      END IF
+
+      IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+        & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+          !--- Remaining tensor material data of permeability tensor
+          WRITE(14,'("    ", es25.16 )')NodePerm2Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm3Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm4Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm5Value(I)
+          WRITE(14,'("    ", es25.16 )')NodePerm6Value(I)
+
+          !source field
+          IF( OUTPUT_SOURCE ) THEN
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue1(I)
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue2(I)
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue3(I)
+            WRITE(14,'("    ", es25.16 )')NodeSourceValue4(I)
+          END IF
       END IF
 
 
@@ -1981,38 +2315,59 @@ CONTAINS
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
 !     CHARACTER :: FILENAME !<the prefix name of file.
     ! CHARACTER*60 ELEM_TYPE
-    INTEGER(INTG):: I,J,K
+    INTEGER(INTG):: I,J,K,KK
     INTEGER(INTG) :: ERR
     TYPE(VARYING_STRING):: ERROR
+    LOGICAL:: OUTPUT_FLAG
 
     FILENAME="./output/"//NAME//".exelem"
     OPEN(UNIT=5, FILE=CHAR(FILENAME),STATUS='unknown')
     WRITE(5,*) 'Group name: OpenCMISS'
+
+
+  DO KK = 1,NumberOfElements
+
+    !write out the running header only once #NodesPerElement is changing
+    IF( KK == 1 ) THEN
+      OUTPUT_FLAG = .TRUE.
+    ELSE IF( KK > 1 .AND. NodesPerElement(KK).NE.NodesPerElement(KK-1) ) THEN
+      OUTPUT_FLAG = .TRUE.
+    ELSE 
+      OUTPUT_FLAG = .FALSE.
+    END IF
+
+    IF( OUTPUT_FLAG ) THEN
  
     IF(lagrange_simplex==2) THEN
       IF(NumberOfDimensions==2) THEN
         WRITE(5,*) 'Shape.  Dimension=',TRIM(NMs(NumberOfDimensions)),', simplex(2)*simplex'
         IF(MaxNodesPerElement==3) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==6) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' l.simplex(2)*l.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF (MaxNodesPerElement== 10 ) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' q.simplex(2)*q.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' q.simplex(2)*q.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' q.simplex(2)*q.simplex, #Scale factors= ', NodesPerElement(KK)
         ENDIF
       ELSE IF(NumberOfDimensions==3) THEN
         WRITE(5,*) 'Shape.  Dimension=',TRIM(NMs(NumberOfDimensions)),', simplex(2;3)*simplex*simplex'
         IF(MaxNodesPerElement==4) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' l.simplex(2;3)*l.simplex*l.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF (MaxNodesPerElement== 10 ) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==20) THEN
           WRITE(5,*) '#Scale factor sets= 1'
-          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+!           WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(1)
+          WRITE(5,*) ' q.simplex(2;3)*q.simplex*q.simplex, #Scale factors= ', NodesPerElement(KK)
         ENDIF      
       ELSE
         WRITE(5,*) '#Scale factor sets= 0'
@@ -2021,27 +2376,35 @@ CONTAINS
       WRITE(5,*) 'Shape.  Dimension= ',TRIM(NMs(NumberOfDimensions))
       WRITE(5,*) '#Scale factor sets= 1'
       IF(NumberOfDimensions==1) THEN
-           WRITE(5,*) 'q.Lagrange, #Scale factors=',NodesPerElement(1)
+!            WRITE(5,*) 'q.Lagrange, #Scale factors=',NodesPerElement(1)
+           WRITE(5,*) 'q.Lagrange, #Scale factors=',NodesPerElement(KK)
       ELSE IF (NumberOfDimensions==2) THEN
         IF(MaxNodesPerElement==4) THEN
-          WRITE(5,*) 'l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==9) THEN
-          WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==16) THEN
-          WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(KK)
         END IF
       ELSE
         IF(MaxNodesPerElement==8) THEN
-          WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'l.Lagrange*l.Lagrange*l.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==27) THEN
-          WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'q.Lagrange*q.Lagrange*q.Lagrange, #Scale factors=',NodesPerElement(KK)
         ELSE IF(MaxNodesPerElement==64) THEN
-          WRITE(5,*) 'c.Lagrange*c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+!           WRITE(5,*) 'c.Lagrange*c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(1)
+          WRITE(5,*) 'c.Lagrange*c.Lagrange*c.Lagrange, #Scale factors=',NodesPerElement(KK)
         END IF
       END IF
     END IF
 
-    WRITE(5,*) '#Nodes= ',TRIM(NMs(NodesPerElement(1)))
+!     WRITE(5,*) '#Nodes= ',TRIM(NMs(NodesPerElement(1)))
+    WRITE(5,*) '#Nodes= ',TRIM(NMs(NodesPerElement(KK)))
     WRITE(5,*) '#Fields= ',TRIM(Nms(NumberOfFields))
 
     DO I=1,NumberOfFields
@@ -2051,6 +2414,8 @@ CONTAINS
         WRITE(5,*)' 2) general,  field,  rectangular cartesian, #Components= ',TRIM(NMs(NumberOfVariableComponents))
       ELSE IF(I==3) THEN
         WRITE(5,*)' 3) material,  field,  rectangular cartesian, #Components= ',TRIM(NMs(NumberOfMaterialComponents))
+      ELSE IF(I==4) THEN
+        WRITE(5,*)' 4) source,  field,  rectangular cartesian, #Components= ',TRIM(NMs(NumberOfSourceComponents))
       END IF
 
       DO J=1,NumberOfFieldComponent(I)
@@ -2199,10 +2564,16 @@ CONTAINS
       END DO
     END DO
 
-    IF(lagrange_simplex==2) THEN
-      IF(.NOT.ALLOCATED(SimplexOutputHelp)) ALLOCATE(SimplexOutputHelp(NodesPerElement(1)))
+    END IF !write out the running header only once #NodesPerElement is changing
 
-      DO K = 1,NumberOfElements
+
+    IF(lagrange_simplex==2) THEN
+!       IF(.NOT.ALLOCATED(SimplexOutputHelp)) ALLOCATE(SimplexOutputHelp(NodesPerElement(1)))
+      IF(.NOT.ALLOCATED(SimplexOutputHelp)) ALLOCATE(SimplexOutputHelp(NodesPerElement(KK)))
+
+!       DO K = 1,NumberOfElements
+      K = KK
+
         IF(NumberOfDimensions==2)THEN
           SimplexOutputHelp(1)=ElementNodes(K,1)
           SimplexOutputHelp(2)=ElementNodes(K,4)
@@ -2227,19 +2598,29 @@ CONTAINS
         WRITE(5,*) '   Nodes:'
         WRITE(5,*) '   ', SimplexOutputHelp
         WRITE(5,*) '   Scale factors:'
-        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
-      END DO
+!         WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
+        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(K))
+!       END DO
 
     ELSE IF (lagrange_simplex==1) THEN
 
-      DO K = 1,NumberOfElements
+!       DO K = 1,NumberOfElements
+      K = KK
+
         WRITE(5,*) 'Element:     ', K,' 0  0'
         WRITE(5,*) '   Nodes:'
-        WRITE(5,*) '   ', ElementNodes(K,1:NodesPerElement(1))
+!         WRITE(5,*) '   ', ElementNodes(K,1:NodesPerElement(1))
+        WRITE(5,*) '   ', ElementNodes(K,1:NodesPerElement(K))
         WRITE(5,*) '   Scale factors:'
-        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
-      END DO
+!         WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(1))
+        WRITE(5,*) '   ',ElementNodesScales(K,1:NodesPerElement(K))
+!       END DO
     END IF
+
+
+  ENDDO
+
+
 
     WRITE(5,*) ' '
     CLOSE(5)
@@ -2262,7 +2643,7 @@ CONTAINS
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
-    TYPE (EXPORT_CONTAINER):: TMP  
+!     TYPE (EXPORT_CONTAINER):: TMP  
     ! INTEGER(INTG):: test 
 
     CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART1",ERR,ERROR,*999)
@@ -2368,17 +2749,18 @@ CONTAINS
 
 
   !> Reads in information defined by cmheart input file format.
-  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART2(EXPORT1,EXPORT2,ERR)
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART3(EXPORT1,EXPORT2,EXPORT3,CONNECT,ERR)
 
     !Argument variables
-    TYPE (EXPORT_CONTAINER):: EXPORT1,EXPORT2
+    TYPE (EXPORT_CONTAINER):: EXPORT1,EXPORT2,EXPORT3
+    TYPE (COUPLING_PARAMETERS):: CONNECT
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
-    TYPE (EXPORT_CONTAINER):: TMP  
+!     TYPE (EXPORT_CONTAINER):: TMP1  
     INTEGER(INTG):: I
 
-    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR,*999)
+    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART3",ERR,ERROR,*999)
     WRITE(*,*)' '
     WRITE(*,*)'Importing CMHEART information...'
     WRITE(*,*)' '
@@ -2392,17 +2774,22 @@ CONTAINS
 !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 !     READ(*,*)
 
-
-    DO I=1,2
+    DO I=1,3
       IF(I==1) THEN
         OPEN(UNIT=42, FILE='./input/CMHEART1.inp',STATUS='old')
-      ELSE
+      ELSE IF(I==2) THEN
         OPEN(UNIT=42, FILE='./input/CMHEART2.inp',STATUS='old')
+      ELSE IF(I==3) THEN
+        OPEN(UNIT=42, FILE='./input/CMHEART3.inp',STATUS='old')
       ENDIF
 
       CALL FLUID_MECHANICS_IO_READ_AUX
       CALL FLUID_MECHANICS_IO_READ_NODES
       CALL FLUID_MECHANICS_IO_READ_ELEMENTS
+
+      IF(ALLOCATED(OPENCMISS_ELEM_M)) DEALLOCATE(OPENCMISS_ELEM_M)
+      IF(ALLOCATED(OPENCMISS_ELEM_V)) DEALLOCATE(OPENCMISS_ELEM_V)
+      IF(ALLOCATED(OPENCMISS_ELEM_P)) DEALLOCATE(OPENCMISS_ELEM_P)
 
       IF(.NOT.ALLOCATED(OPENCMISS_ELEM_M)) ALLOCATE(OPENCMISS_ELEM_M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)), & 
         & STAT=ALLOC_ERROR)
@@ -2421,70 +2808,142 @@ CONTAINS
       WRITE(*,*)' '
       WRITE(*,*)'Import finished successfully...', I
       WRITE(*,*)' '
-! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Export finished successfully...",ERR,ERROR,*999)
-! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Export finished successfully...",ERR,ERROR,*999)
+    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 
       IF(ALLOC_ERROR.NE.0) THEN
         CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
       END IF
 
-      ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP1%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP1%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP1%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP1%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
 
-      TMP%M=OPENCMISS_ELEM_M
-      TMP%V=OPENCMISS_ELEM_V
-      TMP%P=OPENCMISS_ELEM_P
-      TMP%N=OPENCMISS_NODE_COORD
-      TMP%D=DIMEN
-      TMP%F=BASE_INFO%n_B
-      TMP%ID_M=1
-      TMP%ID_V=2
-      TMP%ID_P=3
-      TMP%IT_M=OPENCMISS_INTERPOLATION(1)
-      TMP%IT_V=OPENCMISS_INTERPOLATION(2)
-      TMP%IT_P=OPENCMISS_INTERPOLATION(3)
+      TMP1%M=OPENCMISS_ELEM_M
+      TMP1%V=OPENCMISS_ELEM_V
+      TMP1%P=OPENCMISS_ELEM_P
+      TMP1%N=OPENCMISS_NODE_COORD
+      TMP1%D=DIMEN
+      TMP1%F=BASE_INFO%n_B
+      TMP1%ID_M=1
+      TMP1%ID_V=2
+      TMP1%ID_P=3
+      TMP1%IT_M=OPENCMISS_INTERPOLATION(1)
+      TMP1%IT_V=OPENCMISS_INTERPOLATION(2)
+      TMP1%IT_P=OPENCMISS_INTERPOLATION(3)
   
       IF (BASE_INFO%HEXA==1) THEN
       !LAGRANGIAN BASIS
-        TMP%IT_T=1
+        TMP1%IT_T=1
       ELSE 
       ! SIMPLEX BASIS
-        TMP%IT_T=2
+        TMP1%IT_T=2
       END IF
 
-      TMP%E_M=NumberOfElementsDefined(1)
-      TMP%E_V=NumberOfElementsDefined(2)
-      TMP%E_P=NumberOfElementsDefined(3)
-      TMP%E_T=NumberOfElementsDefined(3)
-      TMP%EN_M=NumberOfNodesPerElement(1)
-      TMP%EN_V=NumberOfNodesPerElement(2)
-      TMP%EN_P=NumberOfNodesPerElement(3)
-      TMP%EN_T=TMP%EN_M+TMP%EN_V+TMP%EN_P
-      TMP%N_M=ArrayOfNodesDefined(1)
-      TMP%N_V=ArrayOfNodesDefined(2)
-      TMP%N_P=ArrayOfNodesDefined(3)
-      TMP%N_T=TMP%N_M+TMP%N_V+TMP%N_P
+      TMP1%E_M=NumberOfElementsDefined(1)
+      TMP1%E_V=NumberOfElementsDefined(2)
+      TMP1%E_P=NumberOfElementsDefined(3)
+      TMP1%E_T=NumberOfElementsDefined(3)
+      TMP1%EN_M=NumberOfNodesPerElement(1)
+      TMP1%EN_V=NumberOfNodesPerElement(2)
+      TMP1%EN_P=NumberOfNodesPerElement(3)
+      TMP1%EN_T=TMP1%EN_M+TMP1%EN_V+TMP1%EN_P
+      TMP1%N_M=ArrayOfNodesDefined(1)
+      TMP1%N_V=ArrayOfNodesDefined(2)
+      TMP1%N_P=ArrayOfNodesDefined(3)
+      TMP1%N_T=TMP1%N_M+TMP1%N_V+TMP1%N_P
 
       IF(I==1) THEN
-        EXPORT1=TMP
-      ELSE
-        EXPORT2=TMP
+        EXPORT1=TMP1
+      ELSE IF (I==2) THEN
+        EXPORT2=TMP1
+      ELSE IF (I==3) THEN
+        EXPORT3=TMP1
       ENDIF
 
       IF(ALLOC_ERROR.NE.0) THEN
         CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
       END IF
+
     ENDDO
 
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+
+    !Read in the interface connectivity mapping
+    OPEN(UNIT=79, FILE='./input/IM_COUPLING.LM',STATUS='old')
+    READ(79,*) CONNECT%NUMBER_OF_COUPLINGS
+
+    ALLOCATE(CONNECT%INTERFACE_ELEMENT_NUMBER(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
+    ALLOCATE(CONNECT%INTERFACE_ELEMENT_LOCAL_NODE(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
+    ALLOCATE(CONNECT%MESH1_ELEMENT_NUMBER(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
+    ALLOCATE(CONNECT%MESH1_ELEMENT_XI(CONNECT%NUMBER_OF_COUPLINGS,3),STAT=ALLOC_ERROR)
+    ALLOCATE(CONNECT%MESH2_ELEMENT_NUMBER(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
+    ALLOCATE(CONNECT%MESH2_ELEMENT_XI(CONNECT%NUMBER_OF_COUPLINGS,3),STAT=ALLOC_ERROR)
+
+    DO I=1,CONNECT%NUMBER_OF_COUPLINGS
+      READ(79,*) CONNECT%INTERFACE_ELEMENT_NUMBER(I), &
+        & CONNECT%INTERFACE_ELEMENT_LOCAL_NODE(I),CONNECT%MESH1_ID,CONNECT%MESH1_ELEMENT_NUMBER(I), &
+        & CONNECT%MESH1_ELEMENT_XI(I,1:3), CONNECT%MESH2_ID,CONNECT%MESH2_ELEMENT_NUMBER(I), &
+        & CONNECT%MESH2_ELEMENT_XI(I,1:3)
+    ENDDO
+    WRITE(*,*)' '
+    WRITE(*,*)'Import finished successfully...  IMC'
+    WRITE(*,*)' '
+
+    IF(ALLOC_ERROR.NE.0) THEN
+      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+    END IF
+
+    CLOSE(79)
+
+
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART3")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART3",ERR,ERROR)    
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART3")
     RETURN
 
-  END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART2
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART3
+
+  ! OK
+  !================================================================================================================================
+  !
+
+  !> Free memory
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART_FINISH
+
+    !Argument variables
+
+    !Local Variables
+
+    ! INTEGER(INTG):: test 
+
+    WRITE(*,*)' '
+    WRITE(*,*)'Free all CMHEART information memory...'
+    WRITE(*,*)' '
+
+    IF(ALLOCATED(OPENCMISS_ELEM_M)) DEALLOCATE(OPENCMISS_ELEM_M)
+    IF(ALLOCATED(OPENCMISS_ELEM_V)) DEALLOCATE(OPENCMISS_ELEM_V)
+    IF(ALLOCATED(OPENCMISS_ELEM_P)) DEALLOCATE(OPENCMISS_ELEM_P)
+    DEALLOCATE(TMP%M)
+    DEALLOCATE(TMP%V)
+    DEALLOCATE(TMP%P)
+    DEALLOCATE(TMP%N)
+    DEALLOCATE(BASE_INFO%B)
+
+    DEALLOCATE(MESH_INFO(1)%X)
+    DEALLOCATE(MESH_INFO(2)%X)
+    DEALLOCATE(MESH_INFO(3)%X)
+    DEALLOCATE(OPENCMISS_NODE_COORD)
+
+    DEALLOCATE(MESH_INFO(1)%T)
+    DEALLOCATE(MESH_INFO(2)%T)
+    DEALLOCATE(MESH_INFO(3)%T)
+
+
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART_FINISH")
+
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART_FINISH
 
 
   ! OK
@@ -2501,6 +2960,20 @@ CONTAINS
     READ(42,*) NIMZ
     NIMZ = TRIM(NIMZ); BASE_INFO%n_B = 0; BASE_INFO%HEXA = 0; BASE_INFO%DM = 3
     OPEN(UNIT=1,FILE=NIMZ,STATUS='old',action='read') ! Read base file for initial parameters
+
+    BASE_INFO%n_B=0
+    BASE_INFO%n_pts=0
+    BASE_INFO%VL=0
+    BASE_INFO%n_pts_f=0
+    BASE_INFO%FACES=0
+    BASE_INFO%FNODES=0
+    BASE_INFO%HEXA=0
+    BASE_INFO%DM=0
+    BASE_INFO%TRI_BASIS=0
+    BASE_INFO%TET_BASIS=0
+    BASE_INFO%QUAD_BASIS=0
+    BASE_INFO%HEX_BASIS=0
+
 
     DO WHILE (0 < 1)
       READ(1,*,END=50) IN_CHAR
@@ -2957,6 +3430,7 @@ CONTAINS
     END DO
     CLOSE(1)
 
+    IF(ALLOCATED(OPENCMISS_NODE_COORD)) DEALLOCATE(OPENCMISS_NODE_COORD)
     IF(.NOT.ALLOCATED(OPENCMISS_NODE_COORD)) ALLOCATE(OPENCMISS_NODE_COORD(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
     a=1
     b=0
@@ -3189,25 +3663,25 @@ CONTAINS
             WRITE(UVEL_FILE,'("./input/data/VEL_DATA_",I0,".dat")') TIME_STEP-1
           ENDIF
         ELSE IF(INPUT_OPTION==3) THEN
-          IF(TIME_STEP<=10) THEN
+          IF(TIME_STEP<10) THEN
             WRITE(UVEL_FILE,'("./input/data/ORI_DATA_0",I0,".dat")') TIME_STEP
           ELSE IF(TIME_STEP<100) THEN
             WRITE(UVEL_FILE,'("./input/data/ORI_DATA_",I0,".dat")') TIME_STEP
           ENDIF
         ELSE IF(INPUT_OPTION==4) THEN
-          IF(TIME_STEP<=10) THEN
+          IF(TIME_STEP<10) THEN
             WRITE(UVEL_FILE,'("./input/data/U_DATA_0",I0,".dat")') TIME_STEP
           ELSE IF(TIME_STEP<100) THEN
             WRITE(UVEL_FILE,'("./input/data/U_DATA_",I0,".dat")') TIME_STEP
           ENDIF
         ELSE IF(INPUT_OPTION==5) THEN
-          IF(TIME_STEP<=10) THEN
+          IF(TIME_STEP<10) THEN
             WRITE(UVEL_FILE,'("./input/data/V_DATA_0",I0,".dat")') TIME_STEP
           ELSE IF(TIME_STEP<100) THEN
             WRITE(UVEL_FILE,'("./input/data/V_DATA_",I0,".dat")') TIME_STEP
           ENDIF
         ELSE IF(INPUT_OPTION==6) THEN
-          IF(TIME_STEP<=10) THEN
+          IF(TIME_STEP<10) THEN
             WRITE(UVEL_FILE,'("./input/data/W_DATA_0",I0,".dat")') TIME_STEP
           ELSE IF(TIME_STEP<100) THEN
             WRITE(UVEL_FILE,'("./input/data/W_DATA_",I0,".dat")') TIME_STEP

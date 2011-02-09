@@ -47,7 +47,9 @@ MODULE SOLVER_ROUTINES
 
   USE BASE_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
-  !USE CELLML_MODEL_DEFINITION
+#ifdef USECELLML
+  USE CELLML_MODEL_DEFINITION
+#endif
   USE CMISS_CELLML
   USE CMISS_PETSC
   USE COMP_ENVIRONMENT
@@ -1393,8 +1395,8 @@ CONTAINS
 
   !>Integrate using a forward Euler differential-algebraic equation solver.
   SUBROUTINE SOLVER_DAE_EULER_FORWARD_INTEGRATE(FORWARD_EULER_SOLVER,CELLML,N,START_TIME,END_TIME,TIME_INCREMENT, &
-    & ONLY_ONE_MODEL_INDEX,MODELS_DATA,NUMBER_STATES,STATE_DATA,NUMBER_PARAMETERS,PARAMETERS_DATA,NUMBER_INTERMEDIATE, &
-    & INTERMEDIATE_DATA,ERR,ERROR,*)
+    & ONLY_ONE_MODEL_INDEX,MODELS_DATA,MAX_NUMBER_STATES,STATE_DATA,MAX_NUMBER_PARAMETERS,PARAMETERS_DATA, &
+    & MAX_NUMBER_INTERMEDIATES,INTERMEDIATE_DATA,ERR,ERROR,*)
 
     !Argument variables
     TYPE(FORWARD_EULER_DAE_SOLVER_TYPE), POINTER :: FORWARD_EULER_SOLVER !<A pointer the forward Euler differential-algebraic equation solver to integrate
@@ -1405,17 +1407,20 @@ CONTAINS
     REAL(DP), INTENT(INOUT) :: TIME_INCREMENT !<The (initial) time increment for the integration
     INTEGER(INTG), INTENT(IN) :: ONLY_ONE_MODEL_INDEX !<If only one model is used in the models data the index of that model. 0 otherwise.
     INTEGER(INTG), POINTER :: MODELS_DATA(:) !<MODELS_DATA(dof_idx). The models data for the dof_idx'th dof.
-    INTEGER(INTG), INTENT(IN) :: NUMBER_STATES !<The maximum number of state variables per dof
+    INTEGER(INTG), INTENT(IN) :: MAX_NUMBER_STATES !<The maximum number of state variables per dof
     REAL(DP), POINTER :: STATE_DATA(:) !<STATE_DATA(state_idx,dof_idx). The state data for the state_idx'th state variable of the dof_idx'th dof. state_idx varies from 1..NUMBER_STATES.
-    INTEGER(INTG), INTENT(IN) :: NUMBER_PARAMETERS !<The maximum number of parameter variables per dof.
+    INTEGER(INTG), INTENT(IN) :: MAX_NUMBER_PARAMETERS !<The maximum number of parameter variables per dof.
     REAL(DP), POINTER :: PARAMETERS_DATA(:) !<PARAMETERS_DATA(parameter_idx,dof_idx). The parameters data for the parameter_idx'th parameter variable of the dof_idx'th dof. parameter_idx varies from 1..NUMBER_PARAMETERS.
-    INTEGER(INTG), INTENT(IN) :: NUMBER_INTERMEDIATE !<The maximum number of intermediate variables per dof.
+    INTEGER(INTG), INTENT(IN) :: MAX_NUMBER_INTERMEDIATES !<The maximum number of intermediate variables per dof.
     REAL(DP), POINTER :: INTERMEDIATE_DATA(:) !<INTERMEDIATE_DATA(intermediate_idx,dof_idx). The intermediate values data for the intermediate_idx'th intermediate variable of the dof_idx'th dof. intermediate_idx varies from 1.NUMBER_INTERMEDIATE    
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,model_idx
-    REAL(DP) :: RATES(NUMBER_STATES),TIME
+    INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
+      & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
+      & STATE_END_DOF,state_idx,STATE_START_DOF
+    REAL(DP) :: INTERMEDIATES(MAX_NUMBER_INTERMEDIATES),PARAMETERS(MAX_NUMBER_PARAMETERS),RATES(MAX_NUMBER_STATES), &
+      & STATES(MAX_NUMBER_STATES),TIME
     TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
@@ -1426,16 +1431,96 @@ CONTAINS
         IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
           CALL FIELD_DOF_ORDER_TYPE_GET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*999)
           IF(DOF_ORDER_TYPE==FIELD_SEPARATED_COMPONENT_DOF_ORDER) THEN
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             !Dof components are separated. Will need to copy data to temporary arrays.
-            IF(ONLY_ONE_MODEL_INDEX==0) THEN
-              !Mulitple models              
+            IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
+              !Mulitple models
+              DO WHILE(TIME<=END_TIME)
+                DO dof_idx=1,N
+                  model_idx=MODELS_DATA(dof_idx)
+                  MODEL=>CELLML%MODELS(model_idx)%PTR
+                  IF(ASSOCIATED(MODEL)) THEN
+                    NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                    NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                    NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                    
+                    !Copy CellML data to temporary arrays
+                    DO state_idx=1,NUMBER_STATES
+                      STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                    ENDDO !state_idx
+                    DO parameter_idx=1,NUMBER_PARAMETERS
+                      PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                    ENDDO !parameter_idx
+                    
+#ifdef USECELLML                    
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
+                      & PARAMETERS)
+#else
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+
+                    !Copy temporary data back to CellML arrays
+                    DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                      INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                    ENDDO !intermediate_idx
+                    DO state_idx=1,NUMBER_STATES
+                      STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)+TIME_INCREMENT*RATES(state_idx)
+                    ENDDO !state_idx
+                    
+                  ELSE
+                    LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF                  
+                ENDDO !dof_idx
+                TIME=TIME+TIME_INCREMENT
+              ENDDO !time              
             ELSE
               !One one model is used.          
+              MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
+              IF(ASSOCIATED(MODEL)) THEN
+                NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                TIME=START_TIME
+                DO WHILE(TIME<=END_TIME)
+                  DO dof_idx=1,N
+
+                    !Copy CellML data to temporary arrays
+                     DO state_idx=1,NUMBER_STATES
+                      STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                    ENDDO !state_idx
+                    DO parameter_idx=1,NUMBER_PARAMETERS
+                      PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                    ENDDO !parameter_idx
+
+#ifdef USECELLML                    
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
+                      & PARAMETERS)
+#else
+                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+                    
+                    !Copy temporary data back to CellML arrays
+                    DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                      INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                    ENDDO !intermediate_idx
+                    DO state_idx=1,NUMBER_STATES
+                      STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)+TIME_INCREMENT*RATES(state_idx)
+                    ENDDO !state_idx
+
+                  ENDDO !dof_idx
+                  TIME=TIME+TIME_INCREMENT
+                ENDDO !time
+              ELSE
+                LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
             ENDIF
           ELSE
             !Dof components are continguous. Can pass data directly.
-            IF(ONLY_ONE_MODEL_INDEX==0) THEN
+            IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
               !Mulitple models
               TIME=START_TIME
               DO WHILE(TIME<=END_TIME)
@@ -1443,15 +1528,26 @@ CONTAINS
                   model_idx=MODELS_DATA(dof_idx)
                   MODEL=>CELLML%MODELS(model_idx)%PTR
                   IF(ASSOCIATED(MODEL)) THEN
+                    NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                    NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                    NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                    
 #ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA((dof_idx-1)*NUMBER_STATES+1: &
-                      & (dof_idx-1)*NUMBER_STATES),RATES,INTERMEDIATE_DATA((dof_idx-1)*NUMBER_INTERMEDIATE+1:(dof_idx-1)* &
-                      & NUMBER_INTERMEDIATE),PARAMETERS_DATA((dof_idx-1)*NUMBER_PARAMETERS+1:(dof_idx-1)*NUMBER_PARAMETERS))
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
+                      & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                      PARAMETER_END_DOF))
 #else
                     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
-                    STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)= &
-                      & STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)+TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                    STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                      & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                    
                   ELSE
                     LOCAL_ERROR="CellML environment model is not associated for model index "// &
                       & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
@@ -1465,18 +1561,30 @@ CONTAINS
               !One one model is used.
               MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
               IF(ASSOCIATED(MODEL)) THEN
+                NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
                 TIME=START_TIME
                 DO WHILE(TIME<=END_TIME)
                   DO dof_idx=1,N
+                    STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                    STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                    INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                    INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                    PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                    PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    
 #ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA((dof_idx-1)*NUMBER_STATES+1: &
-                      & (dof_idx-1)*NUMBER_STATES),RATES,INTERMEDIATE_DATA((dof_idx-1)*NUMBER_INTERMEDIATE+1:(dof_idx-1)* &
-                      & NUMBER_INTERMEDIATE),PARAMETERS_DATA((dof_idx-1)*NUMBER_PARAMETERS+1:(dof_idx-1)*NUMBER_PARAMETERS))
+                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
+                      & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                      PARAMETER_END_DOF))
 #else
                     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
-                    STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)= &
-                      & STATE_DATA((dof_idx-1)*NUMBER_STATES+1:dof_idx*NUMBER_STATES)+TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                    
+                    STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
+                      & TIME_INCREMENT*RATES(1:NUMBER_STATES)
+                    
                   ENDDO !dof_idx
                   TIME=TIME+TIME_INCREMENT
                 ENDDO !time
@@ -1528,8 +1636,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+   TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("SOLVER_DAE_EULER_FORWARD_SOLVE",ERR,ERROR,*999)
 
@@ -3115,31 +3222,76 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: cellml_idx
+    TYPE(CELLML_TYPE), POINTER :: CELLML
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
+    TYPE(CELLML_STATE_FIELD_TYPE), POINTER :: CELLML_STATE_FIELD
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_DAE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
-      SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
-      CASE(SOLVER_DAE_EULER)
-        CALL SOLVER_DAE_EULER_SOLVE(DAE_SOLVER%EULER_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_DAE_CRANK_NICOLSON)
-        CALL SOLVER_DAE_CRANK_NICOLSON_SOLVE(DAE_SOLVER%CRANK_NICOLSON_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_DAE_RUNGE_KUTTA)
-        CALL SOLVER_DAE_RUNGE_KUTTA_SOLVE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_DAE_ADAMS_MOULTON)
-        CALL SOLVER_DAE_ADAMS_MOULTON_SOLVE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,ERR,ERROR,*999)        
-      CASE(SOLVER_DAE_BDF)
-        CALL SOLVER_DAE_BDF_SOLVE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_DAE_RUSH_LARSON)
-        CALL SOLVER_DAE_RUSH_LARSON_SOLVE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_DAE_EXTERNAL)
-        CALL SOLVER_DAE_EXTERNAL_SOLVE(DAE_SOLVER%EXTERNAL_SOLVER,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="The differential-algebraic equation solver solve type of "// &
-          & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+      SOLVER=>DAE_SOLVER%SOLVER
+      IF(ASSOCIATED(SOLVER)) THEN
+        SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
+        CASE(SOLVER_DAE_EULER)
+          CALL SOLVER_DAE_EULER_SOLVE(DAE_SOLVER%EULER_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DAE_CRANK_NICOLSON)
+          CALL SOLVER_DAE_CRANK_NICOLSON_SOLVE(DAE_SOLVER%CRANK_NICOLSON_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DAE_RUNGE_KUTTA)
+          CALL SOLVER_DAE_RUNGE_KUTTA_SOLVE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DAE_ADAMS_MOULTON)
+          CALL SOLVER_DAE_ADAMS_MOULTON_SOLVE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,ERR,ERROR,*999)        
+        CASE(SOLVER_DAE_BDF)
+          CALL SOLVER_DAE_BDF_SOLVE(DAE_SOLVER%BDF_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DAE_RUSH_LARSON)
+          CALL SOLVER_DAE_RUSH_LARSON_SOLVE(DAE_SOLVER%RUSH_LARSON_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_DAE_EXTERNAL)
+          CALL SOLVER_DAE_EXTERNAL_SOLVE(DAE_SOLVER%EXTERNAL_SOLVER,ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="The differential-algebraic equation solver solve type of "// &
+            & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+        IF(SOLVER%OUTPUT_TYPE>SOLVER_SOLVER_OUTPUT) THEN
+#ifdef TAUPROF
+           CALL TAU_STATIC_PHASE_START("Solution Output Phase")
+#endif
+           CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
+           IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver State vectors:",ERR,ERROR,*999)
+             CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of CellML environments = ",CELLML_EQUATIONS% &
+               & NUMBER_OF_CELLML_ENVIRONMENTS,ERR,ERROR,*999)
+             DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+               CELLML=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
+               IF(ASSOCIATED(CELLML)) THEN
+                 CELLML_STATE_FIELD=>CELLML%STATE_FIELD
+                 IF(ASSOCIATED(CELLML_STATE_FIELD)) THEN
+                   CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"CellML index : ",cellml_idx,ERR,ERROR,*999)
+                   CALL FIELD_PARAMETER_SET_OUTPUT(GENERAL_OUTPUT_TYPE,CELLML_STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                 ELSE
+                   CALL FLAG_ERROR("CellML environment state field is not associated.",ERR,ERROR,*999)
+                 ENDIF
+               ELSE
+                 LOCAL_ERROR="CellML environment is not associated for CellML index "// &
+                   & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               ENDIF
+             ENDDO !cellml_idx
+              
+           ELSE
+             CALL FLAG_ERROR("Solver CellML equations is not associated.",ERR,ERROR,*999)
+           ENDIF
+#ifdef TAUPROF
+           CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
+#endif
+         ENDIF
+     ELSE
+        CALL FLAG_ERROR("Differential-algebraic solver solver is not associated.",ERR,ERROR,*999)
+      ENDIF      
     ELSE
       CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -4852,7 +5004,10 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: solver_matrix_idx
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER,SOLVER,NONLINEAR_SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_DYNAMIC_SOLVE",ERR,ERROR,*999)
@@ -4886,12 +5041,13 @@ CONTAINS
             CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
             !Solve the linear system
             CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)
+              
           ELSE
             CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
-         ! Solve the nonlinear dynamic problem
-         ELSE IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-            NONLINEAR_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
+          !Solve the nonlinear dynamic problem
+        ELSE IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+          NONLINEAR_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
           IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
             !If we need to initialise the solver
             IF(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
@@ -4910,6 +5066,37 @@ CONTAINS
          ELSE
           CALL FLAG_ERROR("Dynamic solver linearity is not associated.",ERR,ERROR,*999)
          END IF
+
+         IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
+           
+#ifdef TAUPROF
+           CALL TAU_STATIC_PHASE_START("Solution Output Phase")
+#endif
+           SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+           IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+             SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+             IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver solution vectors:",ERR,ERROR,*999)
+               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of solution vectors = ",SOLVER_MATRICES%NUMBER_OF_MATRICES, &
+                 & ERR,ERROR,*999)
+               DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solution vector for solver matrix : ",solver_matrix_idx, &
+                   & ERR,ERROR,*999)
+                 CALL DISTRIBUTED_VECTOR_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR% &
+                   & SOLVER_VECTOR,ERR,ERROR,*999)
+               ENDDO !solver_matrix_idx
+             ELSE
+               CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+             ENDIF
+           ELSE
+             CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+           ENDIF
+           
+#ifdef TAUPROF
+           CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
+#endif
+         ENDIF
          !Update dependent field with solution
          CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
         ELSE
@@ -9933,6 +10120,9 @@ CONTAINS
                                             CASE(BOUNDARY_CONDITION_MIXED)
                                               !Set Robin or is it Cauchy??? boundary conditions
                                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
+                                              !Don't do anything - it's taken care of in the Darcy equation finite element calculate
+                                              !  in the form of a penalty term
                                             CASE DEFAULT
                                               LOCAL_ERROR="The RHS boundary condition of "// &
                                                 & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
@@ -10790,6 +10980,9 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(BOUNDARY_CONDITION_PRESSURE,BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                                           !Don't do anything - it's taken care of in the finite elasticity residual calculation
+                                        CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
+                                          !Don't do anything - it's taken care of in the Darcy equation finite element calculate
+                                          !  in the form of a penalty term
                                         CASE DEFAULT
                                           LOCAL_ERROR="The RHS boundary condition of "// &
                                             & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
@@ -13715,24 +13908,64 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: solver_matrix_idx
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_NONLINEAR_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
-      CASE(SOLVER_NONLINEAR_NEWTON)
-        CALL SOLVER_NEWTON_SOLVE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
-      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(SOLVER_NONLINEAR_SQP)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-            
+      SOLVER=>NONLINEAR_SOLVER%SOLVER
+      IF(ASSOCIATED(SOLVER)) THEN
+        SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+        CASE(SOLVER_NONLINEAR_NEWTON)
+          CALL SOLVER_NEWTON_SOLVE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
+        CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE(SOLVER_NONLINEAR_SQP)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="The nonlinear solver type of "// &
+            & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+        
+        IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
+          
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_START("Solution Output Phase")
+#endif
+          
+          SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+          IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+            SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+            IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver solution vectors:",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of solution vectors = ",SOLVER_MATRICES%NUMBER_OF_MATRICES, &
+                & ERR,ERROR,*999)
+              DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solution vector for solver matrix : ",solver_matrix_idx, &
+                  & ERR,ERROR,*999)
+                CALL DISTRIBUTED_VECTOR_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR% &
+                  & SOLVER_VECTOR,ERR,ERROR,*999)
+              ENDDO !solver_matrix_idx
+            ELSE
+              CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          ENDIF
+          
+#ifdef TAUPROF
+          CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
+#endif
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -14260,7 +14493,7 @@ CONTAINS
   !
 
   !>Solve the problem. 
-  SUBROUTINE SOLVER_SOLVE(SOLVER,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE SOLVER_SOLVE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to solve
@@ -14767,7 +15000,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_idx,solver_dof_idx,solver_matrix_idx
+    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_idx,solver_dof_idx,solver_matrix_idx,var_idx
     REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
@@ -14799,19 +15032,18 @@ CONTAINS
                     SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
                     IF(ASSOCIATED(SOLVER_VECTOR)) THEN
                       !Get the solver variables data
-                      CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
-                      solver_dof_idx=1
-                      !DO equations_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                      !equations_idx=1
-                      DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
+                     CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
+                     solver_dof_idx=1
+                     equations_idx=1
+!                       DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
                         !Loop over the equations sets associated with this dof
-                        DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+!                         DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+!                           & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+                     DO var_idx=1,SOLVER_MAPPING%VARIABLES_LIST(1)%NUMBER_OF_VARIABLES
                       SELECT CASE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                         & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%EQUATIONS_TYPES(equations_idx))
                       CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
-                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE(equations_idx)%PTR
+                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%VARIABLES_LIST(1)%VARIABLES(var_idx)%VARIABLE
                         IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
                           DYNAMIC_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
                           NULLIFY(DEPENDENT_FIELD)
@@ -14831,8 +15063,8 @@ CONTAINS
                       END SELECT
                       CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                          & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                        ENDDO !equations_idx
-                      ENDDO !solver_dof_idx
+                     ENDDO !var_idx
+!                       ENDDO !solver_dof_idx
                     ELSE
                       CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
                     ENDIF

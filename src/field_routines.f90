@@ -49,6 +49,7 @@ MODULE FIELD_ROUTINES
   USE BASIS_ROUTINES
   USE COMP_ENVIRONMENT
   USE COORDINATE_ROUTINES
+  USE CMISS_MPI
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
   USE KINDS
@@ -232,6 +233,7 @@ MODULE FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_RELATIVE_VELOCITY_SET_TYPE=31 !<The parameter set corresponding to the relative velocity values for ALE \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE=32 !<The parameter set corresponding to the NEGATIVE mesh velocity values for ALE \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   INTEGER(INTG), PARAMETER :: FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE=33 !<The parameter set corresponding to the previous iteration field values (at iteration n) \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
+  INTEGER(INTG), PARAMETER :: FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE=34 !<The parameter set corresponding to the impermeable flag field values \see FIELD_ROUTINES_ParameterSetTypes,FIELD_ROUTINES
   !>@}
 
   !> \addtogroup FIELD_ROUTINES_ScalingTypes FIELD_ROUTINES::ScalingTypes
@@ -525,7 +527,8 @@ MODULE FIELD_ROUTINES
     & FIELD_INPUT_DATA1_SET_TYPE, FIELD_INPUT_DATA2_SET_TYPE, FIELD_INPUT_DATA3_SET_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE, &
     & FIELD_PREVIOUS_PRESSURE_SET_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE, FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE, &
     & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE, &
-    & FIELD_INPUT_VEL1_SET_TYPE,FIELD_INPUT_VEL2_SET_TYPE,FIELD_INPUT_VEL3_SET_TYPE,FIELD_INPUT_LABEL_SET_TYPE
+    & FIELD_INPUT_VEL1_SET_TYPE,FIELD_INPUT_VEL2_SET_TYPE,FIELD_INPUT_VEL3_SET_TYPE,FIELD_INPUT_LABEL_SET_TYPE, &
+    & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE
 
 
   PUBLIC FIELD_NO_SCALING,FIELD_UNIT_SCALING,FIELD_ARC_LENGTH_SCALING,FIELD_HARMONIC_MEAN_SCALING,FIELD_ARITHMETIC_MEAN_SCALING, &
@@ -588,14 +591,24 @@ MODULE FIELD_ROUTINES
   PUBLIC FIELD_PARAMETER_SET_GET
   
   PUBLIC FIELD_PARAMETER_SET_ADD_CONSTANT,FIELD_PARAMETER_SET_ADD_LOCAL_DOF,FIELD_PARAMETER_SET_ADD_ELEMENT, &
-    & FIELD_PARAMETER_SET_ADD_LOCAL_ELEMENT,FIELD_PARAMETER_SET_ADD_NODE,FIELD_PARAMETER_SET_ADD_LOCAL_NODE, &
-    & FIELD_PARAMETER_SET_CREATE,FIELD_PARAMETER_SET_DATA_GET,FIELD_PARAMETER_SET_DATA_RESTORE, &
-    & FIELD_PARAMETER_SET_GET_CONSTANT,FIELD_PARAMETER_SET_GET_ELEMENT,FIELD_PARAMETER_SET_GET_NODE, &
-    & FIELD_PARAMETER_SET_UPDATE_FINISH,FIELD_PARAMETER_SET_UPDATE_START,FIELD_PARAMETER_SET_UPDATE_CONSTANT, &
-    & FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF,FIELD_PARAMETER_SET_UPDATE_ELEMENT,FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT, &
-    & FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE,FIELD_PARAMETER_SET_VECTOR_GET, &
-    & FIELD_PARAMETER_SET_GET_GAUSS_POINT, FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
+    & FIELD_PARAMETER_SET_ADD_LOCAL_ELEMENT,FIELD_PARAMETER_SET_ADD_NODE,FIELD_PARAMETER_SET_ADD_LOCAL_NODE
+  
+  PUBLIC FIELD_PARAMETER_SET_CREATE
 
+  PUBLIC FIELD_PARAMETER_SET_DATA_GET,FIELD_PARAMETER_SET_DATA_RESTORE
+
+  PUBLIC FIELD_PARAMETER_SET_GET_CONSTANT,FIELD_PARAMETER_SET_GET_ELEMENT,FIELD_PARAMETER_SET_GET_NODE, &
+    & FIELD_PARAMETER_SET_GET_GAUSS_POINT
+
+  PUBLIC FIELD_PARAMETER_SET_OUTPUT
+
+  PUBLIC FIELD_PARAMETER_SET_UPDATE_FINISH,FIELD_PARAMETER_SET_UPDATE_START
+
+  PUBLIC FIELD_PARAMETER_SET_UPDATE_CONSTANT,FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF,FIELD_PARAMETER_SET_UPDATE_ELEMENT, &
+    & FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT,FIELD_PARAMETER_SET_UPDATE_NODE,FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE, &
+    & FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT
+
+  PUBLIC FIELD_PARAMETER_SET_VECTOR_GET
 
   PUBLIC FIELD_SCALING_TYPE_CHECK,FIELD_SCALING_TYPE_GET,FIELD_SCALING_TYPE_SET,FIELD_SCALING_TYPE_SET_AND_LOCK
 
@@ -1042,14 +1055,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("FIELD_COMPONENT_DOF_GET_USER_ELEMENT",ERR,ERROR,*999)
@@ -1070,53 +1080,25 @@ CONTAINS
               CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                 DECOMPOSITION=>FIELD%DECOMPOSITION
                 IF(ASSOCIATED(DECOMPOSITION)) THEN
-                  MESH=>DECOMPOSITION%MESH
-                  IF(ASSOCIATED(MESH)) THEN
-                    MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                    CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                      & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                    IF(MESH_ELEMENT_EXISTS) THEN
-                      DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                      IF(ASSOCIATED(DOMAIN)) THEN
-                        DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                        IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                          ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                          IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                            CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER,LOCAL_EXISTS, &
-                              & DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                            IF(LOCAL_EXISTS) THEN
-                              IF(ASSOCIATED(FIELD_VARIABLE%DOMAIN_MAPPING)) THEN
-                                LOCAL_DOF=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                  & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                GLOBAL_DOF=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(LOCAL_DOF)
-                              ELSE
-                                CALL FLAG_ERROR("The field variable domain mapping is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              LOCAL_ERROR="The specified user element number of "// &
-                                & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                & " is not part of this local domain."                                  
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                      ENDIF
+                  DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                  CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                    & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                  IF(USER_ELEMENT_EXISTS) THEN
+                    IF(ASSOCIATED(FIELD_VARIABLE%DOMAIN_MAPPING)) THEN
+                      LOCAL_DOF=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                        & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                      GLOBAL_DOF=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(LOCAL_DOF)
                     ELSE
-                      LOCAL_ERROR="The specified user element number of "// &
-                        & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                        " does not exist in mesh component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                        & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                      CALL FLAG_ERROR("The field variable domain mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                    LOCAL_ERROR="The specified user element number of "// &
+                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                      & " does not exist in the decomposition for field component number "// &
+                      & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable "// &
+                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -1202,14 +1184,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
       !#######################################################VERSIONS END##########################################################
     CALL ENTERS("FIELD_COMPONENT_DOF_GET_USER_NODE",ERR,ERROR,*999)
@@ -1234,76 +1213,48 @@ CONTAINS
                   & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               CASE(FIELD_NODE_BASED_INTERPOLATION)
-                DECOMPOSITION=>FIELD%DECOMPOSITION
-                IF(ASSOCIATED(DECOMPOSITION)) THEN
-                  MESH=>DECOMPOSITION%MESH
-                  IF(ASSOCIATED(MESH)) THEN
-                    MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                    CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                      & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                    IF(MESH_NODE_EXISTS) THEN
-                      DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                       IF(ASSOCIATED(DOMAIN)) THEN
-                        DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                        IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                          NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                          IF(ASSOCIATED(NODES_MAPPING)) THEN
-                            CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                              & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                            IF(LOCAL_EXISTS) THEN
-                              IF(ASSOCIATED(FIELD_VARIABLE%DOMAIN_MAPPING)) THEN
+                  DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                  CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                    & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                  IF(USER_NODE_EXISTS) THEN
+                    IF(ASSOCIATED(FIELD_VARIABLE%DOMAIN_MAPPING)) THEN
   !#######################################################VERSIONS START########################################################
-                                IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                    & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES) &
-                                    & THEN
-                                  LOCAL_DOF=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% & 
-                                    & VERSIONS(VERSION_NUMBER)
-                                  GLOBAL_DOF=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(LOCAL_DOF)
-                                ELSE
-                                  LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                    & " is invalid for user node number "// &
-                                    & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                    & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                    & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                    & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-                                    & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES, &
-                                    & "*",ERR,ERROR))//" derivatives."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("The field variable domain mapping is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              LOCAL_ERROR="The specified user node number of "// &
-                                & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                & " is not part of this local domain."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                        ENDIF
+                      IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
+                        & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES) &
+                        & THEN
+                        LOCAL_DOF=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                          & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% & 
+                          & VERSIONS(VERSION_NUMBER)
+                        GLOBAL_DOF=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(LOCAL_DOF)
                       ELSE
-                        CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
+                        LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                          & " is invalid for user node number "// &
+                          & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                          & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                          & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                          & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES, &
+                          & "*",ERR,ERROR))//" derivatives."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
                       ENDIF
                     ELSE
-                      LOCAL_ERROR="The specified user node number of "// &
-                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                        " does not exist in mesh component number "// &
-                        & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                        & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FLAG_ERROR("The field variable domain mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                    LOCAL_ERROR="The specified user node number of "// &
+                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                      & " does not exist in the domain for field component number "// &
+                      & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable "// &
+                      & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                      & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Field variable component domain is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                 LOCAL_ERROR="Can not get the dof by user node for component number "// &
@@ -2534,6 +2485,7 @@ CONTAINS
                             DO gp=1,MAX_NGP ! could be just element's gp
                               field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                 & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gp,element_idx)
+
                               FIELD_PARAMETERS(field_dof)=VALUE
                             ENDDO !gp
                             ENDDO !element_idx
@@ -3246,6 +3198,9 @@ CONTAINS
             & " is invalid. The variable type must be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+
+
+
         ENDIF
       ELSE
         LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
@@ -4020,6 +3975,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+
     INTEGER(INTG) :: DUMMY_ERR,NUMBER_OF_COMPONENTS,component_idx,variable_idx
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
@@ -4120,6 +4076,90 @@ CONTAINS
             FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="V"
           CASE(FIELD_DELVDELN_VARIABLE_TYPE)
             FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del V/del n"
+          CASE(FIELD_DELVDELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del V/del t"
+          CASE(FIELD_DEL2VDELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 V/del t^2"
+          CASE(FIELD_U1_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U1"
+          CASE(FIELD_DELU1DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U1/del n"
+          CASE(FIELD_DELU1DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U1/del t"
+          CASE(FIELD_DEL2U1DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U1/del t^2"
+          CASE(FIELD_U2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U2"
+          CASE(FIELD_DELU2DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U2/del n"
+          CASE(FIELD_DELU2DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U2/del t"
+          CASE(FIELD_DEL2U2DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U2/del t^2"
+          CASE(FIELD_U3_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U3"
+          CASE(FIELD_DELU3DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U3/del n"
+          CASE(FIELD_DELU3DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U3/del t"
+          CASE(FIELD_DEL2U3DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U3/del t^2"
+          CASE(FIELD_U4_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U4"
+          CASE(FIELD_DELU4DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U4/del n"
+          CASE(FIELD_DELU4DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U4/del t"
+          CASE(FIELD_DEL2U4DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U4/del t^2"
+          CASE(FIELD_U5_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U5"
+          CASE(FIELD_DELU5DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U5/del n"
+          CASE(FIELD_DELU5DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U5/del t"
+          CASE(FIELD_DEL2U5DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U5/del t^2"
+          CASE(FIELD_U6_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U6"
+          CASE(FIELD_DELU6DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U6/del n"
+          CASE(FIELD_DELU6DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U6/del t"
+          CASE(FIELD_DEL2U6DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U6/del t^2"
+          CASE(FIELD_U7_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U7"
+          CASE(FIELD_DELU7DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U7/del n"
+          CASE(FIELD_DELU7DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U7/del t"
+          CASE(FIELD_DEL2U7DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U7/del t^2"
+          CASE(FIELD_U8_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U8"
+          CASE(FIELD_DELU8DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U8/del n"
+          CASE(FIELD_DELU8DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U8/del t"
+          CASE(FIELD_DEL2U8DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U8/del t^2"
+          CASE(FIELD_U9_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U9"
+          CASE(FIELD_DELU9DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U9/del n"
+          CASE(FIELD_DELU9DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U9/del t"
+          CASE(FIELD_DEL2U9DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U/9del t^2"
+          CASE(FIELD_U10_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U10"
+          CASE(FIELD_DELU10DELN_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U10/del n"
+          CASE(FIELD_DELU10DELT_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U10/del t"
+          CASE(FIELD_DEL2U10DELT2_VARIABLE_TYPE)
+            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del^2 U10/del t^2"
           CASE DEFAULT
             LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -5269,6 +5309,7 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE FIELD_INTERPOLATE_NODE
+
 
    !
   !================================================================================================================================
@@ -6663,6 +6704,7 @@ CONTAINS
       ENDIF
     ELSE
       CALL FLAG_ERROR("Interpolation points is not associated.",ERR,ERROR,*998)
+
     ENDIF
 
     CALL EXITS("FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE")
@@ -7154,6 +7196,7 @@ CONTAINS
                   & " for component number "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//" of field number "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERPOLATION_PARAMETERS%FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+
               ENDIF
             ENDDO !component_idx
             CALL COORDINATE_INTERPOLATION_PARAMETERS_ADJUST(COORDINATE_SYSTEM,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
@@ -7904,6 +7947,7 @@ CONTAINS
           ALLOCATE(PHYSICAL_POINTS(FIELD_NUMBER_OF_VARIABLE_TYPES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate physical points.",ERR,ERROR,*999)
           DO var_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+
             NULLIFY(PHYSICAL_POINTS(var_type_idx)%PTR)
             IF(ASSOCIATED(FIELD_INTERPOLATED_POINTS(var_type_idx)%PTR).AND. &
               & ASSOCIATED(GEOMETRIC_INTERPOLATED_POINTS(var_type_idx)%PTR)) &
@@ -7941,19 +7985,17 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: variable_idx,component_idx,domain_type_idx,VARIABLE_GLOBAL_DOFS_OFFSET,NUMBER_OF_GLOBAL_VARIABLE_DOFS, &
       & NUMBER_OF_CONSTANT_DOFS,NUMBER_OF_ELEMENT_DOFS,NUMBER_OF_NODE_DOFS,NUMBER_OF_GRID_POINT_DOFS,NUMBER_OF_GAUSS_POINT_DOFS, &
-      & NUMBER_OF_LOCAL_VARIABLE_DOFS,TOTAL_NUMBER_OF_VARIABLE_DOFS,NUMBER_OF_DOMAINS,mesh_component_idx,variable_global_ny, &
+      & NUMBER_OF_LOCAL_VARIABLE_DOFS,TOTAL_NUMBER_OF_VARIABLE_DOFS,NUMBER_OF_DOMAINS,variable_global_ny, &
       & variable_local_ny,domain_idx,domain_no,constant_nyy,element_ny,element_nyy,node_ny,node_nyy,grid_point_nyy, &
-      & Gauss_point_nyy,element_idx,version_idx,derivative_idx,node_idx,ny, &
-      & NUMBER_OF_COMPUTATIONAL_NODES,my_computational_node_number,domain_type_stop,start_idx,stop_idx,NUMBER_OF_LOCAL, &
-      & NGP, MAX_NGP, gp
+      & Gauss_point_nyy,version_idx,derivative_idx,ny,NUMBER_OF_COMPUTATIONAL_NODES, &
+      & my_computational_node_number,domain_type_stop,start_idx,stop_idx,element_idx,node_idx,NUMBER_OF_LOCAL, NGP, MAX_NGP, &
+      & gp,MPI_IERROR,NUMBER_OF_GLOBAL_DOFS
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_LOCAL_DOFS_OFFSETS(:),VARIABLE_GHOST_DOFS_OFFSETS(:)
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING,DOFS_MAPPING,FIELD_VARIABLE_DOFS_MAPPING
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: FIELD_COMPONENT
-    TYPE(MESH_TYPE), POINTER :: MESH
-    TYPE(MESH_TOPOLOGY_TYPE), POINTER :: MESH_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(BASIS_TYPE), POINTER :: BASIS
 
@@ -7985,42 +8027,36 @@ CONTAINS
             NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+1
           CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
             DOMAIN=>FIELD_COMPONENT%DOMAIN
-            mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-            MESH=>DOMAIN%MESH
-            MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
             DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
             NUMBER_OF_ELEMENT_DOFS=NUMBER_OF_ELEMENT_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
             NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
             TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_GLOBAL_ELEMENTS
           CASE(FIELD_NODE_BASED_INTERPOLATION)
             DOMAIN=>FIELD_COMPONENT%DOMAIN
-            mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-            MESH=>DOMAIN%MESH
-            MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
             DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
             NUMBER_OF_NODE_DOFS=NUMBER_OF_NODE_DOFS+DOMAIN_TOPOLOGY%DOFS%TOTAL_NUMBER_OF_DOFS
             NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%DOFS%NUMBER_OF_DOFS
             TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+DOMAIN_TOPOLOGY%DOFS%TOTAL_NUMBER_OF_DOFS
-            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+MESH_TOPOLOGY%DOFS%NUMBER_OF_DOFS
+            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%DOFS%NUMBER_OF_GLOBAL_DOFS
           CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
             DOMAIN=>FIELD_COMPONENT%DOMAIN
-            MESH=>DOMAIN%MESH
-            mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-            MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
+            DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
             MAX_NGP = -1
-            DO element_idx=1,MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS ! global elts
-              BASIS=>MESH_TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%BASIS
+            DO element_idx=1,DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+              BASIS=>DOMAIN_TOPOLOGY%ELEMENTS%ELEMENTS(element_idx)%BASIS
               NGP = BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%NUMBER_OF_GAUSS
               MAX_NGP = MAX(MAX_NGP,NGP)
-            ENDDO !ne
-            DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
-            NUMBER_OF_GAUSS_POINT_DOFS=NUMBER_OF_GAUSS_POINT_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS * MAX_NGP
-            NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS * MAX_NGP
+            ENDDO !element_idx
+            CALL MPI_REDUCE(MPI_IN_PLACE,MAX_NGP,1,MPI_INT,MPI_MAX,COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER, &
+              & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+            CALL MPI_ERROR_CHECK("MPI_REDUCE",MPI_IERROR,ERR,ERROR,*999)             
+            NUMBER_OF_GAUSS_POINT_DOFS=NUMBER_OF_GAUSS_POINT_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS*MAX_NGP
+            NUMBER_OF_LOCAL_VARIABLE_DOFS=NUMBER_OF_LOCAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS*MAX_NGP
             TOTAL_NUMBER_OF_VARIABLE_DOFS=TOTAL_NUMBER_OF_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS*MAX_NGP
-            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+MESH_TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS * MAX_NGP
+            NUMBER_OF_GLOBAL_VARIABLE_DOFS=NUMBER_OF_GLOBAL_VARIABLE_DOFS+DOMAIN_TOPOLOGY%ELEMENTS%NUMBER_OF_GLOBAL_ELEMENTS*MAX_NGP
           CASE DEFAULT
             LOCAL_ERROR="The interpolation type of "// &
               & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &
@@ -8155,12 +8191,9 @@ CONTAINS
                 ENDIF
               CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                 DOMAIN=>FIELD_COMPONENT%DOMAIN
-                ELEMENTS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
-                mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-                MESH=>DOMAIN%MESH
-                MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
                 DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
                 DECOMPOSITION=>DOMAIN%DECOMPOSITION
+                ELEMENTS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
                 IF(domain_type_idx==1) THEN
                   !Allocate parameter to dof map for this field variable component
                   DOFS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
@@ -8255,11 +8288,9 @@ CONTAINS
                 ENDDO !element_idx
               CASE(FIELD_NODE_BASED_INTERPOLATION)
                 DOMAIN=>FIELD_COMPONENT%DOMAIN
-                mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-                MESH=>DOMAIN%MESH
-                MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
                 DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
                 DECOMPOSITION=>DOMAIN%DECOMPOSITION
+
                 DOFS_MAPPING=>DOMAIN%MAPPINGS%DOFS
                 IF(domain_type_idx==1) THEN
 !  !#######################################################VERSIONS START########################################################
@@ -8282,7 +8313,7 @@ CONTAINS
                       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field component parameter to dof node map (versions).", &
                         & ERR,ERROR,*999)
                       FIELD_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(derivative_idx)% &
-                        NUMBER_OF_VERSIONS = DOMAIN_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                        & NUMBER_OF_VERSIONS = DOMAIN_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                     ENDDO !derivative_idx
                   ENDDO !node_idx
 !  !#######################################################VERSIONS END##########################################################
@@ -8382,9 +8413,6 @@ CONTAINS
               CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                 DOMAIN=>FIELD_COMPONENT%DOMAIN
                 ELEMENTS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
-                mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-                MESH=>DOMAIN%MESH
-                MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
                 DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
                 DECOMPOSITION=>DOMAIN%DECOMPOSITION
                 IF(domain_type_idx==1) THEN ! domain_type_idx==1 -> non ghosts
@@ -8563,14 +8591,8 @@ CONTAINS
               DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
                 FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
                 DOMAIN=>FIELD_COMPONENT%DOMAIN
-                ELEMENTS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
-                mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-                MESH=>DOMAIN%MESH
-                MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
                 DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
-                DECOMPOSITION=>DOMAIN%DECOMPOSITION
                 !Allocate parameter to dof map for this field variable component
-                DOFS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
                 ALLOCATE(FIELD_COMPONENT%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_TOPOLOGY%ELEMENTS% &
                   & TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field component parameter to dof element map.",ERR,ERROR,*999)
@@ -8654,12 +8676,7 @@ CONTAINS
               DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
                 FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
                 DOMAIN=>FIELD_COMPONENT%DOMAIN
-                mesh_component_idx=DOMAIN%MESH_COMPONENT_NUMBER
-                MESH=>DOMAIN%MESH
-                MESH_TOPOLOGY=>MESH%TOPOLOGY(mesh_component_idx)%PTR
                 DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
-                DECOMPOSITION=>DOMAIN%DECOMPOSITION
-                DOFS_MAPPING=>DOMAIN%MAPPINGS%DOFS
 !  !#######################################################VERSIONS START########################################################
                 ALLOCATE(FIELD_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_TOPOLOGY%NODES%TOTAL_NUMBER_OF_NODES), &
                   & STAT=ERR)
@@ -8703,7 +8720,8 @@ CONTAINS
               !Should the contiguous components have an inner groupping for derivatives??? i.e., loop over nodes, components then
               !derivatives????
               node_ny=0
-              DO ny=1,DOFS_MAPPING%NUMBER_OF_GLOBAL
+              NUMBER_OF_GLOBAL_DOFS=FIELD%VARIABLES(variable_idx)%COMPONENTS(1)%DOMAIN%MAPPINGS%DOFS%NUMBER_OF_GLOBAL
+              DO ny=1,NUMBER_OF_GLOBAL_DOFS
                 DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
                   FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
                   DOMAIN=>FIELD_COMPONENT%DOMAIN
@@ -8857,8 +8875,8 @@ CONTAINS
             CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"      Nodal DOFs:",ERR,ERROR,*999)
             DO node_nyy=1,FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%NUMBER_OF_NODE_DOFS
               CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Node DOF : ",node_nyy,ERR,ERROR,*999)
-              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,3,3,3,FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP% &
-                & NODE_DOF2PARAM_MAP(:,node_nyy),'("          DOF 2 Parameters :",3(X,I8))','(28X,3(X,I8))',ERR,ERROR,*999)
+              CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,4,4,4,FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP% &
+                & NODE_DOF2PARAM_MAP(:,node_nyy),'("          DOF 2 Parameters :",4(X,I8))','(28X,4(X,I8))',ERR,ERROR,*999)
             ENDDO !node_nyy
           ENDIF
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of grid point DOFs = ",FIELD%VARIABLES(variable_idx)% &
@@ -8888,7 +8906,7 @@ CONTAINS
             & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
           DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
   !#######################################################VERSIONS START########################################################
-            FIELD_COMPONENT = FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
+            FIELD_COMPONENT => FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Component : ",component_idx,ERR,ERROR,*999)
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of constant parameters = ", &
               & FIELD_COMPONENT%PARAM_TO_DOF_MAP%NUMBER_OF_CONSTANT_PARAMETERS,ERR,ERROR,*999)
@@ -10031,6 +10049,7 @@ CONTAINS
                                 & " and the mesh decomposition is defined on region number "//&
                                 & TRIM(NUMBER_TO_VSTRING(MESH_REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+
                             ENDIF
                           ELSE
                             CALL FLAG_ERROR("Field interface parent region is not associated.",ERR,ERROR,*999)
@@ -10706,6 +10725,7 @@ CONTAINS
     IF(ASSOCIATED(FIELD)) THEN
       IF(ASSOCIATED(FIELD%CREATE_VALUES_CACHE)) THEN
         FIELD%CREATE_VALUES_CACHE%NUMBER_OF_VARIABLES_LOCKED=.TRUE.
+
       ELSE
         LOCAL_ERROR="Field create values cache is not associated for field number "// &
           & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
@@ -10835,6 +10855,7 @@ CONTAINS
     ENDIF
     
     CALL EXITS("FIELD_PARAMETER_SETS_ADD_DP")
+
     RETURN
 999 CALL ERRORS("FIELD_PARAMETER_SETS_ADD_DP",ERR,ERROR)
     CALL EXITS("FIELD_PARAMETER_SETS_ADD_DP")
@@ -12282,15 +12303,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_ELEMENT_INTG",ERR,ERROR,*999)
@@ -12315,51 +12333,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."                                  
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot add element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -12459,15 +12453,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_ELEMENT_SP",ERR,ERROR,*999)
@@ -12492,49 +12483,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."                                  
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot add element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -12635,15 +12604,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_ELEMENT_DP",ERR,ERROR,*999)
@@ -12668,50 +12634,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."                                  
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot add element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -12811,15 +12754,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_ELEMENT_L",ERR,ERROR,*999)
@@ -12844,49 +12784,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."                                  
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot add element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -13532,15 +13450,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_NODE_INTG",ERR,ERROR,*999)
@@ -13569,76 +13485,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-
-!TODO VERSIONS START check version number
-                                    !IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                     ! & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                     ! & NUMBER_OF_DERIVATIVES) THEN
-
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
-                                        & ERR,ERROR))//" is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot add node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
+                                  & ERR,ERROR))//" is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not add element for component number "// &
@@ -13731,15 +13622,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_NODE_SP",ERR,ERROR,*999)
@@ -13769,70 +13658,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
-                                        & ERR,ERROR))//" is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot add node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
+                                  & ERR,ERROR))//" is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not add element for component number "// &
@@ -13926,15 +13796,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_NODE_DP",ERR,ERROR,*999)
@@ -13963,70 +13831,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
-                                        & ERR,ERROR))//" is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot add node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
+                                  & ERR,ERROR))//" is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not add element for component number "// &
@@ -14119,15 +13968,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_ADD_NODE_L",ERR,ERROR,*999)
@@ -14156,70 +14003,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
-                                        & ERR,ERROR))//" is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot add node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_ADD(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*", &
+                                  & ERR,ERROR))//" is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not add element for component number "// &
@@ -15779,6 +15607,7 @@ CONTAINS
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET !<On return, a pointer to the specified parameter set. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
     !Local Variables
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -16373,15 +16202,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_ELEMENT_INTG",ERR,ERROR,*999)
@@ -16406,49 +16232,21 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
-                          ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                            & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                          CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -16533,9 +16331,11 @@ CONTAINS
   !================================================================================================================================
   !
 
+
   !>Returns from the given parameter set a single precision value for the specified element of a field variable component. \see OPENCMISS::CMISSFieldParameterSetGetElement
   SUBROUTINE FIELD_PARAMETER_SET_GET_ELEMENT_SP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,USER_ELEMENT_NUMBER,COMPONENT_NUMBER, &
     & VALUE,ERR,ERROR,*)
+
 
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the value for
@@ -16547,15 +16347,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_ELEMENT_SP",ERR,ERROR,*999)
@@ -16580,49 +16377,21 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
-                          ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                            & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                          CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -16722,15 +16491,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_ELEMENT_DP",ERR,ERROR,*999)
@@ -16755,49 +16521,21 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
-                          ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                            & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                          CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -16896,15 +16634,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_ELEMENT_L",ERR,ERROR,*999)
@@ -16929,49 +16664,21 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                            & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                          CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -17072,15 +16779,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_NODE_INTG",ERR,ERROR,*999)
@@ -17109,70 +16814,47 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Only checks if version number is greater than zero
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                              dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                & VERSIONS(VERSION_NUMBER)
+                              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
+                              LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                & " is invalid for user node number "// &
+                                & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
                             ENDIF
                           ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not get by node for component number "// &
@@ -17265,15 +16947,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_NODE_SP",ERR,ERROR,*999)
@@ -17302,70 +16982,47 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Only checks if version number is greater than zero
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                              dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                & VERSIONS(VERSION_NUMBER)
+                              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
+                              LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                & " is invalid for user node number "// &
+                                & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
                             ENDIF
                           ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not get by node for component number "// &
@@ -17458,15 +17115,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_NODE_DP",ERR,ERROR,*999)
@@ -17495,71 +17150,45 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-
-                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."                                  
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Only checks if version number is greater than zero
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                              dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                & VERSIONS(VERSION_NUMBER)
+                              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
+                              LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                & " is invalid for user node number "// &
+                                & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
                             ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not get by node for component number "// &
@@ -17652,15 +17281,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_NODE_L",ERR,ERROR,*999)
@@ -17689,70 +17316,47 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Only checks if version number is greater than zero
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                              dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                & VERSIONS(VERSION_NUMBER)
+                              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
+                              LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                & " is invalid for user node number "// &
+                                & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
                             ENDIF
                           ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not get by node for component number "// &
@@ -17829,9 +17433,11 @@ CONTAINS
   !================================================================================================================================
   !
 
+!!\todo The interface here is wrong it should by GAUSS_POINT_NUMBER and then USER_ELEMENT_NUMBER. Should also think about quadrature schemes?
+  
  !>Returns from the given parameter set a double precision value for the specified gauss point of a field variable component. \see OPENCMISS::CMISSFieldParameterSetGetGaussPoint
   SUBROUTINE FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,USER_ELEMENT_NUMBER,GAUSS_POINT_NUMBER, &
-    & COMPONENT_NUMBER, VALUE,ERR,ERROR,*)
+    & COMPONENT_NUMBER,VALUE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to get the value for
@@ -17845,15 +17451,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_DP",ERR,ERROR,*999)
@@ -17896,57 +17499,29 @@ CONTAINS
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN          
-                                   IF(GAUSS_POINT_NUMBER >= 1 .AND. GAUSS_POINT_NUMBER <= SIZE(FIELD_VARIABLE% & ! TODO: could check for actual # of gp
-                                   & COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(GAUSS_POINT_NUMBER,DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                   ELSE
-                                    LOCAL_ERROR="The specified gauss point number "// &
-                                      & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not within the expected range"
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                                     
-                                   ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GAUSS_POINT_NUMBER >= 1 .AND. GAUSS_POINT_NUMBER <= SIZE(FIELD_VARIABLE% & ! TODO: could check for actual # of gp
+                            & COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(GAUSS_POINT_NUMBER,DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            LOCAL_ERROR="The specified gauss point number "// &
+                              & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT_NUMBER,"*",ERR,ERROR))// &
+                              & " is not within the expected range."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -18038,6 +17613,74 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_INITIALISE")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Outputs the parameter set for a field variable.
+  SUBROUTINE FIELD_PARAMETER_SET_OUTPUT(ID,FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,ERR,ERROR,*)
+
+   !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ID !<The ID of the output stream
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field to output the parameter set for
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to output the parameter set for \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
+    INTEGER(INTG), INTENT(IN) :: FIELD_SET_TYPE !<The field parameter set identifier to output
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("FIELD_PARAMETER_SET_OUTPUT",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FIELD)) THEN
+      IF(FIELD%FIELD_FINISHED) THEN
+        IF(VARIABLE_TYPE>=1.AND.VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+          FIELD_VARIABLE=>FIELD%VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR
+          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+            IF(FIELD_SET_TYPE>0.AND.FIELD_SET_TYPE<=FIELD_NUMBER_OF_SET_TYPES) THEN
+              PARAMETER_SET=>FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_SET_TYPE)%PTR
+              IF(ASSOCIATED(PARAMETER_SET)) THEN
+                CALL DISTRIBUTED_VECTOR_OUTPUT(ID,PARAMETER_SET%PARAMETERS,ERR,ERROR,*999)
+              ELSE
+                LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                  & " has not been created on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The field set type of "//TRIM(NUMBER_TO_VSTRING(FIELD_SET_TYPE,"*",ERR,ERROR))// &
+                & " is invalid. The field set type must be between 1 and "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_SET_TYPES,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            LOCAL_ERROR="The specified field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+              & " has not been defined on field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          LOCAL_ERROR="The specified variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid. The variable type must be between 1 and  "// &
+            & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="Field number "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+          & " has not been finished."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("FIELD_PARAMETER_SET_OUTPUT")
+    RETURN
+999 CALL ERRORS("FIELD_PARAMETER_SET_OUTPUT",ERR,ERROR)
+    CALL EXITS("FIELD_PARAMETER_SET_OUTPUT")
+    RETURN 1
+  END SUBROUTINE FIELD_PARAMETER_SET_OUTPUT
 
   !
   !================================================================================================================================
@@ -18217,6 +17860,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
+
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not update by constant for component number "// &
@@ -18909,15 +18553,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_ELEMENT_INTG",ERR,ERROR,*999)
@@ -18942,49 +18583,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot update by element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -18999,6 +18618,7 @@ CONTAINS
                       LOCAL_ERROR="Can not update by element for component number "// &
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has grid point based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
@@ -19083,15 +18703,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_ELEMENT_SP",ERR,ERROR,*999)
@@ -19116,49 +18733,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot update by element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -19257,15 +18852,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_ELEMENT_DP",ERR,ERROR,*999)
@@ -19290,49 +18882,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot update by element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -19431,15 +19001,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_ELEMENT_L",ERR,ERROR,*999)
@@ -19464,49 +19031,27 @@ CONTAINS
                     CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN                                  
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                      & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DOMAIN_LOCAL_ELEMENT_NUMBER)
-                                    CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot update by element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & ELEMENT_PARAM2DOF_MAP%ELEMENTS(DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                            CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -19657,6 +19202,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has grid point based interpolation."
+
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not update by element for component number "// &
@@ -20218,15 +19764,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_NODE_INTG",ERR,ERROR,*999)
@@ -20255,70 +19799,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot update by node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                  & " is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not update by node for component number "// &
@@ -20412,15 +19937,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_NODE_SP",ERR,ERROR,*999)
@@ -20449,70 +19972,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot update by node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                  & " is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not update by node for component number "// &
@@ -20605,15 +20109,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_NODE_DP",ERR,ERROR,*999)
@@ -20642,70 +20144,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot update by node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                  & " is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not update by node for component number "// &
@@ -20798,15 +20281,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,MESH_COMPONENT,MESH_GLOBAL_NODE_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_NODE_EXISTS
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
+    INTEGER(INTG) :: DOMAIN_LOCAL_NODE_NUMBER,dof_idx
+    LOGICAL :: GHOST_NODE,USER_NODE_EXISTS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: NODES_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_NODE_L",ERR,ERROR,*999)
@@ -20835,70 +20316,51 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has element based interpolation."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
-                      DECOMPOSITION=>FIELD%DECOMPOSITION
-                      IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_NODE_NUMBER,MESH_NODE_EXISTS, &
-                            & MESH_GLOBAL_NODE_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_NODE_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
                             IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                NODES_MAPPING=>DOMAIN_MAPPINGS%NODES
-                                IF(ASSOCIATED(NODES_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,MESH_GLOBAL_NODE_NUMBER,LOCAL_EXISTS, &
-                                    & DOMAIN_LOCAL_NODE_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN
-                                    IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
-                                      & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
-                                      & NUMBER_OF_DERIVATIVES) THEN
-                                      ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                        & NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)%VERSIONS(VERSION_NUMBER)
-                                      CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                    ELSE
-                                      LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-                                        & " is invalid for user node number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
-                                        & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has a maximum of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES,"*", &
-                                        & ERR,ERROR))//" derivatives."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
-                                    ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user node number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings nodes mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            LOCAL_ERROR="The specified user node number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
+                        DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                        CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(DOMAIN_TOPOLOGY,USER_NODE_NUMBER,USER_NODE_EXISTS, &
+                          & DOMAIN_LOCAL_NODE_NUMBER,GHOST_NODE,ERR,ERROR,*999)
+                        IF(USER_NODE_EXISTS) THEN
+                          IF(GHOST_NODE) THEN
+                            LOCAL_ERROR="Cannot update by node for user node "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" as it is a ghost node."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ELSE
+                            DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
+                            IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                              !Only checks if version number is greater than zero
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS(VERSION_NUMBER)
+                                CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                              ELSE
+                                LOCAL_ERROR="Derivative number "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
+                                  & " is invalid for user node number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))//" of component number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of variable type "// &
+                                  & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" which has "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                                  & NUMBER_OF_DERIVATIVES,"*",ERR,ERROR))//" derivatives."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+  !#######################################################VERSIONS END##########################################################
+                              ENDIF
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user node number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_NODE_NUMBER,"*",ERR,ERROR))// &
+                            &  " does not exist in the domain for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       LOCAL_ERROR="Can not update by node for component number "// &
@@ -21475,6 +20937,7 @@ CONTAINS
                     CASE(FIELD_NODE_BASED_INTERPOLATION)
                       IF(LOCAL_NODE_NUMBER>0.AND.LOCAL_NODE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                         & NODE_PARAM2DOF_MAP%NUMBER_OF_NODE_PARAMETERS) THEN
+                        !\todo add version number check
                         IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)% &
                           & PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(LOCAL_NODE_NUMBER)%NUMBER_OF_DERIVATIVES) THEN
                           ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
@@ -21576,7 +21039,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-
+!!\todo The interface here is wrong it should by GAUSS_POINT_NUMBER and then USER_ELEMENT_NUMBER. Should also think about quadrature schemes?
 
   !>Updates the given parameter set with the given double precision value for a particular gauss point of the field variable component.  \see CMISSFieldParameterSetUpdateGaussPoint
   SUBROUTINE FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP(FIELD,VARIABLE_TYPE,FIELD_SET_TYPE,USER_ELEMENT_NUMBER,GAUSS_POINT_NUMBER,&
@@ -21593,15 +21056,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DOMAIN_LOCAL_ELEMENT_NUMBER,MESH_COMPONENT,MESH_GLOBAL_ELEMENT_NUMBER,ny
-    LOGICAL :: LOCAL_EXISTS,MESH_ELEMENT_EXISTS
+    INTEGER(INTG) :: DECOMPOSITION_LOCAL_ELEMENT_NUMBER,dof_idx
+    LOGICAL :: GHOST_ELEMENT,USER_ELEMENT_EXISTS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: ELEMENTS_MAPPING
-    TYPE(DOMAIN_MAPPINGS_TYPE), POINTER :: DOMAIN_MAPPINGS
+    TYPE(DECOMPOSITION_TOPOLOGY_TYPE), POINTER :: DECOMPOSITION_TOPOLOGY
     TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: PARAMETER_SET
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(MESH_TYPE), POINTER :: MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT_DP",ERR,ERROR,*999)
@@ -21644,66 +21104,35 @@ CONTAINS
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
                       DECOMPOSITION=>FIELD%DECOMPOSITION
                       IF(ASSOCIATED(DECOMPOSITION)) THEN
-                        MESH=>DECOMPOSITION%MESH
-                        IF(ASSOCIATED(MESH)) THEN
-                          MESH_COMPONENT=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%MESH_COMPONENT_NUMBER
-                          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(MESH,MESH_COMPONENT,USER_ELEMENT_NUMBER,MESH_ELEMENT_EXISTS, &
-                            & MESH_GLOBAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                          IF(MESH_ELEMENT_EXISTS) THEN
-                            DOMAIN=>DECOMPOSITION%DOMAIN(MESH_COMPONENT)%PTR
-                            IF(ASSOCIATED(DOMAIN)) THEN
-                              DOMAIN_MAPPINGS=>DOMAIN%MAPPINGS
-                              IF(ASSOCIATED(DOMAIN_MAPPINGS)) THEN
-                                ELEMENTS_MAPPING=>DOMAIN_MAPPINGS%ELEMENTS
-                                IF(ASSOCIATED(ELEMENTS_MAPPING)) THEN
-                                  CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(ELEMENTS_MAPPING,MESH_GLOBAL_ELEMENT_NUMBER, &
-                                    & LOCAL_EXISTS,DOMAIN_LOCAL_ELEMENT_NUMBER,ERR,ERROR,*999)
-                                  IF(LOCAL_EXISTS) THEN   
-                                   IF(GAUSS_POINT_NUMBER >= 1 .AND. GAUSS_POINT_NUMBER <= SIZE(FIELD_VARIABLE% & ! TODO: could check for actual # of gp
-
-                                   & COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
-
-                                    ny=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-
-                                      & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(GAUSS_POINT_NUMBER,DOMAIN_LOCAL_ELEMENT_NUMBER)
-
-                                    CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,ny,VALUE,ERR,ERROR,*999)
-                                   ELSE
-
-                                    LOCAL_ERROR="The specified gauss point number "// &
-
-                                      & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT_NUMBER,"*",ERR,ERROR))// &
-
-                                      & " is not within the expected range"
-
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                                     
-
-                                   ENDIF
-                                  ELSE
-                                    LOCAL_ERROR="The specified user element number of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                                      & " is not part of this local domain."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("Domain mappings elements mapping is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Domain mappings is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Domain is not associated for this mesh component.",ERR,ERROR,*999)
-                            ENDIF
+                        DECOMPOSITION_TOPOLOGY=>DECOMPOSITION%TOPOLOGY
+                        CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DECOMPOSITION_TOPOLOGY,USER_ELEMENT_NUMBER, &
+                          & USER_ELEMENT_EXISTS,DECOMPOSITION_LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+                        IF(USER_ELEMENT_EXISTS) THEN
+                          IF(GHOST_ELEMENT) THEN
+                            LOCAL_ERROR="Cannot update by element for user element "// &
+                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))//" as it is a ghost element."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="The specified user element number of "// &
-                              & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
-                              " does not exist in mesh component number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH_COMPONENT,"*",ERR,ERROR))//" of mesh number "// &
-                              & TRIM(NUMBER_TO_VSTRING(MESH%USER_NUMBER,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                            IF(GAUSS_POINT_NUMBER >= 1 .AND. GAUSS_POINT_NUMBER <= SIZE(FIELD_VARIABLE% & ! TODO: could check for actual # of gp
+                              & COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)) THEN
+                              dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(GAUSS_POINT_NUMBER,DECOMPOSITION_LOCAL_ELEMENT_NUMBER)
+                              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETER_SET%PARAMETERS,dof_idx,VALUE,ERR,ERROR,*999)
+                            ELSE
+                              LOCAL_ERROR="The specified gauss point number "// &
+                                & TRIM(NUMBER_TO_VSTRING(GAUSS_POINT_NUMBER,"*",ERR,ERROR))// &
+                                & " is not within the expected range."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Decomposition mesh is not associated.",ERR,ERROR,*999)
+                          LOCAL_ERROR="The specified user element number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(USER_ELEMENT_NUMBER,"*",ERR,ERROR))// &
+                            & " does not exist in the decomposition for field component number "// &
+                            & TRIM(NUMBER_TO_VSTRING(COMPONENT_NUMBER,"*",ERR,ERROR))//" of field variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))//" of field number "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         CALL FLAG_ERROR("Field decomposition is not associated.",ERR,ERROR,*999)
@@ -24060,7 +23489,7 @@ CONTAINS
       DO I=1,MESH_EMBEDDING%CHILD_NODE_XI_POSITION(E)%NUMBER_OF_NODES
         INTERP_VAL = 0.0
         DO B=1,BASIS%NUMBER_OF_NODES
-          WT = BASIS_EVALUATE_XI(BASIS,1,NO_PART_DERIV,MESH_EMBEDDING%CHILD_NODE_XI_POSITION(E)%XI_COORDS(:,I),ERR,ERROR) 
+          WT = BASIS_EVALUATE_XI(BASIS,B,NO_PART_DERIV,MESH_EMBEDDING%CHILD_NODE_XI_POSITION(E)%XI_COORDS(:,I),ERR,ERROR)
           INTERP_VAL = INTERP_VAL + WT * PARENT_VALUES(B)
         ENDDO
         ! store in field
@@ -24114,7 +23543,7 @@ CONTAINS
           ! Version variable added and initialized above
           CALL FIELD_PARAMETER_SET_GET_NODE(CHILD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,version,1,& ! TODO: FROM INPUT
           &  ELEMENT%GLOBAL_ELEMENT_NODES(B),CHILD_COMPONENT,VAL ,ERR,ERROR,*999)   ! global no?
-          WT = BASIS_EVALUATE_XI(BASIS,1,NO_PART_DERIV,MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(GP,E)%CHILD_XI_COORD,ERR,ERROR) 
+          WT = BASIS_EVALUATE_XI(BASIS,B,NO_PART_DERIV,MESH_EMBEDDING%GAUSS_POINT_XI_POSITION(GP,E)%CHILD_XI_COORD,ERR,ERROR) 
           INTERP_VAL = INTERP_VAL + WT * VAL
         ENDDO       
          ! store in gauss point parent field 
@@ -24149,7 +23578,6 @@ CONTAINS
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: GP
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD",ERR,ERROR,*999)
 

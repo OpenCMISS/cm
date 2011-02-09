@@ -31,8 +31,9 @@ where architecture is the appropriate architecture for the machine. Possible arc
 - x86_64-linux-mpiprof
 - x86_64-linux-prof
 .
-Furthermore, a number of external packages can be checked out from https://svn.physiomeproject.org/svn/opencmissextras/cm/ . To check out the packages from the code repository issue the following command in the opencmissextras directory:
+Furthermore, a number of external packages can be checked out from https://svn.physiomeproject.org/svn/opencmissextras/cm/. To check out the packages from the code repository issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/packages cm/external/packages \endcode
+Please note that this packages directory is extremely large and is only required if you want to build the opencmissextras/cm libraries from scratch.
 
 To check out the main trunk of the various cellml libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cellml/trunk/architecture cellml/architecture \endcode
@@ -118,7 +119,9 @@ Extract the file and follow the install.htm to install.
 
 For the GNU comilers:
 
-Currently, only gfortran version 4.4 or greater will work. Download and install it (for Ubuntu 9.10, it can be downloaded from the Ubuntu software repositories). 
+Currently, only gfortran version 4.4 or greater will work. Download and install it (for Ubuntu 9.10, it can be downloaded from the Ubuntu software repositories). A version of the gfortran compilers for x86_64-linux can also be found in the opencmissextras svn repository. To obtain these versions change directory to the opencmissextras directory and issue the command:
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/gfortran/trunk/ gfortran \endcode
+
 \subsubsection project_setup_linux_compile Compile
 To build an example project issue the following command into the ".../opencmiss/cm/examples/<example>/<sub-example>" directory:
 \code make \endcode

@@ -356,6 +356,7 @@ CONTAINS
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             ! get interpolated geometric and material interpolated point
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+
               & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
@@ -422,15 +423,21 @@ CONTAINS
                         ENDDO !ni
                         STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG ! Aij = int D_ij * dphi_m/dx_i * dphi_n/dx_j 
                       ENDIF
+ 
+                      IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN ! non mass lumped version
+                         DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
+                            & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
+                            & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*RWG ! int phi_m phi_n
+                      ENDIF 
 
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
-                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                  DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)+ &
-                  & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG   !  // int phi_m
-                ENDIF
+!                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN  ! mass lumnped version
+!                  DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)+ &
+!                  & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG   !  // int phi_m
+!                ENDIF
               ENDDO !ms
             ENDDO !mh
           IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP 
@@ -454,16 +461,21 @@ CONTAINS
                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
                       ENDIF
+                      IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN ! non mass lumped version
+                        DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
+                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
+                      ENDIF 
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
 
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)* &
-                  & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
-                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                   DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-                     & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
-                ENDIF
+                  & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh) 
+ !               IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN ! mass lumped version
+ !                  DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+ !                    & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
+ !               ENDIF
               ENDDO !ms
             ENDDO !mh
           ENDIF
@@ -876,6 +888,7 @@ CONTAINS
                 CALL FLAG_ERROR("No user specified field supported!",ERR,ERROR,*999)
               ENDIF
              ELSE
+
                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
              ENDIF
            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -1336,7 +1349,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
+    REAL(DP) :: TMPV, TMPA
+    INTEGER(INTG) :: I
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, MATERIAL_FIELD,  INDEPENDENT_FIELD, GEOMETRIC_FIELD
 
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -1388,6 +1402,26 @@ CONTAINS
         CASE DEFAULT
           CALL FLAG_ERROR("Invalid cell model subtype",ERR,ERROR,*999)
         END SELECT
+
+        DO I=1,INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NUMBER_OF_NODES
+          !Default to version 1 of each derivative
+          CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,I,1,TMPV,&  ! get local node?
+               & ERR,ERROR,*999)
+          IF (TMPV > 0) THEN
+           !Default to version 1 of each derivative
+           CALL FIELD_PARAMETER_SET_GET_NODE(MATERIAL_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,I,7,TMPA,&
+                & ERR,ERROR,*999) 
+            IF(TMPA==0.0) THEN
+              !Default to version 1 of each derivative
+              CALL FIELD_PARAMETER_SET_UPDATE_NODE(MATERIAL_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,I,7,&
+                   &CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, ERR,ERROR,*999)  
+            ENDIF      
+          ENDIF
+        ENDDO
+
+        IF(MOD(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME+1e-6,5.0)<1e-3) THEN
+          WRITE(*,*), 'T=',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME
+        ENDIF
 
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
