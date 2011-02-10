@@ -1284,6 +1284,8 @@ CONTAINS
     FIELD_VAR_DUDN_TYPE=EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE
     DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
+!     write(*,*)'ELEMENT_NUMBER (solid) = ',ELEMENT_NUMBER
+
     !Surface pressure term calculation: Loop over all faces
     DO element_face_idx=1,DEPENDENT_BASIS%NUMBER_OF_LOCAL_FACES
       face_number=DECOMP_ELEMENT%ELEMENT_FACES(element_face_idx)
@@ -1309,6 +1311,10 @@ CONTAINS
 
         !Nonzero surface pressure found?
         IF(NONZERO_PRESSURE) THEN
+
+!           write(*,*)'element_face_idx (solid) = ',element_face_idx
+!           write(*,*)'DECOMP_FACE%XI_DIRECTION = ',DECOMP_FACE%XI_DIRECTION
+
           !Grab some other pointers
           DOMAIN_FACE=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)
           FACE_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)%BASIS       
@@ -1341,6 +1347,15 @@ CONTAINS
               & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             DZDXI=DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
 
+!             write(*,*)'gauss_idx (solid) = ',gauss_idx
+!             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+!               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
+!               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!             write(*,*)'GEOMETRIC_INTERP_POINT (solid) = ',EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+!               & PTR%VALUES(1:3,NO_PART_DERIV)
+!             write(*,*)'DEPENDENT_INTERPOLATED_POINT COORDS (solid) = ',DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,NO_PART_DERIV)
+
             !Calculate covariant metric tensor
             CALL MATRIX_TRANSPOSE(DZDXI,DZDXIT,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(DZDXIT,DZDXI,GIJL,ERR,ERROR,*999) !g_ij = dZdXI' * dZdXI
@@ -1372,6 +1387,11 @@ CONTAINS
                     & SQRT_G
                 ENDDO !node_derivative_idx
               ENDDO !face_node_idx
+
+!               write(*,*)'component_idx (solid) = ',component_idx
+!               write(*,*)'NORMAL_PROJECTION (solid) = ',NORMAL_PROJECTION
+!               write(*,*)' '
+
             ENDDO !componenet_dx
           ENDDO !gauss_idx
         ENDIF !nonzero surface pressure check
