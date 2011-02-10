@@ -2,46 +2,68 @@
 \chapter{Modules}
 \label{cha:modules}
 
+
+The \emph{OpenCMISS} library dynamically links to a number of 
+other libraries, these libraries are either externally provided 
+libraries (for example: the \emph{PETSc} solver library or the 
+\emph{ParMETIS} library) or internal provided libraries (the 
+\emph{CellML} and \emph{FieldML} projects). 
+
+The \emph{OpenCMISS} library itself is subdivided into a collection modules,
+this section provides an introduction to each of these modules.
+
+
 \section{Definitions}
 \label{sec:definitions}
 
-\emph{Class}, \emph{type} and \emph{sub-type} - In \emph{OpenCMISS}, \emph{class} 
-is the broadest grouping, it is a means of identifying equations of a physics 
-type (for example: \emph{Fluid Mechanics}), \emph{type} refers to a particular 
-equation in that \emph{class} (for example: \emph{Navier Stokes}), and 
-\emph{sub-type} refers to an implementation of that equation (for example: 
+\emph{Class}, \emph{type} and \emph{sub-type} - In \emph{OpenCMISS}, 
+\emph{class} is the broadest grouping, it is a means of identifying 
+equations of a physics type (for example: \emph{Fluid Mechanics}), 
+\emph{type} refers to a particular equation in that \emph{class} 
+(for example: \emph{Navier Stokes}), and \emph{sub-type} refers to 
+an implementation of that equation (for example: 
 \emph{static Navier Stokes}). \\
 
-\noindent Variable, parameter and routine naming - \emph{OpenCMISS} uses descriptive variable, 
-parameter and routine names where possible, in addition to this, some of the variables have 
-legacy names from the old \emph{CMISS} code (for example, $nd$ for data, $ng$ for gauss, 
-etc), these are in process of being replaced with descriptive names. \\
+\noindent Variable, parameter and routine naming - \emph{OpenCMISS} uses 
+descriptive variable, parameter and routine names where possible, in 
+addition to this, some of the variables in \emph{OpenCMISS} have legacy 
+names from the old \emph{CMISS} code (for example, $nd$ for data, $ng$ 
+for gauss, etc), these are in process of being replaced with descriptive 
+names. \\
 \linebreak
-\emph{Hex} and \emph{Tet} - In addition to \emph{Hex} (Hexahedral) elements, 
-\emph{OpenCMISS} can handle \emph{Tet} (Tetrahedral) elements, linear, quadratic 
-and cubic interpolation. It should be noted that \emph{cmgui}, whilst being 
-able to visualise \emph{Tet} elements, cannot handle \emph{Tet} elements with 
-cubic interpolation. \\
+Hexahedral (\emph{Hex}) and Tetrahedral (\emph{Tet}) elements - 
+\emph{OpenCMISS} can handle both \emph{Hex} and \emph{Tet} elements 
+with linear, quadratic and cubic interpolation. It should be noted 
+that \emph{cmgui} on the other hand, whilst being able to visualise 
+\emph{Hex} and \emph{Tet} elements, cannot handle \emph{Tet} 
+elements with cubic interpolation (\emph{cmgui} is a package used 
+as the visualisation front-end of \emph{OpenCMISS}). \\
 \linebreak
 \emph{dof} - Degree of freedom \\
 \linebreak
-\emph{Modules} - A collection of subroutines organised into a functional file. \\
+\emph{Modules} - A collection of subroutines organised into a functional file.
+\\
 \linebreak
-\emph{Example} program - The top level program set up by the user, containing mostly
-subroutine calls that call routines in the opencmiss module. \\
-\linebreak
-\emph{Units} - A functional unit is defined as the basic
-call unit between the calls of \emph{MODULENAME\_CREATE\_START} to 
-\emph{MODULENAME\_CREATE\_FINISH}. Further calls can be added between these calls to 
-override default set up settings. \\
+\emph{Example} program - The top level program set up by the user, 
+containing mostly subroutine calls to routines in the opencmiss 
+module (in the first instance). The example program is subdivided 
+into object blocks. An object block sets up an object and is defined 
+as the basic unit between (and including) the calls of 
+\emph{MODULENAME\_CREATE\_START} to \emph{MODULENAME\_CREATE\_FINISH}
+(where \emph{MODULENAME} is an \emph{OpenCMISS} module). All the calls 
+in a object block are handled by the corresponding module in 
+\emph{OpenCMISS}. Further calls can be added between these two calls to 
+override default object set up settings. \\
 \linebreak
 \emph{MODULENAME\_CREATE\_START} - This routine initialises the object. \\
 \linebreak
-\emph{MODULENAME\_CREATE\_FINISH} - This routine complete the object creation. \\
+\emph{MODULENAME\_CREATE\_FINISH} - This routine completes the object creation.
+\\
 \linebreak
-\emph{MODULENAME\_DESTROY} - This routine either deallocates all allocated variables on an object,
-zeros parameters and nulls character strings, or calls a \emph{MODULENAME\_FINALISE} routine 
-that performs these operations.
+\emph{MODULENAME\_DESTROY} - This routine either deallocates all 
+allocated variables on an object, zeros parameters and nulls character 
+strings, or calls a \emph{MODULENAME\_FINALISE} routine that performs 
+these operations.
 
 
 \section{Use of the cache}
@@ -60,74 +82,160 @@ the solver mapping object, the field object, and equations set object.
 \section{Diagnostics}
 \label{sec:diagnostics}
 
-There are three types of diagnostics available: \\
-\linebreak
-\emph{CMISS\_ALL} - Print out diagnostics from all routines used in the example \\
-\linebreak
-\emph{CMISS\_IN} - Print out diagnostics only the specified routines \\
-\linebreak
-\emph{CMISS\_FROM} - Print out diagnostics from the specified routine onwards \\
+The diagnostics routines in \emph{OpenCMISS} allow the printing of specified 
+variables to screen or file from subroutines in the \emph{OpenCMISS} modules 
+to aid program design and debugging.
 
-\noindent There are $5$ levels of diagnostic available, with level $1$ being the 
-coarsest and level $5$ the finest. The \emph{filename} is the file to which the print 
-out from the diagnostics will be written. \\
+The call to \emph{CMISSDiagnosticsSetOn()} should be made following the 
+initialisation of variables and the call to \emph{CMISS\_INITIALISE()} in the
+example program.
 
-\noindent \emph{ALL\_DIAG\_TYPE} - \emph{All} routines. \\
+To use diagnostics a call to diagnostics needs to be made in the example file:
+\\
 \linebreak
-\emph{FROM\_DIAG\_TYPE} - \emph{From} routine specified onwards to the completion of the program. \\
+\emph{CALL
+CMISSDiagnosticsSetOn(DIAG\_TYPE,DIAG\_LEVEL,DIAG\_FILE,DIAG\_ROUTINE,Err)} \\ 
 \linebreak
-\emph{IN\_DIAG\_TYPE} - \emph{In} routine specified, diagnostics set on in that routine.
+\noindent Where \emph{DIAG\_TYPE} is either: \\
+
+\noindent \emph{ALL\_DIAG\_TYPE} - Print out diagnostics from all subroutines 
+used in the example. \\
+\emph{FROM\_DIAG\_TYPE} - Print out diagnostics \emph{From} the specified 
+routine in \emph{DIAG\_ROUTINE} onwards to the completion of the program. \\
+\emph{IN\_DIAG\_TYPE} - Print out diagnostics from only the specified 
+subroutines in \emph{DIAG\_ROUTINE}. \\
+\linebreak
+
+\emph{DIAG\_ROUTINE} is an array allowing a number of routines to be specified.
+
+\noindent There are $5$ levels of diagnostic available (\emph{DIAG\_LEVEL}), 
+with level $1$ being the coarsest and level $5$ the finest. 
+
+The \emph{DIAG\_FILE} is the file to which the print out from the diagnostics 
+will be written. The diagnostics file is labelled as a \emph{.diag} file.
+
+
+\section{Writing screen output to a file}
+
+The \emph{output set on} feature allows the user to specify the output from 
+the screen to be written to a file in addition to being written to the screen. 
+To use this feature a call to \emph{output set on} needs to be made in the 
+example file: \\
+\linebreak
+\emph{CMISSOutputSetOn(OUTPUT\_FILE,Err)}
+\linebreak
+
+\noindent The \emph{OUTPUT\_FILE} is the file to which the output to screen will
+be written.
+
+The call to \emph{CMISSOutputSetOn()} should be made following the 
+initialisation of variables and the call to \emph{CMISS\_INITIALISE()} in the
+example program.
+
+
+\section{Program timing}
+\label{sec:programtiming}
+
+OpenCMISS allows routine timing using the \emph{timing set on} 
+feature from the \emph{base\_routines} module.
+
+The timing routines in \emph{OpenCMISS} allow the timing of 
+specified subroutines in \emph{OpenCMISS} modules.
+
+The call to \emph{CMISSTimingSetOn()} should be made following the 
+initialisation of variables and the call to \emph{CMISS\_INITIALISE()} 
+in the example program.
+
+To use the timing feature a call to set the timing on needs to 
+be made in the example file: \\
+\linebreak
+\emph{CALL
+CMISSTimingSetOn(TIMING\_TYPE,TIMING\_FLAG,TIMING\_FILE,TIMING\_ROUTINE,Err)}
+\\ 
+\linebreak
+\noindent Where \emph{TIMING\_TYPE} is either: \\
+
+\noindent \emph{ALL\_TIMING\_TYPE} - Print out timings 
+from all subroutines used in the example. \\
+\emph{FROM\_TIMING\_TYPE} - Print out timings \emph{From} 
+the specified routine in \emph{TIMING\_ROUTINE} onwards to the 
+completion of the program. \\
+\emph{IN\_TIMING\_TYPE} - Print out timings from only the 
+specified subroutines in \emph{TIMING\_ROUTINE}. \\
+\linebreak
+
+\noindent \emph{TIMING\_ROUTINE} is an array allowing a number of 
+routines to be specified.
+
+The \emph{TIMING\_FLAG} has the value of either \emph{.TRUE.} 
+if the timing information is to be output with subsequent 
+\emph{TIMING\_SUMMARY\_OUTPUT} calls, or \emph{.FALSE.} 
+if the timing information is to be output every time a 
+routine exits.
+
+The \emph{TIMING\_FILE} is the file to which the timing results  
+will be written. The timing file is labelled as a \emph{.timing} file.
+
+The results from the use of \emph{timing set on} are returned as 
+The \emph{User} (CPU) time is the time attributed to the code and the 
+\emph{System} time is the time spent in system events, accessing the 
+disk, accessing the libraries in \emph{opencmissextras} etc. 
 
 
 \section{Library: \emph{CellML}}
 \label{sec:cellml}
 
-The purpose of the Cell Markup Language \emph{CellML} project is to enable 
-the storage and exchange of computer based mathematical models. 
-\emph{CellML} is a set of separate pre-compiled libraries that are called by the 
-\emph{OpenCMISS} libraries, the libraries are dynamically linked to \emph{OpenCMISS} 
-for performance. The \emph{CellML} libraries are used to import \emph{CellML} models 
-as a means of evaluating the values of the field dofs. These Models are generally 
-point based or $0D$. 
+The purpose of the Cell Markup Language (\emph{CellML}) project is to enable 
+the storage and exchange of computer based mathematical models. \emph{CellML} 
+is a set of separate pre-compiled libraries that are called by the 
+\emph{OpenCMISS} libraries, the libraries are dynamically linked to
+\emph{OpenCMISS} for performance. The \emph{CellML} libraries are used to 
+import \emph{CellML} models as a means of evaluating the values of the field 
+dofs. These Models are generally point based or $0D$. 
 
 \emph{CellML} requires state variables, rates, intermediates and parameters. 
-\emph{CellML} uses the \emph{OpenCMISS} field object construct to describe the state 
-fields, intermediate fields, and parameter fields necessary for \emph{CellML}.
+\emph{CellML} uses the \emph{OpenCMISS} field object construct to describe the
+state fields, intermediate fields, and parameter fields necessary for 
+\emph{CellML}.
 
-A \emph{CellML} object is made on a region. \emph{CellML} basically acts as a black box with 
-parameters (constants) as inputs and intermediates as outputs (these are
-changed by the model). 
+A \emph{CellML} object is made on a region. \emph{CellML} basically acts as a
+black box with parameters (constants) as inputs and intermediates as outputs 
+(these are changed by the model). 
 
 The minimum requirements to use \emph{CellML} in an example file are: 
 
 \begin{enumerate}
- \item A call to import the \emph{CellML} model. The model is imported and stored as a
-\emph{CellML} model with no further inputs required to the example. All changes to the 
-initial conditions of the model are made to the \emph{CellML} model file. There are a 
-few example model files contained in the OpenCMISS examples tree, further models can 
-be found on the \emph{CellML} website.
- \item A call specifying how \emph{CellML} is going to interact with \emph{OpenCMISS}. 
-\emph{CellML} allows mapping between \emph{OpenCMISS} fields and \emph{CellML} fields 
-and vice versa. 
+ \item A call to import the \emph{CellML} model. The model is imported and
+stored as a \emph{CellML} model with no further inputs required to the 
+example. All changes to the initial conditions of the model are made to 
+the \emph{CellML} model file. There are a few example model files contained 
+in the OpenCMISS examples tree, further models can be found on the 
+\emph{CellML} website.
+ \item A call specifying how \emph{CellML} is going to interact with
+\emph{OpenCMISS}. \emph{CellML} allows mapping between \emph{OpenCMISS} 
+fields and \emph{CellML} fields and vice versa. 
  \item A call to specify the \emph{CellML} fields to be used for storage. 
- \item A call to \emph{CMISSCellMLCreateFinish} performs the \emph{CellML} calculations.
- \item Finally a call in the example is required to replace the set up of the solver 
-equations with a call to \emph{CellML} equations.
+ \item A call to \emph{CMISSCellMLCreateFinish} performs the \emph{CellML}
+calculations.
+ \item Finally a call in the example is required to replace the set up of the
+solver equations with a call to \emph{CellML} equations.
 \end{enumerate}
 
-\noindent A recent addition to the \emph{CellML} code is the \emph{CellML integrator} and the 
-\emph{CellMLevaluator}. \emph{CellML} is a project that is still evolving.
+\noindent A recent addition to the \emph{CellML} code is the \emph{CellML
+integrator} and the \emph{CellMLevaluator}. \emph{CellML} is a project 
+that is still evolving.
 
 
 \section{Library: \emph{FieldML}}
 \label{sec:fieldml}
 
-\emph{FieldML} (Field modelling Markup Language) is used to read/write the field 
-descriptions in \emph{OpenCMISS}. \emph{FieldML} is a declarative language for building 
-hierarchical models represented by generalized mathematical fields. It is intended 
-as a framework for modelling software development and model interchange for 
-bioengineering and general engineering analysis communities. To date \emph{FieldML} 
-has not been fully integrated into \emph{OpenCMISS} and remains a project under 
+\emph{FieldML} (Field modelling Markup Language) is used to read/write the
+field descriptions in \emph{OpenCMISS}. \emph{FieldML} is a declarative 
+language for building hierarchical models represented by generalized 
+mathematical fields. It is intended as a framework for modelling software 
+development and model interchange for bioengineering and general 
+engineering analysis communities. To date \emph{FieldML} has not been 
+fully integrated into \emph{OpenCMISS} and remains a project under 
 development.
 
 
@@ -142,17 +250,10 @@ for the diagnostics and for display when a program fails. Also attached to
 this object is the \emph{CPU\_TIMING} routines that record the execution time 
 between the \emph{ENTERS} and \emph{EXITS} calls in a subroutine.The global 
 boolean \emph{TIMING} variable is used to switch the timing on, and the global 
-boolean \emph{DIAG} variable is used to switch the diagnostics on. The routines
-allow the writing out of diagnostics information to a \emph{.diag} file.
+boolean \emph{DIAG} variable is used to switch the diagnostics on. 
 
-The \emph{User} CPU time is the time attributed to the code and the \emph{System} time 
-is the time spent in system events, accessing the disk etc. The routines 
-allow the writing of timing information to \emph{.timing} files.
-
-The \emph{command} file, \emph{learn} file and \emph{echo} files are legacy files and not
-implemented.
-
-With \emph{SET OUTPUT = ON} the output will be printed to the screen and a file.
+The \emph{command} file, \emph{learn} file and \emph{echo} files are legacy 
+files and their use is not implemented.
 
 
 \section{Module: \emph{basis\_routines}}
@@ -179,82 +280,89 @@ In \emph{OpenCMISS} specifying a basis function automatically generates all the
 necessary line and face basis functions as sub-bases of the basis function. 
 Faces and lines in an element have both local numbers and global numbers, the 
 local numbering scheme for \emph{Hex} and \emph{Tet} elements is shown in the 
-diagrams (). For LHTP type the direction of a face in \emph{OpenCMISS} is defined 
-by the normal to the face (for $3D$) or line (for $2D$) (see diagrams), for simplex 
-types it is defined as the tangent from the point opposite to the face (for 
-$3D$) or the line (for $2D$) running out through the face/line at right-angles 
-(see diagrams).
+diagrams (). For LHTP type the direction of a face in \emph{OpenCMISS} is
+defined by the normal to the face (for $3D$) or line (for $2D$) (see diagrams), 
+for simplex types it is defined as the tangent from the point opposite to the 
+face (for $3D$) or the line (for $2D$) running out through the face/line at 
+right-angles (see diagrams).
 
 The simplex type basis in \emph{OpenCMISS} uses the bary-centric coordinate 
 system of area coordinates. The area coordinate is the ratio of the covered 
 area to the uncovered area. The area of a triangle is defined with three 
 coordinates: $L1$, $L2$ and $L3$. The definition of area coordinates is such 
 that the sum of the coordinates equals $1$, this allows only $L1$ and $L2$ to 
-be used and $L3$ dropped. Simplex type basis functions can have line, triangular 
-and tetrahedral elements. 
+be used and $L3$ dropped. Simplex type basis functions can have line,
+triangular and tetrahedral elements. 
 
 There are two variables in \emph{OpenCMISS} for the number of $\xi$: \\
-\emph{NUMBER\_OF\_XI\_COORDINATES} which is used for the number of 
-actual $\xi$ coordinates that the user can specify, this is the topological 
-system, and \emph{NUMBER\_OF\_XI} which is used for the number of independent $\xi$ 
-coordinates. If it is a two dimension manifold then this variable will be two. 
-This is primary for bary-centric coordinate system where we can have more than 
-one parametric coordinate.
+\emph{NUMBER\_OF\_XI\_COORDINATES} which is used for the number of actual 
+$\xi$ coordinates that the user can specify, this is the topological system, 
+and \emph{NUMBER\_OF\_XI} which is used for the number of independent $\xi$ 
+coordinates. If it is a two dimension manifold then this variable will be 
+two. This is primary for bary-centric coordinate system where we can have 
+more than one parametric coordinate.
 
 The basis functions handle collapsed bases, a collapsed basis (where there are 
 two or more nodes in the same location) is called a degenerate basis. Both $2D$ 
 elements and $3D$ elements can be collapsed. They can be collapsed in any one 
 direction or in two directions, and are defined by the direction of collapse 
-and the end of collapse, either the $\xi=0$ end or $\xi=1$ end. Simplex elements 
-cannot be collapsed. The collapse is defined by the \emph{xi\_collapsed} parameter, 
-this has three possible states: \emph{collapsed\_at\_xi1}, \emph{collapsed\_at\_xi0} 
-and \emph{not\_collapsed}, these define the direction and point of collapse. In nodal
-interpolation, the nodes of the collapsed line or face are bunched into a 
-point (for the collapsed of a line) or line (for the collapsed of a face).
+and the end of collapse, either the $\xi=0$ end or $\xi=1$ end. Simplex
+elements cannot be collapsed. The collapse is defined by the 
+\emph{xi\_collapsed} parameter, this has three possible states: 
+\emph{collapsed\_at\_xi1}, \emph{collapsed\_at\_xi0} and 
+\emph{not\_collapsed}, these define the direction and point of collapse. In
+nodal interpolation, the nodes of the collapsed line or face are bunched into 
+a point (for the collapsed of a line) or line (for the collapsed of a face).
 When an object collapsed one end loses it's derivative. This is defined in 
-OpenCMISS using the \emph{BASIS\_QUADRATIC1\_HERMITE\_INTERPOLATION} parameter that
-defines that for a line there is no derivative at the $\xi=0$ end, and the  
-\emph{BASIS\_QUADRATIC2\_HERMITE\_INTERPOLATION} parameter that defines that there is 
-no derivative at the $\xi=1$ end.
+OpenCMISS using the \emph{BASIS\_QUADRATIC1\_HERMITE\_INTERPOLATION} parameter
+that defines that for a line there is no derivative at the $\xi=0$ end, and 
+the  \emph{BASIS\_QUADRATIC2\_HERMITE\_INTERPOLATION} parameter that defines 
+that there is no derivative at the $\xi=1$ end.
 
 The serendipity (where there is no central point in a face), fourier and
 singular interpolation schemes have not currently been implemented in 
 \emph{OpenCMISS}, although place holders exists for their use.
 
-The following three parameters have not been currently enabled in OpenCMISS:  
+The following three parameters have not been currently enabled in OpenCMISS: 
 \emph{BASIS\_LOW\_QUADRATURE\_SCHEME}, \emph{BASIS\_MID\_QUADRATURE\_SCHEME},
-\emph{BASIS\_HIGH\_QUADRATURE\_SCHEME} these are for use in the implementation of
-boundary elements.
+\emph{BASIS\_HIGH\_QUADRATURE\_SCHEME} these are for use in the implementation
+of boundary elements.
 
 In addition to the basis functions described above, there are also face gauss 
 basis functions the face gauss basis functions are $3D$ objects allowing the 
 calculation of the derivative in the third dimension at the face.
 
+In this module the local node numbering of the elements is set. The local node 
+numbering is as follows:
+
 
 \section{Module: \emph{boundary\_condition\_routines}} 
 \label{sec:boundaryconditionroutines}
 
-There are two basic type of boundary condition: \emph{fixed} and \emph{free}. 
-The type is the status of the value held at the dof (the dof is at the 
-boundary), if the type is fixed the value of the dof is set and it is 
-removed from the main problem calculation, and if the type is free the value 
-of dof is included and calculated in the main problem calculation.
-In the \emph{fixed} type there are a number of sub-types: \emph{Neumann}, 
-\emph{Dirichlet} and \emph{Incremented} (boundary values change with time).
+There are two basic types of boundary condition: \emph{fixed} and 
+\emph{free}. The type is the status of the value held at the dof (the 
+dof at the boundary), if the type is fixed the value of the dof is 
+set and it is removed from the main problem calculation, and if the type 
+is free the value of the dof is included and calculated in the main 
+problem calculation. In the \emph{fixed} type there are a number of 
+sub-types: \emph{Neumann}, \emph{Dirichlet} and \emph{Incremented} 
+(boundary dof values change with time). The \emph{Neumann} boundary 
+conditions operate on the \emph{RHS}, and the \emph{Dirichlet} boundary 
+conditions operate on the \emph{LHS}. 
 
-Boundary conditions operate on the \emph{RHS} for \emph{Neumann} and 
-\emph{LHS} for \emph{Dirichlet}. Linked list using the sparsity pattern are 
-currently used for \emph{Dirichlet} boundary conditions.
+The \emph{Dirichlet} boundary condition applies to a dof, if a dof is 
+set to fixed (that is the boundary condition on the dof is fixed) and 
+if all other entries in the row of the solver matrix $A$ correspond to 
+fixed dofs, then the Dirichlet condition applies and the row and column 
+in the solver matrix $A$ in which the value that corresponds to the dof 
+resides, can be removed. The \emph{Dirichlet} boundary conditions use 
+a linked-list with the matrix sparsity pattern, more details are provided 
+in the theory section on the \emph{Dirichlet} boundary conditions. Also 
+further details on the \emph{Neumann} boundary conditions are provided 
+in the theory section.
 
-The \emph{Dirichlet} condition works by: if a dof is set to be fixed (that is the 
-boundary condition on the dof is fixed) and if all entries in the row of solver 
-matrix $A$ correspond to fixed dof, then the row and column in the solver
-matrix $A$ in which the value that corresponds to the dof resides are removed. 
-
-To date the type of boundary condition is not clear delinated from the sub-type,
-this needs to be clarified in the future. Further work on the boundary conditions
-routines included the implementation of the boundary conditions as a boundary
-condition object.
+To date the type of boundary condition is not clearly delinated from the 
+sub-type, this needs to be clarified in the future. 
 
 
 \section{Module: \emph{classical\_field\_routines}}
@@ -262,10 +370,11 @@ condition object.
 
 This module is the top level module to the generic physics modules (classical 
 field type), it contains the calling routines for the generic physics routines. 
-The classical field type includes the physics types of: Advection Diffusion, 
-Biharmonic, Diffusion, Hamilton Jacobi, Helmholtz, Laplace, Poisson, Reaction 
-Diffusion and Wave. Biharmonic, Reaction Diffusion and Wave are not currently 
-implemented.
+The classical field type includes the physics types of: \emph{Advection
+Diffusion}, \emph{Biharmonic}, \emph{Diffusion}, \emph{Hamilton Jacobi}, 
+\emph{Helmholtz}, \emph{Laplace}, \emph{Poisson}, \emph{Reaction Diffusion} 
+and \emph{Wave}. \emph{Biharmonic}, \emph{Reaction Diffusion} and \emph{Wave} 
+are not currently implemented.
 
 
 \section{Module: \emph{cmiss}}
@@ -308,14 +417,14 @@ problem solver.
 \section{Module: \emph{coordinate\_routines}}
 \label{sec:coordinateroutines}
 
-A coordinate system is a system for assigning an $n$-tuple of numbers or scalars 
-to each point in an $n$-dimensional space. It anchors the regions within the real
-world. \emph{OpenCMISS} has been designed to support a number of different coordinate 
-systems: rectangular cartesian, cylindrical polar, spherical polar, prolate 
-spheroidal or oblate spheroidal. Currently only the rectangular cartesian (RC) 
-coordinate system has been fully implemented. There are however routines for 
-the conversion of cylindrical polar, spherical polar, prolate spheroidal and 
-oblate spheroidal coordinates to RC coordinates.
+A coordinate system is a system for assigning an $n$-tuple of numbers or
+scalars to each point in an $n$-dimensional space. It anchors the regions 
+within the real world. \emph{OpenCMISS} has been designed to support a number 
+of different coordinate systems: rectangular cartesian, cylindrical polar, 
+spherical polar, prolate spheroidal or oblate spheroidal. Currently only the 
+rectangular cartesian (RC) coordinate system has been fully implemented. 
+There are however routines for the conversion of cylindrical polar, spherical 
+polar, prolate spheroidal and oblate spheroidal coordinates to RC coordinates.
 
 A coordinate system in \emph{OpenCMISS} is defined with respect to the parent 
 coordinate system, whilst the parent coordinate system itself is defined with 
@@ -340,8 +449,8 @@ elements are decomposed during the execution of the program.
 Geometric fields are ordinarily worked out after the geometric position is 
 assigned, however in \emph{OpenCMISS} we cannot do this, so in order to 
 construct the data field from the data, we assign a starting guess of the 
-centroid of candidate element to a data point, then we use Newton's method 
-to find the closest face/line and $1D$, $2D$ or $3D$ element to the data point, 
+centroid of candidate element to a data point, then we use Newton's method to 
+find the closest face/line and $1D$, $2D$ or $3D$ element to the data point, 
 enabling the position of the data point to be set and stored in the data field. 
 The number of dofs in the data field is determined by the number of data points 
 to which the field is fit.
@@ -362,8 +471,8 @@ distributed evenly across processors.
 The routines allow different solver library to be used with the matrices and 
 vectors; with either internal or external solver libraries.
 
-The override matrix/vector allow the overriding of the \emph{PETSc} matrix/vector 
-with an incoming matrix/vector from \emph{PETSc}.
+The override matrix/vector allow the overriding of the \emph{PETSc}
+matrix/vector with an incoming matrix/vector from \emph{PETSc}.
 
 The receive buffer and the send buffer handle the communication between the 
 domains of the ghost values.
@@ -496,13 +605,13 @@ to the design of OpenCMISS. This has been implemented with the storage of
 components (and subsequently dofs) as a single vector, rather than the storage 
 of a separate block for each component.
 
-The \emph{dof type} defines what sort of dofs are in the field, essentially where 
-the dofs are positioned in the field, either as constant dofs (only one set 
-of dofs for the field), element dofs (one set of dofs per element), node dofs 
-(one set of dofs per node), grid point dofs (one set of dofs per grid point), 
-or gauss point dofs (one set of dofs per gauss point). A set of dofs consists 
-of a dof for each defined component for the variable, and a dof for each 
-derivative (derivatives are used for Cubic Hermite basis functions).
+The \emph{dof type} defines what sort of dofs are in the field, essentially
+where the dofs are positioned in the field, either as constant dofs (only one 
+set of dofs for the field), element dofs (one set of dofs per element), node 
+dofs (one set of dofs per node), grid point dofs (one set of dofs per grid point), 
+or gauss point dofs (one set of dofs per gauss point). A set of dofs consists of 
+a dof for each defined component for the variable, and a dof for each derivative 
+(derivatives are used for Cubic Hermite basis functions).
 
 There are three types of dof numbering: local, ghost and global. The global dof 
 numbering refers to the numbering of all dofs in the mesh. The local dof
@@ -513,13 +622,13 @@ A domain is the decomposed problem space assigned to the individual processor
 following the decomposition of the problem over a number of processors. There
 is one domain per processor. 
 
-The \emph{field mapping calculate} routine sets up the local and ghost dof numbering 
-scheme for the domain and the mapping of these local dofs numbers to the global 
-dofs.
+The \emph{field mapping calculate} routine sets up the local and ghost dof
+numbering scheme for the domain and the mapping of these local dofs numbers 
+to the global dofs.
 
-The dofs (indexed by $ny$) are organised in a component with the local dofs first 
-followed by the ghost dofs. This allows looping, when required, to be made only 
-over the local dofs. The ordering of local and ghost dofs in a component is
+The dofs (indexed by $ny$) are organised in a component with the local dofs
+first followed by the ghost dofs. This allows looping, when required, to be made 
+only over the local dofs. The ordering of local and ghost dofs in a component is
 made in the \emph{field mappings calculate} routine.
 
 The \emph{field mappings calculate} routine operates with the following steps:
@@ -531,14 +640,14 @@ The \emph{field mappings calculate} routine operates with the following steps:
  \item Calculate the global dof to local dof mapping
 \end{enumerate}
 
-The \emph{field mappings calculate} routine does two sweeps, the first to calculate 
-how many values are required, and the second to allocate the arrays.
+The \emph{field mappings calculate} routine does two sweeps, the first to
+calculate how many values are required, and the second to allocate the arrays.
 
 The labeling of variables containing collections of dofs are: if the variable 
 name contains \emph{number\_of\_local} then this is the per domain dofs, if it 
-contains \emph{total} then this refers to local and ghost dofs, or if it contains 
-\emph{global} then this refers to all local and ghost dofs across all elements (the 
-total number of undistributed items).
+contains \emph{total} then this refers to local and ghost dofs, or if it 
+contains \emph{global} then this refers to all local and ghost dofs across all 
+elements (the total number of undistributed items).
 
 
 \section{Module: \emph{finite\_element\_routines}}
@@ -555,9 +664,9 @@ The routines take as input given material data at the interpolation points (the
 gauss points) and project the data onto the desired field interpolation to give
 a material field interpolation. It reduces the vector down to the Galerkin
 space, it is the minimum projection, the closest one can get to representing a 
-vector on a space using available basis functions. It builds a projection
-matrix (\emph{LHS}) and a projection vector (\emph{RHS}). The fitting object 
-itself' is an equations set object.
+vector on a space using available basis functions. It builds a projection matrix 
+(\emph{LHS}) and a projection vector (\emph{RHS}). The fitting object itself' 
+is an equations set object.
 
 
 \section{Module: \emph{generated\_mesh\_routines}}
@@ -609,8 +718,8 @@ of \emph{Hex} and \emph{Tet} elements, though to date remains to be fully
 tested for both of these.
 
 Surface coupling is not currently working in parallel, this remains 
-\emph{work in progress}, when complete, both coupled regions will parallelise 
-in a similar fashion.
+\emph{work in progress}, when complete, both coupled regions will 
+parallelise in a similar fashion.
 
 
 \section{Module: \emph{kinds}}
@@ -618,11 +727,10 @@ in a similar fashion.
 
 This module handles the different data types available in \emph{OpenCMISS}: 
 \emph{\_DP} (double precision), \emph{\_INTG} (integer), \emph{\_SP} (single 
-precision) or \emph{\_L} (logical). The \emph{\_} (a Fortran source term) 
-means a different \emph{kind} in Fortran. In addition to these data types, 
-a number of additional kinds are defined preceded by \emph{CMISS} these 
-are equal to a corresponding kind, for example: \emph{\_CMISSDP} is 
-equal to \emph{\_DP}. 
+precision) or \emph{\_L} (logical). The '\emph{\_}' (a Fortran source term) 
+means a different \emph{kind} in Fortran. In addition, a number of kinds 
+are defined preceded by \emph{CMISS} these are equal to a corresponding 
+kind, for example: \emph{\_CMISSDP} is equal to \emph{\_DP}. 
 
 
 \section{Module: \emph{lists}}
@@ -640,10 +748,10 @@ and are only for routines that operate on an individual domain/processor.
 
 Matrices are stored as a combination of three vectors, a data matrix, 
 containing the actual values, and row indices and column indices, containing 
-the position of these data values in the matrix. This enables sparse 
-matrices to be efficiently stored. A number of storage structures are 
-available in \emph{OpenCMISS}, these storage structures are governed by the 
-\emph{STORAGE} parameter associated with the array. 
+the position of these data values in the matrix. This enables sparse matrices 
+to be efficiently stored. A number of storage structures are available in 
+\emph{OpenCMISS}, these storage structures are governed by the \emph{STORAGE} 
+parameter associated with the array. 
 
 \emph{MATRIX\_COMPRESSED\_ROW\_STORAGE\_TYPE} is the default storage type 
 and the most commonly used in \emph{OpenCMISS}.
@@ -711,9 +819,9 @@ associated with either an interface or a region, and have both a global
 and a user number (allowing the user to define their own numbering scheme 
 to the nodes). In \emph{OpenCMISS} nodes are just labels for dofs, they 
 do not have a position. The position in space of a dof is a property of 
-the field. Dofs are important in \emph{OpenCMISS}, they are the basic topological 
-unit, they are the basic unit by which matrices are indexed and 
-calculations performed.
+the field. Dofs are important in \emph{OpenCMISS}, they are the basic 
+topological unit, they are the basic unit by which matrices are indexed 
+and calculations performed.
 
 
 \section{Module: \emph{opencmiss}}
@@ -742,7 +850,7 @@ numerical workflow to solve the physics of the problem. A problem has control
 loops, control loops are described further in the description of the 
 \emph{control\_loop\_routines}.
 
-Nested control loops allow the dealing of problem complexity, each control
+Nested control loops allow the dealing of problem complexity, each control 
 loop can have a number of different solvers.
 
 Coupled problems can be multiple problems in the same region or multiple 
@@ -765,7 +873,7 @@ number of daughter sub-regions. Daughter regions are related in space to
 parent regions by an origin and an orientation of the regions coordinate 
 system. Daughter regions may only have the same or fewer dimensions as the 
 parent region. All regions are defined with respect to a parent region, the 
-exception is the global (world) region (number $0$) which is defined with a
+exception is the global (world) region (number $0$) which is defined with a 
 parent region of itself' and has the global (world) coordinate system.
   
 The fields, meshes, data points, coordinate system, nodes, sub-regions and 
@@ -801,9 +909,9 @@ surface coupling and some physics types). The surface coupling method (that
 uses the interface object) uses the Lagrange multiplier interface method as 
 default.
 
-For time dependent problems (all fluid problems) each time step is 
-integrated over the time interval, with the corresponding weighting (shown by 
-$\alpha$, $\beta$ and $\gamma$): $A=\alpha M + \beta C+ \gamma K$ \\
+For time dependent problems (all fluid problems) each time step is integrated 
+over the time interval, with the corresponding weighting (shown by $\alpha$, 
+$\beta$ and $\gamma$): $A=\alpha M + \beta C+ \gamma K$ \\
 For non-time dependent problems there is no mass matrix.
 
 When solving in a time loop the previous values are updated using the current
@@ -811,12 +919,12 @@ values at the end of the time loop, this is done at the end of post-solve
 control loop.
 
 Parallelisation of the solver matrix across processors is made by splitting up
-the solver matrix $A$ by rows and columns. For the splitting of the matrix by rows
-the same splitting scheme used to divide the equation matrix rows between
+the solver matrix $A$ by rows and columns. For the splitting of the matrix by
+rows the same splitting scheme used to divide the equation matrix rows between
 processors is used to divide up the solver matrix between processors. A global
 numbering scheme is given in solver routines for the solver matrix rows.
 
-In solver routines the ghost rows in the equation matrix rows are dropped,
+In solver routines the ghost rows in the equation matrix rows are dropped, 
 whilst the ghost columns persist and carry through to the solver matrix rows.
 
 The main routine in this module is the \emph{solver mapping calculate} routine,
@@ -837,12 +945,12 @@ to solver matrix row mappings for each row in rank order. There are no ghosted
 rows for the solver matrix so there is only one domain for the global to local 
 map. 
  \item Calculate the number of local and global columns in the solver matrix by 
-creating lists of columns for each rank, allowing the columns to be arranged 
-in rank order. Allowing each solver column to be allocated to the equations 
-sets mapping array and the solver mappings for each column to be calculated
-in rank order.
- \item Set up the column mappings such that the solver matrix (\emph{sm}) 
-and equations matrix (\emph{em}) orderings are the same.
+creating lists of columns for each rank, allowing the columns to be arranged in 
+rank order. Allowing each solver column to be allocated to the equations sets 
+mapping array and the solver mappings for each column to be calculated in rank 
+order.
+ \item Set up the column mappings such that the solver matrix (\emph{sm}) and 
+equations matrix (\emph{em}) orderings are the same.
 \end{enumerate}
 
 
@@ -852,15 +960,16 @@ and equations matrix (\emph{em}) orderings are the same.
 These routines handle the solver matrices which are the actually matrices to 
 be solved for the numerical problem. Solver matrices are used with the solvers, 
 either internal (the \emph{CMISS} solver) or external (\emph{PETSc}, 
-\emph{GMRES}) solvers.
+\emph{GMRES}) solvers. \{OpenCMISS} has been setup to take full advantage of 
+the optimised parallel features of the \{PETSc} numerical solver library, to  
+allow the efficient operation of \emph{OpenCMISS} library in parallel.
 
 
 \section{Module: \emph{solver\_routines}}
 \label{sec:solverroutines}
 
-Currently only finite element methods have been implemented in 
-\emph{OpenCMISS}. Places holders have been made for other solution methods 
-in \emph{OpenCMISS}.
+Currently only finite element methods have been implemented in \emph{OpenCMISS}. 
+Places holders have been made for other solution methods in \emph{OpenCMISS}.
 
 
 \section{Module: \emph{sorting}}
@@ -883,16 +992,25 @@ This module contains the routines used for manipulating strings in
 
 Binary search trees are used in \emph{OpenCMISS} to match a user-defined node 
 number to a global or a local number of a node. \emph{Red-black} binary trees 
-are used, as they have good order properties for lookups, searching and ordering, 
-and good worst case characteristics. Trees are composed of keys and data, the 
-search is made on the key and the return is whatever is required.
+are used, as they have good order properties for lookups, searching and 
+ordering, and good worst case characteristics. Trees are composed of keys and 
+data, the search is made on the key and the return is whatever is required.
 
 Nodes have a user node number assigned by the user and a corresponding 
 global/local number that the program uses. User node numbers are used in the 
-example file to reference the nodes in the mesh, their use allows users flexibility 
-in their ordering and referencing of the nodes. Presently trees are only used for 
-nodes lookup.
+example file to reference the nodes in the mesh, their use allows users 
+flexibility in their ordering and referencing of the nodes. Presently trees 
+are only used for nodes lookup.
 
 Trees are used in \emph{OpenCMISS} by two objects: the \emph{mesh object} uses 
-trees to lookup the global node number, whilst the \emph{domain object} uses trees 
-to lookup the local node number.
+trees to lookup the global node number, whilst the \emph{domain object} uses
+trees to lookup the local node number.
+
+
+\section{Module: \emph{types}}
+\label{sec:types}
+
+The \emph{types} module holds the all data types definitions and type
+relationships used in the \emph{OpenCMISS} library. Comments are provided 
+in this module on each of the types defined. The types are located in this 
+module in order to avoid cyclic dependency. 
