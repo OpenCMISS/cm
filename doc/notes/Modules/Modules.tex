@@ -100,8 +100,9 @@ CMISSDiagnosticsSetOn(DIAG\_TYPE,DIAG\_LEVEL,DIAG\_FILE,DIAG\_ROUTINE,Err)} \\
 
 \noindent \emph{ALL\_DIAG\_TYPE} - Print out diagnostics from all subroutines 
 used in the example. \\
-\emph{FROM\_DIAG\_TYPE} - Print out diagnostics \emph{From} the specified 
-routine in \emph{DIAG\_ROUTINE} onwards to the completion of the program. \\
+\emph{FROM\_DIAG\_TYPE} - Print out diagnostics \emph{from} the specified 
+routine in 
+\\ \emph{DIAG\_ROUTINE} onwards to the completion of the program. \\
 \emph{IN\_DIAG\_TYPE} - Print out diagnostics from only the specified 
 subroutines in \emph{DIAG\_ROUTINE}. \\
 \linebreak
@@ -157,9 +158,9 @@ CMISSTimingSetOn(TIMING\_TYPE,TIMING\_FLAG,TIMING\_FILE,TIMING\_ROUTINE,Err)}
 
 \noindent \emph{ALL\_TIMING\_TYPE} - Print out timings 
 from all subroutines used in the example. \\
-\emph{FROM\_TIMING\_TYPE} - Print out timings \emph{From} 
-the specified routine in \emph{TIMING\_ROUTINE} onwards to the 
-completion of the program. \\
+\emph{FROM\_TIMING\_TYPE} - Print out timings \emph{from} 
+the specified routine in \\
+\emph{TIMING\_ROUTINE} onwards to the completion of the program. \\
 \emph{IN\_TIMING\_TYPE} - Print out timings from only the 
 specified subroutines in \emph{TIMING\_ROUTINE}. \\
 \linebreak
@@ -225,6 +226,13 @@ solver equations with a call to \emph{CellML} equations.
 integrator} and the \emph{CellMLevaluator}. \emph{CellML} is a project 
 that is still evolving.
 
+\begin{figure}
+\centering
+      \includegraphics[width=0.7\textwidth]{figs/Modules/cellml_interface.eps}
+\caption{Diagram showing \emph{OpenCMISS} field and \emph{CellML} fields.}
+\label{cellml_interface}
+\end{figure}
+
 
 \section{Library: \emph{FieldML}}
 \label{sec:fieldml}
@@ -280,10 +288,10 @@ In \emph{OpenCMISS} specifying a basis function automatically generates all the
 necessary line and face basis functions as sub-bases of the basis function. 
 Faces and lines in an element have both local numbers and global numbers, the 
 local numbering scheme for \emph{Hex} and \emph{Tet} elements is shown in the 
-diagrams (). For LHTP type the direction of a face in \emph{OpenCMISS} is
-defined by the normal to the face (for $3D$) or line (for $2D$) (see diagrams), 
-for simplex types it is defined as the tangent from the point opposite to the 
-face (for $3D$) or the line (for $2D$) running out through the face/line at 
+diagrams below. For LHTP type the direction of a face in \emph{OpenCMISS} is
+defined by the normal to the face (for $3D$) or line (for $2D$), for simplex 
+types it is defined as the tangent from the point opposite to the face (for 
+$3D$) or the line (for $2D$) running out through the face/line at 
 right-angles (see diagrams).
 
 The simplex type basis in \emph{OpenCMISS} uses the bary-centric coordinate 
@@ -332,8 +340,74 @@ In addition to the basis functions described above, there are also face gauss
 basis functions the face gauss basis functions are $3D$ objects allowing the 
 calculation of the derivative in the third dimension at the face.
 
-In this module the local node numbering of the elements is set. The local node 
+In this module the node numbering of the elements is set. The node 
 numbering is as follows:
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/2D_linear.eps}
+\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a 2D arrangement of four elements with linear interpolation.}
+\label{2D_linear}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/2D_quadratic.eps}
+\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a 2D arrangement of four elements with quadratic interpolation.}
+\label{2D_quadratic}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/2D_cubic.eps}
+\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a 2D arrangement of four elements with cubic interpolation.}
+\label{2D_cubic}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/cube.eps}
+\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a single 3D element with quadratic interpolation.}
+\label{cube}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/tri_elements.eps}
+\caption{Diagram showing node and line numbering for single 2D tri elements 
+with linear (top left), quadratic (top right) and cubic (bottom) 
+interpolation.}
+\label{tri_elements}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/tet_elements.eps}
+\caption{Diagram showing node and line numbering for single 3D tet elements 
+with linear (top left), quadratic (top right) and cubic (bottom) 
+interpolation.}
+\label{tet_elements}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.7\textwidth]{figs/Modules/tet_normals.eps}
+\caption{Diagram showing $\xi$ directions for a tet element (left) and  
+a tri element (right), both with linear interpolation.}
+\label{tet_normals}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/Tri_area_coordinates.eps}
+\caption{Diagram showing $L1$, $L2$ and $L3$ area coordinates for a 2D 
+tri element.}
+\label{Tri_area_coordinates}
+\end{figure}
 
 
 \section{Module: \emph{boundary\_condition\_routines}} 
@@ -412,6 +486,15 @@ loop executes until a condition is met (for example a convergence condition).
 Each control loop has a number of sub loops, if a control loop has no sub loops 
 it can have a number of solvers. Each solver deals with a particular numerical 
 problem solver.
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.6\textwidth]{figs/Modules/control_loops.eps}
+\caption{Diagram showing sub-control loops and associated solvers within a 
+control loop.}
+\label{control_loops}
+\end{figure}
+
 
 
 \section{Module: \emph{coordinate\_routines}}
@@ -649,6 +732,27 @@ contains \emph{total} then this refers to local and ghost dofs, or if it
 contains \emph{global} then this refers to all local and ghost dofs across all 
 elements (the total number of undistributed items).
 
+\begin{figure}
+\centering
+      \includegraphics[width=0.7\textwidth]{figs/Modules/variable_mapping_1.eps}
+\caption{Diagram showing showing variable mappings.}
+\label{variable_mapping_1}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.7\textwidth]{figs/Modules/variable_mapping_2.eps}
+\caption{Diagram showing showing variable mappings.}
+\label{variable_mapping_2}
+\end{figure}
+
+\begin{figure}
+\centering
+      \includegraphics[width=0.7\textwidth]{figs/Modules/variable_mapping_3.eps}
+\caption{Diagram showing showing variable mappings.}
+\label{variable_mapping_3}
+\end{figure}
+
 
 \section{Module: \emph{finite\_element\_routines}}
 \label{sec:finiteelementroutines}
@@ -721,6 +825,14 @@ Surface coupling is not currently working in parallel, this remains
 \emph{work in progress}, when complete, both coupled regions will 
 parallelise in a similar fashion.
 
+\begin{figure}
+\centering
+      \includegraphics[width=0.7\textwidth]{figs/Modules/interfaces.eps}
+\caption{Diagram showing the interface between two regions.}
+\label{Interfaces}
+\end{figure}
+
+
 
 \section{Module: \emph{kinds}}
 \label{sec:kinds}
@@ -780,6 +892,13 @@ components are made up from nodes, elements and basis functions. A new mesh
 component is required for each different form of interpolation e.g., one mesh 
 component could be bilinear Lagrange whilst the other could be biquadratic 
 Lagrange.
+
+\begin{figure}
+\centering
+      \includegraphics[width=1\textwidth]{figs/Modules/mesh_components.eps}
+\caption{Diagram showing the multiple mesh components of a mesh.}
+\label{mesh_components}
+\end{figure}
 
 The \emph{ParMETIS} library (\emph{ParMETIS} is a parallel graph partitioning 
 library) is used to calculate the decomposition of the mesh by element into 
