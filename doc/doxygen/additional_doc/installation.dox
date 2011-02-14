@@ -71,17 +71,13 @@ Finally, to check out themain trunk of the various utils in the code repository.
 
 -For Auckland users, you may find libraries on hpc. Go to \\bioengsmb\cmiss\opencmissextras\cm (Windows) or /hpc/cmiss/opencmissextras/cm and copy the necessary files. 
 The folder structure is the same as svn repository. 
-\subsection makefile_structure Makefile Structure
-The top level makefile (located in "<path to your root OpenCMISS directory>/opencmiss/cm/") will build the external libraries and eventually build the OpenCMISS library. Issue the following commands in the ".../opencmiss/cm/" directory:
-\code make \endcode or, if you want to use the GNU compiler (Version 4.4 or greater) \code make COMPILER=gnu \endcode
-In the examples directory there are separate compilable "applications" with individual makefiles, e.g. in ".../opencmiss/cm/examples/ClassicalField/NewLaplace". How to compile the examples will be explained further below.
-\section programmer_documentation Programmer documentation
-This programmer documentation is written using doxygen with the source located in the ".../opencmiss/cm/doc/doxygen/additional_doc/" folder. The source XML code can be transformed into documents in HTML format. Issue the following command into the ".../opencmiss/cm/doc/doxygen/" directory:
-\code doxygen Doxyfile \endcode
-It will build a number of html pages in the ".../opencmiss/cm/doc/doxygen/Programmer/html" directory, which can be read by opening the "index.html" file in a web browser. 
+
 \section project_setup Project Setup
+
 \subsection project_setup_aix On AIX 5.3 (HPC)
+
 \subsubsection project_setup_hpc_environment Set environment
+
 Set environment variable to point to OpenCMISS
 \code setenv OPENCMISS_ROOT <path to your opencmiss folder>\endcode or \code export OPENCMISS_ROOT=<path to your opencmiss folder>\endcode
 Set environment variable to point to OpenCMISS-extras
@@ -97,19 +93,9 @@ Use gmake.
 This should result in a binary that you can run in the bin/rs6000-32-aix folder.
 
 \subsection project_setup_linux On Ubuntu 9.10
-\subsubsection project_setup_linux_environment Set environment
-Set the environment variable to point to opencmiss and opencmissextras. If you use the bash shell you can do this by adding the following lines to your "~/.bashrc" file:
-\code export OPENCMISS_ROOT=<path to your opencmiss folder>
- export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>
- PATH=$OPENCMISS_ROOT:$OPENCMISSEXTRAS_ROOT:$PATH ; export PATH \endcode
-If you use a shell different from the bash, it might be
-\code setenv OPENCMISS_ROOT <path to your opencmiss folder> 
- setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder> 
- setenv PATH ${OPENCMISSEXTRAS_ROOT}:${OPENCMISS_ROOT}:${PATH} \endcode 
-If you are using totalview you will also need to add
-\code export LM_LICENSE_FILES=<path-to-the-flex-directory> \endcode respectively, 
-\code setenv LM_LICENSE_FILES <path-to-the-flex-directory> \endcode
+
 \subsubsection project_setup_linux_compiler Install Compilers
+
 There are two options for compilers under Linux - Intel or gnu compilers.
 
 For the Intel compilers:
@@ -120,9 +106,48 @@ Extract the file and follow the install.htm to install.
 For the GNU comilers:
 
 Currently, only gfortran version 4.4 or greater will work. Download and install it (for Ubuntu 9.10, it can be downloaded from the Ubuntu software repositories). A version of the gfortran compilers for x86_64-linux can also be found in the opencmissextras svn repository. To obtain these versions change directory to the opencmissextras directory and issue the command:
-\code svn co https://svn.physiomeproject.org/svn/opencmissextras/gfortran/trunk/ gfortran \endcode
+\code 
+svn co https://svn.physiomeproject.org/svn/opencmissextras/gfortran/trunk/ gfortran 
+\endcode
+
+\subsubsection project_setup_linux_environment Set environment
+
+You need to set the environment variable to point to opencmiss and opencmissextras and execute the opencmiss_programmers script. 
+
+If you use the bash shell you can do this by adding the following lines to your "~/.bashrc" file:
+\code 
+export OPENCMISS_ROOT=<path to your opencmiss folder>
+export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>
+if [ -x ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.sh ]; then
+  . ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.sh
+fi
+\endcode
+If you use a c to tc shell you can do this by adding the following lines to your "/.cshrc" or "~/.tcshrc" file:
+\code 
+setenv OPENCMISS_ROOT <path to your opencmiss folder> 
+setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder> 
+if ( -r ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.csh ) then
+  source ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.csh 
+endif
+\endcode 
+
+The opencmiss_programmers script will let you customise the setup by setting environment variables after the root sets and before executing the script. These variables are:
+- COMPILER : set the compiler to be used as the default. Options are gnu and intel.
+- USE_OPENCMISS_GFORTRAN : if set use the gfortran in the OpenCMISSextras repository. If not set use the system gfortran.
+- GNU_COMPILER_VERSION : if using the OpenCMISSextras gfortran set what version to use. Options are 4.4 and 4.5.
+- OPENCMISSEXTRAS_RUN_CONFIG : select which configuration of the OpenCMISSextras binaries to use at runtime. Options are debug or optimised.
+- MPI : select what version of MPI to use. Options are mpich2, intel or openmpi.
+- INTEL_COMPILER_VERSION : if using the pre 12.0 version of the intel compilers the compiler version to use e.g., 11.1
+- INTEL_COMPILER_BUILD : if using the pre 12.0 version of the intel compilers the build version to use e.g., 072
+- INTEL_TRACE_COLLECTOR_VERSION : the version of the intel trace collector to use e.g., 8.0.1.009
+- INTEL_MPI_VERSION : the version of the intel MPI to use e.g., 4.0.1.007
+
+If you are using totalview you will also need to add
+\code export LM_LICENSE_FILES=<path-to-the-flex-directory> \endcode respectively, 
+\code setenv LM_LICENSE_FILES <path-to-the-flex-directory> \endcode
 
 \subsubsection project_setup_linux_compile Compile
+
 To build an example project issue the following command into the ".../opencmiss/cm/examples/<example>/<sub-example>" directory:
 \code make \endcode
 
@@ -220,4 +245,14 @@ setenv PETSC_ARCH aix5.3.0.0 \endcode
 - \code make -e all \endcode
 - \code make -e install \endcode
 */
+
+\section makefile_structure Makefile Structure
+The top level makefile (located in "<path to your root OpenCMISS directory>/opencmiss/cm/") will build the OpenCMISS library. Issue the following commands in the ".../opencmiss/cm/" directory:
+\code make \endcode or, if you want to use the GNU compiler (Version 4.4 or greater) \code make COMPILER=gnu \endcode
+In the examples directory there are separate compilable "applications" with individual makefiles, e.g. in ".../opencmiss/cm/examples/ClassicalField/NewLaplace". How to compile the examples will be explained further below.
+
+\section programmer_documentation Programmer documentation
+This programmer documentation is written using doxygen with the source located in the ".../opencmiss/cm/doc/doxygen/additional_doc/" folder. The source XML code can be transformed into documents in HTML format. Issue the following command into the ".../opencmiss/cm/doc/doxygen/" directory:
+\code doxygen Doxyfile \endcode
+It will build a number of html pages in the ".../opencmiss/cm/doc/doxygen/Programmer/html" directory, which can be read by opening the "index.html" file in a web browser. 
 
