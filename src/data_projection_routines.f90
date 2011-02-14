@@ -181,7 +181,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !>Find the closest elements to a data point base on starting xi guess.
+  !>Find the closest elements to a data point based on starting xi guess.
   SUBROUTINE DATA_PROJECTION_CLOSEST_ELEMENTS_FIND(DATA_PROJECTION,INTERPOLATED_POINT,DATA_POINT_NUMBER, &
     & CANDIDATE_ELEMENTS,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS,CLOSEST_DISTANCES,ERR,ERROR,*)
 
