@@ -193,22 +193,24 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_FieldCount
     END FUNCTION FieldExport_FieldCount
 
-    FUNCTION FieldExport_CoordinateVariable( handle, variableNumber, coordinateSystemType, componentCount ) &
+    FUNCTION FieldExport_CoordinateVariable( handle, variableName, variableNumber, coordinateSystemType, componentCount ) &
       & BIND(C,NAME="FieldExport_CoordinateVariable")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
+      CHARACTER(LEN=1, KIND=C_CHAR) :: variableName(*)
       INTEGER(C_INT), VALUE :: variableNumber
       INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentCount
       INTEGER(C_INT) :: FieldExport_CoordinateVariable
     END FUNCTION FieldExport_CoordinateVariable
 
-    FUNCTION FieldExport_Variable( handle, variableNumber, fieldType, variableType, componentCount ) &
+    FUNCTION FieldExport_Variable( handle, variableName, variableNumber, fieldType, variableType, componentCount ) &
       & BIND(C,NAME="FieldExport_Variable")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
+      CHARACTER(LEN=1, KIND=C_CHAR) :: variableName(*)
       INTEGER(C_INT), VALUE :: variableNumber
       INTEGER(C_INT), VALUE :: fieldType
       INTEGER(C_INT), VALUE :: variableType
@@ -2718,6 +2720,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: i,LENGTH
+    CHARACTER(LEN=MAXSTRLEN) :: fvar_name
+    CHARACTER(LEN=1, KIND=C_CHAR) :: cvar_name(MAXSTRLEN+1)
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
     TYPE(DOMAIN_TYPE), POINTER :: componentDomain !The domain mapping to calculate nodal mappings
@@ -2888,14 +2893,21 @@ CONTAINS
           variable_ptr=>component%FIELD_VARIABLE
           !write out the field information
 
-          IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+          fvar_name = CHAR(variable_ptr%variable_label)
+          LENGTH=LEN_TRIM(fvar_name)
+          DO i=1,LENGTH
+            cvar_name(I)=fvar_name(i:i)
+          ENDDO !i
+          cvar_name(LENGTH+1)=C_NULL_CHAR
+          
+           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
              NULLIFY(COORDINATE_SYSTEM)
              CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-             ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, COORDINATE_SYSTEM%TYPE, &
+             ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, var_idx, COORDINATE_SYSTEM%TYPE, &
                   & GROUP_VARIABLES(var_idx) )
           ELSE
-             ERR = FieldExport_Variable( sessionHandle, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
+             ERR = FieldExport_Variable( sessionHandle, cvar_name, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
                   & GROUP_VARIABLES(var_idx) )
           ENDIF
 
@@ -4978,6 +4990,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: i, LENGTH
+    CHARACTER(LEN=MAXSTRLEN) :: fvar_name
+    CHARACTER(LEN=1, KIND=C_CHAR) :: cvar_name(MAXSTRLEN+1)
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_TYPE), POINTER :: field_ptr
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
@@ -5096,14 +5111,21 @@ CONTAINS
           variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx1)%PTR%FIELD_VARIABLE
           !write out the field information
 
+          fvar_name = CHAR(variable_ptr%variable_label)
+          LENGTH=LEN_TRIM(fvar_name)
+          DO i=1,LENGTH
+            cvar_name(I)=fvar_name(i:i)
+          ENDDO !i
+          cvar_name(LENGTH+1)=C_NULL_CHAR
+          
           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
             & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
             NULLIFY(COORDINATE_SYSTEM)
             CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-            ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, &
+            ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, global_var_idx, &
               & COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
           ELSE
-            ERR = FieldExport_Variable( sessionHandle, global_var_idx, variable_ptr%FIELD%TYPE,  &
+            ERR = FieldExport_Variable( sessionHandle, cvar_name, global_var_idx, variable_ptr%FIELD%TYPE,  &
               & variable_ptr%VARIABLE_TYPE, &
               & variable_ptr%NUMBER_OF_COMPONENTS )
           ENDIF
@@ -5212,14 +5234,15 @@ CONTAINS
     TYPE(VARYING_STRING) :: FILE_NAME !the prefix name of file.
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: COMPONENT !the prefix name of file.
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
-    INTEGER(INTG) :: local_number, global_number, sessionHandle, paddingCount, DERIVATIVE_INDEXES(PART_DERIV_S4_S4_S4)
+    INTEGER(INTG) :: local_number, global_number, sessionHandle, paddingCount,DERIVATIVE_INDEXES(PART_DERIV_S4_S4_S4)
     INTEGER(INTG), ALLOCATABLE :: paddingInfo(:)
     INTEGER(INTG) :: nn, comp_idx,  dev_idx, NUM_OF_NODAL_DEV, MAX_NUM_OF_NODAL_DERIVATIVES, total_nodal_values
+    INTEGER(INTG), POINTER :: GEOMETRIC_PARAMETERS_INTG(:)
     LOGICAL :: FOUND
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: NODAL_BUFFER(:), TOTAL_NODAL_BUFFER(:)
-    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS_DP(:)
     !INTEGER(INTG), POINTER :: GEOMETRIC_PARAMETERS_INTG(:)
-    REAL(DP) :: padding(1)
+    REAL(DP) :: padding(1),VALUE
     
     padding(1) = 1.23456789
     
@@ -5322,16 +5345,18 @@ CONTAINS
         ENDDO !paddingCount
 
 
-!         SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
-!         CASE(FIELD_INTG_TYPE)
-!         NULLIFY(GEOMETRIC_PARAMETERS_INTG)
-!         CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
-!           & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
-!         CASE(FIELD_DP_TYPE)
-        NULLIFY(GEOMETRIC_PARAMETERS)
-        CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
-          & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-!         END SELECT
+         SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
+         CASE(FIELD_INTG_TYPE)
+           NULLIFY(GEOMETRIC_PARAMETERS_INTG)
+           CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
+             & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
+         CASE(FIELD_DP_TYPE)
+           NULLIFY(GEOMETRIC_PARAMETERS_DP)
+           CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
+             & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_DP,ERR,ERROR,*999)
+         CASE DEFAULT
+           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         END SELECT
         !get the nodal partial derivatives
         NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
 
@@ -5350,8 +5375,17 @@ CONTAINS
 
           NUM_OF_NODAL_DEV = NUM_OF_NODAL_DEV + 1
 
-          NODAL_BUFFER( NUM_OF_NODAL_DEV ) = GEOMETRIC_PARAMETERS( COMPONENT%PARAM_TO_DOF_MAP% &
-            & NODE_PARAM2DOF_MAP( DERIVATIVE_INDEXES( dev_idx ), local_number ) )
+          SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
+          CASE(FIELD_INTG_TYPE)
+            VALUE=REAL(GEOMETRIC_PARAMETERS_INTG( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP( &
+              & DERIVATIVE_INDEXES( dev_idx ), local_number ) ),DP)
+          CASE(FIELD_DP_TYPE)
+            VALUE=GEOMETRIC_PARAMETERS_DP( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP( &
+              & DERIVATIVE_INDEXES( dev_idx ), local_number ) )
+          CASE DEFAULT
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          END SELECT
+          NODAL_BUFFER( NUM_OF_NODAL_DEV ) = VALUE
         ENDDO !dev_idx
 
         CALL GROW_ARRAY( TOTAL_NODAL_BUFFER, NUM_OF_NODAL_DEV, "Insufficient memory during I/O", ERR, ERROR, *999 )
@@ -5400,7 +5434,8 @@ CONTAINS
     !release the temporary memory
     CALL CHECKED_DEALLOCATE( NODAL_BUFFER )
     CALL CHECKED_DEALLOCATE( TOTAL_NODAL_BUFFER )
-    IF(ASSOCIATED(GEOMETRIC_PARAMETERS)) NULLIFY(GEOMETRIC_PARAMETERS)
+    IF(ASSOCIATED(GEOMETRIC_PARAMETERS_DP)) NULLIFY(GEOMETRIC_PARAMETERS_DP)
+    IF(ASSOCIATED(GEOMETRIC_PARAMETERS_INTG)) NULLIFY(GEOMETRIC_PARAMETERS_INTG)
 
     CALL EXITS("FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE")
     RETURN

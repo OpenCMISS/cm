@@ -4027,7 +4027,21 @@ CONTAINS
           FIELD%CREATE_VALUES_CACHE%VARIABLE_TYPES(variable_idx)=variable_idx
           SELECT CASE(variable_idx)
           CASE(FIELD_U_VARIABLE_TYPE)
-            FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U"
+            SELECT CASE(FIELD%TYPE)
+            CASE(FIELD_GEOMETRIC_TYPE)
+              FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="Coordinate"
+            CASE(FIELD_FIBRE_TYPE)
+              FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="Fibre"
+            CASE(FIELD_MATERIAL_TYPE)
+              FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="Material"              
+            CASE(FIELD_GENERAL_TYPE)
+              FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="U"
+            CASE DEFAULT
+              LOCAL_ERROR="The field type of "//TRIM(NUMBER_TO_VSTRING(FIELD%TYPE,"*",ERR,ERROR))// &
+                & " is invalid for field number "// &
+                & TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           CASE(FIELD_DELUDELN_VARIABLE_TYPE)
             FIELD%CREATE_VALUES_CACHE%VARIABLE_LABELS(variable_idx)="del U/del n"
           CASE(FIELD_DELUDELT_VARIABLE_TYPE)
