@@ -13499,7 +13499,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -13672,7 +13672,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -13845,7 +13845,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -14017,7 +14017,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -16823,7 +16823,7 @@ CONTAINS
                           DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                           IF(ASSOCIATED(DOMAIN_NODES)) THEN
                             !Only checks if version number is greater than zero
-                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                               NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                               dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -16991,7 +16991,7 @@ CONTAINS
                           DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                           IF(ASSOCIATED(DOMAIN_NODES)) THEN
                             !Only checks if version number is greater than zero
-                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                               NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                               dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -17159,7 +17159,7 @@ CONTAINS
                           DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                           IF(ASSOCIATED(DOMAIN_NODES)) THEN
                             !Only checks if version number is greater than zero
-                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                               NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                               dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -17325,7 +17325,7 @@ CONTAINS
                           DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                           IF(ASSOCIATED(DOMAIN_NODES)) THEN
                             !Only checks if version number is greater than zero
-                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                            IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                               NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                               dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                 & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -19813,7 +19813,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -19986,7 +19986,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -20158,7 +20158,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
@@ -20330,7 +20330,7 @@ CONTAINS
                             DOMAIN_NODES=>DOMAIN_TOPOLOGY%NODES
                             IF(ASSOCIATED(DOMAIN_NODES)) THEN
                               !Only checks if version number is greater than zero
-                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
+                              IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
