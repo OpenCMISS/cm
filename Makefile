@@ -82,8 +82,8 @@ ifndef USECELLML
 endif
 
 ifndef USEFIELDML
-#  USEFIELDML := false
-  USEFIELDML := true
+  USEFIELDML := false
+#  USEFIELDML := true
 endif
 
 ifeq ($(MPI),mpich2)
@@ -1195,6 +1195,8 @@ $(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(SOURCE_DIR)/finite_elastici
 
 $(OBJECT_DIR)/data_point_routines.o	:	$(SOURCE_DIR)/data_point_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/computational_environment.o \
+	$(OBJECT_DIR)/data_projection_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \

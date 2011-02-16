@@ -1400,43 +1400,39 @@ CONTAINS
     CALL ENTERS("CONTROL_LOOP_TIMES_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
-      ELSE
-        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
-          IF(ASSOCIATED(TIME_LOOP)) THEN
-            IF(ABS(TIME_INCREMENT)<=ZERO_TOLERANCE) THEN
-              LOCAL_ERROR="The specified time increment of "//TRIM(NUMBER_TO_VSTRING(TIME_INCREMENT,"*",ERR,ERROR))// &
-                & " is invalid. The time increment must not be zero."          
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+        TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
+        IF(ASSOCIATED(TIME_LOOP)) THEN
+          IF(ABS(TIME_INCREMENT)<=ZERO_TOLERANCE) THEN
+            LOCAL_ERROR="The specified time increment of "//TRIM(NUMBER_TO_VSTRING(TIME_INCREMENT,"*",ERR,ERROR))// &
+              & " is invalid. The time increment must not be zero."          
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ELSE
+            IF(TIME_INCREMENT>0.0_DP) THEN
+              IF(STOP_TIME<=START_TIME) THEN
+                LOCAL_ERROR="The specified stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
+                  & " is incompatiable with a specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
+                  & ". For a positive time increment the stop time must be > than the start time."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
             ELSE
-              IF(TIME_INCREMENT>0.0_DP) THEN
-                IF(STOP_TIME<=START_TIME) THEN
-                  LOCAL_ERROR="The specified stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
-                    & " is incompatiable with a specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
-                    & ". For a positive time increment the stop time must be > than the start time."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                IF(START_TIME<=STOP_TIME) THEN
-                  LOCAL_ERROR="The specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
-                    & " is incompatiable with a specified stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
-                    & ". For a negative time increment the stop time must be < than the start time."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
+              IF(START_TIME<=STOP_TIME) THEN
+                LOCAL_ERROR="The specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
+                  & " is incompatiable with a specified stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
+                  & ". For a negative time increment the stop time must be < than the start time."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDIF
-            TIME_LOOP%START_TIME=START_TIME
-            TIME_LOOP%STOP_TIME=STOP_TIME
-            TIME_LOOP%TIME_INCREMENT=TIME_INCREMENT
-          ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
+          TIME_LOOP%START_TIME=START_TIME
+          TIME_LOOP%STOP_TIME=STOP_TIME
+          TIME_LOOP%TIME_INCREMENT=TIME_INCREMENT
         ELSE
-          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
         ENDIF
-      ENDIF          
+      ELSE
+        CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF

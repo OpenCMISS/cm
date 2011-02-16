@@ -396,69 +396,69 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_U_VARIABLE_TYPE:
             return "unknown";
         case FIELD_DELUDELN_VARIABLE_TYPE:
-            return "Normal_derivative,  field,  normal derivative of variable";
+            return "field,  normal derivative of variable";
         case FIELD_DELUDELT_VARIABLE_TYPE:
-            return "first_time_derivative,  field,  first time derivative of variable";
+            return "field,  first time derivative of variable";
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
-            return "second_time_derivative,  field,  second time derivative of variable";
+            return "field,  second time derivative of variable";
         default:
-            return "unknown_geometry,  field,  unknown field variable type";
+            return "field,  unknown field variable type";
         }
     case FIELD_FIBRE_TYPE:
         switch( variableType )
         {
         case FIELD_U_VARIABLE_TYPE:
-            return "fibres, anatomical, fibre";
+            return "anatomical, fibre";
         case FIELD_DELUDELN_VARIABLE_TYPE:
-            return "norm_der_fiber,  normal derivative of variable";
+            return "normal derivative of variable";
         case FIELD_DELUDELT_VARIABLE_TYPE:
-            return "first_time_fiber,  first time derivative of variable";
+            return "first time derivative of variable";
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
-            return "second_time_fiber,  second time derivative of variable";
+            return "second time derivative of variable";
         default:
-            return "unknown_fiber,  unknown field variable type";
+            return "unknown field variable type";
         }
     case FIELD_GENERAL_TYPE:
         switch( variableType )
         {
         case FIELD_U_VARIABLE_TYPE:
-            return "general,  field,  rectangular cartesian";
+            return "field,  rectangular cartesian";
         case FIELD_DELUDELN_VARIABLE_TYPE:
-            return "norm_dev_variable,  field,  rectangular cartesian";
+            return "field,  rectangular cartesian";
         case FIELD_DELUDELT_VARIABLE_TYPE:
-            return "first_time_variable,  field,  first time derivative of variable";
+            return "field,  first time derivative of variable";
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
-            return "second_time_variable,  field,  second time derivative of variable";
+            return "field,  second time derivative of variable";
         default:
-            return "unknown_general,  field,  unknown field variable type";
+            return "field,  unknown field variable type";
         }
     case FIELD_MATERIAL_TYPE:
         switch( variableType )
         {
         case FIELD_U_VARIABLE_TYPE:
-            return "material,  field,  rectangular cartesian";
+            return "field,  rectangular cartesian";
         case FIELD_DELUDELN_VARIABLE_TYPE:
-            return "normal_material,  field,  normal derivative of variable";
+            return "field,  normal derivative of variable";
         case FIELD_DELUDELT_VARIABLE_TYPE:
-            return "fist_time_material,  field,  first time derivative of variable";
+            return "field,  first time derivative of variable";
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
-            return "second_time_material,  field,  second time derivative of variable";
+            return "field,  second time derivative of variable";
         default:
-            return "unknown material,  field,  unknown field variable type";
+            return "field,  unknown field variable type";
         }
     default:
         switch( variableType )
         {
         case FIELD_U_VARIABLE_TYPE:
-            return "unknown,  field,  unknown standand variable type";
+            return "field,  unknown standand variable type";
         case FIELD_DELUDELN_VARIABLE_TYPE:
-            return "unknown,  field,  unknown normal derivative of variable";
+            return "field,  unknown normal derivative of variable";
         case FIELD_DELUDELT_VARIABLE_TYPE:
-            return "unknown,  field,  unknown first time derivative of variable";
+            return "field,  unknown first time derivative of variable";
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
-            return "unknown, field,  unknown second time derivative of variable";
+            return "field,  unknown second time derivative of variable";
         default:
-            return "unknown,  field,  unknown field variable type";
+            return "field,  unknown field variable type";
         }
     }
 }
@@ -469,7 +469,7 @@ static char *FieldExport_GetCoordinateVariableLabel( int coordinateSystemType )
     switch( coordinateSystemType )
     {
     case COORDINATE_RECTANGULAR_CARTESIAN_TYPE:
-        return "coordinates,  coordinate, rectangular cartesian";
+        return "coordinate, rectangular cartesian";
     //MUSTDO non-rectangular coordinate systems
     /*
     case COORDINATE_CYCLINDRICAL_POLAR_TYPE:
@@ -527,24 +527,25 @@ static int FieldExport_File_FieldCount( FileSession *const session, const int fi
 }
 
 
-static int FieldExport_File_CoordinateVariable( FileSession *const session, const int variableIndex,
+static int FieldExport_File_CoordinateVariable( FileSession *const session, const char *variableName, const int variableIndex,
                                         int coordinateSystemType, const int componentCount )
 {
     char *coordinateLabel;
 
     coordinateLabel = FieldExport_GetCoordinateVariableLabel( coordinateSystemType );
     
-    return FieldExport_FPrintf( session, " %d) %s, #Components=%d\n", variableIndex, coordinateLabel, componentCount );
+    return FieldExport_FPrintf( session, " %d) %s, %s, #Components=%d\n", variableIndex, variableName, coordinateLabel, componentCount );
 }
 
 
-static int FieldExport_File_Variable( FileSession *const session, const int variableIndex, const int fieldType, const int variableType, const int componentCount )
+static int FieldExport_File_Variable( FileSession *const session, const char *variableName, const int variableIndex, 
+				      const int fieldType, const int variableType, const int componentCount )
 {
     char *variableLabel;
 
     variableLabel = FieldExport_GetVariableLabel( fieldType, variableType );
     
-    return FieldExport_FPrintf( session, " %d) %s, #Components=%d\n", variableIndex, variableLabel, componentCount );
+    return FieldExport_FPrintf( session, " %d) %s, %s, #Components=%d\n", variableIndex, variableName, variableLabel, componentCount );
 }
 
 
@@ -1153,7 +1154,7 @@ int FieldExport_FieldCount( const int handle, const int fieldCount )
 }
 
 
-int FieldExport_CoordinateVariable( const int handle, const int variableNumber, int coordinateSystemType,
+int FieldExport_CoordinateVariable( const int handle, const char *variableName, const int variableNumber, int coordinateSystemType,
     const int componentCount )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
@@ -1164,7 +1165,7 @@ int FieldExport_CoordinateVariable( const int handle, const int variableNumber, 
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_CoordinateVariable( &session->fileSession, variableNumber, coordinateSystemType, componentCount );
+      return FieldExport_File_CoordinateVariable( &session->fileSession, variableName, variableNumber, coordinateSystemType, componentCount );
     }
     else
     {
@@ -1173,7 +1174,7 @@ int FieldExport_CoordinateVariable( const int handle, const int variableNumber, 
 }
 
 
-int FieldExport_Variable( const int handle, const int variableNumber, const int fieldType, const int variableType,
+int FieldExport_Variable( const int handle, const char *variableName, const int variableNumber, const int fieldType, const int variableType,
     const int componentCount )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
@@ -1184,7 +1185,7 @@ int FieldExport_Variable( const int handle, const int variableNumber, const int 
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_Variable( &session->fileSession, variableNumber, fieldType, variableType, componentCount );
+      return FieldExport_File_Variable( &session->fileSession, variableName, variableNumber, fieldType, variableType, componentCount );
     }
     else
     {
