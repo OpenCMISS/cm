@@ -1754,12 +1754,12 @@ CONTAINS
             TEMP1=-TRACE/3.0_DP
             TEMP2=TRACE2/3.0_DP
             TEMP3=TEMP2-TEMP1**2 !<=0
-            IF(TEMP3>=0.0_DP) THEN !include>0 for numerical error
+            IF(TEMP3>-1.0E-5_DP) THEN !include some negatives for numerical errors
               EIGEN_MIN=-TEMP1 !all eigenvalues are the same                
             ELSE
               TEMP3=DSQRT(-TEMP3)
               TEMP4=(DET+3.0_DP*(TEMP1*TEMP2)-2.0_DP*TEMP1**3)/(2.0_DP*TEMP3**3)
-              EIGEN_MIN=2.0_DP*TEMP3*DCOS((REAL(DACOS(TEMP4))+TWOPI)/3.0_DP)-TEMP1                
+              EIGEN_MIN=2.0_DP*TEMP3*DCOS((DACOS(TEMP4)+TWOPI)/3.0_DP)-TEMP1                
             ENDIF
             FUNCTION_GRADIENT_NORM=DSQRT(DOT_PRODUCT(FUNCTION_GRADIENT,FUNCTION_GRADIENT))
             DO itr2=1,DATA_PROJECTION%MAXIMUM_NUMBER_OF_ITERATIONS !(inner loop: adjust region size) usually EXIT at 1 or 2 iterations
