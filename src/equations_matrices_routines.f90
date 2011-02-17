@@ -575,7 +575,6 @@ CONTAINS
                     node=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                     DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
                       derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-!  !#######################################################VERSIONS START########################################################
                       version=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
                       local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                         & DERIVATIVES(derivative)%VERSIONS(version)
@@ -584,7 +583,6 @@ CONTAINS
                       ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
                       ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
                       ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
-!  !#######################################################VERSIONS END##########################################################
                     ENDDO !derivative_idx
                   ENDDO !node_idx
                 CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -632,11 +630,9 @@ CONTAINS
                     node=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                     DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
                       derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-!  !#######################################################VERSIONS START########################################################
                       version=ELEMENTS_TOPOLOGY%ELEMENTS(ROW_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
                       local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                         & DERIVATIVES(derivative)%VERSIONS(version)
-!  !#######################################################VERSIONS END##########################################################
                       ELEMENT_MATRIX%NUMBER_OF_ROWS=ELEMENT_MATRIX%NUMBER_OF_ROWS+1
                       ELEMENT_MATRIX%ROW_DOFS(ELEMENT_MATRIX%NUMBER_OF_ROWS)=local_ny
                     ENDDO !derivative_idx
@@ -686,11 +682,9 @@ CONTAINS
                     node=ELEMENTS_TOPOLOGY%ELEMENTS(COLUMN_ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                     DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
                       derivative=ELEMENTS_TOPOLOGY%ELEMENTS(COLUMN_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-!  !#######################################################VERSIONS START########################################################
                       version=ELEMENTS_TOPOLOGY%ELEMENTS(COLUMN_ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
                       local_ny=COLS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                         & DERIVATIVES(derivative)%VERSIONS(version)
-!  !#######################################################VERSIONS END##########################################################
                       global_ny=COLS_FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
                       ELEMENT_MATRIX%NUMBER_OF_COLUMNS=ELEMENT_MATRIX%NUMBER_OF_COLUMNS+1
                       ELEMENT_MATRIX%COLUMN_DOFS(ELEMENT_MATRIX%NUMBER_OF_COLUMNS)=global_ny
@@ -894,12 +888,10 @@ CONTAINS
               DO node_idx=1,BASIS%NUMBER_OF_NODES
                 node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
                 DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-!  !#######################################################VERSIONS START########################################################
                   derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
                   version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
                   local_ny=ROWS_FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                     & DERIVATIVES(derivative)%VERSIONS(version)
-!  !#######################################################VERSIONS END##########################################################
                   ELEMENT_VECTOR%NUMBER_OF_ROWS=ELEMENT_VECTOR%NUMBER_OF_ROWS+1
                   ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%NUMBER_OF_ROWS)=local_ny
                 ENDDO !derivative_idx
@@ -3072,7 +3064,6 @@ CONTAINS
                                       nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)!value for a particular field dof (local_ny)
                                       np=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyy)!node number (np) of the field parameter
                                       nh=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(4,nyy)!component number (nh) of the field parameter
-  !#######################################################VERSIONS END##########################################################
                                       DOMAIN_NODES=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%NODES
                                       
                                       !Set up list
@@ -3092,13 +3083,11 @@ CONTAINS
                                           DO nn=1,BASIS%NUMBER_OF_NODES
                                             mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                             DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-!  !#######################################################VERSIONS START########################################################
                                               mk=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,nnk,nn)
                                               mv=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,nnk,nn)
                                               !Find the local and global column and add the global column to the indices list
                                               local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                                 & NODES(mp)%DERIVATIVES(mk)%VERSIONS(mv)
-!  !#######################################################VERSIONS END##########################################################
                                               global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                           
                                               CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
@@ -3341,10 +3330,8 @@ CONTAINS
                                       CALL FLAG_ERROR("Constant interpolation is not implemented yet.",ERR,ERROR,*999)
                                     CASE(FIELD_NODE_DOF_TYPE)
                                       nyy=DEPENDENT_DOFS_PARAM_MAPPING%DOF_TYPE(2,local_ny)
-  !#######################################################VERSIONS START########################################################
                                       np=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(3,nyy)
                                       nh=DEPENDENT_DOFS_PARAM_MAPPING%NODE_DOF2PARAM_MAP(4,nyy)
-  !#######################################################VERSIONS END##########################################################
                                       DOMAIN_NODES=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%NODES
                                       DOMAIN_ELEMENTS=>FIELD_VARIABLE%COMPONENTS(nh)%DOMAIN%TOPOLOGY%ELEMENTS
                                       !Set up list
@@ -3373,13 +3360,11 @@ CONTAINS
                                             DO nn=1,BASIS%NUMBER_OF_NODES
                                               mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                               DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-!  !#######################################################VERSIONS START########################################################
                                                 mk=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,nnk,nn)
                                                 mv=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,nnk,nn)
                                                 !Find the local and global column and add the global column to the indices list
                                                 local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                                   & NODES(mp)%DERIVATIVES(mk)%VERSIONS(mv)
-!  !#######################################################VERSIONS END##########################################################
                                                 global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                                 CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
                                               ENDDO !mk
@@ -3433,13 +3418,11 @@ CONTAINS
                                           DO nn=1,BASIS%NUMBER_OF_NODES
                                             mp=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_NODES(nn)
                                             DO nnk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
-!  !#######################################################VERSIONS START########################################################
                                               mk=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,nnk,nn)
                                               mv=DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,nnk,nn)
                                               !Find the local and global column and add the global column to the indices list
                                               local_column=FIELD_VARIABLE%COMPONENTS(nh2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                                 & NODES(mp)%DERIVATIVES(mk)%VERSIONS(mv)
-!  !#######################################################VERSIONS END##########################################################
                                               global_column=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_column)
                                               CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(local_ny)%PTR,global_column,ERR,ERROR,*999)
                                             ENDDO !mk

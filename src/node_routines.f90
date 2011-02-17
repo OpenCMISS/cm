@@ -851,64 +851,6 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE NODES_USER_NUMBER_SET
-        
-  !
-  !================================================================================================================================
-  !
-
-!  !#######################################################VERSIONS START########################################################
-
-!  !>Changes/sets the user number for a node identified by a given global number. \see OPENCMISS::CMISSNodesNumberOfVersionsSet
-!  SUBROUTINE NODES_NUMBER_OF_VERSIONS_SET(NODES,USER_NUMBER,DERIVATIVE_NUMBER,NUMBER_OF_VERSIONS,ERR,ERROR,*)
-
-!    !Argument variables
-!    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to set the number for
-!    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to set the number of versions for
-!    INTEGER(INTG), INTENT(IN) :: DERIVATIVE_NUMBER !<The derivative number to set the number of versions for
-!    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_VERSIONS !<The number of versions to set
-!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-!    !Local Variables
-!    INTEGER(INTG) :: GLOBAL_NUMBER
-!    LOGICAL :: NODE_EXISTS
-!    TYPE(VARYING_STRING) :: LOCAL_ERROR
-!    
-!    CALL ENTERS("NODES_NUMBER_OF_VERSIONS_SET",ERR,ERROR,*999)
-
-!    IF(ASSOCIATED(NODES)) THEN
-!      IF(NODES%NODES_FINISHED) THEN
-!        CALL FLAG_ERROR("Nodes have been finished.",ERR,ERROR,*999)
-!      ELSE
-!        !Check the node user number exists
-!        CALL NODE_CHECK_EXISTS(NODES,USER_NUMBER,NODE_EXISTS,GLOBAL_NUMBER,ERR,ERROR,*999)
-!        IF(NODE_EXISTS) THEN
-!          IF(DERIVATIVE_NUMBER>=1.AND.DERIVATIVE_NUMBER<=SIZE(PARTIAL_DERIVATIVE_INDEX,1)) THEN
-!            NODES%NODES(GLOBAL_NUMBER)%NUMBER_OF_VERSIONS(DERIVATIVE_NUMBER)=NUMBER_OF_VERSIONS
-!          ELSE
-!            LOCAL_ERROR="The specified derivative number of "//TRIM(NUMBER_TO_VSTRING(DERIVATIVE_NUMBER,"*",ERR,ERROR))// &
-!              & " is invalid. The derivative number should be between 1 and "// &
-!              & TRIM(NUMBER_TO_VSTRING(SIZE(PARTIAL_DERIVATIVE_INDEX,1),"*",ERR,ERROR))//"."
-!            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!          ENDIF
-!        ELSE
-!          LOCAL_ERROR="The specified user node number of "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
-!            & " is invalid."
-!          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!        ENDIF
-!      ENDIF
-!    ELSE
-!      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
-!    ENDIF
-!    
-!    CALL EXITS("NODES_NUMBER_OF_VERSIONS_SET")
-!    RETURN
-!999 CALL ERRORS("NODES_NUMBER_OF_VERSIONS_SET",ERR,ERROR)
-!    CALL EXITS("NODES_NUMBER_OF_VERSIONS_SET")
-!    RETURN 1
-!   
-!  END SUBROUTINE NODES_NUMBER_OF_VERSIONS_SET
-!        
-!  !#######################################################VERSIONS END##########################################################
 
   !
   !================================================================================================================================

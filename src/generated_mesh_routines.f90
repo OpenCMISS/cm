@@ -3408,10 +3408,8 @@ CONTAINS
                       & TOTAL_NUMBER_OF_NODES_XI(1)+1
                     node_position_idx(1)=MOD(MOD(component_node-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
                       & TOTAL_NUMBER_OF_NODES_XI(1))+1
-  !#######################################################VERSIONS START########################################################
                     !Default to version 1 of each node derivative
                     dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
-  !#######################################################VERSIONS END##########################################################
                     VALUE=0.0_DP
                     DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
                       VALUE=VALUE+REAL(node_position_idx(xi_idx)-1,DP)*DELTA_COORD(component_idx,xi_idx)
@@ -3466,11 +3464,9 @@ CONTAINS
                       DO derivative_idx=1,MAXIMUM_GLOBAL_DERIV_NUMBER
                         IF(DERIVATIVES_NUMBER_OF_LINES(derivative_idx)>0) THEN
                           DELTA(derivative_idx)=DELTA(derivative_idx)/REAL(DERIVATIVES_NUMBER_OF_LINES(derivative_idx),DP)
-  !#######################################################VERSIONS START########################################################
                           !Default to version 1 of each node derivative
                           dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)% &
                             & DERIVATIVES(derivative_idx)%VERSIONS(1)
-  !#######################################################VERSIONS END##########################################################
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & dof,DELTA(derivative_idx),ERR,ERROR,*999)
                         ENDIF
@@ -3637,10 +3633,8 @@ CONTAINS
                 RECT_COORDS(2)=POLAR_COORDS(1)*SIN(POLAR_COORDS(2))
                 RECT_COORDS(3)=POLAR_COORDS(3)
                 RECT_COORDS=RECT_COORDS+CYLINDER_MESH%ORIGIN
-  !#######################################################VERSIONS START########################################################
                 !Default to version 1 of each node derivative
                 ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(np)%DERIVATIVES(1)%VERSIONS(1)
-  !#######################################################VERSIONS END##########################################################
                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ny, &
                   & RECT_COORDS(component_idx),ERR,ERROR,*999)
                 ! Do derivatives: if there are derivatives, we can assume it's cubic hermite
@@ -3650,9 +3644,7 @@ CONTAINS
                   ! Since I decided how xi 1,2,3 line up with the cylinder polar coordinates,
                   ! we know a priori that only some of the derivatives are nonzero (analytically).
                   ! NOTE: if hermite type used, should assign FIELD_UNIT_SCALING type for this to work
-  !#######################################################VERSIONS START########################################################
                   DO nk=2,FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(np)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS END##########################################################
                     SELECT CASE(DOMAIN_NODES%NODES(np)%DERIVATIVES(nk)%GLOBAL_DERIVATIVE_INDEX)
                     CASE(GLOBAL_DERIV_S1)
                       SELECT CASE(component_idx)
@@ -3691,11 +3683,9 @@ CONTAINS
                       DERIV=0.0_DP
                     END SELECT
                     ! assign derivative
-  !#######################################################VERSIONS START########################################################
                     !Default to version 1 of each node derivative
                     ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nk)%DERIVATIVES(np)% &
                       & VERSIONS(1)
-  !#######################################################VERSIONS END##########################################################
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                          & ny,DERIV,ERR,ERROR,*999)
                   ENDDO !nk

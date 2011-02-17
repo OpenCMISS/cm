@@ -2078,7 +2078,6 @@ CONTAINS
                             DOMAIN_LINE%BASIS=>BASIS%LINE_BASES(DECOMPOSITION_LINE%XI_DIRECTION)%PTR
                             ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)),STAT=ERR)
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line nodes in line.",ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
                             ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(2,DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                               & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)),STAT=ERR)
                             IF(ERR/=0) CALL FLAG_ERROR("Could not allocate line derivatives in line.",ERR,ERROR,*999)
@@ -2100,7 +2099,6 @@ CONTAINS
                                   & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx), &
                                   & BASIS%NODE_NUMBERS_IN_LOCAL_LINE(basis_local_line_node_idx,basis_local_line_idx))
                                 DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
-      !#######################################################VERSIONS END##########################################################
                               ENDIF
                             ENDDO !basis_local_line_node_idx
                           ENDIF
@@ -2240,7 +2238,6 @@ CONTAINS
                                 ALLOCATE(DOMAIN_LINE%NODES_IN_LINE(BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)), &
                                   & STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in line.",ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
                                 ALLOCATE(DOMAIN_LINE%DERIVATIVES_IN_LINE(2,DOMAIN_LINE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                                   & BASIS%NUMBER_OF_NODES_IN_LOCAL_LINE(basis_local_line_idx)),STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivatives in line.",ERR,ERROR,*999)
@@ -2266,7 +2263,6 @@ CONTAINS
                                     DOMAIN_LINE%DERIVATIVES_IN_LINE(2,2,basis_local_line_node_idx)=version_idx
                                   ENDIF
                                   NODES_NUMBER_OF_LINES(node_idx)=NODES_NUMBER_OF_LINES(node_idx)+1
-      !#######################################################VERSIONS END##########################################################
                                 ENDDO !basis_local_line_node_idx
                               ELSE
                                 CALL FLAG_ERROR("Line is not surrounded by any elements?",ERR,ERROR,*999)
@@ -2358,7 +2354,6 @@ CONTAINS
             & '("        Nodes in line        :",4(X,I8))','(30X,4(X,I8))',ERR,ERROR,*999)
           DO basis_local_line_node_idx=1,DOMAIN_LINE%BASIS%NUMBER_OF_NODES
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Node : ",basis_local_line_node_idx,ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
             !/TODO::Loop over local_derivative index so this output makes more sense !<DERIVATIVES_IN_LINE(i,local_derivative_idx,local_node_idx)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
               & DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_line_node_idx),4,4, &
@@ -2368,7 +2363,6 @@ CONTAINS
               & DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_line_node_idx),4,4, &
               & DOMAIN_LINE%DERIVATIVES_IN_LINE(2,:,basis_local_line_node_idx), &
               & '("            Derivatives Versions in line  :",4(X,I8))','(34X,4(X,I8))',ERR,ERROR,*999)
-      !#######################################################VERSIONS END##########################################################
           ENDDO !basis_local_line_node_idx
         ENDDO !component_idx
       ENDDO !local_line_idx
@@ -2702,7 +2696,6 @@ CONTAINS
                               ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)), &
                                 & STAT=ERR)
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face nodes in face",ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
                               ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                                 & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)),STAT=ERR)
                               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face derivatives in face",ERR,ERROR,*999)
@@ -2726,7 +2719,6 @@ CONTAINS
                                     & 2,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx), &
                                     & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(basis_local_face_node_idx,basis_local_face_idx))
                                   DOMAIN_FACE%DERIVATIVES_IN_FACE(2,2,basis_local_face_node_idx)=version_idx
-      !#######################################################VERSIONS END##########################################################
                                 ENDIF
                               ENDDO !basis_local_face_node_idx
                             ENDIF
@@ -2872,7 +2864,6 @@ CONTAINS
                                 ALLOCATE(DOMAIN_FACE%NODES_IN_FACE(BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)), &
                                   & STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes in face",ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
                                 ALLOCATE(DOMAIN_FACE%DERIVATIVES_IN_FACE(2,DOMAIN_FACE%BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                                   & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(basis_local_face_idx)),STAT=ERR)
                                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivatives in face",ERR,ERROR,*999)
@@ -2899,11 +2890,10 @@ CONTAINS
                                     DOMAIN_FACE%DERIVATIVES_IN_FACE(2,2,basis_local_face_node_idx)=version_idx
                                   ENDIF
                                   NODES_NUMBER_OF_FACES(node_idx)=NODES_NUMBER_OF_FACES(node_idx)+1
-      !#######################################################VERSIONS END##########################################################
                                 ENDDO !basis_local_face_node_idx
                               ELSE
                                 CALL FLAG_ERROR("Face is not surrounded by any elements?",ERR,ERROR,*999)
-                              ENDIF                              
+                              ENDIF
                             ENDDO !face_idx
                             DO node_idx=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                               ALLOCATE(DOMAIN_NODES%NODES(node_idx)%NODE_FACES(NODES_NUMBER_OF_FACES(node_idx)),STAT=ERR)
@@ -2992,7 +2982,6 @@ CONTAINS
             & '("        Nodes in face        :",4(X,I8))','(30X,4(X,I8))',ERR,ERROR,*999)
           DO basis_local_face_node_idx=1,DOMAIN_FACE%BASIS%NUMBER_OF_NODES
             CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"          Node : ",basis_local_face_node_idx,ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
             !/TODO::Loop over local_derivative index so this output makes more sense !<DERIVATIVES_IN_LINE(i,local_derivative_idx,local_node_idx)
             CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1, &
               & DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_face_node_idx),4,4,DOMAIN_FACE% &
@@ -3002,7 +2991,6 @@ CONTAINS
               & DOMAIN_FACE%BASIS%NUMBER_OF_DERIVATIVES(basis_local_face_node_idx),4,4,DOMAIN_FACE% &
               & DERIVATIVES_IN_FACE(2,:,basis_local_face_node_idx),'("            Derivatives Versions in face  :",4(X,I8))', &
               & '(34X,4(X,I8))',ERR,ERROR,*999)
-      !#######################################################VERSIONS END##########################################################
           ENDDO !basis_local_face_node_idx
         ENDDO !component_idx
       ENDDO !face_idx
@@ -4001,29 +3989,15 @@ CONTAINS
                     ALLOCATE(NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global to local map local type.",ERR,ERROR,*999)
                     DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
-                         !\todo DELETE THIS
-!                      ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
-!                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-!                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local number.",ERR,ERROR,*999)
-!                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-!                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map domain number.",ERR,ERROR,*999)
-!                      ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
-!                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local type.",ERR,ERROR,*999)
                       DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                         ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
                         ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local number.",ERR,ERROR,*999)
                         ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(MAX_NUMBER_DOMAINS),STAT=ERR)
-
-
-
-
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map domain number.",ERR,ERROR,*999)
                         ALLOCATE(DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(MAX_NUMBER_DOMAINS),STAT=ERR)
                         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof global to local map local type.",ERR,ERROR,*999)
                       ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                     ENDDO !derivative_idx
                     IF(NUMBER_OF_DOMAINS==1) THEN
                       !Node is an internal node
@@ -4036,15 +4010,6 @@ CONTAINS
                       NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(1)=DOMAINS(1) 
                       NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
                       DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
-                         !\todo DELETE THIS
-!                        ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
-!                        !LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
-!                        !DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=-1
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
                         DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                           ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
                           DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
@@ -4052,21 +4017,15 @@ CONTAINS
                           DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
                           DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_INTERNAL
                         ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                       ENDDO !derivative_idx
                     ELSE
                       !Node is on the boundary of computational domains
                       NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
                       DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
-                         !\todo DELETE THIS
-!                        ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
                         DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                           ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
                           DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
                         ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                       ENDDO !derivative_idx
                       DO domain_idx=1,NUMBER_OF_DOMAINS
                         domain_no=DOMAINS(domain_idx)
@@ -4076,21 +4035,12 @@ CONTAINS
                         NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(domain_idx)=domain_no
                         NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
                         DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
-                         !\todo DELETE THIS
-!                          ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
-!                          !LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-!                          !DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=LOCAL_DOF_NUMBERS(domain_no)
-!                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=-1
-!                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)=domain_no
-!                          DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
                           DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                             ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
                             DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)=-1
                             DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)=domain_no
                             DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)=DOMAIN_LOCAL_BOUNDARY
                           ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                         ENDDO !derivative_idx
                       ENDDO !domain_idx
                     ENDIF
@@ -4111,17 +4061,11 @@ CONTAINS
                       LOCAL_NODE_NUMBERS(domain_no)=LOCAL_NODE_NUMBERS(domain_no)+1
                       NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_NUMBER(1)=LOCAL_NODE_NUMBERS(domain_no)
                       DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
-                         !\todo DELETE THIS
-!                        ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
-!                        LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
                         DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                           ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
                           LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
                           DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
                         ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                       ENDDO !derivative_idx
                     ELSE !Boundary node
                       NUMBER_OF_DOMAINS=NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%NUMBER_OF_DOMAINS
@@ -4141,14 +4085,6 @@ CONTAINS
                             NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%DOMAIN_NUMBER(1)=domain_no
                             NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(node_idx)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
                             DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
-                         !\todo DELETE THIS
-!                              ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)
-!                              LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
-!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS=1
-!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(1)=LOCAL_DOF_NUMBERS(domain_no)
-!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
-!                              DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
                               DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                                 ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
                                 LOCAL_DOF_NUMBERS(domain_no)=LOCAL_DOF_NUMBERS(domain_no)+1
@@ -4157,7 +4093,6 @@ CONTAINS
                                 DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(1)=domain_no
                                 DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(1)=DOMAIN_LOCAL_BOUNDARY
                               ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                             ENDDO !derivative_idx
                           ELSE
                             !The node as already been assigned to a domain so it must be a ghost node in this domain
@@ -4190,20 +4125,6 @@ CONTAINS
                         & NODES_MAPPING%GLOBAL_TO_LOCAL_MAP(ghost_node)%NUMBER_OF_DOMAINS)= &
                         & DOMAIN_LOCAL_GHOST
                       DO derivative_idx=1,MESH_TOPOLOGY%NODES%NODES(ghost_node)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
-                         !\todo DELETE THIS
-!                        ny=MESH_TOPOLOGY%NODES%NODES(ghost_node)%DOF_INDEX(derivative_idx)
-!                        LOCAL_DOF_NUMBERS(domain_idx)=LOCAL_DOF_NUMBERS(domain_idx)+1
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS= &
-!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS+1
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER( &
-!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
-!                          & LOCAL_DOF_NUMBERS(domain_idx)
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER( &
-!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)=domain_idx
-!                        DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE( &
-!                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
-!                          & DOMAIN_LOCAL_GHOST
                         DO version_idx=1,MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
                           ny=MESH_TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
                           LOCAL_DOF_NUMBERS(domain_idx)=LOCAL_DOF_NUMBERS(domain_idx)+1
@@ -4218,7 +4139,6 @@ CONTAINS
                             & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS)= &
                             & DOMAIN_LOCAL_GHOST
                         ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                       ENDDO !derivative_idx
                     ENDDO !no_ghost_node
                     DEALLOCATE(GHOST_NODES)
@@ -4596,14 +4516,13 @@ CONTAINS
               DOMAIN_NODES%NUMBER_OF_GLOBAL_NODES=DOMAIN%MAPPINGS%NODES%NUMBER_OF_GLOBAL
               ALLOCATE(DOMAIN_DOFS%DOF_INDEX(3,DOMAIN%MAPPINGS%DOFS%TOTAL_NUMBER_OF_LOCAL),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain dofs dof index.",ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
               DOMAIN_DOFS%NUMBER_OF_DOFS=DOMAIN%MAPPINGS%DOFS%NUMBER_OF_LOCAL
               DOMAIN_DOFS%TOTAL_NUMBER_OF_DOFS=DOMAIN%MAPPINGS%DOFS%TOTAL_NUMBER_OF_LOCAL
               DOMAIN_DOFS%NUMBER_OF_GLOBAL_DOFS=DOMAIN%MAPPINGS%DOFS%NUMBER_OF_GLOBAL
               !Loop over the domain nodes and calculate the parameters from the mesh nodes
               CALL TREE_CREATE_START(DOMAIN_NODES%NODES_TREE,ERR,ERROR,*999)
               CALL TREE_INSERT_TYPE_SET(DOMAIN_NODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
-              CALL TREE_CREATE_FINISH(DOMAIN_NODES%NODES_TREE,ERR,ERROR,*999)               
+              CALL TREE_CREATE_FINISH(DOMAIN_NODES%NODES_TREE,ERR,ERROR,*999)
               dof_idx=0
               DO local_node=1,DOMAIN_NODES%TOTAL_NUMBER_OF_NODES
                 CALL DOMAIN_TOPOLOGY_NODE_INITIALISE(DOMAIN_NODES%NODES(local_node),ERR,ERROR,*999)
@@ -4617,22 +4536,9 @@ CONTAINS
                 DOMAIN_NODES%NODES(local_node)%NUMBER_OF_SURROUNDING_ELEMENTS=0
                 NULLIFY(DOMAIN_NODES%NODES(local_node)%SURROUNDING_ELEMENTS)
                 DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES=MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES
-                !ALLOCATE(DOMAIN_NODES%NODES(local_node)%GLOBAL_DERIVATIVE_INDEX( &
-                !  & MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
-                !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999)
-                !DOMAIN_NODES%NODES(local_node)%GLOBAL_DERIVATIVE_INDEX=MESH_NODES%NODES(global_node)%GLOBAL_DERIVATIVE_INDEX !TODO: VERSIONS Delete line
-                !ALLOCATE(DOMAIN_NODES%NODES(local_node)%PARTIAL_DERIVATIVE_INDEX( &
-                !  & MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
-                !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node partial derivative index.",ERR,ERROR,*999)
-                !DOMAIN_NODES%NODES(local_node)%PARTIAL_DERIVATIVE_INDEX=MESH_NODES%NODES(global_node)%PARTIAL_DERIVATIVE_INDEX !TODO: VERSIONS Delete line
-                !ALLOCATE(DOMAIN_NODES%NODES(local_node)%DOF_INDEX(MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-                !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node dof index.",ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
                 ALLOCATE(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(MESH_NODES%NODES(global_node)%NUMBER_OF_DERIVATIVES),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain node derivatives.",ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
                 DO derivative_idx=1,DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
                   CALL DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE( &
                     & DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
                   DOMAIN_NODES%NODES(local_node)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX= & 
@@ -4651,7 +4557,6 @@ CONTAINS
                     DOMAIN_DOFS%DOF_INDEX(2,dof_idx)=derivative_idx
                     DOMAIN_DOFS%DOF_INDEX(3,dof_idx)=local_node
                   ENDDO !version_idx
-  !#######################################################VERSIONS END##########################################################
                 ENDDO !derivative_idx
                 DOMAIN_NODES%NODES(local_node)%BOUNDARY_NODE=MESH_NODES%NODES(global_node)%BOUNDARY_NODE
               ENDDO !local_node
@@ -4663,19 +4568,16 @@ CONTAINS
                 DOMAIN_ELEMENTS%ELEMENTS(local_element)%BASIS=>BASIS
                 ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_NODES(BASIS%NUMBER_OF_NODES),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element nodes",ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
                 ALLOCATE(DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                   & BASIS%NUMBER_OF_NODES),STAT=ERR)
                 IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain elements element derivatives",ERR,ERROR,*999)
-  !#######################################################VERSIONS END##########################################################
                 DO nn=1,BASIS%NUMBER_OF_NODES
                   global_node=MESH_ELEMENTS%ELEMENTS(global_element)%MESH_ELEMENT_NODES(nn)
                   local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(global_node)%LOCAL_NUMBER(1)
                   DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_NODES(nn)=local_node
                   DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
                     !Find equivalent node derivative by matching partial derivative index
-  !#######################################################VERSIONS START########################################################
-                    !/todo Take a look at this later- is it needed?
+                    !/todo Take a look at this - is it needed any more?
                     FOUND=.FALSE.
                     DO nkk=1,DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES
                       IF(DOMAIN_NODES%NODES(local_node)%DERIVATIVES(nkk)%PARTIAL_DERIVATIVE_INDEX == &
@@ -4688,7 +4590,6 @@ CONTAINS
                       DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(1,derivative_idx,nn)=nkk
                       DOMAIN_ELEMENTS%ELEMENTS(local_element)%ELEMENT_DERIVATIVES(2,derivative_idx,nn) = & 
                         & MESH_ELEMENTS%ELEMENTS(global_element)%USER_ELEMENT_NODE_VERSIONS(derivative_idx,nn)
-  !#######################################################VERSIONS END##########################################################
                     ELSE
                       CALL FLAG_ERROR("Could not find equivalent node derivative",ERR,ERROR,*999)
                     ENDIF
@@ -4727,7 +4628,6 @@ CONTAINS
           & ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of derivatives = ", &
           & DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
         DO derivative_idx=1,DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Node local derivative number = ",derivative_idx,ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Global derivative index = ", &
@@ -4739,7 +4639,6 @@ CONTAINS
             & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX, &
             & '("        Degree-of-freedom index(version_idx)  :",4(X,I9))','(36X,4(X,I9))',ERR,ERROR,*999)
         ENDDO !derivative_idx
-  !#######################################################VERSIONS END##########################################################
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Boundary node = ", &
           & DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE,ERR,ERROR,*999)
      ENDDO !node_idx
@@ -4769,7 +4668,6 @@ CONTAINS
             & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(1,:,nn), &
             & '("        Element derivatives(derivative_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
         ENDDO !nn
-  !#######################################################VERSIONS START########################################################
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Element versions :",ERR,ERROR,*999)
         DO nn=1,DOMAIN_ELEMENTS%ELEMENTS(ne)%BASIS%NUMBER_OF_NODES
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local node number = ",nn,ERR,ERROR,*999)
@@ -4777,7 +4675,6 @@ CONTAINS
             & DOMAIN_ELEMENTS%ELEMENTS(ne)%ELEMENT_DERIVATIVES(2,:,nn), &
             & '("        Element derivatives(version_idx) :",8(X,I2))','(33X,8(X,I2))',ERR,ERROR,*999)
         ENDDO !nn
-  !#######################################################VERSIONS END##########################################################
       ENDDO !ne
     ENDIF
     
@@ -5367,7 +5264,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  !#######################################################VERSIONS START########################################################
 
   !>Finalises the given domain topology node derivative and deallocates all memory.
   SUBROUTINE DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE_DERIVATIVE,ERR,ERROR,*)
@@ -5417,8 +5313,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE DOMAIN_TOPOLOGY_NODE_DERIVATIVE_INITIALISE
 
-  !#######################################################VERSIONS END##########################################################
-
   !
   !================================================================================================================================
   !
@@ -5435,13 +5329,9 @@ CONTAINS
 
     CALL ENTERS("DOMAIN_TOPOLOGY_NODE_FINALISE",ERR,ERROR,*999)
 
-!  !#######################################################VERSIONS START########################################################
     DO derivative_idx=1,NODE%NUMBER_OF_DERIVATIVES
        CALL DOMAIN_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
     ENDDO !derivative_idx
-    !IF(ALLOCATED(NODE%GLOBAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%GLOBAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
-    !IF(ALLOCATED(NODE%PARTIAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%PARTIAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
-!  !#######################################################VERSIONS END##########################################################
     IF(ASSOCIATED(NODE%SURROUNDING_ELEMENTS)) DEALLOCATE(NODE%SURROUNDING_ELEMENTS)
     IF(ALLOCATED(NODE%NODE_LINES)) DEALLOCATE(NODE%NODE_LINES)
  
@@ -6617,14 +6507,7 @@ CONTAINS
         IF(ASSOCIATED(TOPOLOGY%DOFS)) THEN
           NUMBER_OF_DOFS=0
           DO node_idx=1,TOPOLOGY%NODES%NUMBER_OF_NODES
-!  !#######################################################VERSIONS START########################################################
-             !\todo DELETE THIS
-!            ALLOCATE(TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-!            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology node dof index",ERR,ERROR,*999)
             DO derivative_idx=1,TOPOLOGY%NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-               !\todo DELETE THIS
-!              NUMBER_OF_DOFS=NUMBER_OF_DOFS+1
-!              TOPOLOGY%NODES%NODES(node_idx)%DOF_INDEX(derivative_idx)=NUMBER_OF_DOFS
               ALLOCATE(TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX( &
                 & TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate mesh topology node derivative version dof index",ERR,ERROR,*999)
@@ -6632,7 +6515,6 @@ CONTAINS
                 NUMBER_OF_DOFS=NUMBER_OF_DOFS+1
                 TOPOLOGY%NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)=NUMBER_OF_DOFS
               ENDDO !version_idx
-!  !#######################################################VERSIONS END##########################################################
             ENDDO !derivative_idx
           ENDDO !node_idx
           TOPOLOGY%DOFS%NUMBER_OF_DOFS=NUMBER_OF_DOFS
@@ -6841,12 +6723,10 @@ CONTAINS
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global element nodes",ERR,ERROR,*999)
                     ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODES=1
                     ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES=1
-  !#######################################################VERSIONS START########################################################
                     ALLOCATE(ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES, &
                       & BASIS%NUMBER_OF_NODES),STAT=ERR)
                     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global element nodes versions",ERR,ERROR,*999)
                     ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS = 1
-  !#######################################################VERSIONS END##########################################################
                   ENDDO !ne
                 ELSE
                   CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
@@ -7319,7 +7199,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  !#######################################################VERSIONS START########################################################
 
   !>Changes/sets an element node's version for a mesh element identified by a given global number. \todo specify by user number not global number \see OPENCMISS::CMISSMeshElementsNodesSet
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GLOBAL_NUMBER,ELEMENTS,VERSION_NUMBER,DERIVATIVE_NUMBER, &
@@ -7367,7 +7246,7 @@ CONTAINS
                 IF(VERSION_NUMBER>=1) THEN !Check if the specified version is greater than 1
                   ELEMENTS%ELEMENTS(GLOBAL_NUMBER)%USER_ELEMENT_NODE_VERSIONS(DERIVATIVE_NUMBER,USER_ELEMENT_NODE_INDEX) & 
                     & = VERSION_NUMBER
-                  !TODO: There is redunancy in USER_ELEMENT_NODE_VERSIONS since it was allocated in MESH_TOPOLOGY_ELEMENTS_CREATE_START based on MAXIMUM_NUMBER_OF_DERIVATIVES for that elements basis:ALLOCATE(ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES,BASIS%NUMBER_OF_NODES),STAT=ERR)
+                  !\todo : There is redunancy in USER_ELEMENT_NODE_VERSIONS since it was allocated in MESH_TOPOLOGY_ELEMENTS_CREATE_START based on MAXIMUM_NUMBER_OF_DERIVATIVES for that elements basis:ALLOCATE(ELEMENTS%ELEMENTS(ne)%USER_ELEMENT_NODE_VERSIONS(BASIS%MAXIMUM_NUMBER_OF_DERIVATIVES,BASIS%NUMBER_OF_NODES),STAT=ERR)
                 ELSE
                   LOCAL_ERROR="The specified node version number of "//TRIM(NUMBER_TO_VSTRING(VERSION_NUMBER,"*", & 
                     & ERR,ERROR))//" is invalid. The element node index should be greater than 1."
@@ -7410,8 +7289,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#######################################################VERSIONS END##########################################################
-
  !>Calculates the element numbers surrounding an element in a mesh topology.
   SUBROUTINE MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
 
@@ -7440,7 +7317,7 @@ CONTAINS
     IF(ASSOCIATED(TOPOLOGY)) THEN
       IF(ASSOCIATED(TOPOLOGY%NODES)) THEN
         IF(ASSOCIATED(TOPOLOGY%ELEMENTS)) THEN
-          !Loop over the global elements in the mesh         
+          !Loop over the global elements in the mesh
           DO ne=1,TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
           !%%%% first we initialize lists that are required to find the adjacent elements list
             BASIS=>TOPOLOGY%ELEMENTS%ELEMENTS(ne)%BASIS
@@ -7500,9 +7377,9 @@ CONTAINS
                 !Determine the xi directions that lie in this xi direction
                 FACE_XI(1)=OTHER_XI_DIRECTIONS3(ni,2,1)
                 FACE_XI(2)=OTHER_XI_DIRECTIONS3(ni,3,1)
-                !Loop over the two faces                
+                !Loop over the two faces
                 DO direction_index=-1,1,2
-                  xi_direction=direction_index*ni                  
+                  xi_direction=direction_index*ni
                   !Find nodes in the element on the appropriate face/line/point
                   NULLIFY(NODE_MATCH_LIST)
                   CALL LIST_CREATE_START(NODE_MATCH_LIST,ERR,ERROR,*999)
@@ -8144,14 +8021,10 @@ CONTAINS
 
     CALL ENTERS("MESH_TOPOLOGY_NODE_FINALISE",ERR,ERROR,*999)
 
-!  !#######################################################VERSIONS START########################################################
     DO derivative_idx=1,NODE%NUMBER_OF_DERIVATIVES
        CALL MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
     ENDDO !derivative_idx
-!  !#######################################################VERSIONS END##########################################################
     IF(ASSOCIATED(NODE%SURROUNDING_ELEMENTS)) DEALLOCATE(NODE%SURROUNDING_ELEMENTS)
-    !IF(ALLOCATED(NODE%GLOBAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%GLOBAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
-    !IF(ALLOCATED(NODE%PARTIAL_DERIVATIVE_INDEX)) DEALLOCATE(NODE%PARTIAL_DERIVATIVE_INDEX) !TODO: VERSIONS Delete line
   
     CALL EXITS("MESH_TOPOLOGY_NODE_FINALISE")
     RETURN
@@ -8341,8 +8214,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !#######################################################VERSIONS START########################################################
-
   !>Finalises the given mesh topology node. 
   SUBROUTINE MESH_TOPOLOGY_NODE_DERIVATIVE_FINALISE(NODE_DERIVATIVE,ERR,ERROR,*)
 
@@ -8390,8 +8261,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE
 
-  !#######################################################VERSIONS END##########################################################
-
   !
   !================================================================================================================================
   !
@@ -8422,7 +8291,6 @@ CONTAINS
           NODES=>TOPOLOGY%NODES
           !Loop over the mesh nodes
           DO node_idx=1,NODES%NUMBER_OF_NODES
-            !VERSIONS - revert comment back to original
             !Calculate the number of derivatives and versions at each node. This needs to be calculated by looking at the mesh elements
             !as we may have an adjacent element in another domain with a higher order basis also with versions.
             NULLIFY(NODE_DERIVATIVE_LIST)
@@ -8455,27 +8323,15 @@ CONTAINS
             CALL LIST_REMOVE_DUPLICATES(NODE_DERIVATIVE_LIST,ERR,ERROR,*999)
             CALL LIST_DETACH_AND_DESTROY(NODE_DERIVATIVE_LIST,NUMBER_OF_DERIVATIVES,DERIVATIVES,ERR,ERROR,*999)
             IF(NUMBER_OF_DERIVATIVES==MAX_NUMBER_OF_DERIVATIVES) THEN
-  !#######################################################VERSIONS START########################################################
               !Set up the node derivatives.
               ALLOCATE(NODES%NODES(node_idx)%DERIVATIVES(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR)
-  !#######################################################VERSIONS END##########################################################
               NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES=MAX_NUMBER_OF_DERIVATIVES
-              !ALLOCATE(NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
-              !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999) !TODO: VERSIONS Delete line
-              !ALLOCATE(NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX(MAX_NUMBER_OF_DERIVATIVES),STAT=ERR) !TODO: VERSIONS Delete line
-              !IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node partial derivative index.",ERR,ERROR,*999) !TODO: VERSIONS Delete line
               DO derivative_idx=1,NUMBER_OF_DERIVATIVES
-  !#######################################################VERSIONS START########################################################
                 CALL MESH_TOPOLOGY_NODE_DERIVATIVE_INITIALISE(NODES%NODES(node_idx)%DERIVATIVES(derivative_idx),ERR,ERROR,*999)
                 NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX = DERIVATIVES(derivative_idx)
-  !#######################################################VERSIONS END##########################################################
-                !NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX(derivative_idx)=DERIVATIVES(derivative_idx) !TODO: VERSIONS Delete line
                 global_deriv=PARTIAL_DERIVATIVE_GLOBAL_DERIVATIVE_MAP(DERIVATIVES(derivative_idx))
                 IF(global_deriv/=0) THEN
-                  !NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(derivative_idx)=global_deriv !TODO: VERSIONS Delete line
-  !#######################################################VERSIONS START########################################################
                   NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX=global_deriv
-  !#######################################################VERSIONS END##########################################################
                 ELSE
                   LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(DERIVATIVES(derivative_idx),"*", &
                     & ERR,ERROR))//" for derivative number "//TRIM(NUMBER_TO_VSTRING(derivative_idx,"*",ERR,ERROR))// &
@@ -8507,7 +8363,6 @@ CONTAINS
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Mesh global node number = ",node_idx,ERR,ERROR,*999)
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of derivatives = ",NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES, &
           & ERR,ERROR,*999)
-  !#######################################################VERSIONS START########################################################
         DO derivative_idx=1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
           !TODO: change output string below so that it writes out derivative_idx index as well
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global derivative index(derivative_idx) = ", &
@@ -8515,13 +8370,6 @@ CONTAINS
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Partial derivative index(derivative_idx) = ", &
             & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
         ENDDO !derivative_idx
-  !#######################################################VERSIONS END##########################################################
-        !CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,8,8, & !TODO: VERSIONS Delete line
-        !  & NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX,'("    Global derivative index(derivative_idx) :",8(X,I2))', &
-        !  & '(36X,8(X,I2))',ERR,ERROR,*999) !TODO: VERSIONS Delete line
-        !CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,8,8, & !TODO: VERSIONS Delete line
-        !  & NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX,'("    Partial derivative index(derivative_idx) :",8(X,I2))', &
-        !  & '(36X,8(X,I2))',ERR,ERROR,*999) !TODO: VERSIONS Delete line
       ENDDO !node_idx
     ENDIF
     
@@ -8535,12 +8383,9 @@ CONTAINS
    
   END SUBROUTINE MESH_TOPOLOGY_NODES_DERIVATIVES_CALCULATE
 
-  !#######################################################VERSIONS END##########################################################
-
   !
   !================================================================================================================================
   !
-
 
   !>Calculates the number of versions at each node in a topology.
   SUBROUTINE MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE(TOPOLOGY,ERR,ERROR,*)
@@ -8567,7 +8412,7 @@ CONTAINS
           !Loop over the mesh elements
           !Calculate the number of versions at each node. This needs to be calculated by looking at all the mesh elements
           !as we may have an adjacent elements in another domain with a higher order basis along with different versions being assigned to its derivatives.
-          !TODO: See if there are any constraints that can be applied to restrict the amount of memory being allocated here
+          !\todo : See if there are any constraints that can be applied to restrict the amount of memory being allocated here
           ALLOCATE(NODE_VERSION_LIST(MAXIMUM_GLOBAL_DERIV_NUMBER,NODES%NUMBER_OF_NODES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node version list.",ERR,ERROR,*999)
           DO node_idx=1,NODES%NUMBER_OF_NODES
@@ -8596,7 +8441,7 @@ CONTAINS
               NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS = NUMBER_OF_VERSIONS
               ALLOCATE(NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS(NUMBER_OF_VERSIONS),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999)
-              !Possible bug in LIST_REMOVE_DUPLICATES, when it comes time to LIST_DETACH_AND_DESTROY the deleted list values are still present. Or is this how lists are supposed to work - you shift the deleted one to the end of the list and just change the number of list values to -1 
+              !\todo Possible bug in LIST_REMOVE_DUPLICATES, when it comes time to LIST_DETACH_AND_DESTROY the deleted list values are still present. Or is this how lists are supposed to work - you shift the deleted one to the end of the list and just change the number of list values to -1 
               NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS = VERSIONS(1:NUMBER_OF_VERSIONS)
               DEALLOCATE(VERSIONS)
             ENDDO!derivative_idx
@@ -8618,7 +8463,7 @@ CONTAINS
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of derivatives = ", &
           & NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
         DO derivative_idx=1,NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-          !TODO: change output string below so that it writes out derivative_idx index as well
+          !\todo : change output string below so that it writes out derivative_idx index as well
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global derivative index(derivative_idx) = ", &
             & NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%GLOBAL_DERIVATIVE_INDEX,ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Partial derivative index(derivative_idx) = ", &
@@ -8647,12 +8492,9 @@ CONTAINS
    
   END SUBROUTINE MESH_TOPOLOGY_NODES_VERSIONS_CALCULATE
 
-  !#######################################################VERSIONS END##########################################################
-
   !
   !================================================================================================================================
   !
-
 
   !>Calculates the element numbers surrounding a node for a mesh.
   SUBROUTINE MESH_TOPOLOGY_NODES_SURROUNDING_ELEMENTS_CALCULATE(TOPOLOGY,ERR,ERROR,*)

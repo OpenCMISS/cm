@@ -3207,7 +3207,7 @@ MODULE OPENCMISS
   END INTERFACE !CMISSFieldParameterSetGetNode
 
   !>Returns from the given parameter set a value for the specified element and Gauss point of a field variable component.
-  INTERFACE CMISSFieldParameterSetGetGaussPoint ! TODO: other versions
+  INTERFACE CMISSFieldParameterSetGetGaussPoint ! \todo : other versions
     MODULE PROCEDURE CMISSFieldParameterSetGetGaussPointDPObj
   END INTERFACE !CMISSFieldParameterSetGetGaussPoint
 
@@ -4199,13 +4199,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElementsNodesSetObj
   END INTERFACE !CMISSMeshElementsNodesSet
 
-  !#######################################################VERSIONS START########################################################
   !>Sets/changes a node version for an element in a mesh. 
   INTERFACE CMISSMeshElementsNodeVersionSet
     MODULE PROCEDURE CMISSMeshElementsNodeVersionSetNumber
     MODULE PROCEDURE CMISSMeshElementsNodeVersionSetObj
   END INTERFACE !CMISSMeshElementsNodeVersionSet
-  !#######################################################VERSIONS END##########################################################
 
   !>Returns the element user number for an element in a mesh. 
   INTERFACE CMISSMeshElementsUserNumberGet
@@ -4344,14 +4342,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSNodesUserNumberSetNumber
     MODULE PROCEDURE CMISSNodesUserNumberSetObj
   END INTERFACE !CMISSNodesUserNumberSet
-
-!  !#######################################################VERSIONS START########################################################
-!  !>Sets number of versions for a node identified by a given global number and component. 
-!  INTERFACE CMISSNodesNumberOfVersionsSet
-!    MODULE PROCEDURE CMISSNodesNumberOfVersionsSetNumber
-!    MODULE PROCEDURE CMISSNodesNumberOfVersionsSetObj
-!  END INTERFACE !CMISSNodesNumberOfVersionsSet
-!  !#######################################################VERSIONS END##########################################################
 
   PUBLIC CMISSNodesCreateFinish,CMISSNodesCreateStart
 
@@ -36242,7 +36232,7 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
-  !#######################################################VERSIONS START########################################################
+
   !>Sets/changes the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
   SUBROUTINE CMISSMeshElementsNodeVersionSetNumber(RegionUserNumber,MeshUserNumber,GlobalElementNumber,VersionNumber, &
     & DerivativeNumber,ElementNodeIndex,MeshComponentNumber,Err)
@@ -36325,7 +36315,7 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSMeshElementsNodeVersionSetObj
-  !#######################################################VERSIONS END##########################################################
+
   !  
   !================================================================================================================================
   !  
@@ -37368,76 +37358,6 @@ CONTAINS
   !  
   !================================================================================================================================
   !
-  
-!  !#######################################################VERSIONS START########################################################
-
-!  !>Sets number of versions for a given user node number's, derivative, identified by user number.
-!  SUBROUTINE CMISSNodesNumberOfVersionsSetNumber(RegionUserNumber,NodeUserNumber,DerivativeNumber, &
-!    & NumberOfVersions,Err)
-!  
-!    !Argument variables
-!    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the nodes to set the number of versions for.
-!    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to set the number of versions for.
-!    INTEGER(INTG), INTENT(IN) :: DerivativeNumber  !<The nk'th derivative to set the number of versions for.
-!    INTEGER(INTG), INTENT(IN) :: NumberOfVersions !<The number of versions for the nk'th derivative of the specifed user node number to set.
-!    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-!    !Local variables
-!    TYPE(NODES_TYPE), POINTER :: NODES
-!    TYPE(REGION_TYPE), POINTER :: REGION
-!    TYPE(VARYING_STRING) :: LOCAL_ERROR
-!    
-!    CALL ENTERS("CMISSNodesNumberOfVersionsSetNumber",Err,ERROR,*999)
-! 
-!    NULLIFY(REGION)
-!    NULLIFY(NODES)
-!    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-!    IF(ASSOCIATED(REGION)) THEN
-!      CALL REGION_NODES_GET(REGION,NODES,Err,ERROR,*999)
-!      CALL NODES_NUMBER_OF_VERSIONS_SET(NODES,NodeUserNumber,DerivativeNumber,NumberOfVersions,Err,ERROR,*999)
-!    ELSE
-!      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-!        & " does not exist."
-!      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-!    ENDIF
-
-!    CALL EXITS("CMISSNodesNumberOfVersionsSetNumber")
-!    RETURN
-!999 CALL ERRORS("CMISSNodesNumberOfVersionsSetNumber",Err,ERROR)
-!    CALL EXITS("CMISSNodesNumberOfVersionsSetNumber")
-!    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-!    RETURN
-!    
-!  END SUBROUTINE CMISSNodesNumberOfVersionsSetNumber
-
-!  !  
-!  !================================================================================================================================
-!  !  
-! 
-!  !>Sets number of versions for a given user node number's, derivative, identified by an object. \todo this should be user number
-!  SUBROUTINE CMISSNodesNumberOfVersionsSetObj(Nodes,NodeUserNumber,DerivativeNumber,NumberOfVersions,Err)
-!  
-!    !Argument variables
-!    TYPE(CMISSNodesType), INTENT(IN) :: Nodes !<The nodes to set the number of versions for.
-!    INTEGER(INTG), INTENT(IN) :: NodeUserNumber !<The user number of the node to set the number of versions for.
-!    INTEGER(INTG), INTENT(IN) :: DerivativeNumber  !<The nk'th derivative to set the number of versions for.
-!    INTEGER(INTG), INTENT(IN) :: NumberOfVersions !<The number of versions for the nk'th derivative of the specifed user node number to set.
-!    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-!    !Local variables
-!  
-!    CALL ENTERS("CMISSNodesNumberOfVersionsSetObj",Err,ERROR,*999)
-! 
-!    CALL NODES_NUMBER_OF_VERSIONS_SET(Nodes%NODES,NodeUserNumber,DerivativeNumber,NumberOfVersions,Err,ERROR,*999)
-
-!    CALL EXITS("CMISSNodesNumberOfVersionsSetObj")
-!    RETURN
-!999 CALL ERRORS("CMISSNodesNumberOfVersionsSetObj",Err,ERROR)
-!    CALL EXITS("CMISSNodesNumberOfVersionsSetObj")
-!    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-!    RETURN
-!    
-!  END SUBROUTINE CMISSNodesNumberOfVersionsSetObj
-
-!  !#######################################################VERSIONS END##########################################################
 
 !!==================================================================================================================================
 !!
