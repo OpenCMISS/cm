@@ -1932,9 +1932,9 @@ CONTAINS
     REAL(DP):: SOURCE,INTER_COMP_SOURCE,INTER_COMP_PERM_1,INTER_COMP_PERM_2
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
 
-    REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3), DARCY_RHO_0_F
+    REAL(DP):: PERM_OVER_VIS_PARAM, DARCY_RHO_0_F
+    !REAL(DP):: POROSITY
     REAL(DP):: PERM_TENSOR_OVER_VIS(3,3), VIS_OVER_PERM_TENSOR(3,3), Jmat
-    REAL(DP):: MESH_VEL(3), MESH_VEL_DERIV(3,3), MESH_VEL_DERIV_PHYS(3,3)
     REAL(DP):: X(3), ARG(3), L, FACT
     REAL(DP):: LM_PRESSURE,GRAD_LM_PRESSURE(3)
 
@@ -2283,13 +2283,6 @@ CONTAINS
               & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
 
 
-!==========================================================================================
-            !***  Try w-formulation  ***!
-            MESH_VEL(:) = 0.0_DP
-            MESH_VEL_DERIV(:,:) = 0.0_DP
-!==========================================================================================
-
-
 !             !--- Material Settings ---!
 !             !*** If material is variable, need to account for this in deriving the variational statement ***!
 
@@ -2314,13 +2307,6 @@ CONTAINS
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & SOURCE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             END IF
-
-!==========================================================================================
-            !***  Try w-formulation  ***!
-            POROSITY = 1.0_DP
-            GRAD_POROSITY(:) = 0.0_DP
-!==========================================================================================
-
 
 !             PERM_OVER_VIS_PARAM = MATERIALS_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
 !             PERM_TENSOR_OVER_VIS(:,:) = 0.0_DP
@@ -2463,7 +2449,7 @@ CONTAINS
                           PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
                           !within this conditional: mh==nh anyway
 
@@ -2487,9 +2473,7 @@ CONTAINS
                           ENDDO !ni
 
                           DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                            SUM = SUM + PGM * PGNSI(ni) * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
                           ENDDO !ni
 
@@ -2512,7 +2496,7 @@ CONTAINS
                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                               & SUM * RWG
                           END IF
-!---tob
+
 !                           !Try out adding the inertia term ...
 !                           IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
 !                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
@@ -2525,7 +2509,7 @@ CONTAINS
 !                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
 !                               & SUM * RWG
 !                           END IF
-!---toe
+
                         END IF
 
                       ! matrices for multi-compartment poroelastic equations
@@ -2538,7 +2522,7 @@ CONTAINS
                           PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
                           !within this conditional: mh==nh anyway
 
@@ -2562,9 +2546,7 @@ CONTAINS
                           ENDDO !ni
 
                           DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                            SUM = SUM + PGM * PGNSI(ni) * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
                           ENDDO !ni
 
@@ -2587,7 +2569,7 @@ CONTAINS
                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                               & SUM * RWG
                           END IF
-!---tob
+
 !                           !Try out adding the inertia term ...
 !                           IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
 !                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
@@ -2600,7 +2582,7 @@ CONTAINS
 !                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
 !                               & SUM * RWG
 !                           END IF
-!---toe
+
                         END IF
 
 
@@ -2616,12 +2598,12 @@ CONTAINS
                           PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
                           !within this conditional: mh==nh anyway
 
                           IF( STABILIZED ) THEN
-                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           END IF
 
                           STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
@@ -2677,15 +2659,13 @@ CONTAINS
                           ENDDO !ni
 
                           DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                            SUM = SUM + PGM * PGNSI(ni) * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
                           ENDDO !ni
 
                           IF( STABILIZED ) THEN
                             DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                              SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * PGN * &
+                              SUM = SUM + 0.5_DP * PGMSI(mi) * PGN * &
                                 & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,nh)
                             ENDDO !mi
                           END IF
@@ -2827,11 +2807,6 @@ CONTAINS
 
                       PGM = QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
-                      !Term arising from the moving mesh with mesh velocity given
-                      DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                        SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                      ENDDO
-
                       !Term arising from the pressure / Lagrange Multiplier of elasticity (given):
                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
                         SUM = SUM - PGM * GRAD_LM_PRESSURE(mi) * &
@@ -2847,18 +2822,6 @@ CONTAINS
                       SUM = 0.0_DP
 
                       PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                      !Terms arising from the moving mesh with mesh velocity given
-!                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                      DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                        PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                          SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                        ENDDO !ni
-                      ENDDO !mi
 
                       ! + possible SOURCE AND SINK TERMS
                       SOURCE = 0.0_DP
@@ -2882,12 +2845,6 @@ CONTAINS
 
                       PGM = QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
-                      !Term arising from the moving mesh with mesh velocity given
-                      !COMMENTED OUT ON 13/01/11 - will be removed in due course
-!                       DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-!                         SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-!                       ENDDO
-
                       !Term arising from the pressure / Lagrange Multiplier of elasticity (given):
                       !TO DO- need to read different grad p depending on the compartment of interest
                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
@@ -2907,20 +2864,6 @@ CONTAINS
                       SUM = 0.0_DP
 
                       PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                      !Terms arising from the moving mesh with mesh velocity given
-                      !COMMENTED OUT ON 13/01/11 - will be removed in due course
-!                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-!                       DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-!                         PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-!                         DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-!                           !COMMENTED OUT ON 13/01/11 - will be removed in due course
-!                           SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
-!                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-!                           SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
-!                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-!                         ENDDO !ni
-!                       ENDDO !mi
 
                       ! n o   s o u r c e
                       !source terms need to be converted to use source field & vector
@@ -2959,21 +2902,6 @@ CONTAINS
 
                       SUM = 0.0_DP
 
-                      !Terms arising from the moving mesh with mesh velocity given
-                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
-                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                        DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                          IF( STABILIZED ) THEN
-                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                          END IF
-                        ENDDO
-                      END IF
-
                       RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
 
                     !-----------------------------------------------------------------------------------------------------------------
@@ -2983,27 +2911,6 @@ CONTAINS
                       SUM = 0.0_DP
 
                       PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                      !Terms arising from the moving mesh with mesh velocity given
-                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
-!                         DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                        DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                            IF( STABILIZED ) THEN
-                              SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * MESH_VEL( ni ) * &
-                                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,ni)
-                            END IF
-                          ENDDO !ni
-                        ENDDO !mi
-                      END IF
 
                       ! n o   s o u r c e
                       SOURCE = 0.0_DP
@@ -3276,7 +3183,7 @@ CONTAINS
 !                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 !                             PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 ! 
-!                             SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+!                             SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
 ! 
 !                             COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
 !                               & COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * RWG
@@ -4419,7 +4326,7 @@ CONTAINS
                               & FIELD_VALUES_SET_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
                             EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                             IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-!---tob
+
                               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                               CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
                               FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
@@ -4429,7 +4336,7 @@ CONTAINS
                                   & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                                 FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                               END SELECT
-!---toe
+
                               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                                 FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
                                 !--- Store the initial DEPENDENT field values
@@ -4878,7 +4785,7 @@ CONTAINS
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                 EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-!---tob                          
+
                                   SELECT CASE(EQUATIONS_SET%SUBTYPE)
                                   CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
                                     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
@@ -4890,7 +4797,7 @@ CONTAINS
                                       & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                                     FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                                   END SELECT
-!---toe
+
                                   IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                                     FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
 
@@ -5229,7 +5136,6 @@ CONTAINS
             CASE(PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
-!                 CALL DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 CALL DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 
               ! The following command only when setting the Darcy mass increase explicitly to test finite elasticity !!!
@@ -6693,12 +6599,12 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                     & SOLUTION_VALUES_SOLID(dof_number), &
                     & ERR,ERROR,*999)
 
-!---tob: !!! Why not directly do the mesh update here ??? !!!
+!---              !!! Why not directly do the mesh update here ??? !!!
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(GEOMETRIC_FIELD_DARCY, & 
                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
                     & SOLUTION_VALUES_SOLID(dof_number), &
                     & ERR,ERROR,*999)
-!---toe
+!---
 
                 END DO
                 CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD_DARCY, &
@@ -6750,218 +6656,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
   !
   !================================================================================================================================
-
-  !> Determine Darcy velocity for Darcy equation post solve
-  SUBROUTINE DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, GEOMETRIC_FIELD
-
-    REAL(DP) :: ALPHA
-    REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:) 
-    REAL(DP), POINTER :: NEGATIVE_MESH_VELOCITY_VALUES(:)
-    REAL(DP), POINTER :: DUMMY_VALUES1(:)
-
-    INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS
-    INTEGER(INTG) :: NDOFS_TO_PRINT
-
-
-    CALL ENTERS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(SOLVER)) THEN
-        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
-          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-              CASE(PROBLEM_STANDARD_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
-                & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                    IF(ASSOCIATED(EQUATIONS)) THEN
-                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                        SELECT CASE(EQUATIONS_SET%SUBTYPE)
-                          CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE)
-                            ! do nothing ???
-                          CASE(EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE)
-                            ! do nothing ???
-                          CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-                            & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
-                            & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy post solve determine Darcy velocity ... ",ERR,ERROR,*999)
-                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                            GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                            IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                              EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
-                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-
-                                SELECT CASE(EQUATIONS_SET%SUBTYPE)
-                                CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
-                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-                                  ! '1' associated with linear matrix
-                                CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                                    & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
-                                    & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
-                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-                                END SELECT
-
-                                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                                  FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-
-                                  !-------------------------------------------------------------------------------------------------
-                                  ! 1.) Generate negative_mesh_velocity= -mesh_velocity
-                                  IF(DIAGNOSTICS1) THEN
-                                    NULLIFY( MESH_VELOCITY_VALUES )
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                      & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-                                    NDOFS_TO_PRINT = SIZE(MESH_VELOCITY_VALUES,1)
-                                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                      & NDOFS_TO_PRINT,MESH_VELOCITY_VALUES, &
-                                      & '(" MESH_VELOCITY_VALUES = ",4(X,E13.6))','4(4(X,E13.6))',ERR,ERROR,*999)
-                                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," ",ERR,ERROR,*999)
-                                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                      & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-                                  ENDIF
-
-                                  ! negative_mesh_velocity = -mesh_velocity
-                                  ALPHA = -1.0_DP
-                                  CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                    & FIELD_MESH_VELOCITY_SET_TYPE,FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
-
-                                  ! Get pointer to -mesh_velocity
-                                  NULLIFY(NEGATIVE_MESH_VELOCITY_VALUES)
-                                  CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                    & FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE,NEGATIVE_MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-
-                                  !-------------------------------------------------------------------------------------------------
-                                  ! 2.) dependent field values
-                                  IF(DIAGNOSTICS1) THEN
-                                    NULLIFY( DUMMY_VALUES1 )
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                      & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                    NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                      & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                      & '(" DEPENDENT_FIELD,FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE = ",4(X,E13.6))', &
-                                      & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                  ENDIF
-
-                                  ! (Reset) FIELD_RELATIVE_VELOCITY_SET_TYPE = FIELD_VALUES_SET_TYPE
-                                  ALPHA = 1.0_DP
-                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                    & FIELD_VALUES_SET_TYPE,FIELD_RELATIVE_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
-
-                                  !-------------------------------------------------------------------------------------------------
-                                  ! 3.) Finalise field relative velocity
-                                  NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%NUMBER_OF_DOFS
-                                  ! number of geometric dofs = number of (u,v,w) dofs
-                                  DO dof_number=1,NUMBER_OF_DOFS
-                                    ! Subtract mesh velocity values
-                                    !--- Subtract the velocity of the moving mesh from the fluid velocity
-                                    CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                      & FIELD_VAR_TYPE,FIELD_RELATIVE_VELOCITY_SET_TYPE,dof_number, & 
-                                      & NEGATIVE_MESH_VELOCITY_VALUES(dof_number),ERR,ERROR,*999)
-                                    ! dependent field      ( V_u, V_v, V_w, P_p )
-                                    ! MESH_VELOCITY_VALUES ( V_u, V_v, V_w )
-                                  END DO
-                                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                    & FIELD_VAR_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                                    & FIELD_VAR_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  IF(DIAGNOSTICS1) THEN
-                                    NULLIFY( DUMMY_VALUES1 )
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                      & FIELD_RELATIVE_VELOCITY_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                    NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                      & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                      & '(" DEPENDENT_FIELD,FIELD_VAR_TYPE,FIELD_RELATIVE_VELOCITY_SET_TYPE = ",4(X,E13.6))', &
-                                      & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                      & FIELD_RELATIVE_VELOCITY_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
-                            END IF
-                          CASE DEFAULT
-                            LOCAL_ERROR="Equations set subtype " &
-                              & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                              & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT
-                      ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                      END IF
-                    ELSE
-                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                    END IF                
-                  ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-                END IF  
-              CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          ! do nothing ???
-!           CALL FLAG_ERROR("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY may only be carried out for SOLVER%GLOBAL_NUMBER = SOLVER_NUMBER_DARCY", &
-!             & ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY")
-    RETURN
-999 CALL ERRORS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY",ERR,ERROR)
-    CALL EXITS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY")
-    RETURN 1
-  END SUBROUTINE DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY
-
-  !
-  !================================================================================================================================
-  !
 
   !>Store solution of previous subiteration iterate
   SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
@@ -7570,42 +7264,24 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                   ENDIF
 
 
-
-
-
-!                                   IF(DIAGNOSTICS1) THEN
-
-                                    SUBITERATION_NUMBER = CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER
-
-                                    WRITE(FILENAME,'("Darcy_DOFs_N_",I2.2,".dat")') SUBITERATION_NUMBER
-                                    FILEPATH = "./output/"//FILENAME
-                                    FILEUNIT_N = 7777 + 2*SUBITERATION_NUMBER
-                                    OPEN(UNIT=FILEUNIT_N,FILE=CHAR(FILEPATH),STATUS='unknown',ACCESS='append')
-                                    DO dof_number=1,NUMBER_OF_DOFS
-                                      WRITE(FILEUNIT_N,*) ITERATION_VALUES_N(dof_number)
-                                    END DO
-
-
-                                    WRITE(FILENAME,'("Darcy_DOFs_N1_",I2.2,".dat")') SUBITERATION_NUMBER
-                                    FILEPATH = "./output/"//FILENAME
-                                    FILEUNIT_N1 = 7777 + 2*SUBITERATION_NUMBER+1
-                                    OPEN(UNIT=FILEUNIT_N1,FILE=CHAR(FILEPATH),STATUS='unknown',ACCESS='append')
-                                    DO dof_number=1,NUMBER_OF_DOFS
-                                      WRITE(FILEUNIT_N1,*) ITERATION_VALUES_N1(dof_number)
-                                    END DO
-
-
-!                                     NDOFS_TO_PRINT = SIZE(ITERATION_VALUES_N,1)
-!                                     CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER = ", &
-!                                       & CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER,ERR,ERROR,*999)
-!                                     CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-!                                       & NDOFS_TO_PRINT,ITERATION_VALUES_N, &
-!                                       & '(" ITERATION_VALUES_N = ",4(X,E13.6))', '4(4(X,E13.6))',ERR,ERROR,*999)
-!                                   ENDIF
-
-
-
-
+!                                   SUBITERATION_NUMBER = CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER
+! 
+!                                   WRITE(FILENAME,'("Darcy_DOFs_N_",I2.2,".dat")') SUBITERATION_NUMBER
+!                                   FILEPATH = "./output/"//FILENAME
+!                                   FILEUNIT_N = 7777 + 2*SUBITERATION_NUMBER
+!                                   OPEN(UNIT=FILEUNIT_N,FILE=CHAR(FILEPATH),STATUS='unknown',ACCESS='append')
+!                                   DO dof_number=1,NUMBER_OF_DOFS
+!                                     WRITE(FILEUNIT_N,*) ITERATION_VALUES_N(dof_number)
+!                                   END DO
+! 
+! 
+!                                   WRITE(FILENAME,'("Darcy_DOFs_N1_",I2.2,".dat")') SUBITERATION_NUMBER
+!                                   FILEPATH = "./output/"//FILENAME
+!                                   FILEUNIT_N1 = 7777 + 2*SUBITERATION_NUMBER+1
+!                                   OPEN(UNIT=FILEUNIT_N1,FILE=CHAR(FILEPATH),STATUS='unknown',ACCESS='append')
+!                                   DO dof_number=1,NUMBER_OF_DOFS
+!                                     WRITE(FILEUNIT_N1,*) ITERATION_VALUES_N1(dof_number)
+!                                   END DO
 
 
                                   CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
