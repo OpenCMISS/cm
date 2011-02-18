@@ -8,7 +8,7 @@ the reader who would like to see his or her name in the nose AUTHORS file.
 import traceback
 from nose.plugins import Plugin
 
-import inspect
+import inspect,os
 
 class ResultTree:
   isPassed = True
@@ -46,8 +46,6 @@ class HtmlOutput(Plugin):
     isStart = True
     buildbotUrl = "http://autotest.bioeng.auckland.ac.nz/opencmiss-build/"
     
-    
-    
     def __init__(self):
         super(HtmlOutput, self).__init__()
         self.header=['<html><head>',
@@ -59,21 +57,22 @@ class HtmlOutput(Plugin):
         self.html=['</div>','<ul id="tree1" class="mktree">']
 
     def insertLog(self, test):
+        compiler = os.environ['COMPILER']
         if str(test).find('test_build_library')!=-1 :
-          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build" 
-          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history" 
+          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + compiler 
+          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + compiler 
         elif str(test).find('test_example')!=-1 :
           path = list(test.test.arg)[1]
           path = path[path.find("/examples/")+10:]
           if list(test.test.arg)[0]=='build' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build"
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history"
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + compiler
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history_" + compiler
           elif list(test.test.arg)[0]=='run' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run"
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history"
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + compiler
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history_" + compiler
           elif list(test.test.arg)[0]=='check' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check"
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history"
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + compiler
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history_" + compiler
         self.html.append('&nbsp;<a href="'+logPath+'">log</a>')
         self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
     
