@@ -969,12 +969,13 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo "	MPI=(mpich2|intel|openmpi)"
+	@echo "	MPI=(mpich2|intel|openmpi|mvapich2|cray)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
-	@echo "	COMPILER=(intel|gnu|ibm)"
-	@echo "	LIBRARY_VERSION=(old|new)"
+	@echo "	COMPILER=(intel|gnu|ibm|cray)"
+	@echo "	USECELLML=(false|true)"
+	@echo "	USEFIELDML=(false|true)"
 	@echo 
 	@echo "Available targets:                            "
 	@echo

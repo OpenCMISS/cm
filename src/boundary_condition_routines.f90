@@ -1960,7 +1960,7 @@ CONTAINS
                           DO nd=1,NUMBER_OF_SET_DOF
                             !Check if dof in current component (uvwp)
                             IF(FIELD_VARIABLE%DOF_TO_PARAM_MAP% &
-                              & NODE_DOF2PARAM_MAP(3,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd))==component_idx) THEN
+                              & NODE_DOF2PARAM_MAP(4,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd))==component_idx) THEN
 
                               IF(BOUNDARY_CONDITIONS_NEUMANN%SET_DOF_CONDITIONS(nd)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
 
@@ -1970,7 +1970,7 @@ CONTAINS
 
                                 !Convert dof to node and add to list
                                 CALL LIST_ITEM_ADD(SET_NODES_LIST,FIELD_VARIABLE%DOF_TO_PARAM_MAP% &
-                                  & NODE_DOF2PARAM_MAP(2,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd)),ERR,ERROR,*999)
+                                  & NODE_DOF2PARAM_MAP(3,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd)),ERR,ERROR,*999)
 
                               ELSEIF(BOUNDARY_CONDITIONS_NEUMANN%SET_DOF_CONDITIONS(nd)== & 
                                 & BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
@@ -2231,7 +2231,7 @@ CONTAINS
                             DO nd=1,NUMBER_OF_SET_DOF_POINT
 
                               !Convert dof to node number
-                              NODE_NUMBER=FIELD_VARIABLE%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(2,SET_DOF_POINT(nd))
+                              NODE_NUMBER=FIELD_VARIABLE%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,SET_DOF_POINT(nd))
                               DOMAIN_NODE=>DOMAIN_NODES%NODES(NODE_NUMBER)
 
                               !Iterate over the faces on which that node is a part of
@@ -2410,7 +2410,7 @@ CONTAINS
                           DO nd=1,NUMBER_OF_SET_DOF
                             !Check if dof in current component (uvwp)
                             IF(FIELD_VARIABLE%DOF_TO_PARAM_MAP% &
-                              & NODE_DOF2PARAM_MAP(3,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd))==component_idx) THEN
+                              & NODE_DOF2PARAM_MAP(4,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd))==component_idx) THEN
 
                               IF(BOUNDARY_CONDITIONS_NEUMANN%SET_DOF_CONDITIONS(nd)==BOUNDARY_CONDITION_NEUMANN_POINT) THEN
 
@@ -2421,7 +2421,7 @@ CONTAINS
 
                                 !Convert dof to node and add to list
                                 CALL LIST_ITEM_ADD(SET_NODES_LIST,FIELD_VARIABLE%DOF_TO_PARAM_MAP% &
-                                  & NODE_DOF2PARAM_MAP(2,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd)),ERR,ERROR,*999)
+                                  & NODE_DOF2PARAM_MAP(3,BOUNDARY_CONDITIONS_NEUMANN%SET_DOF(nd)),ERR,ERROR,*999)
 
                               ELSEIF(BOUNDARY_CONDITIONS_NEUMANN%SET_DOF_CONDITIONS(nd)== &
                                 & BOUNDARY_CONDITION_NEUMANN_INTEGRATED) THEN
@@ -2529,7 +2529,7 @@ CONTAINS
                                     DO line_local_deriv_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(line_local_node_index) !nnd
                                       IF(INCLUDE_LINE) THEN
                                         DERIVATIVE=DOMAIN_LINE%DERIVATIVES_IN_LINE(1,line_local_deriv_index,line_local_node_index)
-                                        version=DOMAIN_FACE%DERIVATIVES_IN_FACE(2,face_local_deriv_index,face_local_node_index)
+                                        version=DOMAIN_LINE%DERIVATIVES_IN_LINE(2,line_local_deriv_index,line_local_node_index)
                                         !Locate dof number on face
                                         local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                           & NODES(node)%DERIVATIVES(derivative)%VERSIONS(version)
@@ -2596,7 +2596,7 @@ CONTAINS
                                     NODE=DOMAIN_LINE%NODES_IN_LINE(line_local_node_index)
                                     DO line_local_deriv_index=1,DOMAIN_LINE%BASIS%NUMBER_OF_DERIVATIVES(line_local_node_index) !nnd
                                       DERIVATIVE=DOMAIN_LINE%DERIVATIVES_IN_LINE(1,line_local_deriv_index,line_local_node_index)
-                                      version=DOMAIN_FACE%DERIVATIVES_IN_FACE(2,face_local_deriv_index,face_local_node_index)
+                                      version=DOMAIN_LINE%DERIVATIVES_IN_LINE(2,line_local_deriv_index,line_local_node_index)
                                       local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
                                         & NODES(node)%DERIVATIVES(derivative)%VERSIONS(version)
                                       x_pos = DOMAIN_LINE%BASIS% &
@@ -2683,7 +2683,7 @@ CONTAINS
                             DO nd=1,NUMBER_OF_SET_DOF_POINT
 
                               !Convert dof to node number
-                              NODE_NUMBER=FIELD_VARIABLE%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(2,SET_DOF_POINT(nd))
+                              NODE_NUMBER=FIELD_VARIABLE%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,SET_DOF_POINT(nd))
                               DOMAIN_NODE=>DOMAIN_NODES%NODES(NODE_NUMBER)
 
                               !Iterate over the lines on which that node is a part of
