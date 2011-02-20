@@ -50,8 +50,8 @@ class HtmlOutput(Plugin):
         super(HtmlOutput, self).__init__()
         self.header=['<html><head>',
                       '<title>Test output</title>',
-                      '<SCRIPT LANGUAGE="JavaScript" SRC="../../../../../../../tree.js"></SCRIPT>',
-                      '<link href="../../../../../../../tree.css" rel="stylesheet">',
+                      '<SCRIPT LANGUAGE="JavaScript" SRC="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/tree.js"></SCRIPT>',
+                      '<link href="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/tree.css" rel="stylesheet">',
                       '</head><body>',
                       '<h1>OpenCMISS Nighly Testing Results</h1>']
         self.html=['</div>','<ul id="tree1" class="mktree">']
