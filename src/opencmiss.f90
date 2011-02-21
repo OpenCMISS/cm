@@ -4199,11 +4199,17 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElementsNodesSetObj
   END INTERFACE !CMISSMeshElementsNodesSet
 
-  !>Sets/changes a node version for an element in a mesh. 
-  INTERFACE CMISSMeshElementsNodeVersionSet
-    MODULE PROCEDURE CMISSMeshElementsNodeVersionSetNumber
-    MODULE PROCEDURE CMISSMeshElementsNodeVersionSetObj
-  END INTERFACE !CMISSMeshElementsNodeVersionSet
+  !>Sets/changes a user node's derivative version for an element in a mesh.
+  INTERFACE CMISSMeshElementsUserNodeVersionSet
+    MODULE PROCEDURE CMISSMeshElementsUserNodeVersionSetNumber
+    MODULE PROCEDURE CMISSMeshElementsUserNodeVersionSetObj
+  END INTERFACE !CMISSMeshElementsUserNodeVersionSet
+
+  !>Sets/changes a local element's node derivative version for an element in a mesh. 
+  INTERFACE CMISSMeshElementsLocalElementNodeVersionSet
+    MODULE PROCEDURE CMISSMeshElementsLocalElementNodeVersionSetNumber
+    MODULE PROCEDURE CMISSMeshElementsLocalElementNodeVersionSetObj
+  END INTERFACE !CMISSMeshElementsLocalElementNodeVersionSet
 
   !>Returns the element user number for an element in a mesh. 
   INTERFACE CMISSMeshElementsUserNumberGet
@@ -4271,7 +4277,7 @@ MODULE OPENCMISS
   
   PUBLIC CMISSMeshNodeExists,CMISSMeshElementExists
 
-  PUBLIC CMISSDecompositionNodeDomainGet,CMISSMeshElementsNodeVersionSet 
+  PUBLIC CMISSDecompositionNodeDomainGet,CMISSMeshElementsUserNodeVersionSet, CMISSMeshElementsLocalElementNodeVersionSet
 
   PUBLIC CMISSMeshSurroundingElementsCalculateSet
 
@@ -36234,8 +36240,8 @@ CONTAINS
   !  
 
   !>Sets/changes the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
-  SUBROUTINE CMISSMeshElementsNodeVersionSetNumber(RegionUserNumber,MeshUserNumber,GlobalElementNumber,VersionNumber, &
-    & DerivativeNumber,ElementNodeIndex,MeshComponentNumber,Err)
+  SUBROUTINE CMISSMeshElementsUserNodeVersionSetNumber(RegionUserNumber,MeshUserNumber,GlobalElementNumber,VersionNumber, &
+    & DerivativeNumber,UserNodeNumber,MeshComponentNumber,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to set the element nodes for.
@@ -36243,7 +36249,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to set the element nodes for.
     INTEGER(INTG), INTENT(IN) :: VersionNumber !<The version number of the specified element node to set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the specified element node to set.
-    INTEGER(INTG), INTENT(IN) :: ElementNodeIndex !<The node index of the specified element node to set a version for.
+    INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to set a version for.
     INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to set the element nodes for.
 
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -36252,8 +36258,10 @@ CONTAINS
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: localelementnode
+    LOGICAL :: FOUND
     
-    CALL ENTERS("CMISSMeshElementsNodeVersionSetNumber",Err,ERROR,*999)
+    CALL ENTERS("CMISSMeshElementsUserNodeVersionSetNumber",Err,ERROR,*999)
  
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -36263,8 +36271,21 @@ CONTAINS
       CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
       IF(ASSOCIATED(MESH)) THEN
         CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,MeshComponentNumber,MESH_ELEMENTS,Err,ERROR,*999)
-        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MESH_ELEMENTS,VersionNumber,DerivativeNumber, &
-          & ElementNodeIndex,Err,ERROR,*999)
+        FOUND=.FALSE.
+        DO localelementnode=1,MESH_ELEMENTS%ELEMENTS(GlobalElementNumber)%BASIS%NUMBER_OF_NODES
+          IF(MESH_ELEMENTS%ELEMENTS(GlobalElementNumber)%USER_ELEMENT_NODES(localelementnode)==UserNodeNumber) THEN
+            FOUND=.TRUE.
+            EXIT
+          ENDIF
+        ENDDO !localelementnode
+        IF(FOUND) THEN
+          CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MESH_ELEMENTS,VersionNumber,DerivativeNumber, &
+            & UserNodeNumber,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="User node number "//TRIM(NUMBER_TO_VSTRING(UserNodeNumber,"*",Err,ERROR))// &
+            & " does not exist in element number "//TRIM(NUMBER_TO_VSTRING(GlobalElementNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
           & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -36276,50 +36297,153 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CMISSMeshElementsNodeVersionSetNumber")
+    CALL EXITS("CMISSMeshElementsUserNodeVersionSetNumber")
     RETURN
-999 CALL ERRORS("CMISSMeshElementsNodeVersionSetNumber",Err,ERROR)
-    CALL EXITS("CMISSMeshElementsNodeVersionSetNumber")
+999 CALL ERRORS("CMISSMeshElementsUserNodeVersionSetNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsUserNodeVersionSetNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSMeshElementsNodeVersionSetNumber
+  END SUBROUTINE CMISSMeshElementsUserNodeVersionSetNumber
 
   !  
   !================================================================================================================================
   !  
  
   !>Sets/changes the element nodes for an element in a mesh identified by an object. \todo should the global element number be a user number?
-  SUBROUTINE CMISSMeshElementsNodeVersionSetObj(MeshElements,GlobalElementNumber,VersionNumber,DerivativeNumber,ElementNodeIndex, &
-    & Err)
+  SUBROUTINE CMISSMeshElementsUserNodeVersionSetObj(MeshElements,GlobalElementNumber,VersionNumber,DerivativeNumber, &
+    & UserNodeNumber,Err)
   
     !Argument variables
     TYPE(CMISSMeshElementsType), INTENT(IN) :: MeshElements !<The mesh elements to set the element nodes for.
     INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to set the element nodes for.
     INTEGER(INTG), INTENT(IN) :: VersionNumber !<The version number of the specified element node to set.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the specified element node to set.
-    INTEGER(INTG), INTENT(IN) :: ElementNodeIndex !<The node index of the specified element node to set a version for.
+    INTEGER(INTG), INTENT(IN) :: UserNodeNumber !<The user node number to set a version for.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: localelementnode
+    LOGICAL :: FOUND
   
-    CALL ENTERS("CMISSMeshElementsNodeVersionSetObj",Err,ERROR,*999)
- 
-    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MeshElements%MESH_ELEMENTS,VersionNumber, &
-       & DerivativeNumber,ElementNodeIndex,Err,ERROR,*999)
+    CALL ENTERS("CMISSMeshElementsUserNodeVersionSetObj",Err,ERROR,*999)
 
-    CALL EXITS("CMISSMeshElementsNodeVersionSetObj")
+    FOUND=.FALSE.
+    DO localelementnode=1,MeshElements%MESH_ELEMENTS%ELEMENTS(GlobalElementNumber)%BASIS%NUMBER_OF_NODES
+      IF(MeshElements%MESH_ELEMENTS%ELEMENTS(GlobalElementNumber)%USER_ELEMENT_NODES(localelementnode)==UserNodeNumber) THEN
+        FOUND=.TRUE.
+        EXIT
+      ENDIF
+    ENDDO !localelementnode
+    IF(FOUND) THEN
+      CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MeshElements%MESH_ELEMENTS,VersionNumber, &
+         & DerivativeNumber,UserNodeNumber,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="User node number "//TRIM(NUMBER_TO_VSTRING(UserNodeNumber,"*",Err,ERROR))// &
+        & " does not exist in element number "//TRIM(NUMBER_TO_VSTRING(GlobalElementNumber,"*",Err,ERROR))//"."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshElementsUserNodeVersionSetObj")
     RETURN
-999 CALL ERRORS("CMISSMeshElementsNodeVersionSetObj",Err,ERROR)
-    CALL EXITS("CMISSMeshElementsNodeVersionSetObj")
+999 CALL ERRORS("CMISSMeshElementsUserNodeVersionSetObj",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsUserNodeVersionSetObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSMeshElementsNodeVersionSetObj
+  END SUBROUTINE CMISSMeshElementsUserNodeVersionSetObj
 
   !  
   !================================================================================================================================
   !  
  
+  !>Sets/changes the element nodes for an element in a mesh identified by an user number. \todo should the global element number be a user number?
+  SUBROUTINE CMISSMeshElementsLocalElementNodeVersionSetNumber(RegionUserNumber,MeshUserNumber,GlobalElementNumber,VersionNumber, &
+    & DerivativeNumber,LocalElementNodeNumber,MeshComponentNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The version number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: LocalElementNodeNumber !<The local element node to set a version for.
+    INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to set the element nodes for.
+
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSMeshElementsLocalElementNodeVersionSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(MESH)
+    NULLIFY(MESH_ELEMENTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL MESH_USER_NUMBER_FIND(MeshUserNumber,REGION,MESH,Err,ERROR,*999)
+      IF(ASSOCIATED(MESH)) THEN
+        CALL MESH_TOPOLOGY_ELEMENTS_GET(MESH,MeshComponentNumber,MESH_ELEMENTS,Err,ERROR,*999)
+        CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MESH_ELEMENTS,VersionNumber,DerivativeNumber, &
+          & LocalElementNodeNumber,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(MeshUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSMeshElementsLocalElementNodeVersionSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsLocalElementNodeVersionSetNumber",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsLocalElementNodeVersionSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsLocalElementNodeVersionSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the element nodes for an element in a mesh identified by an object. \todo should the global element number be a user number?
+  SUBROUTINE CMISSMeshElementsLocalElementNodeVersionSetObj(MeshElements,GlobalElementNumber,VersionNumber,DerivativeNumber, &
+    & LocalElementNodeNumber,Err)
+  
+    !Argument variables
+    TYPE(CMISSMeshElementsType), INTENT(IN) :: MeshElements !<The mesh elements to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to set the element nodes for.
+    INTEGER(INTG), INTENT(IN) :: VersionNumber !<The version number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The derivative number of the specified element node to set.
+    INTEGER(INTG), INTENT(IN) :: LocalElementNodeNumber !<The local element node to set a version for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSMeshElementsLocalElementNodeVersionSetObj",Err,ERROR,*999)
+ 
+    CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(GlobalElementNumber,MeshElements%MESH_ELEMENTS,VersionNumber, &
+       & DerivativeNumber,LocalElementNodeNumber,Err,ERROR,*999)
+
+    CALL EXITS("CMISSMeshElementsLocalElementNodeVersionSetObj")
+    RETURN
+999 CALL ERRORS("CMISSMeshElementsLocalElementNodeVersionSetObj",Err,ERROR)
+    CALL EXITS("CMISSMeshElementsLocalElementNodeVersionSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSMeshElementsLocalElementNodeVersionSetObj
+
+  !  
+  !================================================================================================================================
+  !  
+
   !>Returns the user number for an element in a mesh identified by an user number. 
   SUBROUTINE CMISSMeshElementsUserNumberGetNumber(RegionUserNumber,MeshUserNumber,MeshComponentNumber,ElementGlobalNumber, &
     & ElementUserNumber,Err)
