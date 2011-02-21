@@ -3362,7 +3362,7 @@ MODULE OPENCMISS
     & CMISSFieldImpermeableFlagValuesSetType
 
   PUBLIC CMISSFieldNoScaling,CMISSFieldUnitScaling,CMISSFieldArcLengthScaling,CMISSFieldArithmeticMeanScaling, &
-    & CMISSFieldHarmonicMeanScaling
+    & CMISSFieldGeometricMeanScaling,CMISSFieldHarmonicMeanScaling
 
   PUBLIC CMISSFieldComponentInterpolationGet,CMISSFieldComponentInterpolationSet
 
