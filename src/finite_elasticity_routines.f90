@@ -4660,7 +4660,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the functions f(J) and f'(J); 
+  !>Evaluates the functions f(J) and f'(J)
   !>  Eq.(21) in Chapelle, Gerbeau, Sainte-Marie, Vignon-Clementel, Computational Mechanics (2010)
   SUBROUTINE EVALUATE_CHAPELLE_FUNCTION(Jznu,ffact,dfdJfact,ERR,ERROR,*)
   
