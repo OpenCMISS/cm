@@ -4660,7 +4660,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the functions f(J) and f'(J)
+  !>Evaluates the functions f(J) and f\'(J);
   !>  Eq.(21) in Chapelle, Gerbeau, Sainte-Marie, Vignon-Clementel, Computational Mechanics (2010)
   SUBROUTINE EVALUATE_CHAPELLE_FUNCTION(Jznu,ffact,dfdJfact,ERR,ERROR,*)
   
@@ -4701,7 +4701,7 @@ CONTAINS
   SUBROUTINE EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*)
   
     !Argument variables
-    REAL(DP), INTENT(IN) :: AZL(3,3) !<C=F'F
+    REAL(DP), INTENT(IN) :: AZL(3,3) !<C=F\'F
     REAL(DP), INTENT(IN) :: AZU(3,3) !<inverse of AZL
     REAL(DP), INTENT(IN) :: DARCY_MASS_INCREASE !<mass increase
     REAL(DP), INTENT(OUT) :: PIOLA_TENSOR_ADDITION(3,3) !<Addition to the 2nd Piola-Kirchhoff tensor
@@ -4710,7 +4710,7 @@ CONTAINS
     !Local variables
     REAL(DP) :: Jznu !<Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
     REAL(DP) :: ffact !<f(Jznu) of the INRIA model
-    REAL(DP) :: dfdJfact !<dfdJfact = f'(Jznu) of the INRIA model
+    REAL(DP) :: dfdJfact !<dfdJfact = f\'(Jznu) of the INRIA model
     REAL(DP) :: Mfact, bfact, p0fact  !<INRIA constitutive law
     REAL(DP) :: DARCY_VOL_INCREASE, DARCY_RHO_0_F
     INTEGER(INTG) :: i,j
