@@ -21459,8 +21459,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: MESH_COMPONENT_NUMBER,ni,ni1,ni2,nk,nk2,nl,nl2,nlp,np,nu,nu1,nu2,ny,ny1,ny2,ny3,scaling_idx
-    REAL(DP) :: LENGTH1,LENGTH2,MEAN_LENGTH,TEMP
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER,xi_direction,ni1,ni2,version_idx,derivative_idx,nk2,local_node_line_idx, &
+      & adjacent_local_node_line_idx,node_line_idx,node_idx,partial_derivative_idx,nu1,nu2,dof_idx,ny1,ny2,ny3,scaling_idx
+    REAL(DP) :: LENGTH1,LENGTH2,MEAN_LENGTH,TEMP,NUMBER_OF_LINE_VERSIONS1,NUMBER_OF_LINE_VERSIONS2,VALUE
     REAL(DP), POINTER :: SCALE_FACTORS(:)
     LOGICAL :: FOUND
     TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: DECOMPOSITION_LINES
@@ -21493,6 +21494,7 @@ CONTAINS
             ENDDO !scaling_idx
           CASE(FIELD_ARC_LENGTH_SCALING)
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+
           CASE(FIELD_ARITHMETIC_MEAN_SCALING,FIELD_GEOMETRIC_MEAN_SCALING,FIELD_HARMONIC_MEAN_SCALING)
             DO scaling_idx=1,FIELD_SCALINGS%NUMBER_OF_SCALING_INDICES
               FIELD_SCALING=>FIELD_SCALINGS%SCALINGS(scaling_idx)
@@ -21505,152 +21507,173 @@ CONTAINS
               ENDIF
               NULLIFY(SCALE_FACTORS)
               CALL DISTRIBUTED_VECTOR_DATA_GET(FIELD_SCALING%SCALE_FACTORS,SCALE_FACTORS,ERR,ERROR,*999)
-              DO np=1,DOMAIN_NODES%NUMBER_OF_NODES
-                DO nk=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                  ny=DOMAIN_NODES%NODES(np)%DERIVATIVES(nk)%DOF_INDEX(1)
-                  nu=DOMAIN_NODES%NODES(np)%DERIVATIVES(nk)%PARTIAL_DERIVATIVE_INDEX
-                  SELECT CASE(nu)
+              DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                DO derivative_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                  partial_derivative_idx=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
+                  SELECT CASE(partial_derivative_idx)
                   CASE(NO_PART_DERIV)
-                    CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,ny,1.0_DP,ERR,ERROR,*999)
+                    DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                      dof_idx=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                      CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,dof_idx,1.0_DP,ERR,ERROR,*999)
+                    ENDDO
                   CASE(PART_DERIV_S1,PART_DERIV_S2,PART_DERIV_S3)
-                    IF(nu==PART_DERIV_S1) THEN
-                      ni=1
-                    ELSE IF(nu==PART_DERIV_S2) THEN
-                      ni=2
-                    ELSE
-                      ni=3
-                    ENDIF
-                    !Find a line of the correct Xi direction going through this node
                     IF(FIELD%DECOMPOSITION%CALCULATE_LINES) THEN
-                      FOUND=.FALSE.
-                      DO nlp=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_NODE_LINES
-                        nl=DOMAIN_NODES%NODES(np)%NODE_LINES(nlp)
-                        IF(DECOMPOSITION_LINES%LINES(nl)%XI_DIRECTION==ni) THEN
-                          FOUND=.TRUE.
-                          EXIT
-                        ENDIF
-                      ENDDO !nnl
-                      IF(FOUND) THEN
-                        IF(DOMAIN_LINES%LINES(nl)%NODES_IN_LINE(1)==np) THEN !Current node at the beginning of the line
-                          nl2=DECOMPOSITION_LINES%LINES(nl)%ADJACENT_LINES(0)
-                        ELSE !Current node at the end of the line
-                          nl2=DECOMPOSITION_LINES%LINES(nl)%ADJACENT_LINES(1)
-                        ENDIF
-                        IF(nl2==0) THEN
-                          LENGTH1=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl)
-                          MEAN_LENGTH=LENGTH1
-                        ELSE
-                          LENGTH1=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl)
-                          LENGTH2=GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(nl2)
-                          SELECT CASE(FIELD_SCALINGS%SCALING_TYPE)
-                          CASE(FIELD_ARITHMETIC_MEAN_SCALING)
-                            MEAN_LENGTH=(LENGTH1+LENGTH2)/2.0_DP
-                          CASE(FIELD_GEOMETRIC_MEAN_SCALING)
-                            MEAN_LENGTH=sqrt(LENGTH1*LENGTH2)
-                          CASE(FIELD_HARMONIC_MEAN_SCALING)
-                            TEMP=LENGTH1*LENGTH2
-                            IF(ABS(TEMP)>ZERO_TOLERANCE) THEN
-                              MEAN_LENGTH=2.0_DP*TEMP/(LENGTH1+LENGTH2)
-                            ELSE
-                              MEAN_LENGTH=0.0_DP
-                            ENDIF
-                          CASE DEFAULT
-                            LOCAL_ERROR="The scaling type of "// &
-                              & TRIM(NUMBER_TO_VSTRING(FIELD_SCALINGS%SCALING_TYPE,"*",ERR,ERROR))//" is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT
-                        ENDIF
-                        CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,ny,MEAN_LENGTH,ERR,ERROR,*999)
+                      IF(partial_derivative_idx==PART_DERIV_S1) THEN
+                        xi_direction=1
+                      ELSE IF(partial_derivative_idx==PART_DERIV_S2) THEN
+                        xi_direction=2
                       ELSE
-                        LOCAL_ERROR="Could not find a line in the Xi "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))// &
-                          & " direction going through node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        xi_direction=3
                       ENDIF
+                      LENGTH1 = 0.0_DP
+                      LENGTH2 = 0.0_DP
+                      NUMBER_OF_LINE_VERSIONS1 = 0.0_DP
+                      NUMBER_OF_LINE_VERSIONS2 = 0.0_DP
+                      DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                        !Find a line of the correct Xi direction going through this node
+                        FOUND=.FALSE.
+                        DO node_line_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_NODE_LINES
+                          local_node_line_idx=DOMAIN_NODES%NODES(node_idx)%NODE_LINES(node_line_idx)
+                          IF(DECOMPOSITION_LINES%LINES(local_node_line_idx)%XI_DIRECTION==xi_direction) THEN
+                            FOUND=.TRUE.
+                            EXIT
+                          ENDIF
+                        ENDDO !node_line_idx
+                        IF(FOUND) THEN
+                          IF(DOMAIN_LINES%LINES(local_node_line_idx)%NODES_IN_LINE(1)==node_idx) THEN !Current node at the beginning of the line
+                            adjacent_local_node_line_idx=DECOMPOSITION_LINES%LINES(local_node_line_idx)%ADJACENT_LINES(0)
+                          ELSE !Current node at the end of the line
+                            adjacent_local_node_line_idx=DECOMPOSITION_LINES%LINES(local_node_line_idx)%ADJACENT_LINES(1)
+                          ENDIF
+                          !Average line lengths for the different versions (division by the number of lines is done after all the line lengths are added together)
+                          LENGTH1=LENGTH1+GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(local_node_line_idx)
+                          NUMBER_OF_LINE_VERSIONS1=NUMBER_OF_LINE_VERSIONS1+1
+                          IF(adjacent_local_node_line_idx/=0) THEN !Adjacent node and therefore lines exist
+                            LENGTH2=LENGTH2+GEOMETRIC_FIELD%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(adjacent_local_node_line_idx)
+                            NUMBER_OF_LINE_VERSIONS2=NUMBER_OF_LINE_VERSIONS2+1
+                          ENDIF
+                        ELSE
+                          LOCAL_ERROR="Could not find a line in the Xi "//TRIM(NUMBER_TO_VSTRING(xi_direction,"*",ERR,ERROR))// &
+                            & " direction going through node number "//TRIM(NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO !version_idx
+                      !Division by the numer of version for this node derivative, completing the calculation for the average line lengths
+                      LENGTH1 = LENGTH1/NUMBER_OF_LINE_VERSIONS1
+                      IF(adjacent_local_node_line_idx==0) THEN !No adjacent node ie end of mesh 
+                        MEAN_LENGTH=LENGTH1
+                      ELSE !Adjacent node and therefore lines exist
+                        LENGTH2 = LENGTH2/NUMBER_OF_LINE_VERSIONS2
+                        SELECT CASE(FIELD_SCALINGS%SCALING_TYPE)
+                        CASE(FIELD_ARITHMETIC_MEAN_SCALING)
+                          MEAN_LENGTH=(LENGTH1+LENGTH2)/2.0_DP
+                        CASE(FIELD_GEOMETRIC_MEAN_SCALING)
+                          MEAN_LENGTH=sqrt(LENGTH1*LENGTH2)
+                        CASE(FIELD_HARMONIC_MEAN_SCALING)
+                          TEMP=LENGTH1*LENGTH2
+                          IF(ABS(TEMP)>ZERO_TOLERANCE) THEN
+                            MEAN_LENGTH=2.0_DP*TEMP/(LENGTH1+LENGTH2)
+                          ELSE
+                            MEAN_LENGTH=0.0_DP
+                          ENDIF
+                        CASE DEFAULT
+                          LOCAL_ERROR="The scaling type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(FIELD_SCALINGS%SCALING_TYPE,"*",ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      ENDIF
+                      DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                        dof_idx=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                        CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,dof_idx,MEAN_LENGTH,ERR,ERROR,*999)
+                      ENDDO !version_idx
                     ENDIF
                   CASE(PART_DERIV_S1_S2,PART_DERIV_S1_S3,PART_DERIV_S2_S3,PART_DERIV_S1_S2_S3)
-                    IF(nu==PART_DERIV_S1_S2) THEN
-                      ni1=1
-                      nu1=PART_DERIV_S1
-                      ni2=2
-                      nu2=PART_DERIV_S2
-                    ELSE IF(nu==PART_DERIV_S1_S3) THEN
-                      ni1=1
-                      nu1=PART_DERIV_S1
-                      ni2=3
-                      nu2=PART_DERIV_S3
-                    ELSE IF(nu==PART_DERIV_S1_S2) THEN
-                      ni1=2
-                      nu1=PART_DERIV_S2
-                      ni2=3
-                      nu2=PART_DERIV_S3
-                    ELSE
-                      ni1=1
-                      nu1=PART_DERIV_S1
-                      ni2=2
-                      nu2=PART_DERIV_S2
-                    ENDIF
-!!TODO: Shouldn't have to search for the nk directions. Store them somewhere.
-                    !Find the first direction nk
-                    FOUND=.FALSE.
-                    DO nk2=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                      IF(DOMAIN_NODES%NODES(np)%DERIVATIVES(nk2)%PARTIAL_DERIVATIVE_INDEX==nu1) THEN
-                        ny1=DOMAIN_NODES%NODES(np)%DERIVATIVES(nk2)%DOF_INDEX(1)
-                        FOUND=.TRUE.
-                        EXIT
+                    DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                      dof_idx=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+                      IF(partial_derivative_idx==PART_DERIV_S1_S2) THEN
+                        ni1=1
+                        nu1=PART_DERIV_S1
+                        ni2=2
+                        nu2=PART_DERIV_S2
+                      ELSE IF(partial_derivative_idx==PART_DERIV_S1_S3) THEN
+                        ni1=1
+                        nu1=PART_DERIV_S1
+                        ni2=3
+                        nu2=PART_DERIV_S3
+                      ELSE IF(partial_derivative_idx==PART_DERIV_S1_S2) THEN
+                        ni1=2
+                        nu1=PART_DERIV_S2
+                        ni2=3
+                        nu2=PART_DERIV_S3
+                      ELSE
+                        ni1=1
+                        nu1=PART_DERIV_S1
+                        ni2=2
+                        nu2=PART_DERIV_S2
                       ENDIF
-                    ENDDO !nk2
-                    IF(FOUND) THEN
-                      !Find the second direction nk
+  !!TODO: Shouldn't have to search for the derivative_idx directions. Store them somewhere.
+                      !Find the first direction derivative_idx
                       FOUND=.FALSE.
-                      DO nk2=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                        IF(DOMAIN_NODES%NODES(np)%DERIVATIVES(nk2)%PARTIAL_DERIVATIVE_INDEX==nu2) THEN
-                          ny2=DOMAIN_NODES%NODES(np)%DERIVATIVES(nk2)%DOF_INDEX(1)
+                      DO nk2=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                        IF(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(nk2)%PARTIAL_DERIVATIVE_INDEX==nu1) THEN
+                          ny1=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(nk2)%DOF_INDEX(version_idx)
                           FOUND=.TRUE.
                           EXIT
                         ENDIF
                       ENDDO !nk2
                       IF(FOUND) THEN
-                        IF(nu==PART_DERIV_S1_S2_S3) THEN
-                          !Find the third direction nk
-                          FOUND=.FALSE.
-                          DO nk2=1,DOMAIN_NODES%NODES(np)%NUMBER_OF_DERIVATIVES
-                            IF(DOMAIN_NODES%NODES(np)%DERIVATIVES(nk2)%PARTIAL_DERIVATIVE_INDEX==PART_DERIV_S3) THEN
-                              ny3=DOMAIN_NODES%NODES(np)%DERIVATIVES(nk2)%DOF_INDEX(1)
-                              FOUND=.TRUE.
-                              EXIT
+                        !Find the second direction derivative_idx
+                        FOUND=.FALSE.
+                        DO nk2=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                          IF(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(nk2)%PARTIAL_DERIVATIVE_INDEX==nu2) THEN
+                            ny2=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(nk2)%DOF_INDEX(version_idx)
+                            FOUND=.TRUE.
+                            EXIT
+                          ENDIF
+                        ENDDO !nk2
+                        IF(FOUND) THEN
+                          IF(partial_derivative_idx==PART_DERIV_S1_S2_S3) THEN
+                            !Find the third direction derivative_idx
+                            FOUND=.FALSE.
+                            DO nk2=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                              IF(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(nk2)%PARTIAL_DERIVATIVE_INDEX==PART_DERIV_S3) THEN
+                                ny3=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(nk2)%DOF_INDEX(version_idx)
+                                FOUND=.TRUE.
+                                EXIT
+                              ENDIF
+                            ENDDO !nk2
+                            IF(FOUND) THEN
+                              CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,dof_idx, &
+                                SCALE_FACTORS(ny1)*SCALE_FACTORS(ny2)*SCALE_FACTORS(ny3),ERR,ERROR,*999)
+                            ELSE
+                              LOCAL_ERROR="Could not find the first partial derivative in the s3 direction index for "//&
+                                & "local node number "//TRIM(NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
-                          ENDDO !nk2
-                          IF(FOUND) THEN
-                            CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,ny, &
-                              SCALE_FACTORS(ny1)*SCALE_FACTORS(ny2)*SCALE_FACTORS(ny3),ERR,ERROR,*999)
                           ELSE
-                            LOCAL_ERROR="Could not find the first partial derivative in the s3 direction index for "//&
-                              & "local node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,dof_idx,SCALE_FACTORS(ny1)* &
+                              & SCALE_FACTORS(ny2),ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL DISTRIBUTED_VECTOR_VALUES_SET(FIELD_SCALING%SCALE_FACTORS,ny,SCALE_FACTORS(ny1)* &
-                            & SCALE_FACTORS(ny2),ERR,ERROR,*999)
+                          LOCAL_ERROR="Could not find the first partial derivative in the s"// &
+                            & TRIM(NUMBER_TO_VSTRING(ni2,"*",ERR,ERROR))//" direction index for "//&
+                            & "local node number "//TRIM(NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Could not find the first partial derivative in the s"// &
-                          & TRIM(NUMBER_TO_VSTRING(ni2,"*",ERR,ERROR))//" direction index for "//&
-                          & "local node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NUMBER_TO_VSTRING(ni1,"*",ERR,ERROR))//" direction index for "//&
+                          & "local node number "//TRIM(NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR))//"."
                       ENDIF
-                    ELSE
-                      LOCAL_ERROR="Could not find the first partial derivative in the s"// &
-                        & TRIM(NUMBER_TO_VSTRING(ni1,"*",ERR,ERROR))//" direction index for "//&
-                        & "local node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//"."
-                    ENDIF
+                    ENDDO !version_idx
                   CASE DEFAULT
-                    LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(nu,"*",ERR,ERROR))// &
-                      & " for derivative number "//TRIM(NUMBER_TO_VSTRING(nk,"*",ERR,ERROR))// &
-                      & " of local node number "//TRIM(NUMBER_TO_VSTRING(np,"*",ERR,ERROR))//" is invalid."
+                    LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(partial_derivative_idx,"*", &
+                      & ERR,ERROR))//" for derivative number "//TRIM(NUMBER_TO_VSTRING(derivative_idx,"*",ERR,ERROR))// &
+                      & " of local node number "//TRIM(NUMBER_TO_VSTRING(node_idx,"*",ERR,ERROR))//" is invalid."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
-                ENDDO !nk
-              ENDDO !np
+                ENDDO !derivative_idx
+              ENDDO !node_idx
               CALL DISTRIBUTED_VECTOR_UPDATE_START(FIELD_SCALING%SCALE_FACTORS,ERR,ERROR,*999)
               CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(FIELD_SCALING%SCALE_FACTORS,ERR,ERROR,*999)
             ENDDO !scaling_idx
@@ -21667,6 +21690,27 @@ CONTAINS
       ENDIF
     ELSE
       CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    IF(DIAGNOSTICS1) THEN
+      DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Scale Factors for nodes in the domain:",ERR,ERROR,*999)
+      DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Node : ",node_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Number of Derivatives = ", &
+          & DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES,ERR,ERROR,*999)
+        DO derivative_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Derivative : ",derivative_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of Versions = ", &
+            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS,ERR,ERROR,*999)
+          DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Version : ",version_idx,ERR,ERROR,*999)
+            dof_idx=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%DOF_INDEX(version_idx)
+            CALL DISTRIBUTED_VECTOR_VALUES_GET(FIELD_SCALING%SCALE_FACTORS,dof_idx,VALUE,ERR,ERROR,*999)
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Scale Factor : ",VALUE,ERR,ERROR,*999)
+          ENDDO !version_idx
+        ENDDO !derivative_idx
+      ENDDO !node_idx
     ENDIF
 
     CALL EXITS("FIELD_SCALINGS_CALCULATE")
