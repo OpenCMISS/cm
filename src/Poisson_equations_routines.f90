@@ -3778,8 +3778,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,I,J,K,L,H,element_node_identity !,k1sum,k2sum
-    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SUM2,DXI_DX(3,3),DELTA_T,DXI_DX_DX(3,3)
-    REAL(DP) :: U_VALUE(3),U_DERIV(3,3),RHO_PARAM,MU_PARAM,U_OLD(3),U_SECOND(3,3,3),X(3),B(3),P_DERIV(3),DIFF_COEFF,W_VALUE(3)
+    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SUM2,DXI_DX(3,3),DELTA_T,DXI_DX_DX(3,3),PHINS
+    REAL(DP) :: U_VALUE(3),U_DERIV(3,3),RHO_PARAM,MU_PARAM,U_OLD(3),U_SECOND(3,3,3),X(3),B(3),P_DERIV(3),W_VALUE(3)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS,SOURCE_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -3794,11 +3794,10 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    LOGICAL :: INSIDE
+    LOGICAL :: INSIDE,BETWEEN
     REAL(DP), POINTER :: INPUT_LABEL(:)
+    REAL(DP) :: DIFF_COEFF1,DIFF_COEFF2
     
-    INSIDE=.TRUE.
-
     CALL ENTERS("POISSON_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -3895,6 +3894,10 @@ CONTAINS
         CASE(EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE,EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE, &
           & EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE,EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE)
           !Store all these in equations matrices/somewhere else?????
+
+          INSIDE=.TRUE.
+          BETWEEN=.FALSE.
+
           SOURCE_FIELD=>EQUATIONS%INTERPOLATION%SOURCE_FIELD
           MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -3932,8 +3935,8 @@ CONTAINS
               & INDEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
           ENDIF
 
-!\todo: Check the influence of DIFF_COEFF
-          DIFF_COEFF=1.0_DP
+          DIFF_COEFF1=1.0_DP
+          DIFF_COEFF2=1.0_DP
 
           !Determine inside outside nodes/elements
           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
@@ -3943,16 +3946,36 @@ CONTAINS
               & elements%elements(ELEMENT_NUMBER)%element_nodes(I)
             !this needs to be changed even at the right INPUT_LABEL
             IF(INPUT_LABEL(element_node_identity)<0.5_DP) THEN
-              !outside node
+              !labelling if !!!ELEMENT!!! is inside or outside
+              !so even if only one node is outside node, the whole element is outside element.
               INSIDE=.FALSE.
-              DIFF_COEFF=1.0_DP/1000.0_DP
-!TESTING FOR STABILITY
-              DIFF_COEFF=1.0_DP
-            ELSE
-              !inside node
-              DIFF_COEFF=1.0_DP
             ENDIF
           ENDDO
+          DO I=1,GEOMETRIC_FIELD%decomposition%domain(1)%ptr%topology%elements%maximum_number_of_element_parameters
+            element_node_identity=GEOMETRIC_FIELD%decomposition%domain(1)%ptr%topology% &
+              & elements%elements(ELEMENT_NUMBER)%element_nodes(I)
+            !this needs to be changed even at the right INPUT_LABEL
+            IF(.NOT.INSIDE) THEN
+              IF(INPUT_LABEL(element_node_identity)>0.5_DP) THEN
+                !labelling if !!!ELEMENT!!! is inside or outside
+                !so even if only one node is outside node, the whole element is outside element.
+                BETWEEN=.TRUE.
+              ENDIF
+            ENDIF
+          ENDDO
+
+          IF(INSIDE) THEN
+            DIFF_COEFF1=1.0_DP
+            DIFF_COEFF2=1.0_DP
+          ELSE IF(BETWEEN) THEN
+!          set to "zero" if "between" nodes should be outside!   
+!             DIFF_COEFF1=0.0_DP
+            DIFF_COEFF1=1.0_DP/1000.0_DP
+            DIFF_COEFF2=0.0_DP
+          ELSE
+            DIFF_COEFF1=0.0_DP
+            DIFF_COEFF2=0.0_DP
+          ENDIF
           !Loop over gauss points
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
@@ -4060,6 +4083,7 @@ CONTAINS
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                     DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
+                      PHINS=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                       DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
@@ -4069,10 +4093,11 @@ CONTAINS
                         END DO
                       ENDDO !ni
                       SUM=0.0_DP
+
                       DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
                           SUM=SUM+PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION% &
-                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)*DIFF_COEFF
+                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)*DIFF_COEFF1
                         ENDDO !ni
                       ENDDO !mi
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
@@ -4105,9 +4130,6 @@ CONTAINS
                           ENDDO  
                         ENDDO  
                       ELSE
-!TESTING FOR STABILITY
-                      !This is the procedure if we are outside the fluid domain
-! ! !                         B(K)=B(K)+P_DERIV(K)
                         B(K)=0.0_DP
                       ENDIF
                       !eventually it gets combined to the RHS (source) term
@@ -4139,15 +4161,11 @@ CONTAINS
                           ENDDO
                         ENDDO
                       ELSE
-!TESTING FOR STABILITY
-                      !This is the procedure if we are outside the fluid domain
-! ! !                         B(K)=B(K)+P_DERIV(K)
-! ! !                         B(K)=B(K)+0.0_DP
                         B(K)=0.0_DP
                       ENDIF
                       !now bring the test function in
                       DO J=1,3
-                        SUM=SUM+B(K)*PGMSI(J)*DXI_DX(J,K)
+                        SUM=SUM+B(K)*PGMSI(J)*DXI_DX(J,K)*DIFF_COEFF2
                       ENDDO
                     ENDDO
                     IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -4227,7 +4245,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
-       
+
     CALL EXITS("POISSON_EQUATION_FINITE_ELEMENT_CALCULATE")
     RETURN
 999 CALL ERRORS("POISSON_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
