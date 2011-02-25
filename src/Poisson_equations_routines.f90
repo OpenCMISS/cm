@@ -5721,26 +5721,26 @@ CONTAINS
                   IF(ASSOCIATED(EQUATIONS)) THEN
                     EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                     !Set pressure field to zero     
-                      CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-                      !Set pressure reference point in order to solve for absolute pressure
-                      IF(BOUNDARY_UPDATE) THEN
-!\todo: Let user determine when to change reference value
-                        IF(CURRENT_TIME<0.35_DP) THEN
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,10000.0_DP,ERR,ERROR,*999)
-                        ELSE
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-                        ENDIF
-                          CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                      ENDIF
+!                      !Set pressure field to zero     
+!                       CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+!                         & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+!                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+!                         & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+!                       !Set pressure reference point in order to solve for absolute pressure
+!                       IF(BOUNDARY_UPDATE) THEN
+! !\todo: Let user determine when to change reference value
+!                         IF(CURRENT_TIME<0.35_DP) THEN
+!                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+!                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,10000.0_DP,ERR,ERROR,*999)
+!                         ELSE
+!                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+!                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+!                         ENDIF
+!                           CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+!                             & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                           CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+!                             & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                       ENDIF
                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                         & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                       CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
