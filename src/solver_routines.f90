@@ -6109,7 +6109,7 @@ CONTAINS
   !
 
   !>Finalises a solver and deallocates all memory.
-  SUBROUTINE SOLVER_FINALISE(SOLVER,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE SOLVER_FINALISE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to finalise
@@ -11489,7 +11489,7 @@ CONTAINS
   !
 
   !>Finalise a Newton solver and deallocate all memory
-  SUBROUTINE SOLVER_NEWTON_FINALISE(NEWTON_SOLVER,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE SOLVER_NEWTON_FINALISE(NEWTON_SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer the Newton solver to finalise
@@ -13644,7 +13644,7 @@ CONTAINS
   !
 
   !>Finalise a nonlinear solver for a solver.
-  SUBROUTINE SOLVER_NONLINEAR_FINALISE(NONLINEAR_SOLVER,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE SOLVER_NONLINEAR_FINALISE(NONLINEAR_SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer the nonlinear solver to finalise
