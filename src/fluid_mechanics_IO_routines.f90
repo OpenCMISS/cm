@@ -279,7 +279,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   PUBLIC FLUID_MECHANICS_IO_READ_CMHEART, FLUID_MECHANICS_IO_READ_CMHEART_FINISH
   PUBLIC EXPORT_CONTAINER,COUPLING_PARAMETERS, BOUNDARY_PARAMETERS
   PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE
-  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK
+  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK,FLUID_MECHANICS_IO_WRITE_FITTED_FIELD
 
 
   PUBLIC FLUID_MECHANICS_IO_READ_DARCY_PARAMS
@@ -2008,6 +2008,96 @@ CONTAINS
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK
+
+
+  ! OK
+  !================================================================================================================================
+  !  
+
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_FITTED_FIELD(REGION, EQUATIONS_SET_GLOBAL_NUMBER, NAME, ERR, ERROR,*)
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the coordinate system for
+!     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(7) :: NAME !<the prefix name of file.
+    INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
+    INTEGER(INTG) :: ERR !<The error code
+    TYPE(VARYING_STRING):: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG):: NODES_PER_COMPONENT,I!,J,K !,icompartment
+!     INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
+!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+!     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
+!     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
+    TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
+    DOUBLE PRECISION:: fit
+
+    CALL ENTERS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR,*999)
+
+    NODES_PER_COMPONENT=REGION%equations_sets%equations_sets(1)%ptr%dependent% &
+      & dependent_field%variables(1)%components(1)%param_to_dof_map%node_param2dof_map%number_of_node_parameters
+
+    FILENAME="./output/VEL_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+    WRITE(81,*)NODES_PER_COMPONENT*3
+    parameter_set_idx = 1
+    DO I = 1,NODES_PER_COMPONENT*3
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/LAM_"//NAME//".err"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+    WRITE(81,*)NODES_PER_COMPONENT
+    parameter_set_idx = 1
+    DO I = NODES_PER_COMPONENT*3+1,NODES_PER_COMPONENT*4
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/U_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+!     WRITE(81,*)NodesPerMeshComponent(1)
+    parameter_set_idx = 1
+    DO I = 1,NODES_PER_COMPONENT
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/V_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+!     WRITE(81,*)NodesPerMeshComponent(1)
+    parameter_set_idx = 1
+    DO I = NODES_PER_COMPONENT+1,NODES_PER_COMPONENT*2
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/W_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+!     WRITE(81,*)NodesPerMeshComponent(1)
+    parameter_set_idx = 1
+    DO I = NODES_PER_COMPONENT*2+1,NODES_PER_COMPONENT*3
+      WRITE(81,'(e12.5)') REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+    ENDDO
+    CLOSE(81)
+
+    CALL EXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR)    
+    CALL EXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD")
+    RETURN
+
+  END SUBROUTINE FLUID_MECHANICS_IO_WRITE_FITTED_FIELD
 
 
   ! OK
