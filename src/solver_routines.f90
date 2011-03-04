@@ -5743,6 +5743,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    LOGICAL :: TIME_COMPATIBLE,LINEARITY_COMPATIBLE
     
     CALL ENTERS("SOLVER_EQUATIONS_EQUATIONS_SET_ADD",ERR,ERROR,*999)
 
@@ -5760,22 +5761,93 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS_SET)) THEN
                 EQUATIONS=>EQUATIONS_SET%EQUATIONS
                 IF(ASSOCIATED(EQUATIONS)) THEN
-                  IF(EQUATIONS%LINEARITY==SOLVER_EQUATIONS%LINEARITY) THEN
-                    IF(EQUATIONS%TIME_DEPENDENCE==SOLVER_EQUATIONS%TIME_DEPENDENCE) THEN
-                      CALL SOLVER_MAPPING_EQUATIONS_SET_ADD(SOLVER_MAPPING,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*999)
-                    ELSE
-                      LOCAL_ERROR="Invalid equations set up. The time dependence of the equations set to add ("// &
-                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
-                        & ") does not match the solver equations time dependence ("// &
-                        & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
+                  TIME_COMPATIBLE=.TRUE.
+                  LINEARITY_COMPATIBLE=.TRUE.
+                  !Check solver equations and equations set time dependence is compatible
+                  SELECT CASE(SOLVER_EQUATIONS%TIME_DEPENDENCE)
+                  CASE(SOLVER_EQUATIONS_STATIC,SOLVER_EQUATIONS_QUASISTATIC)
+                    SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+                    CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                      !OK
+                    CASE DEFAULT
+                      TIME_COMPATIBLE=.FALSE.
+                    END SELECT
+                  CASE(SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC)
+                    SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+                    CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                      !Not yet implemented, this needs to be checked to see that it works
+                      TIME_COMPATIBLE=.FALSE.
+                      LOCAL_ERROR="Static equations set equations with dynamic solver equations is not yet implemented."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
+                    CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
+                      !OK
+                    CASE DEFAULT
+                      TIME_COMPATIBLE=.FALSE.
+                    END SELECT
+                  CASE(SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC)
+                    SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+                    CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC,EQUATIONS_FIRST_ORDER_DYNAMIC)
+                      !Not implemented, this needs to be checked to see that it works
+                      TIME_COMPATIBLE=.FALSE.
+                      LOCAL_ERROR="Static or first order dynamic equations set equations with a second order dynamic "// &
+                        & "solver equations is not yet implemented."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
+                      !OK
+                    CASE DEFAULT
+                      TIME_COMPATIBLE=.FALSE.
+                    END SELECT
+                  CASE(SOLVER_EQUATIONS_TIME_STEPPING)
+                    SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+                    CASE(EQUATIONS_TIME_STEPPING)
+                      !OK
+                    CASE DEFAULT
+                      TIME_COMPATIBLE=.FALSE.
+                    END SELECT
+                  CASE DEFAULT
+                    TIME_COMPATIBLE=.FALSE.
+                    LOCAL_ERROR="Invalid time dependence for solver equations, "// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  IF (.NOT. TIME_COMPATIBLE) THEN
+                    LOCAL_ERROR="Invalid equations set up. The time dependence of the equations set to add ("// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+                      & ") is not compatible with the solver equations time dependence ("// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                  !Check solver equations and equations set linearity is compatible
+                  SELECT CASE(SOLVER_EQUATIONS%LINEARITY)
+                  CASE(SOLVER_EQUATIONS_LINEAR)
+                    SELECT CASE(EQUATIONS%LINEARITY)
+                    CASE(EQUATIONS_LINEAR)
+                      !OK
+                    CASE DEFAULT
+                      LINEARITY_COMPATIBLE=.FALSE.
+                    END SELECT
+                  CASE(SOLVER_EQUATIONS_NONLINEAR)
+                    SELECT CASE(EQUATIONS%LINEARITY)
+                    CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR)
+                      !OK
+                    CASE DEFAULT
+                      LINEARITY_COMPATIBLE=.FALSE.
+                    END SELECT
+                  CASE DEFAULT
+                    LINEARITY_COMPATIBLE=.FALSE.
+                    LOCAL_ERROR="Invalid linearity for solver equations, "// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                  IF (.NOT. LINEARITY_COMPATIBLE) THEN
                     LOCAL_ERROR="Invalid equations set up. The linearity of the equations set to add ("// &
-                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
-                      & ") does not match the solver equations linearity ("// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//")."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+                      & ") is not compatible with the solver equations linearity ("// &
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                  IF (TIME_COMPATIBLE .AND. LINEARITY_COMPATIBLE) THEN
+                    CALL SOLVER_MAPPING_EQUATIONS_SET_ADD(SOLVER_MAPPING,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
@@ -11243,8 +11315,36 @@ CONTAINS
                                 ELSE
                                   CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+                              ELSE IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                                DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
+                                  IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                      & NUMBER_OF_SOLVER_ROWS>0) THEN
+                                    LINEAR_VALUE_SUM=0.0_DP
+                                    DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                                      LINEAR_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
+                                      LINEAR_TEMP_VECTOR=>LINEAR_MATRIX%TEMP_VECTOR
+                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(LINEAR_TEMP_VECTOR,equations_row_number, &
+                                        & LINEAR_VALUE,ERR,ERROR,*999)
+                                      LINEAR_VALUE_SUM=LINEAR_VALUE_SUM+LINEAR_VALUE
+                                    ENDDO !equations_matrix_idx
+                                    RESIDUAL_VALUE=LINEAR_VALUE_SUM
+                                    !Loop over the solver rows associated with this equations set residual row
+                                    DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%NUMBER_OF_SOLVER_ROWS
+                                      solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                        & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)%SOLVER_ROWS( &
+                                        & solver_row_idx)
+                                      row_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                        & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
+                                        & COUPLING_COEFFICIENTS(solver_row_idx)
+                                      VALUE=RESIDUAL_VALUE*row_coupling_coefficient
+                                      !Add in nonlinear residual values                                    
+                                      CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
+                                        & ERR,ERROR,*999)
+                                    ENDDO !solver_row_idx
+                                  ENDIF
+                                ENDDO !equations_row_number
                               ENDIF
                             ELSE
                               CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
@@ -15444,6 +15544,29 @@ CONTAINS
                         END SELECT
                       ENDDO !equations_idx
                     ENDDO !solver_dof_idx
+                    IF(DIAGNOSTICS2) THEN
+                      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Solver matrix index = ",solver_matrix_idx,ERR,ERROR,*999)
+                      DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
+                        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Solver dof index = ",solver_dof_idx,ERR,ERROR,*999)
+                        DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                          & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
+                          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Equations index = ",equations_idx,ERR,ERROR,*999)
+                          variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                            & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_idx)
+                          variable_coefficient=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                            & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_COEFFICIENT(equations_idx)
+                          additive_constant=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
+                            & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_idx)
+                          VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
+                          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Variable dof = ",variable_dof,ERR,ERROR,*999)
+                          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Variable coefficient = ",variable_coefficient, &
+                              & ERR,ERROR,*999)
+                          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Additive constant = ",additive_constant, &
+                              & ERR,ERROR,*999)
+                          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Value = ",VALUE,ERR,ERROR,*999)
+                        ENDDO
+                      ENDDO
+                    ENDIF
                     !Restore the solver dof data
                     CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
                     !Start the transfer of the field dofs
