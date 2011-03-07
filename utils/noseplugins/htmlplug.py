@@ -50,8 +50,8 @@ class HtmlOutput(Plugin):
         super(HtmlOutput, self).__init__()
         self.header=['<html><head>',
                       '<title>Test output</title>',
-                      '<SCRIPT LANGUAGE="JavaScript" SRC="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/tree.js"></SCRIPT>',
-                      '<link href="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/tree.css" rel="stylesheet">',
+                      '<SCRIPT LANGUAGE="JavaScript" SRC="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/tree.js"> </SCRIPT>',
+                      '<link href="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/tree.css" rel="stylesheet" />',
                       '</head><body>',
                       '<h1>OpenCMISS Nighly Testing Results</h1>']
         self.html=['</div>','<ul id="tree1" class="mktree">']
@@ -112,12 +112,12 @@ class HtmlOutput(Plugin):
           else:
             self.html.append('<a class="fail">FAIL</a>')
           self.current=self.current.parent
-          self.html.append('</li>')
-        self.html.append('</ul>')       
+          if i != len(self.testLevelsOuter)-1 :
+            self.html.append('</li>')      
         if not result.wasSuccessful():
-            self.html.append('<br><a class="fail">'+str(len(result.failures))+' FAILs, '+str(len(result.errors))+ 'ERRORs</a>')                             
+            self.html.append('<br /><a class="fail">'+str(len(result.failures))+' FAILs, '+str(len(result.errors))+ 'ERRORs</a>')                             
         else:
-            self.html.append('<br><a class="success">ALL PASS</a>')
+            self.html.append('<br /><a class="success">ALL PASS</a>')
         # print >> sys.stderr, self.html
         for l in self.html:
             self.stream.writeln(l)
