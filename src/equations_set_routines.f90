@@ -5284,6 +5284,9 @@ CONTAINS
     !Take the stored load, scale it down appropriately then apply to the unknown variables
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+      IF(DIAGNOSTICS1) THEN
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  equations set",EQUATIONS_SET%USER_NUMBER,ERR,ERROR,*999)
+      ENDIF
       IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
@@ -5336,6 +5339,11 @@ CONTAINS
                                 NEW_LOAD=CURRENT_LOAD+(FULL_LOAD-CURRENT_LOAD)/(MAXIMUM_NUMBER_OF_ITERATIONS-ITERATION_NUMBER+1)
                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                                   & dirichlet_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                                IF(DIAGNOSTICS1) THEN
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx",dirichlet_dof_idx,ERR,ERROR,*999)
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load",CURRENT_LOAD,ERR,ERROR,*999)
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                                ENDIF
                               ENDIF !Full or intermediate load
                             ENDIF !non-ghost dof
                           ENDIF !current domain
@@ -5397,6 +5405,13 @@ CONTAINS
                                 & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,0.0_dp,ERR,ERROR,*999)
+                              IF(DIAGNOSTICS1) THEN
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
+                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
+                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                              ENDIF
                             ENDIF !Non-ghost dof
                           ENDIF !Current domain
                         ENDDO !pressure_incremented_idx
@@ -5421,6 +5436,13 @@ CONTAINS
                                 & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,CURRENT_LOAD,ERR,ERROR,*999)
+                              IF(DIAGNOSTICS1) THEN
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
+                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
+                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                              ENDIF
                             ENDIF !Non-ghost dof
                           ENDIF !Current domain
                         ENDDO !pressure_incremented_idx
