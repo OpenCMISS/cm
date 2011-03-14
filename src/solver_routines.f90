@@ -5836,7 +5836,7 @@ CONTAINS
                   CASE DEFAULT
                     LINEARITY_COMPATIBLE=.FALSE.
                     LOCAL_ERROR="Invalid linearity for solver equations, "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//"."
+                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   IF (.NOT. LINEARITY_COMPATIBLE) THEN

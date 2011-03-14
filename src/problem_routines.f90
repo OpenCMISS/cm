@@ -1374,7 +1374,6 @@ CONTAINS
                     CASE(EQUATIONS_LINEAR)            
                       !Assemble the equations for linear equations
                       CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
-                      CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
                     CASE(EQUATIONS_NONLINEAR)            
                       !Evaluate the residual for nonlinear equations
                       CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
@@ -1396,7 +1395,6 @@ CONTAINS
                   CASE(EQUATIONS_LINEAR)            
                     !Assemble the equations for linear equations
                     CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
-                    CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
                   CASE(EQUATIONS_NONLINEAR)            
                     !Evaluate the residual for nonlinear equations
                     CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
@@ -2309,6 +2307,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: equations_set_idx,interface_condition_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -2346,6 +2345,24 @@ CONTAINS
           ENDDO !interface_condition_idx
           !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+          !Update the rhs field variable with residuals or backsubstitute for any linear
+          !equations sets
+          DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            EQUATIONS=>EQUATIONS_SET%EQUATIONS
+            IF(ASSOCIATED(EQUATIONS)) THEN
+              SELECT CASE(EQUATIONS%LINEARITY)
+              CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
+                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_NONLINEAR)
+                CALL EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE DEFAULT
+                CALL FLAG_ERROR("Invalid linearity for equations set equations",ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDDO !equations_set_idx
         ELSE
           CALL FLAG_ERROR("Solver equations solver mapping not associated.",ERR,ERROR,*999)
         ENDIF
