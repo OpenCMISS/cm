@@ -1609,7 +1609,7 @@ CONTAINS
     CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
       !C(1)=Mooney Rivlin parameter
       !C(2)=Mooney Rivlin parameter
-      !C(3)=Mooney Rivlin parameter
+      !C(3)=K
       !C(4)=M, Biot modulus
       !C(5)=b, skeleton parameter
       !C(6)=p0, reference pressure
@@ -1620,10 +1620,10 @@ CONTAINS
 
       PIOLA_TENSOR(1,1)=C(1)+C(2)*(AZL(2,2)+AZL(3,3))
       PIOLA_TENSOR(1,2)=C(2)*(-AZL(2,1))
-      PIOLA_TENSOR(1,3)=C(2)*(-AZL(3,1))   
+      PIOLA_TENSOR(1,3)=C(2)*(-AZL(3,1))
       PIOLA_TENSOR(2,1)=PIOLA_TENSOR(1,2)
       PIOLA_TENSOR(2,2)=C(1)+C(2)*(AZL(3,3)+AZL(1,1))
-      PIOLA_TENSOR(2,3)=C(2)*(-AZL(3,2))     
+      PIOLA_TENSOR(2,3)=C(2)*(-AZL(3,2))
       PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
       PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
       PIOLA_TENSOR(3,3)=C(1)+C(2)*(AZL(1,1)+AZL(2,2))
