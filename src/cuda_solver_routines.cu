@@ -129,6 +129,7 @@ __device__ void integrator(int timeSteps, float stepSize, double* constants, dou
 		previousStates[j] = states[j];
 	}
 
+
 #pragma unroll 40
 	for (i=1; i<timeSteps+1; i++) {
 		computeRates(i*stepSize, constants, previousStates, algebraic, kutta);
@@ -176,7 +177,6 @@ __global__ void solveSystem(int timeSteps, float stepSize, double* states)
 	intitialiseConstants(threadConstants);
 #endif
 
-
 	for (i=0; i<rateStateCount; i++) {
 		threadStates[threadIdx.x + i*blockDim.x] = states[threadIdx.x + i*blockDim.x + blockIdx.x*blockDim.x*rateStateCount];
 	}
@@ -200,7 +200,7 @@ void checkCUDAError(const char *msg)
     cudaError_t err = cudaGetLastError();
     if( cudaSuccess != err) 
     {
-        fprintf(stderr, "Cuda error: %s: %s.\n", msg, 
+        fprintf(stderr, "Cuda error: %s: %s.\n", msg,
                                   cudaGetErrorString( err) );
         exit(EXIT_FAILURE);
     }                         
@@ -285,7 +285,7 @@ void solve(double* h_states, float startTime, float endTime, unsigned int timeSt
 	// Adjust threads per blocks so that states variables fit in shared memory
 	count=0;
 	sharedMem = (size_t) (sharedMemoryIntegrator + sharedMemoryDevice + sharedMemoryCellModel) * threads_per_block * sizeof(double);
-	while ( sharedMem > deviceProp.sharedMemPerBlock*0.95 && count < 200 ) {
+	while ( sharedMem > deviceProp.sharedMemPerBlock*0.5 && count < 200 ) {
 		if (threads_per_block > 32 ) {
 			threads_per_block-=32;
 		} else {
@@ -320,7 +320,6 @@ void solve(double* h_states, float startTime, float endTime, unsigned int timeSt
 
     // Setup execution parameters
     dim3  grid(num_blocks/num_streams/num_partitions, 1, 1);
-    //printf(" blox %d streams %d parts %d\n", num_blocks, num_streams, num_partitions);
     dim3  threads(threads_per_block, 1, 1);
 
 	if (timing_file) {
@@ -337,6 +336,7 @@ void solve(double* h_states, float startTime, float endTime, unsigned int timeSt
 		kernel_timer = 0;
 		cutCreateTimer(&kernel_timer);
 		cutilCheckError(cutStartTimer(kernel_timer));
+	    printf("grid.x %d threads.x %d sharedMem %d\n", grid.x, threads.x, sharedMem);
 		// Start kernel
 		solveSystem<<<grid, threads, sharedMem>>>(timeSteps, stepSize, d_states);
 		checkCUDAError("Single Kernel Execution");

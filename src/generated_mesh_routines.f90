@@ -3408,7 +3408,8 @@ CONTAINS
                       & TOTAL_NUMBER_OF_NODES_XI(1)+1
                     node_position_idx(1)=MOD(MOD(component_node-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1)), &
                       & TOTAL_NUMBER_OF_NODES_XI(1))+1
-                    dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                    !Default to version 1 of each node derivative
+                    dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                     VALUE=0.0_DP
                     DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
                       VALUE=VALUE+REAL(node_position_idx(xi_idx)-1,DP)*DELTA_COORD(component_idx,xi_idx)
@@ -3431,8 +3432,8 @@ CONTAINS
                         global_node2=DOMAIN_NODES%NODES(node2)%GLOBAL_NUMBER
                         component_node2=USER_NUMBER_TO_COMPONENT_NODE(REGULAR_MESH%GENERATED_MESH,MESH_COMPONENT, &
                             & global_node2,ERR,ERROR)
-                        derivative1=DOMAIN_LINES%LINES(line)%DERIVATIVES_IN_LINE(2,1)
-                        derivative2=DOMAIN_LINES%LINES(line)%DERIVATIVES_IN_LINE(2,DOMAIN_LINES%LINES(line)%BASIS%NUMBER_OF_NODES)
+                        derivative1=DOMAIN_LINES%LINES(line)%DERIVATIVES_IN_LINE(1,2,1)
+                        derivative2=DOMAIN_LINES%LINES(line)%DERIVATIVES_IN_LINE(1,2,DOMAIN_LINES%LINES(line)%BASIS%NUMBER_OF_NODES)
                         VALUE=0.0_DP
                         IF(node1==node_idx) THEN
                           node_position_idx2(3)=(component_node2-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
@@ -3463,7 +3464,9 @@ CONTAINS
                       DO derivative_idx=1,MAXIMUM_GLOBAL_DERIV_NUMBER
                         IF(DERIVATIVES_NUMBER_OF_LINES(derivative_idx)>0) THEN
                           DELTA(derivative_idx)=DELTA(derivative_idx)/REAL(DERIVATIVES_NUMBER_OF_LINES(derivative_idx),DP)
-                          dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative_idx,node_idx)
+                          !Default to version 1 of each node derivative
+                          dof=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)% &
+                            & DERIVATIVES(derivative_idx)%VERSIONS(1)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & dof,DELTA(derivative_idx),ERR,ERROR,*999)
                         ENDIF
@@ -3482,21 +3485,22 @@ CONTAINS
                 NULLIFY(GEOMETRIC_PARAMETERS)
                 CALL FIELD_PARAMETER_SET_DATA_GET(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
                   & ERR,ERROR,*999)
-!!TODO: Don't loop over all components somehow????
+!\todo : Don't loop over all components somehow????
                 DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                   DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
                   DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
                   DOMAIN_LINES=>DOMAIN%TOPOLOGY%LINES
                   DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                     DO derivative_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                      partial_derivative=DOMAIN_NODES%NODES(node_idx)%PARTIAL_DERIVATIVE_INDEX(derivative_idx)
+                      partial_derivative=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
                       IF(partial_derivative==PART_DERIV_S1.OR.partial_derivative==PART_DERIV_S2.OR. &
                         & partial_derivative==PART_DERIV_S3) THEN
                         LENGTH=0.0_DP
                         VECTOR=0.0_DP
                         DO component_idx2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                          !Default to version 1 of each node derivative
                           dof=FIELD_VARIABLE%COMPONENTS(component_idx2)%PARAM_TO_DOF_MAP% &
-                            & NODE_PARAM2DOF_MAP(derivative_idx,node_idx)
+                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(derivative_idx)%VERSIONS(1)
                           VECTOR(component_idx2)=GEOMETRIC_PARAMETERS(dof)
                           LENGTH=LENGTH+VECTOR(component_idx2)**2
                         ENDDO !component_idx2
@@ -3504,8 +3508,9 @@ CONTAINS
                         IF(LENGTH>ZERO_TOLERANCE) THEN
                           VECTOR=VECTOR/LENGTH
                           DO component_idx2=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                            !Default to version 1 of each node derivative
                             dof=FIELD_VARIABLE%COMPONENTS(component_idx2)%PARAM_TO_DOF_MAP% &
-                              & NODE_PARAM2DOF_MAP(derivative_idx,node_idx)
+                              & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(derivative_idx)%VERSIONS(1)
                             CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof, &
                               & VECTOR(component_idx2),ERR,ERROR,*999)
                           ENDDO !component_idx2
@@ -3628,7 +3633,8 @@ CONTAINS
                 RECT_COORDS(2)=POLAR_COORDS(1)*SIN(POLAR_COORDS(2))
                 RECT_COORDS(3)=POLAR_COORDS(3)
                 RECT_COORDS=RECT_COORDS+CYLINDER_MESH%ORIGIN
-                ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,np)
+                !Default to version 1 of each node derivative
+                ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(np)%DERIVATIVES(1)%VERSIONS(1)
                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ny, &
                   & RECT_COORDS(component_idx),ERR,ERROR,*999)
                 ! Do derivatives: if there are derivatives, we can assume it's cubic hermite
@@ -3638,8 +3644,8 @@ CONTAINS
                   ! Since I decided how xi 1,2,3 line up with the cylinder polar coordinates,
                   ! we know a priori that only some of the derivatives are nonzero (analytically).
                   ! NOTE: if hermite type used, should assign FIELD_UNIT_SCALING type for this to work
-                  DO nk=2,FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%MAX_NUMBER_OF_DERIVATIVES
-                    SELECT CASE(DOMAIN_NODES%NODES(np)%GLOBAL_DERIVATIVE_INDEX(nk))
+                  DO nk=2,FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(np)%NUMBER_OF_DERIVATIVES
+                    SELECT CASE(DOMAIN_NODES%NODES(np)%DERIVATIVES(nk)%GLOBAL_DERIVATIVE_INDEX)
                     CASE(GLOBAL_DERIV_S1)
                       SELECT CASE(component_idx)
                       CASE(1)
@@ -3677,7 +3683,9 @@ CONTAINS
                       DERIV=0.0_DP
                     END SELECT
                     ! assign derivative
-                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(nk,np)
+                    !Default to version 1 of each node derivative
+                    ny=FIELD_VARIABLE_COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(nk)%DERIVATIVES(np)% &
+                      & VERSIONS(1)
                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                          & ny,DERIV,ERR,ERROR,*999)
                   ENDDO !nk
@@ -3818,7 +3826,8 @@ CONTAINS
                       RECT_COORDS(2)=0
                       RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)
                       DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                         !Default to version 1 of each node derivative
+                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                               & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                          local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                          IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -3841,7 +3850,7 @@ CONTAINS
                          CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                          IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                             DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                               CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                               CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                     & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                                local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                                IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -3864,7 +3873,7 @@ CONTAINS
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                          DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                  & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                             local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                             IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -3895,7 +3904,7 @@ CONTAINS
                             CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                             IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                        & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                                   local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                                   IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -3922,7 +3931,7 @@ CONTAINS
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                          DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                  & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                             local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                             IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -3945,7 +3954,7 @@ CONTAINS
                             CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                             IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                        & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                                   local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                                   IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -3975,7 +3984,7 @@ CONTAINS
                       RECT_COORDS(2)=0
                       RECT_COORDS(3)=-ELLIPSOID_EXTENT(1)
                       DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                               & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                          local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                          IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -3998,7 +4007,7 @@ CONTAINS
                          CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                          IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                             DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                               CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                               CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                     & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                                local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                                IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -4021,7 +4030,7 @@ CONTAINS
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                          DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                  & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                             local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                             IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN
@@ -4052,7 +4061,7 @@ CONTAINS
                             CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,npg,MESH_COMPONENT,DOMAIN_NUMBER,ERR,ERROR,*999)
                             IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE) THEN
                                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,npg, &
+                                  CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,npg, &
                                        & component_idx,RECT_COORDS(component_idx),ERR,ERROR,*999)
                                   local_node=DOMAIN%MAPPINGS%NODES%GLOBAL_TO_LOCAL_MAP(npg)%local_number(1)
                                   IF(DOMAIN_NODES%NODES(local_node)%NUMBER_OF_DERIVATIVES>1) THEN

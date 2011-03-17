@@ -193,22 +193,24 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_FieldCount
     END FUNCTION FieldExport_FieldCount
 
-    FUNCTION FieldExport_CoordinateVariable( handle, variableNumber, coordinateSystemType, componentCount ) &
+    FUNCTION FieldExport_CoordinateVariable( handle, variableName, variableNumber, coordinateSystemType, componentCount ) &
       & BIND(C,NAME="FieldExport_CoordinateVariable")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
+      CHARACTER(LEN=1, KIND=C_CHAR) :: variableName(*)
       INTEGER(C_INT), VALUE :: variableNumber
       INTEGER(C_INT), VALUE :: coordinateSystemType
       INTEGER(C_INT), VALUE :: componentCount
       INTEGER(C_INT) :: FieldExport_CoordinateVariable
     END FUNCTION FieldExport_CoordinateVariable
 
-    FUNCTION FieldExport_Variable( handle, variableNumber, fieldType, variableType, componentCount ) &
+    FUNCTION FieldExport_Variable( handle, variableName, variableNumber, fieldType, variableType, componentCount ) &
       & BIND(C,NAME="FieldExport_Variable")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
+      CHARACTER(LEN=1, KIND=C_CHAR) :: variableName(*)
       INTEGER(C_INT), VALUE :: variableNumber
       INTEGER(C_INT), VALUE :: fieldType
       INTEGER(C_INT), VALUE :: variableType
@@ -1322,7 +1324,8 @@ CONTAINS
                    DO idx_dev=1, total_number_of_devs-LIST_DEV_POS(idx_comp1)+1
                       idx_dev1=idx_dev1+1
                       !Set the domain to be used by the field components
-                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), &
+                      !Default to version 1 of each node derivative
+                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE,1, LIST_DEV(idx_dev1), &
                            &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
                            &ERR, ERROR, *999)
                       !print *, "n--n"
@@ -1331,7 +1334,8 @@ CONTAINS
                    DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
                       idx_dev1=idx_dev1+1
                       !Set the domain to be used by the field components
-                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE, LIST_DEV(idx_dev1), &
+                      !Default to version 1 of each node derivative
+                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE,1, LIST_DEV(idx_dev1), &
                            &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
                            &ERR, ERROR, *999)
                       !print *, "n--n"
@@ -2729,6 +2733,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: i,LENGTH
+    CHARACTER(LEN=MAXSTRLEN) :: fvar_name
+    CHARACTER(LEN=1, KIND=C_CHAR) :: cvar_name(MAXSTRLEN+1)
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
     TYPE(DOMAIN_TYPE), POINTER :: componentDomain !The domain mapping to calculate nodal mappings
@@ -2899,14 +2906,21 @@ CONTAINS
           variable_ptr=>component%FIELD_VARIABLE
           !write out the field information
 
+          fvar_name = CHAR(variable_ptr%variable_label)
+          LENGTH=LEN_TRIM(fvar_name)
+          DO i=1,LENGTH
+            cvar_name(I)=fvar_name(i:i)
+          ENDDO !i
+          cvar_name(LENGTH+1)=C_NULL_CHAR
+          
           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
                & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
              NULLIFY(COORDINATE_SYSTEM)
              CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-             ERR = FieldExport_CoordinateVariable( sessionHandle, var_idx, COORDINATE_SYSTEM%TYPE, &
+             ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, var_idx, COORDINATE_SYSTEM%TYPE, &
                   & GROUP_VARIABLES(var_idx) )
           ELSE
-             ERR = FieldExport_Variable( sessionHandle, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
+             ERR = FieldExport_Variable( sessionHandle, cvar_name, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
                   & GROUP_VARIABLES(var_idx) )
           ENDIF
 
@@ -3007,8 +3021,8 @@ CONTAINS
                             NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)
+                                 & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                                 & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3034,7 +3048,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3060,7 +3074,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3086,7 +3100,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3114,7 +3128,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3140,7 +3154,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3166,7 +3180,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3192,7 +3206,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3220,7 +3234,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3246,7 +3260,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3272,7 +3286,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3298,7 +3312,7 @@ CONTAINS
                             DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
                                ELEMENT_DERIVATIVES(nn)= &
                                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(mm,NODE_NUMBER)  
+                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
                             ENDDO
                          ENDDO
                       ENDDO
@@ -3313,7 +3327,7 @@ CONTAINS
                 NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
                 DO mm=1,NUMBER_OF_DERIVATIVES(nn)
                    ELEMENT_DERIVATIVES(derivativeIndex) = &
-                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(mm,nn)
+                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(1,mm,nn)
                    derivativeIndex = derivativeIndex + 1
                 ENDDO !mm
              ENDDO !nn
@@ -3382,7 +3396,7 @@ CONTAINS
 
     !Local variables
     INTEGER(INTG) :: scaleIndex, componentIndex, localNumber, scaleFactorCount, nodeIndex
-    INTEGER(INTG) :: nodeNumber, derivativeIndex, nk, ny2, firstScaleSet, nx, ny, nz, NodesX, NodesY, NodesZ
+    INTEGER(INTG) :: nodeNumber, derivativeIndex, nv, nk, ny2, firstScaleSet, nx, ny, nz, NodesX, NodesY, NodesZ
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: domainElements
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
@@ -3429,8 +3443,9 @@ CONTAINS
           DO nodeIndex = 1, basis%NUMBER_OF_NODES
             nodeNumber = domainElements%ELEMENTS( localNumber )%ELEMENT_NODES( nodeIndex )
             DO derivativeIndex = 1, basis%NUMBER_OF_DERIVATIVES( nodeIndex )
-              nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES( derivativeIndex, nodeIndex )
-              ny2 = domainNodes%NODES( nodeNumber )%DOF_INDEX( nk )
+              nk = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(1, derivativeIndex, nodeIndex )
+              nv = domainElements%ELEMENTS( localNumber )%ELEMENT_DERIVATIVES(2, derivativeIndex, nodeIndex )
+              ny2 = domainNodes%NODES( nodeNumber )%DERIVATIVES(nk)%DOF_INDEX(nv)
               scaleFactorCount = scaleFactorCount + 1
               IF( component%FIELD_VARIABLE%FIELD%SCALINGS%SCALING_TYPE /= FIELD_NO_SCALING ) THEN
                 scaleBuffer( scaleFactorCount ) = SCALE_FACTORS(ny2)
@@ -3508,6 +3523,7 @@ CONTAINS
     REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:)
     TYPE(FIELD_IO_COMPONENT_INFO_SET), POINTER :: components
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    REAL(DP) :: VALUE
     !INTEGER(INTG), POINTER :: GEOMETRIC_PARAMETERS_INTG(:)
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENTS_INTO_LOCAL_FILE",ERR,ERROR,*999)
@@ -3625,27 +3641,25 @@ CONTAINS
             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
   
           ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
-            & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(local_number)) )
+            & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)) )
           isFirstValueSet = 0
         ELSEIF( component%INTERPOLATION_TYPE == FIELD_CONSTANT_INTERPOLATION ) THEN
-        !SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
-        !CASE(FIELD_INTG_TYPE)
-        !NULLIFY(GEOMETRIC_PARAMETERS_INTG)
-!         CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
-!           & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
-!           ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
-!             & GEOMETRIC_PARAMETERS_INTG(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP) )
-!           isFirstValueSet = 0
-        !CASE(FIELD_DP_TYPE)
-        NULLIFY(GEOMETRIC_PARAMETERS)
-        CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
-          & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-          ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
-            & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP) )
-          isFirstValueSet = 0
-!         END SELECT
-  
-
+          !SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
+          !CASE(FIELD_INTG_TYPE)
+          !  NULLIFY(GEOMETRIC_PARAMETERS_INTG)
+          ! CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
+          !   & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
+          !   ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
+          !     & GEOMETRIC_PARAMETERS_INTG(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP) )
+          !   isFirstValueSet = 0
+          !CASE(FIELD_DP_TYPE)
+            NULLIFY(GEOMETRIC_PARAMETERS)
+            CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+            VALUE=GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
+            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI,VALUE)
+            isFirstValueSet = 0
+          !END SELECT
         ENDIF
 
         IF(ERR/=0) THEN
@@ -4260,7 +4274,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !local variables
-    INTEGER(INTG) :: component_idx
+    INTEGER(INTG) :: component_idx, derivative_idx
     INTEGER(INTG) :: local_number1, local_number2, tmp1
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES1, DOMAIN_NODES2
     INTEGER(INTG), ALLOCATABLE:: array1(:), array2(:)
@@ -4311,10 +4325,14 @@ CONTAINS
       
         array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=0
         array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=0
-        array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=&
-          &DOMAIN_NODES1%NODES(local_number1)%PARTIAL_DERIVATIVE_INDEX(:)
-        array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=&
-          &DOMAIN_NODES1%NODES(local_number2)%PARTIAL_DERIVATIVE_INDEX(:)
+
+        DO derivative_idx=1,DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES
+          array1(derivative_idx)=DOMAIN_NODES1%NODES(local_number1)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
+        ENDDO
+        DO derivative_idx=1,DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES
+          array2(derivative_idx)=DOMAIN_NODES1%NODES(local_number2)%DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
+        ENDDO
+
         CALL LIST_SORT(array1,ERR,ERROR,*999)
         CALL LIST_SORT(array2,ERR,ERROR,*999)
         tmp1=SUM(array1-array2)
@@ -4989,6 +5007,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: i, LENGTH
+    CHARACTER(LEN=MAXSTRLEN) :: fvar_name
+    CHARACTER(LEN=1, KIND=C_CHAR) :: cvar_name(MAXSTRLEN+1)
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(FIELD_TYPE), POINTER :: field_ptr
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
@@ -4997,7 +5018,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE, TARGET :: GROUP_FIELDS(:), GROUP_VARIABLES(:), GROUP_DERIVATIVES(:)
     INTEGER(INTG) :: NUM_OF_FIELDS, NUM_OF_VARIABLES, NUM_OF_NODAL_DEV
     INTEGER(INTG) :: local_number
-    INTEGER(INTG) :: field_idx, comp_idx, comp_idx1, value_idx, var_idx, global_var_idx !dev_idx,
+    INTEGER(INTG) :: field_idx, comp_idx, comp_idx1, value_idx, var_idx, global_var_idx ,derivative_idx !dev_idx,
     LOGICAL :: FOUND
 
     CALL ENTERS("FIELD_IO_EXPORT_NODAL_GROUP_HEADER_FORTRAN",ERR,ERROR,*999)
@@ -5107,14 +5128,21 @@ CONTAINS
           variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx1)%PTR%FIELD_VARIABLE
           !write out the field information
 
+          fvar_name = CHAR(variable_ptr%variable_label)
+          LENGTH=LEN_TRIM(fvar_name)
+          DO i=1,LENGTH
+            cvar_name(I)=fvar_name(i:i)
+          ENDDO !i
+          cvar_name(LENGTH+1)=C_NULL_CHAR
+          
           IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
             & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
             NULLIFY(COORDINATE_SYSTEM)
             CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-            ERR = FieldExport_CoordinateVariable( sessionHandle, global_var_idx, &
+            ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, global_var_idx, &
               & COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
           ELSE
-            ERR = FieldExport_Variable( sessionHandle, global_var_idx, variable_ptr%FIELD%TYPE,  &
+            ERR = FieldExport_Variable( sessionHandle, cvar_name, global_var_idx, variable_ptr%FIELD%TYPE,  &
               & variable_ptr%VARIABLE_TYPE, &
               & variable_ptr%NUMBER_OF_COMPONENTS )
           ENDIF
@@ -5170,7 +5198,10 @@ CONTAINS
 
              !get the nodal partial derivatives
              NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
-             GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV)=DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(:)
+             DO derivative_idx=1,NUM_OF_NODAL_DEV
+               GROUP_DERIVATIVES(derivative_idx)=DOMAIN_NODES%NODES(local_number)%DERIVATIVES(derivative_idx)% &
+                 & PARTIAL_DERIVATIVE_INDEX
+             ENDDO
              !sort  the partial derivatives
              CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
              
@@ -5334,25 +5365,25 @@ CONTAINS
         ENDDO !paddingCount
 
 
-         SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
-         CASE(FIELD_INTG_TYPE)
-           NULLIFY(GEOMETRIC_PARAMETERS_INTG)
-           CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
-             & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
-         CASE(FIELD_DP_TYPE)
-           NULLIFY(GEOMETRIC_PARAMETERS_DP)
-           CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
-             & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_DP,ERR,ERROR,*999)
-         CASE DEFAULT
-           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-         END SELECT
+        SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
+        CASE(FIELD_INTG_TYPE)
+          NULLIFY(GEOMETRIC_PARAMETERS_INTG)
+          CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
+        CASE(FIELD_DP_TYPE)
+          NULLIFY(GEOMETRIC_PARAMETERS_DP)
+          CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_DP,ERR,ERROR,*999)
+        CASE DEFAULT
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        END SELECT
         !get the nodal partial derivatives
         NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
 
         !Record the dof-index of each derivative (if it is present)      
         DERIVATIVE_INDEXES = -1
         DO dev_idx=1, NUM_OF_NODAL_DEV
-          DERIVATIVE_INDEXES( DOMAIN_NODES%NODES(local_number)%PARTIAL_DERIVATIVE_INDEX(dev_idx) ) = dev_idx
+          DERIVATIVE_INDEXES( DOMAIN_NODES%NODES(local_number)%DERIVATIVES(dev_idx)%PARTIAL_DERIVATIVE_INDEX ) = dev_idx
         ENDDO
 
         !Output the dofs, sorted according to derivative index    
@@ -5366,11 +5397,12 @@ CONTAINS
 
           SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
           CASE(FIELD_INTG_TYPE)
-            VALUE=REAL(GEOMETRIC_PARAMETERS_INTG( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP( &
-              & DERIVATIVE_INDEXES( dev_idx ), local_number ) ),DP)
+            VALUE=REAL(GEOMETRIC_PARAMETERS_INTG( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+              & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(1) ) ,DP)
           CASE(FIELD_DP_TYPE)
-            VALUE=GEOMETRIC_PARAMETERS_DP( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP( &
-              & DERIVATIVE_INDEXES( dev_idx ), local_number ) )
+           !Default to version 1 of each node derivative
+            VALUE=GEOMETRIC_PARAMETERS_DP( COMPONENT%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_number)% &
+              & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(1) )
           CASE DEFAULT
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           END SELECT
@@ -5472,6 +5504,7 @@ CONTAINS
     CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_STRING")
     RETURN
 999 CALL ERRORS("FIELD_IO_FORTRAN_FILE_READ_STRING",ERR,ERROR)
+
     CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_STRING")
     RETURN 1
   END SUBROUTINE FIELD_IO_FORTRAN_FILE_READ_STRING

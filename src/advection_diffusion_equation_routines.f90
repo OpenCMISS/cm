@@ -155,7 +155,9 @@ CONTAINS
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              !Default to version 1 of each node derivative
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                             ENDDO !dim_idx
                             !Loop over the derivatives
@@ -167,7 +169,7 @@ CONTAINS
                                 !Solution is u(x,y)=tanh(1 - alpha.(x.tan(Phi) - y))
                                SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=TANH(1.0-alpha*(X(1)*tanphi-X(2)))
                                   CASE(GLOBAL_DERIV_S1)
@@ -178,39 +180,40 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=0.0_DP
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
                                   LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                                     & " is invalid."
                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                END SELECT                                
+                                END SELECT
                               CASE DEFAULT
                                 LOCAL_ERROR="The analytic function type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                   & " is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
+                              !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                               IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
@@ -287,7 +290,9 @@ CONTAINS
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              !Default to version 1 of each node derivative
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                             ENDDO !dim_idx
                             !Loop over the derivatives
@@ -306,8 +311,9 @@ CONTAINS
                                   & " is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
+                              !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,local_ny,VALUE_INDEPENDENT,ERR,ERROR,*999)
                             ENDDO !deriv_idx
@@ -376,7 +382,9 @@ CONTAINS
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              !Default to version 1 of each node derivative
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                             ENDDO !dim_idx
                             !Loop over the derivatives
@@ -394,8 +402,9 @@ CONTAINS
                                   & " is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
+                              !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & FIELD_VALUES_SET_TYPE,local_ny,VALUE_SOURCE,ERR,ERROR,*999)
                             ENDDO !deriv_idx
@@ -844,7 +853,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: component_idx,GEOMETRIC_MESH_COMPONENT,GEOMETRIC_SCALING_TYPE,NUMBER_OF_DIMENSIONS, &
       & NUMBER_OF_MATERIALS_COMPONENTS, NUMBER_OF_SOURCE_COMPONENTS, NUMBER_OF_INDEPENDENT_COMPONENTS,imy_matrix,Ncompartments,&
-      & GEOMETRIC_COMPONENT_NUMBER
+      & GEOMETRIC_COMPONENT_NUMBER,NUMBER_OF_INDEPENDENT_U_VAR_COMPONENTS,NUMBER_OF_INDEPENDENT_V_VAR_COMPONENTS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -1745,6 +1754,99 @@ CONTAINS
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             EQUATIONS_INDEPENDENT=>EQUATIONS_SET%INDEPENDENT
             IF(ASSOCIATED(EQUATIONS_INDEPENDENT)) THEN
+             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE .OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE) THEN
+              IF(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                !Create the auto created independent field
+                CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_INDEPENDENT% &
+                  & INDEPENDENT_FIELD,ERR,ERROR,*999)
+                CALL FIELD_LABEL_SET(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,"Independent Field",ERR,ERROR,*999)
+                CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD, &
+                      & FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_DECOMPOSITION, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
+                  & GEOMETRIC_FIELD,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,2,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_V_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                  NUMBER_OF_INDEPENDENT_U_VAR_COMPONENTS=NUMBER_OF_DIMENSIONS
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_INDEPENDENT_U_VAR_COMPONENTS,ERR,ERROR,*999)
+                EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+                  Ncompartments=EQUATIONS_SET_FIELD_DATA(2)
+                  NUMBER_OF_INDEPENDENT_V_VAR_COMPONENTS=Ncompartments-1
+                 !Set the number of independent components
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & NUMBER_OF_INDEPENDENT_V_VAR_COMPONENTS,ERR,ERROR,*999)
+                !Default the k independent components to the geometric interpolation setup with constant interpolation
+                DO component_idx=1,NUMBER_OF_INDEPENDENT_U_VAR_COMPONENTS
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                ENDDO !component_idx
+                DO component_idx=1,NUMBER_OF_INDEPENDENT_V_VAR_COMPONENTS
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                    & FIELD_V_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                ENDDO !component_idx
+                  !Default the field scaling to that of the geometric field
+                CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                CALL FIELD_SCALING_TYPE_SET(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+              ELSE
+                !Check the user specified field
+                CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE/),&
+                   & ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                   & ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                   & ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS, &
+                  & ERR,ERROR,*999)
+                EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+                  Ncompartments=EQUATIONS_SET_FIELD_DATA(2)
+                  NUMBER_OF_INDEPENDENT_V_VAR_COMPONENTS=Ncompartments-1
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_INDEPENDENT_V_VAR_COMPONENTS,ERR,ERROR,*999)
+                DO component_idx=1,NUMBER_OF_INDEPENDENT_U_VAR_COMPONENTS
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
+                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                ENDDO
+                DO component_idx=1,NUMBER_OF_INDEPENDENT_V_VAR_COMPONENTS
+                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,component_idx, &
+                    & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                ENDDO
+              ENDIF
+             ELSE
               IF(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                 !Create the auto created independent field
                 CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_INDEPENDENT% &
@@ -1775,12 +1877,8 @@ CONTAINS
                 DO component_idx=1,NUMBER_OF_DIMENSIONS
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-!                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-!                     & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-                  !CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  !  & component_idx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 ENDDO !component_idx
@@ -1802,9 +1900,8 @@ CONTAINS
                   & ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
                   & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
-                  & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
               ENDIF
+             ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set independent is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -1815,9 +1912,14 @@ CONTAINS
                 !Finish creating the independent field
                 CALL FIELD_CREATE_FINISH(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
                 !Set the default values for the independent field
-                    CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                       & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_INPUT_DATA1_SET_TYPE,ERR,ERROR,*999)
 
+                 IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE .OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE) THEN
+!                   CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+!                      & FIELD_INPUT_DATA2_SET_TYPE,ERR,ERROR,*999)
+                 ENDIF
 !                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
 !                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
 !                   NUMBER_OF_INDEPENDENT_COMPONENTS=NUMBER_OF_DIMENSIONS             
@@ -2479,6 +2581,11 @@ CONTAINS
             & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE) THEN
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+               & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+          ENDIF
+
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
@@ -2542,6 +2649,10 @@ CONTAINS
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & SOURCE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)   
             ENDIF
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE) THEN
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                 & MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            ENDIF
             !Calculate RWG.
 !!TODO: Think about symmetric problems. 
             RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
@@ -2598,7 +2709,7 @@ CONTAINS
                             & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*RWG
                             ! A_PARAM is the material parameter that multiplies the linear source u
                         ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE) THEN
-                        !for multi-compartment model must include additional terms into the 
+                        !for multi-compartment model must include additional terms into the
                           COUPLING_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR% &
                             & VALUES(my_compartment,NO_PART_DERIV)
                           STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ & 
@@ -3968,10 +4079,11 @@ CONTAINS
                      & NUMBER_OF_COMPONENTS,BOUNDARY_CONDITION_FIXED,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
                      & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER)
                    WRITE(*,*) SIZE(BOUNDARY_VALUES)
-                   DO node_idx=1,SIZE(BOUNDARY_VALUES)      
+                   DO node_idx=1,SIZE(BOUNDARY_VALUES)
+                     !Default to version 1 of each node derivative
                      CALL FIELD_COMPONENT_DOF_GET_USER_NODE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                       & NO_GLOBAL_DERIV,BOUNDARY_NODES(node_idx), &
-                       & 1,local_ny,global_ny,ERR,ERROR,*999)              
+                       & 1,NO_GLOBAL_DERIV,BOUNDARY_NODES(node_idx), &
+                       & 1,local_ny,global_ny,ERR,ERROR,*999)
                      BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
                        & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN

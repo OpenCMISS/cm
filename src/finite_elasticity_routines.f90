@@ -112,7 +112,8 @@ MODULE FINITE_ELASTICITY_ROUTINES
     & FINITE_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET,FINITE_ELASTICITY_PROBLEM_SETUP, &
     & FINITE_ELASTICITY_POST_SOLVE,FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA, &
     & FINITE_ELASTICITY_PRE_SOLVE,FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP, &
-    & EVALUATE_CHAPELLE_FUNCTION, GET_DARCY_FINITE_ELASTICITY_PARAMETERS
+    & EVALUATE_CHAPELLE_FUNCTION, GET_DARCY_FINITE_ELASTICITY_PARAMETERS, &
+    & FINITE_ELASTICITY_GAUSS_DEFORMATION_GRADIENT_TENSOR
 
 CONTAINS
 
@@ -192,7 +193,8 @@ CONTAINS
                       !Need to test if this node is in current decomposition
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(INNER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,PIN,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -203,7 +205,8 @@ CONTAINS
                       !Need to test if this node is in current decomposition
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(OUTER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,POUT,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -217,9 +220,12 @@ CONTAINS
                         CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
                         IF(.NOT.NODE_EXISTS) CYCLE
                         CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        !Default to version 1 of each node derivative
+                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                          & DERIVATIVES(1)%VERSIONS(1)
                         DEFORMED_Z=GEOMETRIC_PARAMETERS(local_ny)*LAMBDA
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(TOP_NORMAL_XI),BOUNDARY_CONDITION_FIXED,DEFORMED_Z,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -229,7 +235,8 @@ CONTAINS
                       !Need to check this node exists in the current domain
                       CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                        !Default to version 1 of each node derivative
+                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                           & user_node,ABS(BOTTOM_NORMAL_XI),BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
                       ENDIF
                     ENDDO
@@ -244,22 +251,28 @@ CONTAINS
                         CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
                         IF(.NOT.NODE_EXISTS) CYCLE
                         CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                        !Default to version 1 of each node derivative
+                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                          & DERIVATIVES(1)%VERSIONS(1)
                         X(1)=GEOMETRIC_PARAMETERS(local_ny)
                           CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
                           IF(.NOT.NODE_EXISTS) CYCLE
                           CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,local_node)
+                          !Default to version 1 of each node derivative
+                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                          & DERIVATIVES(1)%VERSIONS(1)
                         X(2)=GEOMETRIC_PARAMETERS(local_ny)
                         IF(ABS(X(1))<1E-7_DP) THEN
-                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                          !Default to version 1 of each node derivative
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                             & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
 !                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
 !                             & "FIXED IN X DIRECTION"
                           X_FIXED=.TRUE.
                         ENDIF
                         IF(ABS(X(2))<1E-7_DP) THEN
-                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1, &
+                          !Default to version 1 of each node derivative
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
                             & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
 !                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
 !                             & "FIXED IN Y DIRECTION"
@@ -316,7 +329,9 @@ CONTAINS
                                 DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                   !!TODO \todo We should interpolate the geometric field here and the node position.
                                   DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                    local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                                    !Default to version 1 of each node derivative
+                                    local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                      & NODES(local_node)%DERIVATIVES(1)%VERSIONS(1)
                                     X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                                   ENDDO !dim_idx
                                   !Loop over the derivatives
@@ -326,7 +341,7 @@ CONTAINS
                                       !Cylinder inflation, extension, torsion
                                       SELECT CASE(variable_type)
                                       CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           !Do all components at the same time (r,theta,z)->(x,y,z) & p
                                           CALL FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X, &
@@ -339,24 +354,24 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           !Not implemented, but don't want to cause an error so do nothing
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
@@ -372,8 +387,9 @@ CONTAINS
                                     END SELECT
                                     !Set the analytic solution to parameter set
                                     DO component_idx=1,NUMBER_OF_DIMENSIONS
+                                      !Default to version 1 of each node derivative
                                       local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                        & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                         & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,DEFORMED_X(component_idx),ERR,ERROR,*999)
                                     ENDDO
@@ -387,8 +403,9 @@ CONTAINS
                                       IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
                                         !\todo: test the domain node mappings pointer properly
                                         local_node=DOMAIN_PRESSURE%mappings%nodes%global_to_local_map(global_node)%local_number(1)
-                                        local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(deriv_idx, &
-                                          & local_node)
+                                        !Default to version 1 of each node derivative
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                          & NODES(local_node)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                         !Because p=2.lambda in this particular constitutive law, we'll assign half the 
                                         !hydrostatic pressure to the analytic array
                                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
@@ -597,7 +614,7 @@ CONTAINS
     REAL(DP),POINTER :: DATA(:) ! parameter_set vector
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR1
-    INTEGER(INTG) :: component_idx,local_ny,derivative_idx,derivative,node_idx,node,column
+    INTEGER(INTG) :: component_idx,local_ny,version,derivative_idx,derivative,node_idx,node,column
     INTEGER(INTG) :: DEPENDENT_NUMBER_OF_COMPONENTS
     INTEGER(INTG) :: DEPENDENT_COMPONENT_INTERPOLATION_TYPE
     REAL(DP) :: DELTA, ORIG_DEP_VAR ,xnorm
@@ -640,8 +657,10 @@ CONTAINS
             DO node_idx=1,BASIS%NUMBER_OF_NODES
               node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
               DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(derivative_idx,node_idx)
-                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(derivative,node)
+                derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
+                version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
+                  & DERIVATIVES(derivative)%VERSIONS(version)
                 ! one-sided finite difference
                 CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
                 CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
@@ -654,7 +673,7 @@ CONTAINS
               ENDDO !derivative_idx
             ENDDO !node_idx
           CASE (FIELD_ELEMENT_BASED_INTERPOLATION) ! element based
-            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP(ELEMENT_NUMBER)
+            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ELEMENT_NUMBER)
             ! one-sided finite difference
             CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
             CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
@@ -814,7 +833,8 @@ CONTAINS
         MATERIALS_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. &
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE) THEN
           DARCY_DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR
         ENDIF
 
@@ -829,7 +849,8 @@ CONTAINS
 
         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. &
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE) THEN
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
             & DARCY_DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
         ENDIF
@@ -841,7 +862,8 @@ CONTAINS
         DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR
         IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE .OR. &
+          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE) THEN
           DARCY_DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_V_VARIABLE_TYPE)%PTR
         ENDIF
 
@@ -1110,7 +1132,8 @@ CONTAINS
           ENDIF
 
         ! ---------------------------------------------------------------
-        CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   ! compressible problem (no pressure component)
+        CASE (EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
+            & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)   ! compressible problem (no pressure component)
 
           !Loop over gauss points and add up residuals
           DO gauss_idx=1,DEPENDENT_NUMBER_OF_GAUSS_POINTS
@@ -1125,9 +1148,10 @@ CONTAINS
               & FIBRE_INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
               & MATERIALS_INTERPOLATED_POINT,ERR,ERROR,*999)
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) THEN
-                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
-                  & DARCY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999) ! 'FIRST_PART_DERIV' required ???
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE) THEN
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                & DARCY_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999) ! 'FIRST_PART_DERIV' required ???
             ENDIF
 
             !Calculate F=dZ/dNU at the gauss point
@@ -1284,6 +1308,8 @@ CONTAINS
     FIELD_VAR_DUDN_TYPE=EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE
     DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
+!     write(*,*)'ELEMENT_NUMBER (solid) = ',ELEMENT_NUMBER
+
     !Surface pressure term calculation: Loop over all faces
     DO element_face_idx=1,DEPENDENT_BASIS%NUMBER_OF_LOCAL_FACES
       face_number=DECOMP_ELEMENT%ELEMENT_FACES(element_face_idx)
@@ -1309,6 +1335,10 @@ CONTAINS
 
         !Nonzero surface pressure found?
         IF(NONZERO_PRESSURE) THEN
+
+!           write(*,*)'element_face_idx (solid) = ',element_face_idx
+!           write(*,*)'DECOMP_FACE%XI_DIRECTION = ',DECOMP_FACE%XI_DIRECTION
+
           !Grab some other pointers
           DOMAIN_FACE=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)
           FACE_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)%BASIS       
@@ -1341,6 +1371,15 @@ CONTAINS
               & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             DZDXI=DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
 
+!             write(*,*)'gauss_idx (solid) = ',gauss_idx
+!             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+!               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
+!               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!             write(*,*)'GEOMETRIC_INTERP_POINT (solid) = ',EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)% &
+!               & PTR%VALUES(1:3,NO_PART_DERIV)
+!             write(*,*)'DEPENDENT_INTERPOLATED_POINT COORDS (solid) = ',DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,NO_PART_DERIV)
+
             !Calculate covariant metric tensor
             CALL MATRIX_TRANSPOSE(DZDXI,DZDXIT,ERR,ERROR,*999)
             CALL MATRIX_PRODUCT(DZDXIT,DZDXI,GIJL,ERR,ERROR,*999) !g_ij = dZdXI' * dZdXI
@@ -1372,6 +1411,11 @@ CONTAINS
                     & SQRT_G
                 ENDDO !node_derivative_idx
               ENDDO !face_node_idx
+
+!               write(*,*)'component_idx (solid) = ',component_idx
+!               write(*,*)'NORMAL_PROJECTION (solid) = ',NORMAL_PROJECTION
+!               write(*,*)' '
+
             ENDDO !componenet_dx
           ENDDO !gauss_idx
         ENDIF !nonzero surface pressure check
@@ -1478,7 +1522,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: EQUATIONS_SET_SUBTYPE !<The equation subtype
     INTEGER(INTG) :: i,j,PRESSURE_COMPONENT
-    REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),P,ACTIVTIME
+    REAL(DP) :: AZL(3,3),AZU(3,3),DZDNUT(3,3),PIOLA_TENSOR(3,3),E(3,3),P,ACTIVTIME,IDENTITY(3,3),AZLT(3,3)
     REAL(DP) :: I1,I2,I3            !Invariants, if needed
     REAL(DP) :: TEMP(3,3),TEMPTERM  !Temporary variables
     REAL(DP) :: TEMP_1, TEMP_2
@@ -1487,7 +1531,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP), DIMENSION (:), POINTER :: C !Parameters for constitutive laws
     REAL(DP) :: a, B(3,3), Q !Parameters for orthotropic laws
-    REAL(DP) :: DARCY_MASS_INCREASE  !coupled elasticity Darcy
+    REAL(DP) :: DARCY_MASS_INCREASE,ffact,dfdJfact !coupled elasticity Darcy
     INTEGER(INTG) :: DARCY_MASS_INCREASE_ENTRY !position of mass-increase entry in dependent-variable vector
     REAL(DP) :: C3
     REAL(DP) :: Z_COORD_GAUSS, Z_COORD, TOL_GAUSS
@@ -1552,9 +1596,6 @@ CONTAINS
       ! W=c1/2 (e^Q - 1)
       ! where Q=c2(I1-3)
       ! S = 2*dW/dC + 2pC^-1
-      C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1)
-      C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1)
-
       TEMPTERM=C(1)*C(2)*EXP(C(2)*(AZL(1,1)+AZL(2,2)+AZL(3,3)-3.0_DP))
       PIOLA_TENSOR(1,1)=TEMPTERM+2.0_DP*P*AZU(1,1)
       PIOLA_TENSOR(1,2)=2.0_DP*P*AZU(1,2)
@@ -1565,6 +1606,32 @@ CONTAINS
       PIOLA_TENSOR(3,1)=PIOLA_TENSOR(1,3)
       PIOLA_TENSOR(3,2)=PIOLA_TENSOR(2,3)
       PIOLA_TENSOR(3,3)=TEMPTERM+2.0_DP*P*AZU(3,3)
+    CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
+      !C(1)=Mooney Rivlin parameter
+      !C(2)=Mooney Rivlin parameter
+      !C(3)=K
+      !C(4)=M, Biot modulus
+      !C(5)=b, skeleton parameter
+      !C(6)=p0, reference pressure
+
+      P=DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV) !Fluid pressure
+      IDENTITY=0.0_DP
+      DO i=1,3
+        IDENTITY(i,i)=1.0_DP
+      ENDDO
+      CALL MATRIX_TRANSPOSE(AZL,AZLT,ERR,ERROR,*999)
+      I1=AZL(1,1)+AZL(2,2)+AZL(3,3)
+      I2=AZL(1,1)+AZL(2,2)+AZL(3,3)
+      TEMP=MATMUL(AZL,AZL)
+      I2=0.5_DP*(I1**2.0_DP-TEMP(1,1)-TEMP(2,2)-TEMP(3,3))
+
+      CALL EVALUATE_CHAPELLE_FUNCTION(Jznu,ffact,dfdJfact,ERR,ERROR,*999)
+
+      PIOLA_TENSOR=2.0_DP*C(1)*Jznu**(-2.0_DP/3.0_DP)*(IDENTITY-(1.0_DP/3.0_DP)*I1*AZU)
+      PIOLA_TENSOR=PIOLA_TENSOR+2.0_DP*C(2)*Jznu**(-4.0_DP/3.0_DP)*(I1*IDENTITY-AZLT-(2.0_DP/3.0_DP)*I2*AZU)
+      PIOLA_TENSOR=PIOLA_TENSOR+(C(3)-C(4)*C(5)**2)*(Jznu-1.0_DP)*AZU
+      PIOLA_TENSOR=PIOLA_TENSOR-C(5)*(P-C(6))*Jznu*AZU
+      PIOLA_TENSOR=PIOLA_TENSOR+0.5_DP*((P-C(6))**2/C(4))*(dfdJfact/(ffact**2))*Jznu*AZU
     CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE) 
       !Form of constitutive model is:
       ! W=c1/2 (e^Q - 1)
@@ -2035,7 +2102,8 @@ CONTAINS
     
     IS_HYDROSTATIC_PRESSURE_DEPENDENT_FIELD = EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE &
                             & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_MEMBRANE_SUBTYPE &
-                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE
+                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE &
+                            & .AND. EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE
 
     NUMBER_OF_DIMENSIONS = EQUATIONS_SET%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
 
@@ -2054,7 +2122,8 @@ CONTAINS
           & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
           & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE, &
-          & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE,EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE)
+          & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE,EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
+          & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -2612,6 +2681,210 @@ CONTAINS
                 & " is invalid for a finite elasticity equation"
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
+          !---------------------------------------------------------------------------------------------
+          ! Shared Dependent field setup for multi-physics: elasticity coupled with Darcy fluid pressure
+          !---------------------------------------------------------------------------------------------
+          CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
+            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+            CASE (EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
+              NUMBER_OF_DARCY_COMPONENTS=1 !Only solving for the fluid pressure at the moment
+            END SELECT
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
+                !Create the auto created dependent field
+                CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%DEPENDENT% &
+                  & DEPENDENT_FIELD,ERR,ERROR,*999)
+                CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                CALL FIELD_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,"Dependent Field",ERR,ERROR,*999)
+                CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_DECOMPOSITION, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
+                  & GEOMETRIC_FIELD,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,4,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
+                  & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
+
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                  & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                  & NUMBER_OF_DARCY_COMPONENTS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
+                  & NUMBER_OF_DARCY_COMPONENTS,ERR,ERROR,*999)
+
+                !Set labels
+                CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,"U",ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,"del U/del n", &
+                  & ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE,"V",ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELVDELN_VARIABLE_TYPE,"del V/del n", &
+                  & ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,"x1",ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,2,"x2",ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,3,"x3",ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                  & "del x1/del n",ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,2, &
+                  & "del x2/del n",ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,3, &
+                  & "del x3/del n",ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,"p",ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
+                  & "del p/del n",ERR,ERROR,*999)
+
+                !Elasticity: Default to the geometric interpolation setup
+                DO component_idx=1,NUMBER_OF_DIMENSIONS
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                ENDDO !component_idx
+                !Darcy: Default pressure and mass increase to the first geometric component
+                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                DO component_idx=1,NUMBER_OF_DARCY_COMPONENTS
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
+                ENDDO !component_idx
+
+                SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                  !Elasticity: Set the displacement components to node based interpolation
+                  DO component_idx=1,NUMBER_OF_DIMENSIONS
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                      & FIELD_DELUDELN_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  ENDDO !component_idx
+                  !Darcy: Set the pressure and mass increase components to node based interpolation
+                  DO component_idx=1,NUMBER_OF_DARCY_COMPONENTS
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                      & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                      & FIELD_DELVDELN_VARIABLE_TYPE,component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  ENDDO !component_idx
+
+                  !Default the scaling to the geometric field scaling
+                  CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ELSE
+                !Check the user specified field
+                CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,4,ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE, &
+                      & FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE/) &
+                    & ,ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
+                  & ERR,ERROR,*999)
+
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+                CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
+
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                    & NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & NUMBER_OF_DARCY_COMPONENTS,ERR,ERROR,*999)
+                CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE, &
+                    & NUMBER_OF_DARCY_COMPONENTS,ERR,ERROR,*999)
+
+                SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                  !Elasticity:
+                  DO component_idx=1,NUMBER_OF_DIMENSIONS
+                    CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,component_idx, &
+                      & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,component_idx, &
+                      & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  ENDDO !component_idx
+                  !Darcy:
+                  DO component_idx=1,NUMBER_OF_DARCY_COMPONENTS
+                    CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,component_idx, &
+                      & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                    CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE,component_idx, &
+                      & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                  ENDDO !component_idx
+
+                CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              ENDIF
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
+                CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for a finite elasticity equation"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           !-------------------------------------------------------------------------------
           ! Shared Dependent field setup for multi-physics: elasticity coupled with multi-compartment Darcy
           !-------------------------------------------------------------------------------
@@ -3092,6 +3365,8 @@ CONTAINS
                 NUMBER_OF_COMPONENTS = 8;
               CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 4;
+              CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
+                NUMBER_OF_COMPONENTS = 6;
               CASE DEFAULT
                 LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a finite elasticity equation type of an elasticity equation set class."
@@ -3400,7 +3675,8 @@ CONTAINS
           & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
-          & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE,EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE)
+          & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE,EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
+          & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
@@ -3464,7 +3740,8 @@ CONTAINS
           & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
           & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE, &
-          & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE,EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE)
+          & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE,EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
+          & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
         EQUATIONS_SET%CLASS=EQUATIONS_SET_ELASTICITY_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_FINITE_ELASTICITY_TYPE
         EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_SUBTYPE
@@ -3718,6 +3995,8 @@ CONTAINS
               CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_NO_SUBTYPE)
               CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
+              ! do nothing
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a finite elasticity problem class."
@@ -3774,7 +4053,7 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_NO_SUBTYPE)
+            CASE(PROBLEM_NO_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                   SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -4001,7 +4280,7 @@ CONTAINS
             ! set component 2 to current time.
             CALL FIELD_COMPONENT_VALUES_INITIALISE(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                  & FIELD_VALUES_SET_TYPE,2,CONTROL_LOOP%TIME_LOOP%CURRENT_TIME,ERR,ERROR,*999)
-          CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)
+          CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
             ! could do this in one line with problem_solver_get but the dependence on problem_routines causes a circular dependence
             CALL CONTROL_LOOP_GET(CONTROL_LOOP,(/1,CONTROL_LOOP_NODE/),CONTROL_LOOP_SOLID,ERR,ERROR,*999)
             CALL SOLVERS_SOLVER_GET(CONTROL_LOOP_SOLID%SOLVERS,1,SOLVER_SOLID,ERR,ERROR,*999)
@@ -4069,6 +4348,8 @@ CONTAINS
               ! do nothing, time values get updated in CONTROL_TIME_LOOP_PRE_LOOP as there might be 
               ! a load increment loop below the time loop, so we don't want to update times here before
               ! every  solve
+            CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
+              ! do nothing
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
               IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
@@ -4622,7 +4903,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the functions f(J) and f'(J); 
+  !>Evaluates the functions f(J) and f\'(J);
   !>  Eq.(21) in Chapelle, Gerbeau, Sainte-Marie, Vignon-Clementel, Computational Mechanics (2010)
   SUBROUTINE EVALUATE_CHAPELLE_FUNCTION(Jznu,ffact,dfdJfact,ERR,ERROR,*)
   
@@ -4663,7 +4944,7 @@ CONTAINS
   SUBROUTINE EVALUATE_CHAPELLE_PIOLA_TENSOR_ADDITION(AZL,AZU,DARCY_MASS_INCREASE,PIOLA_TENSOR_ADDITION,ERR,ERROR,*)
   
     !Argument variables
-    REAL(DP), INTENT(IN) :: AZL(3,3) !<C=F'F
+    REAL(DP), INTENT(IN) :: AZL(3,3) !<C=F\'F
     REAL(DP), INTENT(IN) :: AZU(3,3) !<inverse of AZL
     REAL(DP), INTENT(IN) :: DARCY_MASS_INCREASE !<mass increase
     REAL(DP), INTENT(OUT) :: PIOLA_TENSOR_ADDITION(3,3) !<Addition to the 2nd Piola-Kirchhoff tensor
@@ -4672,7 +4953,7 @@ CONTAINS
     !Local variables
     REAL(DP) :: Jznu !<Jznu=DETERMINANT(AZL,ERR,ERROR)**0.5_DP
     REAL(DP) :: ffact !<f(Jznu) of the INRIA model
-    REAL(DP) :: dfdJfact !<dfdJfact = f'(Jznu) of the INRIA model
+    REAL(DP) :: dfdJfact !<dfdJfact = f\'(Jznu) of the INRIA model
     REAL(DP) :: Mfact, bfact, p0fact  !<INRIA constitutive law
     REAL(DP) :: DARCY_VOL_INCREASE, DARCY_RHO_0_F
     INTEGER(INTG) :: i,j

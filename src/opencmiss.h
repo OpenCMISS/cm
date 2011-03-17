@@ -423,6 +423,8 @@ static int CMISSEquationsSetFiniteElasticityType = 2;
 static int CMISSEquationsSetStokesEquationType = 1;
 static int CMISSEquationsSetNavierStokesEquationType = 2;
 static int CMISSEquationsSetDarcyEquationType = 3;
+static int CMISSEquationsSetPoiseuilleEquationType = 4;
+static int CMISSEquationsSetDarcyPressureEquationType = 5;
 static int CMISSEquationsSetElectrostaticType = 1;
 static int CMISSEquationsSetMagnetostaticType = 2;
 static int CMISSEquationsSetMaxwellsEquationType = 3;
@@ -489,6 +491,7 @@ static int CMISSEquationsSetSecondBidomainSubtype = 2;
 static int CMISSEquationsSetStandardDataFittingSubtype = 1;
 static int CMISSEquationsSetGeneralisedDataFittingSubtype = 2;
 static int CMISSEquationsSetMatPropertiesDataFittingSubtype = 3;
+static int CMISSEquationsSetElasticityFluidPressureStaticSubtype = 16;
 
 /*
  * >@}
@@ -891,6 +894,8 @@ static int CMISSProblemFiniteElasticityStokesType = 2;
 static int CMISSProblemFiniteElasticityNavierStokesType = 3;
 static int CMISSProblemDiffusionDiffusionType = 4;
 static int CMISSProblemDiffusionAdvectionDiffusionType = 5;
+static int CMISSProblemMultiCompartmentTransportType = 6;
+static int CMISSProblemFiniteElasticityFluidPressureType = 7;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
@@ -933,6 +938,7 @@ static int CMISSProblemMatPropertiesDataFittingSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
+static int CMISSProblemStandardElasticityFluidPressureSubtype = 133;
 static int CMISSProblemMonodomainGudunovSplitSubtype = 1;
 static int CMISSProblemMonodomainStrangSplitSubtype = 2;
 static int CMISSProblemBidomainGudunovSplitSubtype = 1;

@@ -37,7 +37,7 @@ and for the second equation:
  \item EQUATIONS\_SET\_PHYS\_TWO\_COUPLED\_PHYS\_ONE\_EQUATION\_SUBTYPE
 \end{enumerate}
 
-The obvious implication of the above is that a new PHYS\_ONE\_PHYS\_TWO\_EQUATION\_ROUTINES.f90 must be created, which in principle will include all the same subroutines as any other equations\_routines.f90 file e.g. finite element calculate, equations set setup, problem setup. However, usually only the problem related information needs to be setup in the new file, with the equations specific setup included within the separate equations routines of the componont physics (using CASE statements on the subtype to select the appropriate sections of code). More details on this will be given in Sections \ref{partitionspec} \& \ref{monolithicspec}.
+The obvious implication of the above is that a new PHYS\_ONE\_PHYS\_TWO\_EQUATION\_ROUTINES.f90 must be created, which in principle will include all the same subroutines as any other equations\_routines.f90 file e.g. finite element calculate, equations set setup, problem setup. However, usually only the problem related information needs to be setup in the new file, with the equations specific setup included within the separate equations routines of the component physics (using CASE statements on the subtype to select the appropriate sections of code). More details on this will be given in Sections \ref{partitionspec} \& \ref{monolithicspec}.
 
 \subsubsection{Dependent field}
 

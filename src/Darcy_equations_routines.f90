@@ -95,6 +95,8 @@ MODULE DARCY_EQUATIONS_ROUTINES
 
   PUBLIC DARCY_CONTROL_TIME_LOOP_PRE_LOOP
 
+  PUBLIC DARCY_EQUATION_MONITOR_CONVERGENCE
+
   INTEGER(INTG) :: SOLVER_NUMBER_SOLID,SOLVER_NUMBER_MAT_PROPERTIES,SOLVER_NUMBER_DARCY
   INTEGER(INTG) :: SOLVER_INDEX_SOLID,SOLVER_INDEX_MAT_PROPERTIES,SOLVER_INDEX_DARCY
   
@@ -980,7 +982,7 @@ CONTAINS
             & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
             & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE)
             MATERIAL_FIELD_NUMBER_OF_VARIABLES = 1
-            MATERIAL_FIELD_NUMBER_OF_COMPONENTS = 2
+            MATERIAL_FIELD_NUMBER_OF_COMPONENTS = 7 !2
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -1930,9 +1932,9 @@ CONTAINS
     REAL(DP):: SOURCE,INTER_COMP_SOURCE,INTER_COMP_PERM_1,INTER_COMP_PERM_2
     REAL(DP):: BETA_PARAM, P_SINK_PARAM
 
-    REAL(DP):: PERM_OVER_VIS_PARAM, POROSITY, GRAD_POROSITY(3), DARCY_RHO_0_F
+    REAL(DP):: PERM_OVER_VIS_PARAM, DARCY_RHO_0_F
+    !REAL(DP):: POROSITY
     REAL(DP):: PERM_TENSOR_OVER_VIS(3,3), VIS_OVER_PERM_TENSOR(3,3), Jmat
-    REAL(DP):: MESH_VEL(3), MESH_VEL_DERIV(3,3), MESH_VEL_DERIV_PHYS(3,3)
     REAL(DP):: X(3), ARG(3), L, FACT
     REAL(DP):: LM_PRESSURE,GRAD_LM_PRESSURE(3)
 
@@ -2281,13 +2283,6 @@ CONTAINS
               & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
 
 
-!==========================================================================================
-            !***  Try w-formulation  ***!
-            MESH_VEL(:) = 0.0_DP
-            MESH_VEL_DERIV(:,:) = 0.0_DP
-!==========================================================================================
-
-
 !             !--- Material Settings ---!
 !             !*** If material is variable, need to account for this in deriving the variational statement ***!
 
@@ -2312,13 +2307,6 @@ CONTAINS
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & SOURCE_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             END IF
-
-!==========================================================================================
-            !***  Try w-formulation  ***!
-            POROSITY = 1.0_DP
-            GRAD_POROSITY(:) = 0.0_DP
-!==========================================================================================
-
 
 !             PERM_OVER_VIS_PARAM = MATERIALS_INTERPOLATED_POINT%VALUES(2,NO_PART_DERIV)
 !             PERM_TENSOR_OVER_VIS(:,:) = 0.0_DP
@@ -2461,7 +2449,7 @@ CONTAINS
                           PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
                           !within this conditional: mh==nh anyway
 
@@ -2485,9 +2473,7 @@ CONTAINS
                           ENDDO !ni
 
                           DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                            SUM = SUM + PGM * PGNSI(ni) * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
                           ENDDO !ni
 
@@ -2510,7 +2496,7 @@ CONTAINS
                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                               & SUM * RWG
                           END IF
-!---tob
+
 !                           !Try out adding the inertia term ...
 !                           IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
 !                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
@@ -2523,7 +2509,7 @@ CONTAINS
 !                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
 !                               & SUM * RWG
 !                           END IF
-!---toe
+
                         END IF
 
                       ! matrices for multi-compartment poroelastic equations
@@ -2536,7 +2522,7 @@ CONTAINS
                           PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
                           !within this conditional: mh==nh anyway
 
@@ -2560,9 +2546,7 @@ CONTAINS
                           ENDDO !ni
 
                           DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                            SUM = SUM + PGM * PGNSI(ni) * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
                           ENDDO !ni
 
@@ -2585,7 +2569,7 @@ CONTAINS
                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
                               & SUM * RWG
                           END IF
-!---tob
+
 !                           !Try out adding the inertia term ...
 !                           IF(mh==nh.AND.mh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
 !                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
@@ -2598,7 +2582,7 @@ CONTAINS
 !                             DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
 !                               & SUM * RWG
 !                           END IF
-!---toe
+
                         END IF
 
 
@@ -2614,12 +2598,12 @@ CONTAINS
                           PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           !MIND: double check the matrix index order: (mh, nh) or (nh, mh)
                           !within this conditional: mh==nh anyway
 
                           IF( STABILIZED ) THEN
-                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
                           END IF
 
                           STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) = STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) + &
@@ -2675,15 +2659,13 @@ CONTAINS
                           ENDDO !ni
 
                           DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * PGNSI(ni) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * PGN * &
+                            SUM = SUM + PGM * PGNSI(ni) * &
                               & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,nh)
                           ENDDO !ni
 
                           IF( STABILIZED ) THEN
                             DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                              SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * PGN * &
+                              SUM = SUM + 0.5_DP * PGMSI(mi) * PGN * &
                                 & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,nh)
                             ENDDO !mi
                           END IF
@@ -2825,11 +2807,6 @@ CONTAINS
 
                       PGM = QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
-                      !Term arising from the moving mesh with mesh velocity given
-                      DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                        SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                      ENDDO
-
                       !Term arising from the pressure / Lagrange Multiplier of elasticity (given):
                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
                         SUM = SUM - PGM * GRAD_LM_PRESSURE(mi) * &
@@ -2845,18 +2822,6 @@ CONTAINS
                       SUM = 0.0_DP
 
                       PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                      !Terms arising from the moving mesh with mesh velocity given
-!                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                      DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                        PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                        DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                          SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
-                            & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                        ENDDO !ni
-                      ENDDO !mi
 
                       ! + possible SOURCE AND SINK TERMS
                       SOURCE = 0.0_DP
@@ -2880,12 +2845,6 @@ CONTAINS
 
                       PGM = QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 
-                      !Term arising from the moving mesh with mesh velocity given
-                      !COMMENTED OUT ON 13/01/11 - will be removed in due course
-!                       DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-!                         SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-!                       ENDDO
-
                       !Term arising from the pressure / Lagrange Multiplier of elasticity (given):
                       !TO DO- need to read different grad p depending on the compartment of interest
                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
@@ -2905,20 +2864,6 @@ CONTAINS
                       SUM = 0.0_DP
 
                       PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                      !Terms arising from the moving mesh with mesh velocity given
-                      !COMMENTED OUT ON 13/01/11 - will be removed in due course
-!                       DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-!                       DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-!                         PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-!                         DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-!                           !COMMENTED OUT ON 13/01/11 - will be removed in due course
-!                           SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
-!                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-!                           SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
-!                             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-!                         ENDDO !ni
-!                       ENDDO !mi
 
                       ! n o   s o u r c e
                       !source terms need to be converted to use source field & vector
@@ -2957,21 +2902,6 @@ CONTAINS
 
                       SUM = 0.0_DP
 
-                      !Terms arising from the moving mesh with mesh velocity given
-                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
-                        PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                        DO nh=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                          IF( STABILIZED ) THEN
-                            SUM = SUM - 0.5_DP * VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * MESH_VEL( nh )
-                          END IF
-                        ENDDO
-                      END IF
-
                       RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) = RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs) + SUM * RWG
 
                     !-----------------------------------------------------------------------------------------------------------------
@@ -2981,27 +2911,6 @@ CONTAINS
                       SUM = 0.0_DP
 
                       PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-
-                      !Terms arising from the moving mesh with mesh velocity given
-                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
-                        & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE) THEN
-!                         DO mi=1,DEPENDENT_BASIS_1%NUMBER_OF_XI
-                        DO mi=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                          PGMSI(mi)=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(mi),ng)
-                          DO ni=1,DEPENDENT_BASIS_2%NUMBER_OF_XI
-                            SUM = SUM + POROSITY * PGM * MESH_VEL_DERIV(mi,ni)  * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                            SUM = SUM + GRAD_POROSITY(ni) * PGM * MESH_VEL( mi ) * &
-                              & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(ni,mi)
-                            IF( STABILIZED ) THEN
-                              SUM = SUM + 0.5_DP * POROSITY * PGMSI(mi) * MESH_VEL( ni ) * &
-                                & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,ni)
-                            END IF
-                          ENDDO !ni
-                        ENDDO !mi
-                      END IF
 
                       ! n o   s o u r c e
                       SOURCE = 0.0_DP
@@ -3274,7 +3183,7 @@ CONTAINS
 !                             PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
 !                             PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
 ! 
-!                             SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * POROSITY * PGM * PGN
+!                             SUM = SUM + VIS_OVER_PERM_TENSOR( mh, nh ) * PGM * PGN
 ! 
 !                             COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) = &
 !                               & COUPLING_MATRICES(imatrix)%PTR%ELEMENT_MATRIX%MATRIX(mhs,nhs) + SUM * RWG
@@ -4417,7 +4326,7 @@ CONTAINS
                               & FIELD_VALUES_SET_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
                             EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                             IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-!---tob
+
                               SELECT CASE(EQUATIONS_SET%SUBTYPE)
                               CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
                               FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
@@ -4427,7 +4336,7 @@ CONTAINS
                                   & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                                 FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                               END SELECT
-!---toe
+
                               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                                 FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
                                 !--- Store the initial DEPENDENT field values
@@ -4876,7 +4785,7 @@ CONTAINS
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                 EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-!---tob                          
+
                                   SELECT CASE(EQUATIONS_SET%SUBTYPE)
                                   CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
                                     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
@@ -4888,7 +4797,7 @@ CONTAINS
                                       & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                                     FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
                                   END SELECT
-!---toe
+
                                   IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                                     FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
 
@@ -5227,7 +5136,6 @@ CONTAINS
             CASE(PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
-!                 CALL DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 CALL DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 
               ! The following command only when setting the Darcy mass increase explicitly to test finite elasticity !!!
@@ -5575,19 +5483,22 @@ CONTAINS
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              !Default to version 1 of each node derivative
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                             ENDDO !dim_idx
                             !Loop over the derivatives
                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx)
+                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX
 !                               CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,variable_type, & 
 !                                 & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
 !!!!!!!!!!!!NEED TO SET APPROPRIATE VALUE DEPENDING ON WHETHER IT IS A VELOCITY COMPONENT OR THE MASS INCREASE COMPONENT
                               VALUE=0.0_DP
+                              !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                               IF(variable_type==FIELD_V_VARIABLE_TYPE) THEN
@@ -5814,7 +5725,7 @@ CONTAINS
 !POLYNOM
                                   SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           FACT = PERM_OVER_VIS_PARAM
                                           IF(component_idx==1) THEN
@@ -5837,24 +5748,24 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                             VALUE= 0.0_DP
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE DEFAULT
@@ -5873,7 +5784,7 @@ CONTAINS
 !EXPONENTIAL
                                   SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           FACT   = PERM_OVER_VIS_PARAM / L
                                           ARG(1) = X(1) / L
@@ -5898,12 +5809,12 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           IF(component_idx==1) THEN
                                             !calculate u
@@ -5920,14 +5831,14 @@ CONTAINS
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
 
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
 
@@ -5948,7 +5859,7 @@ CONTAINS
 !SINUS/COSINUS
                                   SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           FACT = 2.0_DP * PI * PERM_OVER_VIS_PARAM / L
                                           ARG(1) = 2.0_DP * PI * X(1) / L
@@ -5973,12 +5884,12 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           IF(component_idx==1) THEN
                                             !calculate u
@@ -5995,13 +5906,13 @@ CONTAINS
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE DEFAULT
@@ -6019,7 +5930,7 @@ CONTAINS
 !POLYNOM
                                   SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           FACT = PERM_OVER_VIS_PARAM
                                           IF(component_idx==1) THEN
@@ -6046,24 +5957,24 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT   
                                     CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           VALUE=0.0_DP
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE DEFAULT
@@ -6082,7 +5993,7 @@ CONTAINS
 !EXPONENTIAL
                                   SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           FACT   = PERM_OVER_VIS_PARAM / L
                                           ARG(1) = X(1) / L
@@ -6111,12 +6022,12 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT   
                                     CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           IF(component_idx==1) THEN
                                             !calculate u
@@ -6137,13 +6048,13 @@ CONTAINS
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE DEFAULT
@@ -6161,7 +6072,7 @@ CONTAINS
 !SINE/COSINE
                                   SELECT CASE(variable_type)
                                     CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           FACT = 2.0_DP * PI * PERM_OVER_VIS_PARAM / L
                                           ARG(1) = 2.0_DP * PI * X(1) / L
@@ -6190,12 +6101,12 @@ CONTAINS
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT   
                                     CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                         CASE(NO_GLOBAL_DERIV)
                                           IF(component_idx==1) THEN
                                             !calculate u
@@ -6215,13 +6126,13 @@ CONTAINS
                                         CASE(GLOBAL_DERIV_S1)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE(GLOBAL_DERIV_S1_S2)
                                           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                            & " is invalid."
+                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                            & ERR,ERROR))//" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE DEFAULT
@@ -6239,8 +6150,9 @@ CONTAINS
                                   & " is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
+                              !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                               IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
@@ -6691,12 +6603,12 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                     & SOLUTION_VALUES_SOLID(dof_number), &
                     & ERR,ERROR,*999)
 
-!---tob: !!! Why not directly do the mesh update here ??? !!!
+!---              !!! Why not directly do the mesh update here ??? !!!
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(GEOMETRIC_FIELD_DARCY, & 
                     & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
                     & SOLUTION_VALUES_SOLID(dof_number), &
                     & ERR,ERROR,*999)
-!---toe
+!---
 
                 END DO
                 CALL FIELD_PARAMETER_SET_UPDATE_START(GEOMETRIC_FIELD_DARCY, &
@@ -6748,218 +6660,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
   !
   !================================================================================================================================
-
-  !> Determine Darcy velocity for Darcy equation post solve
-  SUBROUTINE DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, GEOMETRIC_FIELD
-
-    REAL(DP) :: ALPHA
-    REAL(DP), POINTER :: MESH_VELOCITY_VALUES(:) 
-    REAL(DP), POINTER :: NEGATIVE_MESH_VELOCITY_VALUES(:)
-    REAL(DP), POINTER :: DUMMY_VALUES1(:)
-
-    INTEGER(INTG) :: FIELD_VAR_TYPE
-    INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS
-    INTEGER(INTG) :: NDOFS_TO_PRINT
-
-
-    CALL ENTERS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(SOLVER)) THEN
-        IF(SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
-          IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-              CASE(PROBLEM_STANDARD_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_ALE_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)
-                ! do nothing ???
-              CASE(PROBLEM_PGM_DARCY_SUBTYPE,PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE,PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
-                & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                    IF(ASSOCIATED(EQUATIONS)) THEN
-                      EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                        SELECT CASE(EQUATIONS_SET%SUBTYPE)
-                          CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE)
-                            ! do nothing ???
-                          CASE(EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE)
-                            ! do nothing ???
-                          CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-                            & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
-                            & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy post solve determine Darcy velocity ... ",ERR,ERROR,*999)
-                            DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                            GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                            IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                              EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
-                              IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-
-                                SELECT CASE(EQUATIONS_SET%SUBTYPE)
-                                CASE(EQUATIONS_SET_ALE_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
-                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-                                  ! '1' associated with linear matrix
-                                CASE(EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-                                    & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
-                                    & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
-                                  FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-                                END SELECT
-
-                                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                                  FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-
-                                  !-------------------------------------------------------------------------------------------------
-                                  ! 1.) Generate negative_mesh_velocity= -mesh_velocity
-                                  IF(DIAGNOSTICS1) THEN
-                                    NULLIFY( MESH_VELOCITY_VALUES )
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                      & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-                                    NDOFS_TO_PRINT = SIZE(MESH_VELOCITY_VALUES,1)
-                                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                      & NDOFS_TO_PRINT,MESH_VELOCITY_VALUES, &
-                                      & '(" MESH_VELOCITY_VALUES = ",4(X,E13.6))','4(4(X,E13.6))',ERR,ERROR,*999)
-                                      CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE," ",ERR,ERROR,*999)
-                                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                      & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-                                  ENDIF
-
-                                  ! negative_mesh_velocity = -mesh_velocity
-                                  ALPHA = -1.0_DP
-                                  CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                    & FIELD_MESH_VELOCITY_SET_TYPE,FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
-
-                                  ! Get pointer to -mesh_velocity
-                                  NULLIFY(NEGATIVE_MESH_VELOCITY_VALUES)
-                                  CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                    & FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE,NEGATIVE_MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-
-                                  !-------------------------------------------------------------------------------------------------
-                                  ! 2.) dependent field values
-                                  IF(DIAGNOSTICS1) THEN
-                                    NULLIFY( DUMMY_VALUES1 )
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                      & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                    NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                      & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                      & '(" DEPENDENT_FIELD,FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE = ",4(X,E13.6))', &
-                                      & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                  ENDIF
-
-                                  ! (Reset) FIELD_RELATIVE_VELOCITY_SET_TYPE = FIELD_VALUES_SET_TYPE
-                                  ALPHA = 1.0_DP
-                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                    & FIELD_VALUES_SET_TYPE,FIELD_RELATIVE_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
-
-                                  !-------------------------------------------------------------------------------------------------
-                                  ! 3.) Finalise field relative velocity
-                                  NUMBER_OF_DOFS = GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%NUMBER_OF_DOFS
-                                  ! number of geometric dofs = number of (u,v,w) dofs
-                                  DO dof_number=1,NUMBER_OF_DOFS
-                                    ! Subtract mesh velocity values
-                                    !--- Subtract the velocity of the moving mesh from the fluid velocity
-                                    CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                      & FIELD_VAR_TYPE,FIELD_RELATIVE_VELOCITY_SET_TYPE,dof_number, & 
-                                      & NEGATIVE_MESH_VELOCITY_VALUES(dof_number),ERR,ERROR,*999)
-                                    ! dependent field      ( V_u, V_v, V_w, P_p )
-                                    ! MESH_VELOCITY_VALUES ( V_u, V_v, V_w )
-                                  END DO
-                                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                    & FIELD_VAR_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                                    & FIELD_VAR_TYPE, FIELD_RELATIVE_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  IF(DIAGNOSTICS1) THEN
-                                    NULLIFY( DUMMY_VALUES1 )
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                      & FIELD_RELATIVE_VELOCITY_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                    NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                      & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                      & '(" DEPENDENT_FIELD,FIELD_VAR_TYPE,FIELD_RELATIVE_VELOCITY_SET_TYPE = ",4(X,E13.6))', &
-                                      & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                      & FIELD_RELATIVE_VELOCITY_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                  ENDIF
-                                ELSE
-                                  CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
-                            END IF
-                          CASE DEFAULT
-                            LOCAL_ERROR="Equations set subtype " &
-                              & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                              & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT
-                      ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                      END IF
-                    ELSE
-                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                    END IF                
-                  ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-                END IF  
-              CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          ! do nothing ???
-!           CALL FLAG_ERROR("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY may only be carried out for SOLVER%GLOBAL_NUMBER = SOLVER_NUMBER_DARCY", &
-!             & ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY")
-    RETURN
-999 CALL ERRORS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY",ERR,ERROR)
-    CALL EXITS("DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY")
-    RETURN 1
-  END SUBROUTINE DARCY_EQUATION_POST_SOLVE_DETERMINE_DARCY_VELOCITY
-
-  !
-  !================================================================================================================================
-  !
 
   !>Store solution of previous subiteration iterate
   SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
@@ -7455,7 +7155,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,equations_set_idx
     INTEGER(INTG) :: COMPUTATIONAL_NODE_NUMBER
-
+    INTEGER(INTG) :: FILEUNIT_N, FILEUNIT_N1, SUBITERATION_NUMBER
 
     CALL ENTERS("DARCY_EQUATION_MONITOR_CONVERGENCE",ERR,ERROR,*999)
 
@@ -7567,6 +7267,27 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                         & "with a while control loop",ERR,ERROR,*999)
                                   ENDIF
 
+
+!                                   SUBITERATION_NUMBER = CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER
+! 
+!                                   WRITE(FILENAME,'("Darcy_DOFs_N_",I2.2,".dat")') SUBITERATION_NUMBER
+!                                   FILEPATH = "./output/"//FILENAME
+!                                   FILEUNIT_N = 7777 + 2*SUBITERATION_NUMBER
+!                                   OPEN(UNIT=FILEUNIT_N,FILE=CHAR(FILEPATH),STATUS='unknown',ACCESS='append')
+!                                   DO dof_number=1,NUMBER_OF_DOFS
+!                                     WRITE(FILEUNIT_N,*) ITERATION_VALUES_N(dof_number)
+!                                   END DO
+! 
+! 
+!                                   WRITE(FILENAME,'("Darcy_DOFs_N1_",I2.2,".dat")') SUBITERATION_NUMBER
+!                                   FILEPATH = "./output/"//FILENAME
+!                                   FILEUNIT_N1 = 7777 + 2*SUBITERATION_NUMBER+1
+!                                   OPEN(UNIT=FILEUNIT_N1,FILE=CHAR(FILEPATH),STATUS='unknown',ACCESS='append')
+!                                   DO dof_number=1,NUMBER_OF_DOFS
+!                                     WRITE(FILEUNIT_N1,*) ITERATION_VALUES_N1(dof_number)
+!                                   END DO
+
+
                                   CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                     & FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ITERATION_VALUES_N,ERR,ERROR,*999)
                                   CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
@@ -7621,6 +7342,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     ENDIF
 
     CLOSE(23)
+    CLOSE(FILEUNIT_N)
+    CLOSE(FILEUNIT_N1)
 
     CALL EXITS("DARCY_EQUATION_MONITOR_CONVERGENCE")
     RETURN
@@ -7652,7 +7375,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     REAL(DP), POINTER :: ITERATION_VALUES_N(:),ITERATION_VALUES_N1(:)
-    REAL(DP) :: RESIDUAL_NORM,AITKEN_PARAM,ACCELERATED_VALUE
+    REAL(DP) :: RESIDUAL_NORM,RELAXATION_PARAM,ACCELERATED_VALUE
 
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,equations_set_idx
@@ -7723,22 +7446,22 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                                   CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                     & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
 
-                                  RESIDUAL_NORM = 0.0_DP
+!                                   RESIDUAL_NORM = 0.0_DP
                                   NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
 
-                                  DO dof_number=1,NUMBER_OF_DOFS
-                                    RESIDUAL_NORM = RESIDUAL_NORM + &
-                                      & ( ITERATION_VALUES_N1(dof_number) - ITERATION_VALUES_N(dof_number) )**2.0_DP
-                                  END DO
-                                  RESIDUAL_NORM = SQRT(RESIDUAL_NORM / NUMBER_OF_DOFS)
+!                                   DO dof_number=1,NUMBER_OF_DOFS
+!                                     RESIDUAL_NORM = RESIDUAL_NORM + &
+!                                       & ( ITERATION_VALUES_N1(dof_number) - ITERATION_VALUES_N(dof_number) )**2.0_DP
+!                                   END DO
+!                                   RESIDUAL_NORM = SQRT(RESIDUAL_NORM / NUMBER_OF_DOFS)
 
-                                  AITKEN_PARAM = 0.5_DP  !\ToDo Devise better way of determining optimal Aitken parameter
+                                  RELAXATION_PARAM = 2.0_DP  !\ToDo Devise better way of determining optimal Aitken parameter
 
                                   IF( CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER>2 )THEN
                                     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy accelerate convergence ... ",ERR,ERROR,*999)
                                     DO dof_number=1,NUMBER_OF_DOFS
-                                      ACCELERATED_VALUE = AITKEN_PARAM * ITERATION_VALUES_N1(dof_number) &
-                                        & + (1.0_DP - AITKEN_PARAM) * ITERATION_VALUES_N(dof_number)
+                                      ACCELERATED_VALUE = ITERATION_VALUES_N(dof_number) &
+                                        & + RELAXATION_PARAM * ( ITERATION_VALUES_N1(dof_number) - ITERATION_VALUES_N(dof_number) )
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
                                         & FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
                                         & ACCELERATED_VALUE,ERR,ERROR,*999)
@@ -7976,6 +7699,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
   !\ToDo: enable this penalty formulation also for (quasi-)static; as made available in solver_routines
 
   !Adds a penalty term to the equilibrium equations to enforce impermeability at certain boundaries
+  ! derived from: "FINITE_ELASTICITY_SURFACE_PRESSURE_RESIDUAL_EVALUATE"; same restrictions apply
   SUBROUTINE DARCY_EQUATION_IMPERMEABLE_BC_VIA_PENALTY(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -7987,7 +7711,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, INDEPENDENT_FIELD
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: DECOMP_ELEMENT
-    TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: DOMAIN_ELEMENT
     TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: GEOMETRIC_INTERPOLATION_PARAMETERS
@@ -7998,14 +7721,14 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: FACE_QUADRATURE_SCHEME
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: FACE_VELOCITY_INTERPOLATION_PARAMETERS
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: FACE_INTERPOLATED_POINT
-    INTEGER(INTG) :: FIELD_VAR_V_TYPE,FIELD_VAR_DEL_V_DEL_N_TYPE,MESH_COMPONENT_NUMBER
+    INTEGER(INTG) :: MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: element_face_idx,face_number,normal_component_idx,gauss_idx
     INTEGER(INTG) :: FACE_NUMBER_OF_GAUSS_POINTS
     INTEGER(INTG) :: component_idx_1,element_base_dof_idx_1,face_node_idx_1
-    INTEGER(INTG) :: node_derivative_idx_1,element_dof_idx_1,element_node_idx_1,parameter_idx_1
+    INTEGER(INTG) :: element_node_derivative_idx_1,element_dof_idx_1,element_node_idx_1,parameter_idx_1
     INTEGER(INTG) :: face_parameter_idx_1,face_node_derivative_idx_1
     INTEGER(INTG) :: component_idx_2,element_base_dof_idx_2,face_node_idx_2
-    INTEGER(INTG) :: node_derivative_idx_2,element_dof_idx_2,element_node_idx_2,parameter_idx_2
+    INTEGER(INTG) :: element_node_derivative_idx_2,element_dof_idx_2,element_node_idx_2,parameter_idx_2
     INTEGER(INTG) :: face_parameter_idx_2,face_node_derivative_idx_2
     INTEGER(INTG) :: var2
 
@@ -8019,13 +7742,13 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
     NULLIFY(EQUATIONS,DEPENDENT_FIELD,INDEPENDENT_FIELD)
     NULLIFY(DYNAMIC_MATRICES,STIFFNESS_MATRIX,DECOMPOSITION)
-    NULLIFY(DECOMP_ELEMENT,DOMAIN_ELEMENT)
+    NULLIFY(DECOMP_ELEMENT)
     NULLIFY(GEOMETRIC_INTERPOLATION_PARAMETERS,GEOMETRIC_INTERPOLATED_POINT)
     NULLIFY(DECOMP_FACE,DOMAIN_FACE)
     NULLIFY(FACE_BASIS,DEPENDENT_BASIS,FACE_QUADRATURE_SCHEME,FACE_QUADRATURE_SCHEME)
     NULLIFY(FACE_VELOCITY_INTERPOLATION_PARAMETERS,FACE_INTERPOLATED_POINT)
 
-    PENALTY_PARAM = 1.0e05_DP
+    PENALTY_PARAM = 1.0e04_DP
 
     !Grab pointers of interest
     EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -8041,15 +7764,9 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     MESH_COMPONENT_NUMBER = EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)% &
       & VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
 
-    DOMAIN_ELEMENT=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)
-
-    !Interpolation parameter for metric tensor
-    FIELD_VAR_V_TYPE=EQUATIONS%EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE%VARIABLE_TYPE
-    FIELD_VAR_DEL_V_DEL_N_TYPE=EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE
     DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
-! !     var2=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_NUMBER ! number for 'DELUDELN'
-!     var2=FIELD_VAR_DEL_V_DEL_N_TYPE
+!     write(*,*)'ELEMENT_NUMBER = ',ELEMENT_NUMBER
 
     !Calculate penalty term to render surfaces impermeable: Loop over all faces
     DO element_face_idx=1,DEPENDENT_BASIS%NUMBER_OF_LOCAL_FACES
@@ -8065,15 +7782,6 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
         !\todo: will FACE_COMPONENTS be a problem with sector elements? Check this.
 
         ! To find out which faces are set impermeable:
-        
-!         FACE_COMPONENTS=OTHER_XI_DIRECTIONS3(normal_component_idx,2:3,1)  !Two xi directions for the current face
-        !\todo: will FACE_COMPONENTS be a problem with sector elements? Check this.
-!         FACE_VELOCITY_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DEL_V_DEL_N_TYPE)%PTR
-!         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,face_number, &
-!           & FACE_VELOCITY_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-!         FACE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(var2)%PTR
-
-
         FACE_VELOCITY_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,face_number, &
           & FACE_VELOCITY_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
@@ -8087,7 +7795,9 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
         ENDIF
 
         IF(IMPERMEABLE_BC) THEN
-          !write(*,*)'ELEMENT_NUMBER WITH AN IMPERMEABLE FACE = ',ELEMENT_NUMBER
+
+!           write(*,*)'element_face_idx = ',element_face_idx
+!           write(*,*)'DECOMP_FACE%XI_DIRECTION = ',DECOMP_FACE%XI_DIRECTION
 
           !Grab some other pointers
           DOMAIN_FACE=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%FACES%FACES(face_number)
@@ -8100,36 +7810,26 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
           !  i.e. same basis functions for test and trial functions
 
           !Start integrating
-          ! Note: As the code will look for P(appl) in the *normal* component to the face, the
-          !       initial assignment of P(appl) will have to be made appropriately during bc assignment
 !\todo: hopefully all quadrature stuff will always match up between face basis and local face stuff.
 ! Annoying issue here that p(appl) is interpolated using the face_basis, while dZdXI has to be evaluated
 ! using the 3D face interpolation... many variables are shared, probably supposed to be the same but I 
 ! can't guarantee it and checking every single thing will be a fair bit of overhead
           DO gauss_idx=1,FACE_NUMBER_OF_GAUSS_POINTS 
-            GAUSS_WEIGHT=FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)  !What happens with surface Jacobian ? SQRT_G ?
-!           RWG = EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN * QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+            GAUSS_WEIGHT=FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)  
+            !What happens with surface Jacobian ? SQRT_G ? - Apparently contained in normal calculation
 
-            !Interpolate delx_j/delxi_M = dZdxi at the face gauss point
-!             DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_V_TYPE)%PTR
-!             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-!               & DEPENDENT_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-!             DEPENDENT_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_V_TYPE)%PTR
-!             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
-!               & DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
-
-            !Use (deformed) Geometric field instead 
+            !Use (deformed) Geometric field to obtain delx_j/delxi_M = dZdxi at the face gauss point
             GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
               & GEOMETRIC_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
             GEOMETRIC_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
-!             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
-!               & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,element_face_idx,gauss_idx, &
               & GEOMETRIC_INTERPOLATED_POINT,ERR,ERROR,*999)
 
-!             DZDXI=DEPENDENT_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
             DZDXI=GEOMETRIC_INTERPOLATED_POINT%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
+
+!             write(*,*)'gauss_idx = ',gauss_idx
+!             write(*,*)'GAUSS_COORDS = ',GEOMETRIC_INTERPOLATED_POINT%VALUES(1:3,NO_PART_DERIV) !(component,derivative)
 
             !Calculate covariant metric tensor
             CALL MATRIX_TRANSPOSE(DZDXI,DZDXIT,ERR,ERROR,*999)
@@ -8137,14 +7837,12 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
             CALL INVERT(GIJL,GIJU,G,ERR,ERROR,*999) !g^ij = inv(g_ij), G=DET(GIJL)
             SQRT_G=SQRT(G)
 
-            !--- L o o p   1 : over element rows -----------------------------------
-            !Loop over 3 components
-
+            !--- L o o p   1 : over element rows (3 velocity components) -----------------------------------
             DO component_idx_1=1,3
-              !Calculate g^3M*dZ_j/dxi_M
+              !Calculate g^{normal_component_idx}M*dZ_j/dxi_M; this apparently includes the face Jacobian
               NORMAL_PROJECTION_1=dot_product(GIJU(normal_component_idx,:),DZDXI(component_idx_1,:))
 
-!               write(*,*)'NORMAL_PROJECTION_1 = ',NORMAL_PROJECTION_1
+              IF(DECOMP_FACE%XI_DIRECTION<0) NORMAL_PROJECTION_1=-NORMAL_PROJECTION_1  !always outward normal
 
               IF(ABS(NORMAL_PROJECTION_1)<ZERO_TOLERANCE) CYCLE !Makes it a bit quicker
 
@@ -8154,23 +7852,23 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                 element_node_idx_1=DEPENDENT_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(face_node_idx_1,element_face_idx) !nn
 
                 DO face_node_derivative_idx_1=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx_1) !nkf
-                  node_derivative_idx_1=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_1, &
+                  element_node_derivative_idx_1=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_1, &
                     & element_face_idx)
 
-                  parameter_idx_1=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(node_derivative_idx_1,element_node_idx_1)
+                  parameter_idx_1=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(element_node_derivative_idx_1,element_node_idx_1)
 
                   face_parameter_idx_1=FACE_BASIS%ELEMENT_PARAMETER_INDEX(face_node_derivative_idx_1,face_node_idx_1)
 
                   element_dof_idx_1=element_base_dof_idx_1+parameter_idx_1
 
-                  !--- L o o p   2 : over element columns -----------------------------------
-                  !Loop over 3 components
+                  !--- L o o p   2 : over element columns (3 velocity components) -----------------------------------
                   DO component_idx_2=1,3
                     !Calculate g^3M*dZ_j/dxi_M
                     NORMAL_PROJECTION_2=dot_product(GIJU(normal_component_idx,:),DZDXI(component_idx_2,:))
-                    IF(ABS(NORMAL_PROJECTION_2)<ZERO_TOLERANCE) CYCLE !Makes it a bit quicker
 
-!                     write(*,*)'NORMAL_PROJECTION_2 = ',NORMAL_PROJECTION_2
+                    IF(DECOMP_FACE%XI_DIRECTION<0) NORMAL_PROJECTION_2=-NORMAL_PROJECTION_2  !always outward normal
+
+                    IF(ABS(NORMAL_PROJECTION_2)<ZERO_TOLERANCE) CYCLE !Makes it a bit quicker
 
                     element_base_dof_idx_2 = (component_idx_2-1) * DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
 
@@ -8178,10 +7876,10 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                       element_node_idx_2=DEPENDENT_BASIS%NODE_NUMBERS_IN_LOCAL_FACE(face_node_idx_2,element_face_idx) !nn
 
                       DO face_node_derivative_idx_2=1,FACE_BASIS%NUMBER_OF_DERIVATIVES(face_node_idx_2) !nkf
-                        node_derivative_idx_2=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_2, &
+                        element_node_derivative_idx_2=DEPENDENT_BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(face_node_derivative_idx_2, &
                           & element_face_idx)
 
-                        parameter_idx_2=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(node_derivative_idx_2,element_node_idx_2)
+                        parameter_idx_2=DEPENDENT_BASIS%ELEMENT_PARAMETER_INDEX(element_node_derivative_idx_2,element_node_idx_2)
 
                         face_parameter_idx_2=FACE_BASIS%ELEMENT_PARAMETER_INDEX(face_node_derivative_idx_2,face_node_idx_2)
 
@@ -8189,33 +7887,27 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
                         SUM = 0.0_DP
 
-!                         PGM=QUADRATURE_SCHEME_1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-!                         PGN=QUADRATURE_SCHEME_2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
                         PGM=FACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(face_parameter_idx_1,NO_PART_DERIV,gauss_idx)
                         PGN=FACE_QUADRATURE_SCHEME%GAUSS_BASIS_FNS(face_parameter_idx_2,NO_PART_DERIV,gauss_idx)
 
                         SUM = SUM + PENALTY_PARAM * PGM * NORMAL_PROJECTION_1 * SQRT_G * &
                                                   & PGN * NORMAL_PROJECTION_2 * SQRT_G 
 
-!                         write(*,*)'SUM = ',SUM
-
-!                         NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx_1)= &
-!                           & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx_1)+ &  ! sign: double -'s. p(appl) always opposite to normal
-!                           & GAUSS_WEIGHT*PRESSURE_GAUSS*NORMAL_PROJECTION* &
-!                           & PGM * &
-!                           & SQRT_G
-
                         STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(element_dof_idx_1,element_dof_idx_2) = &
                           & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(element_dof_idx_1,element_dof_idx_2) + &
-                          & SUM * GAUSS_WEIGHT  !* RWG includes (surface) Jacobian
+                          & SUM * GAUSS_WEIGHT
 
-                      ENDDO !node_derivative_idx_2
+                      ENDDO !element_node_derivative_idx_2
                     ENDDO !face_node_idx_2
                   ENDDO !component_idx_2
 
-                ENDDO !node_derivative_idx_1
+                ENDDO !element_node_derivative_idx_1
               ENDDO !face_node_idx_1
+
+!               write(*,*)'component_idx_1 = ',component_idx_1
+!               write(*,*)'NORMAL_PROJECTION_1 = ',NORMAL_PROJECTION_1
+!               write(*,*)' '
+
             ENDDO !component_idx_1
 
           ENDDO !gauss_idx

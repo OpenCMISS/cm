@@ -181,7 +181,8 @@ CONTAINS
                           DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                             !!TODO \todo We should interpolate the geometric field here and the node position.
                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                               X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                             ENDDO !dim_idx
                             !Loop over the derivatives
@@ -191,7 +192,7 @@ CONTAINS
                                 !u=ln(4/(x+y+1^2))
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=LOG(4.0_DP/((X(1)+X(2)+1.0_DP)**2))
                                   CASE(GLOBAL_DERIV_S1)
@@ -202,25 +203,25 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !This is believed to be incorrect, should be: VALUE=-2.0_DP/(X(1)+X(2)+1.0_DP)
                                     VALUE=-2.0_DP*(X(1)+X(2))/(X(1)+X(2)+1.0_DP)
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 END SELECT
@@ -232,7 +233,7 @@ CONTAINS
                                 !u=ln(6/(x+y+z+1^2))
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=LOG(6.0_DP/((X(1)+X(2)+x(3)+1.0_DP)**2))
                                   CASE(GLOBAL_DERIV_S1)
@@ -243,24 +244,24 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=-3.0_DP/(X(1)+X(2)+X(3)+1.0_DP)
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -272,7 +273,7 @@ CONTAINS
                                 !u=x^2+3y^2+z^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
                                     VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
@@ -284,16 +285,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=2*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
@@ -332,13 +334,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -351,7 +353,7 @@ CONTAINS
                                 !u=-3x^2+3y^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=-3*X(1)**2+3*X(2)**2     !2D version - no source needed
                                   CASE(GLOBAL_DERIV_S1)
@@ -362,16 +364,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=-6*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
@@ -410,13 +413,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -429,7 +432,7 @@ CONTAINS
                                 !u=x^2+3y^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !!VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs source of 10
                                     VALUE=X(1)**2+3*X(2)**2
@@ -441,29 +444,30 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !Do nothing
                                     !VALUE=2*X(1)+6*X(2)+2*X(3)
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -476,7 +480,7 @@ CONTAINS
                                 !u=x^2+3y^2+z^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
                                     VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
@@ -488,16 +492,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=2*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
@@ -518,13 +523,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -537,7 +542,7 @@ CONTAINS
                                 !u=x^2+3y^2+z^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
                                     VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
@@ -549,16 +554,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=2*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
@@ -579,13 +585,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -598,7 +604,7 @@ CONTAINS
                                 !u=x^2+3y^2+z^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
                                     VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
@@ -610,16 +616,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=2*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
@@ -646,13 +653,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -665,7 +672,7 @@ CONTAINS
                                 !u=x^2+3y^2+z^2 Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=X(1)**2+3*X(2)**2+X(3)**2  3D version - also needs a source of 10
                                     VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
@@ -677,16 +684,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=2*X(1)+6*X(2)
                                     !This is for testing Integrated Neumann Boundary Conditions
@@ -694,13 +702,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -713,7 +721,7 @@ CONTAINS
                                 !u=y Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=X(2) !2D version - no source
                                   CASE(GLOBAL_DERIV_S1)
@@ -724,16 +732,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !VALUE=1
                                     !This is for testing Integrated Neumann Boundary Conditions
@@ -766,13 +775,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -785,7 +794,7 @@ CONTAINS
                                 !u=y Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=X(2)    !3D version - no source
                                   CASE(GLOBAL_DERIV_S1)
@@ -796,16 +805,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !This is for testing Integrated Neumann Boundary Conditions
 
@@ -831,13 +841,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -850,7 +860,7 @@ CONTAINS
                                 !u=y Test case example used
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=X(1)**2+3*X(2)**2     !2D version - needs a source of 8
                                   CASE(GLOBAL_DERIV_S1)
@@ -861,16 +871,17 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                  !Default to version 1 of each node derivative
                                   local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                    & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                   global_ny=FIELD_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(local_ny)
 
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     !This is for testing Integrated Neumann Boundary Conditions
 
@@ -897,13 +908,13 @@ CONTAINS
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -921,7 +932,7 @@ CONTAINS
                                 !u=ln(4/(x+y+1^2))
                                 SELECT CASE(variable_type)
                                 CASE(FIELD_U_VARIABLE_TYPE)
-                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
                                     VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)*SIN(2.0_DP*PI*X(3)/10.0_DP)
                                     !  VALUE=2*X(1)*X(1)+2*X(2)
@@ -933,24 +944,24 @@ CONTAINS
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
+                                 SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                   CASE(NO_GLOBAL_DERIV)
 !                                     do nothing, tbd
                                   CASE(GLOBAL_DERIV_S1)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S2)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE(GLOBAL_DERIV_S1_S2)
                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                      DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
-                                      & " is invalid."
+                                      DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                      & ERR,ERROR))//" is invalid."
                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
@@ -964,8 +975,9 @@ CONTAINS
                                   & " is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
+                                  !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
 
@@ -2183,8 +2195,9 @@ CONTAINS
                                 !Loop over the local nodes excluding the ghosts.
                                 DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
                                   DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                    !Default to version 1 of each node derivative
                                     local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                      & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
+                                      & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                     CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(EQUATIONS_SET_ALE_PPE%GEOMETRY%GEOMETRIC_FIELD, & 
                                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
                                       & MESH_DISPLACEMENT_VALUES(local_ny),ERR,ERROR,*999)
@@ -3765,8 +3778,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,I,J,K,L,H,element_node_identity !,k1sum,k2sum
-    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SUM2,DXI_DX(3,3),DELTA_T,DXI_DX_DX(3,3)
-    REAL(DP) :: U_VALUE(3),U_DERIV(3,3),RHO_PARAM,MU_PARAM,U_OLD(3),U_SECOND(3,3,3),X(3),B(3),P_DERIV(3),DIFF_COEFF,W_VALUE(3)
+    REAL(DP) :: RWG,SUM,PGMSI(3),PGNSI(3),SUM2,DXI_DX(3,3),DELTA_T,DXI_DX_DX(3,3),PHINS
+    REAL(DP) :: U_VALUE(3),U_DERIV(3,3),RHO_PARAM,MU_PARAM,U_OLD(3),U_SECOND(3,3,3),X(3),B(3),P_DERIV(3),W_VALUE(3)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS,SOURCE_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -3781,11 +3794,10 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    LOGICAL :: INSIDE
+    LOGICAL :: INSIDE,BETWEEN
     REAL(DP), POINTER :: INPUT_LABEL(:)
+    REAL(DP) :: DIFF_COEFF1,DIFF_COEFF2
     
-    INSIDE=.TRUE.
-
     CALL ENTERS("POISSON_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
@@ -3882,6 +3894,10 @@ CONTAINS
         CASE(EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE,EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE, &
           & EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE,EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE)
           !Store all these in equations matrices/somewhere else?????
+
+          INSIDE=.TRUE.
+          BETWEEN=.FALSE.
+
           SOURCE_FIELD=>EQUATIONS%INTERPOLATION%SOURCE_FIELD
           MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -3919,8 +3935,8 @@ CONTAINS
               & INDEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
           ENDIF
 
-!\todo: Check the influence of DIFF_COEFF
-          DIFF_COEFF=1.0_DP
+          DIFF_COEFF1=1.0_DP
+          DIFF_COEFF2=1.0_DP
 
           !Determine inside outside nodes/elements
           CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
@@ -3930,16 +3946,36 @@ CONTAINS
               & elements%elements(ELEMENT_NUMBER)%element_nodes(I)
             !this needs to be changed even at the right INPUT_LABEL
             IF(INPUT_LABEL(element_node_identity)<0.5_DP) THEN
-              !outside node
+              !labelling if !!!ELEMENT!!! is inside or outside
+              !so even if only one node is outside node, the whole element is outside element.
               INSIDE=.FALSE.
-              DIFF_COEFF=1.0_DP/1000.0_DP
-!TESTING FOR STABILITY
-              DIFF_COEFF=1.0_DP
-            ELSE
-              !inside node
-              DIFF_COEFF=1.0_DP
             ENDIF
           ENDDO
+          DO I=1,GEOMETRIC_FIELD%decomposition%domain(1)%ptr%topology%elements%maximum_number_of_element_parameters
+            element_node_identity=GEOMETRIC_FIELD%decomposition%domain(1)%ptr%topology% &
+              & elements%elements(ELEMENT_NUMBER)%element_nodes(I)
+            !this needs to be changed even at the right INPUT_LABEL
+            IF(.NOT.INSIDE) THEN
+              IF(INPUT_LABEL(element_node_identity)>0.5_DP) THEN
+                !labelling if !!!ELEMENT!!! is inside or outside
+                !so even if only one node is outside node, the whole element is outside element.
+                BETWEEN=.TRUE.
+              ENDIF
+            ENDIF
+          ENDDO
+
+          IF(INSIDE) THEN
+            DIFF_COEFF1=1.0_DP
+            DIFF_COEFF2=1.0_DP
+          ELSE IF(BETWEEN) THEN
+!          set to "zero" if "between" nodes should be outside!   
+!             DIFF_COEFF1=0.0_DP
+            DIFF_COEFF1=1.0_DP/1000.0_DP
+            DIFF_COEFF2=0.0_DP
+          ELSE
+            DIFF_COEFF1=0.0_DP
+            DIFF_COEFF2=0.0_DP
+          ENDIF
           !Loop over gauss points
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
@@ -3961,6 +3997,9 @@ CONTAINS
             ELSE
               W_VALUE=0.0_DP
             END IF
+
+! ! !               W_VALUE=0.0_DP
+
             U_VALUE=0.0_DP
             U_OLD=0.0_DP
             DXI_DX=0.0_DP
@@ -4047,6 +4086,7 @@ CONTAINS
                   DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                     DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
+                      PHINS=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                       DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
                         PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
@@ -4056,10 +4096,11 @@ CONTAINS
                         END DO
                       ENDDO !ni
                       SUM=0.0_DP
+
                       DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
                         DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
                           SUM=SUM+PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION% &
-                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)*DIFF_COEFF
+                            & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)*DIFF_COEFF1
                         ENDDO !ni
                       ENDDO !mi
                       EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
@@ -4092,9 +4133,6 @@ CONTAINS
                           ENDDO  
                         ENDDO  
                       ELSE
-!TESTING FOR STABILITY
-                      !This is the procedure if we are outside the fluid domain
-! ! !                         B(K)=B(K)+P_DERIV(K)
                         B(K)=0.0_DP
                       ENDIF
                       !eventually it gets combined to the RHS (source) term
@@ -4105,6 +4143,7 @@ CONTAINS
                     SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=SOURCE_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+SUM*RWG
                   ENDIF
                 ELSE IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE.OR. &
                   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) THEN
                   SUM=0.0_DP
                   SUM2=0.0_DP
@@ -4126,15 +4165,11 @@ CONTAINS
                           ENDDO
                         ENDDO
                       ELSE
-!TESTING FOR STABILITY
-                      !This is the procedure if we are outside the fluid domain
-! ! !                         B(K)=B(K)+P_DERIV(K)
-! ! !                         B(K)=B(K)+0.0_DP
                         B(K)=0.0_DP
                       ENDIF
                       !now bring the test function in
                       DO J=1,3
-                        SUM=SUM+B(K)*PGMSI(J)*DXI_DX(J,K)
+                        SUM=SUM+B(K)*PGMSI(J)*DXI_DX(J,K)*DIFF_COEFF2
                       ENDDO
                     ENDDO
                     IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -4214,7 +4249,7 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
-       
+
     CALL EXITS("POISSON_EQUATION_FINITE_ELEMENT_CALCULATE")
     RETURN
 999 CALL ERRORS("POISSON_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
@@ -4860,120 +4895,6 @@ CONTAINS
             & " is invalid for a linear source Poisson equation."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
-      ELSE IF(PROBLEM%SUBTYPE==PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE.OR.PROBLEM%SUBTYPE== &
-        & PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE.OR.PROBLEM%SUBTYPE== &
-        & PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE) THEN
-        SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
-        CASE(PROBLEM_SETUP_INITIAL_TYPE)
-          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
-          CASE(PROBLEM_SETUP_START_ACTION)
-            !Do nothing????
-          CASE(PROBLEM_SETUP_FINISH_ACTION)
-            !Do nothing????
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a linear source Poisson equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        CASE(PROBLEM_SETUP_CONTROL_TYPE)
-          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
-          CASE(PROBLEM_SETUP_START_ACTION)
-            NULLIFY(CONTROL_LOOP_ROOT)
-            NULLIFY(CONTROL_LOOP1)
-            NULLIFY(CONTROL_LOOP2)
-            NULLIFY(SUB_LOOP)
-            !Set up a simple control loop with 2 subloops
-            CALL CONTROL_LOOP_CREATE_START(PROBLEM,CONTROL_LOOP,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_TYPE_SET(CONTROL_LOOP,PROBLEM_CONTROL_TIME_LOOP_TYPE,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(CONTROL_LOOP,1,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,1,SUB_LOOP,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_TYPE_SET(SUB_LOOP,PROBLEM_CONTROL_WHILE_LOOP_TYPE,ERR,ERROR,*999)
-            !Set the number of iterations for the while loop to 3 for now
-! WRITE(*,*)'BE CAREFUL HERE ! MAKE IT MORE GENERAL'
-            CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(SUB_LOOP,1,ERR,ERROR,*999)
-          CASE(PROBLEM_SETUP_FINISH_ACTION)
-            !Finish the control loops
-            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-            CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_CREATE_FINISH(CONTROL_LOOP,ERR,ERROR,*999)            
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a linear source Poisson equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        CASE(PROBLEM_SETUP_SOLVERS_TYPE)
-          !Get the control loop
-          CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-          NULLIFY(SUB_LOOP)
-          NULLIFY(CONTROL_LOOP)
-          CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,sub_LOOP,ERR,ERROR,*999)
-          CALL CONTROL_LOOP_GET(sub_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
-
-          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
-          CASE(PROBLEM_SETUP_START_ACTION)
-            !Start the solvers creation
-            CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-            CALL SOLVERS_NUMBER_SET(SOLVERS,1,ERR,ERROR,*999)
-            !Set the solver to be a dynamic solver
-            CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
-             !Start the linear solver creation
-            CALL SOLVER_TYPE_SET(SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
-            !Set solver defaults
-            CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
-          CASE(PROBLEM_SETUP_FINISH_ACTION)
-            !Get the solvers
-            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-            !Finish the solvers creation
-            CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a linear source Poisson equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
-          SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
-          CASE(PROBLEM_SETUP_START_ACTION)
-            !Get the control loop
-            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-            NULLIFY(SUB_LOOP)
-            NULLIFY(CONTROL_LOOP)
-            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,sub_LOOP,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_GET(sub_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
-            !Get the solver
-            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-            CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
-            !Create the solver equations
-            CALL SOLVER_EQUATIONS_CREATE_START(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
-            CALL SOLVER_EQUATIONS_LINEARITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_LINEAR,ERR,ERROR,*999)
-            CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_QUASISTATIC,ERR,ERROR,*999)
-            CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_SPARSE_MATRICES,ERR,ERROR,*999)
-          CASE(PROBLEM_SETUP_FINISH_ACTION)
-            !Get the control loop
-            CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
-            NULLIFY(SUB_LOOP)
-            NULLIFY(CONTROL_LOOP)
-            CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP_ROOT,1,sub_LOOP,ERR,ERROR,*999)
-            CALL CONTROL_LOOP_GET(sub_LOOP,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
-            !Get the solver equations
-            CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-            CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
-            CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
-            !Finish the solver equations creation
-            CALL SOLVER_EQUATIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*999)             
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a linear source Poisson equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        CASE DEFAULT
-          LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-            & " is invalid for a linear source Poisson equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
       ELSE
         LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a linear source Poisson equation subtype."
@@ -5527,8 +5448,35 @@ CONTAINS
                 CALL FLAG_ERROR("Solver global number not associated for PPE problem.",ERR,ERROR,*999)
               ENDIF
             CASE(PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE)
+              IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER==1)THEN
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                  IF(ASSOCIATED(EQUATIONS)) THEN
+                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                        IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2) THEN
+                          !do nothing
+                        ELSE
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read in vector data... ",ERR,ERROR,*999)
+                          !Update indpendent data fields
+                          CALL POISSON_PRE_SOLVE_UPDATE_INPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"While loop... ",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read in vector data... ",ERR,ERROR,*999)
+                        !Update indpendent data fields
+                        CALL POISSON_PRE_SOLVE_UPDATE_INPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"While loop... ",ERR,ERROR,*999)
+                      ENDIF 
+                    ENDIF
+                  ENDIF
+                ENDIF
               !Update mesh
               CALL POISSON_PRE_SOLVE_UPDATE_PPE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              ENDIF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Poisson type of a classical field problem class."
@@ -5679,7 +5627,8 @@ CONTAINS
                   ENDIF
                 ENDIF
               ENDIF
-            CASE(PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE,PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE)
+            CASE(PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE,PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE, &
+              & PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE)
                 CONTROL_TIME_LOOP=>CONTROL_LOOP%PARENT_LOOP
                 CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read input data... ",ERR,ERROR,*999)
@@ -5690,26 +5639,26 @@ CONTAINS
                   IF(ASSOCIATED(EQUATIONS)) THEN
                     EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                     !Set pressure field to zero     
-                      CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                        & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-                      !Set pressure reference point in order to solve for absolute pressure
-                      IF(BOUNDARY_UPDATE) THEN
-!\todo: Let user determine when to change reference value
-                        IF(CURRENT_TIME<0.35_DP) THEN
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,10000.0_DP,ERR,ERROR,*999)
-                        ELSE
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-                        ENDIF
-                          CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                          CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                      ENDIF
+!                      !Set pressure field to zero     
+!                       CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+!                         & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+!                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+!                         & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+!                       !Set pressure reference point in order to solve for absolute pressure
+!                       IF(BOUNDARY_UPDATE) THEN
+! !\todo: Let user determine when to change reference value
+!                         IF(CURRENT_TIME<0.35_DP) THEN
+!                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+!                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,10000.0_DP,ERR,ERROR,*999)
+!                         ELSE
+!                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+!                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+!                         ENDIF
+!                           CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+!                             & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                           CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+!                             & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+!                       ENDIF
                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                         & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                       CURRENT_LOOP_ITERATION=CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER

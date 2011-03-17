@@ -145,11 +145,28 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
     REAL(DP), POINTER:: MESH2_ELEMENT_XI(:,:)
   END TYPE COUPLING_PARAMETERS
 
+  TYPE BOUNDARY_PARAMETERS
+    INTEGER:: NUMBER_OF_BC
+    INTEGER:: NUMBER_OF_BC1
+    INTEGER:: NUMBER_OF_BC2
+    INTEGER:: NUMBER_OF_BC3
+    INTEGER:: NUMBER_OF_BC4
+    INTEGER:: NUMBER_OF_BC5
+    INTEGER, POINTER:: BC_NODE_NUMBER1(:)
+    INTEGER, POINTER:: BC_NODE_NUMBER2(:)
+    INTEGER, POINTER:: BC_NODE_NUMBER3(:)
+    INTEGER, POINTER:: BC_NODE_NUMBER4(:)
+    INTEGER, POINTER:: BC_NODE_NUMBER5(:)
+  END TYPE BOUNDARY_PARAMETERS
+
+
   !Module variables
 
   TYPE (ARRAY_PROBLEM_BASE) BASE_INFO
   TYPE (ARRAY_MESH) MESH_INFO(3)
   TYPE (EXPORT_CONTAINER) TMP, TMP1
+  TYPE (BOUNDARY_PARAMETERS) BC_TMP
+  TYPE (COUPLING_PARAMETERS) CONNECT_TMP
   TYPE (DARCY_PARAMETERS) DARCY
   TYPE(FIELD_TYPE), POINTER :: FIELD, MATERIAL_FIELD, SOURCE_FIELD
   TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:),MATERIAL_INTERPOLATION_PARAMETERS(:)
@@ -249,6 +266,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
   !Interfaces
   INTERFACE FLUID_MECHANICS_IO_READ_CMHEART
     MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART1
+    MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART2
     MODULE PROCEDURE FLUID_MECHANICS_IO_READ_CMHEART3
   END INTERFACE !FLUID_MECHANICS_IO_READ_CMHEART
 
@@ -259,12 +277,13 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
 
   PUBLIC FLUID_MECHANICS_IO_WRITE_CMGUI
   PUBLIC FLUID_MECHANICS_IO_READ_CMHEART, FLUID_MECHANICS_IO_READ_CMHEART_FINISH
-  PUBLIC EXPORT_CONTAINER,COUPLING_PARAMETERS
+  PUBLIC EXPORT_CONTAINER,COUPLING_PARAMETERS, BOUNDARY_PARAMETERS
   PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS,FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE
-  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK
+  PUBLIC FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK,FLUID_MECHANICS_IO_WRITE_FITTED_FIELD
 
 
   PUBLIC FLUID_MECHANICS_IO_READ_DARCY_PARAMS
+  PUBLIC FLUID_MECHANICS_IO_PPE_MASKING
   PUBLIC DARCY
 
 CONTAINS
@@ -1668,11 +1687,11 @@ CONTAINS
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG):: I,J,K,icompartment
-    INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
+    INTEGER(INTG):: I,J,K !,icompartment
+!     INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
-    INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
+!     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
+!     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
 
     CALL ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK",ERR,ERROR,*999)
 
@@ -1914,6 +1933,7 @@ CONTAINS
               & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
               & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
               & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE) &
                 & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           parameter_set_idx = 1 
           NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
@@ -1989,6 +2009,96 @@ CONTAINS
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK
+
+
+  ! OK
+  !================================================================================================================================
+  !  
+
+  SUBROUTINE FLUID_MECHANICS_IO_WRITE_FITTED_FIELD(REGION, EQUATIONS_SET_GLOBAL_NUMBER, NAME, ERR, ERROR,*)
+
+    !Argument variables
+    TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to get the coordinate system for
+!     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(7) :: NAME !<the prefix name of file.
+    INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
+    INTEGER(INTG) :: ERR !<The error code
+    TYPE(VARYING_STRING):: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG):: NODES_PER_COMPONENT,I!,J,K !,icompartment
+!     INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
+!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+!     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
+!     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
+    TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
+    DOUBLE PRECISION:: fit
+
+    CALL ENTERS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR,*999)
+
+    NODES_PER_COMPONENT=REGION%equations_sets%equations_sets(1)%ptr%dependent% &
+      & dependent_field%variables(1)%components(1)%param_to_dof_map%node_param2dof_map%number_of_node_parameters
+
+    FILENAME="./output/VEL_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+    WRITE(81,*)NODES_PER_COMPONENT*3
+    parameter_set_idx = 1
+    DO I = 1,NODES_PER_COMPONENT*3
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/LAM_"//NAME//".err"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+    WRITE(81,*)NODES_PER_COMPONENT
+    parameter_set_idx = 1
+    DO I = NODES_PER_COMPONENT*3+1,NODES_PER_COMPONENT*4
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/U_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+!     WRITE(81,*)NodesPerMeshComponent(1)
+    parameter_set_idx = 1
+    DO I = 1,NODES_PER_COMPONENT
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/V_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+!     WRITE(81,*)NodesPerMeshComponent(1)
+    parameter_set_idx = 1
+    DO I = NODES_PER_COMPONENT+1,NODES_PER_COMPONENT*2
+      fit=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+      WRITE(81,'(e12.5)') fit
+    ENDDO
+    CLOSE(81)
+
+    FILENAME="./output/W_"//NAME//".fit"
+    OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
+!     WRITE(81,*)NodesPerMeshComponent(1)
+    parameter_set_idx = 1
+    DO I = NODES_PER_COMPONENT*2+1,NODES_PER_COMPONENT*3
+      WRITE(81,'(e12.5)') REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+          & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(I)
+    ENDDO
+    CLOSE(81)
+
+    CALL EXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR)    
+    CALL EXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD")
+    RETURN
+
+  END SUBROUTINE FLUID_MECHANICS_IO_WRITE_FITTED_FIELD
 
 
   ! OK
@@ -2154,7 +2264,7 @@ CONTAINS
         END IF
         IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
           & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-          & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE)) THEN
+          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE)) THEN
           WRITE(14,'("    ", es25.16 )')NodeUValueORG(I)
           WRITE(14,'("    ", es25.16 )')NodeVValueORG(I)
           WRITE(14,'("    ", es25.16 )')NodeWValueORG(I)
@@ -2163,6 +2273,7 @@ CONTAINS
           & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
           & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
           & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
+          & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE) &
           & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           WRITE(14,'("    ", es25.16 )')NodePValue(I)
           WRITE(14,'("    ", es25.16 )')NodeLabelValue(I)
@@ -2665,6 +2776,8 @@ CONTAINS
     CALL FLUID_MECHANICS_IO_READ_NODES
     CALL FLUID_MECHANICS_IO_READ_ELEMENTS
 
+    CLOSE(42)
+
     IF(.NOT.ALLOCATED(OPENCMISS_ELEM_M)) ALLOCATE(OPENCMISS_ELEM_M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)), & 
       & STAT=ALLOC_ERROR)
     IF(.NOT.ALLOCATED(OPENCMISS_ELEM_V))ALLOCATE(OPENCMISS_ELEM_V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)), &
@@ -2749,11 +2862,134 @@ CONTAINS
 
 
   !> Reads in information defined by cmheart input file format.
-  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART3(EXPORT1,EXPORT2,EXPORT3,CONNECT,ERR)
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART2(EXPORT,BC,ERR)
+
+    !Argument variables
+    TYPE (EXPORT_CONTAINER):: EXPORT  
+    TYPE (BOUNDARY_PARAMETERS):: BC
+    INTEGER(INTG) :: ERR !<The error code
+    TYPE(VARYING_STRING):: ERROR !<The error string
+    !Local Variables
+!     TYPE (EXPORT_CONTAINER):: TMP  
+    ! INTEGER(INTG):: test 
+
+    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR,*999)
+    WRITE(*,*)' '
+    WRITE(*,*)'Importing CMHEART information...'
+    WRITE(*,*)' '
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Run from bin directory if input needed.",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"REMEMBER: M,V,P need to be defined as required by cmHeart!",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+!     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Press ENTER to start.",ERR,ERROR,*999)
+!     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+!     READ(*,*)
+    OPEN(UNIT=42, FILE='./input/CMHEART_MESH1.inp',STATUS='old')
+
+    CALL FLUID_MECHANICS_IO_READ_AUX
+    CALL FLUID_MECHANICS_IO_READ_NODES
+    CALL FLUID_MECHANICS_IO_READ_ELEMENTS
+
+    CLOSE(42)
+
+    IF(.NOT.ALLOCATED(OPENCMISS_ELEM_M)) ALLOCATE(OPENCMISS_ELEM_M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)), & 
+      & STAT=ALLOC_ERROR)
+    IF(.NOT.ALLOCATED(OPENCMISS_ELEM_V))ALLOCATE(OPENCMISS_ELEM_V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)), &
+      & STAT=ALLOC_ERROR)
+    IF(.NOT.ALLOCATED(OPENCMISS_ELEM_P))ALLOCATE(OPENCMISS_ELEM_P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)), &
+      & STAT=ALLOC_ERROR)
+
+    CALL FLUID_MECHANICS_IO_MAKE_UNIQUE
+    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_M,MESH_INFO(1)%T,NumberOfElementsDefined(1), & 
+      & NumberOfNodesPerElement(1),1)
+    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_V,MESH_INFO(2)%T,NumberOfElementsDefined(2), & 
+      & NumberOfNodesPerElement(2),2)
+    CALL FLUID_MECHANICS_IO_ORDER_NUMBERING(OPENCMISS_ELEM_P,MESH_INFO(3)%T,NumberOfElementsDefined(3), & 
+      & NumberOfNodesPerElement(3),3)
+    WRITE(*,*)' '
+    WRITE(*,*)'Import finished successfully...'
+    WRITE(*,*)' '
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Export finished successfully...",ERR,ERROR,*999)
+! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
+
+    IF(ALLOC_ERROR.NE.0) THEN
+      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+    END IF
+
+    ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
+    ALLOCATE(TMP%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
+    ALLOCATE(TMP%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
+    ALLOCATE(TMP%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
+
+    TMP%M=OPENCMISS_ELEM_M
+    TMP%V=OPENCMISS_ELEM_V
+    TMP%P=OPENCMISS_ELEM_P
+    TMP%N=OPENCMISS_NODE_COORD
+    TMP%D=DIMEN
+    TMP%F=BASE_INFO%n_B
+    TMP%ID_M=1
+    TMP%ID_V=2
+    TMP%ID_P=3
+    TMP%IT_M=OPENCMISS_INTERPOLATION(1)
+    TMP%IT_V=OPENCMISS_INTERPOLATION(2)
+    TMP%IT_P=OPENCMISS_INTERPOLATION(3)
+  
+    IF (BASE_INFO%HEXA==1) THEN
+    !LAGRANGIAN BASIS
+      TMP%IT_T=1
+    ELSE 
+    ! SIMPLEX BASIS
+      TMP%IT_T=2
+    END IF
+
+    TMP%E_M=NumberOfElementsDefined(1)
+    TMP%E_V=NumberOfElementsDefined(2)
+    TMP%E_P=NumberOfElementsDefined(3)
+    TMP%E_T=NumberOfElementsDefined(3)
+    TMP%EN_M=NumberOfNodesPerElement(1)
+    TMP%EN_V=NumberOfNodesPerElement(2)
+    TMP%EN_P=NumberOfNodesPerElement(3)
+    TMP%EN_T=TMP%EN_M+TMP%EN_V+TMP%EN_P
+    TMP%N_M=ArrayOfNodesDefined(1)
+    TMP%N_V=ArrayOfNodesDefined(2)
+    TMP%N_P=ArrayOfNodesDefined(3)
+    TMP%N_T=TMP%N_M+TMP%N_V+TMP%N_P
+
+    EXPORT=TMP
+
+    IF(ALLOC_ERROR.NE.0) THEN
+      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+    END IF
+
+    !Now read boundary information from CMHEART
+    OPEN(UNIT=42, FILE='./input/CMHEART_BC.inp',STATUS='old')
+      CALL FLUID_MECHANICS_IO_READ_BC
+      BC=BC_TMP
+    CLOSE(42)
+
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+    RETURN
+999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR)    
+    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+    RETURN
+
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART2
+
+
+  ! OK
+  !================================================================================================================================
+  !
+
+
+  !> Reads in information defined by cmheart input file format.
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART3(EXPORT1,EXPORT2,EXPORT3,CONNECT,BC,ERR)
 
     !Argument variables
     TYPE (EXPORT_CONTAINER):: EXPORT1,EXPORT2,EXPORT3
     TYPE (COUPLING_PARAMETERS):: CONNECT
+    TYPE (BOUNDARY_PARAMETERS):: BC
     INTEGER(INTG) :: ERR !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
@@ -2776,16 +3012,18 @@ CONTAINS
 
     DO I=1,3
       IF(I==1) THEN
-        OPEN(UNIT=42, FILE='./input/CMHEART1.inp',STATUS='old')
+        OPEN(UNIT=42, FILE='./input/CMHEART_MESH1.inp',STATUS='old')
       ELSE IF(I==2) THEN
-        OPEN(UNIT=42, FILE='./input/CMHEART2.inp',STATUS='old')
+        OPEN(UNIT=42, FILE='./input/CMHEART_MESH2.inp',STATUS='old')
       ELSE IF(I==3) THEN
-        OPEN(UNIT=42, FILE='./input/CMHEART3.inp',STATUS='old')
+        OPEN(UNIT=42, FILE='./input/CMHEART_INTERFACE.inp',STATUS='old')
       ENDIF
 
       CALL FLUID_MECHANICS_IO_READ_AUX
       CALL FLUID_MECHANICS_IO_READ_NODES
       CALL FLUID_MECHANICS_IO_READ_ELEMENTS
+
+      CLOSE(42)
 
       IF(ALLOCATED(OPENCMISS_ELEM_M)) DEALLOCATE(OPENCMISS_ELEM_M)
       IF(ALLOCATED(OPENCMISS_ELEM_V)) DEALLOCATE(OPENCMISS_ELEM_V)
@@ -2815,51 +3053,51 @@ CONTAINS
         CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
       END IF
 
-      ALLOCATE(TMP1%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP1%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP1%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
-      ALLOCATE(TMP1%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%V(NumberOfElementsDefined(2),NumberOfNodesPerElement(2)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%P(NumberOfElementsDefined(3),NumberOfNodesPerElement(3)),STAT=ALLOC_ERROR)
+      ALLOCATE(TMP%N(TotalNumberOfNodes,3),STAT=ALLOC_ERROR)
 
-      TMP1%M=OPENCMISS_ELEM_M
-      TMP1%V=OPENCMISS_ELEM_V
-      TMP1%P=OPENCMISS_ELEM_P
-      TMP1%N=OPENCMISS_NODE_COORD
-      TMP1%D=DIMEN
-      TMP1%F=BASE_INFO%n_B
-      TMP1%ID_M=1
-      TMP1%ID_V=2
-      TMP1%ID_P=3
-      TMP1%IT_M=OPENCMISS_INTERPOLATION(1)
-      TMP1%IT_V=OPENCMISS_INTERPOLATION(2)
-      TMP1%IT_P=OPENCMISS_INTERPOLATION(3)
+      TMP%M=OPENCMISS_ELEM_M
+      TMP%V=OPENCMISS_ELEM_V
+      TMP%P=OPENCMISS_ELEM_P
+      TMP%N=OPENCMISS_NODE_COORD
+      TMP%D=DIMEN
+      TMP%F=BASE_INFO%n_B
+      TMP%ID_M=1
+      TMP%ID_V=2
+      TMP%ID_P=3
+      TMP%IT_M=OPENCMISS_INTERPOLATION(1)
+      TMP%IT_V=OPENCMISS_INTERPOLATION(2)
+      TMP%IT_P=OPENCMISS_INTERPOLATION(3)
   
       IF (BASE_INFO%HEXA==1) THEN
       !LAGRANGIAN BASIS
-        TMP1%IT_T=1
+        TMP%IT_T=1
       ELSE 
       ! SIMPLEX BASIS
-        TMP1%IT_T=2
+        TMP%IT_T=2
       END IF
 
-      TMP1%E_M=NumberOfElementsDefined(1)
-      TMP1%E_V=NumberOfElementsDefined(2)
-      TMP1%E_P=NumberOfElementsDefined(3)
-      TMP1%E_T=NumberOfElementsDefined(3)
-      TMP1%EN_M=NumberOfNodesPerElement(1)
-      TMP1%EN_V=NumberOfNodesPerElement(2)
-      TMP1%EN_P=NumberOfNodesPerElement(3)
-      TMP1%EN_T=TMP1%EN_M+TMP1%EN_V+TMP1%EN_P
-      TMP1%N_M=ArrayOfNodesDefined(1)
-      TMP1%N_V=ArrayOfNodesDefined(2)
-      TMP1%N_P=ArrayOfNodesDefined(3)
-      TMP1%N_T=TMP1%N_M+TMP1%N_V+TMP1%N_P
+      TMP%E_M=NumberOfElementsDefined(1)
+      TMP%E_V=NumberOfElementsDefined(2)
+      TMP%E_P=NumberOfElementsDefined(3)
+      TMP%E_T=NumberOfElementsDefined(3)
+      TMP%EN_M=NumberOfNodesPerElement(1)
+      TMP%EN_V=NumberOfNodesPerElement(2)
+      TMP%EN_P=NumberOfNodesPerElement(3)
+      TMP%EN_T=TMP%EN_M+TMP%EN_V+TMP%EN_P
+      TMP%N_M=ArrayOfNodesDefined(1)
+      TMP%N_V=ArrayOfNodesDefined(2)
+      TMP%N_P=ArrayOfNodesDefined(3)
+      TMP%N_T=TMP%N_M+TMP%N_V+TMP%N_P
 
       IF(I==1) THEN
-        EXPORT1=TMP1
+        EXPORT1=TMP
       ELSE IF (I==2) THEN
-        EXPORT2=TMP1
+        EXPORT2=TMP
       ELSE IF (I==3) THEN
-        EXPORT3=TMP1
+        EXPORT3=TMP
       ENDIF
 
       IF(ALLOC_ERROR.NE.0) THEN
@@ -2868,33 +3106,19 @@ CONTAINS
 
     ENDDO
 
+    !Now read connectivity information from CMHEART
+    OPEN(UNIT=42, FILE='./input/CMHEART_CONNECT.inp',STATUS='old')
+      CALL FLUID_MECHANICS_IO_READ_CONNECT
+      CONNECT=CONNECT_TMP
+    CLOSE(42)
 
-    !Read in the interface connectivity mapping
-    OPEN(UNIT=79, FILE='./input/IM_COUPLING.LM',STATUS='old')
-    READ(79,*) CONNECT%NUMBER_OF_COUPLINGS
 
-    ALLOCATE(CONNECT%INTERFACE_ELEMENT_NUMBER(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
-    ALLOCATE(CONNECT%INTERFACE_ELEMENT_LOCAL_NODE(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
-    ALLOCATE(CONNECT%MESH1_ELEMENT_NUMBER(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
-    ALLOCATE(CONNECT%MESH1_ELEMENT_XI(CONNECT%NUMBER_OF_COUPLINGS,3),STAT=ALLOC_ERROR)
-    ALLOCATE(CONNECT%MESH2_ELEMENT_NUMBER(CONNECT%NUMBER_OF_COUPLINGS),STAT=ALLOC_ERROR)
-    ALLOCATE(CONNECT%MESH2_ELEMENT_XI(CONNECT%NUMBER_OF_COUPLINGS,3),STAT=ALLOC_ERROR)
 
-    DO I=1,CONNECT%NUMBER_OF_COUPLINGS
-      READ(79,*) CONNECT%INTERFACE_ELEMENT_NUMBER(I), &
-        & CONNECT%INTERFACE_ELEMENT_LOCAL_NODE(I),CONNECT%MESH1_ID,CONNECT%MESH1_ELEMENT_NUMBER(I), &
-        & CONNECT%MESH1_ELEMENT_XI(I,1:3), CONNECT%MESH2_ID,CONNECT%MESH2_ELEMENT_NUMBER(I), &
-        & CONNECT%MESH2_ELEMENT_XI(I,1:3)
-    ENDDO
-    WRITE(*,*)' '
-    WRITE(*,*)'Import finished successfully...  IMC'
-    WRITE(*,*)' '
-
-    IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
-    END IF
-
-    CLOSE(79)
+    !Now read boundary information from CMHEART
+    OPEN(UNIT=42, FILE='./input/CMHEART_BC.inp',STATUS='old')
+      CALL FLUID_MECHANICS_IO_READ_BC
+      BC=BC_TMP
+    CLOSE(42)
 
 
     CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART3")
@@ -2940,10 +3164,103 @@ CONTAINS
     DEALLOCATE(MESH_INFO(2)%T)
     DEALLOCATE(MESH_INFO(3)%T)
 
-
     CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART_FINISH")
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART_FINISH
+
+  ! OK
+  !================================================================================================================================
+  !
+
+  !> Free memory
+  SUBROUTINE FLUID_MECHANICS_IO_PPE_MASKING(BC_MASKING)
+
+    !Argument variables
+    INTEGER, DIMENSION(TMP%E_T):: ELEMENT_MASKING
+    REAL, DIMENSION(TMP%N_V):: NODE_MASKING
+    INTEGER, POINTER:: BC_MASKING(:)
+    INTEGER:: I,J
+    INTEGER:: CONTROL_INSIDE, CONTROL_BETWEEN, CONTROL_OUTSIDE
+    REAL :: DUMMY
+
+    !Local Variables
+
+    ! INTEGER(INTG):: test 
+
+    WRITE(*,*)' '
+    WRITE(*,*)'Perform enhanced PPE masking...'
+    WRITE(*,*)' '
+
+    BC_MASKING=1
+    ELEMENT_MASKING=1  !0=outside, 1=inside, 2=between
+
+    !IDENTIFY FLUID DOMAIN / BOUNDARY_CONDITIONS_POISSON
+    OPEN(UNIT=42, FILE="./input/data/ORI_DATA_01.dat",STATUS='unknown')
+    READ(42,*)DUMMY
+    DO I=1,TMP%N_V !NUMBER_OF_NODES_PRESSURE
+      READ(42,*)NODE_MASKING(I)
+    ENDDO
+    CLOSE(42)
+    DO I=1,TMP%E_T !TOTAL_NUMBER_OF_ELEMENTS
+      DO J=1, TMP%EN_V !NUMBER_OF_ELEMENT_NODES_PRESSURE
+        IF(NODE_MASKING(TMP%M(I,J))<0.5_DP) THEN 
+          ELEMENT_MASKING(I)=0
+        ENDIF
+      ENDDO
+    ENDDO
+    DO I=1,TMP%E_T !TOTAL_NUMBER_OF_ELEMENTS
+      IF(ELEMENT_MASKING(I)==0) THEN
+        DO J=1, TMP%EN_V !NUMBER_OF_ELEMENT_NODES_PRESSURE
+          IF(NODE_MASKING(TMP%M(I,J))>0.5_DP) THEN 
+            ELEMENT_MASKING(I)=2
+          ENDIF
+        ENDDO
+      ENDIF
+    ENDDO
+    !CONTROL
+    CONTROL_INSIDE=0
+    CONTROL_BETWEEN=0
+    CONTROL_OUTSIDE=0
+    DO I=1,TMP%E_T !TOTAL_NUMBER_OF_ELEMENTS
+      IF(ELEMENT_MASKING(I)==0) THEN
+        CONTROL_OUTSIDE=CONTROL_OUTSIDE+1
+      ELSE IF(ELEMENT_MASKING(I)==1) THEN
+        CONTROL_INSIDE=CONTROL_INSIDE+1
+      ELSE IF(ELEMENT_MASKING(I)==2) THEN
+        CONTROL_BETWEEN=CONTROL_BETWEEN+1
+      ENDIF
+    ENDDO
+! ! !     WRITE(*,*)'CONTROL_INSIDE ',CONTROL_INSIDE
+! ! !     WRITE(*,*)'CONTROL_OUTSIDE ',CONTROL_OUTSIDE
+! ! !     WRITE(*,*)'CONTROL_BETWEEN ',CONTROL_BETWEEN
+    !LOOP OVER ALL OUTSIDE ELEMENTS FIRST
+    DO I=1,TMP%E_T !TOTAL_NUMBER_OF_ELEMENTS
+      IF(ELEMENT_MASKING(I)==0) THEN
+        DO J=1, TMP%EN_V
+          BC_MASKING(TMP%M(I,J))=0      
+        ENDDO
+      ENDIF
+    ENDDO
+    !THEN LOOP OVER ALL "BETWEEN" ELEMENTS
+    DO I=1,TMP%E_T !TOTAL_NUMBER_OF_ELEMENTS
+      IF(ELEMENT_MASKING(I)==2) THEN
+        DO J=1, TMP%EN_V
+          BC_MASKING(TMP%M(I,J))=2      
+        ENDDO
+      ENDIF
+    ENDDO
+  !CORRECT BC LABEL BY LOOPING OVER ALL INSIDE ELEMENTS NOW
+    DO I=1,TMP%E_T !TOTAL_NUMBER_OF_ELEMENTS
+      IF(ELEMENT_MASKING(I)==1) THEN
+        DO J=1, TMP%EN_V
+          BC_MASKING(TMP%M(I,J))=1      
+        ENDDO
+      ENDIF
+    ENDDO
+
+    CALL EXITS("FLUID_MECHANICS_IO_PPE_MASKING")
+
+  END SUBROUTINE FLUID_MECHANICS_IO_PPE_MASKING
 
 
   ! OK
@@ -3453,6 +3770,208 @@ CONTAINS
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_NODES
 
+  !   OK
+  !================================================================================================================================
+  !
+
+  !> Executes cmheart connectivity reading process.
+  SUBROUTINE FLUID_MECHANICS_IO_READ_CONNECT
+
+    INTEGER(INTG):: I
+
+    !Read in the interface connectivity mapping
+
+    READ(42,*) NIMZ
+    NIMZ = TRIM(NIMZ)
+    OPEN(UNIT=79,FILE=NIMZ,STATUS='old',action='read') ! Read base file for initial parameters
+
+    READ(79,*) CONNECT_TMP%NUMBER_OF_COUPLINGS
+    ALLOCATE(CONNECT_TMP%INTERFACE_ELEMENT_NUMBER(CONNECT_TMP%NUMBER_OF_COUPLINGS))
+    ALLOCATE(CONNECT_TMP%INTERFACE_ELEMENT_LOCAL_NODE(CONNECT_TMP%NUMBER_OF_COUPLINGS))
+    ALLOCATE(CONNECT_TMP%MESH1_ELEMENT_NUMBER(CONNECT_TMP%NUMBER_OF_COUPLINGS))
+    ALLOCATE(CONNECT_TMP%MESH1_ELEMENT_XI(CONNECT_TMP%NUMBER_OF_COUPLINGS,3))
+    ALLOCATE(CONNECT_TMP%MESH2_ELEMENT_NUMBER(CONNECT_TMP%NUMBER_OF_COUPLINGS))
+    ALLOCATE(CONNECT_TMP%MESH2_ELEMENT_XI(CONNECT_TMP%NUMBER_OF_COUPLINGS,3))
+
+    DO I=1,CONNECT_TMP%NUMBER_OF_COUPLINGS
+      READ(79,*) CONNECT_TMP%INTERFACE_ELEMENT_NUMBER(I), &
+        & CONNECT_TMP%INTERFACE_ELEMENT_LOCAL_NODE(I),CONNECT_TMP%MESH1_ID,CONNECT_TMP%MESH1_ELEMENT_NUMBER(I), &
+        & CONNECT_TMP%MESH1_ELEMENT_XI(I,1:3), CONNECT_TMP%MESH2_ID,CONNECT_TMP%MESH2_ELEMENT_NUMBER(I), &
+        & CONNECT_TMP%MESH2_ELEMENT_XI(I,1:3)
+    ENDDO
+    WRITE(*,*)' '
+    WRITE(*,*)'Import finished successfully...  IMC'
+    WRITE(*,*)' '
+    CLOSE(79)
+
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_CONNECT
+
+
+
+  !   OK
+  !================================================================================================================================
+  !
+
+
+  !> Executes cmheart bc reading process.
+  SUBROUTINE FLUID_MECHANICS_IO_READ_BC
+
+    INTEGER(INTG):: NumberOfFaces, NumberOfNodes, HighestNodeNumber
+    INTEGER(INTG):: FLAG,I1,I2,I3,I4,I5,I,J
+    LOGICAL :: TEST
+
+    INTEGER(INTG), DIMENSION(:), ALLOCATABLE:: DUMMY,TMP1,TMP2,TMP3,TMP4,TMP5
+
+    READ(42,*) NAMz
+    OPEN(UNIT = 79, FILE=NAMz,STATUS='old')
+    READ(79,*) NumberOfFaces, NumberOfNodes
+
+    ALLOCATE(DUMMY(NumberOfNodes+1),STAT=ALLOC_ERROR)
+
+    BC_TMP%NUMBER_OF_BC=0
+    BC_TMP%NUMBER_OF_BC1=0
+    BC_TMP%NUMBER_OF_BC2=0
+    BC_TMP%NUMBER_OF_BC3=0
+    BC_TMP%NUMBER_OF_BC4=0
+    BC_TMP%NUMBER_OF_BC5=0
+    HighestNodeNumber=1
+
+    DO I=1,NumberOfFaces
+      READ(79,*) DUMMY(1:NumberOfNodes+1),FLAG
+      DO J=2,NumberOfNodes+1
+        IF(DUMMY(J)>HighestNodeNumber) HighestNodeNumber=DUMMY(J)
+      ENDDO
+    ENDDO
+
+    CLOSE(79)
+
+    ALLOCATE(TMP1(HighestNodeNumber))
+    ALLOCATE(TMP2(HighestNodeNumber))
+    ALLOCATE(TMP3(HighestNodeNumber))
+    ALLOCATE(TMP4(HighestNodeNumber))
+    ALLOCATE(TMP5(HighestNodeNumber))
+
+    TMP1=0
+    TMP2=0
+    TMP3=0
+    TMP4=0
+    TMP5=0
+
+    OPEN(UNIT = 79, FILE=NAMz,STATUS='old')
+    READ(79,*) NumberOfFaces, NumberOfNodes
+
+    DO I=1,NumberOfFaces
+      READ(79,*) DUMMY(1:NumberOfNodes+1),FLAG
+      IF(FLAG==1) THEN
+        DO J=2,NumberOfNodes+1
+          IF(TMP1(DUMMY(J))==1) THEN
+            !do nothing
+          ELSE
+            TMP1(DUMMY(J))=1
+            BC_TMP%NUMBER_OF_BC1=BC_TMP%NUMBER_OF_BC1+1
+          ENDIF
+        ENDDO
+      ELSE IF(FLAG==2) THEN
+        DO J=2,NumberOfNodes+1
+          IF(TMP2(DUMMY(J))==1) THEN
+            !do nothing
+          ELSE
+            TMP2(DUMMY(J))=1
+            BC_TMP%NUMBER_OF_BC2=BC_TMP%NUMBER_OF_BC2+1
+          ENDIF
+        ENDDO
+      ELSE IF(FLAG==3) THEN
+        DO J=2,NumberOfNodes+1
+          IF(TMP3(DUMMY(J))==1) THEN
+            !do nothing
+          ELSE
+            TMP3(DUMMY(J))=1
+            BC_TMP%NUMBER_OF_BC3=BC_TMP%NUMBER_OF_BC3+1
+          ENDIF
+        ENDDO
+      ELSE IF(FLAG==4) THEN
+        DO J=2,NumberOfNodes+1
+          IF(TMP4(DUMMY(J))==1) THEN
+            !do nothing
+          ELSE
+            TMP4(DUMMY(J))=1
+            BC_TMP%NUMBER_OF_BC4=BC_TMP%NUMBER_OF_BC4+1
+          ENDIF
+        ENDDO
+      ELSEIF(FLAG==5) THEN
+        DO J=2,NumberOfNodes+1
+          IF(TMP5(DUMMY(J))==1) THEN
+            !do nothing
+          ELSE
+            TMP5(DUMMY(J))=1
+            BC_TMP%NUMBER_OF_BC5=BC_TMP%NUMBER_OF_BC5+1
+          ENDIF
+        ENDDO
+      ENDIF
+    ENDDO
+
+    IF(BC_TMP%NUMBER_OF_BC1>0) ALLOCATE(BC_TMP%BC_NODE_NUMBER1(BC_TMP%NUMBER_OF_BC1))
+    IF(BC_TMP%NUMBER_OF_BC2>0) ALLOCATE(BC_TMP%BC_NODE_NUMBER2(BC_TMP%NUMBER_OF_BC2))
+    IF(BC_TMP%NUMBER_OF_BC3>0) ALLOCATE(BC_TMP%BC_NODE_NUMBER3(BC_TMP%NUMBER_OF_BC3))
+    IF(BC_TMP%NUMBER_OF_BC4>0) ALLOCATE(BC_TMP%BC_NODE_NUMBER4(BC_TMP%NUMBER_OF_BC4))
+    IF(BC_TMP%NUMBER_OF_BC5>0) ALLOCATE(BC_TMP%BC_NODE_NUMBER5(BC_TMP%NUMBER_OF_BC5))
+
+    I1=0
+    I2=0
+    I3=0
+    I4=0
+    I5=0
+
+   TEST=.TRUE.
+
+    DO I=1,HighestNodeNumber
+      IF(TMP1(I)==1) THEN
+        I1=I1+1
+        BC_TMP%BC_NODE_NUMBER1(I1)=I
+        BC_TMP%NUMBER_OF_BC=BC_TMP%NUMBER_OF_BC+1
+        TEST=.FALSE.
+      ENDIF
+      IF(TMP2(I)==1) THEN
+        I2=I2+1
+        BC_TMP%BC_NODE_NUMBER2(I2)=I
+        BC_TMP%NUMBER_OF_BC=BC_TMP%NUMBER_OF_BC+1
+      ENDIF
+      IF(TMP3(I)==1) THEN
+        I3=I3+1
+        BC_TMP%BC_NODE_NUMBER3(I3)=I
+        BC_TMP%NUMBER_OF_BC=BC_TMP%NUMBER_OF_BC+1
+      ENDIF
+      IF(TMP4(I)==1) THEN
+        I4=I4+1
+        BC_TMP%BC_NODE_NUMBER4(I4)=I
+        BC_TMP%NUMBER_OF_BC=BC_TMP%NUMBER_OF_BC+1
+      ENDIF
+      IF(TMP5(I)==1) THEN
+        I5=I5+1
+        BC_TMP%BC_NODE_NUMBER5(I5)=I
+        BC_TMP%NUMBER_OF_BC=BC_TMP%NUMBER_OF_BC+1
+      ENDIF
+    ENDDO  
+      
+    CLOSE(79)
+
+    WRITE(*,*)' '
+    WRITE(*,*)'Import bc successfully...  BC'
+    WRITE(*,*)' '
+
+    DEALLOCATE(DUMMY)
+    DEALLOCATE(TMP1)
+    DEALLOCATE(TMP2)
+    DEALLOCATE(TMP3)
+    DEALLOCATE(TMP4)
+    DEALLOCATE(TMP5)
+
+
+    RETURN
+
+  END SUBROUTINE FLUID_MECHANICS_IO_READ_BC
+
+
   ! OK
   !================================================================================================================================
   !
@@ -3777,7 +4296,7 @@ CONTAINS
     INTEGER(INTG) :: TEMP(200)
 
     READ(42,*) NAMz
-    CLOSE(42)
+
     OPEN(UNIT = 1, FILE=NAMz,STATUS='old')
     READ(1,*) NumberOfElementsDefined(1:3)
 

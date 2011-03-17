@@ -99,6 +99,8 @@ MODULE NODE_ROUTINES
   
   PUBLIC NODES_USER_NUMBER_GET,NODES_USER_NUMBER_SET
 
+  !PUBLIC NODES_NUMBER_OF_VERSIONS_SET
+
 CONTAINS
 
   !
@@ -110,7 +112,7 @@ CONTAINS
 
     !Argument variables
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to check
-    INTEGER(INTG) :: USER_NUMBER !<The user node number to check if it exists
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user node number to check if it exists
     LOGICAL, INTENT(OUT) :: NODE_EXISTS !<On exit, is .TRUE. if the node user number exists in the region, .FALSE. if not
     INTEGER(INTG), INTENT(OUT) :: GLOBAL_NUMBER !<On exit, if the node exists the global number corresponding to the user node number. If the node does not exist then global number will be 0.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -849,7 +851,7 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE NODES_USER_NUMBER_SET
-        
+
   !
   !================================================================================================================================
   !

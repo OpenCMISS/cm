@@ -87,7 +87,7 @@ MODULE EQUATIONS_SET_ROUTINES
   !Interfaces
 
   PUBLIC EQUATIONS_SET_ANALYTIC_CREATE_START,EQUATIONS_SET_ANALYTIC_CREATE_FINISH,EQUATIONS_SET_ANALYTIC_DESTROY
-  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE
+  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE,EQUATIONS_SET_NONLINEAR_RHS_UPDATE
   PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC,EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH
   PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START,EQUATIONS_SET_BOUNDARY_CONDITIONS_DESTROY
   PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH,EQUATIONS_SET_DESTROY,EQUATIONS_SETS_INITIALISE
@@ -1563,6 +1563,146 @@ CONTAINS
    
   END SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Updates the right hand side variable from the equations residual vector
+  SUBROUTINE EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: variable_dof,row_idx,VARIABLE_TYPE,rhs_global_dof,rhs_boundary_condition
+    REAL(DP) :: VALUE
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
+    TYPE(FIELD_TYPE), POINTER :: RHS_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE,RESIDUAL_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      EQUATIONS=>EQUATIONS_SET%EQUATIONS
+      IF(ASSOCIATED(EQUATIONS)) THEN
+        EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+        IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+          RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+          IF(ASSOCIATED(RHS_MAPPING)) THEN
+            RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+            IF(ASSOCIATED(RHS_VARIABLE)) THEN
+              !Get the right hand side variable
+              RHS_FIELD=>RHS_VARIABLE%FIELD
+              VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
+            ELSE
+              CALL FLAG_ERROR("RHS mapping RHS variable is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+          ENDIF
+          IF(ASSOCIATED(RHS_FIELD)) THEN
+            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+              RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
+              IF(ASSOCIATED(RHS_DOMAIN_MAPPING)) THEN
+                RHS_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                  & VARIABLE_TYPE)%PTR
+                IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
+                  !Get the equations residual vector
+                  EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                  IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                    NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                    IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+                      RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
+                      IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
+                        !Get mapping from equations rows to field dofs
+                        NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                        IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                          RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
+                          IF(ASSOCIATED(RESIDUAL_VARIABLE)) THEN
+                            DO row_idx=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+                              variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(row_idx)
+                              rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
+                              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
+                                & rhs_global_dof)
+                              SELECT CASE(rhs_boundary_condition)
+                              CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
+                                   & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+                                   & BOUNDARY_CONDITION_NEUMANN_FREE)
+                                !Add residual to field value
+                                CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,row_idx,VALUE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                  & variable_dof,VALUE,ERR,ERROR,*999)
+                              CASE(BOUNDARY_CONDITION_FIXED)
+                                !Do nothing
+                              CASE(BOUNDARY_CONDITION_MIXED)
+                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CASE DEFAULT
+                                LOCAL_ERROR="The RHS variable boundary condition of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                  & " for RHS variable dof number "// &
+                                  & TRIM(NUMBER_TO_VSTRING(variable_dof,"*",ERR,ERROR))//" is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              END SELECT
+                            ENDDO
+                          ELSE
+                            CALL FLAG_ERROR("Residual variable is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Nonlinear mapping is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Residual vector is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Nonlinear matrices is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("RHS variable domain mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set boundary conditions are not associated.",ERR,ERROR,*999)
+            ENDIF
+            CALL FIELD_PARAMETER_SET_UPDATE_START(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("RHS variable field is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE")
+    RETURN 1
+
+  END SUBROUTINE EQUATIONS_SET_NONLINEAR_RHS_UPDATE
+
   !
   !================================================================================================================================
   !
@@ -3724,7 +3864,72 @@ CONTAINS
         IF(EQUATIONS%EQUATIONS_FINISHED) THEN
           SELECT CASE(EQUATIONS%LINEARITY)
           CASE(EQUATIONS_LINEAR)            
-            CALL FLAG_ERROR("Can not evaluate a Jacobian for linear equations.",ERR,ERROR,*999)
+            SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+            CASE(EQUATIONS_STATIC)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_STATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(EQUATIONS_QUASISTATIC)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_DYNAMIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE DEFAULT
+              LOCAL_ERROR="The equations time dependence type of "// &
+                & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           CASE(EQUATIONS_NONLINEAR)
             SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
             CASE(EQUATIONS_STATIC)
@@ -5219,6 +5424,9 @@ CONTAINS
     !Take the stored load, scale it down appropriately then apply to the unknown variables
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+      IF(DIAGNOSTICS1) THEN
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  equations set",EQUATIONS_SET%USER_NUMBER,ERR,ERROR,*999)
+      ENDIF
       IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
@@ -5271,6 +5479,11 @@ CONTAINS
                                 NEW_LOAD=CURRENT_LOAD+(FULL_LOAD-CURRENT_LOAD)/(MAXIMUM_NUMBER_OF_ITERATIONS-ITERATION_NUMBER+1)
                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                                   & dirichlet_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                                IF(DIAGNOSTICS1) THEN
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx",dirichlet_dof_idx,ERR,ERROR,*999)
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load",CURRENT_LOAD,ERR,ERROR,*999)
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                                ENDIF
                               ENDIF !Full or intermediate load
                             ENDIF !non-ghost dof
                           ENDIF !current domain
@@ -5332,6 +5545,13 @@ CONTAINS
                                 & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,0.0_dp,ERR,ERROR,*999)
+                              IF(DIAGNOSTICS1) THEN
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
+                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
+                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                              ENDIF
                             ENDIF !Non-ghost dof
                           ENDIF !Current domain
                         ENDDO !pressure_incremented_idx
@@ -5356,6 +5576,13 @@ CONTAINS
                                 & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                 & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,CURRENT_LOAD,ERR,ERROR,*999)
+                              IF(DIAGNOSTICS1) THEN
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
+                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
+                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                              ENDIF
                             ENDIF !Non-ghost dof
                           ENDIF !Current domain
                         ENDDO !pressure_incremented_idx

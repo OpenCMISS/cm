@@ -1298,7 +1298,7 @@ CONTAINS
                   CALL FLAG_ERROR("Solver equations linking solver mapping is not dynamic.",ERR,ERROR,*999)
                 END IF
               ELSE
-              !Otherwise perform as steady nonlinear
+                !Otherwise perform as steady nonlinear
                 !Copy the current solution vector to the dependent field
                 CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
                 !Calculate the Jacobian
@@ -1370,8 +1370,14 @@ CONTAINS
                   !Calculate the residual for each element (M, C, K and g)
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                    !Assemble the equations for dynamic problems
-                    CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                    SELECT CASE(EQUATIONS_SET%EQUATIONS%LINEARITY)
+                    CASE(EQUATIONS_LINEAR)            
+                      !Assemble the equations for linear equations
+                      CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+                    CASE(EQUATIONS_NONLINEAR)            
+                      !Evaluate the residual for nonlinear equations
+                      CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                    END SELECT
                   ENDDO !equations_set_idx
                   !Assemble the final solver residual.
                   CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
@@ -1385,13 +1391,17 @@ CONTAINS
                 !Make sure the equations sets are up to date
                 DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                  !Assemble the equations for linear problems
-                  CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                  SELECT CASE(EQUATIONS_SET%EQUATIONS%LINEARITY)
+                  CASE(EQUATIONS_LINEAR)            
+                    !Assemble the equations for linear equations
+                    CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+                  CASE(EQUATIONS_NONLINEAR)            
+                    !Evaluate the residual for nonlinear equations
+                    CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                  END SELECT
                 ENDDO !equations_set_idx
                 !Assemble the solver matrices
-!!TODO: need to work out wether to assemble rhs and residual or residual only
-                 CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
-!               CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RESIDUAL_ONLY,ERR,ERROR,*999)
+                CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RHS_RESIDUAL_ONLY,ERR,ERROR,*999)
               END IF
             ELSE
                CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)
@@ -2009,8 +2019,8 @@ CONTAINS
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
                 !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
-!                 !Assemble the equations for nonlinear problems
-!                 CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+                !Assemble the equations for nonlinear problems
+                CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
                 IF(.NOT.SOLVER%DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
                   CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                 ENDIF
@@ -2297,6 +2307,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: equations_set_idx,interface_condition_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
@@ -2316,7 +2327,8 @@ CONTAINS
           !Apply boundary conditition
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
+            !Assemble the equations for linear equations
+            CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
           ENDDO !equations_set_idx          
           !Make sure the interface matrices are up to date
           DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
@@ -2333,6 +2345,24 @@ CONTAINS
           ENDDO !interface_condition_idx
           !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+          !Update the rhs field variable with residuals or backsubstitute for any linear
+          !equations sets
+          DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            EQUATIONS=>EQUATIONS_SET%EQUATIONS
+            IF(ASSOCIATED(EQUATIONS)) THEN
+              SELECT CASE(EQUATIONS%LINEARITY)
+              CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
+                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_NONLINEAR)
+                CALL EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE DEFAULT
+                CALL FLAG_ERROR("Invalid linearity for equations set equations",ERR,ERROR,*999)
+              END SELECT
+            ELSE
+              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ENDDO !equations_set_idx
         ELSE
           CALL FLAG_ERROR("Solver equations solver mapping not associated.",ERR,ERROR,*999)
         ENDIF
