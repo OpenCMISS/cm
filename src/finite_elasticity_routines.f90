@@ -947,11 +947,6 @@ CONTAINS
               THICKNESS = 1.0_DP
             ENDIF
 
-            IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-              CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-            ENDIF
-
             !Now add up the residual terms
             element_dof_idx=0
             DO component_idx=1,NUMBER_OF_DIMENSIONS
@@ -963,19 +958,10 @@ CONTAINS
                 DO parameter_idx=1,NUMBER_OF_FIELD_COMPONENT_INTERPOLATION_PARAMETERS
                   element_dof_idx=element_dof_idx+1
                   DO component_idx2=1,NUMBER_OF_DIMENSIONS
-                    IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
-                        & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
-                        & GAUSS_WEIGHT*Jxxi*Jznu*THICKNESS*CAUCHY_TENSOR(component_idx,component_idx2)* &
-                        & DFDZ(parameter_idx,component_idx2)* &
-                        & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR% &
-                        & SCALE_FACTORS(parameter_idx,component_idx)
-                    ELSE
-                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
-                        & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
-                        & GAUSS_WEIGHT*Jxxi*Jznu*THICKNESS*CAUCHY_TENSOR(component_idx,component_idx2)* &
-                        & DFDZ(parameter_idx,component_idx2)
-                    ENDIF
+                    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)= &
+                      & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(element_dof_idx)+ &
+                      & GAUSS_WEIGHT*Jxxi*Jznu*THICKNESS*CAUCHY_TENSOR(component_idx,component_idx2)* &
+                      & DFDZ(parameter_idx,component_idx2)
                   ENDDO ! component_idx2 (inner component index)
                 ENDDO ! parameter_idx (residual vector loop)
               ELSEIF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_ELEMENT_BASED_INTERPOLATION) THEN
@@ -5176,17 +5162,17 @@ CONTAINS
       IF(ASSOCIATED(EQUATIONS)) THEN
         SOURCE_FIELD=>EQUATIONS%INTERPOLATION%SOURCE_FIELD
         IF(ASSOCIATED(SOURCE_FIELD)) THEN
-          IF(ITERATION_NUMBER==1) THEN
-            !Setup initial values parameter set
-            CALL FIELD_PARAMETER_SET_CREATE(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SETS_COPY(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & FIELD_INITIAL_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+          IF(MAXIMUM_NUMBER_OF_ITERATIONS>1) THEN
+            IF(ITERATION_NUMBER==1) THEN
+              !Setup initial values parameter set
+              CALL FIELD_PARAMETER_SET_CREATE(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SETS_COPY(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & FIELD_INITIAL_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+            ENDIF
+            INCREMENT=REAL(ITERATION_NUMBER)/REAL(MAXIMUM_NUMBER_OF_ITERATIONS)
+            CALL FIELD_PARAMETER_SETS_COPY(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE, &
+                & FIELD_VALUES_SET_TYPE,INCREMENT,ERR,ERROR,*999)
           ENDIF
-          INCREMENT=REAL(ITERATION_NUMBER)/REAL(MAXIMUM_NUMBER_OF_ITERATIONS)
-          CALL FIELD_PARAMETER_SETS_COPY(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_INITIAL_VALUES_SET_TYPE, &
-              & FIELD_VALUES_SET_TYPE,INCREMENT,ERR,ERROR,*999)
-        ELSE
-          CALL FLAG_ERROR("Equations set source field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
