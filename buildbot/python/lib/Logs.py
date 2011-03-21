@@ -121,7 +121,8 @@ class ShellCommandWithHtmlTree(shell.ShellCommand):
        content =  log.getText()
        content += "</body></html>"
        self.addHTMLLog('results', content)
-       self.extractFails(content)
+       if ("Fail" in content) :
+         self.extractFails(content)
 
 
 
