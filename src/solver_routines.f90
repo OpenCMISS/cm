@@ -12044,9 +12044,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    EXTERNAL :: SNESDefaultComputeJacobianColor
-    EXTERNAL :: SNESDefaultComputeJacobian
     EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC
+    EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC
     EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
     EXTERNAL :: SOLVER_NONLINEAR_MONITOR_PETSC
     INTEGER(INTG) :: equations_matrix_idx,equations_set_idx
@@ -12229,6 +12228,7 @@ CONTAINS
                                   & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                                 CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
 #if ( PETSC_VERSION_MAJOR == 3 )
+                                !Pass the linesearch solver object rather than the temporary solver
                                 CALL PETSC_MATFDCOLORINGSETFUNCTION(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
                                   & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
                                   & SOLVER,ERR,ERROR,*999)
@@ -12238,19 +12238,16 @@ CONTAINS
                                   & SOLVER,ERR,ERROR,*999)
 #endif
                                 CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-                                !Pass the linesearch solver object rather than the temporary solver
-                                CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                                  & JACOBIAN_MATRIX%PETSC%MATRIX,SNESDefaultComputeJacobianColor,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                               CASE(SOLVER_FULL_MATRICES)
-                                CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                                  & JACOBIAN_MATRIX%PETSC%MATRIX,SNESDefaultComputeJacobian,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+                                !Do nothing
                               CASE DEFAULT
                                 LOCAL_ERROR="The specified solver equations sparsity type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
+                              CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
+                                & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC,LINESEARCH_SOLVER% &
+                                & NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The Jacobian calculation type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
