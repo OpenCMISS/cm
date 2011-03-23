@@ -4523,7 +4523,7 @@ CONTAINS
         DELTA(2)=MAXIMUM_EXTENT(2)/NUMBER_ELEMENTS_XI(2)
         DELTA(3)=MAXIMUM_EXTENT(3)/NUMBER_ELEMENTS_XI(3)
         DO xi_idx=1,3
-          DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XIC(xi_idx)-1)
+          IF(NUMBER_OF_NODES_XIC(xi_idx)>1) DELTAi(xi_idx)=DELTA(xi_idx)/(NUMBER_OF_NODES_XIC(xi_idx)-1)
         ENDDO
 
         ! calculate total elements and nodes

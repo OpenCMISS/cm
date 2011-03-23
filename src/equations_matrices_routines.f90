@@ -405,6 +405,8 @@ CONTAINS
                 CALL DISTRIBUTED_VECTOR_CREATE_START(ROW_DOMAIN_MAP,EQUATIONS_MATRICES%NONLINEAR_MATRICES%RESIDUAL,ERR,ERROR,*999)
                 CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(NONLINEAR_MATRICES%RESIDUAL,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
                 CALL DISTRIBUTED_VECTOR_CREATE_FINISH(NONLINEAR_MATRICES%RESIDUAL,ERR,ERROR,*999)
+                !Initialise the residual vector to zero for time dependent problems so that the previous residual is set to zero
+                CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(NONLINEAR_MATRICES%RESIDUAL,0.0_DP,ERR,ERROR,*999)
               ELSE
                 CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
               ENDIF

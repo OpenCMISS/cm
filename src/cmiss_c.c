@@ -90,39 +90,39 @@ void CMISSResetFatalHandler()
 #if defined (SIGBUS)
   if( 0 != sigaction(SIGBUS,&old_SIGBUS_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGBUS handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGBUS handler.\n");
     }
 #endif /* defined (SIGBUS) */
 #ifdef SIGEMT
   if( 0 != sigaction(SIGEMT,&old_SIGEMT_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGEMT handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGEMT handler.\n");
     }
 #endif
   if( 0 != sigaction(SIGFPE,&old_SIGFPE_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGFPE handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGFPE handler.\n");
     }
   if( 0 != sigaction(SIGILL,&old_SIGILL_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGILL handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGILL handler.\n");
     }
   if( 0 != sigaction(SIGINT,&old_SIGINT_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGINT handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGINT handler.\n");
     }
   if( 0 != sigaction(SIGABRT,&old_SIGABRT_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGABRT handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGABRT handler.\n");
     }
   if( 0 != sigaction(SIGSEGV,&old_SIGSEGV_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGSEGV handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGSEGV handler.\n");
     }
 #if defined (SIGTRAP)
   if( 0 != sigaction(SIGTRAP,&old_SIGTRAP_action,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not reset SIGTRAP handler.");
+      fprintf(stderr,">>WARNING: Could not reset SIGTRAP handler.\n");
     }
 #endif /* defined (SIGTRAP) */
 }
@@ -133,39 +133,39 @@ void CMISSSetFatalHandler(void)
 #if defined (SIGBUS)
   if( 0 != sigaction(SIGBUS,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: Could not set SIGBUS handler.");
+      fprintf(stderr,">>WARNING: Could not set SIGBUS handler.\n");
     }
 #endif /* defined (SIGBUS) */
 #ifdef SIGEMT
   if( 0 != sigaction(SIGEMT,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: could not set SIGEMT handler.");
+      fprintf(stderr,">>WARNING: could not set SIGEMT handler.\n");
     }
 #endif
   if( 0 != sigaction(SIGFPE,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: could not set SIGFPE handler.");
+      fprintf(stderr,">>WARNING: could not set SIGFPE handler.\n");
     }
   if( 0 != sigaction(SIGILL,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: could not set SIGILL handler.");
+      fprintf(stderr,">>WARNING: could not set SIGILL handler.\n");
     }
   if( 0 != sigaction(SIGINT,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: could not set SIGINT handler.");
+      fprintf(stderr,">>WARNING: could not set SIGINT handler.\n");
     }
   if( 0 != sigaction(SIGABRT,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: could not set SIGABRT handler.");
+      fprintf(stderr,">>WARNING: could not set SIGABRT handler.\n");
     }
   if( 0 != sigaction(SIGSEGV,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: could not set SIGSEGV handler.");
+      fprintf(stderr,">>WARNING: could not set SIGSEGV handler.\n");
     }
 #if defined (SIGTRAP)
   if( 0 != sigaction(SIGTRAP,&fatal_sigaction,NULL) )
     {
-      fprintf(stderr,">>WARNING: could not set SIGTRAP handler.");
+      fprintf(stderr,">>WARNING: could not set SIGTRAP handler.\n");
     }
 #endif /* defined (SIGTRAP) */
 #endif /* defined (unix) || defined (_AIX) */
@@ -250,7 +250,7 @@ void CMISSInitFatalHandler(void)
   fatal_sigaction.sa_handler = (void (*)(int))CMISSFatalHandler;
   if( 0 != sigemptyset(&fatal_sigaction.sa_mask) )
     {
-      fprintf(stderr,">>WARNING: sigemptyset failed in CMISSInitFatalHandler.");
+      fprintf(stderr,">>WARNING: sigemptyset failed in CMISSInitFatalHandler.\n");
     }
 
 #if defined (SIGBUS)

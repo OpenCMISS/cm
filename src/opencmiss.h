@@ -537,8 +537,12 @@ static int CMISSEquationsSetPoissonTwoDim1 = 1;
  * > \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
  * >@{
  */
-static int CMISSEquationsSetDiffusionTwoDim1 = 1;
+static int CMISSEquationsSetDiffusionOneDim1 = 1;
+static int CMISSEquationsSetDiffusionTwoDim1 = 2;
+static int CMISSEquationsSetDiffusionThreeDim1 = 3;
 static int CMISSEquationsSetLinearSourceDiffusionThreeDim1 = 2;
+static int CMISSEquationsSetQuadraticSourceDiffusionOneDim1 = 1;
+static int CMISSEquationsSetExponentialSourceDiffusionOneDim1 = 1;
 /*
  * > \addtogroup OPENCMISS_StokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Stokes
  * > \brief The analytic function types for a Stokes equation.
@@ -2425,8 +2429,27 @@ CMISSError CMISSEquationsSetAnalyticDestroyNum(const int RegionUserNumber,
 
 CMISSError CMISSEquationsSetAnalyticDestroy(CMISSEquationsSetType *EquationsSet);
 
-CMISSError CMISSEquationsSetBoundaryConditionsAnalyticNum(const int RegionUserNumber,
+CMISSError CMISSEquationsSetAnalyticEvaluateNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
+
+CMISSError CMISSEquationsSetAnalyticEvaluate(const CMISSEquationsSetType *EquationsSet);
+
+CMISSError CMISSEquationsSetAnalyticTimeGetNum(const int RegionUserNumber,
+					       const int EquationsSetUserNumber,
+					       double *Time);
+
+CMISSError CMISSEquationsSetAnalyticTimeGet(const CMISSEquationsSetType *EquationsSet,
+					    double *Time);
+
+CMISSError CMISSEquationsSetAnalyticTimeSetNum(const int RegionUserNumber,
+					       const int EquationsSetUserNumber,
+					       const double Time);
+
+CMISSError CMISSEquationsSetAnalyticTimeSet(const CMISSEquationsSetType *EquationsSet,
+					    const double Time);
+
+CMISSError CMISSEquationsSetBoundaryConditionsAnalyticNum(const int RegionUserNumber,
+							  const int EquationsSetUserNumber);
 
 CMISSError CMISSEquationsSetBoundaryConditionsAnalytic(CMISSEquationsSetType *EquationsSet);
 

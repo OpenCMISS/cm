@@ -46,12 +46,15 @@
 MODULE EQUATIONS_SET_ROUTINES
 
   USE BASE_ROUTINES
+  USE BASIS_ROUTINES
   USE BIOELECTRIC_ROUTINES
   USE BOUNDARY_CONDITIONS_ROUTINES
   USE CLASSICAL_FIELD_ROUTINES
   USE CMISS_MPI
   USE COMP_ENVIRONMENT
   USE CONSTANTS
+  USE COORDINATE_ROUTINES
+  USE FIELD_ROUTINES
   USE FITTING_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
@@ -86,23 +89,62 @@ MODULE EQUATIONS_SET_ROUTINES
 
   !Interfaces
 
-  PUBLIC EQUATIONS_SET_ANALYTIC_CREATE_START,EQUATIONS_SET_ANALYTIC_CREATE_FINISH,EQUATIONS_SET_ANALYTIC_DESTROY
-  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE,EQUATIONS_SET_NONLINEAR_RHS_UPDATE
-  PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC,EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH
-  PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START,EQUATIONS_SET_BOUNDARY_CONDITIONS_DESTROY
-  PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH,EQUATIONS_SET_DESTROY,EQUATIONS_SETS_INITIALISE
-  PUBLIC EQUATIONS_SETS_FINALISE
-  PUBLIC EQUATIONS_SET_EQUATIONS_CREATE_FINISH,EQUATIONS_SET_EQUATIONS_CREATE_START,EQUATIONS_SET_EQUATIONS_DESTROY
-  PUBLIC EQUATIONS_SET_MATERIALS_CREATE_START,EQUATIONS_SET_MATERIALS_CREATE_FINISH,EQUATIONS_SET_MATERIALS_DESTROY
-  PUBLIC EQUATIONS_SET_DEPENDENT_CREATE_START,EQUATIONS_SET_DEPENDENT_CREATE_FINISH,EQUATIONS_SET_DEPENDENT_DESTROY
-  PUBLIC EQUATIONS_SET_INDEPENDENT_CREATE_START,EQUATIONS_SET_INDEPENDENT_CREATE_FINISH,EQUATIONS_SET_INDEPENDENT_DESTROY
-  PUBLIC EQUATIONS_SET_JACOBIAN_EVALUATE,EQUATIONS_SET_RESIDUAL_EVALUATE
-  PUBLIC EQUATIONS_SET_SOLUTION_METHOD_GET,EQUATIONS_SET_SOLUTION_METHOD_SET
-  PUBLIC EQUATIONS_SET_SOURCE_CREATE_START,EQUATIONS_SET_SOURCE_CREATE_FINISH,EQUATIONS_SET_SOURCE_DESTROY
-  PUBLIC EQUATIONS_SET_SPECIFICATION_GET,EQUATIONS_SET_SPECIFICATION_SET
+  PUBLIC EQUATIONS_SET_ANALYTIC_CREATE_START,EQUATIONS_SET_ANALYTIC_CREATE_FINISH
+
+  PUBLIC EQUATIONS_SET_ANALYTIC_DESTROY
+
+  PUBLIC EQUATIONS_SET_ANALYTIC_EVALUATE
+
+  PUBLIC EQUATIONS_SET_ANALYTIC_TIME_GET,EQUATIONS_SET_ANALYTIC_TIME_SET
+  
   PUBLIC EQUATIONS_SET_ASSEMBLE
+  
+  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE,EQUATIONS_SET_NONLINEAR_RHS_UPDATE
+  
+  PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC
+
+  PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH
+  
+  PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START
+
+  PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_DESTROY
+
+  PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH
+
+  PUBLIC EQUATIONS_SET_DESTROY
+
+  PUBLIC EQUATIONS_SETS_FINALISE,EQUATIONS_SETS_INITIALISE
+
+  PUBLIC EQUATIONS_SET_EQUATIONS_CREATE_FINISH,EQUATIONS_SET_EQUATIONS_CREATE_START
+
+  PUBLIC EQUATIONS_SET_EQUATIONS_DESTROY
+  
+  PUBLIC EQUATIONS_SET_MATERIALS_CREATE_START,EQUATIONS_SET_MATERIALS_CREATE_FINISH
+
+  PUBLIC EQUATIONS_SET_MATERIALS_DESTROY
+  
+  PUBLIC EQUATIONS_SET_DEPENDENT_CREATE_START,EQUATIONS_SET_DEPENDENT_CREATE_FINISH
+
+  PUBLIC EQUATIONS_SET_DEPENDENT_DESTROY
+  
+  PUBLIC EQUATIONS_SET_INDEPENDENT_CREATE_START,EQUATIONS_SET_INDEPENDENT_CREATE_FINISH
+
+  PUBLIC EQUATIONS_SET_INDEPENDENT_DESTROY
+  
+  PUBLIC EQUATIONS_SET_JACOBIAN_EVALUATE,EQUATIONS_SET_RESIDUAL_EVALUATE
+  
+  PUBLIC EQUATIONS_SET_SOLUTION_METHOD_GET,EQUATIONS_SET_SOLUTION_METHOD_SET
+  
+  PUBLIC EQUATIONS_SET_SOURCE_CREATE_START,EQUATIONS_SET_SOURCE_CREATE_FINISH
+
+  PUBLIC EQUATIONS_SET_SOURCE_DESTROY
+  
+  PUBLIC EQUATIONS_SET_SPECIFICATION_GET,EQUATIONS_SET_SPECIFICATION_SET
+  
   PUBLIC EQUATIONS_SET_USER_NUMBER_FIND
+  
   PUBLIC EQUATIONS_SET_LOAD_INCREMENT_APPLY
+  
   PUBLIC EQUATIONS_SET_ANALYTIC_USER_PARAM_SET,EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
   
 CONTAINS
@@ -310,6 +352,348 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Evaluates the current analytic solution for an equations set. \see OPENCMISS::CMISSEquationsSetAnalyticEvaluate
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to evaluate the current analytic solutins for.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: component_idx,derivative_idx,element_idx,Gauss_idx,GLOBAL_DERIV_INDEX,local_ny,node_idx, &
+      & NUMBER_OF_ANALYTIC_COMPONENTS,NUMBER_OF_DIMENSIONS,NUMBER_OF_MATERIALS_COMPONENTS,variable_idx, &
+      & variable_type,version_idx
+    REAL(DP) :: NORMAL(3),POSITION(3),TANGENTS(3,3),VALUE
+    REAL(DP) :: ANALYTIC_DUMMY_VALUES(1)=0.0_DP
+    REAL(DP) :: MATERIALS_DUMMY_VALUES(1)=0.0_DP
+    TYPE(BASIS_TYPE), POINTER :: BASIS
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: ANALYTIC_INTERP_PARAMETERS(:),GEOMETRIC_INTERP_PARAMETERS(:), &
+      & MATERIALS_INTERP_PARAMETERS(:)
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: ANALYTIC_INTERP_POINT(:),GEOMETRIC_INTERP_POINT(:), &
+      & MATERIALS_INTERP_POINT(:)
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: GEOMETRIC_INTERPOLATED_POINT_METRICS(:)
+    TYPE(FIELD_PHYSICAL_POINT_PTR_TYPE), POINTER :: ANALYTIC_PHYSICAL_POINT(:),MATERIALS_PHYSICAL_POINT(:)
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
+          DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+            GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+            IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+              CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATED_POINTS_INITIALISE(GEOMETRIC_INTERP_PARAMETERS,GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(GEOMETRIC_INTERP_POINT,GEOMETRIC_INTERPOLATED_POINT_METRICS, &
+                & ERR,ERROR,*999)
+              ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
+              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_ANALYTIC_COMPONENTS, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(ANALYTIC_FIELD,ANALYTIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATED_POINTS_INITIALISE(ANALYTIC_INTERP_PARAMETERS,ANALYTIC_INTERP_POINT,ERR,ERROR,*999)
+                CALL FIELD_PHYSICAL_POINTS_INITIALISE(ANALYTIC_INTERP_POINT,GEOMETRIC_INTERP_POINT,ANALYTIC_PHYSICAL_POINT, &
+                  & ERR,ERROR,*999)
+              ENDIF
+              NULLIFY(MATERIALS_FIELD)
+              IF(ASSOCIATED(EQUATIONS_SET%MATERIALS)) THEN
+                MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                CALL FIELD_NUMBER_OF_COMPONENTS_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_ANALYTIC_COMPONENTS, &
+                  & ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(MATERIALS_FIELD,MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATED_POINTS_INITIALISE(MATERIALS_INTERP_PARAMETERS,MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+                CALL FIELD_PHYSICAL_POINTS_INITIALISE(MATERIALS_INTERP_POINT,GEOMETRIC_INTERP_POINT,MATERIALS_PHYSICAL_POINT, &
+                  & ERR,ERROR,*999)
+              ENDIF
+              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                    IF(ASSOCIATED(DOMAIN)) THEN
+                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                        SELECT CASE(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE)
+                        CASE(FIELD_CONSTANT_INTERPOLATION)
+                          CALL FLAG_ERROR("Cannot evaluate an analytic solution for a constant interpolation components.", &
+                            & ERR,ERROR,*999)
+                        CASE(FIELD_ELEMENT_BASED_INTERPOLATION)
+                          DOMAIN_ELEMENTS=>DOMAIN%TOPOLOGY%ELEMENTS
+                          IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                            !Loop over the local elements excluding the ghosts
+                            DO element_idx=1,DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS
+                              BASIS=>DOMAIN_ELEMENTS%ELEMENTS(element_idx)%BASIS
+                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                  & ANALYTIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+                              IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                  & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+                              CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,[0.5_DP,0.5_DP,0.5_DP], &
+                                & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_NO_TYPE, &
+                                & GEOMETRIC_INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_INT_PT_METRIC( &
+                                & GEOMETRIC_INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR, &
+                                & POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
+                              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,[0.5_DP,0.5_DP,0.5_DP], &
+                                  & ANALYTIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+                              IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,[0.5_DP,0.5_DP,0.5_DP], &
+                                  & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+!! \todo Maybe do this with optional arguments?
+                              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                  CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                    & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                    & variable_type,GLOBAL_DERIV_INDEX,component_idx, &
+                                    & ANALYTIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                    & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                    & VALUE,ERR,ERROR,*999)
+                                ELSE
+                                  CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                    & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                    & variable_type,GLOBAL_DERIV_INDEX,component_idx, &
+                                    & ANALYTIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                    & MATERIALS_DUMMY_VALUES,VALUE,ERR,ERROR,*999)
+                                ENDIF
+                              ELSE
+                                IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                  CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                    & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                    & variable_type,GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_DUMMY_VALUES, &
+                                    & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                    & VALUE,ERR,ERROR,*999)
+                                ELSE
+                                  CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                    & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                    & variable_type,GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_DUMMY_VALUES, &
+                                    & MATERIALS_DUMMY_VALUES,VALUE,ERR,ERROR,*999)
+                                ENDIF
+                              ENDIF
+                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                & ELEMENT_PARAM2DOF_MAP%ELEMENTS(element_idx)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999) 
+                            ENDDO !element_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        CASE(FIELD_NODE_BASED_INTERPOLATION)
+                          DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Loop over the local nodes excluding the ghosts.
+                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                              CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(DEPENDENT_FIELD,variable_type,component_idx, &
+                                & node_idx,POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
+                              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                CALL FIELD_INTERPOLATE_FIELD_NODE(NO_PHYSICAL_DERIV,FIELD_VALUES_SET_TYPE,ANALYTIC_FIELD, &
+                                  & FIELD_U_VARIABLE_TYPE,component_idx,node_idx,ANALYTIC_PHYSICAL_POINT( &
+                                  & FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+                              IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                CALL FIELD_INTERPOLATE_FIELD_NODE(NO_PHYSICAL_DERIV,FIELD_VALUES_SET_TYPE,MATERIALS_FIELD, &
+                                  & FIELD_U_VARIABLE_TYPE,component_idx,node_idx,MATERIALS_PHYSICAL_POINT( &
+                                  & FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+                              !Loop over the derivatives
+                              DO derivative_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES                                
+                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)% &
+                                  & GLOBAL_DERIVATIVE_INDEX
+!! \todo Maybe do this with optional arguments?
+                                IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                  IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx, &
+                                      & ANALYTIC_PHYSICAL_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES, &
+                                      & MATERIALS_PHYSICAL_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES,VALUE,ERR,ERROR,*999)
+                                  ELSE
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx, &
+                                      & ANALYTIC_PHYSICAL_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES, &
+                                      & MATERIALS_DUMMY_VALUES,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_DUMMY_VALUES, &
+                                      & MATERIALS_PHYSICAL_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES,VALUE,ERR,ERROR,*999)
+                                  ELSE
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_DUMMY_VALUES, &
+                                      & MATERIALS_DUMMY_VALUES,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                ENDIF
+                                !Loop over the versions
+                                DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS
+                                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                    & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(derivative_idx)%VERSIONS(version_idx)
+                                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                    & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                ENDDO !version_idx
+                              ENDDO !deriv_idx
+                            ENDDO !node_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
+                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
+                          DOMAIN_ELEMENTS=>DOMAIN%TOPOLOGY%ELEMENTS
+                          IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN
+                            !Loop over the local elements excluding the ghosts
+                            DO element_idx=1,DOMAIN_ELEMENTS%NUMBER_OF_ELEMENTS
+                              BASIS=>DOMAIN_ELEMENTS%ELEMENTS(element_idx)%BASIS
+                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                  & ANALYTIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+                              IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                  & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ENDIF
+                              !Loop over the Gauss points in the element
+                              DO gauss_idx=1,BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR% &
+                                & NUMBER_OF_GAUSS
+                                CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                                  & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_NO_TYPE, &
+                                  & GEOMETRIC_INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_INT_PT_METRIC( &
+                                  & GEOMETRIC_INTERPOLATED_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR, &
+                                  & POSITION,NORMAL,TANGENTS,ERR,ERROR,*999)
+                                IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                  CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                                    & ANALYTIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                ENDIF
+                                IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                  CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
+                                    & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                ENDIF
+!! \todo Maybe do this with optional arguments?
+                                IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                  IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx, &
+                                      & ANALYTIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                      & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                      & VALUE,ERR,ERROR,*999)
+                                  ELSE
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx, &
+                                      & ANALYTIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                      & MATERIALS_DUMMY_VALUES,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                ELSE
+                                  IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_DUMMY_VALUES, &
+                                      & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(:,NO_PART_DERIV), &
+                                      & VALUE,ERR,ERROR,*999)
+                                  ELSE
+                                    CALL EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%ANALYTIC% &
+                                      & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME, &
+                                      & variable_type,GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_DUMMY_VALUES, &
+                                      & MATERIALS_DUMMY_VALUES,VALUE,ERR,ERROR,*999)
+                                  ENDIF
+                                ENDIF
+                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(Gauss_idx,element_idx)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                              ENDDO !Gauss_idx
+                            ENDDO !element_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        CASE DEFAULT
+                          LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
+                            & COMPONENTS(component_idx)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
+                            & " for component "//TRIM(NUMBER_TO_VSTRING(component_idx,"*",ERR,ERROR))//" of variable type "// &
+                            & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      ELSE
+                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO !component_idx
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                    & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                    & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO !variable_idx
+              IF(ASSOCIATED(MATERIALS_FIELD)) THEN
+                CALL FIELD_PHYSICAL_POINTS_FINALISE(MATERIALS_PHYSICAL_POINT,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATED_POINTS_FINALISE(MATERIALS_INTERP_POINT,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(MATERIALS_INTERP_PARAMETERS,ERR,ERROR,*999)
+              ENDIF
+              IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                CALL FIELD_PHYSICAL_POINTS_FINALISE(ANALYTIC_PHYSICAL_POINT,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATED_POINTS_FINALISE(ANALYTIC_INTERP_POINT,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(ANALYTIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+              ENDIF
+              CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(GEOMETRIC_INTERPOLATED_POINT_METRICS,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATED_POINTS_FINALISE(GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
+              
+            ELSE
+              CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_EVALUATE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_EVALUATE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_EVALUATE")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finalise the analytic solution for an equations set and deallocate all memory.
   SUBROUTINE EQUATIONS_SET_ANALYTIC_FINALISE(EQUATIONS_SET_ANALYTIC,ERR,ERROR,*)
 
@@ -331,6 +715,69 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_ANALYTIC_FINALISE")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ANALYTIC_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluate the analytic solution for an equations set.
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,TIME, &
+    & VARIABLE_TYPE,GLOBAL_DERIVATIVE,COMPONENT_NUMBER,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to evaluate the analytic for
+    INTEGER(INTG), INTENT(IN) :: ANALYTIC_FUNCTION_TYPE !<The type of analytic function to evaluate
+    REAL(DP), INTENT(IN) :: POSITION(:) !<POSITION(dimention_idx). The geometric position to evaluate at
+    REAL(DP), INTENT(IN) :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
+    REAL(DP), INTENT(IN) :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
+    REAL(DP), INTENT(IN) :: TIME !<The time to evaluate at
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to evaluate at
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_DERIVATIVE !<The global derivative direction to evaluate at
+    INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The dependent field component number to evaluate
+    REAL(DP), INTENT(IN) :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
+    REAL(DP), INTENT(IN) :: MATERIALS_PARAMETERS(:) !<A pointer to any materials field parameters
+    REAL(DP), INTENT(OUT) :: VALUE !<On return, the analtyic function value.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%CLASS)
+      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
+        CALL CLASSICAL_FIELD_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%TYPE,ANALYTIC_FUNCTION_TYPE,POSITION, &
+          & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIVATIVE,COMPONENT_NUMBER,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
+          & VALUE,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FITTING_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_MODAL_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE
 
   !
   !================================================================================================================================
@@ -359,6 +806,7 @@ CONTAINS
         EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED=.FALSE.
         EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD_AUTO_CREATED=.FALSE.
         NULLIFY(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD)
+        EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=0.0_DP
       ENDIF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
@@ -370,7 +818,76 @@ CONTAINS
 998 CALL ERRORS("EQUATIONS_SET_ANALYTIC_INITIALISE",ERR,ERROR)
     CALL EXITS("EQUATIONS_SET_ANALYTIC_INITIALISE")
     RETURN 1
+    
   END SUBROUTINE EQUATIONS_SET_ANALYTIC_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the analytic time for an equations set. \see OPENCMISS::CMISSEquationsSetAnalyticTimeGet
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_TIME_GET(EQUATIONS_SET,TIME,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the time for.
+    REAL(DP), INTENT(OUT) :: TIME !<On return, the analytic time value .
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_TIME_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_TIME_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_TIME_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_TIME_GET")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_TIME_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the analytic time for an equations set. \see OPENCMISS::CMISSEquationsSetAnalyticTimeSet
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_TIME_SET(EQUATIONS_SET,TIME,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the time for.
+    REAL(DP), INTENT(IN) :: TIME !<The time value to set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_TIME_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=TIME
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_TIME_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_TIME_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_TIME_SET")
+    RETURN 1
+    
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_TIME_SET
 
   !
   !================================================================================================================================
@@ -4334,7 +4851,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-
   !>Evaluates the residual for an equations set.
   SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -4344,6 +4860,12 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    TYPE(FIELD_PARAMETER_SET_TYPE), POINTER :: RESIDUAL_PARAMETER_SET
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RESIDUAL_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
     CALL ENTERS("EQUATIONS_SET_RESIDUAL_EVALUATE",ERR,ERROR,*999)
@@ -4357,7 +4879,7 @@ CONTAINS
             CALL FLAG_ERROR("Can not evaluate a residual for linear equations.",ERR,ERROR,*999)
           CASE(EQUATIONS_NONLINEAR)
             SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
-            CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC) ! quasistatic handled like static
+            CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC) !Quasistatic handled like static
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                 CALL EQUATIONS_SET_RESIDUAL_EVALUATE_STATIC_FEM(EQUATIONS_SET,ERR,ERROR,*999)
@@ -4377,9 +4899,7 @@ CONTAINS
                   & " is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
-! sebk 19/08/09
-!|
+            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                 CALL EQUATIONS_SET_RESIDUAL_EVALUATE_DYNAMIC_FEM(EQUATIONS_SET,ERR,ERROR,*999)
@@ -4399,12 +4919,6 @@ CONTAINS
                   & " is invalid."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-!|
-! sebk 19/08/09
-            CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(EQUATIONS_TIME_STEPPING)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The equations set time dependence type of "// &
                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
@@ -4417,12 +4931,45 @@ CONTAINS
               & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
+          !Update the residual parameter set if it exists
+          EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+          IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+            NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+            IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+              RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
+              IF(ASSOCIATED(RESIDUAL_VARIABLE)) THEN
+                RESIDUAL_PARAMETER_SET=>RESIDUAL_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_RESIDUAL_SET_TYPE)%PTR
+                IF(ASSOCIATED(RESIDUAL_PARAMETER_SET)) THEN
+                  !Residual parameter set exists
+                  EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                  IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                    NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                    IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+                      !Copy the residual vector to the residuals parameter set.
+                      CALL DISTRIBUTED_VECTOR_COPY(NONLINEAR_MATRICES%RESIDUAL,RESIDUAL_PARAMETER_SET%PARAMETERS,1.0_DP, &
+                        & ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Nonlinear mapping residual variable is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+          ENDIF
         ELSE
           CALL FLAG_ERROR("Equations have not been finished.",ERR,ERROR,*999)
         ENDIF
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-      ENDIF      
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -4432,6 +4979,7 @@ CONTAINS
 999 CALL ERRORS("EQUATIONS_SET_RESIDUAL_EVALUATE",ERR,ERROR)
     CALL EXITS("EQUATIONS_SET_RESIDUAL_EVALUATE")
     RETURN 1
+    
   END SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE
 
   !

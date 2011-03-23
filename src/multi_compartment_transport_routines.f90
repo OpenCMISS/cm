@@ -504,9 +504,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,SOURCE_FIELD
+    TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,SOURCE_FIELD
 !    TYPE(FIELD_TYPE), POINTER :: FIELD !<A pointer to the field
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: ANALYTIC_VARIABLE,FIELD_VARIABLE,GEOMETRIC_VARIABLE,MATERIALS_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -518,11 +518,11 @@ CONTAINS
 !    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
 !    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
 !    REAL(DP), POINTER :: BOUNDARY_VALUES(:)
-    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),GEOMETRIC_PARAMETERS(:),MATERIALS_PARAMETERS(:)
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE
 
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
-    REAL(DP) :: VALUE,X(3),VALUE_SOURCE !<The value to add
+    REAL(DP) :: NORMAL(3),TANGENTS(3,3),VALUE,X(3),VALUE_SOURCE !<The value to add
 !     REAL(DP) :: k_xx, k_yy, k_zz
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,variable_idx,eqnset_idx
     INTEGER(INTG) :: VARIABLE_TYPE !<The field variable type to add \see FIELD_ROUTINES_VariableTypes,FIELD_ROUTINES
@@ -576,6 +576,7 @@ CONTAINS
                         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                           IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
+                            ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
                             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
                               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                             NULLIFY(GEOMETRIC_VARIABLE)
@@ -583,6 +584,22 @@ CONTAINS
                             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
                             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,& 
                               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                             NULLIFY(ANALYTIC_VARIABLE)
+                             NULLIFY(ANALYTIC_PARAMETERS)
+                             IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                               CALL FIELD_VARIABLE_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,ANALYTIC_VARIABLE,ERR,ERROR,*999)
+                               CALL FIELD_PARAMETER_SET_DATA_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                 & ANALYTIC_PARAMETERS,ERR,ERROR,*999)           
+                             ENDIF
+                             NULLIFY(MATERIALS_FIELD)
+                             NULLIFY(MATERIALS_VARIABLE)
+                             NULLIFY(MATERIALS_PARAMETERS)
+                             IF(ASSOCIATED(EQUATIONS_SET%MATERIALS)) THEN
+                               MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                               CALL FIELD_VARIABLE_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,MATERIALS_VARIABLE,ERR,ERROR,*999)
+                               CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                 & MATERIALS_PARAMETERS,ERR,ERROR,*999)           
+                             ENDIF
                              EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)=CURRENT_TIME
 !                              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
                               variable_type=DEPENDENT_FIELD%VARIABLES(2*eqnset_idx-1)%VARIABLE_TYPE
@@ -610,9 +627,10 @@ CONTAINS
                                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                                 & GLOBAL_DERIVATIVE_INDEX
-                                              CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X, & 
-                                                & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX, &
-                                                & ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
+                                              CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, &
+                                                & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
+                                                & GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
+                                                & VALUE,ERR,ERROR,*999)
                                               !Default to version 1 of each node derivative
                                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
                                                 & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
