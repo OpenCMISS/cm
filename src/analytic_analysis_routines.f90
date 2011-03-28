@@ -326,8 +326,8 @@ CONTAINS
                             ENDIF
                           ELSE
                             CALL FLAG_ERROR("Elements domain topology is not associated.",ERR,ERROR,*999)
-                          ENDIF                     
-                       CASE(FIELD_NODE_BASED_INTERPOLATION)
+                          ENDIF
+                        CASE(FIELD_NODE_BASED_INTERPOLATION)
                           NODES_DOMAIN=>DOMAIN_TOPOLOGY%NODES
                           IF(ASSOCIATED(NODES_DOMAIN)) THEN
                             NUMBER=0

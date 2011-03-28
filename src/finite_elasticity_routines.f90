@@ -331,7 +331,7 @@ CONTAINS
                                   DO dim_idx=1,NUMBER_OF_DIMENSIONS
                                     !Default to version 1 of each node derivative
                                     local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                      & NODES(local_node)%DERIVATIVES(1)%VERSIONS(1)
+                                      & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
                                     X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
                                   ENDDO !dim_idx
                                   !Loop over the derivatives
