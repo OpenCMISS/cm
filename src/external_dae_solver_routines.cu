@@ -83,10 +83,13 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				int *err)
 {
 
-	printf("start %f end %f steps %d\n", StartTime, EndTime, (int)((EndTime-StartTime)/InitialStep[0]));
+	FILE* timing_file;
+	timing_file = fopen("performance_data.txt","w");
 
-	solve(StateData, StartTime, EndTime, (int)((EndTime-StartTime)/InitialStep[0]), NumberOfDofs, 1024, 10, 2, NULL);
+	//printf("start %f end %f steps %d\n", StartTime, EndTime, (int)((EndTime-StartTime)/InitialStep[0]));
+	solve(StateData, StartTime, EndTime, 1000, NumberOfDofs, 512, 1, 1, timing_file);
 
+	if (timing_file != NULL ) fclose(timing_file);
 }
 }
 

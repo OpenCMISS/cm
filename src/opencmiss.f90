@@ -2282,10 +2282,15 @@ MODULE OPENCMISS
   !> \brief The analytic function types for a diffusion equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionOneDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_ONE_DIM_1 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionTwoDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionThreeDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1 !<
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceDiffusionThreeDim1 = &
     & EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1 
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceDiffusionOneDim1 = &
+    & EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1 
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionOneDim1 = &
+    & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM !<Prescribed solution, using a source term to correct for error - 2D with 2 compartments
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim = &
@@ -2482,9 +2487,11 @@ MODULE OPENCMISS
     & CMISSEquationsSetLinearElasticityTwoDim2,CMISSEquationsSetLinearElasticityThreeDim1, &
     & CMISSEquationsSetLinearElasticityThreeDim2
 
-  PUBLIC CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetDiffusionThreeDim1,CMISSEquationsSetLinearSourceDiffusionThreeDim1, &
-    & CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim,CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim, &
-    & CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim,CMISSEquationsSetMultiCompDiffusionFourCompThreeDim
+  PUBLIC CMISSEquationsSetDiffusionOneDim1,CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetDiffusionThreeDim1, &
+    & CMISSEquationsSetLinearSourceDiffusionThreeDim1,CMISSEquationsSetQuadraticSourceDiffusionOneDim1, &
+    & CMISSEquationsSetExponentialSourceDiffusionOneDim1,CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim, &
+    & CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim,CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim, &
+    & CMISSEquationsSetMultiCompDiffusionFourCompThreeDim
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 
@@ -2548,6 +2555,24 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSetAnalyticDestroyNumber
     MODULE PROCEDURE CMISSEquationsSetAnalyticDestroyObj
   END INTERFACE !CMISSEquationsSetAnalyticDestroy
+  
+  !>Evaluates the current analytic solution for an equations set.
+  INTERFACE CMISSEquationsSetAnalyticEvaluate
+    MODULE PROCEDURE CMISSEquationsSetAnalyticEvaluateNumber
+    MODULE PROCEDURE CMISSEquationsSetAnalyticEvaluateObj
+  END INTERFACE !CMISSEquationsSetAnalyticEvaluate
+  
+  !>Returns the analytic time for an equations set.
+  INTERFACE CMISSEquationsSetAnalyticTimeGet
+    MODULE PROCEDURE CMISSEquationsSetAnalyticTimeGetNumber
+    MODULE PROCEDURE CMISSEquationsSetAnalyticTimeGetObj
+  END INTERFACE !CMISSEquationsSetAnalyticTimeGet
+  
+  !>Sets/changes the analytic time for an equations set.
+  INTERFACE CMISSEquationsSetAnalyticTimeSet
+    MODULE PROCEDURE CMISSEquationsSetAnalyticTimeSetNumber
+    MODULE PROCEDURE CMISSEquationsSetAnalyticTimeSetObj
+  END INTERFACE !CMISSEquationsSetAnalyticTimeSet
   
   !>Set boundary conditions for an equation set according to the analytic equations.
   INTERFACE CMISSEquationsSetBoundaryConditionsAnalytic
@@ -2720,6 +2745,10 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSetAnalyticCreateFinish,CMISSEquationsSetAnalyticCreateStart
   
   PUBLIC CMISSEquationsSetAnalyticDestroy
+  
+  PUBLIC CMISSEquationsSetAnalyticEvaluate
+  
+  PUBLIC CMISSEquationsSetAnalyticTimeGet,CMISSEquationsSetAnalyticTimeSet
   
   PUBLIC CMISSEquationsSetBoundaryConditionsAnalytic
   
@@ -19797,6 +19826,217 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSEquationsSetAnalyticDestroyObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Evaluates the current analytic solution for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetAnalyticEvaluateNumber(RegionUserNumber,EquationsSetUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to evaluate.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to evaluate.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+     TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSEquationsSetAnalyticEvaluateNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_ANALYTIC_EVALUATE(EQUATIONS_SET,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSEquationsSetAnalyticEvaluateNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetAnalyticEvaluateNumber",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetAnalyticEvaluateNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetAnalyticEvaluateNumber
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Evaluates the current analytic solution for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSetAnalyticEvaluateObj(EquationsSet,Err)
+  
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to evaluate the current analytic solution for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+ 
+    CALL ENTERS("CMISSEquationsSetAnalyticEvaluateObj",Err,ERROR,*999)
+ 
+    CALL EQUATIONS_SET_ANALYTIC_EVALUATE(EquationsSet%EQUATIONS_SET,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSEquationsSetAnalyticEvaluateObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetAnalyticEvaluateObj",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetAnalyticEvaluateObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetAnalyticEvaluateObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the analytic time for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetAnalyticTimeGetNumber(RegionUserNumber,EquationsSetUserNumber,Time,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set get the analytic time for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the analytic time get.
+    REAL(DP), INTENT(OUT) :: Time !<On return, the analytic time for the equations set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSEquationsSetAnalyticTimeGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_ANALYTIC_TIME_GET(EQUATIONS_SET,Time,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSEquationsSetAnalyticTimeGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetAnalyticTimeGetNumber",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetAnalyticTimeGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetAnalyticTimeGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the analytic time for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSetAnalyticTimeGetObj(EquationsSet,Time,Err)
+  
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to get the analytic time for.
+    REAL(DP), INTENT(OUT) :: Time !<On return, the analytic time for the equations set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+ 
+    CALL ENTERS("CMISSEquationsSetAnalyticTimeGetObj",Err,ERROR,*999)
+ 
+    CALL EQUATIONS_SET_ANALYTIC_TIME_GET(EquationsSet%EQUATIONS_SET,Time,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSEquationsSetAnalyticTimeGetObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetAnalyticTimeGetObj",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetAnalyticTimeGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetAnalyticTimeGetObj
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the analytic time for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetAnalyticTimeSetNumber(RegionUserNumber,EquationsSetUserNumber,Time,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set get the analytic time for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the analytic time get.
+    REAL(DP), INTENT(IN) :: Time !<The analytic time to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSEquationsSetAnalyticTimeSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_ANALYTIC_TIME_SET(EQUATIONS_SET,Time,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSEquationsSetAnalyticTimeSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetAnalyticTimeSetNumber",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetAnalyticTimeSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetAnalyticTimeSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Sets/changes the analytic time for an equations set identified by an object.
+  SUBROUTINE CMISSEquationsSetAnalyticTimeSetObj(EquationsSet,Time,Err)
+  
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<The equations set to set the analytic time for.
+    REAL(DP), INTENT(IN) :: Time !<The analytic time to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+ 
+    CALL ENTERS("CMISSEquationsSetAnalyticTimeSetObj",Err,ERROR,*999)
+ 
+    CALL EQUATIONS_SET_ANALYTIC_TIME_SET(EquationsSet%EQUATIONS_SET,Time,Err,ERROR,*999)
+    
+    CALL EXITS("CMISSEquationsSetAnalyticTimeSetObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetAnalyticTimeSetObj",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetAnalyticTimeSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSEquationsSetAnalyticTimeSetObj
 
   !
   !================================================================================================================================

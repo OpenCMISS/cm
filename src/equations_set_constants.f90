@@ -384,9 +384,12 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DiffusionAnalyticFunctionTypes
   !> \brief The analytic function types for a diffusion equation
   !>@{  
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1=1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1=2 !Prescribed solution, single compartment version of multi-comp solutions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_ONE_DIM_1=1
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1=2 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1=3 !Prescribed solution, single compartment version of multi-comp solutions
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1=3
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1=1 !<Solution to a diffusion equation with a quadratic source.
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1=1 !<Solution to a diffusion equation with an exponential source.
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM=4 !<Prescribed solution, using a source term to correct for error - 2D with 2 compartments
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_THREE_DIM=5 !<Prescribed solution, using a source term to correct for error - 3D with 2 compartments
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_DIFFUSION_THREE_COMP_THREE_DIM=6 !<Prescribed solution, using a source term to correct for error - 3D with 3 compartments

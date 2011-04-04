@@ -269,7 +269,6 @@ MODULE PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_QUASISTATIC=2 !<Solver equations are quasistatic \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC=3 !<Solver equations are first order dynamic \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
   INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC=4 !<Solver equations are second order dynamic \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
-  INTEGER(INTG), PARAMETER :: SOLVER_EQUATIONS_TIME_STEPPING=5 !<Solver equations are for time-stepping solvers \see PROBLEM_CONSTANTS_EquationTimeDependenceTypes,PROBLEM_CONSTANTS
   !>@}
 
    

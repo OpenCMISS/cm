@@ -66,6 +66,8 @@ MODULE BIOELECTRIC_ROUTINES
   !Module variables
 
   !Interfaces
+
+  PUBLIC BIOELECTRIC_CONTROL_LOOP_POST_LOOP
   
   PUBLIC BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET,BIOELECTRIC_PROBLEM_CLASS_TYPE_GET
 
@@ -81,9 +83,59 @@ MODULE BIOELECTRIC_ROUTINES
 
   PUBLIC BIOELECTRIC_PROBLEM_SETUP
   
-  PUBLIC BIOELECTRICS_PRE_SOLVE,BIOELECTRICS_POST_SOLVE
+  PUBLIC BIOELECTRIC_PRE_SOLVE,BIOELECTRIC_POST_SOLVE
   
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Executes after each loop of a control loop for bioelectric problems, i.e., after each time step for a time loop
+  SUBROUTINE BIOELECTRIC_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("BIOELECTRIC_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      PROBLEM=>CONTROL_LOOP%PROBLEM
+      IF(ASSOCIATED(PROBLEM)) THEN
+        SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
+        CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
+          SELECT CASE(PROBLEM%TYPE)
+          CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
+            CALL BIODOMAIN_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+          CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+            !do nothing
+          CASE DEFAULT
+            LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+              & " is not valid for a bioelectric problem class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          !do nothing
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("BIOELECTRIC_CONTROL_LOOP_POST_LOOP")
+    RETURN
+999 CALL ERRORS("BIOELECTRIC_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
+    CALL EXITS("BIOELECTRIC_CONTROL_LOOP_POST_LOOP")
+    RETURN 1
+    
+  END SUBROUTINE BIOELECTRIC_CONTROL_LOOP_POST_LOOP
 
   !
   !================================================================================================================================
@@ -287,7 +339,7 @@ CONTAINS
   !
 
   !>Perform pre-solve actions for the bioelectrics problem class.
-  SUBROUTINE BIOELECTRICS_PRE_SOLVE(SOLVER,ERR,ERROR,*)
+  SUBROUTINE BIOELECTRIC_PRE_SOLVE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
@@ -299,7 +351,7 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("BIOELECTRICS_PRE_SOLVE",ERR,ERROR,*999)
+    CALL ENTERS("BIOELECTRIC_PRE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -331,19 +383,19 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("BIOELECTRICS_PRE_SOLVE")
+    CALL EXITS("BIOELECTRIC_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("BIOELECTRICS_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("BIOELECTRICS_PRE_SOLVE")
+999 CALL ERRORS("BIOELECTRIC_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("BIOELECTRIC_PRE_SOLVE")
     RETURN 1
-  END SUBROUTINE BIOELECTRICS_PRE_SOLVE
+  END SUBROUTINE BIOELECTRIC_PRE_SOLVE
 
   !
   !================================================================================================================================
   !
 
   !>Performs post solve actions for a bioelectrics problem class.
-  SUBROUTINE BIOELECTRICS_POST_SOLVE(SOLVER,ERR,ERROR,*)
+  SUBROUTINE BIOELECTRIC_POST_SOLVE(SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
@@ -355,7 +407,7 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("BIOELECTRICS_POST_SOLVE",ERR,ERROR,*999)
+    CALL ENTERS("BIOELECTRIC_POST_SOLVE",ERR,ERROR,*999)
   
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -387,13 +439,13 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("BIOELECTRICS_POST_SOLVE")
+    CALL EXITS("BIOELECTRIC_POST_SOLVE")
     RETURN
-999 CALL ERRORS("BIOELECTRICS_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("BIOELECTRICS_POST_SOLVE")
+999 CALL ERRORS("BIOELECTRIC_POST_SOLVE",ERR,ERROR)
+    CALL EXITS("BIOELECTRIC_POST_SOLVE")
     RETURN 1
     
-  END SUBROUTINE BIOELECTRICS_POST_SOLVE
+  END SUBROUTINE BIOELECTRIC_POST_SOLVE
 
   !
   !================================================================================================================================

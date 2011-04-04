@@ -84,8 +84,8 @@ MODULE CMISS_PETSC_TYPES
   END TYPE PETSC_KSP_TYPE
 
   TYPE PETSC_MAT_TYPE
-    PetscScalar :: MAT_DATA(1)
-    PetscOffset :: MAT_OFFSET
+    !PetscScalar :: MAT_DATA(1)
+    !PetscOffset :: MAT_OFFSET
     Mat :: MAT
   END TYPE PETSC_MAT_TYPE
   

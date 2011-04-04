@@ -51,6 +51,7 @@
 !> The top level OpenCMISS module for C. This module is the buffer module between the OpenCMISS library and user C code.
 MODULE OPENCMISS_C
 
+  USE CMISS_FORTRAN_C
   USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE OPENCMISS
@@ -404,6 +405,12 @@ MODULE OPENCMISS_C
  PUBLIC CMISSEquationsSetAnalyticCreateStartCNum, CMISSEquationsSetAnalyticCreateStartCPtr
 
  PUBLIC CMISSEquationsSetAnalyticDestroyCNum, CMISSEquationsSetAnalyticDestroyCPtr
+
+ PUBLIC CMISSEquationsSetAnalyticEvaluateCNum, CMISSEquationsSetAnalyticEvaluateCPtr
+
+ PUBLIC CMISSEquationsSetAnalyticTimeGetCNum, CMISSEquationsSetAnalyticTimeGetCPtr
+
+ PUBLIC CMISSEquationsSetAnalyticTimeSetCNum, CMISSEquationsSetAnalyticTimeSetCPtr
 
  PUBLIC CMISSEquationsSetBoundaryConditionsAnalyticCNum, CMISSEquationsSetBoundaryConditionsAnalyticCPtr
 
@@ -1005,63 +1012,6 @@ CONTAINS
 
   END FUNCTION CMISSInitialiseCPtr
 
-  !
-  !================================================================================================================================
-  !
-
-  !>Copys/converts a C string (array of characters) to a Fortran String (length of characters)
-  SUBROUTINE CMISSC2FString(Cstring,Fstring)
-    !Argument variables
-    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Cstring(:)
-    CHARACTER(LEN=*), INTENT(OUT) :: Fstring
-    !Local variables
-    INTEGER(C_INT) :: i,LENGTH
-
-    IF(LEN(Fstring)>=SIZE(Cstring,1)-1) THEN
-      LENGTH=SIZE(Cstring,1)-1
-    ELSE
-      LENGTH=LEN(Fstring)
-    ENDIF
-    Fstring=""
-    DO i=1,LENGTH
-      IF(Cstring(i)==C_NULL_CHAR) THEN
-        EXIT
-      ELSE
-        Fstring(i:i)=Cstring(i)
-      ENDIF
-    ENDDO !i
-    
-    RETURN
-    
-  END SUBROUTINE CMISSC2FSTRING
-   
-  !
-  !================================================================================================================================
-  !
-
-  !>Copys/converts a  Fortran String (length of characters) to a C string (array of characters)
-  SUBROUTINE CMISSF2CString(Fstring,Cstring)
-    !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: Fstring
-    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: Cstring(:)
-    !Local variables
-    INTEGER(C_INT) :: i,LENGTH
-
-    IF(SIZE(Cstring,1)>LEN_TRIM(Fstring)) THEN
-      LENGTH=LEN_TRIM(Fstring)
-    ELSE
-      LENGTH=SIZE(Cstring,1)-1
-    ENDIF
-    DO i=1,LENGTH     
-      Cstring(i)=Fstring(i:i)
-    ENDDO !i
-    !Null terminate the string
-    Cstring(LENGTH+1)=C_NULL_CHAR
-    
-    RETURN
-    
-  END SUBROUTINE CMISSF2CSTRING
-   
   !
   !================================================================================================================================
   !
@@ -9589,6 +9539,163 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSEquationsSetAnalyticDestroyCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the current analytic solution for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetAnalyticEvaluateCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
+    & "CMISSEquationsSetAnalyticEvaluateNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for C of the region containing the equations set to evaluate the analytic solution for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number for C of the equations set to evaluate the analytic solution for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticEvaluateCNum !<Error Code.
+    !Local variable
+
+    CALL CMISSEquationsSetAnalyticEvaluate(RegionUserNumber,EquationsSetUserNumber,CMISSEquationsSetAnalyticEvaluateCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticEvaluateCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the current analytic solution for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetAnalyticEvaluateCPtr(EquationsSetPtr) BIND(C, NAME = "CMISSEquationsSetAnalyticEvaluate")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to evaluate the current analytic solution for.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticEvaluateCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetAnalyticEvaluateCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetAnalyticEvaluate(EquationsSet, CMISSEquationsSetAnalyticEvaluateCPtr)
+      ELSE
+        CMISSEquationsSetAnalyticEvaluateCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetAnalyticEvaluateCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticEvaluateCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the analytic time for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetAnalyticTimeGetCNum(RegionUserNumber,EquationsSetUserNumber,Time) BIND(C, NAME = &
+    & "CMISSEquationsSetAnalyticTimeGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for C of the region containing the equations set to get the analytic time for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number for C of the equations set to get the analytic time for.
+    REAL(C_DOUBLE), INTENT(OUT) :: Time !<On return, the analytic time for the equations set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticTimeGetCNum !<Error Code.
+    !Local variable
+
+    CALL CMISSEquationsSetAnalyticTimeGet(RegionUserNumber,EquationsSetUserNumber,Time,CMISSEquationsSetAnalyticTimeGetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticTimeGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the analytic time for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetAnalyticTimeGetCPtr(EquationsSetPtr,Time) BIND(C, NAME = "CMISSEquationsSetAnalyticTimeGet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to get the analytic time for.
+    REAL(C_DOUBLE), INTENT(OUT) :: Time !<On return, the analytic time for the equations set.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticTimeGetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetAnalyticTimeGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetAnalyticTimeGet(EquationsSet, Time, CMISSEquationsSetAnalyticTimeGetCPtr)
+      ELSE
+        CMISSEquationsSetAnalyticTimeGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetAnalyticTimeGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticTimeGetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the analytic time for an equations set identified by a user number for C.
+  FUNCTION CMISSEquationsSetAnalyticTimeSetCNum(RegionUserNumber,EquationsSetUserNumber,Time) BIND(C, NAME = &
+    & "CMISSEquationsSetAnalyticTimeSetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number for C of the region containing the equations set to set the analytic time for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number for C of the equations set to set the analytic time for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: Time !<The analytic time to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticTimeSetCNum !<Error Code.
+    !Local variable
+
+    CALL CMISSEquationsSetAnalyticTimeSet(RegionUserNumber,EquationsSetUserNumber,Time,CMISSEquationsSetAnalyticTimeSetCNum)
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticTimeSetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the analytic time for an equations set identified by an object for C.
+  FUNCTION CMISSEquationsSetAnalyticTimeSetCPtr(EquationsSetPtr,Time) BIND(C, NAME = "CMISSEquationsSetAnalyticTimeSet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to set the analytic time for.
+    REAL(C_DOUBLE), VALUE, INTENT(IN) :: Time !<The analytic time to set.
+    !Function variables
+    INTEGER(C_INT) :: CMISSEquationsSetAnalyticTimeSetCPtr !<Error code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+
+    CMISSEquationsSetAnalyticTimeSetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        CALL CMISSEquationsSetAnalyticTimeSet(EquationsSet, Time, CMISSEquationsSetAnalyticTimeSetCPtr)
+      ELSE
+        CMISSEquationsSetAnalyticTimeSetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetAnalyticTimeSetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSEquationsSetAnalyticTimeSetCPtr
 
   !
   !================================================================================================================================

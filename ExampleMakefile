@@ -892,7 +892,7 @@ $(EXE_DIR) :
 	mkdir -p $@; 
 
 $(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
-	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES) -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -lcudart -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -lcudart -lcutil_x86_64 -lshrutil_x86_64
+	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES) -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -lcudart -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -L/usr/local/cuda/lib64/ -lcudart -lcutil_x86_64 -lshrutil_x86_64
 
 $(OPENCMISS_LIBRARY) :
 	( cd $(GLOBAL_ROOT); $(MAKE) )

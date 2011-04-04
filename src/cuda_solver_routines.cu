@@ -109,9 +109,9 @@ void initProblem(int num_threads, double* STATES) {
 //}
 
 const int DEFAULT_TESTING_TIMESTEPS = 1000;
-const double FLOPSPerTimeStep = 22.0f;
-const int FunctionEvals = 4;
-const char* integratorName = "RK R2";
+const double FLOPSPerTimeStep = 2.0f;
+const int FunctionEvals = 1;
+const char* integratorName = "E R1";
 const int sharedMemoryIntegrator = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -121,43 +121,68 @@ __device__ void integrator(int timeSteps, float stepSize, double* constants, dou
 {
 	int i,j;
 
-	double previousStates[rateStateCount];
-	double kutta[rateStateCount];
-	double offsets[rateStateCount];
-
-	for (j=0; j<rateStateCount; j++) {
-		previousStates[j] = states[j];
-	}
-
+	double rates[rateStateCount];
 
 #pragma unroll 40
 	for (i=1; i<timeSteps+1; i++) {
-		computeRates(i*stepSize, constants, previousStates, algebraic, kutta);
+		computeRates(i*stepSize, constants, states, algebraic, rates);
 
 		for (j=0; j<rateStateCount; j++) {
-			offsets[j] = previousStates[j] + 0.5f*kutta[j]*stepSize; // 3 ops
-			states[j] += (stepSize/6)*(kutta[j]); // 3 ops
-		}
-		computeRates(i*stepSize, constants, offsets, algebraic, kutta);
-
-		for (j=0; j<rateStateCount; j++) {
-			offsets[j] = previousStates[j] + 0.5f*kutta[j]*stepSize; // 3 ops
-			states[j] += (stepSize/6)*(2*kutta[j]); // 4 ops
-		}
-		computeRates(i*stepSize, constants, offsets, algebraic, kutta);
-
-		for (j=0; j<rateStateCount; j++) {
-			offsets[j] = previousStates[j] + kutta[j]*stepSize; // 2 ops
-			states[j] += (stepSize/6)*(2*kutta[j]); // 4 ops
-		}
-		computeRates(i*stepSize, constants, offsets, algebraic, kutta);
-
-		for (j=0; j<rateStateCount; j++) {
-			states[j] += (stepSize/6)*(kutta[j]); // 3 ops
-			previousStates[j] = states[j];
+			states[j] += stepSize*rates[j];
 		}
 	}
 }
+
+//const int DEFAULT_TESTING_TIMESTEPS = 1000;
+//const double FLOPSPerTimeStep = 22.0f;
+//const int FunctionEvals = 4;
+//const char* integratorName = "RK R2";
+//const int sharedMemoryIntegrator = 0;
+//
+//////////////////////////////////////////////////////////////////////////////////
+//// ODE Integrator Device Functions
+//////////////////////////////////////////////////////////////////////////////////
+//__device__ void integrator(int timeSteps, float stepSize, double* constants, double* states, double* algebraic)
+//{
+//	int i,j;
+//
+//	double previousStates[rateStateCount];
+//	double kutta[rateStateCount];
+//	double offsets[rateStateCount];
+//
+//	for (j=0; j<rateStateCount; j++) {
+//		previousStates[j] = states[j];
+//	}
+//
+//
+//#pragma unroll 40
+//	for (i=1; i<timeSteps+1; i++) {
+//		computeRates(i*stepSize, constants, previousStates, algebraic, kutta);
+//
+//		for (j=0; j<rateStateCount; j++) {
+//			offsets[j] = previousStates[j] + 0.5f*kutta[j]*stepSize; // 3 ops
+//			states[j] += (stepSize/6)*(kutta[j]); // 3 ops
+//		}
+//		computeRates(i*stepSize, constants, offsets, algebraic, kutta);
+//
+//		for (j=0; j<rateStateCount; j++) {
+//			offsets[j] = previousStates[j] + 0.5f*kutta[j]*stepSize; // 3 ops
+//			states[j] += (stepSize/6)*(2*kutta[j]); // 4 ops
+//		}
+//		computeRates(i*stepSize, constants, offsets, algebraic, kutta);
+//
+//		for (j=0; j<rateStateCount; j++) {
+//			offsets[j] = previousStates[j] + kutta[j]*stepSize; // 2 ops
+//			states[j] += (stepSize/6)*(2*kutta[j]); // 4 ops
+//		}
+//		computeRates(i*stepSize, constants, offsets, algebraic, kutta);
+//
+//		for (j=0; j<rateStateCount; j++) {
+//			states[j] += (stepSize/6)*(kutta[j]); // 3 ops
+//			previousStates[j] = states[j];
+//		}
+//	}
+//}
 
 const int sharedMemoryDevice = rateStateCount + algebraicCount;
 
