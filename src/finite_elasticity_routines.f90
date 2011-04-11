@@ -4209,32 +4209,30 @@ CONTAINS
                           CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO
-                      WHILE_LOOP=>TIME_LOOP%SUB_LOOPS(1)%PTR
                       CURRENT_LOOP_ITERATION=TIME_LOOP%TIME_LOOP%ITERATION_NUMBER
                       OUTPUT_ITERATION_NUMBER=TIME_LOOP%TIME_LOOP%OUTPUT_NUMBER
 
-                      IF(WHILE_LOOP%WHILE_LOOP%CONTINUE_LOOP) THEN
-                        IF(TIME_LOOP%TIME_LOOP%CURRENT_TIME<=TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
-                          WRITE(OUTPUT_FILE,'("S_TIMESTP_",I4.4)') CURRENT_LOOP_ITERATION
-                          FILE=OUTPUT_FILE
-                          METHOD="FORTRAN"
-                          EXPORT_FIELD=.TRUE.
-                          IF(EXPORT_FIELD) THEN          
-                            IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN   
-                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ...",ERR,ERROR,*999)
-                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
-                              ENDIF
-                              CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
-                                & ERR,ERROR,*999)
-                              IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
-                              ENDIF
-                              CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                      !Write out fields at each timestep
+                      IF(TIME_LOOP%TIME_LOOP%CURRENT_TIME<=TIME_LOOP%TIME_LOOP%STOP_TIME) THEN
+                        WRITE(OUTPUT_FILE,'("S_TIMESTP_",I4.4)') CURRENT_LOOP_ITERATION
+                        FILE=OUTPUT_FILE
+                        METHOD="FORTRAN"
+                        EXPORT_FIELD=.TRUE.
+                        IF(EXPORT_FIELD) THEN
+                          IF(MOD(CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER)==0)  THEN
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity export fields ...",ERR,ERROR,*999)
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
                             ENDIF
-                          ENDIF 
-                        ENDIF !stop_time
-                      ENDIF !continue_loop
+                            CALL FLUID_MECHANICS_IO_WRITE_CMGUI(EQUATIONS_SET%REGION,EQUATIONS_SET%GLOBAL_NUMBER,FILE, &
+                              & ERR,ERROR,*999)
+                            IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity all fields exported ...",ERR,ERROR,*999)
+                            ENDIF
+                            CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,OUTPUT_FILE,ERR,ERROR,*999)
+                          ENDIF
+                        ENDIF
+                      ENDIF !stop_time
 
 !                       !Subiteration intermediate solutions / iterates output:
 !                       IF(CONTROL_LOOP%PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN  !subiteration exists

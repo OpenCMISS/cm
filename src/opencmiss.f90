@@ -5190,6 +5190,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverDAETimeStepSetObj
   END INTERFACE !CMISSSolverDAETimeStepSet
   
+      !>Sets/changes the parameters relating to an external differential-algebraic equation solver.
+  INTERFACE CMISSSolverExternalDAESolverParametersSet
+    MODULE PROCEDURE CMISSSolverExternalDAESolverParametersSetNumber0
+    MODULE PROCEDURE CMISSSolverExternalDAESolverParametersSetNumber1
+    MODULE PROCEDURE CMISSSolverExternalDAESolverParametersSetObj
+  END INTERFACE !CMISSSolverExternalDAESolverParametersSet
+
   !>Returns the degree of the polynomial used to interpolate time for a dynamic solver.
   INTERFACE CMISSSolverDynamicDegreeGet
     MODULE PROCEDURE CMISSSolverDynamicDegreeGetNumber0
@@ -5550,7 +5557,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverDAESolverTypeGet,CMISSSolverDAESolverTypeSet
 
-  PUBLIC CMISSSolverDAETimesSet,CMISSSolverDAETimeStepSet
+  PUBLIC CMISSSolverDAETimesSet,CMISSSolverDAETimeStepSet,CMISSSolverExternalDAESolverParametersSet
 
   PUBLIC CMISSSolverDynamicDegreeGet,CMISSSolverDynamicDegreeSet
 
@@ -40994,6 +41001,122 @@ CONTAINS
   END SUBROUTINE CMISSSolverDAETimeStepSetObj
   
   !  
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the parameters realting to an external differential-algebraic equation solver identified by an user number.
+  SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+        & ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ThreadsPerBlock !<The number of threads per block
+    INTEGER(INTG), INTENT(IN) :: NumberOfPartitons !<The number of partittion \todo elaborate
+    INTEGER(INTG), INTENT(IN) :: NumberOfStreams !<The number of streams
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolverExternalDAESolverParametersSetNumber0",Err,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_EXTERNAL_DAE_PARAMETERS_SET(SOLVER,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverExternalDAESolverParametersSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the parameters realting to an external differential-algebraic equation solver identified by an user number.
+  SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+        & ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ThreadsPerBlock !<The number of threads per block
+    INTEGER(INTG), INTENT(IN) :: NumberOfPartitons !<The number of partittion \todo elaborate
+    INTEGER(INTG), INTENT(IN) :: NumberOfStreams !<The number of streams
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolverExternalDAESolverParametersSetNumber1",Err,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_EXTERNAL_DAE_PARAMETERS_SET(SOLVER,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverExternalDAESolverParametersSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber1
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the parameters realting to an external differential-algebraic equation solver identified by an object.
+  SUBROUTINE CMISSSolverExternalDAESolverParametersSetObj(Solver,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ThreadsPerBlock !<The number of threads per block
+    INTEGER(INTG), INTENT(IN) :: NumberOfPartitons !<The number of partittion \todo elaborate
+    INTEGER(INTG), INTENT(IN) :: NumberOfStreams !<The number of streams
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolverExternalDAESolverParametersSetObj",Err,ERROR,*999)
+
+    CALL SOLVER_EXTERNAL_DAE_PARAMETERS_SET(Solver%SOLVER,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverExternalDAESolverParametersSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverExternalDAESolverParametersSetObj
+
+  !
   !================================================================================================================================
   !
   

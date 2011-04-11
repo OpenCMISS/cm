@@ -248,7 +248,7 @@ void cleanup() { cudaThreadExit(); }
 ////////////////////////////////////////////////////////////////////////////////
 // CPU side solution routine
 ////////////////////////////////////////////////////////////////////////////////
-void solve(double* h_states, float startTime, float endTime, unsigned int timeSteps,
+void solve(double* h_states, double startTime, double endTime, double stepSize,
 		   unsigned int num_threads, unsigned int threads_per_block, unsigned int num_partitions, 
 		   int unsigned num_streams, FILE *timing_file)
 {
@@ -271,13 +271,13 @@ void solve(double* h_states, float startTime, float endTime, unsigned int timeSt
 	size_t pagedMemorySize;
 	size_t sharedMem = 0;
 
-	float stepSize = (float)(endTime - startTime)/timeSteps;
-
 	double *d_states = 0;
 	double *h_paged_states = 0;
 
 	cudaStream_t *streams;
 	int cuda_device = 0;
+
+	unsigned int timeSteps = (endTime-startTime)/stepSize;
 
     // Check for a CUDA compatible device
     int num_devices=0;

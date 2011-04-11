@@ -1,4 +1,3 @@
-!> \file
 !> $Id$
 !> \author Heye Zhang
 !> \brief ThiS module handles parallel Io. Using mpi2 and parall print function,

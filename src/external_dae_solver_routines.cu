@@ -72,6 +72,9 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				const double StartTime,
 				const double EndTime,
 				double *InitialStep,
+				const int ThreadsPerBlock,
+				const int NumberOfPartitions,
+				const int NumberOfStreams,
 				const int OnlyOneModelIndex,
 				int *ModelsData,
 				int NumberOfState,
@@ -84,10 +87,13 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 {
 
 	FILE* timing_file;
+      int timeSteps = 0;
 	timing_file = fopen("performance_data.txt","w");
 
 	//printf("start %f end %f steps %d\n", StartTime, EndTime, (int)((EndTime-StartTime)/InitialStep[0]));
-	solve(StateData, StartTime, EndTime, 1000, NumberOfDofs, 512, 1, 1, timing_file);
+    //  timeSteps = (int)ceil(((EndTime-StartTime)/InitialStep[0]));
+
+	solve(StateData, StartTime, EndTime, InitialStep[0], NumberOfDofs, ThreadsPerBlock, NumberOfPartitions, NumberOfStreams, timing_file);
 
 	if (timing_file != NULL ) fclose(timing_file);
 }

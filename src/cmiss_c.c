@@ -241,7 +241,7 @@ static void CMISSFatalHandler(int sig,
 
   /* siglongjmp(jump_buffer,sig); */
 
-  exit(0);
+  exit(sig);
 }
 
 void CMISSInitFatalHandler(void)
