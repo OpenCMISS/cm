@@ -667,7 +667,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,linear_variable_idx,linear_variable_type,variable_type_idx
+    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,variable_type_idx
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -704,13 +704,13 @@ CONTAINS
                   CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                     LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                     IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                      DO linear_variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-                        linear_variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(linear_variable_idx)
-                        IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(linear_variable_type)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
+                      DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                        VARIABLE_TYPE=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
+                        IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
                           CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,LINEAR_MAPPING% &
-                            & VAR_TO_EQUATIONS_MATRICES_MAPS(linear_variable_type)%VARIABLE,ERR,ERROR,*999)
+                            & VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE,ERR,ERROR,*999)
                         ENDIF
-                      ENDDO !linear_variable_idx
+                      ENDDO !variable_idx
                     ELSE
                       CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -722,8 +722,10 @@ CONTAINS
                   CASE(EQUATIONS_NONLINEAR)
                     NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                     IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                      DO variable_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
                       CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,NONLINEAR_MAPPING% &
-                        & RESIDUAL_VARIABLE,ERR,ERROR,*999)
+                        & RESIDUAL_VARIABLES(variable_idx)%PTR,ERR,ERROR,*999)
+                      ENDDO
                     ELSE
                       CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -819,7 +821,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,linear_variable_idx,variable_type,variable_type_idx
+    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,variable_type_idx
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -860,15 +862,15 @@ CONTAINS
                   CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                     LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                     IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                      DO linear_variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-                        variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(linear_variable_idx)
-                        IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
-                          VARIABLE => LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(variable_type)%VARIABLE !
+                      DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                        VARIABLE_TYPE=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
+                        IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
+                          VARIABLE => LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE !
                           CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,VARIABLE,ERR,ERROR,*999)
-                          CALL FIELD_PARAMETER_SET_CREATE(VARIABLE%FIELD,variable_type, &
+                          CALL FIELD_PARAMETER_SET_CREATE(VARIABLE%FIELD,VARIABLE_TYPE, &
                             & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
                         ENDIF
-                      ENDDO !linear_variable_idx
+                      ENDDO !variable_idx
                     ELSE
                       CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -882,11 +884,16 @@ CONTAINS
                   CASE(EQUATIONS_NONLINEAR)
                     NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                     IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,NONLINEAR_MAPPING% &
-                        & RESIDUAL_VARIABLE,ERR,ERROR,*999)
-                      !Create a field boundary conditions set type
-                      CALL FIELD_PARAMETER_SET_CREATE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%VARIABLE%FIELD, &
-                        & NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) !
+                      DO variable_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+                        VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(variable_idx)%PTR
+                        CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,VARIABLE,ERR,ERROR,*999)
+                        !Create a field boundary conditions set type
+                        !May have been created already by another equations set
+                        IF(.NOT.ASSOCIATED(VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) THEN
+                          CALL FIELD_PARAMETER_SET_CREATE(VARIABLE%FIELD, &
+                            & VARIABLE%VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
                     ELSE
                       CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -923,9 +930,9 @@ CONTAINS
                     IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                       CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,DYNAMIC_MAPPING% &
                         & DYNAMIC_VARIABLE,ERR,ERROR,*999)
-                      variable_type=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                      VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
 !                       CALL FIELD_PARAMETER_SET_CREATE(DYNAMIC_MAPPING%DYNAMIC_VARIABLE%FIELD, &
-!                         & variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) ! not used?
+!                         & VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) ! not used?
                     ELSE
                       CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -943,9 +950,9 @@ CONTAINS
                     IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                       CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS, &
                         & DYNAMIC_MAPPING%DYNAMIC_VARIABLE,ERR,ERROR,*999)
-                      variable_type=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
+                      VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
                       CALL FIELD_PARAMETER_SET_CREATE(DYNAMIC_MAPPING%DYNAMIC_VARIABLE%FIELD, &
-                        & variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) !
+                        & VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) !
                     ELSE
                       CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                     ENDIF

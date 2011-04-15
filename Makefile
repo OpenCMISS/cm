@@ -741,7 +741,7 @@ $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c
 	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.cu
-	( cd $(OBJECT_DIR) ; nvcc -g  -gencode=arch=compute_20,code=\"sm_20,compute_20\" --compile -m64 --compiler-options -fno-strict-aliasing --ptxas-options=-v  -I$(SOURCE_DIR) -I/usr/local/cuda/include -I/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/inc -I/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//inc --use_fast_math -DUNIX -O2 -o $@ -c $< )
+	( cd $(OBJECT_DIR) ; nvcc -gencode=arch=compute_20,code=\"sm_20,compute_20\" --compile -m64 --compiler-options -fno-strict-aliasing --ptxas-options=-v  -I$(SOURCE_DIR) -I/usr/local/cuda/include -I/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/inc -I/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//inc --use_fast_math -DUNIX -O2 -o $@ -c $< )
 #-gencode=arch=compute_10,code=\"sm_10,compute_10\"  -gencode=arch=compute_20,code=\"sm_20,compute_20\" --compile  -m64 --compiler-options -fno-strict-aliasing --ptxas-options=-v  -I$(SOURCE_DIR) -I/usr/local/cuda/include -I/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/inc -I/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//inc --use_fast_math -DUNIX -O2 -o $@ -c $< )
 
 

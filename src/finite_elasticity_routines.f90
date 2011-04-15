@@ -630,67 +630,69 @@ CONTAINS
         EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
         NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
         PARAMETERS=>DEPENDENT_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS  ! vector of dependent variables, basically
-        
-        ! make a temporary copy of the unperturbed residuals
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999) ! can't we reuse old results?
-        ELEMENT_VECTOR1=NONLINEAR_MATRICES%ELEMENT_RESIDUAL
+        IF(NONLINEAR_MATRICES%NUMBER_OF_JACOBIANS==1) THEN
+          ! make a temporary copy of the unperturbed residuals
+          CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999) ! can't we reuse old results?
+          ELEMENT_VECTOR1=NONLINEAR_MATRICES%ELEMENT_RESIDUAL
 
-        ! determine step size
-        !\todo: will this be robust enough? Try a fraction of the smallest (largest?) entry
-!         DELTA=1e-6_DP
-        CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
-        !xnorm=sqrt(sum(DATA**2))/size(DATA)
-        !DELTA=(DELTA+xnorm)*DELTA
-        DELTA=MAX(MAXVAL(ABS(DATA))*1E-6_DP,1E-9)
-        CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
+          ! determine step size
+          !\todo: will this be robust enough? Try a fraction of the smallest (largest?) entry
+  !         DELTA=1e-6_DP
+          CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
+          !xnorm=sqrt(sum(DATA**2))/size(DATA)
+          !DELTA=(DELTA+xnorm)*DELTA
+          DELTA=MAX(MAXVAL(ABS(DATA))*1E-6_DP,1E-9)
+          CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
 
-        ! the actual finite differencing algorithm is about 4 lines but since the parameters are all 
-        ! distributed out, have to use proper field accessing routines.. 
-        ! so let's just loop over component, node/el, derivative
-        column=0  ! element jacobian matrix column number
-        DO component_idx=1,DEPENDENT_NUMBER_OF_COMPONENTS
-          ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-          DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
-          SELECT CASE (DEPENDENT_COMPONENT_INTERPOLATION_TYPE)
-          CASE (FIELD_NODE_BASED_INTERPOLATION)  !node based
-            BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
-            DO node_idx=1,BASIS%NUMBER_OF_NODES
-              node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
-              DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
-                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
-                  & DERIVATIVES(derivative)%VERSIONS(version)
-                ! one-sided finite difference
-                CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-                CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
-                CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-                CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-                column=column+1
-                NONLINEAR_MATRICES%JACOBIAN%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                    & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
-              ENDDO !derivative_idx
-            ENDDO !node_idx
-          CASE (FIELD_ELEMENT_BASED_INTERPOLATION) ! element based
-            local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ELEMENT_NUMBER)
-            ! one-sided finite difference
-            CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-            CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
-            NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
-            CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-            CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-            column=column+1
-            NONLINEAR_MATRICES%JACOBIAN%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
-          CASE DEFAULT
-            CALL FLAG_ERROR("Unsupported type of interpolation.",ERR,ERROR,*999)
-          END SELECT
-        ENDDO
+          ! the actual finite differencing algorithm is about 4 lines but since the parameters are all 
+          ! distributed out, have to use proper field accessing routines.. 
+          ! so let's just loop over component, node/el, derivative
+          column=0  ! element jacobian matrix column number
+          DO component_idx=1,DEPENDENT_NUMBER_OF_COMPONENTS
+            ELEMENTS_TOPOLOGY=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
+            DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
+            SELECT CASE (DEPENDENT_COMPONENT_INTERPOLATION_TYPE)
+            CASE (FIELD_NODE_BASED_INTERPOLATION)  !node based
+              BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
+              DO node_idx=1,BASIS%NUMBER_OF_NODES
+                node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
+                DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
+                  derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
+                  version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
+                  local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
+                    & DERIVATIVES(derivative)%VERSIONS(version)
+                  ! one-sided finite difference
+                  CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
+                  CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
+                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
+                  CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+                  CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
+                  column=column+1
+                  NONLINEAR_MATRICES%JACOBIANS(1)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
+                      & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
+                ENDDO !derivative_idx
+              ENDDO !node_idx
+            CASE (FIELD_ELEMENT_BASED_INTERPOLATION) ! element based
+              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ELEMENT_NUMBER)
+              ! one-sided finite difference
+              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
+              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
+              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
+              CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
+              column=column+1
+              NONLINEAR_MATRICES%JACOBIANS(1)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
+                  & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
+            CASE DEFAULT
+              CALL FLAG_ERROR("Unsupported type of interpolation.",ERR,ERROR,*999)
+            END SELECT
+          ENDDO
 
-        ! put the original residual back in
-        NONLINEAR_MATRICES%ELEMENT_RESIDUAL=ELEMENT_VECTOR1
-
+          ! put the original residual back in
+          NONLINEAR_MATRICES%ELEMENT_RESIDUAL=ELEMENT_VECTOR1
+        ELSE
+          CALL FLAG_ERROR("Jacobian evaluation is not implemented for multiple Jacobians.",ERR,ERROR,*999)
+        ENDIF
       ELSE
         CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
@@ -785,7 +787,7 @@ CONTAINS
       IF(ASSOCIATED(EQUATIONS)) THEN 
         !Which variables are we working with - find the variable pair used for this equations set
         !\todo: put in checks for all the objects/mappings below (do we want to do this for every element?)
-        var1=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%VARIABLE%VARIABLE_NUMBER ! number for 'U'
+        var1=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_NUMBER ! number for 'U'
         var2=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE%VARIABLE_NUMBER ! number for 'DELUDELN'
 
         !Grab pointers: matrices, fields, decomposition, basis
@@ -833,7 +835,7 @@ CONTAINS
         DFDZ=0.0_DP ! (parameter_idx,component_idx)
 
         !Grab interpolation parameters
-        FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%VARIABLE%VARIABLE_TYPE
+        FIELD_VAR_TYPE=EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_TYPE
         DEPENDENT_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR
         GEOMETRIC_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
         FIBRE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR
@@ -1360,7 +1362,7 @@ CONTAINS
     DOMAIN_ELEMENT=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)
 
     !Interpolation parameter for metric tensor
-    FIELD_VAR_U_TYPE=EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%VARIABLE%VARIABLE_TYPE
+    FIELD_VAR_U_TYPE=EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR%VARIABLE_TYPE
     FIELD_VAR_DUDN_TYPE=EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE
     DEPENDENT_BASIS=>DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
 
@@ -3684,7 +3686,16 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
+              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_SUBTYPE)
+                !Residual vector also depends on the fluid pressure variable
+                CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET(EQUATIONS_MAPPING,2,ERR,ERROR,*999)
+                CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET(EQUATIONS_MAPPING, &
+                    & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
+              CASE DEFAULT
+                !Single residual variable
+                CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+              END SELECT
               CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)

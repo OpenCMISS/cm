@@ -347,7 +347,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of dofs in the mesh.
   END TYPE MESH_DOFS_TYPE
 
-  !Contains information on the mesh adjacent elements for a xi coordinate
+  !>Contains information on the mesh adjacent elements for a xi coordinate
   TYPE MESH_ADJACENT_ELEMENT_TYPE
     INTEGER(INTG) :: NUMBER_OF_ADJACENT_ELEMENTS !<The number of adjacent elements for the xi coordinate
     INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<The global element numbers of the elements adjacent to this element for the xi coordinate
@@ -935,7 +935,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DECOMPOSITION_FACE_TYPE), ALLOCATABLE :: FACES(:) !<FACES(nl). The pointer to the array of topology information for the faces of this decomposition. FACES(nl) contains the topological information for the nl'th local face of the decomposition.
   END TYPE DECOMPOSITION_FACES_TYPE
 
-  !Contains information on the decomposition adjacent elements for a xi coordinate
+  !>Contains information on the decomposition adjacent elements for a xi coordinate
   TYPE DECOMPOSITION_ADJACENT_ELEMENT_TYPE
     INTEGER(INTG) :: NUMBER_OF_ADJACENT_ELEMENTS !<The number of adjacent elements for the xi coordinate
     INTEGER(INTG), ALLOCATABLE :: ADJACENT_ELEMENTS(:) !<The local element numbers of the elements adjacent to this element for the xi coordinate
@@ -1057,7 +1057,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_XI !<The number of xi directions for the interpolation parameters.
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASES(:) !<BASES(component_idx). An array to hold a pointer to the basis (if any) used for interpolating the component_idx'th component of the field variable.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_PARAMETERS(:) !<NUMBER_OF_PARAMETERS(component_idx). The number of interpolation parameters used for interpolating the component_idx'th component of the field variable.
-    REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The interpolation parameters used for interpolating the component_idx'th component of the field variable.
+    REAL(DP), ALLOCATABLE :: PARAMETERS(:,:) !<PARAMETERS(ns,component_idx). The ns'th interpolation parameter used for interpolating the component_idx'th component of the field variable.
     REAL(DP), ALLOCATABLE :: SCALE_FACTORS(:,:) !<SCALE_FACTORS(ns,component_idx). The scale factors used for scaling then component_idx'th component of the field variable. 
   END TYPE FIELD_INTERPOLATION_PARAMETERS_TYPE
 
@@ -1327,7 +1327,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
  
   !>Contains information on the Jacobian matrix for nonlinear problems
   TYPE EQUATIONS_JACOBIAN_TYPE
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    INTEGER(INTG) :: JACOBIAN_NUMBER !<The equations Jacobian matrix number
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES !<A pointer back to the nonlinear matrices for this Jacobian
     INTEGER(INTG) :: STORAGE_TYPE !<The storage (sparsity) type for this matrix
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure (sparsity) type for this matrix
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this global matrix
@@ -1335,8 +1336,12 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN !<A pointer to the distributed jacobian matrix data
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this Jacobian matrix has not been assembled
     TYPE(ELEMENT_MATRIX_TYPE) :: ELEMENT_JACOBIAN !<The element matrix for this Jacobian matrix. This is not used if the Jacobian is not supplied.
-    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<An element residual vector for nonlinear problems when Jacobians are calculated. This is not used if the Jacobian is not supplied. Old CMISS name RE2.
   END TYPE EQUATIONS_JACOBIAN_TYPE
+
+  !>A buffer type to allow for an array of pointers to a EQUATIONS_JACOBIAN_TYPE \see TYPES::EQUATIONS_JACOBIAN_TYPE.
+  TYPE EQUATIONS_JACOBIAN_PTR_TYPE
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: PTR
+  END TYPE EQUATIONS_JACOBIAN_PTR_TYPE
 
   !>Contains information of the dynamic matrices for equations matrices
   TYPE EQUATIONS_MATRICES_DYNAMIC_TYPE
@@ -1356,7 +1361,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information of the nolinear matrices and vectors for equations matrices
   TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer back to the equations matrices.
-    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the Jacobian matrix for nonlinear equations
+    INTEGER(INTG) :: NUMBER_OF_JACOBIANS !<The number of Jacobian matrices for the equations set.
+    TYPE(EQUATIONS_JACOBIAN_PTR_TYPE), ALLOCATABLE :: JACOBIANS(:) !<JACOBIANS(matrix_idx)%PTR is a pointer to the matrix_idx'th Jacobian matrix for nonlinear equations
     LOGICAL :: UPDATE_RESIDUAL !<Is .TRUE. if the equtions residual vector is to be updated
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this residual vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear equations
@@ -1460,42 +1466,43 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS(:,:) !<EQUATIONS_ROW_TO_VARIABLE_DOFS_MAPS(row_idx,variable_type_idx). The row mappings for the row_idx'th row of the equations matrices to the variable_type_idx'th variable.
   END TYPE EQUATIONS_MAPPING_LINEAR_TYPE
 
-  !>Contains the mapping from the Jacobian back to the nonlinear residual variable.
+  !>Contains the mapping from the Jacobian back to the nonlinear residual variables.
   TYPE EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE
+    INTEGER(INTG) :: JACOBIAN_NUMBER !<The equations Jacobian matrix number
     INTEGER(INTG) :: VARIABLE_TYPE !<The dependent variable type mapped to this equations matrix
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable that is mapped to this equations matrix
-    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the equations matrix
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN !<A pointer to the equations matrix for this variable
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The number of columns in this equations matrix.
     REAL(DP) :: JACOBIAN_COEFFICIENT !<The multiplicative coefficent for the matrix in the equation set
     INTEGER(INTG), ALLOCATABLE :: EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP(:) !<COLUMN_TO_DOF_MAP(column_idx). The variable DOF that the column_idx'th column of this equations matrix is mapped to.
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOFS_MAPPING !<A pointer to the column dofs domain mapping for the matrix variable
   END TYPE EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE
-  
+
   !>Contains the mapping for a dependent variable type to the nonlinear Jacobian matrix
   TYPE VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE
+    INTEGER(INTG) :: JACOBIAN_NUMBER !<The equations Jacobian matrix number
     INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this variable to equations matrices map
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this variable to equations matrices map
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_COLUMNS_MAP(:) !<DOF_TO_COLUMNS_MAP(dof_idx). The Jacobian column number for dof_idx'th variable dof
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
   END TYPE VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE
 
-  !>Contains information on the equations mapping for nonlinear matrices i.e., how a field variable is mapped to the residual
-  !vector, and how that field variable is mapped to the rows and columns of the associated Jacobian matrix of the equations set
-  !of this equations mapping.
+  !>Contains information on the equations mapping for nonlinear matrices i.e., how a field variable is mapped to residual
+  !>vectors, and how the field variables are mapped to the rows and columns of the associated Jacobian matrices of the equations set
+  !>of this equations mapping.
+  !>There may be multiple residual variables with a Jacobian matrix for each variable
   TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
-    TYPE(VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE) :: VAR_TO_JACOBIAN_MAP !<The mapping of the residual variable to the Jacobain matrix
-    TYPE(EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE) :: JACOBIAN_TO_VAR_MAP !<The mapping from the Jacobian matrix back to the residual variable.
-    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE !<The field variable type of the residual field variable.
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RESIDUAL_VARIABLE !<A pointer to the variable that is mapped to the residual vector for nonlinear problems.
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RESIDUAL_VARIABLE_MAPPING !<A pointer to the residual variable domain mapping
+    INTEGER(INTG) :: NUMBER_OF_RESIDUAL_VARIABLES !<The number of residual variables in this mapping
+    TYPE(FIELD_VARIABLE_PTR_TYPE), ALLOCATABLE :: RESIDUAL_VARIABLES(:) !<RESIDUAL_VARIABLES(variable_idx). The variable_idx'th residual variable.
+    TYPE(VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE), ALLOCATABLE :: VAR_TO_JACOBIAN_MAP(:) !<VAR_TO_JACOBIAN_MAP(variable_idx). The mapping from the residual variable to the Jacobain matrix for the variable_idx'th residual variable.
+    TYPE(EQUATIONS_JACOBIAN_TO_VAR_MAP_TYPE), ALLOCATABLE :: JACOBIAN_TO_VAR_MAP(:) !<JACOBIAN_TO_VAR_MAP(jacobian_idx). The mapping from the Jacobian matrix to the residual variables for the jacobian_idx'th Jacobian.
     REAL(DP) :: RESIDUAL_COEFFICIENT !<The multiplicative coefficient applied to the residual vector
-    INTEGER(INTG), ALLOCATABLE :: RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(:) !<RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(residual_dof_idx). The mapping from the residual_dof_idx'th residual dof in the residual variable to the equations row.   
-    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.   
+    INTEGER(INTG), ALLOCATABLE :: EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(:) !<EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(row_idx). The mapping from the row_idx'th row of the equations to the source dof.
   END TYPE EQUATIONS_MAPPING_NONLINEAR_TYPE
 
   !>Contains information on the equations mapping for a RHS i.e., how a field variable is mapped to the RHS vector for
-  !the equations set of this equations mapping.
+  !>the equations set of this equations mapping.
   TYPE EQUATIONS_MAPPING_RHS_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The variable type number mapped to the RHS vector
@@ -1507,7 +1514,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   END TYPE EQUATIONS_MAPPING_RHS_TYPE
 
   !>Contains information on the equations mapping for a source i.e., how a field variable is mapped to the source vector for
-  !the equations set of this equations mapping.
+  !>the equations set of this equations mapping.
   TYPE EQUATIONS_MAPPING_SOURCE_TYPE
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG) :: SOURCE_VARIABLE_TYPE !<The variable type number mapped from the source vector
@@ -1519,8 +1526,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   END TYPE EQUATIONS_MAPPING_SOURCE_TYPE
 
   !>Contains information on the create values cache for the equations mapping. Because we do not want to allocate and deallocate
-  !large data structures as the equations mapping options are changed between create start and create finish we cache the
-  !important information and the allocate and process the data structures at create finish.
+  !>large data structures as the equations mapping options are changed between create start and create finish we cache the
+  !>important information and the allocate and process the data structures at create finish.
   TYPE EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE
     INTEGER(INTG) :: NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES !<The number of dynamic matrices in the equations mapping
     INTEGER(INTG) :: DYNAMIC_STIFFNESS_MATRIX_NUMBER !<The dynamic matrix number corresponding to the dynamic stiffness matrix
@@ -1531,16 +1538,17 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear matrices in the equations mapping
     INTEGER(INTG), ALLOCATABLE :: LINEAR_MATRIX_VARIABLE_TYPES(:) !<LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx). The dependent variable type mapped to the matrix_idx'th linear equations matrix.
     REAL(DP), ALLOCATABLE :: LINEAR_MATRIX_COEFFICIENTS(:) !<LINEAR_MATRIX_COEFFICIENTS(matrix_idx). The coefficient of the matrix_idx'th linear matrix in the equations set.
-    INTEGER(INTG) :: RESIDUAL_VARIABLE_TYPE !<The dependent variable type mapped to the residual vector
+    INTEGER(INTG) :: NUMBER_OF_RESIDUAL_VARIABLES !<The number of residual variables for the nonlinear equations.
+    INTEGER(INTG), ALLOCATABLE :: RESIDUAL_VARIABLE_TYPES(:) !<RESIDUAL_VARIABLE_TYPES(jacobian_idx). The type of the jacobian_idx'th Jacobian.
     REAL(DP) :: RESIDUAL_COEFFICIENT !<The coefficient multiplying the residual vector.
-    INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The dependent variable type mapped to the rhs vector
+    INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The dependent variable type mapped to the rhs vector.
     REAL(DP) :: RHS_COEFFICIENT !<The coefficient multiplying the RHS vector.
     INTEGER(INTG) :: SOURCE_VARIABLE_TYPE !<The source variable type mapped to the source vector
     REAL(DP) :: SOURCE_COEFFICIENT !<The coefficient multiplying the source vector.
   END TYPE EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE
 
   !>Contains information on the equations mapping i.e., how field variable DOFS are mapped to the rows and columns of a number
-  !of equations matrices.
+  !>of equations matrices.
   TYPE EQUATIONS_MAPPING_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations for this equations mapping
     LOGICAL :: EQUATIONS_MAPPING_FINISHED !<Is .TRUE. if the equations mapping has finished being created, .FALSE. if not.
@@ -2558,13 +2566,17 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: SOLVER_COLS(:) !<SOLVER_COLS(i). The solver column number for the i'th solver column that this column is mapped to
     REAL(DP), ALLOCATABLE :: COUPLING_COEFFICIENTS(:) !<COUPLING_COEFFICIENTS(i). The coupling coefficients for the i'th solver column that this column is mapped to.
   END TYPE JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE
-  
-  TYPE JACOBIAN_TO_SOLVER_MAP_TYPE    
+
+  TYPE JACOBIAN_TO_SOLVER_MAP_TYPE
     INTEGER(INTG) :: SOLVER_MATRIX_NUMBER !<The solver matrix number being mapped.
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX !<A pointer to the Jacobian matrix being mapped.
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX !<A pointer to the solver matrix being mapped.
     TYPE(JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE), ALLOCATABLE :: JACOBIAN_COL_TO_SOLVER_COLS_MAP(:) !<JACOBIAN_COL_TO_SOLVER_COL_MAP(column_idx). The mapping from the column_idx'th column of the Jacobian matrix to the solver matrix columns.
   END TYPE JACOBIAN_TO_SOLVER_MAP_TYPE
+
+  TYPE JACOBIAN_TO_SOLVER_MAP_PTR_TYPE
+    TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: PTR !<A pointer to the Jacobian to solver map
+  END TYPE JACOBIAN_TO_SOLVER_MAP_PTR_TYPE
 
   !>Contains information on the mappings between field variable dofs inequations and the solver matrix columns (solver dofs) \todo rename solver col to be solver dof here???
   TYPE VARIABLE_TO_SOLVER_COL_MAP_TYPE
@@ -2591,7 +2603,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The maps from the equations_idx'th linear equations matrix to solver matrix
     INTEGER(INTG) :: NUMBER_OF_LINEAR_EQUATIONS_MATRICES !<The number of linear equations matrices mapped to this solver matrix
     TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The maps from the equations_idx'th linear equations matrix to solver matrix
-    TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MATRIX_MAP !<The map from the Jacobian matrix to the solver matrix
+    INTEGER(INTG) :: NUMBER_OF_EQUATIONS_JACOBIANS !<The number of nonlinear equations Jacobian matrices mapped to this solver matrix
+    TYPE(JACOBIAN_TO_SOLVER_MAP_PTR_TYPE), ALLOCATABLE :: JACOBIAN_TO_SOLVER_MATRIX_MAPS(:) !<JACOBIAN_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx). The map from the equations_matrix_idx'th Jacobian matrix to the solver matrix
   END TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE
 
   !>Contains information on the equations to solver matrix mappings when indexing by equations matrix number
@@ -2601,10 +2614,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_TO_SOLVER_MAPS_PTR_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS(solver_matrix_idx). The maps from the equation matrix to the solver_matrix_idx'th solver matrix
   END TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM_TYPE
 
-  TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM_TYPE
-    TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MATRIX_MAP
-  END TYPE EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM_TYPE
-  
   !>Contains information on the mapping from the equations rows in an equations set to the solver rows 
   TYPE EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_TYPE
     INTEGER(INTG) :: NUMBER_OF_SOLVER_ROWS !<The number of solver rows this equations row is mapped to
@@ -2621,7 +2630,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE(interface_condition_idx). Information on the interface_condition_idx'th interface condition affecting this equations set
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx). The mappings from the equations matrices in this equation set to the solver_matrix_idx'th solver_matrix
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx). The mappings from the equation_matrix_idx'th equations matrix in this equation set to the solver_matrices.
-    TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM !<The mappings from the Jacobian matrix in this equation set to the solver_matrices.
+    TYPE(JACOBIAN_TO_SOLVER_MAP_PTR_TYPE), ALLOCATABLE :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM(:) !<EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM(jacobian_idx). The mappings from the jacobian_idx'th Jacobian matrix in this equation set to the solver_matrices.
     TYPE(EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_TYPE), ALLOCATABLE :: EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(:) !<EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_idx). The mappings from the equations_row_idx'th equations row to the solver matrices rows.
   END TYPE EQUATIONS_SET_TO_SOLVER_MAP_TYPE
 
@@ -2764,7 +2773,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(LIST_PTR_TYPE), POINTER :: EQUATIONS_VARIABLE_LIST(:) !<EQUATIONS_VARIABLES_LIST(solver_matrix_idx). The list of equations set variables in the solver mapping.
     INTEGER, ALLOCATABLE :: DYNAMIC_VARIABLE_TYPE(:) !<DYNAMIC_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the dynamic matrices for the equations_set_idx'th equations set.
     INTEGER(INTG), ALLOCATABLE :: MATRIX_VARIABLE_TYPES(:,:,:) !<MATRIX_VARIABLE_TYPES(0:..,equations_set_idx,matrix_idx). The list of matrix variable types in the equations_set_idx'th equations set for the matrix_idx'th solver matrix. MATRIX_VARIABLE_TYPES(0,equations_set_idx,matrix_idx) is the number of variable types in the equations_set_idx'th equations set mapped to the matrix_idx'th solver matrix and MATRIX_VARIABLE_TYPES(1..,equations_set_idx,matrix_idx) is the list of the variable types in the equations set.
-    INTEGER(INTG), ALLOCATABLE :: RESIDUAL_VARIABLE_TYPE(:) !<RESIDUAL_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution residual for the equations_set_idx'th equations set.
+    INTEGER(INTG), ALLOCATABLE :: RESIDUAL_VARIABLE_TYPES(:,:) !<RESIDUAL_VARIABLE_TYPES(0:..,equations_set_idx). The list of residual variable types in the equations_set_idx'th equations set. RESIDUAL_VARIABLE_TYPES(0,equations_set_idx) is the number of variable types in the equations_set_idx'th equations set and RESIDUAL_VARIABLE_TYPES(1..,equations_set_idx) is the list of the variable types in the equations set.
     INTEGER(INTG), ALLOCATABLE :: RHS_VARIABLE_TYPE(:) !<RHS_VARIABLE_TYPE(equations_set_idx). The variable type that is mapped to the solution RHS for the equations_set_idx'th equations set
     INTEGER, ALLOCATABLE :: SOURCE_VARIABLE_TYPE(:) !<SOURCE_VARIABLE_TYPE(equations_set_idx). The source variable type that is mapped to the RHS for the equations_set_idx'th equations set.
     TYPE(LIST_PTR_TYPE), POINTER :: INTERFACE_VARIABLE_LIST(:) !<INTERFACE_VARIABLES_LIST(solver_matrix_idx). The list of interface condition variables in the solver mapping for the solver_matrix idx'th solver matrix.
@@ -2794,7 +2803,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_ROWS !<The number of global rows in the solver matrices
     INTEGER(INTG) :: NUMBER_OF_EQUATIONS_SETS !<The number of equations sets in the solution mapping.
     TYPE(EQUATIONS_SET_PTR_TYPE), ALLOCATABLE :: EQUATIONS_SETS(:) !<The list of equations sets that are in this solution mapping
-    TYPE(EQUATIONS_SET_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: EQUATIONS_SET_TO_SOLVER_MAP(:) !<EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx). The mapping from the equations_set_idx'the equations set to the solver matrices.
+    TYPE(EQUATIONS_SET_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: EQUATIONS_SET_TO_SOLVER_MAP(:) !<EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx). The mapping from the equations_set_idx'th equations set to the solver matrices.
     INTEGER(INTG) :: NUMBER_OF_INTERFACE_CONDITIONS !<The number of interface conditions in the solution mapping.
     TYPE(INTERFACE_CONDITION_PTR_TYPE), ALLOCATABLE :: INTERFACE_CONDITIONS(:) !<The list of interface conditions that are in this
     TYPE(INTERFACE_CONDITION_TO_SOLVER_MAP_TYPE), ALLOCATABLE :: INTERFACE_CONDITION_TO_SOLVER_MAP(:) !<INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx). The mapping from the interface_condition_idx'th interface condition to the solver matrices.
