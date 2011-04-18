@@ -423,9 +423,8 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
     dim3  grid(blocksPerDomain, 1, 1);
     dim3  threads(threads_per_block, 1, 1);
 
-
     //#ifdef DEBUG
-    if (timing_file) {
+
     	printf("> Device name : %s\n", deviceProp.name );
 		printf("> CUDA Capable SM %d.%d hardware with %d multi-processors\n",
 			deviceProp.major, deviceProp.minor, deviceProp.multiProcessorCount);
@@ -436,6 +435,7 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
     	printf("grid.x %d threads.x %d sharedMem %d\n", grid.x, threads.x, sharedMem);
     	printf("Spills %d %d %d\n", spill[0], spill[1], spill[2]);
 
+        if (timing_file) {
 		// Setup and start global timer
 		timer = 0;
 		cutCreateTimer(&timer);
@@ -476,11 +476,11 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 			if (timing_file==NULL || !(i==0 && j==0) || (domainIndex+1)*grid.x<=num_blocks) {
 				local_offset = j * rateStateCount * grid.x * threads.x ;
 				if (i == num_partitions - 1 && j == spill[0] && (spill[1]!=0 || spill[2]!=0)) {
-					//printf("last async in %d, size %d\n", domainIndex, lastStreamMemorySize);
+					printf("last async in %d, size %d\n", domainIndex, lastStreamMemorySize);
 					cutilSafeCall( cudaMemcpyAsync(d_states + local_offset, h_paged_states + local_offset,
 							lastStreamMemorySize, cudaMemcpyHostToDevice, streams[j]) );
 				} else {
-					//printf("normal async in %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
+					printf("normal async in %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
 					cutilSafeCall( cudaMemcpyAsync(d_states + local_offset, h_paged_states + local_offset,
 							pagedMemorySize/num_streams, cudaMemcpyHostToDevice, streams[j]) );
 				}
@@ -509,11 +509,11 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 			if (timing_file==NULL || !(i==0 && j==0) || (domainIndex+1)*grid.x<=num_blocks) {
 				local_offset = j * rateStateCount * grid.x * threads.x ;
 				if (i == num_partitions - 1 && j == spill[0] && (spill[1]!=0 || spill[2]!=0) ) {
-					//printf("last async out %d, size %d\n", domainIndex, lastStreamMemorySize);
+					printf("last async out %d, size %d\n", domainIndex, lastStreamMemorySize);
 					cutilSafeCall( cudaMemcpyAsync(h_paged_states + local_offset, d_states + local_offset,
 						lastStreamMemorySize, cudaMemcpyDeviceToHost, streams[j]) );
 				} else {
-					//printf("normal async out %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
+					printf("normal async out %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
 					cutilSafeCall( cudaMemcpyAsync(h_paged_states + local_offset, d_states + local_offset,
 						pagedMemorySize/num_streams, cudaMemcpyDeviceToHost, streams[j]) );
 				}
@@ -530,23 +530,23 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 				global_offset = i * num_streams * grid.x * threads.x;
 				
 				if (i == num_partitions - 1 && j == spill[0] && (spill[1]!=0 || spill[2]!=0)) {
-					//printf("last memcpy out %d\n", domainIndex);
+					printf("last memcpy out %d\n", domainIndex);
 					memcpy(h_states + rateStateCount * global_offset + local_offset, h_paged_states + local_offset,
 							lastStreamMemorySize);
 				} else {
-					//printf("normal memcpy out %d\n", domainIndex);
+					printf("normal memcpy out %d\n", domainIndex);
 					memcpy(h_states + rateStateCount * global_offset + local_offset, h_paged_states + local_offset,
 						pagedMemorySize/num_streams);
 				}
 
 				global_offset = (i + 1) * num_streams * grid.x * threads.x;
 				if (i == num_partitions - 2 && j == spill[0] && (spill[1]!=0 || spill[2]!=0)) {
-					//printf("last memcpy in %d\n", domainIndex);
+					printf("last memcpy in %d\n", domainIndex);
 					lastStreamMemorySize = sizeof(double)*rateStateCount*(spill[1]*threads_per_block+spill[2]);
 					memcpy(h_paged_states + local_offset, h_states + rateStateCount * global_offset + local_offset,
 							lastStreamMemorySize);
 				} else if (i < num_partitions - 2 || j < spill[0] || (i == num_partitions - 2 && j == spill[0])) {
-					//printf("normal memcpy in %d\n", domainIndex);
+					printf("normal memcpy in %d\n", domainIndex);
 					memcpy(h_paged_states + local_offset, h_states + rateStateCount * global_offset + local_offset,
 						pagedMemorySize/num_streams);
 				}

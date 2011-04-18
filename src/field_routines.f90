@@ -20463,6 +20463,14 @@ CONTAINS
                               !Only checks if version number is greater than zero
                               IF(DERIVATIVE_NUMBER>0.AND.DERIVATIVE_NUMBER<=DOMAIN_NODES%NODES(DOMAIN_LOCAL_NODE_NUMBER)% &
                                 NUMBER_OF_DERIVATIVES.AND.VERSION_NUMBER>0) THEN
+                                WRITE (*,*) SIZE(FIELD_VARIABLE%COMPONENTS, 1)
+                                WRITE (*,*) SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES, 1)
+                                WRITE (*,*) SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES, 1)
+                                WRITE (*,*) SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
+                                  & VERSIONS, 1)
                                 dof_idx=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                                   & NODE_PARAM2DOF_MAP%NODES(DOMAIN_LOCAL_NODE_NUMBER)%DERIVATIVES(DERIVATIVE_NUMBER)% &
                                   & VERSIONS(VERSION_NUMBER)
