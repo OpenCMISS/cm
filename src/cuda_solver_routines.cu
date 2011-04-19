@@ -275,7 +275,7 @@ void domainDecomposition(unsigned int* threads_per_domain, unsigned int* spill, 
 	}
 	(*num_blocks)=num_threads/(*threads_per_block);
 	spill[2]=num_threads % (*threads_per_block);
-	if (spill[2] !=0) (*num_blocks)++; // Round up calculation
+	//if (spill[2] !=0) (*num_blocks)++; // Round up calculation
 
 	(*blocksPerDomain) = (*num_blocks)/(num_streams*(*num_partitions));
 	if ((*blocksPerDomain) == 0) {
@@ -291,8 +291,13 @@ void domainDecomposition(unsigned int* threads_per_domain, unsigned int* spill, 
 	} else if (remainingBlocks > num_streams*(*blocksPerDomain)) {
 		numberRemainingDomains = ceil((float)remainingBlocks/(*blocksPerDomain));
 		(*num_partitions) += ceil((float)numberRemainingDomains/num_streams);
-		remainingBlocks = ((spill[2]!=0) ? (*num_blocks)-1 : (*num_blocks))%(num_streams*((*num_partitions)-1));
 	}
+
+	if ((*num_blocks)/(num_streams*(*num_partitions))==0) {
+		(*num_partitions)--;
+	}
+
+	remainingBlocks = (*num_blocks)%(*num_partitions);
 
 	// Adjust number of partitions so that data fits in GPU memory
 	count = 0;
@@ -307,8 +312,8 @@ void domainDecomposition(unsigned int* threads_per_domain, unsigned int* spill, 
 			} else if (remainingBlocks > num_streams*(*blocksPerDomain)) {
 				numberRemainingDomains = ceil((float)remainingBlocks/(*blocksPerDomain));
 				(*num_partitions) += ceil((float)numberRemainingDomains/num_streams);
-				remainingBlocks = ((spill[2]!=0) ? (*num_blocks)-1 : (*num_blocks))%(num_streams*((*num_partitions)-1));
 			}
+			remainingBlocks = (*num_blocks)%(*num_partitions);
 		} else {
 			fprintf(stderr, "Cannot fit variables in GPU device memory\nReduce threads per block and try again");
 			exit(EXIT_FAILURE);
@@ -326,7 +331,6 @@ void domainDecomposition(unsigned int* threads_per_domain, unsigned int* spill, 
 	(*threads_per_domain) = (*threads_per_block)*(*blocksPerDomain);
 	spill[0] = remainingBlocks/(*blocksPerDomain);
 	spill[1] = remainingBlocks%(*blocksPerDomain);
-
 
 //	if (renainingBlocks != 0) {
 //		blocksLastStream =
@@ -375,6 +379,7 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 	unsigned int kernel_timer = 0;
 	unsigned int domainIndex = 0;
 	unsigned int blocksPerDomain = 0;
+	unsigned int lastFullDomain = 0;
 	unsigned int threads_per_domain = 0;
 	unsigned int spill[3] = { 0 };
 
@@ -410,6 +415,9 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
     domainDecomposition(&threads_per_domain, spill, num_threads, num_streams, &pagedMemorySize, &threads_per_block,
     		&num_partitions, &blocksPerDomain, &num_blocks, &sharedMem);
 
+
+    lastFullDomain = num_blocks/blocksPerDomain;
+
 	// Allocate CUDA device and host pinned memory
 	cutilSafeCall( cudaMallocHost((void**) &h_paged_states, pagedMemorySize) );
 	cutilSafeCall( cudaMalloc((void **) &d_states, pagedMemorySize) );
@@ -424,7 +432,7 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
     dim3  threads(threads_per_block, 1, 1);
 
     //#ifdef DEBUG
-
+    if (timing_file) {
     	printf("> Device name : %s\n", deviceProp.name );
 		printf("> CUDA Capable SM %d.%d hardware with %d multi-processors\n",
 			deviceProp.major, deviceProp.minor, deviceProp.multiProcessorCount);
@@ -435,7 +443,6 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
     	printf("grid.x %d threads.x %d sharedMem %d\n", grid.x, threads.x, sharedMem);
     	printf("Spills %d %d %d\n", spill[0], spill[1], spill[2]);
 
-        if (timing_file) {
 		// Setup and start global timer
 		timer = 0;
 		cutCreateTimer(&timer);
@@ -469,18 +476,18 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 	}
 
 	// Queue kernel calls into streams to hide memory transfers (num_partitions sets of kernel calls in each stream)
-	for(i = 0; i < num_partitions; i++) { 
+	for(i = 0; i < num_partitions+1; i++) {
 		// Asynchronously launch num_streams memcopies
 		for(j = 0; j < num_streams; j++) {
 			domainIndex = j + i*num_streams;
-			if (timing_file==NULL || !(i==0 && j==0) || (domainIndex+1)*grid.x<=num_blocks) {
+			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
 				local_offset = j * rateStateCount * grid.x * threads.x ;
-				if (i == num_partitions - 1 && j == spill[0] && (spill[1]!=0 || spill[2]!=0)) {
-					printf("last async in %d, size %d\n", domainIndex, lastStreamMemorySize);
+				if (domainIndex == lastFullDomain && (spill[1]!=0 || spill[2]!=0)) {
+					//printf("last async in %d, size %d\n", domainIndex, lastStreamMemorySize);
 					cutilSafeCall( cudaMemcpyAsync(d_states + local_offset, h_paged_states + local_offset,
 							lastStreamMemorySize, cudaMemcpyHostToDevice, streams[j]) );
 				} else {
-					printf("normal async in %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
+					//printf("normal async in %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
 					cutilSafeCall( cudaMemcpyAsync(d_states + local_offset, h_paged_states + local_offset,
 							pagedMemorySize/num_streams, cudaMemcpyHostToDevice, streams[j]) );
 				}
@@ -490,9 +497,9 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		// Asynchronously launch num_streams kernels, each operating on its own portion of data
 		for(j = 0; j < num_streams; j++) {
 			domainIndex = j + i*num_streams;
-			if (timing_file==NULL || !(i==0 && j==0) || (domainIndex+1)*grid.x<=num_blocks) {
+			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
 				local_offset = j * grid.x * threads.x ;
-				if (i == num_partitions - 1 && j == spill[0] && (spill[1]!=0 || spill[2]!=0)) {
+				if (domainIndex == lastFullDomain && (spill[1]!=0 || spill[2]!=0)) {
 				    grid.x = spill[1]+1;
 					solveSystem<<<grid, threads, sharedMem, streams[j]>>>(timeSteps, stepSize,
 							d_states + rateStateCount*local_offset);
@@ -506,14 +513,14 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		// Asynchronoously launch num_streams memcopies
 		for(j = 0; j < num_streams; j++){
 			domainIndex = j + i*num_streams;
-			if (timing_file==NULL || !(i==0 && j==0) || (domainIndex+1)*grid.x<=num_blocks) {
+			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
 				local_offset = j * rateStateCount * grid.x * threads.x ;
-				if (i == num_partitions - 1 && j == spill[0] && (spill[1]!=0 || spill[2]!=0) ) {
-					printf("last async out %d, size %d\n", domainIndex, lastStreamMemorySize);
+				if (domainIndex == lastFullDomain && (spill[1]!=0 || spill[2]!=0)) {
+					//printf("last async out %d, size %d\n", domainIndex, lastStreamMemorySize);
 					cutilSafeCall( cudaMemcpyAsync(h_paged_states + local_offset, d_states + local_offset,
 						lastStreamMemorySize, cudaMemcpyDeviceToHost, streams[j]) );
 				} else {
-					printf("normal async out %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
+					//printf("normal async out %d, size %d\n", domainIndex, pagedMemorySize/num_streams);
 					cutilSafeCall( cudaMemcpyAsync(h_paged_states + local_offset, d_states + local_offset,
 						pagedMemorySize/num_streams, cudaMemcpyDeviceToHost, streams[j]) );
 				}
@@ -523,30 +530,30 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		// Execute memcpys in and out of paged memory when CUDA calls in the streams have finished
 		for(j = 0; j < num_streams; j++){
 			domainIndex = j + i*num_streams;
-			if (timing_file==NULL || !(i==0 && j==0) || (domainIndex+1)*grid.x<=num_blocks) {
+			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
 				cudaStreamSynchronize(streams[j]);
 
 				local_offset = j * rateStateCount * grid.x * threads.x ;
 				global_offset = i * num_streams * grid.x * threads.x;
 				
-				if (i == num_partitions - 1 && j == spill[0] && (spill[1]!=0 || spill[2]!=0)) {
-					printf("last memcpy out %d\n", domainIndex);
+				if (domainIndex == lastFullDomain && (spill[1]!=0 || spill[2]!=0)) {
+					//printf("last memcpy out %d\n", domainIndex);
 					memcpy(h_states + rateStateCount * global_offset + local_offset, h_paged_states + local_offset,
 							lastStreamMemorySize);
 				} else {
-					printf("normal memcpy out %d\n", domainIndex);
+					//printf("normal memcpy out %d\n", domainIndex);
 					memcpy(h_states + rateStateCount * global_offset + local_offset, h_paged_states + local_offset,
 						pagedMemorySize/num_streams);
 				}
 
 				global_offset = (i + 1) * num_streams * grid.x * threads.x;
-				if (i == num_partitions - 2 && j == spill[0] && (spill[1]!=0 || spill[2]!=0)) {
-					printf("last memcpy in %d\n", domainIndex);
+				if (domainIndex == lastFullDomain - num_streams && (spill[1]!=0 || spill[2]!=0)) {
+					//printf("last memcpy in %d\n", domainIndex);
 					lastStreamMemorySize = sizeof(double)*rateStateCount*(spill[1]*threads_per_block+spill[2]);
 					memcpy(h_paged_states + local_offset, h_states + rateStateCount * global_offset + local_offset,
 							lastStreamMemorySize);
-				} else if (i < num_partitions - 2 || j < spill[0] || (i == num_partitions - 2 && j == spill[0])) {
-					printf("normal memcpy in %d\n", domainIndex);
+				} else if (domainIndex < lastFullDomain - num_streams) {
+					//printf("normal memcpy in %d\n", domainIndex);
 					memcpy(h_paged_states + local_offset, h_states + rateStateCount * global_offset + local_offset,
 						pagedMemorySize/num_streams);
 				}
