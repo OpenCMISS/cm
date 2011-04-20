@@ -84,7 +84,6 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				double *IntermediateData,
 				int *err)
 {
-
 	FILE* timing_file = NULL;
 	char *filename = NULL;
 
@@ -93,7 +92,8 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 
 	if (!timing_file) {
 		timing_file = fopen(filename, "wt");
-		fprintf(timing_file,"Cell Model\tIntegrator\tNumber of Threads\tNumber 0f Blocks\tThreads Per Block\tNumber of Partitions\tNumber of Streams\tTotal Computational Time(s)\tTotal GFLOPS\tSingle Kernel Computaional Time(s)\tKernel GFLOPS\tDevice Utilisation\n");
+		fprintf(timing_file,"Cell Model\tIntegrator\tNumber of Threads\tNumber 0f Blocks\tThreads Per Block\tNumber of Partitions\tNumber of Streams\tTotal Computational Time(s)\tTotal GFLOPS\n");
+//		fprintf(timing_file,"Cell Model\tIntegrator\tNumber of Threads\tNumber 0f Blocks\tThreads Per Block\tNumber of Partitions\tNumber of Streams\tTotal Computational Time(s)\tTotal GFLOPS\tSingle Kernel Computaional Time(s)\tKernel GFLOPS\tDevice Utilisation\n");
 	} else {
 		fclose(timing_file);
 		timing_file = fopen(filename, "at");
@@ -106,7 +106,7 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 	//printf("start %f end %f steps %d\n", StartTime, EndTime, (int)((EndTime-StartTime)/InitialStep[0]));
     //  timeSteps = (int)ceil(((EndTime-StartTime)/InitialStep[0]));
 
-	solve(StateData, StartTime, EndTime, InitialStep[0], NumberOfDofs, ThreadsPerBlock, NumberOfPartitions, NumberOfStreams, NULL);// timing_file);
+	solve(StateData, StartTime, EndTime, InitialStep[0], NumberOfDofs, ThreadsPerBlock, NumberOfPartitions, NumberOfStreams, timing_file);
 
 	if (timing_file != NULL ) fclose(timing_file);
 	free(filename);

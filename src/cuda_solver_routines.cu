@@ -448,39 +448,39 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		cutCreateTimer(&timer);
 		cutilCheckError(cutStartTimer(timer));
 
-		// Test kernel speed in default stream (timing is more accurate in default stream)
-		memcpy(h_paged_states, h_states, pagedMemorySize/num_streams);
-		cutilSafeCall( cudaMemcpy(d_states, h_paged_states, pagedMemorySize/num_streams, 
-			cudaMemcpyHostToDevice) );
-		// Start kernel timer
-		kernel_timer = 0;
-		cutCreateTimer(&kernel_timer);
-		cutilCheckError(cutStartTimer(kernel_timer));
-		// Start kernel
-		solveSystem<<<grid, threads, sharedMem>>>(timeSteps, stepSize, d_states);
-		checkCUDAError("Single Kernel Execution");
-		cutilSafeCall( cudaThreadSynchronize() );
-		// Stop kernel Timer 
-		cutilCheckError(cutStopTimer(kernel_timer));
-		cutilSafeCall( cudaMemcpy(h_paged_states, d_states, pagedMemorySize/num_streams, 
-			cudaMemcpyDeviceToHost) );
-		memcpy(h_states, h_paged_states, pagedMemorySize/num_streams);
+//		// Test kernel speed in default stream (timing is more accurate in default stream)
+//		memcpy(h_paged_states, h_states, pagedMemorySize/num_streams);
+//		cutilSafeCall( cudaMemcpy(d_states, h_paged_states, pagedMemorySize/num_streams,
+//			cudaMemcpyHostToDevice) );
+//		// Start kernel timer
+//		kernel_timer = 0;
+//		cutCreateTimer(&kernel_timer);
+//		cutilCheckError(cutStartTimer(kernel_timer));
+//		// Start kernel
+//		solveSystem<<<grid, threads, sharedMem>>>(timeSteps, stepSize, d_states);
+//		checkCUDAError("Single Kernel Execution");
+//		cutilSafeCall( cudaThreadSynchronize() );
+//		// Stop kernel Timer
+//		cutilCheckError(cutStopTimer(kernel_timer));
+//		cutilSafeCall( cudaMemcpy(h_paged_states, d_states, pagedMemorySize/num_streams,
+//			cudaMemcpyDeviceToHost) );
+//		memcpy(h_states, h_paged_states, pagedMemorySize/num_streams);
 
 		// Prefetch data for next partition in first stream
-		if (num_partitions>1) {
-			global_offset = rateStateCount * num_streams * grid.x * threads.x;
-			memcpy(h_paged_states, h_states + global_offset, pagedMemorySize/num_streams);
-		}
-	} else {
+//		if (num_partitions>1) {
+//			global_offset = rateStateCount * num_streams * grid.x * threads.x;
+//			memcpy(h_paged_states, h_states + global_offset, pagedMemorySize/num_streams);
+//		}
+//	} else {
 		memcpy(h_paged_states, h_states, pagedMemorySize);
 	}
 
 	// Queue kernel calls into streams to hide memory transfers (num_partitions sets of kernel calls in each stream)
 	for(i = 0; i < num_partitions+1; i++) {
 		// Asynchronously launch num_streams memcopies
-		for(j = 0; j < num_streams; j++) {
+		for(j = 0; j < num_streams; j++) { //((timing_file!=NULL && i==0) ? 1 : 0); j < num_streams; j++){
 			domainIndex = j + i*num_streams;
-			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
+			if (domainIndex <= lastFullDomain) {
 				local_offset = j * rateStateCount * grid.x * threads.x ;
 				if (domainIndex == lastFullDomain && (spill[1]!=0 || spill[2]!=0)) {
 					//printf("last async in %d, size %d\n", domainIndex, lastStreamMemorySize);
@@ -495,9 +495,9 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		}
 		// Execute the kernel
 		// Asynchronously launch num_streams kernels, each operating on its own portion of data
-		for(j = 0; j < num_streams; j++) {
+		for(j = 0; j < num_streams; j++) { //((timing_file!=NULL && i==0) ? 1 : 0); j < num_streams; j++){
 			domainIndex = j + i*num_streams;
-			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
+			if (domainIndex <= lastFullDomain) {
 				local_offset = j * grid.x * threads.x ;
 				if (domainIndex == lastFullDomain && (spill[1]!=0 || spill[2]!=0)) {
 				    grid.x = spill[1]+1;
@@ -511,9 +511,9 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		}
 
 		// Asynchronoously launch num_streams memcopies
-		for(j = 0; j < num_streams; j++){
+		for(j = 0; j < num_streams; j++) { //((timing_file!=NULL && i==0) ? 1 : 0); j < num_streams; j++){
 			domainIndex = j + i*num_streams;
-			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
+			if (domainIndex <= lastFullDomain) {
 				local_offset = j * rateStateCount * grid.x * threads.x ;
 				if (domainIndex == lastFullDomain && (spill[1]!=0 || spill[2]!=0)) {
 					//printf("last async out %d, size %d\n", domainIndex, lastStreamMemorySize);
@@ -528,9 +528,9 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		}
 		
 		// Execute memcpys in and out of paged memory when CUDA calls in the streams have finished
-		for(j = 0; j < num_streams; j++){
+		for(j = 0; j < num_streams; j++) { //((timing_file!=NULL && i==0) ? 1 : 0); j < num_streams; j++){
 			domainIndex = j + i*num_streams;
-			if (domainIndex <= lastFullDomain && (timing_file==NULL || !(i==0 && j==0))) {
+			if (domainIndex <= lastFullDomain) {
 				cudaStreamSynchronize(streams[j]);
 
 				local_offset = j * rateStateCount * grid.x * threads.x ;
@@ -570,14 +570,16 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 		nFLOPS = (FLOPSPerTimeStep*rateStateCount + FLOPSPerFunction*FunctionEvals)*timeSteps*num_threads;
 		gflops = 1.0e-9 * nFLOPS/dSeconds;
 
-		kernel_dSeconds = cutGetTimerValue(kernel_timer)/1000.0;
-		kernel_nFLOPS = (FLOPSPerTimeStep*rateStateCount + FLOPSPerFunction*FunctionEvals)*timeSteps*num_threads/num_streams/num_partitions;
-		kernel_gflops = 1.0e-9 * kernel_nFLOPS/kernel_dSeconds;
+//		kernel_dSeconds = cutGetTimerValue(kernel_timer)/1000.0;
+//		kernel_nFLOPS = (FLOPSPerTimeStep*rateStateCount + FLOPSPerFunction*FunctionEvals)*timeSteps*num_threads/num_streams/num_partitions;
+//		kernel_gflops = 1.0e-9 * kernel_nFLOPS/kernel_dSeconds;
 
 		// Store Stats
-		fprintf(timing_file,"%s\t%s\t%d\t%d\t%d\t%d\t%d\t%f\t%f\t%f\t%f\t%f\n", cellModelName, integratorName, num_threads, num_blocks, 
-			threads_per_block, num_partitions, num_streams, dSeconds, gflops, kernel_dSeconds, 
-			kernel_gflops, gflops/kernel_gflops*100);
+		fprintf(timing_file,"%s\t%s\t%d\t%d\t%d\t%d\t%d\t%f\t%f\n", cellModelName, integratorName, num_threads, num_blocks,
+			threads_per_block, num_partitions, num_streams, dSeconds, gflops);
+//		fprintf(timing_file,"%s\t%s\t%d\t%d\t%d\t%d\t%d\t%f\t%f\t%f\t%f\t%f\n", cellModelName, integratorName, num_threads, num_blocks,
+//			threads_per_block, num_partitions, num_streams, dSeconds, gflops, kernel_dSeconds,
+//			kernel_gflops, gflops/kernel_gflops*100);
 	}
 
 	// Deallocate Memory and Release Threads
