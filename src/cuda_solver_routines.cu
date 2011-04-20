@@ -433,15 +433,15 @@ void solve(double* h_states, double startTime, double endTime, double stepSize,
 
     //#ifdef DEBUG
     if (timing_file) {
-    	printf("> Device name : %s\n", deviceProp.name );
-		printf("> CUDA Capable SM %d.%d hardware with %d multi-processors\n",
-			deviceProp.major, deviceProp.minor, deviceProp.multiProcessorCount);
-		printf("> Cell Model = %s, Integrator = %s\n", cellModelName, integratorName);
-		printf("> num_threads = %d, num_blocks = %d, threads_per_block = %d, num_partitions = %d, timeSteps = %d, num_streams = %d\n",
-			num_threads, num_blocks, threads_per_block, num_partitions, timeSteps, num_streams);
-		//#endif
-    	printf("grid.x %d threads.x %d sharedMem %d\n", grid.x, threads.x, sharedMem);
-    	printf("Spills %d %d %d\n", spill[0], spill[1], spill[2]);
+//    	printf("> Device name : %s\n", deviceProp.name );
+//		printf("> CUDA Capable SM %d.%d hardware with %d multi-processors\n",
+//			deviceProp.major, deviceProp.minor, deviceProp.multiProcessorCount);
+//		printf("> Cell Model = %s, Integrator = %s\n", cellModelName, integratorName);
+//		printf("> num_threads = %d, num_blocks = %d, threads_per_block = %d, num_partitions = %d, timeSteps = %d, num_streams = %d\n",
+//			num_threads, num_blocks, threads_per_block, num_partitions, timeSteps, num_streams);
+//		//#endif
+//    	printf("grid.x %d threads.x %d sharedMem %d\n", grid.x, threads.x, sharedMem);
+//    	printf("Spills %d %d %d\n", spill[0], spill[1], spill[2]);
 
 		// Setup and start global timer
 		timer = 0;
