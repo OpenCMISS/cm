@@ -1960,7 +1960,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx
+    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP
     INTEGER(INTG), POINTER :: FIELD_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: COMPONENT_DOMAIN
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
@@ -2074,7 +2074,31 @@ CONTAINS
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      COMPONENT_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      IF(ASSOCIATED(COMPONENT_DOMAIN)) THEN
+                        DOMAIN_TOPOLOGY=>COMPONENT_DOMAIN%TOPOLOGY
+                        IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                          DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
+                          IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN 
+                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)=variable_local_ny
+                            MAX_NGP=SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
+                            DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                              DO gauss_point_idx=1,MAX_NGP ! could be just element's gauss_point_idx
+                                field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)
+                                FIELD_PARAMETERS(field_dof)=VALUE
+                              ENDDO !gauss_point_idx
+                            ENDDO !element_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -2155,7 +2179,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx
+    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP
     REAL(SP), POINTER :: FIELD_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: COMPONENT_DOMAIN
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
@@ -2269,7 +2293,31 @@ CONTAINS
                     CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      COMPONENT_DOMAIN=>FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%DOMAIN
+                      IF(ASSOCIATED(COMPONENT_DOMAIN)) THEN
+                        DOMAIN_TOPOLOGY=>COMPONENT_DOMAIN%TOPOLOGY
+                        IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
+                          DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
+                          IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN 
+                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)=variable_local_ny
+                            MAX_NGP=SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                              & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
+                            DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+                              DO gauss_point_idx=1,MAX_NGP ! could be just element's gauss_point_idx
+                                field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)
+                                FIELD_PARAMETERS(field_dof)=VALUE
+                              ENDDO !gauss_point_idx
+                            ENDDO !element_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
                     CASE DEFAULT
                       LOCAL_ERROR="The interpolation type of "//TRIM(NUMBER_TO_VSTRING(FIELD_VARIABLE% &
                         & COMPONENTS(COMPONENT_NUMBER)%INTERPOLATION_TYPE,"*",ERR,ERROR))// &
@@ -2349,7 +2397,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx, gp, MAX_NGP
+    INTEGER(INTG) :: element_idx,derivative_idx,version_idx,field_dof,node_idx,partial_deriv_idx,gauss_point_idx,MAX_NGP
     REAL(DP), POINTER :: FIELD_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: COMPONENT_DOMAIN
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
@@ -2469,16 +2517,15 @@ CONTAINS
                         IF(ASSOCIATED(DOMAIN_TOPOLOGY)) THEN
                           DOMAIN_ELEMENTS=>DOMAIN_TOPOLOGY%ELEMENTS
                           IF(ASSOCIATED(DOMAIN_ELEMENTS)) THEN 
-                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gp,element_idx)=variable_local_ny
+                            !GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)=variable_local_ny
                             MAX_NGP=SIZE(FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
                               & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS,1)
                             DO element_idx=1,DOMAIN_ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
-                            DO gp=1,MAX_NGP ! could be just element's gp
-                              field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
-                                & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gp,element_idx)
-
-                              FIELD_PARAMETERS(field_dof)=VALUE
-                            ENDDO !gp
+                              DO gauss_point_idx=1,MAX_NGP ! could be just element's gauss_point_idx
+                                field_dof=FIELD_VARIABLE%COMPONENTS(COMPONENT_NUMBER)%PARAM_TO_DOF_MAP% &
+                                  & GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,element_idx)
+                                FIELD_PARAMETERS(field_dof)=VALUE
+                              ENDDO !gauss_point_idx
                             ENDDO !element_idx
                           ELSE
                             CALL FLAG_ERROR("Domain topology elements is not associated.",ERR,ERROR,*999)
@@ -7965,7 +8012,7 @@ CONTAINS
       & variable_local_ny,domain_idx,domain_no,constant_nyy,element_ny,element_nyy,node_ny,node_nyy,grid_point_nyy, &
       & Gauss_point_nyy,version_idx,derivative_idx,ny,NUMBER_OF_COMPUTATIONAL_NODES, &
       & my_computational_node_number,domain_type_stop,start_idx,stop_idx,element_idx,node_idx,NUMBER_OF_LOCAL, NGP, MAX_NGP, &
-      & gp,MPI_IERROR,NUMBER_OF_GLOBAL_DOFS
+      & gp,MPI_IERROR,NUMBER_OF_GLOBAL_DOFS,gauss_point_idx
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_LOCAL_DOFS_OFFSETS(:),VARIABLE_GHOST_DOFS_OFFSETS(:)
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
@@ -8571,7 +8618,7 @@ CONTAINS
               ENDDO !component_idx
               !Handle global dofs domain mapping
               element_ny=0
-              DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL
+              DO ny=1,ELEMENTS_MAPPING%NUMBER_OF_GLOBAL ! ELEMENTS_MAPPING has not been associated for this case !?!
                 DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
                   FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
                   DOMAIN=>FIELD_COMPONENT%DOMAIN
@@ -8756,7 +8803,100 @@ CONTAINS
             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
+                FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
+                DOMAIN=>FIELD_COMPONENT%DOMAIN
+                DOMAIN_TOPOLOGY=>DOMAIN%TOPOLOGY
+                !>todo find a better way than assuming NGP=MAX_NGP for all elements TODO
+                ALLOCATE(FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(MAX_NGP,DOMAIN_TOPOLOGY% &
+                  & ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field component parameter to dof gauss point map (gauss points).", &
+                  & ERR,ERROR,*999)
+                FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%NUMBER_OF_GAUSS_POINT_PARAMETERS = &
+                  & MAX_NGP*DOMAIN_TOPOLOGY%ELEMENTS%TOTAL_NUMBER_OF_ELEMENTS
+              ENDDO
+              !Handle global dofs domain mapping
+              element_ny=0
+!              NUMBER_OF_GLOBAL_DOFS=FIELD%VARIABLES(variable_idx)%COMPONENTS(1)%DOMAIN%MAPPINGS%ELEMENTS%NUMBER_OF_GLOBAL
+              NUMBER_OF_GLOBAL_DOFS=FIELD%VARIABLES(variable_idx)%COMPONENTS(1)%DOMAIN%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+              DO ny=1,NUMBER_OF_GLOBAL_DOFS
+                DO gauss_point_idx=1,MAX_NGP
+                  DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
+                    FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
+                    DOMAIN=>FIELD_COMPONENT%DOMAIN
+                    DOFS_MAPPING=>DOMAIN%MAPPINGS%ELEMENTS
+                    !Handle variable mapping
+                    IF(ASSOCIATED(FIELD_VARIABLE_DOFS_MAPPING)) THEN
+                      element_ny=element_ny+1
+                      variable_global_ny=element_ny+VARIABLE_GLOBAL_DOFS_OFFSET
+                      CALL DOMAIN_MAPPINGS_MAPPING_GLOBAL_INITIALISE(FIELD_VARIABLE_DOFS_MAPPING% &
+                        & GLOBAL_TO_LOCAL_MAP(variable_global_ny),ERR,ERROR,*999)
+                      NUMBER_OF_DOMAINS=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%NUMBER_OF_DOMAINS
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
+                        & LOCAL_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map local number.", &
+                        & ERR,ERROR,*999)
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)% &
+                        & DOMAIN_NUMBER(NUMBER_OF_DOMAINS),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number.", &
+                        & ERR,ERROR,*999)
+                      ALLOCATE(FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(NUMBER_OF_DOMAINS), &
+                        & STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate field variable dofs global to local map domain number.", &
+                        & ERR,ERROR,*999)
+                      FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%NUMBER_OF_DOMAINS=NUMBER_OF_DOMAINS
+                      DO domain_idx=1,NUMBER_OF_DOMAINS
+                        domain_no=DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_NUMBER(domain_idx)= &
+                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_NUMBER(domain_idx)+VARIABLE_LOCAL_DOFS_OFFSETS(domain_no)
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%DOMAIN_NUMBER(domain_idx)= &
+                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%DOMAIN_NUMBER(domain_idx)
+                        FIELD_VARIABLE_DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(variable_global_ny)%LOCAL_TYPE(domain_idx)= &
+                          & DOFS_MAPPING%GLOBAL_TO_LOCAL_MAP(ny)%LOCAL_TYPE(domain_idx)
+                      ENDDO !domain_idx
+                    ENDIF
+                  ENDDO !component_idx
+                ENDDO !gauss_point_idx
+              ENDDO !ny (global)
+              !Loop over the domain types. Here domain_type_idx=1 for the non-ghosted dofs and =2 for the ghosted dofs.
+              DO domain_type_idx=1,domain_type_stop
+                IF(domain_type_idx==1) THEN
+                  start_idx=1
+                  stop_idx=DOFS_MAPPING%NUMBER_OF_LOCAL
+                ELSE
+                  start_idx=DOFS_MAPPING%NUMBER_OF_LOCAL+1
+                  stop_idx=DOFS_MAPPING%TOTAL_NUMBER_OF_LOCAL
+                ENDIF
+                !Handle local dofs domain mapping
+                element_ny=0
+                DO ny=start_idx,stop_idx
+                  DO gauss_point_idx=1,MAX_NGP
+                    DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
+                      FIELD_COMPONENT=>FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)
+                      DOMAIN=>FIELD_COMPONENT%DOMAIN
+                      element_ny=element_ny+1
+                      variable_local_ny=element_ny+VARIABLE_LOCAL_DOFS_OFFSETS(my_computational_node_number)
+                      node_nyy=node_nyy+1
+                      !Setup dof to parameter map
+                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(1,variable_local_ny)=FIELD_GAUSS_POINT_DOF_TYPE
+                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%DOF_TYPE(2,variable_local_ny)=node_nyy
+                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(1,node_nyy)=gauss_point_idx
+                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(2,node_nyy)=ny !element_idx
+                      FIELD%VARIABLES(variable_idx)%DOF_TO_PARAM_MAP%GAUSS_POINT_DOF2PARAM_MAP(3,node_nyy)=component_idx
+                      !Setup reverse parameter to dof map
+                      FIELD_COMPONENT%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_point_idx,ny)= &
+                        & variable_local_ny
+                    ENDDO !component_idx
+                  ENDDO !gauss_point_idx
+                ENDDO !ny
+                !Adjust the offsets
+                VARIABLE_LOCAL_DOFS_OFFSETS=VARIABLE_LOCAL_DOFS_OFFSETS+FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS* &
+                  & DOFS_MAPPING%NUMBER_OF_DOMAIN_LOCAL*MAX_NGP
+                IF(domain_type_idx==1) THEN
+                  VARIABLE_GLOBAL_DOFS_OFFSET=VARIABLE_GLOBAL_DOFS_OFFSET+FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS* &
+                    & DOFS_MAPPING%NUMBER_OF_GLOBAL*MAX_NGP
+                ENDIF
+              ENDDO !domain_type_idx
             CASE DEFAULT
               LOCAL_ERROR="The interpolation type of "// &
                 & TRIM(NUMBER_TO_VSTRING(FIELD%VARIABLES(variable_idx)%COMPONENTS(component_idx)%INTERPOLATION_TYPE, &

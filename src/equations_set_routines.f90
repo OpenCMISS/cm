@@ -1035,7 +1035,7 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
+            ENDIF
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
@@ -1112,6 +1112,10 @@ CONTAINS
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM
 
+  !
+  !================================================================================================================================
+  !
+
   ! sander, 26/03/10
   !>Assembles the equations stiffness matrix, residuals and rhs for a nonlinear quasistatic equations set using the finite element method.
   !> currently the same as the static nonlinear case
@@ -1130,13 +1134,11 @@ CONTAINS
     RETURN 1
   END  SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM
 
-
   !
   !================================================================================================================================
   !
 
 ! chrm, 17/09/09
-  
   !>Assembles the equations stiffness matrix and rhs for a linear quasistatic equations set using the finite element method.
   SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -4259,8 +4261,8 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
-             !Output timing information if required
+            ENDIF
+            !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
@@ -4339,7 +4341,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
 
   !>Evaluates the residual for an equations set.
   SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
@@ -4669,8 +4670,8 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
-             !Output timing information if required
+            ENDIF
+            !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)

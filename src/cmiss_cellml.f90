@@ -227,8 +227,8 @@ CONTAINS
                   & NUMBER_OF_FIELDS_MAPPED_TO,ERR,ERROR,*999)
               ENDIF
               !Loop over the number of CellML to field maps
-              DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO
-                MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR
+              DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM
+                MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR
                 IF(ASSOCIATED(MODEL_MAP)) THEN
                   SELECT CASE(MODEL_MAP%CELLML_FIELD_TYPE)
                   CASE(CELLML_MODELS_FIELD)
@@ -583,8 +583,8 @@ CONTAINS
                   & NUMBER_OF_FIELDS_MAPPED_TO,ERR,ERROR,*999)
               ENDIF
              !Loop over the number of field to CellML maps
-              DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_FROM
-                MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_FROM(map_idx)%PTR
+              DO map_idx=1,MODEL_MAPS%NUMBER_OF_FIELDS_MAPPED_TO
+                MODEL_MAP=>MODEL_MAPS%FIELDS_MAPPED_TO(map_idx)%PTR
                 IF(ASSOCIATED(MODEL_MAP)) THEN
                   SELECT CASE(MODEL_MAP%CELLML_FIELD_TYPE)
                   CASE(CELLML_MODELS_FIELD)
@@ -4064,3 +4064,4 @@ CONTAINS
   END FUNCTION MAP_CELLML_FIELD_TYPE_TO_VARIABLE_TYPE_INTG
 
 END MODULE CMISS_CELLML
+

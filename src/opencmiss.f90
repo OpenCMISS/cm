@@ -2134,6 +2134,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_QUADRATIC_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype = &
+    & EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE !<In CellML evaluated incompressible material law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEAdvectionDiffusionSubtype = & 
     & EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2467,6 +2469,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetVectorDataPreFittingSubtype,CMISSEquationsSetDivFreeVectorDataPreFittingSubtype, &  
     & CMISSEquationsSetMatPropertiesDataFittingSubtype,CMISSEquationsSetMatPropertiesInriaModelDataFittingSubtype, &
     & CMISSEquationsSetPGMNavierStokesSubtype, &
+    & CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype, &
     & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype
 
   PUBLIC CMISSEquationsSetFEMSolutionMethod,CMISSEquationsSetBEMSolutionMethod,CMISSEquationsSetFDSolutionMethod, &
@@ -4519,6 +4522,8 @@ MODULE OPENCMISS
     & PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE !<Standard elasticity fluid pressure problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityCellMLSubtype = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainGudunovSplitSubtype = PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplitSubtype = PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemBidomainGudunovSplitSubtype = PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Bidomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4629,7 +4634,8 @@ MODULE OPENCMISS
    & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
    & CMISSProblemStandardMultiCompartmentTransportSubtype, CMISSProblemStandardElasticityFluidPressureSubtype 
 
-  PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype
+  PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype,CMISSProblemFiniteElasticityCellMLSubtype
+  
 !!==================================================================================================================================
 !!
 !! PROBLEM_ROUTINES
@@ -5338,6 +5344,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverNewtonLinearSolverGetObj
   END INTERFACE !CMISSSolverNewtonLinearSolverGet
   
+  !>Returns the linear solver associated with a nonlinear Newton solver.
+  INTERFACE CMISSSolverNewtonCellMLSolverGet
+    MODULE PROCEDURE CMISSSolverNewtonCellMLSolverGetNumber0
+    MODULE PROCEDURE CMISSSolverNewtonCellMLSolverGetNumber1
+    MODULE PROCEDURE CMISSSolverNewtonCellMLSolverGetObj
+  END INTERFACE !CMISSSolverNewtonCellMLSolverGet
+
   !>Sets/changes the line search alpha for a nonlinear Newton solver.
   INTERFACE CMISSSolverNewtonLineSearchAlphaSet
     MODULE PROCEDURE CMISSSolverNewtonLineSearchAlphaSetNumber0
@@ -5562,6 +5575,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverNewtonJacobianCalculationTypeSet
 
   PUBLIC CMISSSolverNewtonLinearSolverGet
+
+  PUBLIC CMISSSolverNewtonCellMLSolverGet
 
   PUBLIC CMISSSolverNewtonLineSearchAlphaSet
 
@@ -43578,7 +43593,8 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSSolverNewtonLinearSolverGetNumber1
-
+  
+  !
   !================================================================================================================================
   !  
  
@@ -43603,6 +43619,122 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSSolverNewtonLinearSolverGetObj
+  
+  !  
+  !================================================================================================================================
+  !
+
+  !>Returns the CellML solver associated with a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonCellMLSolverGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,CellMLSolverIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to get the Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the Newton CellML solver for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLSolverIndex !<On return, the solver index of the CellML solver.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonCellMLSolverGetNumber0",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(CELLML_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,Err,ERROR,*999)
+      !todo: get the solver index from CellML solver
+      CellMLSolverIndex=CELLML_SOLVER%GLOBAL_NUMBER
+      CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonCellMLSolverGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonCellMLSolverGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonCellMLSolverGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonCellMLSolverGetNumber0
+
+  !  
+  !================================================================================================================================
+  !  
+
+  !>Returns the CellML solver associated with a Newton solver identified by an user number.
+  SUBROUTINE CMISSSolverNewtonCellMLSolverGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,CellMLSolverIndex,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to get the Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the Newton CellML solver for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the Newton CellML solver for.
+    INTEGER(INTG), INTENT(OUT) :: CellMLSolverIndex !<On return, the Newton CellML solver index. 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSSolverNewtonCellMLSolverGetNumber1",Err,ERROR,*999)
+ 
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    NULLIFY(CELLML_SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,Err,ERROR,*999)
+      !todo: get the solver index from CellML solver
+      CellMLSolverIndex=CELLML_SOLVER%GLOBAL_NUMBER
+      CALL FLAG_ERROR("Not implemented.",Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverNewtonCellMLSolverGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonCellMLSolverGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonCellMLSolverGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSSolverNewtonCellMLSolverGetNumber1
+  
+  !
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the CellML solver associated with a Newton solver identified by an object.
+  SUBROUTINE CMISSSolverNewtonCellMLSolverGetObj(Solver,CellMLSolver,Err)
+  
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to get the Newton CellML solver for.
+    TYPE(CMISSSolverType), INTENT(INOUT) :: CellMLSolver !<On return, the Newton CellML solver. 
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSSolverNewtonCellMLSolverGetObj",Err,ERROR,*999)
+ 
+    CALL SOLVER_NEWTON_CELLML_SOLVER_GET(Solver%SOLVER,CellMLSolver%SOLVER,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverNewtonCellMLSolverGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverNewtonCellMLSolverGetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverNewtonCellMLSolverGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverNewtonCellMLSolverGetObj
   
   !  
   !================================================================================================================================

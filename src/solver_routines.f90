@@ -80,6 +80,7 @@ MODULE SOLVER_ROUTINES
   !> \brief The types of solver
   !> \see SOLVER_ROUTINES
   !>@{
+  INTEGER(INTG), PARAMETER :: SOLVER_NUMBER_OF_SOLVER_TYPES=8 !<Number of different solver types possible \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_LINEAR_TYPE=1 !<A linear solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NONLINEAR_TYPE=2 !<A nonlinear solver  \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_DYNAMIC_TYPE=3 !<A dynamic solver \see SOLVER_ROUTINES_SolverTypes,SOLVER_ROUTINES
@@ -346,6 +347,8 @@ MODULE SOLVER_ROUTINES
     MODULE PROCEDURE SOLVER_LABEL_SET_VS
   END INTERFACE !SOLVER_LABEL_SET
   
+  PUBLIC SOLVER_NUMBER_OF_SOLVER_TYPES
+  
   PUBLIC SOLVER_LINEAR_TYPE,SOLVER_NONLINEAR_TYPE,SOLVER_DYNAMIC_TYPE,SOLVER_DAE_TYPE,SOLVER_EIGENPROBLEM_TYPE, &
     & SOLVER_OPTIMISER_TYPE,SOLVER_CELLML_EVALUATOR_TYPE
 
@@ -492,6 +495,8 @@ MODULE SOLVER_ROUTINES
   
   PUBLIC SOLVER_NEWTON_LINEAR_SOLVER_GET
 
+  PUBLIC SOLVER_NEWTON_CELLML_SOLVER_GET
+
   PUBLIC SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET
 
   PUBLIC SOLVER_NEWTON_LINESEARCH_STEPTOL_SET
@@ -541,7 +546,9 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVERS_NUMBER_SET
 
   PUBLIC SOLVERS_SOLVER_GET
-  
+
+  PUBLIC SOLVER_NEWTON_CELLML_EVALUATOR_CREATE,SOLVER_LINKED_SOLVER_ADD,SOLVER_CELLML_EVALUATOR_FINALISE
+
 CONTAINS
 
   !
@@ -570,26 +577,22 @@ CONTAINS
       ELSE
         SOLVER=>CELLML_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
-          IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not add a CellML environment for a solver that has been linked.",ERR,ERROR,*999)
-          ELSE
-            IF(ASSOCIATED(CELLML)) THEN
-              IF(CELLML%CELLML_FINISHED) THEN
-                ALLOCATE(NEW_CELLML_ENVIRONMENTS(CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environments.",ERR,ERROR,*999)
-                DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
-                  NEW_CELLML_ENVIRONMENTS(cellml_idx)%PTR=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
-                ENDDO !cellml_idx
-                NEW_CELLML_ENVIRONMENTS(CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1)%PTR=>CELLML
-                CALL MOVE_ALLOC(NEW_CELLML_ENVIRONMENTS,CELLML_EQUATIONS%CELLML_ENVIRONMENTS)
-                CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1
-                CELLML_INDEX=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
-              ELSE
-                CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
-              ENDIF
+          IF(ASSOCIATED(CELLML)) THEN
+            IF(CELLML%CELLML_FINISHED) THEN
+              ALLOCATE(NEW_CELLML_ENVIRONMENTS(CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environments.",ERR,ERROR,*999)
+              DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+                NEW_CELLML_ENVIRONMENTS(cellml_idx)%PTR=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
+              ENDDO !cellml_idx
+              NEW_CELLML_ENVIRONMENTS(CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1)%PTR=>CELLML
+              CALL MOVE_ALLOC(NEW_CELLML_ENVIRONMENTS,CELLML_EQUATIONS%CELLML_ENVIRONMENTS)
+              CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1
+              CELLML_INDEX=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
             ELSE
-              CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
             ENDIF
+          ELSE
+            CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("CellML equations solver is not associated.",ERR,ERROR,*999)
@@ -630,11 +633,7 @@ CONTAINS
       ELSE
         SOLVER=>CELLML_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
-          IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not finish CellML equations creation for a solver that has been linked.",ERR,ERROR,*999)
-          ELSE
-            CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED=.TRUE.
-          ENDIF
+          CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED=.TRUE.
         ELSE
           CALL FLAG_ERROR("CellML equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -670,16 +669,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-          CALL FLAG_ERROR("Can not start CellML equations creation for a solver that has been linked.",ERR,ERROR,*999)
+        IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+          CALL FLAG_ERROR("CellML equations is already associated.",ERR,ERROR,*999)
         ELSE
-          IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
-            CALL FLAG_ERROR("CellML equations is already associated.",ERR,ERROR,*999)
-          ELSE
-            NULLIFY(CELLML_EQUATIONS)
-            CALL CELLML_EQUATIONS_INITIALISE(SOLVER,ERR,ERROR,*999)
-            CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
-          ENDIF
+          NULLIFY(CELLML_EQUATIONS)
+          CALL CELLML_EQUATIONS_INITIALISE(SOLVER,ERR,ERROR,*999)
+          CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
         ENDIF
       ELSE
         CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
@@ -914,6 +909,7 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver CellML evaluator solver.",ERR,ERROR,*999)
         SOLVER%CELLML_EVALUATOR_SOLVER%SOLVER=>SOLVER
         SOLVER%CELLML_EVALUATOR_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
+        SOLVER%CELLML_EVALUATOR_SOLVER%CURRENT_TIME=0.0_DP
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
@@ -1000,6 +996,67 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the time for a CellML evaluator solver.
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_TIME_GET(CELLML_EVALUATOR_SOLVER,TIME,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer the CellML evaluator solver to get the time for.
+    REAL(DP), INTENT(OUT) :: TIME !<On exit, the time for the CellML evaluator solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_TIME_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+      TIME=CELLML_EVALUATOR_SOLVER%CURRENT_TIME
+    ELSE
+      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_TIME_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATOR_TIME_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_TIME_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_TIME_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the time for a CellML evaluator solver.
+  SUBROUTINE SOLVER_CELLML_EVALUATOR_TIME_SET(CELLML_EVALUATOR_SOLVER,TIME,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer the CellML evaluator solver to set the time for.
+    REAL(DP), INTENT(IN) :: TIME !<The time for the CellML evaluator solver to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_CELLML_EVALUATOR_TIME_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+      CELLML_EVALUATOR_SOLVER%CURRENT_TIME=TIME
+    ELSE
+      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_TIME_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATOR_TIME_SET",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATOR_TIME_SET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATOR_TIME_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Solve a CellML evaluator solver
   SUBROUTINE SOLVER_CELLML_EVALUATOR_SOLVE(CELLML_EVALUATOR_SOLVER,ERR,ERROR,*)
 
@@ -1008,11 +1065,132 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: cellml_idx
+    INTEGER(INTG), POINTER :: MODELS_DATA(:)
+    REAL(DP), POINTER :: INTERMEDIATE_DATA(:),PARAMETERS_DATA(:),STATE_DATA(:)
+    TYPE(CELLML_TYPE), POINTER :: CELLML_ENVIRONMENT
+    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
+    TYPE(CELLML_MODELS_FIELD_TYPE), POINTER :: CELLML_MODELS_FIELD
+!    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+!    TYPE(EULER_DAE_SOLVER_TYPE), POINTER :: EULER_SOLVER
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
+    TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_CELLML_EVALUATOR_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN        
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      SOLVER=>CELLML_EVALUATOR_SOLVER%SOLVER
+      IF(ASSOCIATED(SOLVER)) THEN
+        CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
+        IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
+          DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
+            CELLML_ENVIRONMENT=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
+            IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN                  
+              CELLML_MODELS_FIELD=>CELLML_ENVIRONMENT%MODELS_FIELD
+              IF(ASSOCIATED(CELLML_MODELS_FIELD)) THEN
+                MODELS_FIELD=>CELLML_MODELS_FIELD%MODELS_FIELD
+                IF(ASSOCIATED(MODELS_FIELD)) THEN
+
+!!TODO: Maybe move this getting of fields earlier up the DAE solver chain? For now keep here.
+                      
+                  !Make sure CellML fields have been updated to the current value of any mapped fields
+                  CALL CELLML_FIELD_TO_CELLML_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
+
+                  NULLIFY(MODELS_VARIABLE)
+                  CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & MODELS_DATA,ERR,ERROR,*999)
+                      
+                  !Get the state information if this environment has any.
+                  IF(ASSOCIATED(CELLML_ENVIRONMENT%STATE_FIELD)) THEN
+                    STATE_FIELD=>CELLML_ENVIRONMENT%STATE_FIELD%STATE_FIELD
+                    IF(ASSOCIATED(STATE_FIELD)) THEN
+                      CALL FIELD_PARAMETER_SET_DATA_GET(STATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & STATE_DATA,ERR,ERROR,*999)
+                    ELSE
+                      NULLIFY(STATE_DATA)
+                    ENDIF
+                  ELSE
+                    NULLIFY(STATE_DATA)
+                    NULLIFY(STATE_FIELD)
+                  ENDIF
+                      
+                  !Get the parameters information if this environment has any.
+                  IF(ASSOCIATED(CELLML_ENVIRONMENT%PARAMETERS_FIELD)) THEN
+                    PARAMETERS_FIELD=>CELLML_ENVIRONMENT%PARAMETERS_FIELD%PARAMETERS_FIELD
+                    IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
+                      CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & PARAMETERS_DATA,ERR,ERROR,*999)
+                    ELSE
+                      NULLIFY(PARAMETERS_DATA)
+                    ENDIF
+                  ELSE
+                    NULLIFY(PARAMETERS_DATA)
+                    NULLIFY(PARAMETERS_FIELD)
+                  ENDIF
+                      
+                  !Get the intermediate information if this environment has any.
+                  IF(ASSOCIATED(CELLML_ENVIRONMENT%INTERMEDIATE_FIELD)) THEN
+                    INTERMEDIATE_FIELD=>CELLML_ENVIRONMENT%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
+                    IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
+                      CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & INTERMEDIATE_DATA,ERR,ERROR,*999)                            
+                    ELSE
+                      NULLIFY(INTERMEDIATE_DATA)
+                    ENDIF
+                  ELSE
+                    NULLIFY(INTERMEDIATE_DATA)
+                    NULLIFY(INTERMEDIATE_FIELD)
+                  ENDIF
+
+                  !Solve these CellML equations
+                  SELECT CASE(CELLML_EVALUATOR_SOLVER%SOLVER_LIBRARY)
+                  CASE(SOLVER_CMISS_LIBRARY)
+                    CALL SOLVER_CELLML_EVALUATE(CELLML_EVALUATOR_SOLVER,CELLML_ENVIRONMENT,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS, & 
+                      & CELLML_ENVIRONMENT%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,MODELS_DATA,CELLML_ENVIRONMENT% &
+                      & MAXIMUM_NUMBER_OF_STATE,STATE_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS, &
+                      & PARAMETERS_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR,ERROR,*999)
+                  CASE DEFAULT
+                    CALL FLAG_ERROR("Solver library not implemented.",ERR,ERROR,*999)
+                  END SELECT
+                   
+                  !Restore field data
+                  CALL FIELD_PARAMETER_SET_DATA_RESTORE(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                    & MODELS_DATA,ERR,ERROR,*999)
+                  IF(ASSOCIATED(STATE_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,STATE_DATA,ERR,ERROR,*999)                    
+                  IF(ASSOCIATED(PARAMETERS_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(PARAMETERS_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,PARAMETERS_DATA,ERR,ERROR,*999)                    
+                  IF(ASSOCIATED(INTERMEDIATE_FIELD)) CALL FIELD_PARAMETER_SET_DATA_RESTORE(INTERMEDIATE_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,INTERMEDIATE_DATA,ERR,ERROR,*999)
+                   
+                  !Make sure fields have been updated to the current value of any mapped CellML fields
+                  CALL CELLML_CELLML_TO_FIELD_UPDATE(CELLML_ENVIRONMENT,ERR,ERROR,*999)
+                    
+                ELSE
+                  LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
+                    & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
+                  & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The CellML enviroment is not associated for for CellML index "// &
+                & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ENDDO !cellml_idx
+        ELSE
+          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -1028,6 +1206,207 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Evaluate the CellML equations. 
+  SUBROUTINE SOLVER_CELLML_EVALUATE(CELLML_EVALUATOR_SOLVER,CELLML,N, ONLY_ONE_MODEL_INDEX,MODELS_DATA,MAX_NUMBER_STATES, &
+    & STATE_DATA,MAX_NUMBER_PARAMETERS,PARAMETERS_DATA,MAX_NUMBER_INTERMEDIATES,INTERMEDIATE_DATA,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CELLML_EVALUATOR_SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer the CellML evaluator equation solver to evaluate
+    TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment to integrate the equations for.
+    INTEGER(INTG), INTENT(IN) :: N !<The number of degrees-of-freedom
+    INTEGER(INTG), INTENT(IN) :: ONLY_ONE_MODEL_INDEX !<If only one model is used in the models data the index of that model. 0 otherwise.
+    INTEGER(INTG), POINTER :: MODELS_DATA(:) !<MODELS_DATA(dof_idx). The models data for the dof_idx'th dof.
+    INTEGER(INTG), INTENT(IN) :: MAX_NUMBER_STATES !<The maximum number of state variables per dof
+    REAL(DP), POINTER :: STATE_DATA(:) !<STATE_DATA(state_idx,dof_idx). The state data for the state_idx'th state variable of the dof_idx'th dof. state_idx varies from 1..NUMBER_STATES.
+    INTEGER(INTG), INTENT(IN) :: MAX_NUMBER_PARAMETERS !<The maximum number of parameter variables per dof.
+    REAL(DP), POINTER :: PARAMETERS_DATA(:) !<PARAMETERS_DATA(parameter_idx,dof_idx). The parameters data for the parameter_idx'th parameter variable of the dof_idx'th dof. parameter_idx varies from 1..NUMBER_PARAMETERS.
+    INTEGER(INTG), INTENT(IN) :: MAX_NUMBER_INTERMEDIATES !<The maximum number of intermediate variables per dof.
+    REAL(DP), POINTER :: INTERMEDIATE_DATA(:) !<INTERMEDIATE_DATA(intermediate_idx,dof_idx). The intermediate values data for the intermediate_idx'th intermediate variable of the dof_idx'th dof. intermediate_idx varies from 1..NUMBER_INTERMEDIATE
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
+      & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
+      & STATE_END_DOF,state_idx,STATE_START_DOF
+    REAL(DP) :: INTERMEDIATES(MAX_NUMBER_INTERMEDIATES),PARAMETERS(MAX_NUMBER_PARAMETERS),RATES(MAX_NUMBER_STATES), &
+      & STATES(MAX_NUMBER_STATES)
+    TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("SOLVER_CELLML_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
+      IF(ASSOCIATED(CELLML)) THEN
+        IF(ASSOCIATED(CELLML%MODELS_FIELD)) THEN
+          CALL FIELD_DOF_ORDER_TYPE_GET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*999)
+          IF(DOF_ORDER_TYPE==FIELD_SEPARATED_COMPONENT_DOF_ORDER) THEN
+            !Dof components are separated. Will need to copy data to temporary arrays.
+            IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
+              !Mulitple models
+              DO dof_idx=1,N
+                model_idx=MODELS_DATA(dof_idx)
+                MODEL=>CELLML%MODELS(model_idx)%PTR
+                IF(ASSOCIATED(MODEL)) THEN
+                  NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                  NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                  NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                    
+                  !Copy CellML data to temporary arrays
+                  DO state_idx=1,NUMBER_STATES
+                    STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                  ENDDO !state_idx
+                  DO parameter_idx=1,NUMBER_PARAMETERS
+                    PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                  ENDDO !parameter_idx
+                  
+#ifdef USECELLML                    
+                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
+                    & PARAMETERS)
+#else
+                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+
+                  !Copy temporary data back to CellML arrays
+                  DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                    INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                  ENDDO !intermediate_idx
+                  DO state_idx=1,NUMBER_STATES
+                    STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)
+                  ENDDO !state_idx
+                    
+                ELSE
+                  LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                    & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                    & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF                  
+              ENDDO !dof_idx
+            ELSE
+              !One one model is used.          
+              MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
+              IF(ASSOCIATED(MODEL)) THEN
+                NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                DO dof_idx=1,N
+
+                  !Copy CellML data to temporary arrays
+                  DO state_idx=1,NUMBER_STATES
+                    STATES(state_idx)=STATE_DATA((dof_idx-1)*N+state_idx)
+                  ENDDO !state_idx
+                  DO parameter_idx=1,NUMBER_PARAMETERS
+                    PARAMETERS(parameter_idx)=PARAMETERS_DATA((dof_idx-1)*N+parameter_idx)
+                  ENDDO !parameter_idx
+
+#ifdef USECELLML                    
+                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
+                    & PARAMETERS)
+#else
+                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+                    
+                  !Copy temporary data back to CellML arrays
+                  DO intermediate_idx=1,NUMBER_INTERMEDIATES
+                    INTERMEDIATE_DATA((dof_idx-1)*N+intermediate_idx)=INTERMEDIATES(intermediate_idx)
+                  ENDDO !intermediate_idx
+                  DO state_idx=1,NUMBER_STATES
+                    STATE_DATA((dof_idx-1)*N+state_idx)=STATES(state_idx)
+                  ENDDO !state_idx
+
+                ENDDO !dof_idx
+              ELSE
+                LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+          ELSE
+            !Dof components are continguous. Can pass data directly.
+            IF(ONLY_ONE_MODEL_INDEX==CELLML_MODELS_FIELD_NOT_CONSTANT) THEN
+              !Mulitple models
+              DO dof_idx=1,N
+                model_idx=MODELS_DATA(dof_idx)
+                MODEL=>CELLML%MODELS(model_idx)%PTR
+                IF(ASSOCIATED(MODEL)) THEN
+                  NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                  NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                  NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                  STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                  STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                  INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                  INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                  PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                  PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1         
+                    
+#ifdef USECELLML                    
+                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                    & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                    & PARAMETER_END_DOF))
+#else
+                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+                    
+                ELSE
+                  LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                    & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                    & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF                  
+              ENDDO !dof_idx
+
+            ELSE
+              !One one model is used.
+              MODEL=>CELLML%MODELS(ONLY_ONE_MODEL_INDEX)%PTR
+              IF(ASSOCIATED(MODEL)) THEN
+                NUMBER_STATES=MODEL%NUMBER_OF_STATE
+                NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
+                NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
+                DO dof_idx=1,N
+                  STATE_START_DOF=(dof_idx-1)*MAX_NUMBER_STATES+1
+                  STATE_END_DOF=STATE_START_DOF+NUMBER_STATES-1
+                  INTERMEDIATE_START_DOF=(dof_idx-1)*MAX_NUMBER_INTERMEDIATES+1
+                  INTERMEDIATE_END_DOF=INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
+                  PARAMETER_START_DOF=(dof_idx-1)*MAX_NUMBER_PARAMETERS+1
+                  PARAMETER_END_DOF=PARAMETER_START_DOF+NUMBER_PARAMETERS-1
+                    
+#ifdef USECELLML                    
+                  CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATE_DATA(STATE_START_DOF:STATE_END_DOF), &
+                    & RATES,INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
+                    & PARAMETER_END_DOF))
+#else
+                  CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+#endif
+                    
+                ENDDO !dof_idx
+              ELSE
+                LOCAL_ERROR="CellML environment model is not associated for model index "// &
+                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+      ENDIF      
+    ELSE
+      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_CELLML_EVALUATE")
+    RETURN
+999 CALL ERRORS("SOLVER_CELLML_EVALUATE",ERR,ERROR)    
+    CALL EXITS("SOLVER_CELLML_EVALUATE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_CELLML_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
 
   !>Finishes the process of creating a solver 
   SUBROUTINE SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*)
@@ -1037,6 +1416,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: solver_idx
 
     CALL ENTERS("SOLVER_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -1045,9 +1425,9 @@ CONTAINS
         CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         !Set the finished flag. The final solver finish will be done once the solver equations have been finished.
-        IF(ASSOCIATED(SOLVER%LINKED_SOLVER)) THEN
-          SOLVER%LINKED_SOLVER%SOLVER_FINISHED=.TRUE.
-        ENDIF
+        DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
+          SOLVER%LINKED_SOLVERS(solver_idx)%PTR%SOLVER_FINISHED=.TRUE.
+        ENDDO !solver_idx
         SOLVER%SOLVER_FINISHED=.TRUE.
       ENDIF
     ELSE
@@ -1541,7 +1921,7 @@ CONTAINS
 #ifdef USECELLML                    
                     CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
                       & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                      PARAMETER_END_DOF))
+                      & PARAMETER_END_DOF))
 #else
                     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
@@ -1577,7 +1957,7 @@ CONTAINS
 #ifdef USECELLML                    
                     CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATE_DATA(STATE_START_DOF:STATE_END_DOF),RATES, &
                       & INTERMEDIATE_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF),PARAMETERS_DATA(PARAMETER_START_DOF: &
-                      PARAMETER_END_DOF))
+                      & PARAMETER_END_DOF))
 #else
                     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
@@ -1636,7 +2016,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-   TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("SOLVER_DAE_EULER_FORWARD_SOLVE",ERR,ERROR,*999)
 
@@ -4292,10 +4672,11 @@ CONTAINS
             NULLIFY(DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVERS)
             DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_LINEAR
             CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-            SOLVER%LINKED_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
-            DYNAMIC_SOLVER%LINEAR_SOLVER%LINKING_SOLVER=>SOLVER
-            DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVE_TYPE=SOLVER_LINEAR_TYPE
+! tomo
+!            CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
             CALL SOLVER_LINEAR_INITIALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+            CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
+! tomo end
             IF(DYNAMIC_SOLVER%LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
               CALL SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO, &
                 & ERR,ERROR,*999)
@@ -4307,10 +4688,11 @@ CONTAINS
             NULLIFY(DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVERS)
             DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_NONLINEAR
             CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
-            SOLVER%LINKED_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
-            DYNAMIC_SOLVER%NONLINEAR_SOLVER%LINKING_SOLVER=>SOLVER
-            DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVE_TYPE=SOLVER_NONLINEAR_TYPE
+! tomo
+!            CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,DYNAMIC_SOLVER%NONLINEAR_SOLVER,SOLVER_NONLINEAR_TYPE,ERR,ERROR,*999)
             CALL SOLVER_NONLINEAR_INITIALISE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
+            CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,DYNAMIC_SOLVER%NONLINEAR_SOLVER,SOLVER_NONLINEAR_TYPE,ERR,ERROR,*999)
+! tomo end
             IF(DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
               CALL SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%NONLINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO, &
                 & ERR,ERROR,*999)
@@ -6202,6 +6584,8 @@ CONTAINS
       CALL SOLVER_CELLML_EVALUATOR_FINALISE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
       IF(.NOT.ASSOCIATED(SOLVER%LINKING_SOLVER)) &
         & CALL SOLVER_EQUATIONS_FINALISE(SOLVER%SOLVER_EQUATIONS,ERR,ERROR,*999)
+      IF(ALLOCATED(SOLVER%LINKED_SOLVER_TYPE_MAP)) DEALLOCATE(SOLVER%LINKED_SOLVER_TYPE_MAP)
+      IF(ALLOCATED(SOLVER%LINKED_SOLVERS)) DEALLOCATE(SOLVER%LINKED_SOLVERS)
       DEALLOCATE(SOLVER)
     ENDIF 
         
@@ -6212,6 +6596,57 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_FINALISE
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Create a CellML evaluator solver for the Newton solver
+  SUBROUTINE SOLVER_NEWTON_CELLML_EVALUATOR_CREATE(SOLVER,CELLML_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to create the CellML evaluator solver for
+    TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER !<On return, a pointer to the created CellML evaluator solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+            
+    NULLIFY(CELLML_SOLVER)
+    
+    CALL ENTERS("SOLVER_NEWTON_CELLML_EVALUATOR_CREATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      NULLIFY(NONLINEAR_SOLVER)
+      NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+      IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+          !Create the CellML evaluator solver
+          ALLOCATE(NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Cannot allocate CellML evaluator solver.",ERR,ERROR,*999)
+          CELLML_SOLVER=>NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+          NULLIFY(CELLML_SOLVER%SOLVERS)
+          CALL SOLVER_INITIALISE_PTR(CELLML_SOLVER,ERR,ERROR,*999)
+          CALL SOLVER_CELLML_EVALUATOR_INITIALISE(CELLML_SOLVER,ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+        
+    CALL EXITS("SOLVER_NEWTON_CELLML_EVALUATOR_CREATE")
+    RETURN
+999 CALL ERRORS("SOLVER_NEWTON_CELLML_EVALUATOR_CREATE",ERR,ERROR)
+    CALL EXITS("SOLVER_NEWTON_CELLML_EVALUATOR_CREATE")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_NEWTON_CELLML_EVALUATOR_CREATE
 
   !
   !================================================================================================================================
@@ -6280,12 +6715,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: solver_idx
     
     CALL ENTERS("SOLVER_INITIALISE_PTR",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       NULLIFY(SOLVER%LINKING_SOLVER)
-      NULLIFY(SOLVER%LINKED_SOLVER)
+      ALLOCATE(SOLVER%LINKED_SOLVER_TYPE_MAP(SOLVER_NUMBER_OF_SOLVER_TYPES),STAT=ERR)
+      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linked solver type map.",ERR,ERROR,*999)
+      DO solver_idx=1,SOLVER_NUMBER_OF_SOLVER_TYPES
+        NULLIFY(SOLVER%LINKED_SOLVER_TYPE_MAP(solver_idx)%PTR)
+      ENDDO !solver_idx
+      SOLVER%NUMBER_OF_LINKED_SOLVERS=0
       SOLVER%SOLVER_FINISHED=.FALSE.
       SOLVER%LABEL=""
       SOLVER%OUTPUT_TYPE=SOLVER_NO_OUTPUT
@@ -11703,6 +12144,7 @@ CONTAINS
           NONLINEAR_SOLVER%NEWTON_SOLVER%SOLUTION_TOLERANCE=1.0E-05_DP
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%LINESEARCH_SOLVER)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%TRUSTREGION_SOLVER)
+          NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER)
           !Default to a Newton linesearch solver
           NONLINEAR_SOLVER%NEWTON_SOLVER%NEWTON_SOLVE_TYPE=SOLVER_NEWTON_LINESEARCH
           CALL SOLVER_NEWTON_LINESEARCH_INITIALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
@@ -11711,10 +12153,11 @@ CONTAINS
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Newton solver linear solver.",ERR,ERROR,*999)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER%SOLVERS)
           CALL SOLVER_INITIALISE_PTR(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
-          SOLVER%LINKED_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER
-          NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER%LINKING_SOLVER=>SOLVER
-          NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER%SOLVE_TYPE=SOLVER_LINEAR_TYPE
+! tomo
           CALL SOLVER_LINEAR_INITIALISE(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+          CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
+!          CALL SOLVER_LINEAR_INITIALISE(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
+! tomo end
         ELSE
           CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*998)
         ENDIF
@@ -11980,6 +12423,63 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_NEWTON_LINEAR_SOLVER_GET
+
+  !
+  !================================================================================================================================
+  !
+  
+  !>Returns the CellML solver associated with a Newton solver \todo should this be SOLVER_NONLINEAR_NEWTON_CELLML_SOLVER_GET??? \see OPENCMISS::CMISSSolverNewtonCellMLSolverGetSet
+  SUBROUTINE SOLVER_NEWTON_CELLML_SOLVER_GET(SOLVER,CELLML_SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the Newton solver to get the linear solver for
+    TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER !<On exit, a pointer the linear solver linked to the Newton solver. Must not be associated on entry
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
+
+    CALL ENTERS("SOLVER_NEWTON_CELLML_SOLVER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(ASSOCIATED(CELLML_SOLVER)) THEN
+        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
+      ELSE
+        NULLIFY(CELLML_SOLVER)
+        IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
+          NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+            IF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_NEWTON) THEN
+              NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+              IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+                CELLML_SOLVER=>NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
+                IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
+                  & CALL FLAG_ERROR("Newton solver CellML solver is not associated.",ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_NEWTON_CELLML_SOLVER_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_NEWTON_CELLML_SOLVER_GET",ERR,ERROR)    
+    CALL EXITS("SOLVER_NEWTON_CELLML_SOLVER_GET")
+    RETURN 1
+   
+  END SUBROUTINE SOLVER_NEWTON_CELLML_SOLVER_GET
 
   !
   !================================================================================================================================
@@ -14764,6 +15264,8 @@ CONTAINS
               CALL SOLVER_EIGENPROBLEM_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_OPTIMISER_TYPE)
               CALL SOLVER_OPTIMISER_INITIALISE(SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_CELLML_EVALUATOR_TYPE)
+              CALL SOLVER_CELLML_EVALUATOR_INITIALISE(SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The specified solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -14782,6 +15284,8 @@ CONTAINS
               CALL SOLVER_EIGENPROBLEM_FINALISE(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
             CASE(SOLVER_OPTIMISER_TYPE)
               CALL SOLVER_OPTIMISER_FINALISE(SOLVER%OPTIMISER_SOLVER,ERR,ERROR,*999)
+            CASE(SOLVER_CELLML_EVALUATOR_TYPE)
+              CALL SOLVER_CELLML_EVALUATOR_FINALISE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The solver solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
@@ -16117,7 +16621,94 @@ CONTAINS
   !
   !================================================================================================================================
   !
-        
+
+  !>Adds a linked solver to the solver. Also sets the solver type for the linked solver, als well as its linking solver.
+  SUBROUTINE SOLVER_LINKED_SOLVER_ADD(SOLVER,SOLVER_TO_LINK,SOLV_TYPE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to add the linked solver to.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER_TO_LINK !<A pointer the the solver to be linked. 
+    INTEGER(INTG), INTENT(IN) :: SOLV_TYPE !<The solver type of the solver to be linked.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(SOLVER_PTR_TYPE), ALLOCATABLE, TARGET :: OLD_LINKED_SOLVERS(:)
+    INTEGER(INTG) :: solver_idx
+
+    CALL ENTERS("SOLVER_LINKED_SOLVER_ADD",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(ASSOCIATED(SOLVER_TO_LINK)) THEN
+        IF(SOLV_TYPE>=1 .AND. SOLV_TYPE<=SOLVER_NUMBER_OF_SOLVER_TYPES) THEN
+          !does the solver have already linked solvers?
+          IF(SOLVER%NUMBER_OF_LINKED_SOLVERS==0) THEN
+            !no - then start the creation of linked solvers
+            ALLOCATE(SOLVER%LINKED_SOLVERS(1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linked solvers.",ERR,ERROR,*999)
+            DO solver_idx=1,SOLVER_NUMBER_OF_SOLVER_TYPES
+              NULLIFY(SOLVER%LINKED_SOLVER_TYPE_MAP(solver_idx)%PTR)
+            ENDDO !solver_idx
+            SOLVER%LINKED_SOLVER_TYPE_MAP(SOLV_TYPE)%PTR=>SOLVER_TO_LINK
+            SOLVER%LINKED_SOLVERS(1)%PTR=>SOLVER_TO_LINK
+            SOLVER%NUMBER_OF_LINKED_SOLVERS=SOLVER%NUMBER_OF_LINKED_SOLVERS+1
+          ELSE IF(SOLVER%NUMBER_OF_LINKED_SOLVERS>0.AND.SOLVER%NUMBER_OF_LINKED_SOLVERS<=SOLVER_NUMBER_OF_SOLVER_TYPES) THEN
+            !yes, there are already linked solvers
+            !check if a solver of the same type has already been linked
+            DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
+              IF(SOLVER%LINKED_SOLVERS(solver_idx)%PTR%SOLVE_TYPE==SOLV_TYPE) THEN
+                LOCAL_ERROR="The solver has already a linked solver of type "//TRIM(NUMBER_TO_VSTRING(SOLV_TYPE, &
+                  & "*",ERR,ERROR))//" attached to it."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ENDDO !solver_idx
+            ALLOCATE(OLD_LINKED_SOLVERS(SOLVER%NUMBER_OF_LINKED_SOLVERS),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not old linked solvers.",ERR,ERROR,*999)
+            DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
+              OLD_LINKED_SOLVERS(solver_idx)%PTR=>SOLVER%LINKED_SOLVERS(solver_idx)%PTR
+            ENDDO
+            DEALLOCATE(SOLVER%LINKED_SOLVERS)
+            ALLOCATE(SOLVER%LINKED_SOLVERS(SOLVER%NUMBER_OF_LINKED_SOLVERS+1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not new linked solvers.",ERR,ERROR,*999)
+            DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
+              SOLVER%LINKED_SOLVERS(solver_idx)%PTR=>OLD_LINKED_SOLVERS(solver_idx)%PTR
+            ENDDO
+            SOLVER%LINKED_SOLVERS(SOLVER%NUMBER_OF_LINKED_SOLVERS+1)%PTR=>SOLVER_TO_LINK
+            SOLVER%LINKED_SOLVER_TYPE_MAP(SOLV_TYPE)%PTR=>SOLVER_TO_LINK
+            SOLVER%NUMBER_OF_LINKED_SOLVERS=SOLVER%NUMBER_OF_LINKED_SOLVERS+1
+            DEALLOCATE(OLD_LINKED_SOLVERS)
+          ELSE
+            LOCAL_ERROR="The number of linked solvers is "//TRIM(NUMBER_TO_VSTRING(SOLVER%NUMBER_OF_LINKED_SOLVERS,"*",ERR, &
+              & ERROR))//" but should be between 0 and "//TRIM(NUMBER_TO_VSTRING(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+          !set the solver type for the linked solver
+          SOLVER%LINKED_SOLVER_TYPE_MAP(SOLV_TYPE)%PTR%SOLVE_TYPE=SOLV_TYPE
+          !set the linking solver for the linked solver
+          SOLVER%LINKED_SOLVER_TYPE_MAP(SOLV_TYPE)%PTR%LINKING_SOLVER=>SOLVER
+        ELSE
+          LOCAL_ERROR="The specified solver type is "//TRIM(NUMBER_TO_VSTRING(SOLV_TYPE,"*",ERR,ERROR))//&
+            & " but should be between 1 and "//TRIM(NUMBER_TO_VSTRING(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver to link is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_LINKED_SOLVER_ADD")
+    RETURN
+999 CALL ERRORS("SOLVER_LINKED_SOLVER_ADD",ERR,ERROR)
+    CALL EXITS("SOLVER_LINKED_SOLVER_ADD")
+    RETURN 1
+  END SUBROUTINE SOLVER_LINKED_SOLVER_ADD
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE SOLVER_ROUTINES
 
 !
