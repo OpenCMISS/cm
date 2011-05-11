@@ -1655,9 +1655,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: PTR !<A pointer to the boundary conditions variable
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE
   
-  !>Contains information on the boundary conditions for the equations set. \see OPENCMISS::CMISSBoundaryConditionsType
+  !>Contains information on the boundary conditions for the solver equations. \see OPENCMISS::CMISSBoundaryConditionsType
   TYPE BOUNDARY_CONDITIONS_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations.
     LOGICAL :: BOUNDARY_CONDITIONS_FINISHED !<Is .TRUE. if the boundary conditions for the equations set has finished being created, .FALSE. if not.
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(:) !<BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx). BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR is the pointer to the variable_type_idx'th BOUNDARY_CONDITIONS_VARIABLE
   END TYPE BOUNDARY_CONDITIONS_TYPE
