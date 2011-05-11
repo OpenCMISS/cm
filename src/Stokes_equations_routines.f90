@@ -214,7 +214,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: GEOMETRIC_SCALING_TYPE,GEOMETRIC_MESH_COMPONENT
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -232,7 +231,6 @@ CONTAINS
     NULLIFY(EQUATIONS_MAPPING)
     NULLIFY(EQUATIONS_MATRICES)
     NULLIFY(GEOMETRIC_DECOMPOSITION)
-    NULLIFY(BOUNDARY_CONDITIONS)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -876,39 +874,6 @@ CONTAINS
                     LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                         & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                         & " is invalid for a Stokes equation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            !Define boundary conditions type
-            CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
-                CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
-                  & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE,&
-                  & EQUATIONS_SET_PGM_STOKES_SUBTYPE)  
-                SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-                    CASE(EQUATIONS_SET_SETUP_START_ACTION)
-                      CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-                      IF(ASSOCIATED(EQUATIONS)) THEN
-                        IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-                         CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-                        ELSE
-                         CALL FLAG_ERROR("Equations set equations has not been finished.",ERR,ERROR,*999)               
-                        ENDIF
-                      ELSE 
-                        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-                      CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-                      CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-                        & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid for a standard Stokes fluid."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
