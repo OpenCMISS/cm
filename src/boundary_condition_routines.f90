@@ -598,12 +598,11 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDDO !equations_set_idx
+            !Initialise the boundary conditions
+            CALL BOUNDARY_CONDITIONS_INITIALISE(SOLVER_EQUATIONS,ERR,ERROR,*999)
             IF(LOAD_INCREMENT) THEN
-              !Initialise the boundary conditions for load increment loop
+              !Setup the required parameter sets for load increments
               CALL BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(SOLVER_EQUATIONS,ERR,ERROR,*999)
-            ELSE
-              !Initialise the boundary conditions
-              CALL BOUNDARY_CONDITIONS_INITIALISE(SOLVER_EQUATIONS,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Solver equations solver mapping is not associated."
@@ -693,344 +692,270 @@ CONTAINS
   !
 
   !>Initialises the boundary conditions for an equations set.
-  SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE(SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the boundary conditions for
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to initialise the boundary conditions for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,variable_type_idx
+    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,variable_type_idx,equations_set_idx
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING    
+    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-    
+
     CALL ENTERS("BOUNDARY_CONDITIONS_INITIALISE",ERR,ERROR,*998)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(ASSOCIATED(EQUATIONS_SET%BOUNDARY_CONDITIONS)) THEN
-        CALL FLAG_ERROR("Boundary conditions is already associated for this equations set.",ERR,ERROR,*998)
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      IF(ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS)) THEN
+        CALL FLAG_ERROR("Boundary conditions is already associated for these solver equations.",ERR,ERROR,*998)
       ELSE
-        EQUATIONS=>EQUATIONS_SET%EQUATIONS
-        IF(ASSOCIATED(EQUATIONS)) THEN
-          IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-            EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-            IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-              IF(EQUATIONS_MAPPING%EQUATIONS_MAPPING_FINISHED) THEN
-                ALLOCATE(EQUATIONS_SET%BOUNDARY_CONDITIONS,STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions.",ERR,ERROR,*999)
-                EQUATIONS_SET%BOUNDARY_CONDITIONS%EQUATIONS_SET=>EQUATIONS_SET
-                EQUATIONS_SET%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.FALSE.
-                ALLOCATE(EQUATIONS_SET%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_NUMBER_OF_VARIABLE_TYPES), &
-                  & STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions variable type map.",ERR,ERROR,*999)
-                DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-                  NULLIFY(EQUATIONS_SET%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR)
-                ENDDO !variable_type_idx
-                SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
-                CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
-                  SELECT CASE(EQUATIONS%LINEARITY)
-                  CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
-                    LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                    IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                      DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-                        VARIABLE_TYPE=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
-                        IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
-                          CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,LINEAR_MAPPING% &
-                            & VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE,ERR,ERROR,*999)
-                        ENDIF
-                      ENDDO !variable_idx
+        IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
+          ALLOCATE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions.",ERR,ERROR,*999)
+          SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.FALSE.
+          ALLOCATE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+              & FIELD_NUMBER_OF_VARIABLE_TYPES),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions variable type map.",ERR,ERROR,*999)
+          DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+            NULLIFY(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR)
+          ENDDO !variable_type_idx
+          DO equations_set_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            IF(ASSOCIATED(EQUATIONS_SET) THEN
+              EQUATIONS=>EQUATIONS_SET%EQUATIONS
+              IF(ASSOCIATED(EQUATIONS)) THEN
+                IF(EQUATIONS%EQUATIONS_FINISHED) THEN
+                  EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                  IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                    IF(EQUATIONS_MAPPING%EQUATIONS_MAPPING_FINISHED) THEN
+                      EQUATIONS_SET%BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                      SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+                      CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
+                        SELECT CASE(EQUATIONS%LINEARITY)
+                        CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
+                          LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                          IF(ASSOCIATED(LINEAR_MAPPING)) THEN
+                            DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
+                              VARIABLE_TYPE=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
+                              VARIABLE=>LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE
+                              IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
+                                IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                    & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR)) THEN
+                                  CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                    & ERR,ERROR,*999)
+                                ENDIF
+                              ENDIF
+                            ENDDO !variable_idx
+                          ELSE
+                            CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                          RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                          IF(ASSOCIATED(RHS_MAPPING)) THEN
+                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                & ERR,ERROR,*999)
+                            ENDIF
+                          ENDIF
+                        CASE(EQUATIONS_NONLINEAR)
+                          NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                          IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                            DO variable_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+                              VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(variable_idx)
+                              IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                  & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
+                                CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                  & ERR,ERROR,*999)
+                              ENDIF
+                            ENDDO
+                          ELSE
+                            CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                          RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                          IF(ASSOCIATED(RHS_MAPPING)) THEN
+                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                & ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        CASE DEFAULT
+                          LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*", &
+                                & ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+                        SELECT CASE(EQUATIONS%LINEARITY)
+                        CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
+                          DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                          IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                            VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
+                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                & ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                          RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                          IF(ASSOCIATED(RHS_MAPPING)) THEN
+                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                & ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        CASE(EQUATIONS_NONLINEAR)
+                          DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                          IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
+                            VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
+                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                & ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                          RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                          IF(ASSOCIATED(RHS_MAPPING)) THEN
+                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
+                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
+                                  & ERR,ERROR,*999)
+                            ENDIF
+                          ELSE
+                            CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        CASE DEFAULT
+                          LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*", &
+                                & ERR,ERROR))//" is invalid."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        END SELECT
+                      CASE DEFAULT
+                        LOCAL_ERROR="The equations time dependence type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Equations mapping has not been finished.",ERR,ERROR,*998)
                     ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
-                    ENDIF
-                  CASE(EQUATIONS_NONLINEAR)
-                    NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                    IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                      DO variable_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,NONLINEAR_MAPPING% &
-                        & RESIDUAL_VARIABLES(variable_idx)%PTR,ERR,ERROR,*999)
-                      ENDDO
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE DEFAULT
-                    LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
-                  SELECT CASE(EQUATIONS%LINEARITY)
-                  CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
-                    DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                    IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,DYNAMIC_MAPPING% &
-                        & DYNAMIC_VARIABLE,ERR,ERROR,*999)
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE(EQUATIONS_NONLINEAR)
-                    DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                    IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,DYNAMIC_MAPPING% &
-                        & DYNAMIC_VARIABLE,ERR,ERROR,*999)
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE DEFAULT
-                    LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                CASE DEFAULT
-                  LOCAL_ERROR="The equations time dependence type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
+                  ELSE
+                    CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*998)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*998)
+                ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations mapping has not been finished.",ERR,ERROR,*998)
+                CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*998)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*998)
+              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*998)
-          ENDIF
+          ENDDO !equations_set_idx
         ELSE
-          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*998)
+          CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Solver equations is not associated",ERR,ERROR,*998)
     ENDIF
-       
+
     CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE")
     RETURN
 999 CALL BOUNDARY_CONDITIONS_FINALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,DUMMY_ERR,DUMMY_ERROR,*998)
 998 CALL ERRORS("BOUNDARY_CONDITIONS_INITIALISE",ERR,ERROR)
     CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE")
     RETURN 1
-    
+
   END SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE
-  
+
   !
   !================================================================================================================================
   !
 
-  !>Initialises the boundary conditions for an equations set to be used with load increment loop.
-  SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(EQUATIONS_SET,ERR,ERROR,*)
+  !>Sets up parameter sets for problems with load incremented boundary conditions
+  SUBROUTINE BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT(SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the boundary conditions for
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to initialise the boundary conditions for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,variable_type_idx
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
-    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    INTEGER(INTG) :: variable_idx
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE
-    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING    
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
-
-    ! The difference between normal BOUNDARY_CONDITIONS_INITIALISE and this one is that this one
-    ! allocates a BOUNDARY_CONDITIONS_SET_TYPE for dependent field to store the conditions in the intrim.
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING), POINTER :: EQUATIONS_MAPPING
+    TYPE(RHS_MAPPING), POINTER :: RHS_MAPPING
 
     CALL ENTERS("BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT",ERR,ERROR,*998)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(ASSOCIATED(EQUATIONS_SET%BOUNDARY_CONDITIONS)) THEN
-        CALL FLAG_ERROR("Boundary conditions is already associated for this equations set.",ERR,ERROR,*998)
-      ELSE
-        EQUATIONS=>EQUATIONS_SET%EQUATIONS
-        IF(ASSOCIATED(EQUATIONS)) THEN
-          IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-            EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-            IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-              IF(EQUATIONS_MAPPING%EQUATIONS_MAPPING_FINISHED) THEN
-                ALLOCATE(EQUATIONS_SET%BOUNDARY_CONDITIONS,STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions.",ERR,ERROR,*999)
-                EQUATIONS_SET%BOUNDARY_CONDITIONS%EQUATIONS_SET=>EQUATIONS_SET
-                EQUATIONS_SET%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.FALSE.
-                ALLOCATE(EQUATIONS_SET%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_NUMBER_OF_VARIABLE_TYPES), &
-                  & STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions variable type map.",ERR,ERROR,*999)
-                DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-                  NULLIFY(EQUATIONS_SET%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR)
-                ENDDO !variable_type_idx
-                SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
-                CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC)
-                  SELECT CASE(EQUATIONS%LINEARITY)
-                  CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
-                    LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                    IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                      DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-                        VARIABLE_TYPE=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
-                        IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
-                          VARIABLE => LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE !
-                          CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,VARIABLE,ERR,ERROR,*999)
-                          CALL FIELD_PARAMETER_SET_CREATE(VARIABLE%FIELD,VARIABLE_TYPE, &
-                            & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-                        ENDIF
-                      ENDDO !variable_idx
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      IF(ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS)) THEN
+        DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
+          VARIABLE=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR
+          IF(ASSOCIATED(VARIABLE)) THEN
+            CALL FIELD_PARAMETER_SET_CREATE(VARIABLE%FIELD,VARIABLE%VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
+          ENDIF
+        ENDDO !variable_type_idx
+        !Also create current & previous pressue set types, if FINITE ELASTICITY equations type
+        !\todo: this is a hacky place to do it
+        IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
+          DO equations_set_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+            EQUATIONS_SET=>SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+            IF(ASSOCIATED(EQUATIONS_SET) THEN
+              EQUATIONS=>EQUATIONS_SET%EQUATIONS
+              IF(ASSOCIATED(EQUATIONS)) THEN
+                EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                  RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+                  IF(ASSOCIATED(RHS_MAPPING)) THEN
+                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
                       CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-                    ENDIF
-                  CASE(EQUATIONS_NONLINEAR)
-                    NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                    IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                      DO variable_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
-                        VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(variable_idx)%PTR
-                        CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,VARIABLE,ERR,ERROR,*999)
-                        !Create a field boundary conditions set type
-                        !May have been created already by another equations set
-                        IF(.NOT.ASSOCIATED(VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_BOUNDARY_CONDITIONS_SET_TYPE)%PTR)) THEN
-                          CALL FIELD_PARAMETER_SET_CREATE(VARIABLE%FIELD, &
-                            & VARIABLE%VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-                        ENDIF
-                      ENDDO
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
+                        & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
                       CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) !
-                      !Also create current & previous pressue set types, if FINITE ELASTICITY equations type
-                      !\todo: this is a hacky place to do it
-                      IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PREVIOUS_PRESSURE_SET_TYPE,ERR,ERROR,*999)  !
-                      ENDIF
-                      IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) THEN
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                        & FIELD_PREVIOUS_PRESSURE_SET_TYPE,ERR,ERROR,*999)  !
                     ENDIF
-                  CASE DEFAULT
-                    LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
-                  SELECT CASE(EQUATIONS%LINEARITY)
-                  CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
-                    DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                    IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,DYNAMIC_MAPPING% &
-                        & DYNAMIC_VARIABLE,ERR,ERROR,*999)
-                      VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-!                       CALL FIELD_PARAMETER_SET_CREATE(DYNAMIC_MAPPING%DYNAMIC_VARIABLE%FIELD, &
-!                         & VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) ! not used?
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
-!                       CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-!                         & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) ! not used?
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE(EQUATIONS_NONLINEAR)
-                    DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                    IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS, &
-                        & DYNAMIC_MAPPING%DYNAMIC_VARIABLE,ERR,ERROR,*999)
-                      VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                      CALL FIELD_PARAMETER_SET_CREATE(DYNAMIC_MAPPING%DYNAMIC_VARIABLE%FIELD, &
-                        & VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) !
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                    RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(EQUATIONS_SET%BOUNDARY_CONDITIONS,RHS_MAPPING% &
-                        & RHS_VARIABLE,ERR,ERROR,*999)
+                    IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) THEN
                       CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                        & FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999) !
-                      !Also create current & previous pressure set types, if FINITE ELASTICITY 
-                      !\todo: Again, this is a hacky place to do it. revise?
-                      IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)  !
-                        CALL FIELD_PARAMETER_SET_CREATE(RHS_MAPPING%RHS_VARIABLE%FIELD,RHS_MAPPING%RHS_VARIABLE_TYPE, &
-                          & FIELD_PREVIOUS_PRESSURE_SET_TYPE,ERR,ERROR,*999)  !
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                        & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,ERR,ERROR,*999)  !should've been already created?
                     ENDIF
-                  CASE DEFAULT
-                    LOCAL_ERROR="The equations linearity type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                CASE DEFAULT
-                  LOCAL_ERROR="The equations time dependence type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*998)
+                ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations mapping has not been finished.",ERR,ERROR,*998)
+                CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*998)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*998)
+              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*998)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*998)
-          ENDIF
+          ENDDO !equations_set_idx
         ELSE
-          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*998)
+          CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*998)
         ENDIF
+      ELSE
+        CALL FLAG_ERROR("Boundary conditions is not associated for these solver equations.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*998)
+      CALL FLAG_ERROR("Solver equations is not associated",ERR,ERROR,*998)
     ENDIF
        
     CALL EXITS("BOUNDARY_CONDITIONS_INITIALISE_LOAD_INCREMENT")
