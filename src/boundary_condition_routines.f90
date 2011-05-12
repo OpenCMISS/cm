@@ -155,7 +155,7 @@ CONTAINS
     INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,NUMBER_OF_DIRICHLET_CONDITIONS, STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS,COUNT
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS,NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS,pressure_incremented_idx
     INTEGER(INTG) :: NUMBER_OF_IMPERMEABILITY_CONDITIONS
-    INTEGER(INTG) :: variable_type_idx,dof_idx, equ_matrix_idx, dirichlet_idx, sparse_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
+    INTEGER(INTG) :: variable_idx,dof_idx, equ_matrix_idx, dirichlet_idx, sparse_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
     INTEGER(INTG) :: col_idx,equations_set_idx
     INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
@@ -182,12 +182,12 @@ CONTAINS
       IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
         CALL FLAG_ERROR("Boundary conditions have already been finished.",ERR,ERROR,*999)        
       ELSE
-        IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP)) THEN
+        IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)) THEN
           IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>0) THEN
             !Transfer all the boundary conditions to all the computational nodes.
  !!TODO \todo Look at this. ?????
-            DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-              BOUNDARY_CONDITION_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR
+            DO variable_idx=1,BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES
+              BOUNDARY_CONDITION_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
               IF(ASSOCIATED(BOUNDARY_CONDITION_VARIABLE)) THEN
                 FIELD_VARIABLE=>BOUNDARY_CONDITION_VARIABLE%VARIABLE
                 IF(ASSOCIATED(FIELD_VARIABLE)) THEN
@@ -201,7 +201,7 @@ CONTAINS
                     CALL MPI_ERROR_CHECK("MPI_ALLREDUCE",MPI_IERROR,ERR,ERROR,*999)
                   ELSE
                     LOCAL_ERROR="Field variable domain mapping is not associated for variable type "// &
-                      & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                      & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                   ! Update to ensure all set boundary condition values are sent to ghosts
@@ -293,6 +293,8 @@ CONTAINS
                       ENDDO
 
                       ! Store Dirichlet dof indices
+                      ! Todo: Figure out what's going on here and what to change now boundary conditions are associated
+                      !       with the solver equations
                       SOLVER_EQUATIONS=>BOUNDARY_CONDITIONS%SOLVER_EQUATIONS
                       IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                         IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
@@ -474,7 +476,7 @@ CONTAINS
                               ENDIF
                             ELSE
                               LOCAL_ERROR="Equations Set is not associated for boundary conditions variable "// &
-                                & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                                & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO !equations_set_idx
@@ -488,7 +490,7 @@ CONTAINS
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Dirichlet Boundary Conditions type is not associated for boundary condition variable type "// &
-                        & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                        & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDIF
@@ -510,17 +512,20 @@ CONTAINS
                       & FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE,ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  LOCAL_ERROR="Field variable is not associated for variable type "// &
-                    & TRIM(NUMBER_TO_VSTRING(variable_type_idx,"*",ERR,ERROR))//"."
+                  LOCAL_ERROR="Field variable is not associated for variable index "// &
+                    & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
+              ELSE
+                CALL FLAG_ERROR("Boundary conditions variable is not associated for variable index "// &
+                    & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//".",ERR,ERROR,*999)
               ENDIF
-            ENDDO ! variable_type_idx
+            ENDDO ! variable_idx
           ENDIF
           !Set the finished flag
           BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.TRUE.
         ELSE
-          CALL FLAG_ERROR("Boundary conditions variable type map is not allocated.",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Boundary conditions variables array is not allocated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
@@ -529,9 +534,10 @@ CONTAINS
 
     IF(DIAGNOSTICS1) THEN
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"Boundary conditions:",ERR,ERROR,*999)
-      DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-        BOUNDARY_CONDITION_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Variable type = ",variable_type_idx,ERR,ERROR,*999)
+      DO variable_idx=1,BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES
+        BOUNDARY_CONDITION_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Variable type = ",BOUNDARY_CONDITION_VARIABLE%VARIABLE_TYPE, &
+            & ERR,ERROR,*999)
         IF(ASSOCIATED(BOUNDARY_CONDITION_VARIABLE)) THEN
           FIELD_VARIABLE=>BOUNDARY_CONDITION_VARIABLE%VARIABLE
           VARIABLE_DOMAIN_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
@@ -541,9 +547,9 @@ CONTAINS
             & BOUNDARY_CONDITION_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS,'("    Global BCs:",8(X,I8))','(15X,8(X,I8))', &
             & ERR,ERROR,*999)
         ELSE
-          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Not mapped",ERR,ERROR,*999)
+          CALL FLAG_ERROR("Boundary condition variable is not associated",ERR,ERROR,*999)
         ENDIF
-      ENDDO !variable_type_idx
+      ENDDO !variable_idx
     ENDIF
     
     CALL EXITS("BOUNDARY_CONDITIONS_CREATE_FINISH")
@@ -665,21 +671,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: variable_type_idx
-    
+    INTEGER(INTG) :: variable_idx
+
     CALL ENTERS("BOUNDARY_CONDITIONS_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-      IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP)) THEN
-        DO variable_type_idx=1,SIZE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP,1)
-          CALL BOUNDARY_CONDITIONS_VARIABLE_FINALISE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-            & variable_type_idx)%PTR,ERR,ERROR,*999)
-        ENDDO !variable_type_idx
-        DEALLOCATE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP)
+      IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)) THEN
+        DO variable_idx=1,SIZE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES,1)
+          CALL BOUNDARY_CONDITIONS_VARIABLE_FINALISE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR, &
+              & ERR,ERROR,*999)
+        ENDDO !variable_idx
+        DEALLOCATE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)
       ENDIF
       DEALLOCATE(BOUNDARY_CONDITIONS)
     ENDIF
-       
+
     CALL EXITS("BOUNDARY_CONDITIONS_FINALISE")
     RETURN
 999 CALL ERRORS("BOUNDARY_CONDITIONS_FINALISE",ERR,ERROR)
@@ -699,8 +705,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,variable_type_idx,equations_set_idx
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE
+    INTEGER(INTG) :: DUMMY_ERR,variable_idx,VARIABLE_TYPE,equations_set_idx
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -720,12 +725,7 @@ CONTAINS
           ALLOCATE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions.",ERR,ERROR,*999)
           SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED=.FALSE.
-          ALLOCATE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-              & FIELD_NUMBER_OF_VARIABLE_TYPES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions variable type map.",ERR,ERROR,*999)
-          DO variable_type_idx=1,FIELD_NUMBER_OF_VARIABLE_TYPES
-            NULLIFY(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR)
-          ENDDO !variable_type_idx
+          SOLVER_EQUATIONS%BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES=0
           DO equations_set_idx=1,SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_EQUATIONS%SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
             IF(ASSOCIATED(EQUATIONS_SET) THEN
@@ -744,13 +744,9 @@ CONTAINS
                           IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                             DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
                               VARIABLE_TYPE=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
-                              VARIABLE=>LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE
                               IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%NUMBER_OF_EQUATIONS_MATRICES>0) THEN
-                                IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                    & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE_TYPE)%PTR)) THEN
-                                  CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                    & ERR,ERROR,*999)
-                                ENDIF
+                                CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                  & LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPE)%VARIABLE,ERR,ERROR,*999)
                               ENDIF
                             ENDDO !variable_idx
                           ELSE
@@ -758,35 +754,23 @@ CONTAINS
                           ENDIF
                           RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
                           IF(ASSOCIATED(RHS_MAPPING)) THEN
-                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                & ERR,ERROR,*999)
-                            ENDIF
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & RHS_MAPPING%RHS_VARIABLE,ERR,ERROR,*999)
                           ENDIF
                         CASE(EQUATIONS_NONLINEAR)
                           NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                           IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                             DO variable_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
-                              VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(variable_idx)
-                              IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                  & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
-                                CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                  & ERR,ERROR,*999)
-                              ENDIF
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                  & NONLINEAR_MAPPING%RESIDUAL_VARIABLES(variable_idx),ERR,ERROR,*999)
                             ENDDO
                           ELSE
                             CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                           RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
                           IF(ASSOCIATED(RHS_MAPPING)) THEN
-                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                & ERR,ERROR,*999)
-                            ENDIF
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & RHS_MAPPING%RHS_VARIABLE,ERR,ERROR,*999)
                           ELSE
                             CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -800,46 +784,30 @@ CONTAINS
                         CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                           DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
                           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                            VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
-                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                & ERR,ERROR,*999)
-                            ENDIF
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & DYNAMIC_MAPPING%DYNAMIC_VARIABLE,ERR,ERROR,*999)
                           ELSE
                             CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                           RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
                           IF(ASSOCIATED(RHS_MAPPING)) THEN
-                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                & ERR,ERROR,*999)
-                            ENDIF
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & RHS_MAPPING%RHS_VARIABLE,ERR,ERROR,*999)
                           ELSE
                             CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE(EQUATIONS_NONLINEAR)
                           DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
                           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                            VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
-                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                & ERR,ERROR,*999)
-                            ENDIF
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & DYNAMIC_MAPPING%DYNAMIC_VARIABLE,ERR,ERROR,*999)
                           ELSE
                             CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                           RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
                           IF(ASSOCIATED(RHS_MAPPING)) THEN
-                            VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-                            IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
-                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(VARIABLE%VARIABLE_TYPE)%PTR)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,VARIABLE, &
-                                  & ERR,ERROR,*999)
-                            ENDIF
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                & RHS_MAPPING%RHS_VARIABLE,ERR,ERROR,*999)
                           ELSE
                             CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
@@ -3556,7 +3524,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Initialise the boundary conditions variable for a variable type.
+  !>Initialise the boundary conditions variable for a variable type if that variable has not already been initialised, otherwise do nothing.
   SUBROUTINE BOUNDARY_CONDITIONS_VARIABLE_INITIALISE(BOUNDARY_CONDITIONS,FIELD_VARIABLE,ERR,ERROR,*)
 
     !Argument variables
@@ -3565,48 +3533,68 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,variable_type
+    INTEGER(INTG) :: DUMMY_ERR,variable_idx
+    TYPE(FIELD_VARIABLE_TYPE) :: VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: NEW_BOUNDARY_CONDITIONS_VARIABLES(:)
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    LOGICAL :: VARIABLE_FOUND
 
     CALL ENTERS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-        IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP)) THEN
-          VARIABLE_DOMAIN_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
-          IF(ASSOCIATED(VARIABLE_DOMAIN_MAPPING)) THEN
-            variable_type=FIELD_VARIABLE%VARIABLE_TYPE
-            IF(ASSOCIATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR)) THEN
-              LOCAL_ERROR="The boundary conditions variable is already associated for variable type "// &
-                & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+        VARIABLE_DOMAIN_MAPPING=>FIELD_VARIABLE%DOMAIN_MAPPING
+        IF(ASSOCIATED(VARIABLE_DOMAIN_MAPPING)) THEN
+          VARIABLE_FOUND=.FALSE.
+          variable_idx=1
+          DO WHILE(variable_idx<=BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES.AND..NOT.VARIABLE_FOUND)
+            VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR%VARIABLE
+            IF(ASSOCIATED(VARIALBLE)) THEN
+              IF(VARIABLE%VARIABLE_TYPE==FIELD_VARIABLE%VARIABLE_TYPE.AND. &
+                  & VARIABLE%FIELD%USER_NUMBER==FIELD_VARIABLE%FIELD%USER_NUMBER.AND. &
+                  & VARIABLE%FIELD%REGION%USER_NUMBER==FIELD_VARIABLE%FIELD%REGION%USER_NUMBER) THEN
+                VARIABLE_FOUND=.TRUE.
+              ENDIF
             ELSE
-              ALLOCATE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR,STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary condition variable.",ERR,ERROR,*999)
-              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%BOUNDARY_CONDITIONS=> &
-                & BOUNDARY_CONDITIONS
-              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%VARIABLE_TYPE=variable_type
-              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%VARIABLE=>FIELD_VARIABLE     
-              ALLOCATE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% &
-                & GLOBAL_BOUNDARY_CONDITIONS(VARIABLE_DOMAIN_MAPPING%NUMBER_OF_GLOBAL),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global boundary conditions.",ERR,ERROR,*999)
-              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%GLOBAL_BOUNDARY_CONDITIONS= &
-                & BOUNDARY_CONDITION_FREE
-              NULLIFY(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%DIRICHLET_BOUNDARY_CONDITIONS)
-              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%NUMBER_OF_DIRICHLET_CONDITIONS=0
-              NULLIFY(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%NEUMANN_BOUNDARY_CONDITIONS)
-              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR%NUMBER_OF_NEUMANN_BOUNDARIES=0
-              NULLIFY(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)% &
-                & PTR%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)
-              BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)% &
-                & PTR%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS=0
+              CALL FLAG_ERROR("Boundary conditions variable field variable is not associated.",ERR,ERROR,*998)
             ENDIF
-          ELSE
-            CALL FLAG_ERROR("Field variable domain mapping is not associated.",ERR,ERROR,*998)
+            variable_idx=variable_idx+1
+          ENDDO
+          IF(.NOT.VARIABLE_FOUND) THEN
+            ALLOCATE(NEW_BOUNDARY_CONDITIONS_VARIABLES(BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES+1),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary conditions variable type map.",ERR,ERROR,*998)
+            IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)) THEN
+              DO variable_idx=1,BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES
+                NEW_BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR=> &
+                    & BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR
+              ENDDO
+            ENDIF
+
+            ALLOCATE(NEW_BOUNDARY_CONDITIONS_VARIABLES(BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES+1)%PTR,STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate boundary condition variable.",ERR,ERROR,*998)
+            BOUNDARY_CONDITIONS_VARIABLE=>NEW_BOUNDARY_CONDITIONS_VARIABLES( &
+                & BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES+1)%PTR
+            BOUNDARY_CONDITIONS_VARIABLE%BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS
+            BOUNDARY_CONDITIONS_VARIABLE%VARIABLE_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+            BOUNDARY_CONDITIONS_VARIABLE%VARIABLE=>FIELD_VARIABLE
+            ALLOCATE(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(VARIABLE_DOMAIN_MAPPING%NUMBER_OF_GLOBAL),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global boundary conditions.",ERR,ERROR,*999)
+            BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS=BOUNDARY_CONDITION_FREE
+            NULLIFY(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)
+            BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS=0
+            NULLIFY(BOUNDARY_CONDITIONS_VARIABLE%NEUMANN_BOUNDARY_CONDITIONS)
+            BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_NEUMANN_BOUNDARIES=0
+            NULLIFY(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)
+            BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS=0
+
+            CALL MOVE_ALLOC(NEW_BOUNDARY_CONDITIONS_VARIABLES,BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)
+            BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES= &
+                & BOUNDARY_CONDITIONS%NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES+1
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Boundary conditions variable type map is not allocated.",ERR,ERROR,*998)
+          CALL FLAG_ERROR("Field variable domain mapping is not associated.",ERR,ERROR,*998)
         ENDIF
       ELSE
         CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*998)
@@ -3614,11 +3602,11 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*998)
     ENDIF
-       
+
     CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE")
     RETURN
-999 CALL BOUNDARY_CONDITIONS_VARIABLE_FINALISE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-      & variable_type)%PTR,DUMMY_ERR,DUMMY_ERROR,*998)
+999 CALL BOUNDARY_CONDITIONS_VARIABLE_FINALISE(BOUNDARY_CONDITIONS_VARIABLE,DUMMY_ERR,DUMMY_ERROR,*998)
+    DEALLOCATE(NEW_BOUNDARY_CONDITIONS_VARIABLES)
 998 CALL ERRORS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE",ERR,ERROR)
     CALL EXITS("BOUNDARY_CONDITIONS_VARIABLE_INITIALISE")
     RETURN 1
