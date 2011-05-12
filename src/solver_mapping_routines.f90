@@ -121,7 +121,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: column_idx,COLUMN_LIST_ITEM(4),COLUMN_RANK,DEPENDENT_VARIABLE_TYPE,dof_idx,dof_type,equation_type, &
+    INTEGER(INTG) :: column_idx,COLUMN_LIST_ITEM(4),COLUMN_RANK,dof_idx,dof_type,equation_type, &
       & equations_column,equations_idx,equations_idx2,equations_matrix,equations_matrix_idx,equations_row_number, &
       & equations_set_idx,EQUATIONS_VARIABLE_LIST_ITEM(3),global_column,global_dof,global_dof_idx,GLOBAL_DOFS_OFFSET, &
       & global_row,global_row_idx,interface_column,interface_col_number,interface_condition_idx,interface_condition_idx2, &
@@ -419,9 +419,9 @@ CONTAINS
                           IF(ROW_RANK>=0) THEN
                             INCLUDE_ROW=.TRUE.
                             IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                              DEPENDENT_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-                                & DEPENDENT_VARIABLE_TYPE)%PTR
+                              DEPENDENT_VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE, &
+                                  & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                 !This is wrong as we only have the mappings for the local rank not the global ranks.
                                 !For now assume 1-1 mapping between rows and dofs.
@@ -436,9 +436,9 @@ CONTAINS
                             IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                               !Look at the boundary conditions for nonlinear variables for this row
                               !Just look at first residual variable for now
-                              DEPENDENT_VARIABLE_TYPE=NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(1)%VARIABLE_TYPE
-                              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-                                & DEPENDENT_VARIABLE_TYPE)%PTR
+                              DEPENDENT_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(1)%VARIABLE
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE, &
+                                  & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                 global_dof=global_row
                                 INCLUDE_ROW=INCLUDE_ROW.AND.(BOUNDARY_CONDITIONS_VARIABLE%GLOBAL_BOUNDARY_CONDITIONS(global_dof)== &
@@ -452,10 +452,10 @@ CONTAINS
                               !Loop over the variables in the equations set. Don't include the row in the solver matrices if
                               !all the variable dofs associated with this equations row are fixed.
                               DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
-                                DEPENDENT_VARIABLE_TYPE=LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
-                                  & VARIABLE_TYPE
-                                BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-                                  & DEPENDENT_VARIABLE_TYPE)%PTR
+                                DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
+                                  & VARIABLE
+                                CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE, &
+                                    & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                                 IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                   !This is wrong as we only have the mappings for the local rank not the global ranks.
                                   !For now assume 1-1 mapping between rows and dofs.
