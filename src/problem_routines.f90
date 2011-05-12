@@ -1490,17 +1490,17 @@ CONTAINS
                           CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                             CALL ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Pre residual evaluate not used
                           CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Pre residual evaluate not used
                           CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Pre residual evaluate not used
                           CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Pre residual evaluate not used
                           CASE(EQUATIONS_SET_MODAL_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Pre residual evaluate not used
                           CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Pre residual evaluate not used
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
                               & " is not valid."
@@ -1614,17 +1614,17 @@ CONTAINS
                           CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                             CALL ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Post residual evaluate not used
                           CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Post residual evaluate not used
                           CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Post residual evaluate not used
                           CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Post residual evaluate not used
                           CASE(EQUATIONS_SET_MODAL_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Post residual evaluate not used
                           CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            !Post residual evaluate not used
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
                               & " is not valid."
