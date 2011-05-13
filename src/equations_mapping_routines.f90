@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -79,7 +81,8 @@ MODULE EQUATIONS_MAPPING_ROUTINES
     & EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET,EQUATIONS_MAPPING_DYNAMIC_MATRICES_COEFFS_SET, &
     & EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET,EQUATIONS_MAPPING_LINEAR_MATRICES_COEFFS_SET, &
     & EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET,EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET, &
-    & EQUATIONS_MAPPING_RESIDUAL_COEFF_SET,EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET, &
+    & EQUATIONS_MAPPING_RESIDUAL_COEFF_SET,EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET, &
+    & EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET, &
     & EQUATIONS_MAPPING_RHS_COEFF_SET,EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET, &
     & EQUATIONS_MAPPING_SOURCE_COEFF_SET,EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET
   
@@ -108,7 +111,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,SOURCE_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,SOURCE_VARIABLE
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,SOURCE_VARIABLE,ROW_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("EQUATIONS_MAPPING_CALCULATE",ERR,ERROR,*999)
@@ -143,12 +146,18 @@ CONTAINS
                     LINEAR_MATRIX_START=2
                     DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(1))%PTR
                   ELSE
-                    CALL FLAG_ERROR("The number of linear equations matrices is zero of less for a linear equations set.", &
+                    CALL FLAG_ERROR("The number of linear equations matrices must be at least one for a linear equations set.", &
                       & ERR,ERROR,*999)
                   ENDIF
                 CASE(EQUATIONS_NONLINEAR)
                   !Static nonlinear equations set
-                  DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE)%PTR
+                  !Use first listed nonlinear variable
+                  IF(CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES>=1) THEN
+                    DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(1))%PTR
+                  ELSE
+                    CALL FLAG_ERROR("The number of Jacobian matrices must be at least one for a nonlinear equations set.", &
+                      & ERR,ERROR,*999)
+                  ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The equations linearity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
@@ -160,12 +169,8 @@ CONTAINS
                   !Dynamic linear equations set
                   DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE)%PTR
                 CASE(EQUATIONS_NONLINEAR)
-! SEBK 19/08/2009 not sure about mapping here
-!|
                   !Dynamic nonlinear equations set
-                  DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE)%PTR
-!|
-! SEBK 19/08/2009 not sure about mapping here
+                  DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(1))%PTR
                 CASE DEFAULT
                   LOCAL_ERROR="The equations linearity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
@@ -191,7 +196,7 @@ CONTAINS
                   CALL FLAG_ERROR("Dependent variable domain mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The dependent variable mapped to the first linear matrix is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("The dependent variable mapped to the first matrix is not associated.",ERR,ERROR,*999)
               ENDIF
               !Check that the number of rows is consistent across the remaining linear matrices
               DO matrix_idx=LINEAR_MATRIX_START,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
@@ -219,7 +224,18 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" is not associated."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-              ENDDO !matrix_idx                  
+              ENDDO !matrix_idx
+              !Check the Jacobian matrices
+              !Can't check the number of rows now as Jacobian's might not be square so just check variables are associated
+              DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE% &
+                  & RESIDUAL_VARIABLE_TYPES(matrix_idx))%PTR
+                IF(.NOT.ASSOCIATED(DEPENDENT_VARIABLE)) THEN
+                  LOCAL_ERROR="The dependent variable mapped to Jacobian matrix number "// &
+                    & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" is not associated."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDDO !matrix_idx
               !Check that the number of rows are consistent with the RHS vector if it exists
               IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE/=0) THEN
                 DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE)%PTR
@@ -541,62 +557,73 @@ CONTAINS
                 ENDIF
               ENDIF
               !Calculate non-linear mappings
-              IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE/=0) THEN                  
+              IF(CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES/=0) THEN
                 CALL EQUATIONS_MAPPING_NONLINEAR_MAPPING_INITIALISE(EQUATIONS_MAPPING,ERR,ERROR,*999)
                 NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                 IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                  CALL EQUATIONS_MAPPING_VAR_TO_EQUATS_JACOBIAN_MAP_INITIALISE(NONLINEAR_MAPPING% &
-                    & VAR_TO_JACOBIAN_MAP,ERR,ERROR,*999)
-                  NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%VARIABLE_TYPE=CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE
-                  DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE)%PTR
-                  NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%VARIABLE=>DEPENDENT_VARIABLE
-                  !Allocate and set dof to Jacobian columns map
-                  ALLOCATE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_COLUMNS_MAP(DEPENDENT_VARIABLE% &
-                    & TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to Jacobian map dof to columns map.",ERR,ERROR,*999)
-                  DO dof_idx=1,DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                    !1-1 mapping for now
-                    column_idx=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(dof_idx)
-                    NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_COLUMNS_MAP(dof_idx)=column_idx
-                  ENDDO !dof_idx
-                  !Allocate and set dof to Jacobian rows map
-                  ALLOCATE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_ROWS_MAP(DEPENDENT_VARIABLE% &
-                    & TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to Jacobian map dof to columns map.",ERR,ERROR,*999)
-                  DO dof_idx=1,DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                    !1-1 mapping for now
-                    row_idx=dof_idx
-                    NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_ROWS_MAP(dof_idx)=row_idx
-                  ENDDO !dof_idx
-                  CALL EQUATIONS_MAPPING_EQUATS_JACOBIAN_TO_VAR_MAP_INITIALISE(NONLINEAR_MAPPING% &
-                    & JACOBIAN_TO_VAR_MAP,ERR,ERROR,*999)
-                  NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%VARIABLE_TYPE=CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE
-                  NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%VARIABLE=>DEPENDENT_VARIABLE
-                  NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS=DEPENDENT_VARIABLE%DOMAIN_MAPPING%NUMBER_OF_GLOBAL
-                  NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%JACOBIAN_COEFFICIENT=CREATE_VALUES_CACHE%RESIDUAL_COEFFICIENT
-                  ALLOCATE(NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP( &
-                    & DEPENDENT_VARIABLE%DOMAIN_MAPPING%NUMBER_OF_GLOBAL),STAT=ERR)
-                  NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP=0
-                  DO dof_idx=1,DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                    !1-1 mapping for now
-                    column_idx=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(dof_idx)
-                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP(column_idx)=dof_idx
-                  ENDDO !dof_idx
-                  NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%COLUMN_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
-                  !Set up the residual vector mapping
-                  NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE=CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE
-                  NONLINEAR_MAPPING%RESIDUAL_VARIABLE=>DEPENDENT_VARIABLE
-                  NONLINEAR_MAPPING%RESIDUAL_VARIABLE_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+                  NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES=CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                  ALLOCATE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to Jacobian maps.",ERR,ERROR,*999)
+                  ALLOCATE(NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian to variable maps.",ERR,ERROR,*999)
+                  ALLOCATE(NONLINEAR_MAPPING%RESIDUAL_VARIABLES(NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
+                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear mapping residual variables.",ERR,ERROR,*999)
+                  DO matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+                    CALL EQUATIONS_MAPPING_VAR_TO_EQUATS_JACOBIAN_MAP_INITIALISE(NONLINEAR_MAPPING% &
+                      & VAR_TO_JACOBIAN_MAP(matrix_idx),ERR,ERROR,*999)
+                    NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%JACOBIAN_NUMBER=matrix_idx
+                    NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%VARIABLE_TYPE= &
+                      & CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)
+                    DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE% &
+                      & RESIDUAL_VARIABLE_TYPES(matrix_idx))%PTR
+                    NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%VARIABLE=>DEPENDENT_VARIABLE
+                    NONLINEAR_MAPPING%RESIDUAL_VARIABLES(matrix_idx)%PTR=>DEPENDENT_VARIABLE
+                    !Row variable is RHS if set, otherwise first nonlinear variable
+                    IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE/=0) THEN
+                      ROW_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE)%PTR
+                    ELSE
+                      ROW_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(1))%PTR
+                    ENDIF
+                    !Allocate and set dof to Jacobian columns map
+                    ALLOCATE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%DOF_TO_COLUMNS_MAP(DEPENDENT_VARIABLE% &
+                      & TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to Jacobian map dof to columns map.",ERR,ERROR,*999)
+                    DO dof_idx=1,DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                      !1-1 mapping for now
+                      column_idx=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(dof_idx)
+                      NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%DOF_TO_COLUMNS_MAP(dof_idx)=column_idx
+                    ENDDO !dof_idx
+                    !Allocate and set dof to Jacobian rows map
+                    ALLOCATE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%DOF_TO_ROWS_MAP(ROW_VARIABLE% &
+                      & TOTAL_NUMBER_OF_DOFS),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable to Jacobian map dof to columns map.",ERR,ERROR,*999)
+                    DO dof_idx=1,ROW_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                      !1-1 mapping for now
+                      row_idx=dof_idx
+                      NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%DOF_TO_ROWS_MAP(dof_idx)=row_idx
+                    ENDDO !dof_idx
+                    CALL EQUATIONS_MAPPING_EQUATS_JACOBIAN_TO_VAR_MAP_INITIALISE(NONLINEAR_MAPPING% &
+                      & JACOBIAN_TO_VAR_MAP(matrix_idx),ERR,ERROR,*999)
+                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%JACOBIAN_NUMBER=matrix_idx
+                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%VARIABLE_TYPE=CREATE_VALUES_CACHE% &
+                      & RESIDUAL_VARIABLE_TYPES(matrix_idx)
+                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%VARIABLE=>DEPENDENT_VARIABLE
+                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%NUMBER_OF_COLUMNS= &
+                      & DEPENDENT_VARIABLE%DOMAIN_MAPPING%NUMBER_OF_GLOBAL
+                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%JACOBIAN_COEFFICIENT=CREATE_VALUES_CACHE%RESIDUAL_COEFFICIENT
+                    ALLOCATE(NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP( &
+                      & DEPENDENT_VARIABLE%DOMAIN_MAPPING%NUMBER_OF_GLOBAL),STAT=ERR)
+                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP=0
+                    DO dof_idx=1,DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                      !1-1 mapping for now
+                      column_idx=DEPENDENT_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(dof_idx)
+                      NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP(column_idx)=dof_idx
+                    ENDDO !dof_idx
+                    NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%COLUMN_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+                  ENDDO !matrix_idx
                   !Set up the row mappings
-                  ALLOCATE(NONLINEAR_MAPPING%RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate residual dof to equations row map.",ERR,ERROR,*999)
                   ALLOCATE(NONLINEAR_MAPPING%EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(TOTAL_NUMBER_OF_ROWS),STAT=ERR)
                   IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations row to residual dof map.",ERR,ERROR,*999)
-                  DO dof_idx=1,DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS
-                    !1-1 mapping for now
-                    row_idx=dof_idx
-                    NONLINEAR_MAPPING%RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP(dof_idx)=row_idx
-                  ENDDO !dof_idx
                   DO row_idx=1,TOTAL_NUMBER_OF_ROWS
                     !1-1 mapping for now
                     dof_idx=row_idx
@@ -804,41 +831,44 @@ CONTAINS
       NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
       IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Nonlinear mappings:",ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Residual variable type = ",NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE, &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Total number of residual DOFs = ",NONLINEAR_MAPPING%RESIDUAL_VARIABLE% &
-          & TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
+        DO matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Matrix number : ",matrix_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Residual variable type = ",NONLINEAR_MAPPING% &
+            & JACOBIAN_TO_VAR_MAP(matrix_idx)%VARIABLE_TYPE,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Total number of residual DOFs = ",NONLINEAR_MAPPING% &
+            & JACOBIAN_TO_VAR_MAP(matrix_idx)%VARIABLE%TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
+        ENDDO
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Residual coefficient = ",NONLINEAR_MAPPING%RESIDUAL_COEFFICIENT, &
           & ERR,ERROR,*999)
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Residual row mappings:",ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NONLINEAR_MAPPING%RESIDUAL_VARIABLE%TOTAL_NUMBER_OF_DOFS,5,5, &
-          & NONLINEAR_MAPPING%RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP,'("    DOF to row mappings :",5(X,I13))','(25X,5(X,I13))', &
-          & ERR,ERROR,*999) 
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS,5,5, &
           & NONLINEAR_MAPPING%EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP,'("    Row to DOF mappings :",5(X,I13))','(25X,5(X,I13))', &
           & ERR,ERROR,*999) 
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Jacobian mappings:",ERR,ERROR,*999)
         CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Variable to Jacobian mappings:",ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian variable type = ",NONLINEAR_MAPPING% &
-          & VAR_TO_JACOBIAN_MAP%VARIABLE_TYPE,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Total number of Jacobain DOFs = ",NONLINEAR_MAPPING% &
-          & VAR_TO_JACOBIAN_MAP%VARIABLE%TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%VARIABLE% &
-          & TOTAL_NUMBER_OF_DOFS,5,5,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_COLUMNS_MAP, &
-          & '("      DOF to column map :",5(X,I13))','(26X,5(X,I13))',ERR,ERROR,*999) 
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%VARIABLE% &
-          & TOTAL_NUMBER_OF_DOFS,5,5,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP%DOF_TO_ROWS_MAP, &
-          & '("      DOF to row map    :",5(X,I13))','(26X,5(X,I13))',ERR,ERROR,*999) 
-        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Jacobian to variable mappings:",ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian variable type = ",NONLINEAR_MAPPING% &
-          & JACOBIAN_TO_VAR_MAP%VARIABLE_TYPE,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of columns = ",NONLINEAR_MAPPING% &
-          & JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian coefficient = ",NONLINEAR_MAPPING% &
-          & JACOBIAN_TO_VAR_MAP%JACOBIAN_COEFFICIENT,ERR,ERROR,*999)
-        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%NUMBER_OF_COLUMNS, &
-          & 5,5,NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP, &
-          & '("      Column to DOF map :",5(X,I13))','(26X,5(X,I13))',ERR,ERROR,*999) 
+        DO matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Matrix number : ",matrix_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian variable type = ",NONLINEAR_MAPPING% &
+            & VAR_TO_JACOBIAN_MAP(matrix_idx)%VARIABLE_TYPE,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Total number of Jacobain DOFs = ",NONLINEAR_MAPPING% &
+            & VAR_TO_JACOBIAN_MAP(matrix_idx)%VARIABLE%TOTAL_NUMBER_OF_DOFS,ERR,ERROR,*999)
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%VARIABLE% &
+            & TOTAL_NUMBER_OF_DOFS,5,5,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%DOF_TO_COLUMNS_MAP, &
+            & '("      DOF to column map :",5(X,I13))','(26X,5(X,I13))',ERR,ERROR,*999) 
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%VARIABLE% &
+            & TOTAL_NUMBER_OF_DOFS,5,5,NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx)%DOF_TO_ROWS_MAP, &
+            & '("      DOF to row map    :",5(X,I13))','(26X,5(X,I13))',ERR,ERROR,*999) 
+          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"    Jacobian to variable mappings:",ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian variable type = ",NONLINEAR_MAPPING% &
+            & JACOBIAN_TO_VAR_MAP(matrix_idx)%VARIABLE_TYPE,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of columns = ",NONLINEAR_MAPPING% &
+            & JACOBIAN_TO_VAR_MAP(matrix_idx)%NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Jacobian coefficient = ",NONLINEAR_MAPPING% &
+            & JACOBIAN_TO_VAR_MAP(matrix_idx)%JACOBIAN_COEFFICIENT,ERR,ERROR,*999)
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%NUMBER_OF_COLUMNS, &
+            & 5,5,NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx)%EQUATIONS_COLUMN_TO_DOF_VARIABLE_MAP, &
+            & '("      Column to DOF map :",5(X,I13))','(26X,5(X,I13))',ERR,ERROR,*999) 
+        ENDDO
       ENDIF
       RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
       IF(ASSOCIATED(RHS_MAPPING)) THEN
@@ -888,9 +918,10 @@ CONTAINS
     !Argument variables
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: matrix_idx
+    LOGICAL :: IS_RESIDUAL_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -917,8 +948,13 @@ CONTAINS
                     & CALL FLAG_ERROR("Invalid equations mapping. The RHS variable type must be set if there are no "// &
                     & "linear matrices.",ERR,ERROR,*999)
                 CASE(EQUATIONS_NONLINEAR)
-                  IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==0) CALL FLAG_ERROR("Invalid equations mapping. "// &
-                    & "The residual variable type must be set for nonlinear equations.", ERR,ERROR,*999)
+                  DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                    IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==0) THEN
+                      LOCAL_ERROR="Invalid equations mapping. The residual variable type is not set for Jacobian number "// &
+                        & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0.AND.CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES==0) &
                     & CALL FLAG_ERROR("Invalid equations mapping. The RHS variable type must be set if there are no "// &
                     & "linear matrices.",ERR,ERROR,*999)
@@ -943,11 +979,21 @@ CONTAINS
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0.AND.CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES==0) &
                     & CALL FLAG_ERROR("Invalid equations mapping. The RHS variable type must be set if there are no "// &
                     & "linear matrices.",ERR,ERROR,*999)
-                  IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==0) CALL FLAG_ERROR("Invalid equations mapping. "// &
-                    & "The residual variable type must be set for nonlinear dynamic equations.", ERR,ERROR,*999)
-                  IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE/=CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE) &
-                    & CALL FLAG_ERROR("Invalid equations mapping. "// "The residual variable type must correspond to the &
-                    & dynamic variable type for nonlinear dynamic equations.", ERR,ERROR,*999)
+                  IS_RESIDUAL_TYPE=.FALSE.
+                  DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                    IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==0) THEN
+                      LOCAL_ERROR="Invalid equations mapping. The residual variable type is not set for Jacobian number "// &
+                        & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                    IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE) THEN
+                      IS_RESIDUAL_TYPE=.TRUE.
+                    ENDIF
+                  ENDDO
+                  IF(IS_RESIDUAL_TYPE.EQV..FALSE.) THEN
+                    CALL FLAG_ERROR("Invalid equations mapping. "// "The residual variable type must correspond to the &
+                      & dynamic variable type for nonlinear dynamic equations.", ERR,ERROR,*999)
+                  ENDIF
 !|
 ! SEBK 19/08/2009 not sure about mapping here
                 CASE DEFAULT
@@ -1005,7 +1051,7 @@ CONTAINS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equation to create the equations mapping from.
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<On return, a pointer to the equations mapping. This must not be associated on entry
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string !<The error string
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
     CALL ENTERS("EQUATIONS_MAPPING_CREATE_START",ERR,ERROR,*999)
@@ -1052,6 +1098,7 @@ CONTAINS
       IF(ALLOCATED(CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS)) DEALLOCATE(CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS)
       IF(ALLOCATED(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES)) DEALLOCATE(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES)
       IF(ALLOCATED(CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS)) DEALLOCATE(CREATE_VALUES_CACHE%LINEAR_MATRIX_COEFFICIENTS)
+      IF(ALLOCATED(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES)) DEALLOCATE(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES)
       DEALLOCATE(CREATE_VALUES_CACHE)
     ENDIF
        
@@ -1074,7 +1121,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR,matrix_idx,VARIABLE_NUMBER
+    INTEGER(INTG) :: DUMMY_ERR,matrix_idx,matrix_idx2,VARIABLE_NUMBER
+    LOGICAL :: IS_RESIDUAL_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
@@ -1099,9 +1147,9 @@ CONTAINS
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=0
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_STIFFNESS_MATRIX_NUMBER=0
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_DAMPING_MATRIX_NUMBER=0
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER=0              
+              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER=0
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=0
-              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=0
+              EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES=0
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_COEFFICIENT=1.0_DP
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=0
               EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_COEFFICIENT=1.0_DP
@@ -1133,21 +1181,16 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented. G",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_NONLINEAR)
-                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=DEPENDENT_FIELD%NUMBER_OF_VARIABLES-2
-                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR)) THEN
-                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=DEPENDENT_FIELD% &
-                        & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
-                    ELSE
-                      CALL FLAG_ERROR("Not implemented. F",ERR,ERROR,*999)
-                    ENDIF
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=0
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES=1
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented. E",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The equations linearity type of "// &
@@ -1173,13 +1216,13 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented. D",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented. C",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                   CASE(EQUATIONS_NONLINEAR)
 ! SEBK 19/08/2009 not sure about mapping here
@@ -1195,23 +1238,18 @@ CONTAINS
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MASS_MATRIX_NUMBER=3
                     ENDIF
                     EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=0
+                    EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES=1
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
-!!!sebk 15/10/2009
-!
-                      EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=EQUATIONS_MAPPING%CREATE_VALUES_CACHE% &
-                        & DYNAMIC_VARIABLE_TYPE
-!
-!!!sebk 15/10/2009
                     ELSE
-                      CALL FLAG_ERROR("Not implemented. B",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR)) THEN
                       EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE=DEPENDENT_FIELD% &
                         & VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR%VARIABLE_TYPE
                     ELSE
-                      CALL FLAG_ERROR("Not implemented. A",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The equations linearity type of "// &
@@ -1240,6 +1278,32 @@ CONTAINS
                   & ERR,ERROR,*999)
                 EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_MATRIX_COEFFICIENTS=1.0_DP !Equations matrices are added by default
               ENDIF
+              !Allocate the residual variable types
+              IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES>0) THEN
+                ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(EQUATIONS_MAPPING% &
+                  & CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
+                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping create values cache residual variable types.", &
+                    & ERR,ERROR,*999)
+                EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES=0
+                DO matrix_idx=1,EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                  VARIABLE_NUMBER=1
+                  DO WHILE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==0.AND. &
+                    & VARIABLE_NUMBER<=FIELD_NUMBER_OF_VARIABLE_TYPES)
+                    IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR)) THEN
+                      IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
+                        & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE) THEN
+                        EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)= &
+                          & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE
+                      ENDIF
+                    ENDIF
+                    VARIABLE_NUMBER=VARIABLE_NUMBER+1
+                  ENDDO
+                ENDDO !matrix_idx
+                IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(EQUATIONS_MAPPING% &
+                  & CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES)==0) &
+                  & CALL FLAG_ERROR("Invalid setup. All Jacobian matrices do not have a mapped dependent field variable.", &
+                  & ERR,ERROR,*999)
+              ENDIF
               !Allocate the linear matrix variable types and linear matrix coefficients and set their values
               IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES>0) THEN
                 ALLOCATE(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(EQUATIONS_MAPPING% &
@@ -1260,13 +1324,16 @@ CONTAINS
                     IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR)) THEN
                       IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
                         & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE) THEN
-                        IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
-                          & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE) THEN
-                          IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE/= &
-                            & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE) THEN
-                            EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)= &
-                              & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE
+                        IS_RESIDUAL_TYPE=.FALSE.
+                        DO matrix_idx2=1,EQUATIONS_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                          IF(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE== &
+                            & EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx2)) THEN
+                            IS_RESIDUAL_TYPE=.TRUE.
                           ENDIF
+                        ENDDO
+                        IF(IS_RESIDUAL_TYPE.EQV..FALSE.) THEN
+                          EQUATIONS_MAPPING%CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)= &
+                            & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(VARIABLE_NUMBER)%PTR%VARIABLE_TYPE
                         ENDIF
                       ENDIF
                     ENDIF
@@ -1884,6 +1951,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    LOGICAL :: IS_RESIDUAL_TYPE
 
     CALL ENTERS("EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET",ERR,ERROR,*999)
 
@@ -1908,14 +1976,22 @@ CONTAINS
 ! sebk 16/09/2009
 !
                     IF(EQUATIONS%LINEARITY==EQUATIONS_LINEAR) THEN
-                      IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==DYNAMIC_VARIABLE_TYPE) THEN
-                        LOCAL_ERROR="The specified dynamic variable type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " is the same as the variable type for the residual vector."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
+                      DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
+                        IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==DYNAMIC_VARIABLE_TYPE) THEN
+                          LOCAL_ERROR="The specified dynamic variable type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                            & " is the same as the variable type for the residual vector."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
                     ELSE IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN 
-                      IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE/=DYNAMIC_VARIABLE_TYPE) THEN
+                      IS_RESIDUAL_TYPE=.FALSE.
+                      DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                        IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==DYNAMIC_VARIABLE_TYPE) THEN
+                          IS_RESIDUAL_TYPE=.TRUE.
+                        ENDIF
+                      ENDDO
+                      IF(IS_RESIDUAL_TYPE.NEQV..TRUE.) THEN
                         LOCAL_ERROR="The specified dynamic variable type of "// &
                           & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
                           & " is not the same as the variable type for the residual vector."
@@ -2184,6 +2260,58 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets the mapping between a dependent field variable and the equations set residual vector.
+  SUBROUTINE EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET(EQUATIONS_MAPPING,NUMBER_OF_VARIABLES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping to set
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_VARIABLES !<The number of residual variables for this equations set.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: PREVIOUS_NUMBER,MIN_NUMBER
+    INTEGER(INTG), ALLOCATABLE :: NEW_RESIDUAL_VARIABLE_TYPES(:)
+    TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
+
+    CALL ENTERS("EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+      IF(EQUATIONS_MAPPING%EQUATIONS_MAPPING_FINISHED) THEN
+        CALL FLAG_ERROR("Equations mapping have been finished.",ERR,ERROR,*999)
+      ELSE
+        CREATE_VALUES_CACHE=>EQUATIONS_MAPPING%CREATE_VALUES_CACHE
+        IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
+          PREVIOUS_NUMBER=CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+          IF(NUMBER_OF_VARIABLES/=PREVIOUS_NUMBER) THEN
+            !Create new residual_variable_types array and copy over previous values
+            MIN_NUMBER=MIN(NUMBER_OF_VARIABLES,PREVIOUS_NUMBER)
+            ALLOCATE(NEW_RESIDUAL_VARIABLE_TYPES(NUMBER_OF_VARIABLES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new residual variable types.",ERR,ERROR,*999)
+            NEW_RESIDUAL_VARIABLE_TYPES=0
+            NEW_RESIDUAL_VARIABLE_TYPES(1:MIN_NUMBER)=CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(1:MIN_NUMBER)
+            CALL MOVE_ALLOC(NEW_RESIDUAL_VARIABLE_TYPES,CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES)
+            !Set number of residual variables
+            CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES=NUMBER_OF_VARIABLES
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations mapping create values cache is not associated",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations mapping is not associated",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finalises the equations mapping linear mapping and deallocates all memory
   SUBROUTINE EQUATIONS_MAPPING_LINEAR_MAPPING_FINALISE(LINEAR_MAPPING,ERR,ERROR,*)
 
@@ -2351,12 +2479,11 @@ CONTAINS
                 SELECT CASE(EQUATIONS%LINEARITY)
                 CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
                   IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==0) THEN                  
-                    IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1.OR. &
-                      & NUMBER_OF_LINEAR_EQUATIONS_MATRICES>FIELD_NUMBER_OF_VARIABLE_TYPES) THEN  ! <<>>  not sure that this check will work
+                    IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1) THEN
                       LOCAL_ERROR="The specified number of linear matrices of "// &
                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
                         & " is invalid. For non-dynamic linear problems without a equations set RHS the number must be "// &
-                        & "between >= 1 and <= "//TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
+                        & ">= 1."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
@@ -2364,7 +2491,7 @@ CONTAINS
                       LOCAL_ERROR="The specified number of linear matrices of "// &
                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
                         & " is invalid. For non-dynamic linear problems with a equations set RHS the number "// &
-                        & "must be between >= 1."
+                        & "must be >= 1."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDIF
@@ -2395,18 +2522,13 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-!chrm 16/06/2010
-!Commenting out the conditional below,
-!since for dynamic problems it is perfectly valid to have zero
-!linear matrices provided that one has dynamic matrices.
-!\ToDo: Will this remain commented out, or shall we introduce a conditional ???
-!                     IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<1) THEN
-!                       LOCAL_ERROR="The specified number of linear matrices of "// &
-!                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
-!                         & " is invalid. For dynamic linear problems with a equations set RHS the number "// &
-!                         & "must be between >= 1."
-!                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!                     ENDIF
+                    IF(NUMBER_OF_LINEAR_EQUATIONS_MATRICES<0) THEN
+                      LOCAL_ERROR="The specified number of linear matrices of "// &
+                        & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_LINEAR_EQUATIONS_MATRICES,"*",ERR,ERROR))// &
+                        & " is invalid. For dynamic linear problems with a equations set RHS the number "// &
+                        & "must be >= 0."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
                 CASE(EQUATIONS_NONLINEAR)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -2668,22 +2790,29 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) matrix_idx
  
     CALL ENTERS("EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-      CALL EQUATIONS_MAPPING_VAR_TO_EQUATS_JACOBIAN_MAP_FINALISE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP,ERR,ERROR,*999)
-      CALL EQUATIONS_MAPPING_EQUATS_JACOBIAN_TO_VAR_MAP_FINALISE(NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP,ERR,ERROR,*999)
-      IF(ALLOCATED(NONLINEAR_MAPPING%RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP)) &
-        & DEALLOCATE(NONLINEAR_MAPPING%RESIDUAL_DOF_TO_EQUATIONS_ROW_MAP)
+      DO matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+        CALL EQUATIONS_MAPPING_VAR_TO_EQUATS_JACOBIAN_MAP_FINALISE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP(matrix_idx),ERR,ERROR,*999)
+        CALL EQUATIONS_MAPPING_EQUATS_JACOBIAN_TO_VAR_MAP_FINALISE(NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(matrix_idx),ERR,ERROR,*999)
+      ENDDO
       IF(ALLOCATED(NONLINEAR_MAPPING%EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP)) &
         & DEALLOCATE(NONLINEAR_MAPPING%EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP)
+      IF(ALLOCATED(NONLINEAR_MAPPING%RESIDUAL_VARIABLES)) &
+        & DEALLOCATE(NONLINEAR_MAPPING%RESIDUAL_VARIABLES)
+      IF(ALLOCATED(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP)) &
+        & DEALLOCATE(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP)
+      IF(ALLOCATED(NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP)) &
+        & DEALLOCATE(NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP)
       DEALLOCATE(NONLINEAR_MAPPING)
     ENDIF
        
     CALL EXITS("EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE")
     RETURN
-999 CALL ERRORS("EQUATIONS_MAPPING_NONLINEAR_MAPPING_INITIALISE",ERR,ERROR)
+999 CALL ERRORS("EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE",ERR,ERROR)
     CALL EXITS("EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE")
     RETURN 1
   END SUBROUTINE EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE
@@ -2697,7 +2826,7 @@ CONTAINS
 
     !Argument variables
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping to initialise the nonlinear mapping for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR
@@ -2712,19 +2841,13 @@ CONTAINS
         ALLOCATE(EQUATIONS_MAPPING%NONLINEAR_MAPPING,STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations mapping nonlinear mapping.",ERR,ERROR,*999)
         EQUATIONS_MAPPING%NONLINEAR_MAPPING%EQUATIONS_MAPPING=>EQUATIONS_MAPPING
-        CALL EQUATIONS_MAPPING_VAR_TO_EQUATS_JACOBIAN_MAP_INITIALISE(EQUATIONS_MAPPING%NONLINEAR_MAPPING% &
-          & VAR_TO_JACOBIAN_MAP,ERR,ERROR,*999)
-        CALL EQUATIONS_MAPPING_EQUATS_JACOBIAN_TO_VAR_MAP_INITIALISE(EQUATIONS_MAPPING%NONLINEAR_MAPPING% &
-          & JACOBIAN_TO_VAR_MAP,ERR,ERROR,*999)
-        EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE=0
-        NULLIFY(EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLE)
-        NULLIFY(EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLE_MAPPING)
+        EQUATIONS_MAPPING%NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES=0
         EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_COEFFICIENT=1.0_DP
       ENDIF
     ELSE
       CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*998)
     ENDIF
-       
+
     CALL EXITS("EQUATIONS_MAPPING_NONLINEAR_MAPPING_INITIALISE")
     RETURN
 999 CALL EQUATIONS_MAPPING_NONLINEAR_MAPPING_FINALISE(EQUATIONS_MAPPING%NONLINEAR_MAPPING,DUMMY_ERR,DUMMY_ERROR,*998)
@@ -2754,11 +2877,7 @@ CONTAINS
         CALL FLAG_ERROR("Equations mapping have been finished.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(EQUATIONS_MAPPING%CREATE_VALUES_CACHE)) THEN
-          IF(EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE/=0) THEN
-            EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_COEFFICIENT=RESIDUAL_COEFFICIENT
-          ELSE
-            CALL FLAG_ERROR("The equations mapping residual variable type has not been set.",ERR,ERROR,*999)
-          ENDIF
+          EQUATIONS_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_COEFFICIENT=RESIDUAL_COEFFICIENT
         ELSE
           CALL FLAG_ERROR("Equations mapping create values cache is not associated",ERR,ERROR,*999)
         ENDIF
@@ -2773,28 +2892,28 @@ CONTAINS
     CALL EXITS("EQUATIONS_MAPPING_RESIDUAL_COEFF_SET")
     RETURN 1
   END SUBROUTINE EQUATIONS_MAPPING_RESIDUAL_COEFF_SET
-  
+
   !
   !================================================================================================================================
   !
 
   !>Sets the mapping between a dependent field variable and the equations set residual vector.
-  SUBROUTINE EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,RESIDUAL_VARIABLE_TYPE,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,RESIDUAL_VARIABLE_TYPES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping to set
-    INTEGER(INTG), INTENT(IN) :: RESIDUAL_VARIABLE_TYPE !<The variable type associated with the equations set residual vector.
+    INTEGER(INTG), INTENT(IN) :: RESIDUAL_VARIABLE_TYPES(:) !<RESIDUAL_VARIABLE_TYPE(variable_idx). The variable_idx'th variable type associated with the equations set residual vector. The first variable type must correspond to the diagonal terms in the full solver Jacobian so that the solver mapping can use boundary conditions on this first variable to decide whether to keep rows.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: matrix_idx
+    INTEGER(INTG) :: matrix_idx,variable_idx,NUMBER_OF_RESIDUAL_VARIABLES,RESIDUAL_VARIABLE_TYPE
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
       IF(EQUATIONS_MAPPING%EQUATIONS_MAPPING_FINISHED) THEN
@@ -2802,67 +2921,69 @@ CONTAINS
       ELSE
         CREATE_VALUES_CACHE=>EQUATIONS_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
-          IF(RESIDUAL_VARIABLE_TYPE==0) THEN
-            CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=0
-          ELSE
+          NUMBER_OF_RESIDUAL_VARIABLES=SIZE(RESIDUAL_VARIABLE_TYPES,1)
+          IF(NUMBER_OF_RESIDUAL_VARIABLES==CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES) THEN
             EQUATIONS=>EQUATIONS_MAPPING%EQUATIONS
             IF(ASSOCIATED(EQUATIONS)) THEN
               EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
               IF(ASSOCIATED(EQUATIONS_SET)) THEN
                 IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                  IF(ASSOCIATED(DEPENDENT_FIELD)) THEN                 
-                  !Check the residual variable type is not being used by other equations matrices or vectors
-                    IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_STATIC .OR. EQUATIONS%TIME_DEPENDENCE==EQUATIONS_QUASISTATIC) THEN
-                      IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
+                  IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                    !Check the residual variable types are not being used by other equations matrices or vectors
+                    DO variable_idx=1,NUMBER_OF_RESIDUAL_VARIABLES
+                      RESIDUAL_VARIABLE_TYPE=RESIDUAL_VARIABLE_TYPES(variable_idx)
+                      IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_STATIC .OR. EQUATIONS%TIME_DEPENDENCE==EQUATIONS_QUASISTATIC) THEN
+                        IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
+                          LOCAL_ERROR="The specified residual variable type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                            & " is the same as the variable type for the dynamic matrices."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ELSE IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_FIRST_ORDER_DYNAMIC.OR. & 
+                        & EQUATIONS%TIME_DEPENDENCE==EQUATIONS_SECOND_ORDER_DYNAMIC) THEN
+                        IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE/=RESIDUAL_VARIABLE_TYPE) THEN
+                          LOCAL_ERROR="The specified residual variable type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                            & " is not the same as the variable type for the dynamic matrices."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("The equations set time dependence is not set.",ERR,ERROR,*999)
+                      END IF
+                      IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
                         LOCAL_ERROR="The specified residual variable type of "// &
                           & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " is the same as the variable type for the dynamic matrices."
+                          & " is the same as the variable type for the RHS vector."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
-                    ELSE IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_FIRST_ORDER_DYNAMIC.OR. & 
-                      & EQUATIONS%TIME_DEPENDENCE==EQUATIONS_SECOND_ORDER_DYNAMIC) THEN
-                      IF(CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE/=RESIDUAL_VARIABLE_TYPE) THEN
-                        LOCAL_ERROR="The specified residual variable type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " is not the same as the variable type for the dynamic matrices."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("The equations set time dependence is not set.",ERR,ERROR,*999)
-                    END IF
-                    IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==RESIDUAL_VARIABLE_TYPE) THEN
-                      LOCAL_ERROR="The specified residual variable type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                        & " is the same as the variable type for the RHS vector."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                    DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
-                      IF(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)==RESIDUAL_VARIABLE_TYPE) THEN
-                        LOCAL_ERROR="The specified residual variable type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " is the same as the variable type for linear matrix number "// &
-                          & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO !matrix_idx
-                    !Check the residual variable number is defined on the dependent field
-                    IF(RESIDUAL_VARIABLE_TYPE>=1.AND.RESIDUAL_VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
-                      IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(RESIDUAL_VARIABLE_TYPE)%PTR)) THEN
-                        CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE=RESIDUAL_VARIABLE_TYPE
+                      DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
+                        IF(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)==RESIDUAL_VARIABLE_TYPE) THEN
+                          LOCAL_ERROR="The specified residual variable type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                            & " is the same as the variable type for linear matrix number "// &
+                            & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO !matrix_idx
+                      !Check the residual variable number is defined on the dependent field
+                      IF(RESIDUAL_VARIABLE_TYPE>=1.AND.RESIDUAL_VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
+                        IF(ASSOCIATED(DEPENDENT_FIELD%VARIABLE_TYPE_MAP(RESIDUAL_VARIABLE_TYPE)%PTR)) THEN
+                          CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(variable_idx)=RESIDUAL_VARIABLE_TYPE
+                        ELSE
+                          LOCAL_ERROR="The specified residual variable type of "// &
+                            & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                            & " is not defined on the dependent field."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
                       ELSE
                         LOCAL_ERROR="The specified residual variable type of "// &
                           & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " is not defined on the dependent field."
+                          & " is invalid. The variable type must either be zero or >= 1 and <= "// &
+                          & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
-                    ELSE
-                      LOCAL_ERROR="The specified residual variable type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(RESIDUAL_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid. The variable type must either be zero or >= 1 and <= "// &
-                        & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
+                    ENDDO !variable_idx
                   ELSE
                     CALL FLAG_ERROR("Dependent field is not associated",ERR,ERROR,*999)
                   ENDIF
@@ -2875,6 +2996,11 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Equations mapping equations is not associated.",ERR,ERROR,*999)
             ENDIF
+          ELSE
+            LOCAL_ERROR="Invalid number of variables. The number of residual variables " &
+              & //TRIM(NUMBER_TO_VSTRING(NUMBER_OF_RESIDUAL_VARIABLES,"*",ERR,ERROR)) &
+              & //" should be "//TRIM(NUMBER_TO_VSTRING(CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES,"*",ERR,ERROR))
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           CALL FLAG_ERROR("Equations mapping create values cache is not associated",ERR,ERROR,*999)
@@ -2884,12 +3010,12 @@ CONTAINS
       CALL FLAG_ERROR("Equations mapping is not associated",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET")
+    CALL EXITS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET")
     RETURN
-999 CALL ERRORS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET",ERR,ERROR)
-    CALL EXITS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET")
+999 CALL ERRORS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET")
     RETURN 1
-  END SUBROUTINE EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET
+  END SUBROUTINE EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET
   
   !
   !================================================================================================================================
@@ -3045,12 +3171,14 @@ CONTAINS
                         & " is the same as the variable type for the dynamic matrices."
                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
-                  IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPE==RHS_VARIABLE_TYPE) THEN
-                    LOCAL_ERROR="The specified RHS variable type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                      & " is the same as the variable type for the residual vector."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
+                  DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
+                    IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==RHS_VARIABLE_TYPE) THEN
+                      LOCAL_ERROR="The specified RHS variable type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
+                        & " is the same as the variable type for the residual vector."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDDO
                   DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
                     IF(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)==RHS_VARIABLE_TYPE) THEN
                       LOCAL_ERROR="The specified RHS variable type of "// &

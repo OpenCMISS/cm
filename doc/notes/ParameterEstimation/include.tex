@@ -1,0 +1,24 @@
+\usepackage[round]{natbib} %for citealt{} and citet{}
+%\usepackage[sfdefault=cmbr]{../latex/isomath} %for mathbold (vector and matrix) and mathboldsans (tensor)
+
+\newcommand{\Real}    {\mathbb{R}} %real space
+\newcommand{\Matrix}  {\mathbb{M}} %Matrix space
+\newcommand{\pdpd} [2]{\frac{\partial #1}{\partial #2}} 
+\newcommand{\Normal}  {\mathcal{N}} %normal distribution
+\newcommand{\opSVD}     {\mathcal{SVD}} %obervational operator
+
+%\newcommand{\vect} [1]{\mathbold{#1}} %vector, already defined!
+%\newcommand{\tens} [1]{\mathboldsans{#1}} %tensor, can't use isomath ...
+%\newcommand{\matr} [1]{\mathbold{#1}} %matrix, already defined!
+\newcommand{\tens} [1]{\mathbb{#1}} %tensor
+
+
+% THEOREMS -------------------------------------------------------
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{rem}[thm]{Remark}
+
+

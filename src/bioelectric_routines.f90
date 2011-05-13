@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -48,6 +50,7 @@ MODULE BIOELECTRIC_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE ISO_VARYING_STRING
   USE KINDS
+  USE MONODOMAIN_EQUATIONS_ROUTINES
   USE PROBLEM_CONSTANTS
   USE STRINGS
   USE TYPES
@@ -66,9 +69,19 @@ MODULE BIOELECTRIC_ROUTINES
   
   PUBLIC BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET,BIOELECTRIC_PROBLEM_CLASS_TYPE_GET
 
-  PUBLIC BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET,BIOELECTRIC_FINITE_ELEMENT_CALCULATE, &
-    & BIOELECTRIC_EQUATIONS_SET_SETUP,BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET, &
-    & BIOELECTRIC_PROBLEM_CLASS_TYPE_SET,BIOELECTRIC_PROBLEM_SETUP
+  PUBLIC BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET
+
+  PUBLIC BIOELECTRIC_FINITE_ELEMENT_CALCULATE
+
+  PUBLIC BIOELECTRIC_EQUATIONS_SET_SETUP
+
+  PUBLIC BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET
+
+  PUBLIC BIOELECTRIC_PROBLEM_CLASS_TYPE_SET
+
+  PUBLIC BIOELECTRIC_PROBLEM_SETUP
+  
+  PUBLIC BIOELECTRICS_PRE_SOLVE,BIOELECTRICS_POST_SOLVE
   
 CONTAINS
 
@@ -130,9 +143,11 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_TYPE)
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+          & ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+          & ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equations set class."
@@ -271,6 +286,119 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Perform pre-solve actions for the bioelectrics problem class.
+  SUBROUTINE BIOELECTRICS_PRE_SOLVE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("BIOELECTRICS_PRE_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      SOLVERS=>SOLVER%SOLVERS
+      IF(ASSOCIATED(SOLVERS)) THEN
+        CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
+        IF(ASSOCIATED(CONTROL_LOOP)) THEN
+          PROBLEM=>CONTROL_LOOP%PROBLEM
+          IF(ASSOCIATED(PROBLEM)) THEN
+            SELECT CASE(PROBLEM%TYPE)
+            CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
+              CALL BIODOMAIN_PRE_SOLVE(SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+              CALL MONODOMAIN_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+                & " is not valid for a bioelectrics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solvers control loop is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("BIOELECTRICS_PRE_SOLVE")
+    RETURN
+999 CALL ERRORS("BIOELECTRICS_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("BIOELECTRICS_PRE_SOLVE")
+    RETURN 1
+  END SUBROUTINE BIOELECTRICS_PRE_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Performs post solve actions for a bioelectrics problem class.
+  SUBROUTINE BIOELECTRICS_POST_SOLVE(SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("BIOELECTRICS_POST_SOLVE",ERR,ERROR,*999)
+  
+    IF(ASSOCIATED(SOLVER)) THEN
+      SOLVERS=>SOLVER%SOLVERS
+      IF(ASSOCIATED(SOLVERS)) THEN
+        CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
+        IF(ASSOCIATED(CONTROL_LOOP)) THEN
+          PROBLEM=>CONTROL_LOOP%PROBLEM
+          IF(ASSOCIATED(PROBLEM)) THEN
+            SELECT CASE(PROBLEM%TYPE)
+            CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
+              !Do nothing???
+            CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+              CALL MONODOMAIN_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE DEFAULT
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+                & " is not valid for a bioelectrics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          ELSE
+            CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solvers control loop is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BIOELECTRICS_POST_SOLVE")
+    RETURN
+999 CALL ERRORS("BIOELECTRICS_POST_SOLVE",ERR,ERROR)
+    CALL EXITS("BIOELECTRICS_POST_SOLVE")
+    RETURN 1
+    
+  END SUBROUTINE BIOELECTRICS_POST_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Gets the problem type and subtype for a bioelectric problem class.
   SUBROUTINE BIOELECTRIC_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
 
@@ -323,16 +451,10 @@ CONTAINS
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_EQUATION_TYPE)
       CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE,PROBLEM_BIDOMAIN_EQUATION_TYPE)
-        SELECT CASE(PROBLEM_SUBTYPE)
-        CASE(PROBLEM_NO_SUBTYPE)        
-          PROBLEM%CLASS=PROBLEM_BIOELECTRICS_CLASS
-          PROBLEM%TYPE=PROBLEM_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_NO_SUBTYPE     
-        CASE DEFAULT
-          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a bioelectric domain equation type of a bioelectric problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
+        CALL BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE, &
+          & ERR,ERROR,*999)
+      CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+        CALL MONODOMAIN_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*999)        
       CASE DEFAULT
         LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric problem class."
@@ -372,6 +494,8 @@ CONTAINS
         CALL BIODOMAIN_EQUATION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_BIDOMAIN_EQUATION_TYPE)
         CALL BIODOMAIN_EQUATION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+      CASE(PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
+        CALL MONODOMAIN_EQUATION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric problem class."

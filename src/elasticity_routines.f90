@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -44,8 +46,10 @@
 MODULE ELASTICITY_ROUTINES
 
   USE BASE_ROUTINES
+  USE CONTROL_LOOP_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE FINITE_ELASTICITY_ROUTINES
+  USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
   USE LINEAR_ELASTICITY_ROUTINES
@@ -65,9 +69,27 @@ MODULE ELASTICITY_ROUTINES
 
   !Interfaces
 
-  PUBLIC ELASTICITY_EQUATIONS_SET_CLASS_TYPE_SET,ELASTICITY_FINITE_ELEMENT_CALCULATE,ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE,  &
-    & ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE,ELASTICITY_EQUATIONS_SET_SETUP,ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET, &
-    & ELASTICITY_PROBLEM_CLASS_TYPE_SET,ELASTICITY_PROBLEM_SETUP,ELASTICITY_POST_SOLVE
+  PUBLIC ELASTICITY_EQUATIONS_SET_CLASS_TYPE_SET
+
+  PUBLIC ELASTICITY_FINITE_ELEMENT_CALCULATE
+
+  PUBLIC ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE,ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE
+
+  PUBLIC ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE,ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
+
+  PUBLIC ELASTICITY_EQUATIONS_SET_SETUP
+
+  PUBLIC ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET
+  
+  PUBLIC ELASTICITY_PROBLEM_CLASS_TYPE_SET
+
+  PUBLIC ELASTICITY_PROBLEM_SETUP
+
+  PUBLIC ELASTICITY_PRE_SOLVE,ELASTICITY_POST_SOLVE
+
+  PUBLIC ELASTICITY_CONTROL_LOOP_PRE_LOOP
+
+  PUBLIC ELASTICITY_LOAD_INCREMENT_APPLY
 
 CONTAINS
 
@@ -190,7 +212,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE
 
-   !
+  !
   !================================================================================================================================
   !
 
@@ -229,7 +251,121 @@ CONTAINS
     RETURN 1
   END SUBROUTINE ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE
 
- !
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the strain field for an elasticity class finite element equation set.
+  SUBROUTINE ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+        CALL FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for an elasticity equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE")
+    RETURN
+999 CALL ERRORS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE",ERR,ERROR)
+    CALL EXITS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE")
+    RETURN 1
+  END SUBROUTINE ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Pre-evaluates the residual for an elasticity class finite element equation set.
+  SUBROUTINE ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+        CALL FLAG_ERROR("Cannot pre-evaluate the residual for a linear equations set.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+        CALL FINITE_ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for an elasticity equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE")
+    RETURN
+999 CALL ERRORS("ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE",ERR,ERROR)
+    CALL EXITS("ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE")
+    RETURN 1
+  END SUBROUTINE ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Post-evaluates the residual for an elasticity class finite element equation set.
+  SUBROUTINE ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+        CALL FLAG_ERROR("Cannot post-evaluate the residual for a linear equations set.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+        CALL FINITE_ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for an elasticity equation set class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE")
+    RETURN
+999 CALL ERRORS("ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE",ERR,ERROR)
+    CALL EXITS("ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE")
+    RETURN 1
+  END SUBROUTINE ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
+
+  !
   !================================================================================================================================
   !
 
@@ -390,6 +526,46 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !>Performs pre-solve actions for an elasticity problem class.
+  SUBROUTINE ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("ELASTICITY_PRE_SOLVE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+        !Do Nothing
+      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+        CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+      CASE DEFAULT
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for an elasticity problem class."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("ELASTICITY_PRE_SOLVE")
+    RETURN
+999 CALL ERRORS("ELASTICITY_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("ELASTICITY_PRE_SOLVE")
+    RETURN 1
+    
+  END SUBROUTINE ELASTICITY_PRE_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+  
   !>Sets up the output type for an elasticity problem class.
   SUBROUTINE ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
@@ -427,6 +603,95 @@ CONTAINS
 
   !
   !================================================================================================================================
+  !
 
+  !>Executes before each loop of a control loop, ie before each time step for a time loop
+  SUBROUTINE ELASTICITY_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+
+    CALL ENTERS("ELASTICITY_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+      SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
+      CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
+        CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"====== Starting time step",ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"CURRENT_TIME          = ",CURRENT_TIME,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"TIME_INCREMENT        = ",TIME_INCREMENT,ERR,ERROR,*999)
+        IF(DIAGNOSTICS1) THEN
+          CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"====== Starting time step",ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"CURRENT_TIME          = ",CURRENT_TIME,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"TIME_INCREMENT        = ",TIME_INCREMENT,ERR,ERROR,*999)
+        ENDIF
+        SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+        CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
+            !do nothing for now
+        CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+            CALL FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+        CASE DEFAULT
+          LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+            & " is not valid for an elasticity problem class."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      CASE DEFAULT
+        !do nothing
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("ELASTICITY_CONTROL_LOOP_PRE_LOOP")
+    RETURN
+999 CALL ERRORS("ELASTICITY_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
+    CALL EXITS("ELASTICITY_CONTROL_LOOP_PRE_LOOP")
+    RETURN 1
+  END SUBROUTINE ELASTICITY_CONTROL_LOOP_PRE_LOOP
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Apply load increments for equations sets
+  SUBROUTINE ELASTICITY_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    INTEGER(INTG), INTENT(IN) :: ITERATION_NUMBER !<The current load increment iteration index
+    INTEGER(INTG), INTENT(IN) :: MAXIMUM_NUMBER_OF_ITERATIONS !<Final index for load increment loop
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    CALL ENTERS("ELASTICITY_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      SELECT CASE(EQUATIONS_SET%TYPE)
+      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
+        CALL FINITE_ELASTICITY_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+      CASE DEFAULT
+        !Do nothing
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("ELASTICITY_LOAD_INCREMENT_APPLY")
+    RETURN
+999 CALL ERRORS("ELASTICITY_LOAD_INCREMENT_APPLY",ERR,ERROR)
+    CALL EXITS("ELASTICITY_LOAD_INCREMENT_APPLY")
+    RETURN 1
+
+  END SUBROUTINE ELASTICITY_LOAD_INCREMENT_APPLY
+
+  !
+  !================================================================================================================================
+  !
 
 END MODULE ELASTICITY_ROUTINES
+

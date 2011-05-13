@@ -21,31 +21,25 @@
 FIG2DEV=fig2dev
 
 
-SHELL=/bin/sh
+SHELL=/bin/bash
 
 .SUFFIXES:	.ps .tex .pstex .fig
 
-#all	:	$(PSTEX_FIGS)
 all	:	all_pstex
 
 .fig.ps:
 	( cd ${@D} ; ${FIG2DEV} -Lps ${*F}.fig > ${@F} )
 
 .fig.tex:
-#	fig2dev -Leepic $*.fig > $@
 	( cd ${@D} ; ${FIG2DEV} -Leepic ${*F}.fig > ${@F} )
 
 .fig.pstex:	
 	( cd ${@D} ; ${FIG2DEV} -Lpstex ${*F}.fig > ${*F}.eps )
-	( cd ${@D} ; ${FIG2DEV} -Lpstex_t -p${*F}.eps ${*F}.fig | sed -f ${CMISS_ROOT}/latex/Strip_pstex_figs | sed s%CUR_DIR%${@D}% | sed s%=figs/./%=figs/% | sed s%=figs//%=figs/% | sed s%{figs/./%{figs/% | sed s%{figs//%{figs/% > ${@F} )
+	( cd ${@D} ; ${FIG2DEV} -Lpstex_t -F -p${*F}.eps ${*F}.fig | sed -f ${OPENCMISS_ROOT}/cm/doc/latex/Strip_pstex_figs | sed s%CUR_DIR%${@D}% | sed s%=figs/./%=figs/% | sed s%=figs//%=figs/% | sed s%{figs/./%{figs/% | sed s%{figs//%{figs/% > ${@F} )
 
-#*.pstex:
-#	${OPENCMISS_ROOT}/cm/doc/latex/genpstex.sh figs *.fig
 all_pstex:
-	@${OPENCMISS_ROOT}/cm/utils/scripts/call_makefile.sh ${OPENCMISS_ROOT}/cm/doc/latex/Makefigs pstex `find . -name "*.fig" -print`
+	@${OPENCMISS_ROOT}/cm/doc/latex/call_makefile.sh ${OPENCMISS_ROOT}/cm/doc/latex/Makefigs pstex `find . -name "*.fig" -print`
 
-#clean:
-#	-rm -f $(PSTEX_FIGS) $(EPS_FIGS)
 clean:
 	find . -name "*.eps" -exec rm -f {} \;
 	find . -name "*.pstex" -exec rm -f {} \;

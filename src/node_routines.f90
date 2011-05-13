@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -92,8 +94,12 @@ MODULE NODE_ROUTINES
   PUBLIC NODES_CREATE_FINISH,NODES_CREATE_START,NODES_DESTROY
 
   PUBLIC NODES_LABEL_GET,NODES_LABEL_SET
+
+  PUBLIC NODES_NUMBER_OF_NODES_GET
   
   PUBLIC NODES_USER_NUMBER_GET,NODES_USER_NUMBER_SET
+
+  !PUBLIC NODES_NUMBER_OF_VERSIONS_SET
 
 CONTAINS
 
@@ -106,7 +112,7 @@ CONTAINS
 
     !Argument variables
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to check
-    INTEGER(INTG) :: USER_NUMBER !<The user node number to check if it exists
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user node number to check if it exists
     LOGICAL, INTENT(OUT) :: NODE_EXISTS !<On exit, is .TRUE. if the node user number exists in the region, .FALSE. if not
     INTEGER(INTG), INTENT(OUT) :: GLOBAL_NUMBER !<On exit, if the node exists the global number corresponding to the user node number. If the node does not exist then global number will be 0.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -153,6 +159,7 @@ CONTAINS
 
     NODE%GLOBAL_NUMBER=0
     NODE%USER_NUMBER=0
+    NODE%LABEL=""
     
     CALL EXITS("NODE_FINALISE")
     RETURN
@@ -713,6 +720,40 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Returns the number of nodes. \see OPENCMISS::CMISSNodesNumberOfNodesGet
+  SUBROUTINE NODES_NUMBER_OF_NODES_GET(NODES,NUMBER_OF_NODES,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes to get the number of nodes for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("NODES_NUMBER_OF_NODES_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(NODES)) THEN
+      IF(NODES%NODES_FINISHED) THEN
+        NUMBER_OF_NODES=NODES%NUMBER_OF_NODES
+      ELSE
+        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("NODES_NUMBER_OF_NODES_GET")
+    RETURN
+999 CALL ERRORS("NODES_NUMBER_OF_NODES_GET",ERR,ERROR)    
+    CALL EXITS("NODES_NUMBER_OF_NODES_GET")
+    RETURN 1
+   
+  END SUBROUTINE NODES_NUMBER_OF_NODES_GET
+        
+  !
+  !================================================================================================================================
+  !
+
   !>Gets the user number for a node identified by a given global number. \see OPENCMISS::CMISSNodesUserNumberGet
   SUBROUTINE NODES_USER_NUMBER_GET(NODES,GLOBAL_NUMBER,USER_NUMBER,ERR,ERROR,*)
 
@@ -810,7 +851,7 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE NODES_USER_NUMBER_SET
-        
+
   !
   !================================================================================================================================
   !

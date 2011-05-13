@@ -1,5 +1,5 @@
 !> \file
-!> $Id: interface_conditions_routines.f90 690 2009-09-30 23:27:16Z chrispbradley $
+!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all interface conditions routines.
 !>
@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -1461,7 +1463,7 @@ CONTAINS
     CALL ENTERS("INTERFACE_CONDITION_LAGRANGE_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_LAGRANGE)) THEN
-       DEALLOCATE(INTERFACE_LAGRANGE)
+      DEALLOCATE(INTERFACE_LAGRANGE)
     ENDIF
        
     CALL EXITS("INTERFACE_CONDITION_LAGRANGE_FINALISE")

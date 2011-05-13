@@ -1,5 +1,5 @@
 !> \file
-!> $Id:  $
+!> $Id$
 !> \author Ishani Roy & Sander Land
 !> \brief This module handles all Monodomain equations routines which use Strang Splitting with hard-coded cell models.
 !>
@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -56,7 +58,7 @@ MODULE MONODOMAIN_EQUATIONS_ROUTINES
   USE EQUATIONS_MATRICES_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE FIELD_ROUTINES
-  USE GALERKIN_PROJECTION_ROUTINES
+  USE FITTING_ROUTINES
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
@@ -354,6 +356,7 @@ CONTAINS
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             ! get interpolated geometric and material interpolated point
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+
               & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
@@ -420,15 +423,21 @@ CONTAINS
                         ENDDO !ni
                         STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG ! Aij = int D_ij * dphi_m/dx_i * dphi_n/dx_j 
                       ENDIF
+ 
+                      IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN ! non mass lumped version
+                         DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
+                            & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
+                            & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*RWG ! int phi_m phi_n
+                      ENDIF 
 
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
-                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                  DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)+ &
-                  & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG   !  // int phi_m
-                ENDIF
+!                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN  ! mass lumnped version
+!                  DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,mhs)+ &
+!                  & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*RWG   !  // int phi_m
+!                ENDIF
               ENDDO !ms
             ENDDO !mh
           IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP 
@@ -452,16 +461,21 @@ CONTAINS
                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
                       ENDIF
+                      IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN ! non mass lumped version
+                        DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)* &
+                           & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ns,nh)
+                      ENDIF 
                     ENDDO !ns
                   ENDDO !nh
                 ENDIF
 
                 IF(RHS_VECTOR%UPDATE_VECTOR) RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)* &
-                  & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
-                IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
-                   DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
-                     & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
-                ENDIF
+                  & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh) 
+ !               IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN ! mass lumped version
+ !                  DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)* &
+ !                    & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR%SCALE_FACTORS(ms,mh)
+ !               ENDIF
               ENDDO !ms
             ENDDO !mh
           ENDIF
@@ -770,9 +784,8 @@ CONTAINS
          
               CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
                    &NUM_COMP,ERR,ERROR,*999)
-            !  crash?
-            !  CALL FIELD_DOF_ORDER_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
-            !  &  FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER,ERR,ERROR,*999) ! dofs continuous, so first + (x-1) is x'th component index
+              CALL FIELD_DOF_ORDER_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,&
+              &  FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER,ERR,ERROR,*999) ! dofs continuous, so first + (x-1) is x'th component index
 
               !Default to the geometric interpolation setup
               CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,1, &
@@ -841,7 +854,8 @@ CONTAINS
                   ! 1. activation  factor (usually 0.0 or 1.0)
                   ! 2,3 for fiber/transverse conductivity   . defaults to constant interpolation 
                   ! 4,5[,6] : fiber unit vector in dimension
-                NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS + 3
+                  ! 7: out - activation times
+                NUMBER_OF_MATERIALS_COMPONENTS= 7 !NUMBER_OF_DIMENSIONS + 3
                  !Set the number of materials components
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_MATERIALS_COMPONENTS,ERR,ERROR,*999)
@@ -854,7 +868,7 @@ CONTAINS
                 CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & 3,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                 ! 4 5 (6) fiber unit vector
-                DO component_idx=1,NUMBER_OF_DIMENSIONS
+                DO component_idx=1,3 !NUMBER_OF_DIMENSIONS
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -862,6 +876,10 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & component_idx+3,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 ENDDO !component_idx
+
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & NUMBER_OF_MATERIALS_COMPONENTS,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+
                   !Default the field scaling to that of the geometric field
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
@@ -870,6 +888,7 @@ CONTAINS
                 CALL FLAG_ERROR("No user specified field supported!",ERR,ERROR,*999)
               ENDIF
              ELSE
+
                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
              ENDIF
            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -1330,10 +1349,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, MATERIAL_FIELD,  INDEPENDENT_FIELD
-    REAL(DP) :: TMP0, TMP1
-    INTEGER(INTG) :: NN, I
+    REAL(DP) :: TMPV, TMPA
+    INTEGER(INTG) :: I
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD, MATERIAL_FIELD,  INDEPENDENT_FIELD, GEOMETRIC_FIELD
 
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
@@ -1359,8 +1377,9 @@ CONTAINS
         DAMPING_MATRIX%UPDATE_MATRIX   = .FALSE.
         RHS_VECTOR%UPDATE_VECTOR       = .FALSE.
 
-
        ! integrate   cell models
+        GEOMETRIC_FIELD => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
+                           & EQUATIONS_SETS(1)%PTR%GEOMETRY%GEOMETRIC_FIELD
         DEPENDENT_FIELD => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
                            & EQUATIONS_SETS(1)%PTR%DEPENDENT%DEPENDENT_FIELD
         MATERIAL_FIELD  => SOLVER%SOLVERS%SOLVERS(1)%PTR%SOLVER_EQUATIONS%SOLVER_MAPPING% &
@@ -1370,21 +1389,6 @@ CONTAINS
 
         CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & 1, INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 1,ERR,ERROR,*999) ! dependent -> independent
-
-        NN =   INDEPENDENT_FIELD%decomposition%domain(1)%ptr%topology%nodes%number_of_nodes
-
-!       WRITE(*,*) 'BEFORE CELL MODEL INTG'
-!       DO I=1,8
-!         call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999)
-!         WRITE(*,*) 'V(',I,')=',tmp1
-!       END DO
-
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,1,1,tmp0,err,error,*999)
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,NN,1,tmp1,err,error,*999)
-        WRITE(*,*) 'BEFORE CELL INTG:',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME-CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT,'->',&
-        & CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, &
-        & 'V(1) = ', TMP0, 'V(',NN,') = ', TMP1
-
 
         SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
         CASE(PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE)
@@ -1399,28 +1403,26 @@ CONTAINS
           CALL FLAG_ERROR("Invalid cell model subtype",ERR,ERROR,*999)
         END SELECT
 
+        DO I=1,INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(1)%PTR%TOPOLOGY%NODES%NUMBER_OF_NODES
+          !Default to version 1 of each derivative
+          CALL FIELD_PARAMETER_SET_GET_NODE(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,I,1,TMPV,&  ! get local node?
+               & ERR,ERROR,*999)
+          IF (TMPV > 0) THEN
+           !Default to version 1 of each derivative
+           CALL FIELD_PARAMETER_SET_GET_NODE(MATERIAL_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,I,7,TMPA,&
+                & ERR,ERROR,*999) 
+            IF(TMPA==0.0) THEN
+              !Default to version 1 of each derivative
+              CALL FIELD_PARAMETER_SET_UPDATE_NODE(MATERIAL_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,I,7,&
+                   &CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, ERR,ERROR,*999)  
+            ENDIF      
+          ENDIF
+        ENDDO
 
+        IF(MOD(CONTROL_LOOP%TIME_LOOP%CURRENT_TIME+1e-6,5.0)<1e-3) THEN
+          WRITE(*,*), 'T=',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME
+        ENDIF
 
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,1,1,tmp0,err,error,*999)
-        call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,NN,1,tmp1,err,error,*999)
-
-        WRITE(*,*) 'INTEGRATED CELL MODELS',CONTROL_LOOP%TIME_LOOP%CURRENT_TIME-CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT,'->',&
-        & CONTROL_LOOP%TIME_LOOP%CURRENT_TIME, &
-        & 'V(1) = ', TMP0, 'V(',NN,') = ', TMP1
-
-!        DO I=1,NN,100
-!          call field_parameter_set_get_node(INDEPENDENT_FIELD,field_u_variable_type,field_values_set_type,1,I,1,tmp1,err,error,*999) 
-!          write(*,*) 'V(',I,')=',tmp1
-!        ENDDO
-    
-       ! euHeart BENCHMARK
-       IF(TMP1 > 0) THEN
-         WRITE(*,*) 'LAST ACTIVATION @ ', CONTROL_LOOP%TIME_LOOP%CURRENT_TIME
-         WRITE(*,*) 'exiting...'
-         call exit(0) 
-       END IF
-
- 
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a monodomain problem class."
@@ -1437,8 +1439,8 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MONODOMAIN_POST_SOLVE
 
-
   !
   !================================================================================================================================
+  !
 
 END MODULE MONODOMAIN_EQUATIONS_ROUTINES

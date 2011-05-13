@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -45,6 +47,7 @@ MODULE REGION_ROUTINES
 
   USE BASE_ROUTINES
   USE COORDINATE_ROUTINES
+  USE CMISS_CELLML
   USE DATA_POINT_ROUTINES
   USE EQUATIONS_SET_ROUTINES
   USE FIELD_ROUTINES
@@ -471,6 +474,8 @@ CONTAINS
     CALL ENTERS("REGION_FINALISE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(REGION)) THEN
+      REGION%LABEL=""
+      CALL CELLML_ENVIRONMENTS_FINALISE(REGION%CELLML_ENVIRONMENTS,ERR,ERROR,*999)
       CALL EQUATIONS_SETS_FINALISE(REGION,ERR,ERROR,*999)
       CALL FIELDS_FINALISE(REGION%FIELDS,ERR,ERROR,*999)
       CALL MESHES_FINALISE(REGION%MESHES,ERR,ERROR,*999)
@@ -512,6 +517,7 @@ CONTAINS
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate region.",ERR,ERROR,*999)
       REGION%USER_NUMBER=0
       REGION%REGION_FINISHED=.FALSE.
+      REGION%LABEL=""
       NULLIFY(REGION%COORDINATE_SYSTEM)
       NULLIFY(REGION%DATA_POINTS)
       NULLIFY(REGION%NODES)
@@ -519,6 +525,7 @@ CONTAINS
       NULLIFY(REGION%GENERATED_MESHES)
       NULLIFY(REGION%FIELDS)
       NULLIFY(REGION%EQUATIONS_SETS)
+      NULLIFY(REGION%CELLML_ENVIRONMENTS)
       NULLIFY(REGION%PARENT_REGION)
       REGION%NUMBER_OF_SUB_REGIONS=0
       NULLIFY(REGION%SUB_REGIONS)
@@ -527,6 +534,7 @@ CONTAINS
       CALL GENERATED_MESHES_INITIALISE(REGION,ERR,ERROR,*999)
       CALL FIELDS_INITIALISE(REGION,ERR,ERROR,*999)
       CALL EQUATIONS_SETS_INITIALISE(REGION,ERR,ERROR,*999)
+      CALL CELLML_ENVIRONMENTS_INITIALISE(REGION,ERR,ERROR,*999)
       CALL INTERFACES_INITIALISE(REGION,ERR,ERROR,*999)
     ENDIF
     

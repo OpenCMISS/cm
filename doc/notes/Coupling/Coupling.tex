@@ -1,0 +1,293 @@
+\chapter{Coupling}
+\label{cha:coupling}
+
+There are two general forms of coupling that concern us, which we will term volume-coupling and interface-coupling. A volume-coupled problem is one where several equations are defined over the whole of a region, and communicate over the entirety of that region (although the coupling terms may be zero in certain parts of the domain). An interface-coupled problem concerns those cases where two, or more, separate regions are interacting at a common interace. In 3-d this interface is a surface, and in 2-d it is a line. A typical example of this type of problem is fluid-structure interaction. An example of a volume-coupled problem are double porosity networks, often used in porous flow modelling for geophysics (citation). Clearly, it is conceivable that both types of coupling could exist in a single problem, for example, if one wished to model cardiac electrophysiology, finite deformation solid mechanics and fluid mechanics within the ventricle.
+
+\section{Volume coupling}
+
+Two solution strategies are available to us within OpenCMISS, a partitioned approach and a monolithic approach. A partitioned solution strategy involves solving each separate equation in turn, passing the relevant information from one equation to the next. In certain cases, sub-iteration may be required to ensure that a converged solution is reached. For coupling together only two equations this can be an attractive option, however, it can become unwieldy if many equations are to be coupled together. In contrast, the aim of a monolithic strategy is to solve all the equations together, in one solution process, by computing the matrix form of each equation, and then assembling all of these forms into one large matrix system, which is then passed to the solver e.g. PETSc. Again, it is possible to use both strategies within the same problem, if required. For example, if the time scale of one process is much slower than the others, it may be better to solve this separately, and for a larger time step, than the other equations. 
+
+\subsection{Common aspects}
+
+\subsubsection{Problem \& equation class/type/subtype}
+
+For a new coupled problem it is necessary to define appropriate new classes, types \& subtypes for the problem and the equations. For a single physics case the problem hierarchy takes the following form (as appropriate):
+\begin{enumerate}
+ \item PROBLEM\_CLASSICAL\_FIELD\_CLASS
+ \item PROBLEM\_POISSON\_EQUATION\_TYPE
+ \item PROBLEM\_LINEAR\_SOURCE\_POISSON\_SUBTYPE
+\end{enumerate}
+For a coupled system, with equations, PHYSICS\_ONE and PHYSICS\_TWO the hierarchy should approximately follow:
+\begin{enumerate}
+ \item PROBLEM\_MULTI\_PHYSICS\_CLASS
+ \item PROBLEM\_PHYS\_ONE\_PHYS\_TWO\_EQUATION\_TYPE
+ \item PROBLEM\_PHYS\_ONE\_PHYS\_TWO\_EQUATION\_STANDARD\_SUBTYPE
+\end{enumerate}
+
+However, for the equations type hierarchy, it is usually not necessary to use the multi-physics equations class. For example, the types could be declared in the following way for the first equation:
+\begin{enumerate}
+ \item EQUATIONS\_SET\_CLASSICAL\_FIELD\_CLASS
+ \item EQUATIONS\_SET\_PHYS\_ONE\_EQUATION\_TYPE
+ \item EQUATIONS\_SET\_PHYS\_ONE\_COUPLED\_PHYS\_TWO\_EQUATION\_SUBTYPE
+\end{enumerate}
+and for the second equation:
+\begin{enumerate}
+ \item EQUATIONS\_SET\_CLASSICAL\_FIELD\_CLASS
+ \item EQUATIONS\_SET\_PHYS\_TWO\_EQUATION\_TYPE
+ \item EQUATIONS\_SET\_PHYS\_TWO\_COUPLED\_PHYS\_ONE\_EQUATION\_SUBTYPE
+\end{enumerate}
+
+The obvious implication of the above is that a new PHYS\_ONE\_PHYS\_TWO\_EQUATION\_ROUTINES.f90 must be created, which in principle will include all the same subroutines as any other equations\_routines.f90 file e.g. finite element calculate, equations set setup, problem setup. However, usually only the problem related information needs to be setup in the new file, with the equations specific setup included within the separate equations routines of the component physics (using CASE statements on the subtype to select the appropriate sections of code). More details on this will be given in Sections \ref{partitionspec} \& \ref{monolithicspec}.
+
+\subsubsection{Dependent field}
+
+For a single physics problem a dependent field will usually possess two field variable types, the \textit{U} variable type (for the left hand side) and the \textit{delUdelN} type (for the right hand side). For a multi-physics problem we must define additional field variable types, typically two for every additional equations set. The list of possible field variable types is given in field\_routines.f90 . Whilst, it is sensible to assign additional field variables in ascending order, this is not necessary, excepting that a dependent field must have at least a \textit{U} variable type. Attempting to setup a dependent field with only \textit{V} and \textit{delVdelN} variable types will result in an error.
+
+As there is only a single dependent field, its setup need only occur in the first of the equations set's setup routines, with the remaining equations set merely checking that the correct field setup has occurred. The key subroutine calls that must be made (either within the library for an auto-created field, or within the example file for a user-specified field) are:
+
+\begin{lstlisting}
+CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,4,&
+  & ERR,ERROR,*999)
+CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP\%FIELD, &
+  & (/FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE, &
+  & FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE/), &
+  & ERR,ERROR,*999)
+\end{lstlisting}
+Then the field dimension, field data type and field number of components must be set/checked for each variable type that has been defined on the field.
+
+\subsubsection{Equations set field}
+
+The equations set field is a mandatory data structure that must be defined for all problems. However, if only a single equations set is being used for that subtype, it does not need to be initialised. However, a variable still needs to be defined in the example file, and passed in to the equations set create start:
+
+\begin{lstlisting}
+     CALL CMISSEquationsSetCreateStart(EquationsSetUserNumberDiffusion,Region,GeometricField,&
+         & CMISSEquationsSetClassicalFieldClass, &
+         & CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetMultiCompTransportDiffusionSubtype,&
+         & EquationsSetFieldUserNumberDiffusion,EquationsSetFieldDiffusion(icompartment),EquationsSetDiffusion(icompartment),&
+         & Err)
+\end{lstlisting}
+
+Need to describe the setup of the equations set field. Number of components, data type etc.
+ 
+
+
+
+
+\subsubsection{Other fields}
+
+Although there is only a single dependent field, we still define separate fields of other types for each equations set, that is, separate materials, source and independent fields, as appropriate for the particular problem under investigation.
+
+\subsection{Boundary conditions}
+
+For each equations set there must be a separate boundary condition object defined as standard. However, it is important to ensure the the correct field variable type is passed into the call to CMISSBoundaryConditionsSetNode, in agreement with the field variable associated with the particular equations set.
+
+
+\subsubsection{Equations mapping}
+
+\subsection{Partitioned scheme specifics}
+\label{partitionspec}
+The setup of the partitioned solution scheme is placed in the new PHYS\_ONE\_PHYS\_TWO\_EQUATION\_ROUTINES.f90 file. Specifically, the following subroutines will need to be completed:
+\begin{enumerate}
+ \item PHYS\_ONE\_PHYS\_TWO\_PRE\_SOLVE
+ \item PHYS\_ONE\_PHYS\_TWO\_POST\_SOLVE
+ \item PHYS\_ONE\_PHYS\_TWO\_PROBLEM\_SETUP
+ \item PHYS\_ONE\_PHYS\_TWO\_PROBLEM\_SUBTYPE\_SET
+\end{enumerate}
+
+The pre and post solve routines will call various specific pre/post-solve routines, such as output data, update boundary conditions etc. These pre/post-solve routines can be those specific to PHYS\_ONE and PHYS\_TWO, and contained within PHYS\_ONE\_EQUATION\_ROUTINES.f90 and PHYS\_TWO\_EQUATION\_ROUTINES.f90 to eliminate excessive code duplication.
+
+PHYS\_ONE\_PHYS\_TWO\_PROBLEM\_SETUP defines the various solvers required for each equation. Some key subroutine calls required are:
+
+\begin{lstlisting}
+CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
+CALL SOLVERS_NUMBER_SET(SOLVERS,2,ERR,ERROR,*999)
+CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER_PHYSICS_ONE,ERR,ERROR,*999)
+!
+!Set properties of solver one...
+!
+CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER_PHYSICS_TWO,ERR,ERROR,*999)
+!
+!Set properties of solver two...
+!
+\end{lstlisting}
+
+
+\subsection{Monolithic scheme specifics}
+\label{monolithicspec}
+
+\subsubsection{Coupling together equations of differing type/subtype}
+
+Not yet attempted.
+
+\subsubsection{Coupling together several equations of the same type/subtype}
+
+For certain physical problems it is required that several equations of the same type must be coupled in the same domain. This means that the equations\_set\_subtype is no longer sufficient for distinguishing between the equations, and the specific behaviour one desires for each. It is neceessary in these cases to make use of the equations\_set\_field structure, which is defined for each equations\_set, and contains two integers. The first integer is the id number of that particular equations\_set, with the second integer defining the total number of equations\_sets of that type. Obtaining the first integer from the equations\_set\_field within the finite\_element\_calculate subroutine allows the correct field\_variable\_type to be identified for interpolation purposes, as well as enabling an automated setup of the dependent field, equations\_mappings etc.
+
+The diffusion equation once converted into a finite-element formulation will have a matrix formulation similar to:
+\begin{eqnarray}
+\label{1compdiffusion}
+\mathbf{M}_1\frac{d \mathbf{c}_1}{dt} + \mathbf{K}_1 \mathbf{c}_1 = \mathbf{f}_1
+\end{eqnarray}
+To solve three such diffusion equations monolithically, would result in the following matrix system (before discretisation in time):
+\begin{eqnarray}
+\label{3compdiffusion}
+\displaystyle \left( \begin{array}{ccc}
+\mathbf{M}_1   & {\boldsymbol{0}} & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & \mathbf{M}_2 & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & {\boldsymbol{0}} & \mathbf{M}_3
+\end{array} \right)  
+\frac{d}{dt}
+\left[ \begin{array}{c}
+\mathbf{c}_1\\
+\mathbf{c}_2\\
+\mathbf{c}_3
+\end{array} \right]
+& + &
+\displaystyle \left( \begin{array}{ccc}
+\mathbf{K}_1   & {\boldsymbol{0}} & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & \mathbf{K}_2 & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & {\boldsymbol{0}} & \mathbf{K}_3
+\end{array} \right)  
+\left[ \begin{array}{c}
+\mathbf{c}_1\\
+\mathbf{c}_2\\
+\mathbf{c}_3
+\end{array} \right]
+=
+\left[ \begin{array}{c}
+\mathbf{f}_1\\
+\mathbf{f}_2\\
+\mathbf{f}_3
+\end{array} \right]
+\end{eqnarray}
+
+Considering a general case of \textit{N} diffusion equations, there will be \textit{N} equations sets, with \textit{N} respective materials fields, to store the diffusion coefficient tensor for each equation. If we now require the equations to be coupled, there will also be ceofficients that determine the strength of this coupling. For each equation set this will be a further $N$ coefficients. Rather than creating a further \textit{N} materials fields, an extra variable type is defined for the existing fields, for simplicity, the \textit{V} variable type. The \textit{V} variable type is set to be a vector dimension type, with $N$ components. With coupling terms the matrix system is:
+\begin{eqnarray}
+\label{M_matrix}
+\displaystyle \left( \begin{array}{ccc}
+\mathbf{M}_1   & {\boldsymbol{0}} & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & \mathbf{M}_2 & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & {\boldsymbol{0}} & \mathbf{M}_3
+\end{array} \right)  
+\frac{d}{dt}
+\left[ \begin{array}{c}
+\mathbf{c}_1\\
+\mathbf{c}_2\\
+\mathbf{c}_3
+\end{array} \right]
++
+\displaystyle \left( \begin{array}{ccc}
+\mathbf{K}_1   & {\boldsymbol{0}} & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & \mathbf{K}_2 & {\boldsymbol{0}} \\
+{\boldsymbol{0}} & {\boldsymbol{0}} & \mathbf{K}_3
+\end{array} \right)  
+&\left[ \begin{array}{c}
+\mathbf{c}_1\\
+\mathbf{c}_2\\
+\mathbf{c}_3
+\end{array} \right] &\\
++
+\left( \begin{array}{ccc}
+-\boldsymbol{\lambda}_{12}-\boldsymbol{\lambda}_{13} & \boldsymbol{\lambda}_{12} & \boldsymbol{\lambda}_{13}  \\
+\boldsymbol{\lambda}_{21} & -\boldsymbol{\lambda}_{21}-\boldsymbol{\lambda}_{23} & \boldsymbol{\lambda}_{23} \\
+\boldsymbol{\lambda}_{31} & \boldsymbol{\lambda}_{32} & -\boldsymbol{\lambda}_{31}-\boldsymbol{\lambda}_{32}
+\end{array} \right)
+& \left[ \begin{array}{c}
+\mathbf{c}_1\\
+\mathbf{c}_2\\
+\mathbf{c}_3
+\end{array} \right] &
+=
+\left[ \begin{array}{c}
+\mathbf{f}_1\\
+\mathbf{f}_2\\
+\mathbf{f}_3
+\end{array} \right]
+\end{eqnarray}
+
+For a standard diffusion equation there are two dynamic matrices defined, stiffness and damping, which are mapped to the U variable type. To store the coupling contributions from the additional equations, extra matrices must be defined. An array of $N-1$ linear matrices are defined, which map to the $N-1$ other field variable types (V, U1, U2, etc). The terms on the diagonal of the global coupling matrix must be included within the stiffness matrix, as it is not possible to have both a dynamic matrix (stiffness) and an additional linear matrix mapping to the same field variable type (the library will be modified in future to allow this, see tracker item 2741 to check progress on this feature). 
+
+For a simple implementation of this refer to the example, /examples/MultiPhysics/CoupledDiffusionDiffusion/MonolithicSchemeTest .
+
+\subsubsection{Setting up the solver}
+
+One solver, but add multiple solver equations.
+
+Show some example lines for the mappings that need to be defined in the set setup.
+
+In the set\_linear\_setup, for the setup case(EQUATIONS\_SET\_SETUP\_FINISH\_ACTION), the appropriate field variable must be mapped to the particular equations set that is being setup. This requires a certain degree of hard coding and \textit{a priori} knowledge about the field variable types avaiable, and the order in which they will be assigned to equations sets.
+
+First, retrieve the equations set field information and store in a local array.
+\begin{lstlisting}
+EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD% &
+  & EQUATIONS_SET_FIELD_FIELD
+CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,& 
+  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+  & EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
+imy_matrix = EQUATIONS_SET_FIELD_DATA(1)
+Ncompartments = EQUATIONS_SET_FIELD_DATA(2)
+\end{lstlisting}
+
+Here arrays the store the mapping between the equations set id and the field variable type are allocated and initialised, for use when setting the mappings.
+
+\begin{lstlisting}
+CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET &
+   & (EQUATIONS_MAPPING,Ncompartments-1,ERR,ERROR,*999)
+
+ALLOCATE(VARIABLE_TYPES(2*Ncompartments))
+ALLOCATE(VARIABLE_U_TYPES(Ncompartments-1))
+DO num_var=1,Ncompartments
+  VARIABLE_TYPES(2*num_var-1)=FIELD_U_VARIABLE_TYPE+ &
+   & (FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(num_var-1))
+  VARIABLE_TYPES(2*num_var)=FIELD_DELUDELN_VARIABLE_TYPE+ &
+   & (FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(num_var-1))
+ENDDO
+num_var_count=0
+DO num_var=1,Ncompartments
+  IF(num_var/=imy_matrix)THEN
+    num_var_count=num_var_count+1
+    VARIABLE_U_TYPES(num_var_count)=VARIABLE_TYPES(2*num_var-1)
+  ENDIF
+ENDDO
+\end{lstlisting}
+
+
+Finally, set the mapping for the dynamic variable (as standard for the diffusion equation), the linear variable types (for the coupling matrices), the right hand side variable (i.e. delUdelN types) and the source variable. Note that the source variable that is mapped is always the FIELD\_U\_VARIABLE because we use separate source fields (containing only a U variable) for each equations set.
+
+\begin{lstlisting}
+CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET &
+ & (EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix-1),ERR,ERROR,*999)
+CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET &
+ & (EQUATIONS_MAPPING,VARIABLE_U_TYPES,ERR,ERROR,*999)
+CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET
+ & (EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix),ERR,ERROR,*999)
+CALL EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET &
+ & (EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
+\end{lstlisting}
+
+For a monolithic solution step there is only a single solver equation to setup, but several equations set equations to map into this. In the example file this is done in the following way:
+
+\begin{lstlisting}
+DO icompartment=1,Ncompartments
+  CALL CMISSSolverEquationsEquationsSetAdd(SolverEquationsDiffusion,&
+     & EquationsSetDiffusion(icompartment),&
+     & EquationsSetIndex,Err)
+ENDDO 
+\end{lstlisting}
+
+\subsection{IO}
+
+Currently field\_IO\_routines does not support the export of fields containing field variable types other than U and delUdelN. Therefore, it is necessary to use the FieldML output routines, and output separate files, one for each variable type, using calls of the following form:
+
+\begin{lstlisting}
+CALL FieldmlOutput_AddField(fieldmlInfo,baseName//".dependent_U",&
+  & region, mesh, DependentField,CMISSFieldUVariableType, err )
+
+CALL FieldmlOutput_AddField(fieldmlInfo,baseName//".dependent_V",&
+  & region, mesh, DependentField,CMISSFieldVVariableType, err ) 
+\end{lstlisting}
+
+
+
+
+\section{Interface coupling}

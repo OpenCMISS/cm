@@ -1,6 +1,7 @@
 /*!
 \page code_style Coding Style
 This is an attempt to document the programming "style" for use with OpenCMISS.
+- Generally, try to ensure that new code is consistent in formating, style, look and feel and convention with existing code.
 - Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.
 - All dynamic arrays should be ALLOCATABLE rather than POINTER unless full pointer functionality is required.
 - A double space should be used for an indent. Tabs should not be used to indent code.
@@ -35,7 +36,6 @@ This is an attempt to document the programming "style" for use with OpenCMISS.
   - Return the result to the memory supplied by calling program. (i.e. using INTENT(OUT)::A(:) etc)
   - Indicate in the doxygen comment that an argument is changed inside the get routine.
   - Check that the size of the memory passed in is large enough to hold the data that it is going to store
-  .
 .
 The following styles are required by IBM Fortran Compiler:
 - For read/write/print statement, avoid the comma before the data variable. 

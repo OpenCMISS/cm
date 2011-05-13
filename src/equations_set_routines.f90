@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -50,6 +52,7 @@ MODULE EQUATIONS_SET_ROUTINES
   USE CMISS_MPI
   USE COMP_ENVIRONMENT
   USE CONSTANTS
+  USE FITTING_ROUTINES
   USE DISTRIBUTED_MATRIX_VECTOR
   USE DOMAIN_MAPPINGS
   USE ELASTICITY_ROUTINES
@@ -85,7 +88,7 @@ MODULE EQUATIONS_SET_ROUTINES
   !Interfaces
 
   PUBLIC EQUATIONS_SET_ANALYTIC_CREATE_START,EQUATIONS_SET_ANALYTIC_CREATE_FINISH,EQUATIONS_SET_ANALYTIC_DESTROY
-  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE
+  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE,EQUATIONS_SET_NONLINEAR_RHS_UPDATE
   PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC,EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_FINISH
   PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_CREATE_START,EQUATIONS_SET_BOUNDARY_CONDITIONS_DESTROY
   PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH,EQUATIONS_SET_DESTROY,EQUATIONS_SETS_INITIALISE
@@ -101,6 +104,7 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_ASSEMBLE
   PUBLIC EQUATIONS_SET_USER_NUMBER_FIND
   PUBLIC EQUATIONS_SET_LOAD_INCREMENT_APPLY
+  PUBLIC EQUATIONS_SET_ANALYTIC_USER_PARAM_SET,EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
   
 CONTAINS
 
@@ -207,21 +211,21 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-                !Check the specified analtyic field has the same decomposition as the geometric field
+                !Check the specified analytic field has the same decomposition as the geometric field
                 GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                 IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
                   IF(.NOT.ASSOCIATED(GEOMETRIC_FIELD%DECOMPOSITION,ANALYTIC_FIELD%DECOMPOSITION)) THEN
-                    CALL FLAG_ERROR("The specified analtyic field does not have the same decomposition as the geometric "// &
+                    CALL FLAG_ERROR("The specified analytic field does not have the same decomposition as the geometric "// &
                       & "field for the specified equations set.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("The geometric field is not associated for the specified equations set.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The specified analtyic field region is not associated.",ERR,ERROR,*999)
+                CALL FLAG_ERROR("The specified analytic field region is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The specified analtyic field has not been finished.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("The specified analytic field has not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
             !Check the user number has not already been used for a field in this region.
@@ -368,6 +372,86 @@ CONTAINS
     CALL EXITS("EQUATIONS_SET_ANALYTIC_INITIALISE")
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ANALYTIC_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the analytic problem user parameter
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_SET(EQUATIONS_SET,PARAM_IDX,PARAM,ERR,ERROR,*)
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the analytic solution for.
+    INTEGER(INTG), INTENT(IN) :: PARAM_IDX !<Index of the user parameter
+    REAL(DP), INTENT(IN) :: PARAM !<Value of the parameter
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      ANALYTIC=>EQUATIONS_SET%ANALYTIC
+      IF(ASSOCIATED(ANALYTIC)) THEN
+        IF(PARAM_IDX>0.AND.PARAM_IDX<=SIZE(ANALYTIC%ANALYTIC_USER_PARAMS)) THEN
+          !Set the value
+          ANALYTIC%ANALYTIC_USER_PARAMS(PARAM_IDX)=PARAM
+        ELSE
+          CALL FLAG_ERROR("Invalid parameter index.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF    
+    ELSE 
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_SET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the analytic problem user parameter
+  SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_GET(EQUATIONS_SET,PARAM_IDX,PARAM,ERR,ERROR,*)
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the analytic solution for.
+    INTEGER(INTG), INTENT(IN) :: PARAM_IDX !<Index of the user parameter
+    REAL(DP), INTENT(OUT) :: PARAM !<Value of the parameter
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC
+
+    CALL ENTERS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      ANALYTIC=>EQUATIONS_SET%ANALYTIC
+      IF(ASSOCIATED(ANALYTIC)) THEN
+        IF(PARAM_IDX>0.AND.PARAM_IDX<=SIZE(ANALYTIC%ANALYTIC_USER_PARAMS)) THEN
+          !Set the value
+          PARAM=ANALYTIC%ANALYTIC_USER_PARAMS(PARAM_IDX)
+        ELSE
+          CALL FLAG_ERROR("Invalid parameter index.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF    
+    ELSE 
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_ANALYTIC_USER_PARAM_GET")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_ANALYTIC_USER_PARAM_GET
 
   !
   !================================================================================================================================
@@ -653,12 +737,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -852,12 +935,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -954,7 +1036,7 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
+            ENDIF
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
@@ -1005,12 +1087,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -1032,6 +1113,10 @@ CONTAINS
     RETURN 1
   END SUBROUTINE EQUATIONS_SET_ASSEMBLE_STATIC_NONLINEAR_FEM
 
+  !
+  !================================================================================================================================
+  !
+
   ! sander, 26/03/10
   !>Assembles the equations stiffness matrix, residuals and rhs for a nonlinear quasistatic equations set using the finite element method.
   !> currently the same as the static nonlinear case
@@ -1050,13 +1135,11 @@ CONTAINS
     RETURN 1
   END  SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM
 
-
   !
   !================================================================================================================================
   !
 
 ! chrm, 17/09/09
-  
   !>Assembles the equations stiffness matrix and rhs for a linear quasistatic equations set using the finite element method.
   SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -1179,12 +1262,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -1488,6 +1570,148 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Updates the right hand side variable from the equations residual vector
+  SUBROUTINE EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: variable_dof,row_idx,VARIABLE_TYPE,rhs_global_dof,rhs_boundary_condition,equations_matrix_idx
+    REAL(DP) :: VALUE
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
+    TYPE(FIELD_TYPE), POINTER :: RHS_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE,RESIDUAL_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      EQUATIONS=>EQUATIONS_SET%EQUATIONS
+      IF(ASSOCIATED(EQUATIONS)) THEN
+        EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+        IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+          RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
+          IF(ASSOCIATED(RHS_MAPPING)) THEN
+            RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+            IF(ASSOCIATED(RHS_VARIABLE)) THEN
+              !Get the right hand side variable
+              RHS_FIELD=>RHS_VARIABLE%FIELD
+              VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
+            ELSE
+              CALL FLAG_ERROR("RHS mapping RHS variable is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+          ENDIF
+          IF(ASSOCIATED(RHS_FIELD)) THEN
+            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+              RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
+              IF(ASSOCIATED(RHS_DOMAIN_MAPPING)) THEN
+                RHS_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
+                  & VARIABLE_TYPE)%PTR
+                IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
+                  !Get the equations residual vector
+                  EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+                  IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                    NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                    IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+                      RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
+                      IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
+                        !Get mapping from equations rows to field dofs
+                        NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                        IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                          DO equations_matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+                            RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(equations_matrix_idx)%VARIABLE
+                            IF(ASSOCIATED(RESIDUAL_VARIABLE)) THEN
+                              DO row_idx=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
+                                variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(row_idx)
+                                rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
+                                rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%GLOBAL_BOUNDARY_CONDITIONS( &
+                                  & rhs_global_dof)
+                                SELECT CASE(rhs_boundary_condition)
+                                CASE(BOUNDARY_CONDITION_FREE,BOUNDARY_CONDITION_FREE_WALL,&
+                                     & BOUNDARY_CONDITION_NEUMANN_POINT,BOUNDARY_CONDITION_NEUMANN_INTEGRATED, &
+                                     & BOUNDARY_CONDITION_NEUMANN_FREE)
+                                  !Add residual to field value
+                                  CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,row_idx,VALUE,ERR,ERROR,*999)
+                                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                    & variable_dof,VALUE,ERR,ERROR,*999)
+                                CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_PRESSURE,BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
+                                  !Do nothing
+                                CASE(BOUNDARY_CONDITION_MIXED)
+                                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The RHS variable boundary condition of "// &
+                                    & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                    & " for RHS variable dof number "// &
+                                    & TRIM(NUMBER_TO_VSTRING(variable_dof,"*",ERR,ERROR))//" is invalid."
+                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                END SELECT
+                              ENDDO
+                            ELSE
+                              CALL FLAG_ERROR("Residual variable is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ENDDO !equations_matrix_idx
+                        ELSE
+                          CALL FLAG_ERROR("Nonlinear mapping is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Residual vector is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Nonlinear matrices is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Equations matrices is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("RHS variable domain mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Equations set boundary conditions are not associated.",ERR,ERROR,*999)
+            ENDIF
+            CALL FIELD_PARAMETER_SET_UPDATE_START(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+          ELSE
+            CALL FLAG_ERROR("RHS variable field is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE")
+    RETURN 1
+
+  END SUBROUTINE EQUATIONS_SET_NONLINEAR_RHS_UPDATE
+
+  !
+  !================================================================================================================================
+  !
+
   !>Set boundary conditions for an equation set according to the analytic equations. \see OPENCMISS::CMISSEquationsSetBoundaryConditionsAnalytic
   SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -1712,13 +1936,21 @@ CONTAINS
   !>- ANALYTIC
   !>- FIXED_CONDITIONS 
   !>- EQUATIONS 
-  SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
+!   SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
+
+  SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,&
+    & EQUATIONS_SET_SUBTYPE,EQUATIONS_SET_FIELD_USER_NUMBER,EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the equations set
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to create the equations set on
-    TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD !<A pointer to the either the geometry or, in appropriate, the fibre field for the equation set
+    TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD !<A pointer to the either the geometry or, if appropriate, the fibre field for the equation set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_FIELD_USER_NUMBER !<The user number of the equations set field
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<On return, a pointer to the equations set field
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<On return, a pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_CLASS !<The equations set class to set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_TYPE_ !<The equations set type to set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equations set subtype to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1726,11 +1958,14 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: NEW_EQUATIONS_SET
     TYPE(EQUATIONS_SET_PTR_TYPE), POINTER :: NEW_EQUATIONS_SETS(:)
     TYPE(EQUATIONS_SET_SETUP_TYPE) :: EQUATIONS_SET_SETUP_INFO
-    TYPE(REGION_TYPE), POINTER :: GEOM_FIBRE_FIELD_REGION
+    TYPE(REGION_TYPE), POINTER :: GEOM_FIBRE_FIELD_REGION,EQUATIONS_SET_FIELD_REGION
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
- 
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
+    TYPE(FIELD_TYPE), POINTER :: FIELD
+
     NULLIFY(NEW_EQUATIONS_SET)
     NULLIFY(NEW_EQUATIONS_SETS)
+    NULLIFY(EQUATIONS_EQUATIONS_SET_FIELD)
 
     CALL ENTERS("EQUATIONS_SET_CREATE_START",ERR,ERROR,*997)
 
@@ -1749,52 +1984,118 @@ CONTAINS
                 GEOM_FIBRE_FIELD_REGION=>GEOM_FIBRE_FIELD%REGION
                 IF(ASSOCIATED(GEOM_FIBRE_FIELD_REGION)) THEN
                   IF(GEOM_FIBRE_FIELD_REGION%USER_NUMBER==REGION%USER_NUMBER) THEN
-                    !Initalise equations set
-                    CALL EQUATIONS_SET_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
-                    !Set default equations set values
-                    NEW_EQUATIONS_SET%USER_NUMBER=USER_NUMBER
-                    NEW_EQUATIONS_SET%GLOBAL_NUMBER=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
-                    NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
-                    NEW_EQUATIONS_SET%REGION=>REGION
-                    !Default to a standardised Laplace.
-                    NEW_EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
-                    NEW_EQUATIONS_SET%TYPE=EQUATIONS_SET_LAPLACE_EQUATION_TYPE
-                    NEW_EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE
-                    NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
-                    !Initialise the setup
-                    CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-                    EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
-                    EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-                    !Start equations set specific setup
-                    CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-                    !Set up the equations set geometric fields
-                    CALL EQUATIONS_SET_GEOMETRY_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
-                    IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
-                      NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD
-                      NULLIFY(NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD)
-                    ELSE
-                      NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD%GEOMETRIC_FIELD
-                      NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD=>GEOM_FIBRE_FIELD
-                    ENDIF
-                    EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_GEOMETRY_TYPE
-                    EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-                    EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=GEOM_FIBRE_FIELD%USER_NUMBER
-                    EQUATIONS_SET_SETUP_INFO%FIELD=>GEOM_FIBRE_FIELD
-                    !Set up equations set specific geometry
-                    CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-                    !Finalise the setup
-                    CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
-                    !Add new equations set into list of equations set in the region
-                    ALLOCATE(NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
-                    DO equations_set_idx=1,REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS
-                      NEW_EQUATIONS_SETS(equations_set_idx)%PTR=>REGION%EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
-                    ENDDO !equations_set_idx
-                    NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1)%PTR=>NEW_EQUATIONS_SET
-                    IF(ASSOCIATED(REGION%EQUATIONS_SETS%EQUATIONS_SETS)) DEALLOCATE(REGION%EQUATIONS_SETS%EQUATIONS_SETS)
-                    REGION%EQUATIONS_SETS%EQUATIONS_SETS=>NEW_EQUATIONS_SETS
-                    REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
-                    EQUATIONS_SET=>NEW_EQUATIONS_SET
+                      IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+                        !Check the equations set field has been finished
+                        IF(EQUATIONS_SET_FIELD_FIELD%FIELD_FINISHED.eqv..TRUE.) THEN
+                          !Check the user numbers match
+                          IF(EQUATIONS_SET_FIELD_USER_NUMBER/=EQUATIONS_SET_FIELD_FIELD%USER_NUMBER) THEN
+                            LOCAL_ERROR="The specified equations set field user number of "// &
+                              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                              & " does not match the user number of the specified equations set field of "// &
+                              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_FIELD%USER_NUMBER,"*",ERR,ERROR))//"."
+                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          ENDIF
+                          EQUATIONS_SET_FIELD_REGION=>EQUATIONS_SET_FIELD_FIELD%REGION
+                          IF(ASSOCIATED(EQUATIONS_SET_FIELD_REGION)) THEN                
+                            !Check the field is defined on the same region as the equations set
+                            IF(EQUATIONS_SET_FIELD_REGION%USER_NUMBER/=REGION%USER_NUMBER) THEN
+                              LOCAL_ERROR="Invalid region setup. The specified equations set field was created on region no. "// &
+                                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                                & " and the specified equations set has been created on region number "// &
+                                & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                            !Check the specified equations set field has the same decomposition as the geometric field
+                            IF(ASSOCIATED(GEOM_FIBRE_FIELD)) THEN
+                              IF(.NOT.ASSOCIATED(GEOM_FIBRE_FIELD%DECOMPOSITION,EQUATIONS_SET_FIELD_FIELD%DECOMPOSITION)) THEN
+                                CALL FLAG_ERROR("The specified equations set field does not have the same decomposition "// &
+                                  & "as the geometric field for the specified equations set.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("The geom. field is not associated for the specified equations set.",ERR,ERROR,*999)
+                            ENDIF
+                              
+                          ELSE
+                            CALL FLAG_ERROR("The specified equations set field region is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("The specified equations set field has not been finished.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        !Check the user number has not already been used for a field in this region.
+                        NULLIFY(FIELD)
+                        CALL FIELD_USER_NUMBER_FIND(EQUATIONS_SET_FIELD_USER_NUMBER,REGION,FIELD,ERR,ERROR,*999)
+                        IF(ASSOCIATED(FIELD)) THEN
+                          LOCAL_ERROR="The specified equations set field user number of "// &
+                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_FIELD_USER_NUMBER,"*",ERR,ERROR))// &
+                            & "has already been used to create a field on region number "// &
+                            & TRIM(NUMBER_TO_VSTRING(REGION%USER_NUMBER,"*",ERR,ERROR))//"."
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                      ENDIF
+                      !Initialise the equations set materials
+!                       CALL EQUATIONS_SET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+!                        WRITE(*,'(A)') "equations set initialise called"
+!                       IF(.NOT.ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
+!                         EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.TRUE.
+!                       ENDIF
+!--- tob 1            
+                      !Initalise equations set
+                      CALL EQUATIONS_SET_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
+                      !Set default equations set values
+                      NEW_EQUATIONS_SET%USER_NUMBER=USER_NUMBER
+                      NEW_EQUATIONS_SET%GLOBAL_NUMBER=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
+                      NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
+                      NEW_EQUATIONS_SET%REGION=>REGION
+                      !Set the equations set class, type and subtype
+                      CALL EQUATIONS_SET_SPECIFICATION_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_, &
+                        & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)      
+                      NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
+                      !Initialise the setup
+                      CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+                      EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
+                      EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+                      !Here, we get a pointer to the equations_set_field; default is null
+                      EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=EQUATIONS_SET_FIELD_USER_NUMBER
+                      EQUATIONS_SET_SETUP_INFO%FIELD=>EQUATIONS_SET_FIELD_FIELD
+                      !Start equations set specific setup
+                      CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+                      CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+                      !Set up the equations set geometric fields
+                      CALL EQUATIONS_SET_GEOMETRY_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
+                      IF(GEOM_FIBRE_FIELD%TYPE==FIELD_GEOMETRIC_TYPE) THEN
+                        NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD
+                        NULLIFY(NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD)
+                      ELSE
+                        NEW_EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD=>GEOM_FIBRE_FIELD%GEOMETRIC_FIELD
+                        NEW_EQUATIONS_SET%GEOMETRY%FIBRE_FIELD=>GEOM_FIBRE_FIELD
+                      ENDIF
+                      EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_GEOMETRY_TYPE
+                      EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+                      EQUATIONS_SET_SETUP_INFO%FIELD_USER_NUMBER=GEOM_FIBRE_FIELD%USER_NUMBER
+                      EQUATIONS_SET_SETUP_INFO%FIELD=>GEOM_FIBRE_FIELD
+                      !Set up equations set specific geometry
+                      CALL EQUATIONS_SET_SETUP(NEW_EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+                      !Finalise the setup
+                      CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+                      !Add new equations set into list of equations set in the region
+                      ALLOCATE(NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
+                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
+                      DO equations_set_idx=1,REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS
+                        NEW_EQUATIONS_SETS(equations_set_idx)%PTR=>REGION%EQUATIONS_SETS%EQUATIONS_SETS(equations_set_idx)%PTR
+                      ENDDO !equations_set_idx
+                      NEW_EQUATIONS_SETS(REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1)%PTR=>NEW_EQUATIONS_SET
+                      IF(ASSOCIATED(REGION%EQUATIONS_SETS%EQUATIONS_SETS)) DEALLOCATE(REGION%EQUATIONS_SETS%EQUATIONS_SETS)
+                      REGION%EQUATIONS_SETS%EQUATIONS_SETS=>NEW_EQUATIONS_SETS
+                      REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS=REGION%EQUATIONS_SETS%NUMBER_OF_EQUATIONS_SETS+1
+                      EQUATIONS_SET=>NEW_EQUATIONS_SET
+                      EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+                      !Set pointers: ASK_CHRIS
+                      IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN            
+                        EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+                      ELSE
+                        EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET_FIELD_FIELD
+                      ENDIF
                   ELSE
                     LOCAL_ERROR="The geometric field region and the specified region do not match. "// &
                       & "The geometric field was created on region number "// &
@@ -2004,6 +2305,7 @@ CONTAINS
       CALL EQUATIONS_SET_MATERIALS_FINALISE(EQUATIONS_SET%MATERIALS,ERR,ERROR,*999)
       CALL EQUATIONS_SET_SOURCE_FINALISE(EQUATIONS_SET%SOURCE,ERR,ERROR,*999)
       CALL EQUATIONS_SET_ANALYTIC_FINALISE(EQUATIONS_SET%ANALYTIC,ERR,ERROR,*999)
+      CALL EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD,ERR,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) CALL EQUATIONS_DESTROY(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET%BOUNDARY_CONDITIONS)) CALL BOUNDARY_CONDITIONS_DESTROY(EQUATIONS_SET%BOUNDARY_CONDITIONS, &
         & ERR,ERROR,*999)
@@ -2057,6 +2359,8 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
         CALL CLASSICAL_FIELD_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_FITTING_CLASS)
+        CALL FITTING_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
         IF(EQUATIONS_SET%TYPE == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
           CALL MONODOMAIN_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
@@ -2202,6 +2506,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code 
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    INTEGER(INTG) :: matrix_idx
     TYPE(ELEMENT_MATRIX_TYPE), POINTER :: ELEMENT_MATRIX
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
@@ -2239,28 +2544,31 @@ CONTAINS
             CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
             NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
             IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element Jacobian:",ERR,ERROR,*999)          
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update Jacobian = ",NONLINEAR_MATRICES%JACOBIAN%UPDATE_JACOBIAN, &
-                & ERR,ERROR,*999)
-              IF(NONLINEAR_MATRICES%JACOBIAN%UPDATE_JACOBIAN) THEN
-                ELEMENT_MATRIX=>NONLINEAR_MATRICES%JACOBIAN%ELEMENT_JACOBIAN
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX% &
-                  & MAX_NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
-                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX% &
-                  & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-                CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
-                  & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
-                  & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
-                  & '(16X,8(X,E13.6))',ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element Jacobian:",ERR,ERROR,*999)
+              DO matrix_idx=1,NONLINEAR_MATRICES%NUMBER_OF_JACOBIANS
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Jacobian number = ",matrix_idx,ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update Jacobian = ",NONLINEAR_MATRICES%JACOBIANS(matrix_idx)%PTR% &
+                  & UPDATE_JACOBIAN,ERR,ERROR,*999)
+                IF(NONLINEAR_MATRICES%JACOBIANS(matrix_idx)%PTR%UPDATE_JACOBIAN) THEN
+                  ELEMENT_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(matrix_idx)%PTR%ELEMENT_JACOBIAN
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX% &
+                    & MAX_NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
+                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX% &
+                    & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
+                    & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
+                    & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
+                    & '(16X,8(X,E13.6))',ERR,ERROR,*999)
 !!TODO: Write out the element residual???
-              ENDIF
+                ENDIF
+              ENDDO
             ELSE
               CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -2726,13 +3034,14 @@ CONTAINS
       EQUATIONS_SET%SOLUTION_METHOD=0
       CALL EQUATIONS_SET_GEOMETRY_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
       CALL EQUATIONS_SET_DEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
+      CALL EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
       NULLIFY(EQUATIONS_SET%INDEPENDENT)
       NULLIFY(EQUATIONS_SET%MATERIALS)
       NULLIFY(EQUATIONS_SET%SOURCE)
       NULLIFY(EQUATIONS_SET%ANALYTIC)
       NULLIFY(EQUATIONS_SET%EQUATIONS)
       NULLIFY(EQUATIONS_SET%BOUNDARY_CONDITIONS)
-     ENDIF
+    ENDIF
        
     CALL EXITS("EQUATIONS_SET_INITIALISE")
     RETURN
@@ -3315,6 +3624,64 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  !>Finalises the dependent variables for an equation set and deallocates all memory.
+  SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE(EQUATIONS_SET_FIELD,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE) :: EQUATIONS_SET_FIELD !<The pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE",ERR,ERROR,*999)
+
+    NULLIFY(EQUATIONS_SET_FIELD%EQUATIONS_SET)
+    EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FINISHED=.FALSE.
+    EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.FALSE.
+    NULLIFY(EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD)
+    
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE
+  
+  !
+  !================================================================================================================================
+  !
+  !>Initialises the equations set field for a equations set.
+  SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE(EQUATIONS_SET,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to initialise the dependent field for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+ 
+    CALL ENTERS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET=>EQUATIONS_SET
+      EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FINISHED=.FALSE.
+      EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.TRUE.
+      NULLIFY(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD)
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE")
+    RETURN 1
+  END SUBROUTINE EQUATIONS_SET_EQUATIONS_SET_FIELD_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+
 
   !>Sets up the specifices for an equation set.
   SUBROUTINE EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*)
@@ -3345,7 +3712,8 @@ CONTAINS
         ELSE
           CALL BIOELECTRIC_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
         END IF
-
+      CASE(EQUATIONS_SET_FITTING_CLASS)
+        CALL FITTING_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_MODAL_CLASS)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
@@ -3511,7 +3879,72 @@ CONTAINS
         IF(EQUATIONS%EQUATIONS_FINISHED) THEN
           SELECT CASE(EQUATIONS%LINEARITY)
           CASE(EQUATIONS_LINEAR)            
-            CALL FLAG_ERROR("Can not evaluate a Jacobian for linear equations.",ERR,ERROR,*999)
+            SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
+            CASE(EQUATIONS_STATIC)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_STATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(EQUATIONS_QUASISTATIC)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
+              SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+              CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                CALL EQUATIONS_SET_ASSEMBLE_DYNAMIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="The equations set solution method of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
+            CASE DEFAULT
+              LOCAL_ERROR="The equations time dependence type of "// &
+                & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           CASE(EQUATIONS_NONLINEAR)
             SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
             CASE(EQUATIONS_STATIC)
@@ -3682,8 +4115,8 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
-             !Output timing information if required
+            ENDIF
+            !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
@@ -3733,12 +4166,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -3836,8 +4268,8 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
-             !Output timing information if required
+            ENDIF
+            !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
@@ -3887,12 +4319,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -3917,7 +4348,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
 
   !>Evaluates the residual for an equations set.
   SUBROUTINE EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
@@ -4145,12 +4575,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -4248,8 +4677,8 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for internal equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-             ENDIF
-             !Output timing information if required
+            ENDIF
+            !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME4,ERR,ERROR,*999)
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME4,ERR,ERROR,*999)
@@ -4299,12 +4728,11 @@ CONTAINS
               CALL CPU_TIMER(SYSTEM_CPU,SYSTEM_TIME6,ERR,ERROR,*999)
               USER_ELAPSED=USER_TIME6(1)-USER_TIME1(1)
               SYSTEM_ELAPSED=SYSTEM_TIME6(1)-SYSTEM_TIME1(1)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total user time for equations assembly = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Total system time for equations assembly = ",SYSTEM_ELAPSED, &
                 & ERR,ERROR,*999)
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"***",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations matrices is not associated",ERR,ERROR,*999)
@@ -4819,18 +5247,22 @@ CONTAINS
           CALL MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FMM_CLASS)
           CALL FMM_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_FITTING_CLASS)
+          CALL FITTING_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+        CASE(EQUATIONS_SET_OPTIMISATION_CLASS)
+          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_CLASS,"*",ERR,ERROR))//" is not valid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         !Initialise the setup
-        CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-        EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
-        EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-        !Peform the initial equations set setup
-        CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-        !Finalise the setup
-        CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
+!         CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+!         EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
+!         EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
+!         !Peform the initial equations set setup
+!         CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
+!         !Finalise the setup
+!         CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)          
       ENDIF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
@@ -4939,7 +5371,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("EQUATIONS_SET_INITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_SETS_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%EQUATIONS_SETS)) THEN
@@ -4969,7 +5401,7 @@ CONTAINS
   !
 
   !> Apply the boundary condition load increment to dependent field
-  SUBROUTINE EQUATIONS_SET_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_INCREMENT(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -4982,14 +5414,17 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: DOMAIN_MAPPING
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS
+    TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
     INTEGER(INTG) :: variable_idx,variable_type,dirichlet_idx,dirichlet_dof_idx
-    REAL(DP), POINTER :: FULL_LOADS(:),CURRENT_LOADS(:)
-    REAL(DP) :: FULL_LOAD, CURRENT_LOAD, NEW_LOAD
+    INTEGER(INTG) :: pressure_incremented_idx, pressure_incremented_dof_idx,MY_COMPUTATIONAL_NODE_NUMBER
+    REAL(DP), POINTER :: FULL_LOADS(:),CURRENT_LOADS(:), PREV_LOADS(:)
+    REAL(DP) :: FULL_LOAD, CURRENT_LOAD, NEW_LOAD, PREV_LOAD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("EQUATIONS_SET_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
+    CALL ENTERS("EQUATIONS_SET_BOUNDARY_CONDITIONS_INCREMENT",ERR,ERROR,*999)
 
     NULLIFY(BOUNDARY_CONDITIONS)
     NULLIFY(DEPENDENT_FIELD)
@@ -4998,10 +5433,16 @@ CONTAINS
     NULLIFY(DIRICHLET_BOUNDARY_CONDITIONS)
     NULLIFY(FULL_LOADS)
     NULLIFY(CURRENT_LOADS)
+
+    MY_COMPUTATIONAL_NODE_NUMBER=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
     
+! write(*,*) "iteration_number=",ITERATION_NUMBER
     !Take the stored load, scale it down appropriately then apply to the unknown variables
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+      IF(DIAGNOSTICS1) THEN
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  equations set",EQUATIONS_SET%USER_NUMBER,ERR,ERROR,*999)
+      ENDIF
       IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
@@ -5011,68 +5452,177 @@ CONTAINS
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLES(variable_idx)
               variable_type=DEPENDENT_VARIABLE%VARIABLE_TYPE
-              IF(ASSOCIATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR)) THEN
-                BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
-                IF(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
-                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
-                    DIRICHLET_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
-                    !Get the pointer to vector holding the full and current loads
-                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                      & FULL_LOADS,ERR,ERROR,*999)
-                    !chrm 22/06/2010: 'FIELD_BOUNDARY_CONDITIONS_SET_TYPE' does not get updated with time (update_BCs)
-                    !\ToDo: How can this be achieved ???
+              BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
+              IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
+                IF(ASSOCIATED(DOMAIN_MAPPING)) THEN
 
-!                     write(*,*)'FULL_LOADS = ',FULL_LOADS
-
-                    CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                      & CURRENT_LOADS,ERR,ERROR,*999)
-
-!                     write(*,*)'CURRENT_LOADS = ',CURRENT_LOADS
-
-                    !Get full increment, calculate new load, then apply to dependent field
-                    DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
-                      dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                      IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                          & BOUNDARY_CONDITION_FIXED_INCREMENTED .OR. &
-                        & BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
-                          & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN !Only increment if it's a incremented type bc
-                        FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
-                        ! Apply full load if last step, or fixed BC
-                        IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                            & dirichlet_dof_idx,FULL_LOAD,ERR,ERROR,*999)
-                        ELSE
-                          !Calculate new load and apply to dependent field
-                          CURRENT_LOAD=CURRENT_LOADS(dirichlet_dof_idx)
-                          NEW_LOAD=CURRENT_LOAD+(FULL_LOAD-CURRENT_LOAD)/(MAXIMUM_NUMBER_OF_ITERATIONS-ITERATION_NUMBER+1)
-                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                            & dirichlet_dof_idx,NEW_LOAD,ERR,ERROR,*999)
-                        ENDIF
-                      ENDIF
-                    ENDDO !dirichlet_idx
-
-!---tob
-                    !\ToDo: What happens if the call below is issued
-                    !without actually that the dependent field has been modified in above conditional ?
-                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                      & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-!---toe
-
-                    !Restore the vector handles
-                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
-                      & FULL_LOADS,ERR,ERROR,*999)
-                    CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                      & CURRENT_LOADS,ERR,ERROR,*999)
-                  ELSE
-                    LOCAL_ERROR="Dirichlet boundary condition for variable type "// &
-                      & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ! Dirichlet boundary conditions (can be displacement or force, as RHS is a whole another field variable)
+                  IF(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS>0) THEN
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS)) THEN
+                      DIRICHLET_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE%DIRICHLET_BOUNDARY_CONDITIONS
+                      !Get the pointer to vector holding the full and current loads
+                      !   full load: FIELD_BOUNDARY_CONDITIONS_SET_TYPE - holds the target load values
+                      !   current load: FIELD_VALUES_SET_TYPE - holds the current increment values
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                        & FULL_LOADS,ERR,ERROR,*999)
+                      !chrm 22/06/2010: 'FIELD_BOUNDARY_CONDITIONS_SET_TYPE' does not get updated with time (update_BCs)
+                      !\ToDo: How can this be achieved ???
+  !                     write(*,*)'FULL_LOADS = ',FULL_LOADS
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+  !                     write(*,*)'CURRENT_LOADS = ',CURRENT_LOADS
+                      !Get full increment, calculate new load, then apply to dependent field
+                      DO dirichlet_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
+                        dirichlet_dof_idx=DIRICHLET_BOUNDARY_CONDITIONS%DIRICHLET_DOF_INDICES(dirichlet_idx)
+                        IF(BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
+                            & BOUNDARY_CONDITION_FIXED_INCREMENTED .OR. &
+                            & BOUNDARY_CONDITIONS_VARIABLE%global_boundary_conditions(dirichlet_dof_idx)== &
+                            & BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN !Only increment if it's a incremented type bc
+                          !Convert dof index to local index
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(dirichlet_dof_idx)%DOMAIN_NUMBER(1)== &
+                            & MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                            dirichlet_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(dirichlet_dof_idx)%LOCAL_NUMBER(1)
+                            IF(0<dirichlet_dof_idx.AND.dirichlet_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
+                              FULL_LOAD=FULL_LOADS(dirichlet_dof_idx)
+                              ! Apply full load if last step, or fixed BC
+                              IF(ITERATION_NUMBER==MAXIMUM_NUMBER_OF_ITERATIONS) THEN
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                                  & dirichlet_dof_idx,FULL_LOAD,ERR,ERROR,*999)
+                              ELSE
+                                !Calculate new load and apply to dependent field
+                                CURRENT_LOAD=CURRENT_LOADS(dirichlet_dof_idx)
+                                NEW_LOAD=CURRENT_LOAD+(FULL_LOAD-CURRENT_LOAD)/(MAXIMUM_NUMBER_OF_ITERATIONS-ITERATION_NUMBER+1)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                                  & dirichlet_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                                IF(DIAGNOSTICS1) THEN
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx",dirichlet_dof_idx,ERR,ERROR,*999)
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load",CURRENT_LOAD,ERR,ERROR,*999)
+                                  CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                                ENDIF
+                              ENDIF !Full or intermediate load
+                            ENDIF !non-ghost dof
+                          ENDIF !current domain
+                        ENDIF !correct BC type
+                      ENDDO !dirichlet_idx
+  !---tob
+                      !\ToDo: What happens if the call below is issued
+                      !without actually that the dependent field has been modified in above conditional ?
+                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                        & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                        & variable_type, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+  !---toe
+                      !Restore the vector handles
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
+                        & FULL_LOADS,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+                    ELSE
+                      LOCAL_ERROR="Dirichlet boundary condition for variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
-                ENDIF
+
+                  !There might also be pressure incremented conditions
+                  IF (BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS>0) THEN 
+                    ! handle pressure incremented boundary conditions
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS)) THEN
+                      PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS_VARIABLE% &
+                        & PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS
+                      !Due to a variety of reasons, the pressure incremented type is setup differently to dirichlet conditions.
+                      !We store two sets of vectors, the current and previous values
+                      !   current: FIELD_PRESSURE_VALUES_SET_TYPE - always holds the current increment, even if not incremented
+                      !   previous: FIELD_PREVIOUS_PRESSURE_SET_TYPE - holds the previously applied increment
+                      !Grab the pointers for both
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
+                        & PREV_LOADS,ERR,ERROR,*999)                    
+                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+                      !Calculate the new load, update the old load
+                      IF(ITERATION_NUMBER==1) THEN
+                        !On the first iteration, FIELD_PRESSURE_VALUES_SET_TYPE actually contains the full load
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                          !Global dof index
+                          pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
+                            & (pressure_incremented_idx)
+                          !Must convert into local dof index
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)%DOMAIN_NUMBER(1)== &
+                            & MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                            pressure_incremented_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)% &
+                              & LOCAL_NUMBER(1)
+                            IF(0<pressure_incremented_dof_idx.AND.pressure_incremented_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
+                              NEW_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
+                              NEW_LOAD=NEW_LOAD/MAXIMUM_NUMBER_OF_ITERATIONS
+!if (pressure_incremented_idx==1) write(*,*) "new load=",new_load
+                              !Update current and previous loads
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,0.0_dp,ERR,ERROR,*999)
+                              IF(DIAGNOSTICS1) THEN
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
+                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
+                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                              ENDIF
+                            ENDIF !Non-ghost dof
+                          ENDIF !Current domain
+                        ENDDO !pressure_incremented_idx
+                      ELSE
+                        !Calculate the new load, keep the current load
+                        DO pressure_incremented_idx=1,BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
+                          !This is global dof idx
+                          pressure_incremented_dof_idx=PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS%PRESSURE_INCREMENTED_DOF_INDICES &
+                            & (pressure_incremented_idx)
+                          !Must convert into local dof index
+                          IF(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)%DOMAIN_NUMBER(1)== &
+                            & MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                            pressure_incremented_dof_idx=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(pressure_incremented_dof_idx)% &
+                              & LOCAL_NUMBER(1)
+                            IF(0<pressure_incremented_dof_idx.AND.pressure_incremented_dof_idx<DOMAIN_MAPPING%GHOST_START) THEN
+                              PREV_LOAD=PREV_LOADS(pressure_incremented_dof_idx)
+                              CURRENT_LOAD=CURRENT_LOADS(pressure_incremented_dof_idx)
+                              NEW_LOAD=CURRENT_LOAD+(CURRENT_LOAD-PREV_LOAD)  !This may be subject to numerical errors...
+!if (pressure_incremented_idx==1) write(*,*) "new load=",new_load
+                          !Update current and previous loads
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PRESSURE_VALUES_SET_TYPE,pressure_incremented_dof_idx,NEW_LOAD,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                & FIELD_PREVIOUS_PRESSURE_SET_TYPE,pressure_incremented_dof_idx,CURRENT_LOAD,ERR,ERROR,*999)
+                              IF(DIAGNOSTICS1) THEN
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  dof idx", &
+                                    & pressure_incremented_dof_idx,ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    current load", &
+                                    & CURRENT_LOADS(pressure_incremented_dof_idx),ERR,ERROR,*999)
+                                CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    new load",NEW_LOAD,ERR,ERROR,*999)
+                              ENDIF
+                            ENDIF !Non-ghost dof
+                          ENDIF !Current domain
+                        ENDDO !pressure_incremented_idx
+                      ENDIF
+                      !Restore the vector handles
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
+                        & PREV_LOADS,ERR,ERROR,*999)
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+                    ELSE
+                      LOCAL_ERROR="Pressure incremented boundary condition for variable type "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated even though"// &
+                        & TRIM(NUMBER_TO_VSTRING(BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS, &
+                        & '*',ERR,ERROR))//" conditions of this type has been counted."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ENDIF
+                  ENDIF !Pressure incremented bc block
+                ELSE
+                  LOCAL_ERROR="Domain mapping is not associated for variable "// &
+                    & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" of dependent field"
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF !Domain mapping test
               ELSE
-                ! do nothing
+                ! do nothing - no boundary conditions variable type associated?
               ENDIF
             ENDDO !variable_idx
           ELSE
@@ -5088,6 +5638,46 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
+    CALL EXITS("EQUATIONS_SET_BOUNDARY_CONDITIONS_INCREMENT")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_BOUNDARY_CONDITIONS_INCREMENT",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_BOUNDARY_CONDITIONS_INCREMENT")
+    RETURN 1
+
+  END SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_INCREMENT
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Apply load increments for equations sets
+  SUBROUTINE EQUATIONS_SET_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    INTEGER(INTG), INTENT(IN) :: ITERATION_NUMBER !<The current load increment iteration index
+    INTEGER(INTG), INTENT(IN) :: MAXIMUM_NUMBER_OF_ITERATIONS !<Final index for load increment loop
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    CALL ENTERS("EQUATIONS_SET_LOAD_INCREMENT_APPLY",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      !Increment boundary conditions
+      CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_INCREMENT(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+
+      !Apply any other equation set specific increments
+      SELECT CASE(EQUATIONS_SET%CLASS)
+      CASE(EQUATIONS_SET_ELASTICITY_CLASS)
+        CALL ELASTICITY_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+      CASE DEFAULT
+        !Do nothing
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+
     CALL EXITS("EQUATIONS_SET_LOAD_INCREMENT_APPLY")
     RETURN
 999 CALL ERRORS("EQUATIONS_SET_LOAD_INCREMENT_APPLY",ERR,ERROR)
@@ -5095,7 +5685,6 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE EQUATIONS_SET_LOAD_INCREMENT_APPLY
-  
 
   !
   !================================================================================================================================

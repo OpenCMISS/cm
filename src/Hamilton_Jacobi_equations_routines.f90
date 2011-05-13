@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -97,7 +99,7 @@ CONTAINS
   !
 
 
-  !>Sets/changes the problem subtype for a Laplace equation type .
+  !>Sets/changes the problem subtype for a Hamilton-Jacobi equation type .
   SUBROUTINE HJ_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -115,7 +117,7 @@ CONTAINS
       CASE(PROBLEM_STANDARD_HJ_SUBTYPE)        
         PROBLEM%CLASS=PROBLEM_FMM_CLASS
         PROBLEM%TYPE=PROBLEM_HJ_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STANDARD_HJ_SUBTYPE     
+        PROBLEM%SUBTYPE=PROBLEM_STANDARD_HJ_SUBTYPE
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a HJ equation type."

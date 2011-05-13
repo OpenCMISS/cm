@@ -65,132 +65,132 @@ MODULE ISO_VARYING_STRING
   interface assignment(=)
      module procedure op_assign_CH_VS
      module procedure op_assign_VS_CH
-  end interface assignment(=)
+  end interface !assignment(=)
 
   interface operator(//)
      module procedure op_concat_VS_VS
      module procedure op_concat_CH_VS
      module procedure op_concat_VS_CH
-  end interface operator(//)
+  end interface !operator(//)
 
   interface operator(==)
      module procedure op_eq_VS_VS
      module procedure op_eq_CH_VS
      module procedure op_eq_VS_CH
-  end interface operator(==)
+  end interface !operator(==)
 
   interface operator(/=)
      module procedure op_ne_VS_VS
      module procedure op_ne_CH_VS
      module procedure op_ne_VS_CH
-  end interface operator (/=)
+  end interface !operator (/=)
   
   interface operator(<)
      module procedure op_lt_VS_VS
      module procedure op_lt_CH_VS
      module procedure op_lt_VS_CH
-  end interface operator (<)
+  end interface !operator (<)
   
   interface operator(<=)
      module procedure op_le_VS_VS
      module procedure op_le_CH_VS
      module procedure op_le_VS_CH
-  end interface operator (<=)
+  end interface !operator (<=)
   
   interface operator(>=)
      module procedure op_ge_VS_VS
      module procedure op_ge_CH_VS
      module procedure op_ge_VS_CH
-  end interface operator (>=)
+  end interface !operator (>=)
 
   interface operator(>)
      module procedure op_gt_VS_VS
      module procedure op_gt_CH_VS
      module procedure op_gt_VS_CH
-  end interface operator (>)
+  end interface !operator (>)
   
   interface adjustl
      module procedure adjustl_
-  end interface adjustl
+  end interface !adjustl
 
   interface adjustr
      module procedure adjustr_
-  end interface adjustr
+  end interface !adjustr
 
   interface char
      module procedure char_auto
      module procedure char_fixed
-  end interface char
+  end interface !char
 
   interface iachar
      module procedure iachar_
-  end interface iachar
+  end interface !iachar
 
   interface ichar
      module procedure ichar_
-  end interface ichar
+  end interface !ichar
 
   interface index
      module procedure index_VS_VS
      module procedure index_CH_VS
      module procedure index_VS_CH
-  end interface index
+  end interface !index
 
   interface len
      module procedure len_
-  end interface len
+  end interface !len
 
   interface len_trim
      module procedure len_trim_
-  end interface len_trim
+  end interface !len_trim
 
   interface lge
      module procedure lge_VS_VS
      module procedure lge_CH_VS
      module procedure lge_VS_CH
-  end interface lge
+  end interface !lge
   
   interface lgt
      module procedure lgt_VS_VS
      module procedure lgt_CH_VS
      module procedure lgt_VS_CH
-  end interface lgt
+  end interface !lgt
 
   interface lle
      module procedure lle_VS_VS
      module procedure lle_CH_VS
      module procedure lle_VS_CH
-  end interface lle
+  end interface !lle
 
   interface llt
      module procedure llt_VS_VS
      module procedure llt_CH_VS
      module procedure llt_VS_CH
-  end interface llt
+  end interface !llt
 
   interface repeat
      module procedure repeat_
-  end interface repeat
+  end interface !repeat
 
   interface scan
      module procedure scan_VS_VS
      module procedure scan_CH_VS
      module procedure scan_VS_CH
-  end interface scan
+  end interface !scan
 
   interface trim
      module procedure trim_
-  end interface trim
+  end interface !trim
 
   interface verify
      module procedure verify_VS_VS
      module procedure verify_CH_VS
      module procedure verify_VS_CH
-  end interface verify
+  end interface !verify
 
   interface var_str
      module procedure var_str_
-  end interface var_str
+  end interface !var_str
 
   interface get
      module procedure get_
@@ -199,38 +199,38 @@ MODULE ISO_VARYING_STRING
      module procedure get_set_CH
      module procedure get_unit_set_VS
      module procedure get_unit_set_CH
-  end interface get
+  end interface !get
 
   interface put
      module procedure put_VS
      module procedure put_CH
      module procedure put_unit_VS
      module procedure put_unit_CH
-  end interface put
+  end interface !put
 
   interface put_line
      module procedure put_line_VS
      module procedure put_line_CH
      module procedure put_line_unit_VS
      module procedure put_line_unit_CH
-  end interface put_line
+  end interface !put_line
 
   interface extract
      module procedure extract_VS
      module procedure extract_CH
-  end interface extract
+  end interface !extract
 
   interface insert
      module procedure insert_VS_VS
      module procedure insert_CH_VS
      module procedure insert_VS_CH
      module procedure insert_CH_CH
-  end interface insert
+  end interface !insert
 
   interface remove
      module procedure remove_VS
      module procedure remove_CH
-  end interface remove
+  end interface !remove
 
   interface replace
      module procedure replace_VS_VS_auto
@@ -254,7 +254,11 @@ MODULE ISO_VARYING_STRING
   interface split
      module procedure split_VS
      module procedure split_CH
-  end interface split
+  end interface !split
+
+  interface erase
+    module procedure erase_
+  end interface !erase
 
   ! Access specifiers
 
@@ -291,6 +295,7 @@ MODULE ISO_VARYING_STRING
   public :: remove
   public :: replace
   public :: split
+  public :: erase
 
   private :: op_assign_CH_VS
   private :: op_assign_VS_CH
@@ -387,6 +392,7 @@ MODULE ISO_VARYING_STRING
   private :: replace_CH_CH_CH_target
   private :: split_VS
   private :: split_CH
+  private :: erase_
 
 ! Procedures
 
@@ -2557,6 +2563,27 @@ contains
     return
 
   end subroutine split_CH
+
+!****
+
+!JL 20/10/10 seems *very* strange that there is no deallocate statement in this entire file... given that varying string is 
+!            an allocatable character array. Adding one to prevent memory leak - has to be called manually like normal 
+!            deallocate statement
+  elemental subroutine erase_ (string)
+
+    type(varying_string), intent(inout) :: string
+
+! Get the length of a varying string
+
+    if(ALLOCATED(string%chars)) then
+       deallocate(string%chars)
+    endif
+
+! Finish
+
+    return
+
+  end subroutine erase_
 
 END MODULE ISO_VARYING_STRING
 

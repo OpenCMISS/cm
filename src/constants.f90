@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -205,6 +207,7 @@ MODULE CONSTANTS
   !> \brief Global derivative constant identifiers
   !> \see CONSTANTS
   !>@{ 
+  INTEGER(INTG), PARAMETER :: MAXIMUM_GLOBAL_DERIV_NUMBER=8 !<The maximum global derivative number
   INTEGER(INTG), PARAMETER :: NO_GLOBAL_DERIV=1 !<No global derivative i.e., u \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S1=2 !<First global derivative in the s1 direction i.e., du/ds1 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S2=3 !<First global derivative in the s2 direction i.e., du/ds2 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
@@ -213,6 +216,15 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S1_S3=6 !<Global Cross derivative in the s1 and s3 direction i.e., d^2u/ds1ds3 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S2_S3=7 !<Global Cross derivative in the s2 and s3 direction i.e., d^2u/ds2ds3 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
   INTEGER(INTG), PARAMETER :: GLOBAL_DERIV_S1_S2_S3=8 !<Cross derivative in the s1, s2 and s3 direction i.e., d^3u/ds1ds2ds3 \see CONSTANTS_GlobalDerivativeConstants,CONSTANTS
+  !>@}
+  
+  !> \addtogroup CONSTANTS_PhysicalDerivativeConstants CONSTANTS::PhysicalDerivativeConstants
+  !> \brief Physical derivative constant identifiers
+  !> \see CONSTANTS
+  !>@{ 
+  INTEGER(INTG), PARAMETER :: MAXIMUM_PHYSICAL_DERIV_NUMBER=2 !<The maximum physical derivative number
+  INTEGER(INTG), PARAMETER :: NO_PHYSICAL_DERIV=1 !<No physical derivative i.e., u \see CONSTANTS_PhysicalDerivativeConstants,CONSTANTS
+  INTEGER(INTG), PARAMETER :: GRADIENT_PHYSICAL_DERIV=2 !<Gradient physical derivative i.e., grad u \see CONSTANTS_PhysicalDerivativeConstants,CONSTANTS
   !>@}
   
   INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX(23,4) = RESHAPE( &

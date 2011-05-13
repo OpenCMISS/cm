@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -364,11 +366,14 @@ CONTAINS
                     & SOLVER_EQUATIONS%SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
                 ENDDO !equations_matrix_idx
               ELSE
-                IF(ASSOCIATED(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                  & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP)) THEN
-                  SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                    & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP%SOLVER_MATRIX=> &
-                    & SOLVER_EQUATIONS%SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
+                IF(ALLOCATED(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                  & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS)) THEN
+                  DO equations_matrix_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                    & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%NUMBER_OF_EQUATIONS_JACOBIANS
+                    SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                      & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR% &
+                      & SOLVER_MATRIX=>SOLVER_EQUATIONS%SOLVER_MATRICES%MATRICES(matrix_idx)%PTR
+                  ENDDO
                 ELSE
                   DO equations_matrix_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                     & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(matrix_idx)%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
@@ -1292,7 +1297,8 @@ CONTAINS
                     IF(EQUATIONS_MATRICES%EQUATIONS_MATRICES_FINISHED) THEN
                       IF(equations_set_idx>0.AND.equations_set_idx<=SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS) THEN
                         JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(SOLVER_MATRIX%MATRIX_NUMBER)%JACOBIAN_TO_SOLVER_MATRIX_MAP
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(SOLVER_MATRIX%MATRIX_NUMBER)%JACOBIAN_TO_SOLVER_MATRIX_MAPS( &
+                          & JACOBIAN_MATRIX%JACOBIAN_NUMBER)%PTR
                         IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
                           SOLVER_DISTRIBUTED_MATRIX=>SOLVER_MATRIX%MATRIX
                           IF(ASSOCIATED(SOLVER_DISTRIBUTED_MATRIX)) THEN
@@ -1597,39 +1603,43 @@ CONTAINS
                                 CALL FLAG_ERROR("Equations matrix linear matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations matrix is not assocaited.",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations to solver matrix map is not assocaited.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Equations to solver matrix map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !equations_matrix_idx
-                        JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
-                        IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
-                          JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
-                          IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
-                            NONLINEAR_MATRICES=>JACOBIAN_MATRIX%NONLINEAR_MATRICES
-                            IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-                              EQUATIONS_MATRICES=>NONLINEAR_MATRICES%EQUATIONS_MATRICES
-                              IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                                DISTRIBUTED_MATRIX=>JACOBIAN_MATRIX%JACOBIAN
-                                IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
-                                  CALL DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET(DISTRIBUTED_MATRIX,MAX_COLUMNS_PER_ROW, &
-                                    & ERR,ERROR,*999)
-                                  MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
+                        DO equations_matrix_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_EQUATIONS_JACOBIANS
+                          JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                            & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS( &
+                            & equations_matrix_idx)%PTR
+                          IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
+                            JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
+                            IF(ASSOCIATED(JACOBIAN_MATRIX)) THEN
+                              NONLINEAR_MATRICES=>JACOBIAN_MATRIX%NONLINEAR_MATRICES
+                              IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+                                EQUATIONS_MATRICES=>NONLINEAR_MATRICES%EQUATIONS_MATRICES
+                                IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+                                  DISTRIBUTED_MATRIX=>JACOBIAN_MATRIX%JACOBIAN
+                                  IF(ASSOCIATED(DISTRIBUTED_MATRIX)) THEN
+                                    CALL DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET(DISTRIBUTED_MATRIX,MAX_COLUMNS_PER_ROW, &
+                                      & ERR,ERROR,*999)
+                                    MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
+                                  ELSE
+                                    CALL FLAG_ERROR("Jacobian distributed matrix is not associated.",ERR,ERROR,*999)
+                                  ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Jacobian distributed matrix is not associated.",ERR,ERROR,*999)
+                                  CALL FLAG_ERROR("Nonlinear matrices equations matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Nonlinear matrices equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("Jacobian matrix is not assocaited.",ERR,ERROR,*999)
                           ENDIF
-                        ENDIF
+                        ENDDO !equations_matrix_idx
                       ENDIF
                     ENDDO !equations_set_idx
                     DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
@@ -1671,7 +1681,7 @@ CONTAINS
                               CALL FLAG_ERROR("Interface to solver map interface matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface to solver matrix map is not assocaited.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Interface to solver matrix map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !interface_matrix_idx
                       CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
@@ -1897,28 +1907,52 @@ CONTAINS
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         ENDDO !equations_matrix_idx
-                        !Now add any columns from the Jacobian
-                        JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAP
-                        IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
-                          !Note: pointers have been checked above
-                          JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
-                          NONLINEAR_MATRICES=>JACOBIAN_MATRIX%NONLINEAR_MATRICES
-                          EQUATIONS_MATRICES=>NONLINEAR_MATRICES%EQUATIONS_MATRICES
-                          DISTRIBUTED_MATRIX=>JACOBIAN_MATRIX%JACOBIAN
-                          CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(DISTRIBUTED_MATRIX,EQUATIONS_STORAGE_TYPE,ERR,ERROR,*999)
-                          SELECT CASE(EQUATIONS_STORAGE_TYPE)
-                          CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                            !Loop over the rows of the Jacobian matrix
-                            DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                              !Loop over the solver rows this equations row is mapped to
-                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
-                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
-                                  & SOLVER_ROWS(solver_row_idx)                                              
-                                !Loop over the columns of the Jacobian
-                                DO jacobian_column_number=1,JACOBIAN_MATRIX%NUMBER_OF_COLUMNS
+                        !Now add any columns from the Jacobians
+                        DO equations_matrix_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                          & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%NUMBER_OF_EQUATIONS_JACOBIANS
+                          JACOBIAN_TO_SOLVER_MAP=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                            & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS( &
+                            & equations_matrix_idx)%PTR
+                          IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
+                            !Note: pointers have been checked above
+                            JACOBIAN_MATRIX=>JACOBIAN_TO_SOLVER_MAP%JACOBIAN_MATRIX
+                            NONLINEAR_MATRICES=>JACOBIAN_MATRIX%NONLINEAR_MATRICES
+                            EQUATIONS_MATRICES=>NONLINEAR_MATRICES%EQUATIONS_MATRICES
+                            DISTRIBUTED_MATRIX=>JACOBIAN_MATRIX%JACOBIAN
+                            CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(DISTRIBUTED_MATRIX,EQUATIONS_STORAGE_TYPE,ERR,ERROR,*999)
+                            SELECT CASE(EQUATIONS_STORAGE_TYPE)
+                            CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
+                              !Loop over the rows of the Jacobian matrix
+                              DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
+                                !Loop over the solver rows this equations row is mapped to
+                                DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
+                                  solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                    & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
+                                    & SOLVER_ROWS(solver_row_idx)
+                                  !Loop over the columns of the Jacobian
+                                  DO jacobian_column_number=1,JACOBIAN_MATRIX%NUMBER_OF_COLUMNS
+                                    !Loop over the solver columns this equations column is mapped to
+                                    DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
+                                      & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
+                                      solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
+                                        & jacobian_column_number)%SOLVER_COLS(solver_column_idx)
+                                      CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
+                                        & ERR,ERROR,*999)
+                                    ENDDO !solver_column_idx
+                                  ENDDO !jacobian_column_number
+                                ENDDO !solver_row_idx
+                              ENDDO !jacobian_row_number
+                            CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
+                              !Loop over the rows of the Jacobian matrix
+                              DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
+                                !Loop over the solver rows this equations row is mapped to
+                                DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
+                                  solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                    & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
+                                    & SOLVER_ROWS(solver_row_idx)
+                                  jacobian_column_number=jacobian_row_number
                                   !Loop over the solver columns this equations column is mapped to
                                   DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
                                     & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
@@ -1927,69 +1961,49 @@ CONTAINS
                                     CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
                                       & ERR,ERROR,*999)
                                   ENDDO !solver_column_idx
-                                ENDDO !jacobian_column_number
-                              ENDDO !solver_row_idx
-                            ENDDO !jacobian_row_number                          
-                          CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                            !Loop over the rows of the Jacobian matrix
-                            DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                              !Loop over the solver rows this equations row is mapped to
-                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
-                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
-                                  & SOLVER_ROWS(solver_row_idx)                                              
-                                jacobian_column_number=jacobian_row_number
-                                !Loop over the solver columns this equations column is mapped to
-                                DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
-                                  & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
-                                  solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
-                                    & jacobian_column_number)%SOLVER_COLS(solver_column_idx)
-                                  CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
-                                    & ERR,ERROR,*999)
-                                ENDDO !solver_column_idx
-                              ENDDO !solver_row_idx
-                            ENDDO !jacobian_row_number                          
-                          CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
-                          CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                          CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                            CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,EQUATIONS_ROW_INDICES, &
-                              & EQUATIONS_COLUMN_INDICES,ERR,ERROR,*999)
-                            !Loop over the rows of the Jacobian matrix
-                            DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
-                              !Loop over the solver rows this equations row is mapped to
-                              DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
-                                solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
-                                  & SOLVER_ROWS(solver_row_idx)
-                                !Loop over the columns of the Jacobian matrix
-                                DO jacobian_column_idx=EQUATIONS_ROW_INDICES(jacobian_row_number), &
-                                  & EQUATIONS_ROW_INDICES(jacobian_row_number+1)-1
-                                  jacobian_column_number=EQUATIONS_COLUMN_INDICES(jacobian_column_idx)
-                                  !Loop over the solver columns this Jacobian column is mapped to
-                                  DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
-                                    & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
-                                    solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
-                                      & jacobian_column_number)%SOLVER_COLS(solver_column_idx)                                   
-                                    CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
-                                      & ERR,ERROR,*999)
-                                  ENDDO !solver_column_idx
-                                ENDDO !jacobian_column_idx
-                              ENDDO !solver_row_idx
-                            ENDDO !jacobian_row_number                          
-                          CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
-                          CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                          CASE DEFAULT
-                            LOCAL_ERROR="The Jacobian storage type of "// &
-                              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT
-                        ENDIF
+                                ENDDO !solver_row_idx
+                              ENDDO !jacobian_row_number
+                            CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                              CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,EQUATIONS_ROW_INDICES, &
+                                & EQUATIONS_COLUMN_INDICES,ERR,ERROR,*999)
+                              !Loop over the rows of the Jacobian matrix
+                              DO jacobian_row_number=1,EQUATIONS_MATRICES%NUMBER_OF_ROWS
+                                !Loop over the solver rows this equations row is mapped to
+                                DO solver_row_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                  & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)%NUMBER_OF_SOLVER_ROWS
+                                  solver_row_number=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
+                                    & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_row_number)% &
+                                    & SOLVER_ROWS(solver_row_idx)
+                                  !Loop over the columns of the Jacobian matrix
+                                  DO jacobian_column_idx=EQUATIONS_ROW_INDICES(jacobian_row_number), &
+                                    & EQUATIONS_ROW_INDICES(jacobian_row_number+1)-1
+                                    jacobian_column_number=EQUATIONS_COLUMN_INDICES(jacobian_column_idx)
+                                    !Loop over the solver columns this Jacobian column is mapped to
+                                    DO solver_column_idx=1,JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
+                                      & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
+                                      solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
+                                        & jacobian_column_number)%SOLVER_COLS(solver_column_idx)
+                                      CALL LIST_ITEM_ADD(COLUMN_INDICES_LISTS(solver_row_number)%PTR,solver_column_number, &
+                                        & ERR,ERROR,*999)
+                                    ENDDO !solver_column_idx
+                                  ENDDO !jacobian_column_idx
+                                ENDDO !solver_row_idx
+                              ENDDO !jacobian_row_number
+                            CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CASE DEFAULT
+                              LOCAL_ERROR="The Jacobian storage type of "// &
+                                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            END SELECT
+                          ENDIF
+                        ENDDO !equations_matrix_idx
                       ENDIF
                       !Now add in any interface matrices columns
                       DO interface_condition_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -2208,7 +2222,7 @@ CONTAINS
                     ENDDO !solver_row_number
                     !Allocate and setup the column locations
                     ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices.",ERR,ERROR,*999)
                     DO solver_row_number=1,SOLVER_MAPPING%NUMBER_OF_ROWS
                       CALL LIST_DETACH_AND_DESTROY(COLUMN_INDICES_LISTS(solver_row_number)%PTR,NUMBER_OF_COLUMNS,COLUMNS, &
                         & ERR,ERROR,*999)
@@ -2241,10 +2255,12 @@ CONTAINS
                         & SOLVER_MATRIX%NUMBER_OF_COLUMNS,DP)*100.0_DP
                       CALL WRITE_STRING_FMT_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Sparsity (%) = ",SPARSITY,"F6.2", ERR,ERROR,*999)
                     ENDIF
-                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MATRICES%NUMBER_OF_ROWS+1,8,8,ROW_INDICES, &
-                      & '("  Row indices    :",8(X,I13))','(18X,8(X,I13))',ERR,ERROR,*999)
-                    CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NUMBER_OF_NON_ZEROS,8,8,COLUMN_INDICES, &
-                      & '("  Column indices :",8(X,I13))','(18X,8(X,I13))', ERR,ERROR,*999)
+                    IF(DIAGNOSTICS2) THEN
+                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,SOLVER_MATRICES%NUMBER_OF_ROWS+1,8,8,ROW_INDICES, &
+                        & '("  Row indices    :",8(X,I13))','(18X,8(X,I13))',ERR,ERROR,*999)
+                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NUMBER_OF_NON_ZEROS,8,8,COLUMN_INDICES, &
+                        & '("  Column indices :",8(X,I13))','(18X,8(X,I13))', ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
                 ELSE
                   CALL FLAG_ERROR("Solver matrices solver mapping is not associated",ERR,ERROR,*999)

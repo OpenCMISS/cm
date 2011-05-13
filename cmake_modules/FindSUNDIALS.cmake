@@ -13,3 +13,6 @@ ELSE(EXISTS ${SUNDIALS_DIR}/include/sundials/sundials_config.h)
   SET(SUNDIALS_FOUND NO)
   message(FATAL_ERROR "Cannot find SUNDIALS!")
 ENDIF(EXISTS ${SUNDIALS_DIR}/include/sundials/sundials_config.h)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(SUNDIALS DEFAULT_MSG SUNDIALS_LIBRARIES SUNDIALS_INCLUDES)

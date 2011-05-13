@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -119,10 +121,60 @@ MODULE CMISS_PETSC
   KSPType, PARAMETER :: PETSC_KSPSYMMLQ = KSPSYMMLQ
   KSPType, PARAMETER :: PETSC_KSPLCD = KSPLCD
 
+  !MatAssembly types
+  MatAssemblyType, PARAMETER :: PETSC_MAT_FLUSH_ASSEMBLY = MAT_FLUSH_ASSEMBLY
+  MatAssemblyType, PARAMETER :: PETSC_MAT_FINAL_ASSEMBLY = MAT_FINAL_ASSEMBLY
+
+  !MatDuplicate types
+  MatDuplicateOption, PARAMETER :: PETSC_MAT_DO_NOT_COPY_VALUES = MAT_DO_NOT_COPY_VALUES
+  MatDuplicateOption, PARAMETER :: PETSC_MAT_COPY_VALUES = MAT_COPY_VALUES
+  MatDuplicateOption, PARAMETER :: PETSC_MAT_SHARE_NONZERO_PATTERN = MAT_SHARE_NONZERO_PATTERN
+
+  !MatInfo types
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_SIZE = MAT_INFO_SIZE
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_BLOCK_SIZE = MAT_INFO_BLOCK_SIZE
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_NZ_ALLOCATED = MAT_INFO_NZ_ALLOCATED
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_NZ_USED = MAT_INFO_NZ_USED
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_NZ_UNNEEDED = MAT_INFO_NZ_UNNEEDED
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_MEMORY = MAT_INFO_MEMORY
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_ASSEMBLIES = MAT_INFO_ASSEMBLIES
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_MALLOCS = MAT_INFO_MALLOCS
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_FILL_RATIO_GIVEN = MAT_INFO_FILL_RATIO_GIVEN
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_FILL_RATIO_NEEDED = MAT_INFO_FILL_RATIO_NEEDED
+  MatInfo, PARAMETER :: PETSC_MAT_INFO_FACTOR_MALLOCS = MAT_INFO_FACTOR_MALLOCS  
+
+  !MatInfoType types
+  MatInfoType, PARAMETER :: PETSC_MAT_LOCAL = MAT_LOCAL
+  MatInfoType, PARAMETER :: PETSC_MAT_GLOBAL_MAX = MAT_GLOBAL_MAX
+  MatInfoType, PARAMETER :: PETSC_MAT_GLOBAL_SUM = MAT_GLOBAL_SUM
+  
+  !MatOption types
+  MatOption, PARAMETER :: PETSC_MAT_ROW_ORIENTED = MAT_ROW_ORIENTED
+  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_LOCATIONS = MAT_NEW_NONZERO_LOCATIONS
+  MatOption, PARAMETER :: PETSC_MAT_SYMMETRIC = MAT_SYMMETRIC
+  MatOption, PARAMETER :: PETSC_MAT_STRUCTURALLY_SYMMETRIC = MAT_STRUCTURALLY_SYMMETRIC
+  MatOption, PARAMETER :: PETSC_MAT_NEW_DIAGONALS = MAT_NEW_DIAGONALS
+  MatOption, PARAMETER :: PETSC_MAT_IGNORE_OFF_PROC_ENTRIES = MAT_IGNORE_OFF_PROC_ENTRIES
+  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_LOCATION_ERR = MAT_NEW_NONZERO_LOCATION_ERR
+  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR = MAT_NEW_NONZERO_ALLOCATION_ERR
+  MatOption, PARAMETER :: PETSC_MAT_USE_HASH_TABLE = MAT_USE_HASH_TABLE
+  MatOption, PARAMETER :: PETSC_MAT_KEEP_NONZERO_PATTERN = MAT_KEEP_NONZERO_PATTERN
+  MatOption, PARAMETER :: PETSC_MAT_IGNORE_ZERO_ENTRIES = MAT_IGNORE_ZERO_ENTRIES
+  MatOption, PARAMETER :: PETSC_MAT_USE_INODES = MAT_USE_INODES
+  MatOption, PARAMETER :: PETSC_MAT_HERMITIAN = MAT_HERMITIAN
+  MatOption, PARAMETER :: PETSC_MAT_SYMMETRY_ETERNAL = MAT_SYMMETRY_ETERNAL
+  MatOption, PARAMETER :: PETSC_MAT_USE_COMPRESSEDROW = MAT_USE_COMPRESSEDROW
+  MatOption, PARAMETER :: PETSC_MAT_IGNORE_LOWER_TRIANGULAR = MAT_IGNORE_LOWER_TRIANGULAR
+  MatOption, PARAMETER :: PETSC_MAT_ERROR_LOWER_TRIANGULAR = MAT_ERROR_LOWER_TRIANGULAR
+  MatOption, PARAMETER :: PETSC_MAT_GETROW_UPPERTRIANGULAR = MAT_GETROW_UPPERTRIANGULAR
+  MatOption, PARAMETER :: PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR = MAT_UNUSED_NONZERO_LOCATION_ERR
+  MatOption, PARAMETER :: PETSC_NUM_MAT_OPTIONS = NUM_MAT_OPTIONS
+  
   !MatStructure types
   MatStructure, PARAMETER :: PETSC_SAME_PRECONDITIONER = SAME_PRECONDITIONER
   MatStructure, PARAMETER :: PETSC_SAME_NONZERO_PATTERN = SAME_NONZERO_PATTERN
   MatStructure, PARAMETER :: PETSC_DIFFERENT_NONZERO_PATTERN = DIFFERENT_NONZERO_PATTERN
+  MatStructure, PARAMETER :: PETSC_SUBSET_NONZERO_PATTERN = SUBSET_NONZERO_PATTERN
 
   !MatColoring types
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_NATURAL = MATCOLORING_NATURAL
@@ -491,7 +543,7 @@ MODULE CMISS_PETSC
     
     SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
       Mat A
-      PetscScalar, POINTER :: mat_data(:,:)
+      PetscScalar, POINTER :: mat_data(:)
       PetscInt ierr
     END SUBROUTINE MatGetArrayF90
     
@@ -502,12 +554,28 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatGetColoring
     
+    SUBROUTINE MatGetInfo(A,flag,info,ierr)
+      Mat A
+      MatInfoType flag
+      MatInfo info(*)
+      PetscInt ierr
+    END SUBROUTINE MatGetInfo
+    
     SUBROUTINE MatGetOwnershipRange(A,firstrow,lastrow,ierr)
       Mat A
       PetscInt firstrow
       PetscInt lastrow
       PetscInt ierr
     END SUBROUTINE MatGetOwnershipRange
+    
+    SUBROUTINE MatGetRow(A,row,ncols,cols,values,ierr)
+      Mat A
+      PetscInt row
+      PetscInt ncols
+      PetscInt cols(*)
+      PetscScalar values(*)
+      PetscInt ierr
+    END SUBROUTINE MatGetRow
     
     SUBROUTINE MatGetValues(A,m,idxm,n,idxn,values,ierr)
       Mat A
@@ -532,15 +600,25 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatRestoreArrayF90
     
+   SUBROUTINE MatRestoreRow(A,row,ncols,cols,values,ierr)
+      Mat A
+      PetscInt row
+      PetscInt ncols
+      PetscInt cols(*)
+      PetscScalar values(*)
+      PetscInt ierr
+    END SUBROUTINE MatRestoreRow
+    
     SUBROUTINE MatSetLocalToGlobalMapping(A,ctx,ierr)
       Mat A
       ISLocalToGlobalMapping ctx
       PetscInt ierr
     END SUBROUTINE MatSetLocalToGlobalMapping
 
-    SUBROUTINE MatSetOption(A,option,ierr)
+    SUBROUTINE MatSetOption(A,option,flag,ierr)
       Mat A
       MatOption option
+      PetscTruth flag
       PetscInt ierr
     END SUBROUTINE MatSetOption
 
@@ -705,6 +783,18 @@ MODULE CMISS_PETSC
       TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE SNESSetFunction
+
+    SUBROUTINE SNESGetJacobian(snes,A,B,Jfunction,ctx,ierr)
+      USE TYPES
+      SNES snes
+      Mat A
+      Mat B      
+      EXTERNAL Jfunction
+!       ISLocalToGlobalMapping ctx
+!       TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ctx
+      PetscInt ierr
+    END SUBROUTINE SNESGetJacobian
 
     SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
       USE TYPES
@@ -1054,8 +1144,16 @@ MODULE CMISS_PETSC
     MODULE PROCEDURE PETSC_SNESSETJACOBIAN_SOLVER  
     MODULE PROCEDURE PETSC_SNESSETJACOBIAN_MATFDCOLORING
   END INTERFACE !PETSC_SNESSETJACOBIAN
- 
-  PUBLIC PETSC_NULL_CHARACTER,PETSC_NULL_DOUBLE,PETSC_NULL_INTEGER,PETSC_NULL_SCALAR
+
+  INTERFACE PETSC_SNESGETJACOBIAN
+    MODULE PROCEDURE PETSC_SNESGETJACOBIAN_SOLVER  
+    MODULE PROCEDURE PETSC_SNESGETJACOBIAN_SPECIAL
+  END INTERFACE !PETSC_SNESSETJACOBIAN
+
+  PUBLIC PETSC_TRUE,PETSC_FALSE
+  
+  PUBLIC PETSC_NULL_CHARACTER,PETSC_NULL_INTEGER,PETSC_NULL_DOUBLE,PETSC_NULL,PETSC_NULL_OBJECT, &
+    & PETSC_NULL_FUNCTION,PETSC_NULL_SCALAR,PETSC_NULL_REAL,PETSC_NULL_TRUTH
 
   PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_DEFAULT_INTEGER, &
     & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_SCATTER_FORWARD,PETSC_SCATTER_REVERSE
@@ -1072,7 +1170,8 @@ MODULE CMISS_PETSC
     & PETSC_PCILU,PETSC_PCICC,PETSC_PCASM,PETSC_PCKSP,PETSC_PCCOMPOSITE,PETSC_PCREDUNDANT,PETSC_PCSPAI,PETSC_PCMILU, &
     & PETSC_PCNN,PETSC_PCCHOLESKY,PETSC_PCPBJACOBI,PETSC_PCMAT,PETSC_PCHYPRE,PETSC_PCFIELDSPLIT,PETSC_PCML
 
-  PUBLIC PETSC_SAME_PRECONDITIONER,PETSC_SAME_NONZERO_PATTERN,PETSC_DIFFERENT_NONZERO_PATTERN
+  PUBLIC PETSC_SAME_PRECONDITIONER,PETSC_SAME_NONZERO_PATTERN,PETSC_DIFFERENT_NONZERO_PATTERN, &
+    & PETSC_SUBSET_NONZERO_PATTERN
 
   PUBLIC PETSC_ISINITIALISE,PETSC_ISFINALISE,PETSC_ISDESTROY
 
@@ -1092,12 +1191,27 @@ MODULE CMISS_PETSC
     & PETSC_KSPSETINITIALGUESSNONZERO,PETSC_KSPSETOPERATORS,PETSC_KSPSETTYPE,PETSC_KSPSETUP,PETSC_KSPSETTOLERANCES, &
     & PETSC_KSPSOLVE
 
-#if ( PETSC_VERSION_MAJOR == 3 )
-  PUBLIC MAT_FINAL_ASSEMBLY,MAT_FLUSH_ASSEMBLY
-#else
+#if ( PETSC_VERSION_MAJOR < 3 )
   PUBLIC MAT_COLUMN_ORIENTED,MAT_COLUMNS_SORTED,MAT_ROWS_SORTED,MAT_FINAL_ASSEMBLY,MAT_FLUSH_ASSEMBLY, &
     & MAT_NO_NEW_NONZERO_LOCATIONS
 #endif
+
+  PUBLIC PETSC_MAT_FLUSH_ASSEMBLY,PETSC_MAT_FINAL_ASSEMBLY
+
+  PUBLIC PETSC_MAT_DO_NOT_COPY_VALUES,PETSC_MAT_COPY_VALUES,PETSC_MAT_SHARE_NONZERO_PATTERN
+  
+  PUBLIC PETSC_MAT_INFO_SIZE,PETSC_MAT_INFO_BLOCK_SIZE,PETSC_MAT_INFO_NZ_ALLOCATED,PETSC_MAT_INFO_NZ_USED, &
+    & PETSC_MAT_INFO_NZ_UNNEEDED,PETSC_MAT_INFO_MEMORY,PETSC_MAT_INFO_ASSEMBLIES,PETSC_MAT_INFO_MALLOCS, &
+    & PETSC_MAT_INFO_FILL_RATIO_GIVEN,PETSC_MAT_INFO_FILL_RATIO_NEEDED,PETSC_MAT_INFO_FACTOR_MALLOCS
+
+  PUBLIC PETSC_MAT_LOCAL,PETSC_MAT_GLOBAL_MAX,PETSC_MAT_GLOBAL_SUM
+
+  PUBLIC PETSC_MAT_ROW_ORIENTED,PETSC_MAT_NEW_NONZERO_LOCATIONS,PETSC_MAT_SYMMETRIC,PETSC_MAT_STRUCTURALLY_SYMMETRIC, &
+    & PETSC_MAT_NEW_DIAGONALS,PETSC_MAT_IGNORE_OFF_PROC_ENTRIES,PETSC_MAT_NEW_NONZERO_LOCATION_ERR, &
+    & PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_MAT_USE_HASH_TABLE,PETSC_MAT_KEEP_NONZERO_PATTERN, &
+    & PETSC_MAT_IGNORE_ZERO_ENTRIES,PETSC_MAT_USE_INODES,PETSC_MAT_HERMITIAN,PETSC_MAT_SYMMETRY_ETERNAL, &
+    & PETSC_MAT_USE_COMPRESSEDROW,PETSC_MAT_IGNORE_LOWER_TRIANGULAR,PETSC_MAT_GETROW_UPPERTRIANGULAR, &
+    & PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR,PETSC_NUM_MAT_OPTIONS
 
   PUBLIC PETSC_MATCOLORING_NATURAL,PETSC_MATCOLORING_SL,PETSC_MATCOLORING_LF,PETSC_MATCOLORING_ID
 
@@ -1105,7 +1219,8 @@ MODULE CMISS_PETSC
     & PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE,PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY, &
     & PETSC_MATFDCOLORINGCREATE,PETSC_MATFDCOLORINGDESTROY,PETSC_MATFDCOLORINGFINALISE,PETSC_MATFDCOLORINGINITIALISE, &
     & PETSC_MATFDCOLORINGSETFROMOPTIONS,PETSC_MATFDCOLORINGSETFUNCTION,PETSC_MATFDCOLORINGSETFUNCTIONSNES, &
-    & PETSC_MATGETARRAY,PETSC_MATGETCOLORING,PETSC_MATGETOWNERSHIPRANGE,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY, &
+    & PETSC_MATGETARRAY,PETSC_MATGETARRAYF90,PETSC_MATGETCOLORING,PETSC_MATGETINFO,PETSC_MATGETOWNERSHIPRANGE, &
+    & PETSC_MATGETROW,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATRESTOREARRAYF90,PETSC_MATRESTOREROW, &
     & PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUE,PETSC_MATSETVALUES, &
     & PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW,PETSC_MATZEROENTRIES,PETSC_MATSETTYPE
 
@@ -1153,7 +1268,8 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
     & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESGETITERATIONNUMBER,PETSC_SNESGETKSP,PETSC_SNESLINESEARCHSET, &
     & PETSC_SNESLINESEARCHSETPARAMS,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION,PETSC_SNESSETJACOBIAN, &
-    & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE,   PETSC_SNESSETKSP
+    & PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE,   PETSC_SNESSETKSP, &
+    & PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN
   
   PUBLIC PETSC_VECINITIALISE,PETSC_VECFINALISE,PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCREATE,PETSC_VECCREATEGHOST, &
     & PETSC_VECCREATEGHOSTWITHARRAY,PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ, &
@@ -1965,7 +2081,7 @@ CONTAINS
     TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the operators for
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: AMAT !<The matrix associated with the linear system
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: PMAT !<The matrix to be used in constructing the preconditioner
-    INTEGER(INTG), INTENT(IN) :: FLAG !<Preconditioner matrix structure flag
+    MatStructure, INTENT(IN) :: FLAG !<Preconditioner matrix structure flag
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2677,14 +2793,14 @@ CONTAINS
     IF(ASSOCIATED(ARRAY)) THEN
       CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
     ELSE
-      CALL MatGetArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
-      IF(ERR/=0) THEN
-        IF(PETSC_HANDLE_ERROR) THEN
-          CHKERRQ(ERR)
-        ENDIF
-        CALL FLAG_ERROR("PETSc error in MatGetArray",ERR,ERROR,*999)
-      ENDIF
-      ARRAY=>A%MAT_DATA(A%MAT_OFFSET:)
+      CALL FLAG_ERROR("PETSC_MATGETARRAY not implemented",ERR,ERROR,*999)
+      !CALL MatGetArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
+      !IF(ERR/=0) THEN
+      !  IF(PETSC_HANDLE_ERROR) THEN
+      !    CHKERRQ(ERR)
+      !  ENDIF
+      !  CALL FLAG_ERROR("PETSc error in MatGetArray",ERR,ERROR,*999)
+      !ENDIF
     ENDIF
     
     CALL EXITS("PETSC_MATGETARRAY")
@@ -2693,6 +2809,41 @@ CONTAINS
     CALL EXITS("PETSC_MATGETARRAY")
     RETURN 1
   END SUBROUTINE PETSC_MATGETARRAY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetArrayF90 routine.
+  SUBROUTINE PETSC_MATGETARRAYF90(A,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT), TARGET :: A !<The matrix to get the array for
+    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the matrix array
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETARRAYF90",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(ARRAY)) THEN
+      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
+    ELSE
+      CALL MatGetArrayF90(A%MAT,ARRAY,ERR)
+      IF(ERR/=0) THEN
+        IF(PETSC_HANDLE_ERROR) THEN
+          CHKERRQ(ERR)
+        ENDIF
+        CALL FLAG_ERROR("PETSc error in MatGetArrayF90",ERR,ERROR,*999)
+      ENDIF
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETARRAYF90")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETARRAYF90",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETARRAYF90")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETARRAYF90
     
   !
   !================================================================================================================================
@@ -2730,6 +2881,38 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc MatGetInfo routine.
+  SUBROUTINE PETSC_MATGETINFO(A,FLAG,INFO,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the information of
+    MatInfoType, INTENT(IN) :: FLAG !<The matrix information collective to return
+    MatInfo, INTENT(OUT) :: INFO(MAT_INFO_SIZE) !<On return, the matrix information
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETINFO",ERR,ERROR,*999)
+
+    CALL MatGetInfo(A%MAT,FLAG,INFO,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatGetInfo",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETINFO")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETINFO",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETINFO")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETINFO
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc MatGetOwnershipRange routine.
   SUBROUTINE PETSC_MATGETOWNERSHIPRANGE(A,FIRST_ROW,LAST_ROW,ERR,ERROR,*)
 
@@ -2757,6 +2940,40 @@ CONTAINS
     CALL EXITS("PETSC_MATGETOWNERSHIPRANGE")
     RETURN 1
   END SUBROUTINE PETSC_MATGETOWNERSHIPRANGE
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetRow routine.
+  SUBROUTINE PETSC_MATGETROW(A,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the array for
+    INTEGER(INTG), INTENT(IN) :: ROW_NUMBER !<The row number to get the row values for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_COLUMNS !<On return, the number of nonzero columns in the row
+    INTEGER(INTG), INTENT(OUT) :: COLUMNS(:) !<On return, the column numbers for the nonzero columns in the row
+    REAL(DP), INTENT(OUT) :: VALUES(:) !<On exit, the nonzero values in the row.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATGETROW",ERR,ERROR,*999)
+
+    CALL MatGetRow(A%MAT,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatGetRow",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATGETROW")
+    RETURN
+999 CALL ERRORS("PETSC_MATGETROW",ERR,ERROR)
+    CALL EXITS("PETSC_MATGETROW")
+    RETURN 1
+  END SUBROUTINE PETSC_MATGETROW
     
   !
   !================================================================================================================================
@@ -2835,8 +3052,8 @@ CONTAINS
     CALL ENTERS("PETSC_MATINITIALISE",ERR,ERROR,*999)
 
     MAT_%MAT=PETSC_NULL
-    MAT_%MAT_DATA(1)=0
-    MAT_%MAT_OFFSET=0
+    !MAT_%MAT_DATA(1)=0
+    !MAT_%MAT_OFFSET=0
     
     CALL EXITS("PETSC_MATINITIALISE")
     RETURN
@@ -2850,23 +3067,25 @@ CONTAINS
   !
 
   !>Buffer routine to the PETSc MatRestoreArray routine.
-  SUBROUTINE PETSC_MATRESTOREARRAY(A,ERR,ERROR,*)
+  SUBROUTINE PETSC_MATRESTOREARRAY(A,ARRAY,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
+    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the matrix array to restore
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATRESTOREARRAY",ERR,ERROR,*999)
 
-    CALL MatRestoreArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatRestoreArray",ERR,ERROR,*999)
-    ENDIF
+    CALL FLAG_ERROR("PETSC_MATRESTOREARRAY not implemented",ERR,ERROR,*999)
+    !CALL MatRestoreArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
+    !IF(ERR/=0) THEN
+    !  IF(PETSC_HANDLE_ERROR) THEN
+    !    CHKERRQ(ERR)
+    !  ENDIF
+    !  CALL FLAG_ERROR("PETSc error in MatRestoreArray",ERR,ERROR,*999)
+    !ENDIF
     
     CALL EXITS("PETSC_MATRESTOREARRAY")
     RETURN
@@ -2874,6 +3093,71 @@ CONTAINS
     CALL EXITS("PETSC_MATRESTOREARRAY")
     RETURN 1
   END SUBROUTINE PETSC_MATRESTOREARRAY
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatRestoreArrayF90 routine.
+  SUBROUTINE PETSC_MATRESTOREARRAYF90(A,ARRAY,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
+    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the matrix array to restore
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATRESTOREARRAYF90",ERR,ERROR,*999)
+
+    CALL MatRestoreArrayF90(A%MAT,ARRAY,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatRestoreArrayF90",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATRESTOREARRAYF90")
+    RETURN
+999 CALL ERRORS("PETSC_MATRESTOREARRAYF90",ERR,ERROR)
+    CALL EXITS("PETSC_MATRESTOREARRAYF90")
+    RETURN 1
+  END SUBROUTINE PETSC_MATRESTOREARRAYF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatRestoreRow routine.
+  SUBROUTINE PETSC_MATRESTOREROW(A,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the row for
+    INTEGER(INTG), INTENT(IN) :: ROW_NUMBER !<The row number to restore the row values for
+    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_COLUMNS !<The number of nonzero columns in the row
+    INTEGER(INTG), INTENT(OUT) :: COLUMNS(:) !<The column numbers for the nonzero columns in the row
+    REAL(DP), INTENT(OUT) :: VALUES(:) !<The nonzero values in the row to restore.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_MATRESTOREROW",ERR,ERROR,*999)
+
+    CALL MatRestoreRow(A%MAT,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in MatRestoreRow.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_MATRESTOREROW")
+    RETURN
+999 CALL ERRORS("PETSC_MATRESTOREROW",ERR,ERROR)
+    CALL EXITS("PETSC_MATRESTOREROW")
+    RETURN 1
+  END SUBROUTINE PETSC_MATRESTOREROW
     
   !
   !================================================================================================================================
@@ -2911,18 +3195,19 @@ CONTAINS
   !
 
   !>Buffer routine to the PETSc MatSetOption routine.
-  SUBROUTINE PETSC_MATSETOPTION(A,OPTION,ERR,ERROR,*)
+  SUBROUTINE PETSC_MATSETOPTION(A,OPTION,FLAG,ERR,ERROR,*)
 
     !Argument Variables
     TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the option for
     MatOption, INTENT(IN) :: OPTION !<The option to set
+    PetscTruth, INTENT(IN) :: FLAG !<The option flag to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_MATSETOPTION",ERR,ERROR,*999)
 
-    CALL MatSetOption(A%MAT,OPTION,ERR)
+    CALL MatSetOption(A%MAT,OPTION,FLAG,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -3732,6 +4017,72 @@ CONTAINS
   !
 
   !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
+  SUBROUTINE PETSC_SNESGETJACOBIAN_SOLVER(SNES_,A,B,JFUNCTION,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
+    EXTERNAL JFUNCTION !<The external function to call
+!     TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESGETJACOBIAN_SOLVER",ERR,ERROR,*999)
+
+    CALL SNESGetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,PETSC_NULL_INTEGER,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetJacobian",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESGETJACOBIAN_SOLVER")
+    RETURN
+999 CALL ERRORS("PETSC_SNESGETJACOBIAN_SOLVER",ERR,ERROR)
+    CALL EXITS("PETSC_SNESGETJACOBIAN_SOLVER")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESGETJACOBIAN_SOLVER
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
+  SUBROUTINE PETSC_SNESGETJACOBIAN_SPECIAL(SNES_,A,ERR,ERROR,*)
+
+    !Argument Variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_SNESSETJACOBIAN_SPECIAL",ERR,ERROR,*999)
+
+    CALL SNESGetJacobian(SNES_%SNES_,A%MAT,PETSC_NULL_OBJECT,PETSC_NULL_FUNCTION,PETSC_NULL_INTEGER,ERR)
+
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESGetJacobian",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_SNESGETJACOBIAN_SPECIAL")
+    RETURN
+999 CALL ERRORS("PETSC_SNESGETJACOBIAN_SPECIAL",ERR,ERROR)
+    CALL EXITS("PETSC_SNESGETJACOBIAN_SPECIAL")
+    RETURN 1
+  END SUBROUTINE PETSC_SNESGETJACOBIAN_SPECIAL
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
   SUBROUTINE PETSC_SNESSETJACOBIAN_SOLVER(SNES_,A,B,JFUNCTION,CTX,ERR,ERROR,*)
 
     !Argument Variables
@@ -3760,6 +4111,67 @@ CONTAINS
     CALL EXITS("PETSC_SNESSETJACOBIAN_SOLVER")
     RETURN 1
   END SUBROUTINE PETSC_SNESSETJACOBIAN_SOLVER
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESComputeJacobianColor routine for solver contexts.
+  SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR(SNES_,X,J,B,FLAG,CTX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The PETSc SNES
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: J !<The PETSc J Mat
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
+    INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
+    TYPE(PETSC_MATFDCOLORING_TYPE), POINTER :: CTX !<The passed through context
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    CALL SNESDefaultComputeJacobianColor(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR")
+    RETURN
+999 CALL ERRORS("PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR",ERR,ERROR)
+    RETURN
+  END SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESComputeJacobian routine for solver contexts.
+  SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIAN(SNES_,X,J,B,FLAG,CTX,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The PETSc SNES
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: J !<The PETSc J Mat
+    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
+    INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
+    TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
+    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    CALL SNESDefaultComputeJacobian(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
+    ENDIF
+
+    RETURN
+999 CALL ERRORS("PETSC_SNESDEFAULTCOMPUTEJACOBIAN",ERR,ERROR)
+    RETURN
+  END SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIAN
 
   !
   !================================================================================================================================

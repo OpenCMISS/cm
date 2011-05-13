@@ -1,6 +1,6 @@
 /* 
  * \file
- * $Id: opencmiss.h 582 2009-07-08 03:51:19Z catalept $
+ * $Id$
  * \author Chris Bradley
  * \brief The OpenCMISS library C header file.
  *
@@ -21,10 +21,12 @@
  * The Original Code is OpenCMISS
  *
  * The Initial Developer of the Original Code is University of Auckland,
- * Auckland, New Zealand and University of Oxford, Oxford, United
- * Kingdom. Portions created by the University of Auckland and University
- * of Oxford are Copyright (C) 2007 by the University of Auckland and
- * the University of Oxford. All Rights Reserved.
+ * Auckland, New Zealand, the University of Oxford, Oxford, United
+ * Kingdom and King's College, London, United Kingdom. Portions created
+ * by the University of Auckland, the University of Oxford and King's
+ * College, London are Copyright (C) 2007-2010 by the University of
+ * Auckland, the University of Oxford and King's College, London.
+ * All Rights Reserved.
  *
  * Contributor(s):
  *
@@ -80,9 +82,9 @@ const int CMISSFalse=0;
  * \see OPENCMISS::DiagnosticTypes,OPENCMISS
  *@{
  */
-#define CMISSAllDiagType 1;
-#define CMISSInDiagType 2;
-#define CMISSFromDiagType 3;
+static int CMISSAllDiagType = 1;
+static int CMISSInDiagType = 2;
+static int CMISSFromDiagType = 3;
 /* @}
  * \addtogroup OPENCMISS_TimingTypes OPENCMISS::DiagnosticAndTiming::TimingTypes
  * \brief Timing constants.
@@ -105,7 +107,7 @@ static int CMISSFromTimingType = 3;
 
 /* Module parameters */
 
-/* > \addtogroup OPENCMISS_BasisConstants OPENCMISS::Basis::Constants
+/*> \addtogroup OPENCMISS_BasisConstants OPENCMISS::Basis::Constants
  *> \brief Basis function constants.
  *>@{
  *> \addtogroup OPENCMISS_BasisTypes OPENCMISS::Basis::BasisTypes
@@ -280,6 +282,16 @@ static int CMISSControlLoopNode = 0;
 
 /*
  * >@}
+ * > \addtogroup OPENCMISS_ControlLoopOutputTypes OPENCMISS::ControlLoop::OutputTypes
+ * > \brief The control loop output types.
+ * > \see OPENCMISS::ControlLoop,OPENCMISS
+ * >@{
+ */
+static int CMISSControlLoopNoOutput = 0;
+static int CMISSControlLoopProgressOutput = 1;
+static int CMISSControlLoopTimingOutput = 2;
+/*
+ * >@}
  * >@}
  */
 
@@ -433,6 +445,8 @@ static int CMISSEquationsSetFiniteElasticityType = 2;
 static int CMISSEquationsSetStokesEquationType = 1;
 static int CMISSEquationsSetNavierStokesEquationType = 2;
 static int CMISSEquationsSetDarcyEquationType = 3;
+static int CMISSEquationsSetPoiseuilleEquationType = 4;
+static int CMISSEquationsSetDarcyPressureEquationType = 5;
 static int CMISSEquationsSetElectrostaticType = 1;
 static int CMISSEquationsSetMagnetostaticType = 2;
 static int CMISSEquationsSetMaxwellsEquationType = 3;
@@ -447,7 +461,7 @@ static int CMISSEquationsSetBiharmonicEquationType = 8;
 static int CMISSEquationsSetMonodomainEquationType = 1;
 static int CMISSEquationsSetBidomainEquationType = 2;
 static int CMISSEquationsSetLinearElasticModalType = 1;
-static int CMISSEquationsSetGalerkinProjectionEquationType = 9;
+static int CMISSEquationsSetDataFittingEquationType = 9;
 /*
  * >@}
  * > \addtogroup OPENCMISS_EquationsSetSubtypes OPENCMISS::EquationsSet::Subtypes
@@ -529,9 +543,10 @@ static int CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = 19;
 
 static int CMISSEquationsSetFirstBidomainSubtype = 1;
 static int CMISSEquationsSetSecondBidomainSubtype = 2;
-static int CMISSEquationsSetStandardGalerkinProjectionSubtype = 1;
-static int CMISSEquationsSetGeneralisedGalerkinProjectionSubtype = 2;
-static int CMISSEquationsSetMatPropertiesGalerkinProjectionSubtype = 3;
+static int CMISSEquationsSetStandardDataFittingSubtype = 1;
+static int CMISSEquationsSetGeneralisedDataFittingSubtype = 2;
+static int CMISSEquationsSetMatPropertiesDataFittingSubtype = 3;
+static int CMISSEquationsSetElasticityFluidPressureStaticSubtype = 16;
 
 static int CMISSEquationsSetStandardElasticityDarcySubtype = 101;
 static int CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = 111;
@@ -697,6 +712,7 @@ static int CMISSFieldGaussPointBasedInterpolation = 5;
  * > \see OPENCMISS::Field,OPENCMISS
  * >@{
  */
+static int CMISSFieldNumberOfVariableSubtypes = 4;
 static int CMISSFieldUVariableType = 1;
 static int CMISSFieldDelUDelNVariableType = 2;
 static int CMISSFieldDelUDelTVariableType = 3;
@@ -705,27 +721,46 @@ static int CMISSFieldVVariableType = 5;
 static int CMISSFieldDelVDelNVariableType = 6;
 static int CMISSFieldDelVDelTVariableType = 7;
 static int CMISSFieldDel2VDelT2VariableType = 8;
-static int CMISSFieldU1VariableType = 10;
-static int CMISSFieldDelU1DelNVariableType = 11;
-static int CMISSFieldU2VariableType = 12;
-static int CMISSFieldDelU2DelNVariableType = 13;
-static int CMISSFieldU3VariableType = 14;
-static int CMISSFieldDelU3DelNVariableType = 15; 
-static int CMISSFieldU4VariableType = 16;
-static int CMISSFieldDelU4DelNVariableType = 17;
-static int CMISSFieldU5VariableType = 18;
-static int CMISSFieldDelU5DelNVariableType = 19;
-static int CMISSFieldU6VariableType = 20;
-static int CMISSFieldDelU6DelNVariableType = 21;
-static int CMISSFieldU7VariableType = 22;
-static int CMISSFieldDelU7DelNVariableType = 23;
-static int CMISSFieldU8VariableType = 24;
-static int CMISSFieldDelU8DelNVariableType = 25;
-static int CMISSFieldU9VariableType = 26;
-static int CMISSFieldDelU9DelNVariableType = 27;
-static int CMISSFieldU10VariableType = 28;
-static int CMISSFieldDelU10DelNVariableType = 29;
-
+static int CMISSFieldU1VariableType = 9;
+static int CMISSFieldDelU1DelNVariableType = 10;
+static int CMISSFieldDelU1DelTVariableType = 11;
+static int CMISSFieldDel2U1DelT2VariableType = 12;
+static int CMISSFieldU2VariableType = 13;
+static int CMISSFieldDelU2DelNVariableType = 14;
+static int CMISSFieldDelU2DelTVariableType = 15;
+static int CMISSFieldDel2U2DelT2VariableType = 16;
+static int CMISSFieldU3VariableType = 17;
+static int CMISSFieldDelU3DelNVariableType = 18;
+static int CMISSFieldDelU3DelTVariableType = 19;
+static int CMISSFieldDel2U3DelT2VariableType = 20;
+static int CMISSFieldU4VariableType = 21;
+static int CMISSFieldDelU4DelNVariableType = 22;
+static int CMISSFieldDelU4DelTVariableType = 23;
+static int CMISSFieldDel2U4DelT2VariableType = 24;
+static int CMISSFieldU5VariableType = 25;
+static int CMISSFieldDelU5DelNVariableType = 26;
+static int CMISSFieldDelU5DelTVariableType = 27;
+static int CMISSFieldDel2U5DelT2VariableType = 28;
+static int CMISSFieldU6VariableType = 29;
+static int CMISSFieldDelU6DelNVariableType = 30;
+static int CMISSFieldDelU6DelTVariableType = 31;
+static int CMISSFieldDel2U6DelT2VariableType = 32;
+static int CMISSFieldU7VariableType = 33;
+static int CMISSFieldDelU7DelNVariableType = 34;
+static int CMISSFieldDelU7DelTVariableType = 35;
+static int CMISSFieldDel2U7DelT2VariableType = 36;
+static int CMISSFieldU8VariableType = 37;
+static int CMISSFieldDelU8DelNVariableType = 38;
+static int CMISSFieldDelU8DelTVariableType = 39;
+static int CMISSFieldDel2U8DelT2VariableType = 40;
+static int CMISSFieldU9VariableType = 41;
+static int CMISSFieldDelU9DelNVariableType = 42;
+static int CMISSFieldDelU9DelTVariableType = 43;
+static int CMISSFieldDel2U9DelT2VariableType = 44;
+static int CMISSFieldU10VariableType = 45;
+static int CMISSFieldDelU10DelNVariableType = 46;
+static int CMISSFieldDelU10DelTVariableType = 47;
+static int CMISSFieldDel2U10DelT2VariableType = 48;
 /*
  * >@}
  * > \addtogroup OPENCMISS_FieldDataTypes OPENCMISS::Field::DataTypes
@@ -924,13 +959,14 @@ static int CMISSProblemBiharmonicEquationType = 8;
 static int CMISSProblemMonodomainEquationType = 1;
 static int CMISSProblemBidomainEquationType = 2;
 static int CMISSProblemLinearElasticModalType = 1;
-static int CMISSProblemGalerkinProjectionType = 9;
+static int CMISSProblemDataFittingType = 9;
 static int CMISSProblemFiniteElasticityDarcyType = 1;
 static int CMISSProblemFiniteElasticityStokesType = 2;
 static int CMISSProblemFiniteElasticityNavierStokesType = 3;
 static int CMISSProblemDiffusionDiffusionType = 4;
 static int CMISSProblemDiffusionAdvectionDiffusionType = 5;
 static int CMISSProblemMultiCompartmentTransportType = 6;
+static int CMISSProblemFiniteElasticityFluidPressureType = 7;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
@@ -947,6 +983,7 @@ static int CMISSProblemOptimisedStokesSubtype = 4;
 static int CMISSProblemStaticNavierStokesSubtype = 1;
 static int CMISSProblemLaplaceNavierStokesSubtype = 2;
 static int CMISSProblemTransientNavierStokesSubtype = 3;
+static int CMISSProblem1DTransientNavierStokesSubtype = 8;
 static int CMISSProblemALENavierStokesSubtype = 5;
 static int CMISSProblemOptimisedNavierStokesSubtype = 4;
 static int CMISSProblemStandardDarcySubtype = 1;
@@ -961,9 +998,6 @@ static int CMISSProblemGeneralisedHelmholtzSubtype = 3;
 static int CMISSProblemNoSourceDiffusionSubtype = 1;
 static int CMISSProblemLinearSourceDiffusionSubtype = 2;
 static int CMISSProblemNonlinearSourceDiffusionSubtype = 3;
-static int CMISSProblemNoSourceALEDiffusionSubtype = 4;
-static int CMISSProblemLinearSourceALEDiffusionSubtype = 5;
-static int CMISSProblemNonlinearSourceALEDiffusionSubtype = 6;
 static int CMISSProblemNoSourceAdvectionDiffusionSubtype = 1;
 static int CMISSProblemLinearSourceAdvectionDiffusionSubtype = 2;
 static int CMISSProblemNonlinearSourceAdvectionDiffusionSubtype = 3;
@@ -973,15 +1007,20 @@ static int CMISSProblemNonlinearSourceALEAdvectionDiffusionSubtype = 6;
 static int CMISSProblemNoSourceStaticAdvecDiffSubtype = 7;
 static int CMISSProblemLinearSourceStaticAdvecDiffSubtype = 8;
 static int CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = 9;
-static int CMISSProblemStandardGalerkinProjectionSubtype = 1;
-static int CMISSProblemGeneralisedGalerkinProjectionSubtype = 2;
-static int CMISSProblemMatPropertiesGalerkinProjectionSubtype = 3;
+static int CMISSProblemStandardDataFittingSubtype = 1;
+static int CMISSProblemGeneralisedDataFittingSubtype = 2;
+static int CMISSProblemMatPropertiesDataFittingSubtype = 3;
 static int CMISSProblemStandardElasticityDarcySubtype = 101;
 static int CMISSProblemCoupledSourceDiffusionDiffusionSubtype = 111;
 static int CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = 121;
 static int CMISSProblemCoupledSourceALEDiffusionAdvecDiffusionSubtype = 122;
 static int CMISSProblemStandardMultiCompartmentTransportSubtype = 131;
 static int CMISSProblemStandardALEMultiCompartmentTransportSubtype = 132;
+static int CMISSProblemStandardElasticityFluidPressureSubtype = 133;
+static int CMISSProblemMonodomainGudunovSplitSubtype = 1;
+static int CMISSProblemMonodomainStrangSplitSubtype = 2;
+static int CMISSProblemBidomainGudunovSplitSubtype = 1;
+static int CMISSProblemBidomainStrangSplitSubtype = 2;
 /*
  * >@}
  * > \addtogroup OPENCMISS_ProblemControlLoopTypes OPENCMISS::Problem::ControlLoopTypes
@@ -1304,6 +1343,7 @@ static int CMISSSolverEquationsFullMatrices = 2;
 struct CMISSBasisType_;
 struct CMISSBoundaryConditionsType_;
 struct CMISSCellMLType_;
+struct CMISSCellMLEquationsType_;
 struct CMISSControlLoopType_;
 struct CMISSCoordinateSystemType_;
 struct CMISSDecompositionType_;
@@ -1332,6 +1372,7 @@ typedef int CMISSError;
 typedef struct CMISSBasisType_ *CMISSBasisType;
 typedef struct CMISSBoundaryConditionsType_ *CMISSBoundaryConditionsType;
 typedef struct CMISSCellMLType_ *CMISSCellMLType;
+typedef struct CMISSCellMLEquationsType_ *CMISSCellMLEquationsType;
 typedef struct CMISSControlLoopType_ *CMISSControlLoopType;
 typedef struct CMISSCoordinateSystemType_ *CMISSCoordinateSystemType;
 typedef struct CMISSDecompositionType_ *CMISSDecompositionType;
@@ -1373,6 +1414,10 @@ CMISSError CMISSBoundaryConditionsTypeInitialise(CMISSBoundaryConditionsType *Bo
 CMISSError CMISSCellMLTypeFinalise(CMISSCellMLType *CellML);
 
 CMISSError CMISSCellMLTypeInitialise(CMISSCellMLType *CellML);
+
+CMISSError CMISSCellMLEquationsTypeFinalise(CMISSCellMLEquationsType *CellMLEquations);
+
+CMISSError CMISSCellMLEquationsTypeInitialise(CMISSCellMLEquationsType *CellMLEquations);
 
 CMISSError CMISSControlLoopTypeFinalise(CMISSControlLoopType *ControlLoop);
 
@@ -1993,6 +2038,15 @@ CMISSError CMISSInitialiseNum(int *WorldCoordinateSystemUserNumber,
 CMISSError CMISSInitialise(CMISSCoordinateSystemType *WorldCoordinateSystem,
 			   CMISSRegionType *WorldRegion);
 
+CMISSError CMISSRandomSeedsGet(const int RandomSeedsSize,
+			       int *RandomSeeds);
+
+CMISSError CMISSRandomSeedsSizeGet(int *RandomSeedsSize);
+
+CMISSError CMISSRandomSeedsSet(const int RandomSeedsSize,
+			       int *RandomSeeds);
+
+
 /*
  *==================================================================================================================================
  *
@@ -2206,6 +2260,26 @@ CMISSError CMISSControlLoopIterationsSet(CMISSControlLoopType *ControlLoop,
 		const int StartIteration,
 		const int StopIteration,
 		const int IterationIncrement);
+
+CMISSError CMISSControlLoopLabelGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int LabelSize,
+		char *Label);
+
+CMISSError CMISSControlLoopLabelGet(const CMISSControlLoopType ControlLoop,
+		const int LabelSize,
+	        char *Label);
+
+CMISSError CMISSControlLoopLabelSetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int LabelSize,
+		const char *Label);
+
+CMISSError CMISSControlLoopLabelSet(const CMISSControlLoopType ControlLoop,
+		const int LabelSize,
+		const char *Label);
 
 CMISSError CMISSControlLoopMaximumIterationsSetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize,
@@ -2509,13 +2583,22 @@ CMISSError CMISSEquationsSetCreateFinishNum(const int RegionUserNumber,
 
 CMISSError CMISSEquationsSetCreateFinish(const CMISSEquationsSetType EquationsSet);
 
-CMISSError CMISSEquationsSetCreateStartNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
-		const int GeomFibreFieldUserNumber);
+CMISSError CMISSEquationsSetCreateStartNum(const int EquationsSetUserNumber,
+		const int RegionUserNumber,
+		const int GeomFibreFieldUserNumber,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype,
+		const int EquationsSetFieldUserNumber);
 
 CMISSError CMISSEquationsSetCreateStart(const int EquationsSetUserNumber,
 		const CMISSRegionType Region,
 		const CMISSFieldType GeomFibreField,
+		const int EquationsSetClass,
+		const int EquationsSetType,
+		const int EquationsSetSubtype,
+		const int EquationsSetFieldUserNumber,
+		CMISSFieldType *EquationsSetFieldField,
 		CMISSEquationsSetType *EquationsSet);
 
 CMISSError CMISSEquationsSetDestroyNum(const int RegionUserNumber,
@@ -2705,9 +2788,9 @@ CMISSError CMISSFieldComponentLabelSet(const CMISSFieldType Field,
 
 CMISSError CMISSFieldComponentMeshComponentGetNum(const int RegionUserNumber,
 		const int FieldUserNumber,
-	        const int VariableType,
-	        const int ComponentNumber,
-	        int *MeshComponent);
+	  const int VariableType,
+	  const int ComponentNumber,
+	  int *MeshComponent);
 
 CMISSError CMISSFieldComponentMeshComponentGet(const CMISSFieldType Field,
 		const int VariableType,
@@ -4155,6 +4238,26 @@ CMISSError CMISSNodesUserNumberSet(const CMISSNodesType Nodes,
  *==================================================================================================================================
  */
 
+CMISSError CMISSProblemCellMLEquationsCreateFinishNum(const int ProblemUserNumber);
+
+CMISSError CMISSProblemCellMLEquationsCreateFinish(const CMISSProblemType Problem);
+
+CMISSError CMISSProblemCellMLEquationsCreateStartNum(const int ProblemUserNumber);
+
+CMISSError CMISSProblemCellMLEquationsCreateStart(const CMISSProblemType Problem);
+
+CMISSError CMISSProblemCellMLEquationsGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		CMISSCellMLEquationsType *CellMLEquations);
+
+CMISSError CMISSProblemCellMLEquationsGet(const CMISSProblemType Problem,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		CMISSCellMLEquationsType *CellMLEquations);
+
 CMISSError CMISSProblemCreateFinishNum(const int ProblemUserNumber);
 
 CMISSError CMISSProblemCreateFinish(const CMISSProblemType Problem);
@@ -4321,6 +4424,26 @@ CMISSError CMISSRegionLabelSet(const CMISSRegionType Region,
  *==================================================================================================================================
  */
 
+CMISSError CMISSCellMLEquationsCellMLAddNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int CellMLUserNumber,
+		int *CellMLIndex);
+
+CMISSError CMISSCellMLEquationsCellMLAdd(const CMISSCellMLEquationsType CellMLEquations,
+		const CMISSCellMLType CellML,
+		int *CellMLIndex);
+
+CMISSError CMISSSolverCellMLEquationsGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		CMISSCellMLEquationsType *CellMLEquations);
+
+CMISSError CMISSSolverCellMLEquationsGet(const CMISSSolverType Solver,
+		CMISSCellMLEquationsType *CellMLEquations);
+
 CMISSError CMISSSolverDAEEulerSolverTypeGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
 		const int *ControlLoopIdentifiers,
@@ -4362,13 +4485,20 @@ CMISSError CMISSSolverDAETimesSetNum(const int ProblemUserNumber,
 		const int *ControlLoopIdentifiers,
 		const int SolverIndex,
 		const int StartTime,
-		const int EndTime,
-		const int IntialStep);
+		const int EndTime);
 
 CMISSError CMISSSolverDAETimesSet(const CMISSSolverType Solver,
 		const int StartTime,
-		const int EndTime,
-		const int InitialStep);
+		const int EndTime);
+
+CMISSError CMISSSolverDAETimeStepSetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int TimeStep);
+
+CMISSError CMISSSolverDAETimeStepSet(const CMISSSolverType Solver,
+		const int TimeStep);
 
 CMISSError CMISSSolverDynamicDegreeGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],
@@ -4445,6 +4575,29 @@ CMISSError CMISSSolverDynamicTimesSetNum(const int ProblemUserNumber,
 CMISSError CMISSSolverDynamicTimesSet(const CMISSSolverType Solver,
 		const double CurrentTime,
 		const double TimeIncrement);
+
+
+CMISSError CMISSSolverLabelGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int LabelSize,
+		char *Label);
+
+CMISSError CMISSSolverLabelGet(const CMISSSolverType Solver,
+		const int LabelSize,
+	        char *Label);
+
+CMISSError CMISSSolverLabelSetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize,
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		const int LabelSize,
+		const char *Label);
+
+CMISSError CMISSSolverLabelSet(const CMISSSolverType Solver,
+		const int LabelSize,
+		const char *Label);
 
 CMISSError CMISSSolverLibraryTypeGetNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],

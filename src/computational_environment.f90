@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -589,7 +591,10 @@ CONTAINS
 
     !Now transfer all the computational node information to the other computational nodes so that each rank has all the
     !information.
-    CALL MPI_ALLGATHER(COMPUTATIONAL_ENVIRONMENT%COMPUTATIONAL_NODES(0),1,MPI_COMPUTATIONAL_NODE_TYPE_DATA%MPI_TYPE, &
+!!    CALL MPI_ALLGATHER(COMPUTATIONAL_ENVIRONMENT%COMPUTATIONAL_NODES(0),1,MPI_COMPUTATIONAL_NODE_TYPE_DATA%MPI_TYPE, &
+!!      & COMPUTATIONAL_ENVIRONMENT%COMPUTATIONAL_NODES(0),1,MPI_COMPUTATIONAL_NODE_TYPE_DATA%MPI_TYPE, &
+!!      & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
+    CALL MPI_ALLGATHER(MPI_IN_PLACE,1,MPI_COMPUTATIONAL_NODE_TYPE_DATA%MPI_TYPE, &
       & COMPUTATIONAL_ENVIRONMENT%COMPUTATIONAL_NODES(0),1,MPI_COMPUTATIONAL_NODE_TYPE_DATA%MPI_TYPE, &
       & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)

@@ -128,11 +128,16 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local variables
+    INTEGER(INTG) :: I
     
     CALL ENTERS("REALLOCATE_STRING",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
-      DEALLOCATE( array )
+      DO I=1,SIZE(ARRAY,1)
+        CALL ERASE(ARRAY(I))
+        DEALLOCATE( array )
+      ENDDO
     ENDIF
     
     ALLOCATE( array( newSize ), STAT = ERR )

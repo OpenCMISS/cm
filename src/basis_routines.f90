@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -111,7 +113,7 @@ MODULE BASIS_ROUTINES
   !>@}
 
   !> \addtogroup BASIS_ROUTINES_QuadratureSchemes BASIS_ROUTINES::QuadratureSchemes
-  !> \brief Quadrature scheme parameters
+  !> \brief Quadrature scheme parameters. NOTE: Quadratures schemes have not been implemented yet. For now you should just use the BASIS_DEFAULT_QUADRATURE_SCHEME.
   !> \see BASIS_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES=4 !<The number of currently defined quadrature schemes \see BASIS_ROUTINES_QuadratureSchemes,BASIS_ROUTINES
@@ -171,6 +173,11 @@ MODULE BASIS_ROUTINES
   INTERFACE BASIS_INTERPOLATE_XI
     MODULE PROCEDURE BASIS_INTERPOLATE_XI_DP
   END INTERFACE !BASIS_INTERPOLATE_XI
+
+  !>Interpolates the requested partial derivative index(ices) of the element parameters for basis function at a face Gauss point \see BASIS_ROUTINES
+  INTERFACE BASIS_INTERPOLATE_LOCAL_FACE_GAUSS
+    MODULE PROCEDURE BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP
+  END INTERFACE !BASIS_INTERPOLATE_LOCAL_FACE_GAUSS
 
   !>Sets/changes the interpolation type in each Xi direction for a basis
   INTERFACE BASIS_INTERPOLATION_XI_SET
@@ -252,7 +259,7 @@ MODULE BASIS_ROUTINES
   
   PUBLIC BASIS_EVALUATE_XI
   
-  PUBLIC BASIS_INTERPOLATE_GAUSS,BASIS_INTERPOLATE_XI
+  PUBLIC BASIS_INTERPOLATE_GAUSS,BASIS_INTERPOLATE_XI,BASIS_INTERPOLATE_LOCAL_FACE_GAUSS
 
   PUBLIC BASIS_LOCAL_NODE_XI_CALCULATE
 
@@ -266,7 +273,7 @@ MODULE BASIS_ROUTINES
 
   PUBLIC BASIS_QUADRATURE_DESTROY,BASIS_QUADRATURE_ORDER_SET,BASIS_QUADRATURE_TYPE_SET
 
-  PUBLIC BASIS_TYPE_SET
+  PUBLIC BASIS_TYPE_SET,BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET
 
   PUBLIC BASIS_CREATE_START,BASIS_CREATE_FINISH
 
@@ -280,7 +287,7 @@ MODULE BASIS_ROUTINES
     & BASIS_QUADRATURE_ORDER_GET,BASIS_QUADRATURE_TYPE_GET,BASIS_TYPE_GET
 
 
-      
+
 CONTAINS
 
   !
@@ -1036,6 +1043,80 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Interpolates the appropriate partial derivative index of the element local face parameters at a face gauss point for the basis
+  !>for double precision arguments. Note the interpolated value returned needs to be adjusted for the particular
+  !!>coordinate system with COORDINATE_INTERPOLATE_ADJUST. 
+  FUNCTION BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP(BASIS,PARTIAL_DERIV_INDEX,QUADRATURE_SCHEME, &
+    & LOCAL_FACE_NUMBER,GAUSS_POINT_NUMBER,FACE_PARAMETERS,ERR,ERROR)
+  
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    INTEGER(INTG), INTENT(IN) :: PARTIAL_DERIV_INDEX !<The partial derivative index to interpolate \see CONSTANTS_PartialDerivativeConstants
+    INTEGER(INTG), INTENT(IN) :: QUADRATURE_SCHEME !<The quadrature scheme to use \see BASIS_ROUTINE_QuadratureSchemes
+    INTEGER(INTG), INTENT(IN) :: LOCAL_FACE_NUMBER !<The index number of the face to interpolate on
+    INTEGER(INTG), INTENT(IN) :: GAUSS_POINT_NUMBER !<The face Gauss point number in the scheme to interpolate
+    REAL(DP), INTENT(IN) :: FACE_PARAMETERS(:) !<The face parameters to interpolate (in 3D coordinates)
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    REAL(DP) :: BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP
+    !Local Variables
+    INTEGER(INTG) :: ns
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: BASIS_QUADRATURE_SCHEME
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP",ERR,ERROR,*999)
+    
+    BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP=0.0_DP
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(QUADRATURE_SCHEME>0.AND.QUADRATURE_SCHEME<=BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES) THEN
+        BASIS_QUADRATURE_SCHEME=>BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(QUADRATURE_SCHEME)%PTR
+        IF(ASSOCIATED(BASIS_QUADRATURE_SCHEME)) THEN
+          IF(BASIS%QUADRATURE%EVALUATE_FACE_GAUSS) THEN !Alternartively, can check whether scheme's face arrays are allocated?
+            IF(LOCAL_FACE_NUMBER>0.AND.LOCAL_FACE_NUMBER<=BASIS%NUMBER_OF_LOCAL_FACES) THEN
+              IF(GAUSS_POINT_NUMBER>0.AND.GAUSS_POINT_NUMBER<=BASIS_QUADRATURE_SCHEME%NUMBER_OF_FACE_GAUSS(LOCAL_FACE_NUMBER)) THEN
+                IF(PARTIAL_DERIV_INDEX>0.AND.PARTIAL_DERIV_INDEX<=BASIS%NUMBER_OF_PARTIAL_DERIVATIVES) THEN
+                  DO ns=1,BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                    BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP=BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP+ &
+                      & BASIS_QUADRATURE_SCHEME%FACE_GAUSS_BASIS_FNS(ns,PARTIAL_DERIV_INDEX,GAUSS_POINT_NUMBER,LOCAL_FACE_NUMBER)* &
+                      & FACE_PARAMETERS(ns)
+                  ENDDO !ns
+                ELSE
+                  LOCAL_ERROR="The partial derivative index of "//TRIM(NUMBER_TO_VSTRING(PARTIAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                    & " is invalid. It must be between 1 and "// &
+                    & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_PARTIAL_DERIVATIVES,"*",ERR,ERROR))
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                ENDIF
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("The local face number index is invalid.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("The face gauss interpolation scheme has not been created",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The quadrature scheme has not been created",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="The quadrature scheme type number of "//TRIM(NUMBER_TO_VSTRING(QUADRATURE_SCHEME,"*",ERR,ERROR))// &
+          & " is invalid. It must be between 1 and "// &
+          & TRIM(NUMBER_TO_VSTRING(BASIS_NUMBER_OF_QUADRATURE_SCHEME_TYPES,"*",ERR,ERROR))
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP")
+    RETURN
+999 CALL ERRORS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP",ERR,ERROR)
+    CALL EXITS("BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP")
+  END FUNCTION BASIS_INTERPOLATE_LOCAL_FACE_GAUSS_DP
+
+  !
+  !================================================================================================================================
+  !
+
   !>Interpolates the appropriate partial derivative index of the element parameters at position XI for the basis
   !>for double precision arguments. Note the interpolated value returned needs to be adjusted for the particular
   !>coordinate system with COORDINATE_INTERPOLATE_ADJUST. Note for simplex basis functions the XI coordinates should
@@ -1286,6 +1367,7 @@ CONTAINS
         BASIS%DEGENERATE=.FALSE.
         BASIS%NUMBER_OF_COLLAPSED_XI=0
         DO ni=1,BASIS%NUMBER_OF_XI
+          !Set up the interpolation types, orders and number of nodes in each xi from the user specified interpolation xi.
           SELECT CASE(BASIS%INTERPOLATION_XI(ni))
           CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
             BASIS%INTERPOLATION_TYPE(ni)=BASIS_LAGRANGE_INTERPOLATION
@@ -1324,6 +1406,7 @@ CONTAINS
         ENDDO !ni
         !If a degenerate (collapsed) basis recalculate the number of nodes from the maximum posible number of nodes
         IF(BASIS%DEGENERATE) THEN
+          !Calculate the NODE_AT_COLLAPSE array.
           ALLOCATE(NODE_AT_COLLAPSE(NUMBER_OF_NODES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate at collapse",ERR,ERROR,*999)
           POSITION=1
@@ -1761,36 +1844,28 @@ CONTAINS
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE=NO_PART_DERIV
 
           ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(MAX(MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(3), &
-                               & MAXIMUM_NODE_EXTENT(3)*MAXIMUM_NODE_EXTENT(1), &
-                               & MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(1)),NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            & MAXIMUM_NODE_EXTENT(3)*MAXIMUM_NODE_EXTENT(1),MAXIMUM_NODE_EXTENT(2)*MAXIMUM_NODE_EXTENT(1)), &
+            & NUMBER_OF_LOCAL_FACES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face",ERR,ERROR,*999)
           BASIS%NODE_NUMBERS_IN_LOCAL_FACE=0
           ALLOCATE(BASIS%LOCAL_XI_NORMAL(NUMBER_OF_LOCAL_FACES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local xi normal.",ERR,ERROR,*999)
           
-          BASIS%NUMBER_OF_LOCAL_FACES=6
-
           ALLOCATE(BASIS%LOCAL_FACE_XI_DIRECTION(NUMBER_OF_LOCAL_FACES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local face xi direction",ERR,ERROR,*999)
           
-          !BASIS%NUMBER_OF_LOCAL_FACES=6
-
           !Find the lines and faces
           BASIS%NUMBER_OF_LOCAL_LINES=0
           DO ni1=1,3
             ni2=OTHER_XI_DIRECTIONS3(ni1,2,1)
-            ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)
-            
-           ! DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
-            !  DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
-                 
+            ni3=OTHER_XI_DIRECTIONS3(ni1,3,1)            
             !We are looking for lines going in the ni1 direction, starting from ni1=0.
             DO nn3=1,MAXIMUM_NODE_EXTENT(ni3),MAXIMUM_NODE_EXTENT(ni3)-1 
               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2),MAXIMUM_NODE_EXTENT(ni2)-1
                 NODE_COUNT=0
                 SPECIAL_NODE_COUNT=0
                 NODES_IN_LINE=0
-                ! Iterate over nodes in the line of interest
+                !Iterate over nodes in the line of interest
                 DO nn1=1,BASIS%NUMBER_OF_NODES
                   IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_NOT_COLLAPSED) THEN
                     !The current xi direction, ni1, is involved in a collapsed (degenerate) plane 
@@ -1910,9 +1985,12 @@ CONTAINS
                 ENDIF
               ENDDO !nn2
             ENDDO !nn3
-         ENDDO !ni1
+          ENDDO !ni1
 
+!!THIS CODE BELOW NEEDS TO BE TESTED AND CHECKED.
 
+!!FROM HERE
+          
          !Find the faces
          nn4=1
          ef=0           !element face counter
@@ -1939,8 +2017,8 @@ CONTAINS
             
             IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI1) THEN
                ef=ef+1  
-               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
-                  DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
+               DO nn3=1,MAXIMUM_NODE_EXTENT(ni2)
+                  DO nn2=1,MAXIMUM_NODE_EXTENT(ni3)
                      LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
                      BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
                           & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)
@@ -1960,14 +2038,13 @@ CONTAINS
                BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
                BASIS%LOCAL_FACE_XI_DIRECTION(ef)=ni1  
             ENDIF
-            
-            
+           
             nn1=1
             LOCAL_NODE_COUNT=0
             IF(BASIS%COLLAPSED_XI(ni1)/=BASIS_COLLAPSED_AT_XI0) THEN
                ef=ef+1  
-               DO nn2=1,MAXIMUM_NODE_EXTENT(ni2)
-                  DO nn3=1,MAXIMUM_NODE_EXTENT(ni3)
+               DO nn3=1,MAXIMUM_NODE_EXTENT(ni2)
+                  DO nn2=1,MAXIMUM_NODE_EXTENT(ni3)
                      LOCAL_NODE_COUNT=LOCAL_NODE_COUNT+1
                      BASIS%NODE_NUMBERS_IN_LOCAL_FACE(LOCAL_NODE_COUNT,ef)= &
                           & BASIS%NODE_POSITION_INDEX_INV(ARGLIST%a1,ARGLIST%a2,ARGLIST%a3,ARGLIST%a4)  
@@ -1985,7 +2062,7 @@ CONTAINS
                   ENDDO
                ENDDO
                BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(ef)=LOCAL_NODE_COUNT
-               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=ni1  
+               BASIS%LOCAL_FACE_XI_DIRECTION(ef)=-ni1  
             ENDIF
          ENDDO
          
@@ -2003,6 +2080,8 @@ CONTAINS
             ENDDO !ef
          ENDDO !ni1
 
+!! TO HERE
+         
       CASE DEFAULT
           CALL FLAG_ERROR("Invalid number of xi directions.",ERR,ERROR,*999)
         END SELECT
@@ -2218,13 +2297,17 @@ CONTAINS
             DO ni2=1,ni-1
               FACE_XI2(1)=OTHER_XI_DIRECTIONS3(ni2,2,1)
               FACE_XI2(2)=OTHER_XI_DIRECTIONS3(ni2,3,1)
-              IF(BASIS%INTERPOLATION_XI(FACE_XI2(1))==BASIS%INTERPOLATION_XI(FACE_XI(1)).AND. &
-                & BASIS%INTERPOLATION_XI(FACE_XI2(2))==BASIS%INTERPOLATION_XI(FACE_XI(2)).AND. &
-                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(1))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1)).AND. &
-                & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(2))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))) THEN
-                FACE_BASIS_DONE=.TRUE.
-                EXIT
-              ENDIF
+
+!!TODO FIX THIS
+              !Going to disable the test below, as it results in error in collapsed elements and doesn't save much time
+!               IF(BASIS%INTERPOLATION_XI(FACE_XI2(1))==BASIS%INTERPOLATION_XI(FACE_XI(1)).AND. &
+!                 & BASIS%INTERPOLATION_XI(FACE_XI2(2))==BASIS%INTERPOLATION_XI(FACE_XI(2)).AND. &
+!                 & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(1))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1)).AND. &
+!                 & BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI2(2))==BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))) THEN
+!                 FACE_BASIS_DONE=.TRUE.
+!                 EXIT
+              !               ENDIF
+              
             ENDDO !ni2
             IF(FACE_BASIS_DONE) THEN
               BASIS%FACE_BASES(ni)%PTR=>BASIS%FACE_BASES(ni2)%PTR
@@ -2565,6 +2648,7 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: NEW_SCHEME,SCHEME
     TYPE(QUADRATURE_SCHEME_PTR_TYPE), POINTER :: NEW_SCHEMES(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: MAX_NUM_FACE_GAUSS,face_idx,NORMAL,FACE_XI(2)
 
     NULLIFY(NEW_SCHEME)
     NULLIFY(NEW_SCHEMES)
@@ -2628,7 +2712,6 @@ CONTAINS
               & POSITIONS(1:BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni),ni), &
               & WEIGHTS(1:BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni),ni),ERR,ERROR,*999)
           ENDDO !ni
-          
           SELECT CASE(BASIS%NUMBER_OF_XI)
           CASE(1)
             NUM_GAUSS_1=BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1)
@@ -2673,6 +2756,74 @@ CONTAINS
               ENDDO !i
             ENDDO !j
           ENDDO !k
+          !Create face quadrature scheme, if requested
+          IF(BASIS%QUADRATURE%EVALUATE_FACE_GAUSS) THEN
+            IF(BASIS%NUMBER_OF_XI==3) THEN
+              !Find maximum number of face gauss points and allocate the arrays
+              MAX_NUM_FACE_GAUSS=PRODUCT(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI))
+              MAX_NUM_FACE_GAUSS=MAX_NUM_FACE_GAUSS/MINVAL(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(1:BASIS%NUMBER_OF_XI))
+              ALLOCATE(NEW_SCHEME%NUMBER_OF_FACE_GAUSS(BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of face gauss",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_POSITIONS(BASIS%NUMBER_OF_XI_COORDINATES,MAX_NUM_FACE_GAUSS, &
+                & BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss positions",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_WEIGHTS(MAX_NUM_FACE_GAUSS,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss weights",ERR,ERROR,*999)
+              ALLOCATE(NEW_SCHEME%FACE_GAUSS_BASIS_FNS(BASIS%NUMBER_OF_ELEMENT_PARAMETERS,BASIS%NUMBER_OF_PARTIAL_DERIVATIVES, &
+                & MAX_NUM_FACE_GAUSS,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate face Gauss basis function values array",ERR,ERROR,*999)
+              !Zero them out just to be safe
+              NEW_SCHEME%FACE_GAUSS_POSITIONS=0.0_DP
+              NEW_SCHEME%FACE_GAUSS_WEIGHTS=0.0_DP
+              NEW_SCHEME%FACE_GAUSS_BASIS_FNS=0.0_DP
+              !Populate face_gauss_positions, weights, basis_fn
+              DO face_idx=1,BASIS%NUMBER_OF_LOCAL_FACES
+                !What's the normal?
+                NORMAL=BASIS%LOCAL_FACE_XI_DIRECTION(face_idx)
+                IF(NORMAL<0_INTG) THEN
+                  XI(ABS(NORMAL))=0.0_DP
+                ELSE
+                  XI(ABS(NORMAL))=1.0_DP
+                ENDIF
+                NORMAL=ABS(NORMAL)
+                FACE_XI=[OTHER_XI_DIRECTIONS3(NORMAL,2,1), OTHER_XI_DIRECTIONS3(NORMAL,3,1)]
+                !How many gauss points are in this face?
+                NEW_SCHEME%NUMBER_OF_FACE_GAUSS(face_idx)=PRODUCT(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI))
+                ng=0_INTG
+                DO j=1,BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(2))
+                  XI(FACE_XI(2))=POSITIONS(j,FACE_XI(2))
+                  DO i=1,BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(FACE_XI(1))
+                    XI(FACE_XI(1))=POSITIONS(i,FACE_XI(1))
+                    ng=ng+1_INTG
+                    !Gauss point xi and weights first
+                    NEW_SCHEME%FACE_GAUSS_WEIGHTS(ng,face_idx)=WEIGHTS(i,FACE_XI(1))*WEIGHTS(j,FACE_XI(2))
+                    NEW_SCHEME%FACE_GAUSS_POSITIONS(1:3,ng,face_idx)=XI(1:3)
+                    !Evaluate basis fn values at the Gauss points now
+                    ns=0
+                    DO nn=1,BASIS%NUMBER_OF_NODES
+                      DO nk=1,BASIS%NUMBER_OF_DERIVATIVES(nn)
+                        ns=ns+1
+                        DO nu=1,BASIS%NUMBER_OF_PARTIAL_DERIVATIVES
+                          SELECT CASE(BASIS%TYPE)
+                          CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
+                            NEW_SCHEME%FACE_GAUSS_BASIS_FNS(ns,nu,ng,face_idx)= &
+                              & BASIS_LHTP_BASIS_EVALUATE(BASIS,nn,nk,nu,XI,ERR,ERROR)
+                            IF(ERR/=0) GOTO 999                        
+                          CASE DEFAULT
+                            CALL FLAG_ERROR("Not implemented",ERR,ERROR,*999)
+                          END SELECT
+                        ENDDO !nu
+                      ENDDO !nk
+                    ENDDO !nn
+
+                  ENDDO !i
+                ENDDO !j
+              ENDDO !face_idx
+            ELSE
+              CALL FLAG_ERROR("Cannot evaluate face quadrature schemes for a non three dimensional element.",ERR,ERROR,*999)
+            ENDIF
+          ENDIF
+          !Clean up
           DEALLOCATE(WEIGHTS)
           DEALLOCATE(POSITIONS)
           DEALLOCATE(POSITIONS_MATRIX)
@@ -2902,13 +3053,13 @@ CONTAINS
             CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
               BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=2
             CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
-              BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=2
+              BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=3
             CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
-              BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=3
+              BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=4
             CASE(BASIS_QUADRATIC1_HERMITE_INTERPOLATION,BASIS_QUADRATIC2_HERMITE_INTERPOLATION)
-              BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=2
-            CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
               BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=3
+            CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
+              BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)=4
             CASE DEFAULT
               LOCAL_ERROR="Interpolation xi value "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_XI(ni),"*",ERR,ERROR))// &
                 & " in xi direction "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))//" is invalid"
@@ -3375,6 +3526,39 @@ CONTAINS
     CALL EXITS("BASIS_QUADRATURE_TYPE_SET_PTR")
     RETURN 1
   END SUBROUTINE BASIS_QUADRATURE_TYPE_SET_PTR
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the local face Gauss evaluation flag on a basis
+  SUBROUTINE BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET(BASIS,FACE_GAUSS_EVALUATE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<A pointer to the basis
+    LOGICAL, INTENT(IN) :: FACE_GAUSS_EVALUATE !<face Gauss evaluation flag
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    CALL ENTERS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET",ERR,ERROR,*999)
+    
+    IF(ASSOCIATED(BASIS)) THEN
+      IF(BASIS%BASIS_FINISHED) THEN
+        CALL FLAG_ERROR("Basis has been finished",ERR,ERROR,*999)
+      ELSE
+        BASIS%QUADRATURE%EVALUATE_FACE_GAUSS=FACE_GAUSS_EVALUATE
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET")
+    RETURN
+999 CALL ERRORS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET",ERR,ERROR)
+    CALL EXITS("BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET")
+    RETURN 1
+
+  END SUBROUTINE BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET
 
   !
   !================================================================================================================================
@@ -4006,8 +4190,8 @@ CONTAINS
             BASIS%NODE_NUMBERS_IN_LOCAL_LINE(3,1)=3
             BASIS%NODE_NUMBERS_IN_LOCAL_LINE(4,1)=4
           CASE DEFAULT 
-            LOCAL_ERROR="Interpolation order "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(1),"*",ERR,ERROR))// &
-              & " is invalid for a simplex basis type."
+            LOCAL_ERROR="Interpolation order "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(1),"*", &
+              & ERR,ERROR))//" is invalid for a simplex basis type."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(2)
@@ -4114,15 +4298,31 @@ CONTAINS
 
           ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local line.",ERR,ERROR,*999)
-          ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
-
           ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE(MAXVAL(BASIS%NUMBER_OF_NODES_XIC),BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local line.",ERR,ERROR,*999)
-          ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
-
           BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_LINE=NO_PART_DERIV
+
+          SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
+          CASE(BASIS_LINEAR_INTERPOLATION_ORDER)
+            ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(3,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
+          CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
+            ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(6,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
+          CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
+            ALLOCATE(BASIS%NODE_NUMBERS_IN_LOCAL_FACE(10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node numbers in local face.",ERR,ERROR,*999)
+            ALLOCATE(BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(10,BASIS%NUMBER_OF_LOCAL_FACES),STAT=ERR)
+            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate derivative numbers in local face.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="Interpolation order "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(1),"*",ERR,ERROR))// &
+              & " is invalid for a simplex basis type."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
 
           ALLOCATE(BASIS%LOCAL_XI_NORMAL(BASIS%NUMBER_OF_LOCAL_LINES),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local line normal.",ERR,ERROR,*999)
@@ -4170,8 +4370,8 @@ CONTAINS
             !Face 2
             BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(2)=3
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(1,2)=1
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,2)=3
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,2)=4
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,2)=4
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,2)=3
             BASIS%LOCAL_FACE_XI_DIRECTION(2)=2
             BASIS%LOCAL_XI_NORMAL(2)=2
             !Face 3
@@ -4179,13 +4379,13 @@ CONTAINS
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(1,3)=1
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,3)=2
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,3)=4
-            BASIS%LOCAL_FACE_XI_DIRECTION(3)=3
+            BASIS%LOCAL_FACE_XI_DIRECTION(3)=3 
             BASIS%LOCAL_XI_NORMAL(3)=3
             !Face 4
             BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(4)=3
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(1,4)=1
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,4)=2
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,4)=3
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,4)=3
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,4)=2
             BASIS%LOCAL_FACE_XI_DIRECTION(4)=4
             BASIS%LOCAL_XI_NORMAL(4)=4
           CASE(BASIS_QUADRATIC_INTERPOLATION_ORDER)
@@ -4238,11 +4438,11 @@ CONTAINS
             !Face 2
             BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(2)=6
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(1,2)=1
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,2)=3
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,2)=4
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,2)=6
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,2)=4
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,2)=3
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,2)=7
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(5,2)=9
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,2)=7
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,2)=6
             BASIS%LOCAL_FACE_XI_DIRECTION(2)=2
             BASIS%LOCAL_XI_NORMAL(2)=2
             !Face 3
@@ -4258,11 +4458,11 @@ CONTAINS
             !Face 4
             BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(4)=6
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(1,4)=1
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,4)=2
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,4)=3
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,4)=5
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,4)=3
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,4)=2
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,4)=6
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(5,4)=8
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,4)=6
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,4)=5
             BASIS%LOCAL_FACE_XI_DIRECTION(4)=4
             BASIS%LOCAL_XI_NORMAL(4)=4
            CASE(BASIS_CUBIC_INTERPOLATION_ORDER)
@@ -4322,17 +4522,17 @@ CONTAINS
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(10,1)=20
             BASIS%LOCAL_FACE_XI_DIRECTION(1)=1
             BASIS%LOCAL_XI_NORMAL(1)=1
-             !Face 2
+            !Face 2
             BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(2)=10
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(1,2)=1
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,2)=3
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,2)=4
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,2)=7
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(5,2)=8
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,2)=13
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(7,2)=14
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(8,2)=10
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(9,2)=9
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,2)=4
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,2)=3
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,2)=9
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(5,2)=10
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,2)=14
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(7,2)=13
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(8,2)=8
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(9,2)=7
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(10,2)=19
             BASIS%LOCAL_FACE_XI_DIRECTION(2)=2
             BASIS%LOCAL_XI_NORMAL(2)=2
@@ -4353,18 +4553,18 @@ CONTAINS
             !Face 4
             BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(4)=10
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(1,4)=1
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,4)=2
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,4)=3
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,4)=5
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(5,4)=6
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,4)=14
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(7,4)=12
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(8,4)=8
-            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(9,4)=7
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(2,4)=3
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(3,4)=2
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(4,4)=7
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(5,4)=8
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(6,4)=12
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(7,4)=11
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(8,4)=6
+            BASIS%NODE_NUMBERS_IN_LOCAL_FACE(9,4)=5
             BASIS%NODE_NUMBERS_IN_LOCAL_FACE(10,4)=17
             BASIS%LOCAL_FACE_XI_DIRECTION(4)=4
             BASIS%LOCAL_XI_NORMAL(4)=4
-           CASE DEFAULT
+          CASE DEFAULT
             LOCAL_ERROR="Interpolation order "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_ORDER(1),"*",ERR,ERROR))// &
               & " is invalid for a simplex basis type."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)

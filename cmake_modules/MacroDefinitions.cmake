@@ -46,13 +46,10 @@ IF(NOT DEFINED MP)
   SET (MP false)
 ENDIF(NOT DEFINED MP)
 
-
 # set architecture dependent directories and default options
 
 # defaults
 SET(INSTRUCTION ${MACHNAME})
-SET(BIN_ARCH_DIR ${INSTRUCTION}-${OPERATING_SYSTEM})
-SET(LIB_ARCH_DIR ${INSTRUCTION}-${ABI}-${OPERATING_SYSTEM})
 
 IF (${SYSNAME} MATCHES "Linux")
   SET(OPERATING_SYSTEM linux)
@@ -84,7 +81,7 @@ IF (${SYSNAME} MATCHES "Linux")
     SET(MPI mpich2)
   ENDIF(NOT DEFINED MPI)
 ENDIF (${SYSNAME} MATCHES "Linux")
-IF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0")
+IF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0|Windows")
   SET(LIB_ARCH_DIR ${INSTRUCTION}-${OPERATING_SYSTEM})# no ABI
   SET(ABI 32)
   SET(INSTRUCTION i386)
@@ -95,7 +92,7 @@ IF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0")
   IF(NOT DEFINED MPI)
     SET(MPI mpich2)
   ENDIF(NOT DEFINED MPI)
-ENDIF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0")
+ENDIF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0|Windows")
 IF("${SYSNAME}" MATCHES "AIX")
   IF(NOT DEFINED ABI)
     IF(DEFINED OBJECT_MODE)
@@ -193,7 +190,9 @@ SET(env_shell2  $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=
 
 # Create a shell that can call nmake from make 
 SET(NMAKE_ENV_FILE /tmp/nmake_env)
-SET(nmake_shell COMMAND($(shell rm -f $(NMAKE_ENV_FILE))$(shell echo 'rm -f $3' >> $(NMAKE_ENV_FILE))$(shell echo '$1' >> $(NMAKE_ENV_FILE))$(shell echo 'nmake MAKEFLAGS= $2 >& $3' >> $(NMAKE_ENV_FILE))$(shell /bin/bash -e $(NMAKE_ENV_FILE) )))
+SET(nmake_shell COMMAND($(shell rm -f $(NMAKE_ENV_FILE))$(shell echo 'rm -f $3' >> $(NMAKE_ENV_FILE))$(shell echo '$1' >> $(NMAKE_ENV_FILE))$(shell echo 'nmake MAKEFLAGS= $2 >& $3' >> $(NMAKE_ENV_FILE))$(shell /bin/bash -e $(NMAKE_ENV_FILE) ))) 
+
+#-------------------------------------------------------------------------------------------------------------------
 
 IF(NOT DEFINED MPI)
   SET(MPI mpich2)
@@ -207,4 +206,28 @@ IF(NOT DEFINED USEFIELDML)
   SET(USEFIELDML false)
 ENDIF(NOT DEFINED USEFIELDML)
 
-  
+IF(${MPI} STREQUAL intel)
+  IF (${OPERATING_SYSTEM} STREQUAL linux)
+    IF(NOT DEFINED I_MPI_ROOT)
+      MESSAGE(FATAL_ERROR "Intel MPI libraries not setup")
+    ENDIF(NOT DEFINED I_MPI_ROOT)
+  ELSE(${OPERATING_SYSTEM} STREQUAL linux)
+    MESSAGE(FATAL_ERROR "can only use intel mpi with Linux")
+  ENDIF(${OPERATING_SYSTEM} STREQUAL linux)
+ELSEIF(NOT (${MPI} MATCHES "(mpich2|openmpi|mvapich2|cray|poe)"))
+  MESSAGE( FATAL_ERROR "unknown MPI type - ${MPI}")
+ENDIF(${MPI} STREQUAL intel)
+
+IF(${MPIPROF} STREQUAL true)
+  IF($(MPI) STREQUAL intel)
+    IF(NOT DEFINED VT_ROOT)
+      MESSAGE(FATAL_ERROR "Intel MPI libraries not setup")
+    ENDIF(NOT DEFINED VT_ROOT)
+    IF(NOT DEFINED VT_ADD_LIBS)
+      MESSAGE(FATAL_ERROR "intel trace collector not setup")
+    ENDIF(NOT DEFINED VT_ADD_LIBS)
+  ENDIF($(MPI) STREQUAL intel)
+ENDIF(${MPIPROF} STREQUAL true)
+
+SET(BIN_ARCH_DIR ${INSTRUCTION}-${OPERATING_SYSTEM})
+SET(LIB_ARCH_DIR ${INSTRUCTION}-${ABI}-${OPERATING_SYSTEM})

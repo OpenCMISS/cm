@@ -11,5 +11,7 @@ IF(EXISTS ${HYPRE_DIR}/include/HYPRE.h)
   FILE(GLOB HYPRE_LIBRARIES RELATIVE "${HYPRE_DIR}/lib" "${HYPRE_DIR}/lib/libHYPRE*.a")
 ELSE(EXISTS ${HYPRE_DIR}/include/HYPRE.h)
   SET(HYPRE_FOUND NO)
-  message(FATAL_ERROR "Cannot find HYPRE!")
 ENDIF(EXISTS ${HYPRE_DIR}/include/HYPRE.h)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(HYPRE DEFAULT_MSG HYPRE_LIBRARIES HYPRE_INCLUDES)

@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -427,11 +429,12 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
+    CHARACTER(LEN=1) :: FORMAT_STRING = "*"
     TYPE(VARYING_STRING) :: LOCAL_STRING
 
  !   CALL ENTERS("WRITE_STRING_VALUE_SP",ERR,ERROR,*999)
         
-    LOCAL_STRING=FIRST_STRING//NUMBER_TO_VSTRING(VALUE,"*",ERR,ERROR)
+    LOCAL_STRING=FIRST_STRING//NUMBER_TO_VSTRING(VALUE,FORMAT_STRING,ERR,ERROR)
     IF(ERR/=0) GOTO 999
     WRITE(OP_STRING,'(A)') CHAR(LOCAL_STRING)
     CALL WRITE_STR(ID,ERR,ERROR,*999)
@@ -3220,6 +3223,7 @@ CONTAINS
     current=FIRST_IDX
     final=current+(NUMBER_FIRST-1)*DELTA
     IF(final>LAST_IDX) final=LAST_IDX
+
     WRITE(OP_STRING,FMT=FIRST_FORMAT) (VECTOR(count),count=current,final,DELTA)
     CALL WRITE_STR(ID,ERR,ERROR,*999)
     DO WHILE(final<LAST_IDX) !more stuff to do

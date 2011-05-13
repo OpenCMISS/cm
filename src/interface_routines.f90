@@ -1,5 +1,5 @@
 !> \file
-!> $Id: interface_routines.f90 690 2009-09-30 23:27:16Z chrispbradley $
+!> $Id$
 !> \author David Nordsletten
 !> \brief This module contains all interface routines.
 !>
@@ -20,12 +20,14 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-! !> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): Chris Bradley
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -65,11 +67,25 @@ MODULE INTERFACE_ROUTINES
 
   !Module variables
 
+  !Interfaces
+
+  INTERFACE INTERFACE_LABEL_GET
+    MODULE PROCEDURE INTERFACE_LABEL_GET_C
+    MODULE PROCEDURE INTERFACE_LABEL_GET_VS
+  END INTERFACE !INTERFACE_LABEL_GET
+  
+  INTERFACE INTERFACE_LABEL_SET
+    MODULE PROCEDURE INTERFACE_LABEL_SET_C
+    MODULE PROCEDURE INTERFACE_LABEL_SET_VS
+  END INTERFACE !INTERFACE_LABEL_SET
+  
   PUBLIC INTERFACE_MESH_ADD
 
   PUBLIC INTERFACE_CREATE_START, INTERFACE_CREATE_FINISH
 
   PUBLIC INTERFACE_DESTROY, INTERFACE_MESH_CONNECTIVITY_DESTROY
+
+  PUBLIC INTERFACE_LABEL_GET,INTERFACE_LABEL_SET
 
   PUBLIC INTERFACE_MESH_CONNECTIVITY_CREATE_START, INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH
 
@@ -280,7 +296,7 @@ CONTAINS
           CALL INTERFACE_INITIALISE(NEW_INTERFACE,ERR,ERROR,*999)
           NEW_INTERFACE%USER_NUMBER=USER_NUMBER
           NEW_INTERFACE%GLOBAL_NUMBER=PARENT_REGION%INTERFACES%NUMBER_OF_INTERFACES+1
-          LOCAL_STRING="Interface "//NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR)
+          LOCAL_STRING="Interface_"//NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR)
           NEW_INTERFACE%LABEL=CHAR(LOCAL_STRING)
           IF(ERR/=0) GOTO 999
           NEW_INTERFACE%INTERFACES=>PARENT_REGION%INTERFACES
@@ -451,6 +467,140 @@ CONTAINS
     CALL EXITS("INTERFACE_INITIALISE")
     RETURN 1
   END SUBROUTINE INTERFACE_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the label of an interface for a character label. \see OPENCMISS::CMISSInterfaceLabelGet
+  SUBROUTINE INTERFACE_LABEL_GET_C(INTERFACE,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to get the label for
+    CHARACTER(LEN=*), INTENT(OUT) :: LABEL !<On return the interface label.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: C_LENGTH,VS_LENGTH
+
+    CALL ENTERS("INTERFACE_LABEL_GET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      C_LENGTH=LEN(LABEL)
+      VS_LENGTH=LEN_TRIM(INTERFACE%LABEL)
+      IF(C_LENGTH>VS_LENGTH) THEN
+        LABEL=CHAR(INTERFACE%LABEL,VS_LENGTH)
+      ELSE
+        LABEL=CHAR(INTERFACE%LABEL,C_LENGTH)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_LABEL_GET_C")
+    RETURN
+999 CALL ERRORS("INTERFACE_LABEL_GET_C",ERR,ERROR)
+    CALL EXITS("INTERFACE_LABEL_GET_C")
+    RETURN 1
+    
+  END SUBROUTINE INTERFACE_LABEL_GET_C
+
+   !
+  !================================================================================================================================
+  !
+
+  !>Returns the label of an interface for a varying string label. \see OPENCMISS::CMISSInterfaceLabelGet
+  SUBROUTINE INTERFACE_LABEL_GET_VS(INTERFACE,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to get the label for
+    TYPE(VARYING_STRING), INTENT(OUT) :: LABEL !<On return the interface label.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("INTERFACE_LABEL_GET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      !CPB 20/2/07 The following line crashes the AIX compiler unless it has a VAR_STR(CHAR()) around it
+      LABEL=VAR_STR(CHAR(INTERFACE%LABEL))
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_LABEL_GET_VS")
+    RETURN
+999 CALL ERRORS("INTERFACE_LABEL_GET_VS",ERR,ERROR)
+    CALL EXITS("INTERFACE_LABEL_GET_VS")
+    RETURN 1
+    
+  END SUBROUTINE INTERFACE_LABEL_GET_VS
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the label of an interface for a character label. \see OPENCMISS::CMISSInterfaceLabelSet
+  SUBROUTINE INTERFACE_LABEL_SET_C(INTERFACE,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to set the label for 
+    CHARACTER(LEN=*), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("INTERFACE_LABEL_SET_C",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN
+        CALL FLAG_ERROR("Interface has been finished.",ERR,ERROR,*999)
+      ELSE
+        INTERFACE%LABEL=LABEL
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_LABEL_SET_C")
+    RETURN
+999 CALL ERRORS("INTERFACE_LABEL_SET_C",ERR,ERROR)
+    CALL EXITS("INTERFACE_LABEL_SET_C")
+    RETURN 1
+  END SUBROUTINE INTERFACE_LABEL_SET_C
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the label of an interface for a varying string label. \see OPENCMISS::CMISSInterfaceLabelSet
+  SUBROUTINE INTERFACE_LABEL_SET_VS(INTERFACE,LABEL,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to set the label for 
+    TYPE(VARYING_STRING), INTENT(IN) :: LABEL !<The label to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("INTERFACE_LABEL_SET_VS",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN
+        CALL FLAG_ERROR("Interface has been finished.",ERR,ERROR,*999)
+      ELSE
+        INTERFACE%LABEL=LABEL
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_LABEL_SET_VS")
+    RETURN
+999 CALL ERRORS("INTERFACE_LABEL_SET_VS",ERR,ERROR)
+    CALL EXITS("INTERFACE_LABEL_SET_VS")
+    RETURN 1
+  END SUBROUTINE INTERFACE_LABEL_SET_VS
 
   !
   !================================================================================================================================
@@ -680,7 +830,9 @@ CONTAINS
                MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%COUPLED_MESH_ELEMENT_NUMBER=NO_ELEM
                XI_DIR=MESH_CON%INTERFACE_MESH%NUMBER_OF_DIMENSIONS+1
                LOCAL_NODE=MESH_CON%BASIS%NUMBER_OF_NODES
-               ALLOCATE(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI(XI_DIR,XI_DIR,LOCAL_NODE))
+               IF(.NOT.ALLOCATED(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI)) THEN
+                 ALLOCATE(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI(XI_DIR,XI_DIR,LOCAL_NODE))
+               ENDIF
                MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI=0.0_DP
              ELSE
                CALL FLAG_ERROR("Interface elements connectivity array not allocated.",ERR,ERROR,*999)

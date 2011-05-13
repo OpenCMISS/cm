@@ -21,10 +21,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -569,7 +571,6 @@ CONTAINS
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST)
-              IF(ALLOCATED(LIST%LIST_INTG)) DEALLOCATE(LIST%LIST_INTG)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_INTG)
               LIST%SIZE=NEW_SIZE
             ENDIF
@@ -628,7 +629,6 @@ CONTAINS
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_INTG2(:,1:LIST%NUMBER_IN_LIST)
-              IF(ALLOCATED(LIST%LIST_INTG2)) DEALLOCATE(LIST%LIST_INTG2)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_INTG2)
               LIST%SIZE=NEW_SIZE
             ENDIF
@@ -690,7 +690,6 @@ CONTAINS
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_SP(1:LIST%NUMBER_IN_LIST)
-              IF(ALLOCATED(LIST%LIST_SP)) DEALLOCATE(LIST%LIST_SP)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_SP)
               LIST%SIZE=NEW_SIZE
             ENDIF
@@ -748,7 +747,6 @@ CONTAINS
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_SP2(:,1:LIST%NUMBER_IN_LIST)
-              IF(ALLOCATED(LIST%LIST_SP2)) DEALLOCATE(LIST%LIST_SP2)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_SP2)
               LIST%SIZE=NEW_SIZE
             ENDIF
@@ -808,7 +806,6 @@ CONTAINS
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_DP(1:LIST%NUMBER_IN_LIST)
-              IF(ALLOCATED(LIST%LIST_DP)) DEALLOCATE(LIST%LIST_DP)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_DP)
               LIST%SIZE=NEW_SIZE
             ENDIF
@@ -867,7 +864,6 @@ CONTAINS
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_DP2(:,1:LIST%NUMBER_IN_LIST)
-              IF(ALLOCATED(LIST%LIST_DP2)) DEALLOCATE(LIST%LIST_DP2)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_DP2)
               LIST%SIZE=NEW_SIZE
             ENDIF

@@ -41,11 +41,11 @@
 %
 % Software
 %
+\newcommand{\OpenCMISS} {\textsf{OpenCMISS}\xspace}
 \newcommand{\CMISS} {\textsf{CMISS}\xspace}
 \newcommand{\CM}    {\textsf{CM}\xspace}       %note upper case to distinguish from centimeters
 \newcommand{\CMGUI} {\textsf{CMGUI}\xspace}
 \newcommand{\UNEMAP}{\textsf{UnEmap}\xspace}
-
 
 
 
@@ -299,14 +299,14 @@
     \Gamma_{#1#2#3}
     }} % Christoffel symbol of the first kind e.g. \christoffelfirst{i}{j}{k} => Gamma_{ijk}
 \newcommand{\christoffelsecond}[3]{\ensuremath{ %
-    \Gamma_{#1#2}^{#3}
-    }} % Christoffel symbol of the second kinde.g. \christoffelsecond{i}{j}{k} => Gamma_{ij}^[k}
+    \Gamma^{#1}_{#2#3}
+    }} % Christoffel symbol of the second kind e.g. \christoffelsecond{i}{j}{k} => Gamma^{i}_{jk}
+\newcommand{\partialderiv}[2]{\ensuremath{ %
+    {#1}_{,#2}
+    }} % partial derivative e.g. \partialderiv{i}{j} => i_{,j}
 \newcommand{\covarderiv}[2]{\ensuremath{ %
-    \brac{.}{#1}{|}_{#2}
-    }} % covariant derivative e.g. \covarderiv{i}{j} => i | _{j}
-\newcommand{\contraderiv}[2]{\ensuremath{ %
-    \brac{.}{#1}{|}^{#2}
-    }} % contravariant derivative e.g. \contraderiv{i}{j} => i | ^{j}
+    {#1}_{;#2}
+    }} % covariant derivative e.g. \covarderiv{i}{j} => i_{;j}
 \newcommand{\mixedderiv}[3]{\ensuremath{ %
     \brac{.}{#1}{|}^{#2}_{#3}
     }} % mixed derivative e.g. \mixedderiv{i}{j}{k} => i | ^{j}_{k}
@@ -394,9 +394,16 @@
     }} % display evaluated integral with limits e.g. 
        % \inteval{xxx}{a}{b} => [xxx]_a^b
 \newcommand{\inverse}[1]{\ensuremath{{#1}^{-1}}} % inverse e.g. \inverse{A} => A^-1
-\newcommand{\kronecker}[2]{\ensuremath{\delta_{{#1}{#2}}}}
+\newcommand{\contrakronecker}[2]{\ensuremath{\delta^{{#1}{#2}}}} %
+       % contravariant kronecker delta tensor e.g., \contrakronecker{i}{j} => delta^{ij}
+\newcommand{\covarkronecker}[2]{\ensuremath{\delta_{{#1}{#2}}}} %
+       % covariant kronecker delta tensor e.g., \contrakronecker{i}{j} => delta_{ij}
+\newcommand{\mixedkronecker}[2]{\ensuremath{\delta_{#1}^{#2}}} %
+       % mixed kronecker delta tensor e.g., \mixedkronecker{i}{j} => delta_{i}^{j}
+\newcommand{\kronecker}[2]{\covarkronecker{#1}{#2}} % kronecker delta
+                                % tensor. Defaul to covariant.
 \newcommand{\laplacian}[1]{\ensuremath{\gradsq {#1}}} % laplacian
-\newcommand{\legendre}[3]{\ensuremath{\fnof{P_{#1}^{#2}}{#3}}}
+\newcommand{\legendre}[3]{\ensuremath{\fnof{P_{#1}^{#2}}{#3}}} % Legendre polynomial
 \newcommand{\limit}[3]{\ensuremath{ %
     \operatornamewithlimits{\lim}_{#1\rightarrow#2} #3 %
     }} % limit e.g. \limit{a}{b}{c} => lim a->b c

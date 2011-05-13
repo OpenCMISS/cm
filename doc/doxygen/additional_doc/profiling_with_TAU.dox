@@ -67,7 +67,7 @@ Running \c papi_avail will display the PAPI metrics (hardware level events like 
 
 TAU will also create library files with filenames which depend on the options used when compiling TAU. The TAU Makefile provided in the OpenCMISS Extras repository sets these options for you and this should result in a main TAU library file called \c libtau-phase-papi-mpi.a. 
 
-It is important to note that if you change any of the configure options in the provided TAU Makefile (i.e build TAU without PAPI) you will need to alter the \c NewExampleMakefile, otherwise the linker will not be able to find the TAU library file. The following line of \c NewExampleMakefile will need to be updated with the TAU library filename on your system.
+It is important to note that if you change any of the configure options in the provided TAU Makefile (i.e build TAU without PAPI) you will need to alter the \c ExampleMakefile, otherwise the linker will not be able to find the TAU library file. The following line of \c NewExampleMakefile will need to be updated with the TAU library filename on your system.
 
 \code	
   TAU_LIBRARIES += -ltau-phase-papi-mpi -l:libpapi.a -l:libpfm.a

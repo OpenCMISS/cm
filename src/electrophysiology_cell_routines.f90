@@ -1,5 +1,5 @@
 !> \file
-!> $Id:  $
+!> $Id$
 !> \author Sander Land
 !> \brief This module contains some hardcoded cell models and integration routines for cardiac electrophysiology.
 !>
@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -181,9 +183,11 @@ contains
     do i=1,ncells
       !   field ->   y
       do d=1,celldim
-        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+        !Default to version 1 of each node derivative
+        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))
       end do
-      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+      !Default to version 1 of each node derivative
+      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))
       
       t = t0
       do while (t < t1 - 1e-6)
@@ -199,7 +203,8 @@ contains
       !   y -> field  
       do d=1,celldim
  !       call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
-        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
+        !Default to version 1 of each node derivative
+        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1)) = y(d)
       end do
     end do
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
@@ -368,8 +373,9 @@ contains
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     integer, parameter :: celldim = 19
-    real(dp), dimension(1:celldim) :: y, dydt
-    real(dp) :: t, dt, activ, m_inf, d_inf, m_inf0, d_inf0
+    real(dp), dimension(1:celldim) :: dydt
+    real(dp), dimension(:), pointer :: y
+    real(dp) :: t, dt, activ, m_inf, d_inf, m_inf0, d_inf0, prev_v
     real(dp), dimension(:), pointer :: celldata, activdata
 
     integer(intg) :: ncells, i, d, nodeno
@@ -388,14 +394,12 @@ contains
     CALL FIELD_PARAMETER_SET_DATA_GET(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
     do i=1,ncells
-      !   field ->   y
-      do d=1,celldim
-!        nodeno = domain%ptr%topology%nodes%nodes(i)%global_number
-!        call field_parameter_set_get_node(cells,field_u_variable_type,field_values_set_type,1,nodeno,d,y(d),err,error,*999)
-        y(d) = celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
-      end do
-      ! field_parameter_set_get_node(materials,field_u_variable_type,field_values_set_type,1,nodeno,1,activ,err,error,*999)
-      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i))
+      !Default to version 1 of each node derivative
+      d = CELLS_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1)
+      y => celldata(d:d+celldim-1)
+      prev_v = y(1)
+      !Default to version 1 of each node derivative
+      activ = activdata(ACTIV_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))
       
   
       t = t0
@@ -427,12 +431,11 @@ contains
         
         t = t + dt
       end do
-      !   y -> field  
-      do d=1,celldim
- !       call field_parameter_set_update_local_node(cells,field_u_variable_type,field_values_set_type,1,i,d,y(d), err,error,*999)
-        celldata(CELLS_VARIABLE%COMPONENTS(d)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,i)) = y(d)
-      end do
-    end do
+      if(prev_v < 0 .and. y(1) > 0) then ! store activation times, where else?
+        !Default to version 1 of each node derivative
+        activdata(ACTIV_VARIABLE%COMPONENTS(7)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(i)%DERIVATIVES(1)%VERSIONS(1))=t1
+      end if
+    end do ! for cells
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 

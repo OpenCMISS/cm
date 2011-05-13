@@ -20,10 +20,12 @@
 !> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -47,7 +49,6 @@ MODULE CLASSICAL_FIELD_ROUTINES
   USE BASE_ROUTINES
   USE DIFFUSION_EQUATION_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
-  USE GALERKIN_PROJECTION_ROUTINES
   USE HELMHOLTZ_EQUATIONS_ROUTINES
   USE ISO_VARYING_STRING
   USE KINDS
@@ -155,8 +156,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE)
-        CALL GALERKIN_PROJECTION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a classical field equations set class."
@@ -208,8 +207,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-     CASE(EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE)
-        CALL GALERKIN_PROJECTION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a classical field equation set class."
@@ -261,8 +258,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a classical field equation set class."
@@ -313,8 +308,6 @@ CONTAINS
       CASE(EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
@@ -368,8 +361,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE)
-        CALL GALERKIN_PROJECTION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a classical field equation set class."
@@ -421,8 +412,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_GALERKIN_PROJECTION_EQUATION_TYPE)
-        CALL GALERKIN_PROJECTION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a classical field equations set class."
@@ -490,7 +479,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CLASSICAL_FIELD_PROBLEM_CLASS_SET",ERR,ERROR,*999)
+    CALL ENTERS("CLASSICAL_FIELD_PROBLEM_CLASS_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_EQUATION_TYPE)
@@ -510,8 +499,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(PROBLEM_BIHARMONIC_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(PROBLEM_GALERKIN_PROJECTION_TYPE)
-        CALL GALERKIN_PROJECTION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a classical field problem class."
@@ -563,8 +550,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(PROBLEM_BIHARMONIC_EQUATION_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(PROBLEM_GALERKIN_PROJECTION_TYPE)
-        CALL GALERKIN_PROJECTION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a classical field problem class."
@@ -663,7 +648,7 @@ CONTAINS
       CASE(PROBLEM_DIFFUSION_EQUATION_TYPE)
         CALL DIFFUSION_EQUATION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_ADVECTION_DIFFUSION_EQUATION_TYPE)
-        !CALL ADVECTION_DIFFUSION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+        CALL ADVECTION_DIFFUSION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE)
         !CALL REACTION_DIFFUSION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_BIHARMONIC_EQUATION_TYPE)

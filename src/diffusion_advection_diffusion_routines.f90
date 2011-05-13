@@ -1,5 +1,5 @@
 !> \file
-!> $Id: diffusion_advection_diffusion_routines.f90 851 2010-01-20 21:24:06Z chrm76 $
+!> $Id$
 !> \authors Andrew Cookson
 !> \brief This module handles all routines pertaining to diffusion coupled to diffusion.
 !>
@@ -17,13 +17,15 @@
 !> License for the specific language governing rights and limitations
 !> under the License.
 !>
-!> The Original Code is openCMISS
+!> The Original Code is OpenCMISS
 !>
 !> The Initial Developer of the Original Code is University of Auckland,
-!> Auckland, New Zealand and University of Oxford, Oxford, United
-!> Kingdom. Portions created by the University of Auckland and University
-!> of Oxford are Copyright (C) 2007 by the University of Auckland and
-!> the University of Oxford. All Rights Reserved.
+!> Auckland, New Zealand, the University of Oxford, Oxford, United
+!> Kingdom and King's College, London, United Kingdom. Portions created
+!> by the University of Auckland, the University of Oxford and King's
+!> College, London are Copyright (C) 2007-2010 by the University of
+!> Auckland, the University of Oxford and King's College, London.
+!> All Rights Reserved.
 !>
 !> Contributor(s):
 !>
@@ -62,7 +64,7 @@ MODULE DIFFUSION_ADVECTION_DIFFUSION_ROUTINES
   USE FIELD_ROUTINES
 !  USE FINITE_ELASTICITY_ROUTINES
   USE FLUID_MECHANICS_IO_ROUTINES
-!   USE GALERKIN_PROJECTION_ROUTINES !also in makefiles
+!   USE FITTING_ROUTINES !also in makefiles
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
@@ -298,7 +300,7 @@ CONTAINS
       SELECT CASE(PROBLEM%SUBTYPE)
 
       !--------------------------------------------------------------------
-      !   coupled source diffusion-diffusion
+      !   coupled source diffusion--advection-diffusion
       !--------------------------------------------------------------------
       CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE)
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
