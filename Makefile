@@ -561,7 +561,6 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
   PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/conf )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/bmake/linux-gnu-opt )
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )

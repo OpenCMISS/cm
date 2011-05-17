@@ -2408,8 +2408,6 @@ MODULE OPENCMISS
     & CMISSEquationsSetStokesEquationType,CMISSEquationsSetNavierStokesEquationType,CMISSEquationsSetDarcyEquationType, &
     & CMISSEquationsSetDarcyPressureEquationType, &
     & CMISSEquationsSetElectrostaticType,CMISSEquationsSetMagnetoStaticType,CMISSEquationsSetMaxwellsEquationType, &
-    & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetHJEquationType,CMISSEquationsSetPoissonEquationType, &
-    & CMISSEquationsSetHelmholtzEquationType, &
     & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetPoiseuilleEquationType,CMISSEquationsSetPoissonEquationType, &
     & CMISSEquationsSetHelmholtzEquationType, CMISSEquationsSetHJEquationType &
     & CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetAdvectionDiffusionEquationType, &
@@ -2439,8 +2437,6 @@ MODULE OPENCMISS
     & CMISSEquationsSet1DTransientNavierStokesSubtype, &
     & CMISSEquationsSetOptimisedNavierStokesSubtype,CMISSEquationsSetStandardDarcySubtype, &
     & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype,CMISSEquationsSetTransientDarcySubtype, &
-    & CMISSEquationsSetTransientALEDarcySubtype,CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
-    & CMISSEquationsSetGeneralisedLaplaceSubtype,,CMISSEquationsSetConstantSourcePoissonSubtype, &
     & CMISSEquationsSetTransientALEDarcySubtype,CMISSEquationsSetMultiCompartmentDarcySubtype, &
     & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
     & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetStaticPoiseuilleSubtype, &
