@@ -78,10 +78,12 @@ endif
 
 ifndef USECELLML
   USECELLML := false
+  #USECELLML := true
 endif
 
 ifndef USEFIELDML
   USEFIELDML := false
+#  USEFIELDML := true
 endif
 
 ifndef USEPROCPOINTER
