@@ -10484,6 +10484,7 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSBoundaryConditionsAddConstantNumber",Err,ERROR,*999)
@@ -10494,9 +10495,15 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
     IF(ASSOCIATED(REGION)) THEN
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
-       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-         CALL BOUNDARY_CONDITIONS_ADD_CONSTANT(BOUNDARY_CONDITIONS,VariableType,ComponentNumber,Condition,Value,Err,ERROR,*999)
+      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+        CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          CALL BOUNDARY_CONDITIONS_ADD_CONSTANT(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,VariableType,ComponentNumber,Condition,Value, &
+            & Err,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10521,10 +10528,11 @@ CONTAINS
   !
   
   !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsAddConstantObj(BoundaryConditions,VariableType,ComponentNumber,Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsAddConstantObj(BoundaryConditions,Field,VariableType,ComponentNumber,Condition,Value,Err)
     
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the constant to.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to set the boundary condition on.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at.
     INTEGER(INTG), INTENT(IN) :: Condition !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
@@ -10534,8 +10542,8 @@ CONTAINS
     
     CALL ENTERS("CMISSBoundaryConditionsAddConstantObj",Err,ERROR,*999)
   
-    CALL BOUNDARY_CONDITIONS_ADD_CONSTANT(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,ComponentNumber,Condition,Value, &
-      & Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_ADD_CONSTANT(BoundaryConditions%BOUNDARY_CONDITIONS,Field%FIELD,VariableType,ComponentNumber, &
+      & Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsAddConstantObj")
     RETURN
@@ -10566,6 +10574,7 @@ CONTAINS
     !Local variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -10579,7 +10588,13 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_SET_CONSTANT(BOUNDARY_CONDITIONS,VariableType,ComponentNumber,Condition,Value,Err,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          CALL BOUNDARY_CONDITIONS_SET_CONSTANT(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,VariableType,ComponentNumber,Condition,Value, &
+            & Err,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10604,10 +10619,11 @@ CONTAINS
   !
   
   !>Sets the value of the specified constant and sets this as a boundary condition on the specified constant for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsSetConstantObj(BoundaryConditions,VariableType,ComponentNumber,Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsSetConstantObj(BoundaryConditions,Field,VariableType,ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to set the constant to.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to set the boundary condition on.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at.
     INTEGER(INTG), INTENT(IN) :: Condition !<The boundary condition type to set \see OPENCMISS_BoundaryConditions,OPENCMISS
@@ -10617,8 +10633,8 @@ CONTAINS
     
     CALL ENTERS("CMISSBoundaryConditionsSetConstantObj",ERR,ERROR,*999)
   
-    CALL BOUNDARY_CONDITIONS_SET_CONSTANT(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,ComponentNumber,Condition,Value, &
-      & Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_SET_CONSTANT(BoundaryConditions%BOUNDARY_CONDITIONS,Field%FIELD,VariableType,ComponentNumber, &
+      & Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsSetConstantObj")
     RETURN
@@ -10649,6 +10665,7 @@ CONTAINS
     !Local variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -10662,8 +10679,13 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_ADD_ELEMENT(BOUNDARY_CONDITIONS,VariableType,ElementUserNumber,ComponentNumber,Condition,Value, &
-          & Err,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          CALL BOUNDARY_CONDITIONS_ADD_ELEMENT(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,VariableType,ElementUserNumber,ComponentNumber, &
+            & Condition,Value,Err,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10688,11 +10710,12 @@ CONTAINS
   !
   
   !>Adds to the value of the specified element and sets this as a boundary condition on the specified element for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsAddElementObj(BoundaryConditions,VariableType,ElementUserNumber,ComponentNumber, &
+  SUBROUTINE CMISSBoundaryConditionsAddElementObj(BoundaryConditions,Field,VariableType,ElementUserNumber,ComponentNumber, &
     & Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the element to.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to set the boundary condition on.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: ElementUserNumber !<The user number of the element to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at.
@@ -10703,8 +10726,8 @@ CONTAINS
 
     CALL ENTERS("CMISSBoundaryConditionsAddElementObj",Err,ERROR,*999)
 
-    CALL BOUNDARY_CONDITIONS_ADD_ELEMENT(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,ElementUserNumber,ComponentNumber, &
-      & Condition,Value,Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_ADD_ELEMENT(BoundaryConditions%BOUNDARY_CONDITIONS,Field%FIELD,VariableType,ElementUserNumber, &
+      & ComponentNumber,Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsAddElementObj")
     RETURN
@@ -10735,6 +10758,7 @@ CONTAINS
     !Local variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -10748,8 +10772,13 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_SET_ELEMENT(BOUNDARY_CONDITIONS,VariableType,ElementUserNumber,ComponentNumber,Condition,Value, &
-          & Err,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          CALL BOUNDARY_CONDITIONS_SET_ELEMENT(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,VariableType,ElementUserNumber,ComponentNumber, &
+            & Condition,Value,Err,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10774,11 +10803,12 @@ CONTAINS
   !
   
   !>Sets the value of the specified element and sets this as a boundary condition on the specified elements for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsSetElementObj(BoundaryConditions,VariableType,ElementUserNumber,ComponentNumber, &
+  SUBROUTINE CMISSBoundaryConditionsSetElementObj(BoundaryConditions,Field,VariableType,ElementUserNumber,ComponentNumber, &
     & Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to set the element to.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to set the boundary condition on.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: ElementUserNumber !<The user number of the element to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at.
@@ -10789,8 +10819,8 @@ CONTAINS
 
     CALL ENTERS("CMISSBoundaryConditionsSetElementObj",Err,ERROR,*999)
     
-    CALL BOUNDARY_CONDITIONS_SET_ELEMENT(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,ElementUserNumber,ComponentNumber, &
-      & Condition,Value,Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_SET_ELEMENT(BoundaryConditions%BOUNDARY_CONDITIONS,Field%FIELD,VariableType,ElementUserNumber, &
+      & ComponentNumber,Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsSetElementObj")
     RETURN
@@ -10823,6 +10853,7 @@ CONTAINS
     !Local variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -10836,8 +10867,13 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-          & ComponentNumber,Condition,Value,Err,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          CALL BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+            & ComponentNumber,Condition,Value,Err,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10862,11 +10898,12 @@ CONTAINS
   !
   
   !>Adds to the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsAddNodeObj(BoundaryConditions,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber, Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsAddNodeObj(BoundaryConditions,Field,VariableType,VersionNumber,DerivativeNumber, &
+      & NodeUserNumber,ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to set the boundary condition on.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: VersionNumber !<The user number of the node derivative version to add the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to add the boundary conditions for.
@@ -10879,8 +10916,8 @@ CONTAINS
 
     CALL ENTERS("CMISSBoundaryConditionsAddNodeObj",Err,ERROR,*999)
     
-    CALL BOUNDARY_CONDITIONS_ADD_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber, &
-      & NodeUserNumber, ComponentNumber,Condition,Value,Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_ADD_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,Field%FIELD,VariableType,VersionNumber, &
+      & DerivativeNumber,NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsAddNodeObj")
     RETURN
@@ -10913,6 +10950,7 @@ CONTAINS
     !Local variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -10926,8 +10964,13 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-          & ComponentNumber,Condition,Value,Err,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,VariableType,VersionNumber,DerivativeNumber, &
+            & NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10952,11 +10995,12 @@ CONTAINS
   !
   
   !>Sets the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsSetNodeObj(BoundaryConditions,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber, Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsSetNodeObj(BoundaryConditions,Field,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+    & ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to set the node to.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to set the boundary condition on.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: VersionNumber !<The user number of the node derivative version to set the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to set the boundary conditions for.
@@ -10969,8 +11013,8 @@ CONTAINS
   
     CALL ENTERS("CMISSBoundaryConditionsSetNodeObj",Err,ERROR,*999)
     
-    CALL BOUNDARY_CONDITIONS_SET_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber, &
-      & NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_SET_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,Field%FIELD,VariableType,VersionNumber, &
+      & DerivativeNumber,NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsSetNodeObj")
     RETURN
@@ -10987,7 +11031,7 @@ CONTAINS
 
   !>Sets the value of the specified dof as a boundary condition on the specified dof for boundary conditions identified by a user number.
   SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryNumber(RegionUserNumber,EquationsSetUserNumber,&
-                                                                   & VariableType,DOFNumber,Value,Condition,Err)
+    & VariableType,DOFNumber,Value,Condition,Err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for.
@@ -11000,9 +11044,10 @@ CONTAINS
     !Local variables
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-  
+
     CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryNumber",Err,ERROR,*999)
 
     NULLIFY(REGION)
@@ -11013,7 +11058,13 @@ CONTAINS
       CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
-        CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,Condition,Err,ERROR,*999)
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,VariableType,DOFNumber,Value,Condition, &
+            & Err,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
+        ENDIF
       ELSE
         LOCAL_ERROR="An equations set with a user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -11038,10 +11089,11 @@ CONTAINS
   !
 
   !>Sets the value of the specified dof and sets this as a boundary condition on the specified dof for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj(BoundaryConditions,VariableType,DOFNumber,Value,Condition,Err)
+  SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj(BoundaryConditions,Field,VariableType,DOFNumber,Value,Condition,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
+    TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to set the boundary condition on.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at. 
     INTEGER(INTG), INTENT(IN) :: DOFNumber(:) !<The number of the dof to set the boundary conditions for.
     REAL(DP), INTENT(IN) :: Value(:) !<The value of the boundary condition to add.
@@ -11051,8 +11103,8 @@ CONTAINS
   
     CALL ENTERS("CMISSBoundaryConditionsAddDOFToBoundaryObj",Err,ERROR,*999)
 
-    CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,DOFNumber,Value,&
-                                                                                           & Condition,Err,ERROR,*999)
+    CALL BOUNDARY_CONDITIONS_BOUNDARY_ADD_DOF(BoundaryConditions%BOUNDARY_CONDITIONS,Field%FIELD,VariableType,DOFNumber,Value,&
+       & Condition,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsAddDOFToBoundaryObj")
     RETURN
