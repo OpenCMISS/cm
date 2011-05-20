@@ -5904,7 +5904,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_EQUATIONS_CREATE_FINISH",ERR,ERROR,*998)
 
@@ -10352,8 +10351,8 @@ CONTAINS
                                         RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
                                         RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
                                         EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
-                                        RHS_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-                                          & rhs_variable_type)%PTR
+                                        CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
+                                          & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                         IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
 
                                           !Call SOLVER_NEUMANN_CALCULATE to check whether any Neumann boundary conditions
@@ -10505,8 +10504,8 @@ CONTAINS
                                                       & variable_type)%VARIABLE
                                                     DEPENDENT_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
                                                     VARIABLE_DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
-                                                    DEPENDENT_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS% &
-                                                      & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(DEPENDENT_VARIABLE_TYPE)%PTR
+                                                    CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE, &
+                                                      & DEPENDENT_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                                     variable_dof=DYNAMIC_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
                                                       & equations_row_number)
                                                     variable_global_dof=VARIABLE_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
@@ -10647,7 +10646,7 @@ CONTAINS
                                                               CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                                                 SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
                                                                   & DIRICHLET_BOUNDARY_CONDITIONS%DYNAMIC_SPARSITY_INDICES( &
-                                                                  & equations_matrix_idx)%PTR
+                                                                  & equations_set_idx,equations_matrix_idx)%PTR
                                                                 IF(ASSOCIATED(SPARSITY_INDICES)) THEN
                                                                   DO equations_row_number2=SPARSITY_INDICES% & 
                                                                     & SPARSE_COLUMN_INDICES(dirichlet_idx), &
@@ -11567,8 +11566,8 @@ CONTAINS
                                     RHS_VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
                                     RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
                                     EQUATIONS_RHS_VECTOR=>RHS_VECTOR%VECTOR
-                                    RHS_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-                                      & RHS_VARIABLE_TYPE)%PTR
+                                    CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
+                                      & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                     IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
 
                                       !Call SOLVER_NEUMANN_CALCULATE to check whether any Neumann boundary conditions
@@ -11631,8 +11630,8 @@ CONTAINS
                                                 & variable_type)%VARIABLE
                                               DEPENDENT_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
                                               VARIABLE_DOMAIN_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
-                                              DEPENDENT_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS% &
-                                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(DEPENDENT_VARIABLE_TYPE)%PTR
+                                              CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE, &
+                                                & DEPENDENT_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
                                               variable_dof=LINEAR_MAPPING%EQUATIONS_ROW_TO_VARIABLE_DOF_MAPS( &
                                                 & equations_row_number,variable_idx)
                                               variable_global_dof=VARIABLE_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
@@ -11723,7 +11722,7 @@ CONTAINS
                                                         CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                                           SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
                                                             & DIRICHLET_BOUNDARY_CONDITIONS%LINEAR_SPARSITY_INDICES( &
-                                                            & equations_matrix_idx)%PTR
+                                                            & equations_set_idx,equations_matrix_idx)%PTR
                                                           IF(ASSOCIATED(SPARSITY_INDICES)) THEN
                                                             DO equations_row_number2=SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
                                                               & dirichlet_idx),SPARSITY_INDICES%SPARSE_COLUMN_INDICES( &
@@ -16715,8 +16714,8 @@ CONTAINS
         RHS_VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
         RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
         IF(ASSOCIATED(RHS_DOMAIN_MAPPING)) THEN
-          RHS_BOUNDARY_CONDITIONS=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-            & RHS_VARIABLE_TYPE)%PTR
+          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE, &
+            & RHS_BOUNDARY_CONDITIONS,ERR,ERROR,*999)
           IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
 
 
@@ -16739,7 +16738,7 @@ CONTAINS
                 !Iterate over components u,v,w,p
                 DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
 
-                  CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS, &
+                  CALL BOUNDARY_CONDITIONS_INTEGRATED_CALCULATE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
                     & RHS_VARIABLE_TYPE,component_idx,ERR,ERROR,*999)
 
                   !Locate calculated value at dof
