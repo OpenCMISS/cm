@@ -1186,7 +1186,8 @@ CONTAINS
                     CALL LIST_ITEM_ADD(VARIABLES_LIST(variable_position_idx)%PTR,VARIABLE_LIST_ITEM,ERR,ERROR,*999)
                     COL_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
                     IF(ASSOCIATED(COL_DOFS_MAPPING)) THEN
-                      BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
+                      CALL BOUNDARY_CONDITIOSN_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE, &
+                        & ERR,ERROR,*999)
                       IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                         SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                           & solver_matrix_idx)%VARIABLE_TYPES(variable_idx)=variable_type
@@ -1479,8 +1480,8 @@ CONTAINS
                         IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                           COL_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
                           IF(ASSOCIATED(COL_DOFS_MAPPING)) THEN
-                            BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP( &
-                              & variable_type)%PTR
+                            CALL BOUNDARY_CONDITIOSN_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE, &
+                              & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                             IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                               !Setup
                               SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
@@ -1870,7 +1871,8 @@ CONTAINS
 
                 DEPENDENT_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                 COL_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
-                BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
+                CALL BOUNDARY_CONDITIOSN_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE, &
+                  & ERR,ERROR,*999)
                 IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                   !Allocate dynamic equations to solver matrix maps equations column to solver columns maps
                   DO equations_matrix_idx=1,NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES
@@ -2088,7 +2090,8 @@ CONTAINS
                         DEPENDENT_VARIABLE=>SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%VARIABLES(solver_variable_idx)% &
                           & VARIABLE
                         COL_DOFS_MAPPING=>DEPENDENT_VARIABLE%DOMAIN_MAPPING
-                        BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR
+                        CALL BOUNDARY_CONDITIOSN_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE, &
+                          & ERR,ERROR,*999)
                         
                         DO global_dof_idx=1,NUMBER_OF_RANK_COLS
                           global_dof=RANK_GLOBAL_COLS_LIST(1,global_dof_idx)
