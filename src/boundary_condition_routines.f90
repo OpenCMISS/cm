@@ -155,7 +155,7 @@ CONTAINS
     INTEGER(INTG) :: MPI_IERROR,SEND_COUNT,NUMBER_OF_DIRICHLET_CONDITIONS, STORAGE_TYPE, NUMBER_OF_NON_ZEROS, NUMBER_OF_ROWS,COUNT
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS,NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS,pressure_incremented_idx
     INTEGER(INTG) :: NUMBER_OF_IMPERMEABILITY_CONDITIONS
-    INTEGER(INTG) :: variable_idx,dof_idx, equ_matrix_idx, dirichlet_idx, sparse_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
+    INTEGER(INTG) :: variable_idx,dof_idx, equ_matrix_idx, dirichlet_idx, row_idx, DUMMY, LAST, DIRICHLET_DOF
     INTEGER(INTG) :: col_idx,equations_set_idx
     INTEGER(INTG), POINTER :: ROW_INDICES(:), COLUMN_INDICES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITION_VARIABLE
@@ -180,7 +180,7 @@ CONTAINS
 
     IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
       IF(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Boundary conditions have already been finished.",ERR,ERROR,*999)        
+        CALL FLAG_ERROR("Boundary conditions have already been finished.",ERR,ERROR,*999)
       ELSE
         IF(ALLOCATED(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)) THEN
           IF(COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES>0) THEN
@@ -332,13 +332,13 @@ CONTAINS
                                           NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
                                           ! Initialise sparsity indices arrays
                                           CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
-                                            & LINEAR_SPARSITY_INDICES(equ_matrix_idx)%PTR,BOUNDARY_CONDITION_VARIABLE% &
-                                            & NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
+                                            & LINEAR_SPARSITY_INDICES(equations_set_idx,equ_matrix_idx)%PTR, &
+                                            & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
 
                                           ! Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
                                           NULLIFY(SPARSITY_INDICES)
                                           SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%LINEAR_SPARSITY_INDICES( &
-                                              & equ_matrix_idx)%PTR
+                                              & equations_set_idx,equ_matrix_idx)%PTR
                                           IF(ASSOCIATED(SPARSITY_INDICES)) THEN
                                             ! Setup list for storing dirichlet non zero indices
                                             NULLIFY(SPARSE_INDICES)
@@ -412,13 +412,13 @@ CONTAINS
                                           NUMBER_OF_ROWS=EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS
                                           ! Intialise sparsity indices arrays
                                           CALL BOUNDARY_CONDITIONS_SPARSITY_INDICES_INITIALISE(BOUNDARY_CONDITIONS_DIRICHLET% &
-                                            & DYNAMIC_SPARSITY_INDICES(equ_matrix_idx)%PTR,BOUNDARY_CONDITION_VARIABLE% &
-                                            & NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
+                                            & DYNAMIC_SPARSITY_INDICES(equations_set_idx,equ_matrix_idx)%PTR, &
+                                            & BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS,ERR,ERROR,*999)
 
                                           ! Find dirichlet columns and store the non zero indices (with respect to the 1D storage array)
                                           NULLIFY(SPARSITY_INDICES)
                                           SPARSITY_INDICES=>BOUNDARY_CONDITIONS_DIRICHLET%DYNAMIC_SPARSITY_INDICES( &
-                                              & equ_matrix_idx)%PTR
+                                              & equations_set_idx,equ_matrix_idx)%PTR
                                           IF(ASSOCIATED(SPARSITY_INDICES)) THEN
                                             ! Setup list for storing dirichlet non zero indices
                                             NULLIFY(SPARSE_INDICES)
@@ -1402,7 +1402,6 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: local_ny,global_ny
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1755,7 +1754,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: TOPOLOGY !<Pointer to Topology
     TYPE(DOMAIN_FACES_TYPE), POINTER :: DOMAIN_FACES
     TYPE(DOMAIN_LINES_TYPE), POINTER :: DOMAIN_LINES
@@ -3565,9 +3563,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,variable_idx
-    TYPE(FIELD_VARIABLE_TYPE) :: VARIABLE
     TYPE(DOMAIN_MAPPING_TYPE), POINTER :: VARIABLE_DOMAIN_MAPPING
-    TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: NEW_BOUNDARY_CONDITIONS_VARIABLES(:)
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
 
