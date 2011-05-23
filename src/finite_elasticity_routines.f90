@@ -169,290 +169,294 @@ CONTAINS
               & ERR,ERROR,*999)
             !Assign BC here - it's complicated so separate from analytic calculations
             NULLIFY(BOUNDARY_CONDITIONS)
-            CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
-            IF(ASSOCIATED(DECOMPOSITION)) THEN
-              MESH=>DECOMPOSITION%MESH
-              IF(ASSOCIATED(MESH)) THEN
-                GENERATED_MESH=>MESH%GENERATED_MESH
-                IF(ASSOCIATED(GENERATED_MESH)) THEN
-                  NODES_MAPPING=>DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES   !HACK - ALL CHECKING INTERMEDIATE SKIPPED
-                  IF(ASSOCIATED(NODES_MAPPING)) THEN
-                    !Get surfaces (hardcoded): fix two nodes on the bottom face, pressure conditions inside & outside
-                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,1_INTG, &
-                        & INNER_SURFACE_NODES,INNER_NORMAL_XI,ERR,ERROR,*999) !Inner
-                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,2_INTG, &
-                        & OUTER_SURFACE_NODES,OUTER_NORMAL_XI,ERR,ERROR,*999) !Outer
-                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,3_INTG, &
-                        & TOP_SURFACE_NODES,TOP_NORMAL_XI,ERR,ERROR,*999) !Top
-                    CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,4_INTG, &
-                        & BOTTOM_SURFACE_NODES,BOTTOM_NORMAL_XI,ERR,ERROR,*999) !Bottom
-                    !Set all inner surface nodes to inner pressure (- sign is to make positive P into a compressive force) ?
-                    PIN=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX)
-                    DO node_idx=1,SIZE(INNER_SURFACE_NODES,1)
-                      user_node=INNER_SURFACE_NODES(node_idx)
-                      !Need to test if this node is in current decomposition
-                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
-                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        !Default to version 1 of each node derivative
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
-                          & user_node,ABS(INNER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,PIN,ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
-                    !Set all outer surface nodes to outer pressure
-                    POUT=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX)
-                    DO node_idx=1,SIZE(OUTER_SURFACE_NODES,1)
-                      user_node=OUTER_SURFACE_NODES(node_idx)
-                      !Need to test if this node is in current decomposition
-                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
-                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        !Default to version 1 of each node derivative
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
-                          & user_node,ABS(OUTER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,POUT,ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
-                    !Set all top nodes fixed in z plane at lambda*height
-                    LAMBDA=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX)
-                    DO node_idx=1,SIZE(TOP_SURFACE_NODES,1)
-                      user_node=TOP_SURFACE_NODES(node_idx)
-                      !Need to test if this node is in current decomposition
-                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
-                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
-                        IF(.NOT.NODE_EXISTS) CYCLE
-                        CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                        !Default to version 1 of each node derivative
-                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
-                          & DERIVATIVES(1)%VERSIONS(1)
-                        DEFORMED_Z=GEOMETRIC_PARAMETERS(local_ny)*LAMBDA
-                        !Default to version 1 of each node derivative
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
-                          & user_node,ABS(TOP_NORMAL_XI),BOUNDARY_CONDITION_FIXED,DEFORMED_Z,ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
-                    !Set all bottom nodes fixed in z plane
-                    DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
-                      user_node=BOTTOM_SURFACE_NODES(node_idx)
-                      !Need to check this node exists in the current domain
-                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
-                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        !Default to version 1 of each node derivative
-                        CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
-                          & user_node,ABS(BOTTOM_NORMAL_XI),BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
-                      ENDIF
-                    ENDDO
-                    !Set two nodes on the bottom surface to axial displacement only:
-                    !Easier for parallel: Fix everything that can be fixed !!!
-                    X_FIXED=.FALSE.
-                    Y_FIXED=.FALSE.
-                    DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
-                      user_node=BOTTOM_SURFACE_NODES(node_idx)
-                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
-                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                        CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
-                        IF(.NOT.NODE_EXISTS) CYCLE
-                        CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
-                        !Default to version 1 of each node derivative
-                        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
-                          & DERIVATIVES(1)%VERSIONS(1)
-                        X(1)=GEOMETRIC_PARAMETERS(local_ny)
+            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+              IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+              DECOMPOSITION=>DEPENDENT_FIELD%DECOMPOSITION
+              IF(ASSOCIATED(DECOMPOSITION)) THEN
+                MESH=>DECOMPOSITION%MESH
+                IF(ASSOCIATED(MESH)) THEN
+                  GENERATED_MESH=>MESH%GENERATED_MESH
+                  IF(ASSOCIATED(GENERATED_MESH)) THEN
+                    NODES_MAPPING=>DECOMPOSITION%DOMAIN(1)%PTR%MAPPINGS%NODES   !HACK - ALL CHECKING INTERMEDIATE SKIPPED
+                    IF(ASSOCIATED(NODES_MAPPING)) THEN
+                      !Get surfaces (hardcoded): fix two nodes on the bottom face, pressure conditions inside & outside
+                      CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,1_INTG, &
+                          & INNER_SURFACE_NODES,INNER_NORMAL_XI,ERR,ERROR,*999) !Inner
+                      CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,2_INTG, &
+                          & OUTER_SURFACE_NODES,OUTER_NORMAL_XI,ERR,ERROR,*999) !Outer
+                      CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,3_INTG, &
+                          & TOP_SURFACE_NODES,TOP_NORMAL_XI,ERR,ERROR,*999) !Top
+                      CALL GENERATED_MESH_SURFACE_GET(GENERATED_MESH,MESH_COMPONENT,4_INTG, &
+                          & BOTTOM_SURFACE_NODES,BOTTOM_NORMAL_XI,ERR,ERROR,*999) !Bottom
+                      !Set all inner surface nodes to inner pressure (- sign is to make positive P into a compressive force) ?
+                      PIN=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX)
+                      DO node_idx=1,SIZE(INNER_SURFACE_NODES,1)
+                        user_node=INNER_SURFACE_NODES(node_idx)
+                        !Need to test if this node is in current decomposition
+                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                          !Default to version 1 of each node derivative
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
+                            & user_node,ABS(INNER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,PIN,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
+                      !Set all outer surface nodes to outer pressure
+                      POUT=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX)
+                      DO node_idx=1,SIZE(OUTER_SURFACE_NODES,1)
+                        user_node=OUTER_SURFACE_NODES(node_idx)
+                        !Need to test if this node is in current decomposition
+                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                          !Default to version 1 of each node derivative
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1,1, &
+                            & user_node,ABS(OUTER_NORMAL_XI),BOUNDARY_CONDITION_PRESSURE_INCREMENTED,POUT,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
+                      !Set all top nodes fixed in z plane at lambda*height
+                      LAMBDA=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX)
+                      DO node_idx=1,SIZE(TOP_SURFACE_NODES,1)
+                        user_node=TOP_SURFACE_NODES(node_idx)
+                        !Need to test if this node is in current decomposition
+                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
                           CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
                           IF(.NOT.NODE_EXISTS) CYCLE
                           CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
                           !Default to version 1 of each node derivative
-                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
-                          & DERIVATIVES(1)%VERSIONS(1)
-                        X(2)=GEOMETRIC_PARAMETERS(local_ny)
-                        IF(ABS(X(1))<1E-7_DP) THEN
+                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(3)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                            & DERIVATIVES(1)%VERSIONS(1)
+                          DEFORMED_Z=GEOMETRIC_PARAMETERS(local_ny)*LAMBDA
                           !Default to version 1 of each node derivative
-                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
-                            & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,1, &
+                            & user_node,ABS(TOP_NORMAL_XI),BOUNDARY_CONDITION_FIXED,DEFORMED_Z,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
+                      !Set all bottom nodes fixed in z plane
+                      DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
+                        user_node=BOTTOM_SURFACE_NODES(node_idx)
+                        !Need to check this node exists in the current domain
+                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                          !Default to version 1 of each node derivative
+                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,1, &
+                            & user_node,ABS(BOTTOM_NORMAL_XI),BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
+                      !Set two nodes on the bottom surface to axial displacement only:
+                      !Easier for parallel: Fix everything that can be fixed !!!
+                      X_FIXED=.FALSE.
+                      Y_FIXED=.FALSE.
+                      DO node_idx=1,SIZE(BOTTOM_SURFACE_NODES,1)
+                        user_node=BOTTOM_SURFACE_NODES(node_idx)
+                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node,1,DOMAIN_NUMBER,ERR,ERROR,*999)
+                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+                          IF(.NOT.NODE_EXISTS) CYCLE
+                          CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node,ERR,ERROR,*999)
+                          !Default to version 1 of each node derivative
+                          local_ny=GEOMETRIC_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                            & DERIVATIVES(1)%VERSIONS(1)
+                          X(1)=GEOMETRIC_PARAMETERS(local_ny)
+                            CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,1,user_node,NODE_EXISTS,global_node,ERR,ERROR,*999)
+                            IF(.NOT.NODE_EXISTS) CYCLE
+                            CALL DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET(NODES_MAPPING,global_node,NODE_EXISTS,local_node, &
+                              & ERR,ERROR,*999)
+                            !Default to version 1 of each node derivative
+                            local_ny=GEOMETRIC_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(local_node)% &
+                            & DERIVATIVES(1)%VERSIONS(1)
+                          X(2)=GEOMETRIC_PARAMETERS(local_ny)
+                          IF(ABS(X(1))<1E-7_DP) THEN
+                            !Default to version 1 of each node derivative
+                            CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,1, &
+                              & user_node,1,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
 !                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
 !                             & "FIXED IN X DIRECTION"
-                          X_FIXED=.TRUE.
-                        ENDIF
-                        IF(ABS(X(2))<1E-7_DP) THEN
-                          !Default to version 1 of each node derivative
-                          CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,FIELD_U_VARIABLE_TYPE,1,1, &
-                            & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
+                            X_FIXED=.TRUE.
+                          ENDIF
+                          IF(ABS(X(2))<1E-7_DP) THEN
+                            !Default to version 1 of each node derivative
+                            CALL BOUNDARY_CONDITIONS_SET_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1,1, &
+                              & user_node,2,BOUNDARY_CONDITION_FIXED,0.0_DP,ERR,ERROR,*999)
 !                           WRITE(*,*) "COMPUTATIONAL NODE ",MY_COMPUTATIONAL_NODE_NUMBER," user node",user_node, &
 !                             & "FIXED IN Y DIRECTION"
-                          Y_FIXED=.TRUE.
+                            Y_FIXED=.TRUE.
+                          ENDIF
+                        ENDIF
+                      ENDDO
+                      !Check it went well
+                      CALL MPI_REDUCE(X_FIXED,X_OKAY,1,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,MPI_IERROR)
+                      CALL MPI_REDUCE(Y_FIXED,Y_OKAY,1,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,MPI_IERROR)
+                      IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
+                        IF(.NOT.(X_OKAY.AND.Y_OKAY)) THEN
+                          CALL FLAG_ERROR("Could not fix nodes to prevent rigid body motion",ERR,ERROR,*999)
                         ENDIF
                       ENDIF
-                    ENDDO
-                    !Check it went well
-                    CALL MPI_REDUCE(X_FIXED,X_OKAY,1,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,MPI_IERROR)
-                    CALL MPI_REDUCE(Y_FIXED,Y_OKAY,1,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,MPI_IERROR)
-                    IF(MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
-                      IF(.NOT.(X_OKAY.AND.Y_OKAY)) THEN
-                        CALL FLAG_ERROR("Could not fix nodes to prevent rigid body motion",ERR,ERROR,*999)
-                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Domain nodes mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Domain nodes mapping is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Generated mesh is not associated. For the Cylinder analytic solution, "// &
+                      & "it must be available for automatic boundary condition assignment",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Generated mesh is not associated. For the Cylinder analytic solution, it must be available "// &
-                    & "for automatic boundary condition assignment",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Mesh is not associated",ERR,ERROR,*999)
+                CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
               ENDIF
-            ELSE
-              CALL FLAG_ERROR("Decomposition is not associated",ERR,ERROR,*999)
-            ENDIF
 
-            !Now calculate analytic solution
-            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-              IF(variable_idx==1) CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Global number of dofs : ", &
-                & FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
-              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                component_idx=1 !Assuming components 1..3 use a common mesh component and 4 uses a different one
-                IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                  DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                  IF(ASSOCIATED(DOMAIN)) THEN
-                    IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                      DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                      IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                        !Also grab the equivalent pointer for pressure component
-                        IF(FIELD_VARIABLE%COMPONENTS(4)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                          DOMAIN_PRESSURE=>FIELD_VARIABLE%COMPONENTS(4)%DOMAIN
-                          IF(ASSOCIATED(DOMAIN_PRESSURE)) THEN
-                            IF(ASSOCIATED(DOMAIN_PRESSURE%TOPOLOGY)) THEN
-                              DOMAIN_PRESSURE_NODES=>DOMAIN_PRESSURE%TOPOLOGY%NODES
-                                IF(ASSOCIATED(DOMAIN_PRESSURE_NODES)) THEN
+              !Now calculate analytic solution
+              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                IF(variable_idx==1) CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Global number of dofs : ", &
+                  & FIELD_VARIABLE%NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
+                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  component_idx=1 !Assuming components 1..3 use a common mesh component and 4 uses a different one
+                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                    IF(ASSOCIATED(DOMAIN)) THEN
+                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                          !Also grab the equivalent pointer for pressure component
+                          IF(FIELD_VARIABLE%COMPONENTS(4)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                            DOMAIN_PRESSURE=>FIELD_VARIABLE%COMPONENTS(4)%DOMAIN
+                            IF(ASSOCIATED(DOMAIN_PRESSURE)) THEN
+                              IF(ASSOCIATED(DOMAIN_PRESSURE%TOPOLOGY)) THEN
+                                DOMAIN_PRESSURE_NODES=>DOMAIN_PRESSURE%TOPOLOGY%NODES
+                                  IF(ASSOCIATED(DOMAIN_PRESSURE_NODES)) THEN
 
-                                !Loop over the local nodes excluding the ghosts.
-                                DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                  !!TODO \todo We should interpolate the geometric field here and the node position.
-                                  DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                    !Default to version 1 of each node derivative
-                                    local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                      & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
-                                    X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                                  ENDDO !dim_idx
-                                  !Loop over the derivatives
-                                  DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                    SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                                    CASE(EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER)
-                                      !Cylinder inflation, extension, torsion
-                                      SELECT CASE(variable_type)
-                                      CASE(FIELD_U_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !Do all components at the same time (r,theta,z)->(x,y,z) & p
-                                          CALL FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X, &
-                                            & EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS,DEFORMED_X,P,ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                        END SELECT
-                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          !Not implemented, but don't want to cause an error so do nothing
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                  !Loop over the local nodes excluding the ghosts.
+                                  DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                    !!TODO \todo We should interpolate the geometric field here and the node position.
+                                    DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                      !Default to version 1 of each node derivative
+                                      local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                        & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
+                                      X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                                    ENDDO !dim_idx
+                                    !Loop over the derivatives
+                                    DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                      SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                                      CASE(EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER)
+                                        !Cylinder inflation, extension, torsion
+                                        SELECT CASE(variable_type)
+                                        CASE(FIELD_U_VARIABLE_TYPE)
+                                          SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            !Do all components at the same time (r,theta,z)->(x,y,z) & p
+                                            CALL FINITE_ELASTICITY_CYLINDER_ANALYTIC_CALCULATE(X, &
+                                              & EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS,DEFORMED_X,P,ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          END SELECT
+                                        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                          SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            !Not implemented, but don't want to cause an error so do nothing
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                                & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          END SELECT
+                                        CASE DEFAULT
+                                          LOCAL_ERROR="The variable type "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR)) &
+                                            & //" is invalid."
                                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
-                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR)) &
-                                          & //" is invalid."
+                                        LOCAL_ERROR="The analytic function type of "// &
+                                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                          & " is invalid."
                                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The analytic function type of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                                        & " is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                    END SELECT
-                                    !Set the analytic solution to parameter set
-                                    DO component_idx=1,NUMBER_OF_DIMENSIONS
-                                      !Default to version 1 of each node derivative
-                                      local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                        & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,DEFORMED_X(component_idx),ERR,ERROR,*999)
-                                    ENDDO
-                                    !Don't forget the pressure component
-                                    user_node=DOMAIN_NODES%NODES(node_idx)%USER_NUMBER
-                                    CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,DOMAIN_PRESSURE%MESH_COMPONENT_NUMBER,user_node, &
-                                      & NODE_EXISTS,global_node,ERR,ERROR,*999)
-                                    IF(NODE_EXISTS) THEN
-                                      CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node, &
-                                        & DOMAIN_PRESSURE%MESH_COMPONENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*999)
-                                      IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
-                                        !\todo: test the domain node mappings pointer properly
-                                        local_node=DOMAIN_PRESSURE%mappings%nodes%global_to_local_map(global_node)%local_number(1)
+                                      !Set the analytic solution to parameter set
+                                      DO component_idx=1,NUMBER_OF_DIMENSIONS
                                         !Default to version 1 of each node derivative
-                                        local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                          & NODES(local_node)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                        !Because p=2.lambda in this particular constitutive law, we'll assign half the 
-                                        !hydrostatic pressure to the analytic array
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                          & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,P/2.0_dp,ERR,ERROR,*999)
+                                          & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,DEFORMED_X(component_idx),ERR,ERROR,*999)
+                                      ENDDO
+                                      !Don't forget the pressure component
+                                      user_node=DOMAIN_NODES%NODES(node_idx)%USER_NUMBER
+                                      CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS(MESH,DOMAIN_PRESSURE%MESH_COMPONENT_NUMBER,user_node, &
+                                        & NODE_EXISTS,global_node,ERR,ERROR,*999)
+                                      IF(NODE_EXISTS) THEN
+                                        CALL DECOMPOSITION_NODE_DOMAIN_GET(DECOMPOSITION,user_node, &
+                                          & DOMAIN_PRESSURE%MESH_COMPONENT_NUMBER,DOMAIN_NUMBER,ERR,ERROR,*999)
+                                        IF(DOMAIN_NUMBER==MY_COMPUTATIONAL_NODE_NUMBER) THEN
+                                          !\todo: test the domain node mappings pointer properly
+                                          local_node=DOMAIN_PRESSURE%mappings%nodes%global_to_local_map(global_node)%local_number(1)
+                                          !Default to version 1 of each node derivative
+                                          local_ny=FIELD_VARIABLE%COMPONENTS(4)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                            & NODES(local_node)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                          !Because p=2.lambda in this particular constitutive law, we'll assign half the
+                                          !hydrostatic pressure to the analytic array
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                          & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,P/2.0_dp,ERR,ERROR,*999)
+                                        ENDIF
                                       ENDIF
-                                    ENDIF
-                                  ENDDO !deriv_idx
-                                ENDDO !node_idx
+                                    ENDDO !deriv_idx
+                                  ENDDO !node_idx
 
+                                ELSE
+                                  CALL FLAG_ERROR("Domain for pressure topology node is not associated",ERR,ERROR,*999)
+                                ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Domain for pressure topology node is not associated",ERR,ERROR,*999)
+                                CALL FLAG_ERROR("Domain for pressure topology is not associated",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Domain for pressure topology is not associated",ERR,ERROR,*999)
+                              CALL FLAG_ERROR("Domain for pressure component is not associated",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Domain for pressure component is not associated",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Non-nodal based interpolation of pressure cannot be used with analytic solutions", &
+                              & ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Non-nodal based interpolation of pressure cannot be used with analytic solutions", &
-                            & ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
                   ENDIF
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
-                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-              ENDIF
 
-            ENDDO !variable_idx
-            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+              ENDDO !variable_idx
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+            ELSE
+              CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF            
@@ -793,7 +797,8 @@ CONTAINS
 
         !Grab pointers: matrices, fields, decomposition, basis
         BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
-        BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(var2)%PTR
+        CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING%RHS_MAPPING% &
+          & RHS_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
         TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS=BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_CONDITIONS+ &
           & BOUNDARY_CONDITIONS_VARIABLE%NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS
 
@@ -5569,8 +5574,6 @@ CONTAINS
     LOGICAL :: UPDATE_PRESSURE
 
 !     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-!     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-
 
     CALL ENTERS("FINITE_ELASTICITY_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
 
@@ -5619,64 +5622,71 @@ CONTAINS
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                 EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                                  BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
-                                    & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)%PTR
-                                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                                    IF(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_CONDITION_USED) THEN
-                                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                                        & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
+                                  CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_VARIABLE, &
+                                    & ERR,ERROR,*999)
+                                  IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                    CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                                      & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                      IF(BOUNDARY_CONDITIONS_VARIABLE%PRESSURE_CONDITION_USED) THEN
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                                          & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
 
-                                      IF(DIAGNOSTICS1) THEN
-                                        NDOFS_TO_PRINT = SIZE(CURRENT_PRESSURE_VALUES,1)
-                                        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                          & NDOFS_TO_PRINT,CURRENT_PRESSURE_VALUES, &
-                                          & '(" DEP_FIELD,FIELD_U_VAR_TYPE,FIELD_PRESSURE_VAL_SET_TYPE (before) = ",4(X,E13.6))', &
-                                          & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                        IF(DIAGNOSTICS1) THEN
+                                          NDOFS_TO_PRINT = SIZE(CURRENT_PRESSURE_VALUES,1)
+                                          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
+                                            & NDOFS_TO_PRINT,CURRENT_PRESSURE_VALUES, &
+                                            & '(" DEP_FIELD,FIELD_U_VAR_TYPE,FIELD_PRESSURE_VAL_SET_TYPE (before) = ",4(X,E13.6))',&
+                                            & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                                            & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
+                                        ENDIF
+
+                                        DEPENDENT_NUMBER_OF_DOFS=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)% &
+                                            & PTR%NUMBER_OF_DOFS
+
+                                        ALLOCATE(NEW_PRESSURE_VALUES(DEPENDENT_NUMBER_OF_DOFS))
+
+                                        !Linear increase of cavity pressure: just a test example prototype
+                                        !\todo: general time-dependent boundary condition input method?
+                                        ALPHA = ( CURRENT_TIME + TIME_INCREMENT ) / CURRENT_TIME
+                                        NEW_PRESSURE_VALUES = ALPHA * CURRENT_PRESSURE_VALUES
+
+                                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update pressure BCs", &
+                                          & ERR,ERROR,*999)
+                                        DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+                                            & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE,dof_number, &
+                                            & NEW_PRESSURE_VALUES(dof_number),ERR,ERROR,*999)
+                                        ENDDO
+                                        CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                          & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                                          & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+                                        DEALLOCATE(NEW_PRESSURE_VALUES)
+
+                                        IF(DIAGNOSTICS1) THEN
+                                          NULLIFY( DUMMY_VALUES1 )
+                                          CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                                            & FIELD_PRESSURE_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                          NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
+                                          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
+                                            & NDOFS_TO_PRINT,DUMMY_VALUES1, &
+                                            & '(" DEP_FIELD,FIELD_U_VAR_TYPE,FIELD_PRESSURE_VAL_SET_TYPE (after) = ",4(X,E13.6))', &
+                                            & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
+                                            & FIELD_PRESSURE_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                        ENDIF
                                         CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                                           & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
-                                      ENDIF
-
-                                      DEPENDENT_NUMBER_OF_DOFS=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_DELUDELN_VARIABLE_TYPE)% &
-                                          & PTR%NUMBER_OF_DOFS
-
-                                      ALLOCATE(NEW_PRESSURE_VALUES(DEPENDENT_NUMBER_OF_DOFS))
-
-                                      !Linear increase of cavity pressure: just a test example prototype
-                                      !\todo: general time-dependent boundary condition input method?
-                                      ALPHA = ( CURRENT_TIME + TIME_INCREMENT ) / CURRENT_TIME
-                                      NEW_PRESSURE_VALUES = ALPHA * CURRENT_PRESSURE_VALUES
-
-                                      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite Elasticity update pressure BCs",ERR,ERROR,*999)
-                                      DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
-                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                          & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_PRESSURE_VALUES_SET_TYPE,dof_number, & 
-                                          & NEW_PRESSURE_VALUES(dof_number),ERR,ERROR,*999)
-                                      ENDDO
-                                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                        & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                                        & FIELD_DELUDELN_VARIABLE_TYPE, FIELD_PRESSURE_VALUES_SET_TYPE,ERR,ERROR,*999)
-
-                                      DEALLOCATE(NEW_PRESSURE_VALUES)
-
-                                      IF(DIAGNOSTICS1) THEN
-                                        NULLIFY( DUMMY_VALUES1 )
-                                        CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                                          & FIELD_PRESSURE_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                        NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                          & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                          & '(" DEP_FIELD,FIELD_U_VAR_TYPE,FIELD_PRESSURE_VAL_SET_TYPE (after) = ",4(X,E13.6))', &
-                                          & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                                          & FIELD_PRESSURE_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                      ENDIF
-                                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
-                                        & FIELD_PRESSURE_VALUES_SET_TYPE,CURRENT_PRESSURE_VALUES,ERR,ERROR,*999)
-                                    ENDIF !Pressure_condition_used
+                                      ENDIF !Pressure_condition_used
+                                    ELSE
+                                      CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                    END IF
                                   ELSE
-                                    CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                                  END IF
+                                    CALL FLAG_ERROR("Dependent field DelUDelN variable is not associated.",ERR,ERROR,*999)
+                                  ENDIF
                                 ELSE
                                   CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                                 ENDIF
@@ -5730,117 +5740,121 @@ CONTAINS
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                 EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                                  BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
-                                    & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                                    IF(DIAGNOSTICS1) THEN
-                                      NULLIFY( DUMMY_VALUES1 )
-                                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                      NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                        & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                        & '(" DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE (bef) = ",4(X,E13.6))', &
-                                        & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                    ENDIF
-
-                                    ! requires solid dependent field and geometry to be interpolated identically !!!
-                                    ! assumes that DOFs for dependent and geometric field are stored in the same order
-                                    ! How does this routine take into account the BC value ???
-                                    ALPHA = 0.10_DP * sin( 2.0_DP * PI * CURRENT_TIME / 4.0_DP )
-                                    CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                      & FIELD_VALUES_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ALPHA,ERR,ERROR,*999)
-
-                                    NULLIFY(GEOMETRIC_FIELD_VALUES)
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                      & FIELD_VALUES_SET_TYPE,GEOMETRIC_FIELD_VALUES,ERR,ERROR,*999)
-
-                                    GEOMETRY_NUMBER_OF_DOFS=GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
-                                        & PTR%NUMBER_OF_DOFS
-                                    DO dof_number=1,GEOMETRY_NUMBER_OF_DOFS
-                                      BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                        & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
-                                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
-                                        & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-!---tob
-                                      write(*,*)'Should not enter here for the INRIA test case !!!'
-                                      !Check this using a conditional !!!
-!---toe
-                                        !--- To obtain absolute positions, add nodal coordinates on top of mesh displacement
-                                        CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, & 
-                                          & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,dof_number, & 
-                                          & GEOMETRIC_FIELD_VALUES(dof_number),ERR,ERROR,*999)
-                                      ELSE
-                                        ! do nothing ???
-                                      END IF
-                                    END DO
-
-                                    NULLIFY(MESH_POSITION_VALUES)
-                                    CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                      & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_POSITION_VALUES,ERR,ERROR,*999)
-
-                                    DEPENDENT_NUMBER_OF_DOFS=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
-                                        & PTR%NUMBER_OF_DOFS
-                                    DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
-                                      BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                        & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
-                                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
-                                        & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-
-!---tob
-                                      !Update FIELD_BOUNDARY_CONDITIONS_SET_TYPE or FIELD_VALUES_SET_TYPE
-                                      !(so it is one or the other, but not both) depending on whether or not load increments are used
-                                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                          & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,dof_number, & 
-                                          & MESH_POSITION_VALUES(dof_number),ERR,ERROR,*999)
-                                      ELSE
-                                        !--- Update the dependent field with the new absolute position
-                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                          & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, & 
-                                          & MESH_POSITION_VALUES(dof_number),ERR,ERROR,*999)
+                                  CALL FIELD_VARIABLE_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VARIABLE,ERR,ERROR,*999)
+                                  IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                    CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                                      & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                      IF(DIAGNOSTICS1) THEN
+                                        NULLIFY( DUMMY_VALUES1 )
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                          & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                        NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
+                                        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
+                                          & NDOFS_TO_PRINT,DUMMY_VALUES1, &
+                                          & '(" DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE (bef) = ",4(X,E13.6))',&
+                                          & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                          & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
                                       ENDIF
+
+                                      ! requires solid dependent field and geometry to be interpolated identically !!!
+                                      ! assumes that DOFs for dependent and geometric field are stored in the same order
+                                      ! How does this routine take into account the BC value ???
+                                      ALPHA = 0.10_DP * sin( 2.0_DP * PI * CURRENT_TIME / 4.0_DP )
+                                      CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_VALUES_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ALPHA,ERR,ERROR,*999)
+
+                                      NULLIFY(GEOMETRIC_FIELD_VALUES)
+                                      CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_VALUES_SET_TYPE,GEOMETRIC_FIELD_VALUES,ERR,ERROR,*999)
+
+                                      GEOMETRY_NUMBER_OF_DOFS=GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
+                                          & PTR%NUMBER_OF_DOFS
+                                      DO dof_number=1,GEOMETRY_NUMBER_OF_DOFS
+                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                        IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
+                                          & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
+!---tob
+                                        write(*,*)'Should not enter here for the INRIA test case !!!'
+                                        !Check this using a conditional !!!
+!---toe
+                                          !--- To obtain absolute positions, add nodal coordinates on top of mesh displacement
+                                          CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, &
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,dof_number, &
+                                            & GEOMETRIC_FIELD_VALUES(dof_number),ERR,ERROR,*999)
+                                        ELSE
+                                          ! do nothing ???
+                                        END IF
+                                      END DO
+
+                                      NULLIFY(MESH_POSITION_VALUES)
+                                      CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                        & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_POSITION_VALUES,ERR,ERROR,*999)
+
+                                      DEPENDENT_NUMBER_OF_DOFS=DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)% &
+                                          & PTR%NUMBER_OF_DOFS
+                                      DO dof_number=1,DEPENDENT_NUMBER_OF_DOFS
+                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+                                          & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
+                                        IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
+                                          & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
+
+!---tob
+                                        !Update FIELD_BOUNDARY_CONDITIONS_SET_TYPE or FIELD_VALUES_SET_TYPE
+                                        !(so it is one or the other, but not both) depending on whether or not load increments are used
+                                        IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_CONDITIONS_SET_TYPE,dof_number, &
+                                            & MESH_POSITION_VALUES(dof_number),ERR,ERROR,*999)
+                                        ELSE
+                                          !--- Update the dependent field with the new absolute position
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,dof_number, &
+                                            & MESH_POSITION_VALUES(dof_number),ERR,ERROR,*999)
+                                        ENDIF
 !---toe
 
+                                        ELSE
+                                          ! do nothing ???
+                                        END IF
+                                      END DO
+
+                                      IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
+                                        CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                          & FIELD_U_VARIABLE_TYPE, FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
+                                        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                                          & FIELD_U_VARIABLE_TYPE, FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
                                       ELSE
-                                        ! do nothing ???
-                                      END IF
-                                    END DO
+                                        CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                          & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                        CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
+                                          & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                      ENDIF
 
-                                    IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-                                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                        & FIELD_U_VARIABLE_TYPE, FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                                        & FIELD_U_VARIABLE_TYPE, FIELD_BOUNDARY_CONDITIONS_SET_TYPE,ERR,ERROR,*999)
+                                      IF(DIAGNOSTICS1) THEN
+                                        NULLIFY( DUMMY_VALUES1 )
+                                        CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                          & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                        NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
+                                        CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
+                                          & NDOFS_TO_PRINT,DUMMY_VALUES1, &
+                                          & '(" DEPENDENT_FIELD,FIELD_U_VAR_TYPE,FIELD_VALUES_SET_TYPE (after) = ",4(X,E13.6))', &
+                                          & '4(4(X,E13.6))',ERR,ERROR,*999)
+                                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                          & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                      ENDIF
                                     ELSE
-                                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                        & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
-                                        & FIELD_U_VARIABLE_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                    ENDIF
-
-                                    IF(DIAGNOSTICS1) THEN
-                                      NULLIFY( DUMMY_VALUES1 )
-                                      CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                      NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                      CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                        & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                        & '(" DEPENDENT_FIELD,FIELD_U_VAR_TYPE,FIELD_VALUES_SET_TYPE (after) = ",4(X,E13.6))', &
-                                        & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                        & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                    ENDIF
+                                      CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                    END IF
+                                    CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                    CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                                   ELSE
-                                    CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                                  END IF
-
-                                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                                    & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                                    & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Dependent field U variable is not associated.",ERR,ERROR,*999)
+                                  ENDIF
                                 ELSE
                                   CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                                 ENDIF

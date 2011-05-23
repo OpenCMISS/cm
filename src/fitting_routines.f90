@@ -2288,32 +2288,6 @@ CONTAINS
           END SELECT
 
         !-----------------------------------------------------------------
-        !   b o u n d a r y   c o n d i t i o n s   t y p e 
-        !-----------------------------------------------------------------
-        CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
-          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-          CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-            IF(ASSOCIATED(EQUATIONS)) THEN
-              IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-                CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Equations set equations has not been finished.",ERR,ERROR,*999)               
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-
-        !-----------------------------------------------------------------
         !   c a s e   d e f a u l t
         !-----------------------------------------------------------------
         CASE DEFAULT
@@ -3035,32 +3009,6 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-
-        !-----------------------------------------------------------------
-        !   b o u n d a r y   c o n d i t i o n s   t y p e 
-        !-----------------------------------------------------------------
-        CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
-          SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-          CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-            IF(ASSOCIATED(EQUATIONS)) THEN
-              IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-                CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Equations set equations has not been finished.",ERR,ERROR,*999)               
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-            CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-          CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a standard Galerkin projection."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 

@@ -514,7 +514,7 @@ CONTAINS
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
 !    TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-!    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
 !    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
 !    REAL(DP), POINTER :: BOUNDARY_VALUES(:)
     REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),GEOMETRIC_PARAMETERS(:),MATERIALS_PARAMETERS(:)
@@ -612,47 +612,52 @@ CONTAINS
                                       IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
                                         DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
                                         IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                          !Loop over the local nodes excluding the ghosts.
-                                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                            !!TODO \todo We should interpolate the geometric field here and the node position.
-                                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                              !Default to version 1 of each node derivative
-                                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP% &
-                                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
-                                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                                            ENDDO !dim_idx
-                                            !Loop over the derivatives
-                                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                              ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-                                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
-                                                & GLOBAL_DERIVATIVE_INDEX
-                                              CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, &
-                                                & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
-                                                & GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
-                                                & VALUE,ERR,ERROR,*999)
-                                              !Default to version 1 of each node derivative
-                                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                              BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
-                                                & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% & 
-                                                & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-                                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
-                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
-                                                 & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                                 & VALUE,ERR,ERROR,*999)
-                                              ENDIF
+                                          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(EQUATIONS_SET%BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                                            & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                                          IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                            !Loop over the local nodes excluding the ghosts.
+                                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                              !!TODO \todo We should interpolate the geometric field here and the node position.
+                                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                                !Default to version 1 of each node derivative
+                                                local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP% &
+                                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
+                                                X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                                              ENDDO !dim_idx
+                                              !Loop over the derivatives
+                                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                                ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+                                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
+                                                  & GLOBAL_DERIVATIVE_INDEX
+                                                CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, &
+                                                  & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
+                                                  & GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
+                                                  & VALUE,ERR,ERROR,*999)
+                                                !Default to version 1 of each node derivative
+                                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                                BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+                                                  & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                                IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
+                                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, & 
+                                                   & variable_type,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                                   & VALUE,ERR,ERROR,*999)
+                                                ENDIF
 
 !                                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
 !                                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                                                  !If we are a boundary node then set the analytic value on the boundary
+!                                                  !If we are a boundary node then set the analytic value on the boundary
 !                                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
 !                                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
 !                                                ENDIF
 !                                              ENDIF
-                                            ENDDO !deriv_idx
-                                          ENDDO !node_idx
+                                              ENDDO !deriv_idx
+                                            ENDDO !node_idx
+                                          ELSE
+                                            CALL FLAG_ERROR("Boundary conditions variable is not associated.",ERR,ERROR,*999)
+                                          ENDIF
                                         ELSE
                                           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                                         ENDIF

@@ -355,8 +355,8 @@ CONTAINS
                                 IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
                                   IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
                                     !If we are a boundary node then set the analytic value on the boundary
-                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                      & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
+                                      & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                   ENDIF
                                 ENDIF
                               ENDDO !deriv_idx

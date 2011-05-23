@@ -162,8 +162,7 @@ CONTAINS
             ENDIF
             ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
             TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
-            NULLIFY(BOUNDARY_CONDITIONS)
-            CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
@@ -203,8 +202,8 @@ CONTAINS
                                   IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
                                     IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
                                       !If we are a boundary node then set the analytic value on the boundary
-                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                        & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
+                                        & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
                                     ELSE
                                       !Set the initial condition.
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
@@ -239,7 +238,6 @@ CONTAINS
                   CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
-              CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
           ELSE
