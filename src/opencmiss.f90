@@ -67,6 +67,9 @@ MODULE OPENCMISS
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
   USE FIELD_ROUTINES
+  USE FIELDML_INPUT_ROUTINES
+  USE FIELDML_OUTPUT_ROUTINES
+  USE FIELDML_UTIL_ROUTINES
   USE FIELD_IO_ROUTINES
   USE FINITE_ELASTICITY_ROUTINES
   USE GENERATED_MESH_ROUTINES
@@ -270,7 +273,8 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: COMPUTATIONAL_WORK_GROUP
   END TYPE CMISSComputationalWorkGroupType
-
+  
+  
   !Module variables
 
   TYPE(VARYING_STRING) :: ERROR
@@ -5612,6 +5616,49 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverEquationsSparsityTypeSet
 
+
+!!==================================================================================================================================
+!!
+!! FieldML routines
+!!
+!!==================================================================================================================================
+
+  INTERFACE CMISSFieldmlInput_CreateMeshComponent
+    MODULE PROCEDURE CMISSFieldmlInput_CreateMeshComponentObj
+    MODULE PROCEDURE CMISSFieldmlInput_CreateMeshComponentNumber
+  END INTERFACE CMISSFieldmlInput_CreateMeshComponent
+
+  INTERFACE CMISSFieldmlInput_CreateField
+    MODULE PROCEDURE CMISSFieldmlInput_CreateFieldObj
+    MODULE PROCEDURE CMISSFieldmlInput_CreateFieldNumber
+  END INTERFACE CMISSFieldmlInput_CreateField
+
+  PUBLIC :: CMISSFieldmlInput_InitialiseFromFile, CMISSFieldmlInput_SetDofVariables, CMISSFieldmlInput_ReadMeshInfo, &
+    & CMISSFieldmlInput_GetCoordinateSystemInfo, CMISSFieldmlInput_CreateBasis, CMISSFieldmlInput_CreateMeshComponent, &
+    & CMISSFieldmlInput_CreateField
+
+  PUBLIC :: CMISSFieldmlUtil_FinaliseInfo
+
+  INTERFACE CMISSFieldmlOutput_AddField
+    MODULE PROCEDURE CMISSFieldmlOutput_AddField_NoType_Obj
+    MODULE PROCEDURE CMISSFieldmlOutput_AddField_NoType_Number
+    MODULE PROCEDURE CMISSFieldmlOutput_AddField_WithType_Obj
+    MODULE PROCEDURE CMISSFieldmlOutput_AddField_WithType_Number
+  END INTERFACE CMISSFieldmlOutput_AddField
+  
+  INTERFACE CMISSFieldmlOutput_InitialiseInfo
+    MODULE PROCEDURE CMISSFieldmlOutput_InitialiseInfoObj
+    MODULE PROCEDURE CMISSFieldmlOutput_InitialiseInfoNumber
+  END INTERFACE CMISSFieldmlOutput_InitialiseInfo
+
+  INTERFACE CMISSFieldmlOutput_AddFieldComponents
+    MODULE PROCEDURE CMISSFieldmlOutput_AddFieldComponentsObj
+    MODULE PROCEDURE CMISSFieldmlOutput_AddFieldComponentsNumber
+  END INTERFACE CMISSFieldmlOutput_AddFieldComponents
+
+  PUBLIC :: CMISSFieldmlOutput_Write, CMISSFieldmlOutput_CreateEnsembleType, CMISSFieldmlOutput_CreateContinuousType, &
+    & CMISSFieldmlOutput_AddField, CMISSFieldmlOutput_InitialiseInfo, CMISSFieldmlOutput_AddFieldComponents
+    
 !!==================================================================================================================================
 !!
 !! GENERAL_ROUTINES
@@ -5632,6 +5679,137 @@ MODULE OPENCMISS
 !!
   
 CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE UserNumberToRegion( userNumber, region, err, error, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the region to find
+    TYPE(REGION_TYPE), POINTER :: region !<On exit, a pointer to the region with the specified user number if it exists. If no region exists with the specified user number a NULL pointer is returned, and an error thrown.
+    INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("UserNumberToRegion", err, error, *999 )
+
+    NULLIFY( region )
+    CALL REGION_USER_NUMBER_FIND( userNumber, region, err, error, *999 )
+    IF( .NOT.ASSOCIATED( region ) ) THEN
+      localError = "A region with an user number of "//TRIM(NUMBER_TO_VSTRING(userNumber,"*", err, error ) )//" does not exist."
+      CALL FLAG_ERROR( localError, err, error, *999 )
+    ENDIF
+
+    CALL EXITS( "UserNumberToRegion" )
+    RETURN
+999 CALL ERRORS( "UserNumberToRegion", err, error )
+    CALL EXITS( "UserNumberToRegion" )
+    RETURN 1
+
+  END SUBROUTINE UserNumberToRegion
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE UserNumberToMesh( userNumber, region, mesh, err, error, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the mesh to find
+    TYPE(REGION_TYPE), POINTER :: region !<The region containing the mesh
+    TYPE(MESH_TYPE), POINTER :: mesh !<On exit, a pointer to the mesh with the specified user number if it exists. If no mesh exists with the specified user number a NULL pointer is returned, and an error thrown.
+    INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("UserNumberToMesh", err, error, *999 )
+
+    NULLIFY( mesh )
+    CALL MESH_USER_NUMBER_FIND( userNumber, region, mesh, err, error, *999 )
+    IF( .NOT.ASSOCIATED( mesh ) ) THEN
+      localError = "A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING( userNumber, "*", err, error ))// &
+        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( region%USER_NUMBER, "*", err, error ))//"."
+      CALL FLAG_ERROR( localError, err, error, *999 )
+    ENDIF
+
+    CALL EXITS( "UserNumberToMesh" )
+    RETURN
+999 CALL ERRORS( "UserNumberToMesh", err, error )
+    CALL EXITS( "UserNumberToMesh" )
+    RETURN 1
+
+  END SUBROUTINE UserNumberToMesh
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE UserNumberToField( userNumber, region, field, err, error, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the field to find
+    TYPE(REGION_TYPE), POINTER :: region !<The region containing the field
+    TYPE(FIELD_TYPE), POINTER :: field !<On exit, a pointer to the field with the specified user number if it exists. If no field exists with the specified user number a NULL pointer is returned, and an error thrown.
+    INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("UserNumberToField", err, error, *999 )
+
+    NULLIFY( field )
+    CALL FIELD_USER_NUMBER_FIND( userNumber, region, field, err, error, *999 )
+      CALL FIELD_USER_NUMBER_FIND( userNumber, region, field, err, error, *999 )
+    IF( .NOT.ASSOCIATED( field ) ) THEN
+      localError = "A field with an user number of "//TRIM(NUMBER_TO_VSTRING( userNumber, "*", err, error ))// &
+        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( region%USER_NUMBER, "*", err, error ))//"."
+      CALL FLAG_ERROR( localError, err, error, *999 )
+    ENDIF
+
+    CALL EXITS( "UserNumberToField" )
+    RETURN
+999 CALL ERRORS( "UserNumberToField", err, error )
+    CALL EXITS( "UserNumberToField" )
+    RETURN 1
+
+  END SUBROUTINE UserNumberToField
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE UserNumberToDecomposition( userNumber, mesh, decomposition, err, error, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the decomposition to find
+    TYPE(MESH_TYPE), POINTER :: mesh !<The mesh containing the decomposition
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition !<On exit, a pointer to the decomposition with the specified user number if it exists. If no decomposition exists with the specified user number a NULL pointer is returned, and an error thrown.
+    INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("UserNumberToDecomposition", err, error, *999 )
+
+    NULLIFY( decomposition )
+    CALL DECOMPOSITION_USER_NUMBER_FIND( userNumber, mesh, decomposition, err, error, *999 )
+    IF( .NOT.ASSOCIATED( decomposition ) ) THEN
+      localError = "A decomposition with an user number of "//TRIM(NUMBER_TO_VSTRING( userNumber, "*", err, error ))// &
+        & " does not exist on mesh number "//TRIM(NUMBER_TO_VSTRING( mesh%USER_NUMBER, "*", err, error ))//"."
+      CALL FLAG_ERROR( localError, err, error, *999 )
+    ENDIF
+
+    CALL EXITS( "UserNumberToDecomposition" )
+    RETURN
+999 CALL ERRORS( "UserNumberToDecomposition", err, error )
+    CALL EXITS( "UserNumberToDecomposition" )
+    RETURN 1
+
+  END SUBROUTINE UserNumberToDecomposition
 
   !
   !================================================================================================================================
@@ -45945,6 +46123,620 @@ CONTAINS
 
 
   !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_InitialiseFromFile( fieldmlInfo, filename, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: filename
+    INTEGER(INTG), INTENT(OUT) :: err
+    
+    CALL ENTERS("CMISSFieldmlInput_InitialiseFromFile",Err,ERROR,*999)
+
+    CALL FieldmlInput_InitialiseFromFile( fieldmlInfo, filename, err, error, *999 )
+    fieldmlInfo%fmlHandle = fieldmlInfo%fmlHandle
+
+    CALL EXITS("CMISSFieldmlInput_InitialiseFromFile")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_InitialiseFromFile",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_InitialiseFromFile")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_InitialiseFromFile
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_SetDofVariables( fieldmlInfo, nodeDofsName, elementDofsName, constantDofsName, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: nodeDofsName
+    CHARACTER(LEN=*), INTENT(IN) :: elementDofsName
+    CHARACTER(LEN=*), INTENT(IN) :: constantDofsName
+    INTEGER(INTG), INTENT(OUT) :: err
+    
+    CALL ENTERS("CMISSFieldmlInput_SetDofVariables",Err,ERROR,*999)
+
+    CALL FieldmlInput_SetDofVariables( fieldmlInfo, nodeDofsName, elementDofsName, constantDofsName, err, error,*999)
+
+    CALL EXITS("CMISSFieldmlInput_SetDofVariables")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_SetDofVariables",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_SetDofVariables")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_SetDofVariables
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_ReadMeshInfo( fieldmlInfo, meshName, nodesEnsembleName, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: meshName
+    CHARACTER(LEN=*), INTENT(IN) :: nodesEnsembleName
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_ReadMeshInfo",Err,ERROR,*999)
+
+    CALL FieldmlInput_ReadMeshInfo( fieldmlInfo, meshName, nodesEnsembleName, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_ReadMeshInfo")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_ReadMeshInfo",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_ReadMeshInfo")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_ReadMeshInfo
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_GetCoordinateSystemInfo( fieldmlInfo, evaluatorHandle, coordinateType, coordinateCount, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    INTEGER(C_INT), INTENT(IN) :: evaluatorHandle
+    INTEGER(INTG), INTENT(OUT) :: coordinateType
+    INTEGER(INTG), INTENT(OUT) :: coordinateCount
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_GetCoordinateSystemInfo",Err,ERROR,*999)
+
+    CALL FieldmlInput_GetCoordinateSystemInfo( fieldmlInfo, evaluatorHandle, coordinateType, coordinateCount, &
+      & err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_GetCoordinateSystemInfo")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_GetCoordinateSystemInfo",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_GetCoordinateSystemInfo")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_GetCoordinateSystemInfo
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    INTEGER(INTG), INTENT(IN) :: userNumber
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(IN) :: gaussQuadrature(:)
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_CreateBasis",Err,ERROR,*999)
+
+    CALL FieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_CreateBasis")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_CreateBasis",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_CreateBasis")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_CreateBasis
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_CreateMeshComponentObj( fieldmlInfo, mesh, componentNumber, evaluatorName, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    INTEGER(INTG), INTENT(IN) :: componentNumber
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_CreateMeshComponentObj",Err,ERROR,*999)
+
+    CALL FieldmlInput_CreateMeshComponent( fieldmlInfo, mesh%MESH, componentNumber, evaluatorName, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_CreateMeshComponentObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_CreateMeshComponentObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_CreateMeshComponentObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_CreateMeshComponentObj
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_CreateMeshComponentNumber( fieldmlInfo, regionNumber, meshNumber, componentNumber, evaluatorName, &
+    & err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: componentNumber
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
+    
+    CALL ENTERS( "CMISSFieldmlInput_CreateMeshComponentNumber", Err, ERROR, *999 )
+ 
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+
+    CALL FieldmlInput_CreateMeshComponent( fieldmlInfo, mesh, componentNumber, evaluatorName, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_CreateMeshComponentNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_CreateMeshComponentNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_CreateMeshComponentNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_CreateMeshComponentNumber
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_CreateFieldObj( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, evaluatorName, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    TYPE(CMISSRegionType), INTENT(IN) :: region
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition
+    INTEGER(INTG), INTENT(IN) :: fieldNumber
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_CreateFieldObj",Err,ERROR,*999)
+
+    CALL FieldmlInput_CreateField( fieldmlInfo, region%REGION, mesh%MESH, decomposition%DECOMPOSITION, fieldNumber, &
+      & field%FIELD, evaluatorName, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_CreateFieldObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_CreateFieldObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_CreateFieldObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_CreateFieldObj
+
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_CreateFieldNumber( fieldmlInfo, regionNumber, meshNumber, decompositionNumber, fieldNumber, &
+    & evaluatorName, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: decompositionNumber
+    INTEGER(INTG), INTENT(IN) :: fieldNumber
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(FIELD_TYPE), POINTER :: field
+
+    CALL ENTERS("CMISSFieldmlInput_CreateFieldNumber",Err,ERROR,*999)
+
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL UserNumberToDecomposition( decompositionNumber, mesh, decomposition, err, error, *999 )
+
+    NULLIFY( field )
+    CALL FieldmlInput_CreateField( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, &
+      & evaluatorName, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_CreateFieldNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_CreateFieldNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_CreateFieldNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_CreateFieldNumber
+
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlOutput_Write( fieldmlInfo, filename, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: filename
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlOutput_Write",Err,ERROR,*999)
+
+    CALL FieldmlOutput_Write( fieldmlInfo, filename, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_Write")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_Write",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_Write")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_Write
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_AddField_NoType_Obj( fieldmlInfo, baseName, region, mesh, field, variableType, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    TYPE(CMISSRegionType), INTENT(IN) :: region
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    TYPE(CMISSFieldType), INTENT(IN) :: field
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(INTG), INTENT(OUT) :: err
+  
+    CALL ENTERS("CMISSFieldmlOutput_AddField_NoType_Obj",Err,ERROR,*999)
+
+    CALL FieldmlOutput_AddField( fieldmlInfo, baseName, region%REGION, mesh%MESH, field%FIELD, variableType, &
+      & err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_AddField_NoType_Obj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_AddField_NoType_Obj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_AddField_NoType_Obj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_AddField_NoType_Obj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_AddField_NoType_Number( fieldmlInfo, baseName, regionNumber, meshNumber, fieldNumber, &
+    & variableType, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: fieldNumber
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(INTG), INTENT(OUT) :: err
+    
+    !Locals
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(FIELD_TYPE), POINTER :: field
+  
+    CALL ENTERS("CMISSFieldmlOutput_AddField_NoType_Number",Err,ERROR,*999)
+
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+
+    CALL FieldmlOutput_AddField( fieldmlInfo, baseName, region, mesh, field, variableType, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_AddField_NoType_Number")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_AddField_NoType_Number",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_AddField_NoType_Number")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_AddField_NoType_Number
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_AddField_WithType_Obj( fieldmlInfo, baseName, mesh, field, variableType, typeHandle, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    TYPE(CMISSFieldType), INTENT(IN) :: field
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(INTG), INTENT(IN) :: typeHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+  
+    CALL ENTERS("CMISSFieldmlOutput_AddField_WithType_Obj",Err,ERROR,*999)
+
+    CALL FieldmlOutput_AddField( fieldmlInfo, baseName, mesh%MESH, field%FIELD, variableType, typeHandle, &
+      & err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_AddField_WithType_Obj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_AddField_WithType_Obj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_AddField_WithType_Obj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_AddField_WithType_Obj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_AddField_WithType_Number( fieldmlInfo, baseName, regionNumber, meshNumber, fieldNumber, &
+    & variableType, typeHandle, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: fieldNumber
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(INTG), INTENT(IN) :: typeHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+    
+    !Locals
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(FIELD_TYPE), POINTER :: field
+  
+    CALL ENTERS("CMISSFieldmlOutput_AddField_WithType_Number",Err,ERROR,*999)
+
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+
+    CALL FieldmlOutput_AddField( fieldmlInfo, baseName, mesh, field, variableType, typeHandle, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_AddField_WithType_Number")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_AddField_WithType_Number",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_AddField_WithType_Number")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_AddField_WithType_Number
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_InitialiseInfoObj( region, mesh, dimensions, location, baseName, fieldmlInfo, err )
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: region
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    INTEGER(INTG), INTENT(IN) :: dimensions
+    CHARACTER(KIND=C_CHAR,LEN=*) :: location
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo
+    INTEGER(INTG), INTENT(OUT) :: err
+  
+    CALL ENTERS("CMISSFieldmlOutput_InitialiseInfoObj",Err,ERROR,*999)
+
+    CALL FieldmlOutput_InitialiseInfo( region%REGION, mesh%MESH, dimensions, location, baseName, fieldmlInfo, &
+      & err, error, *999 )
+    fieldmlInfo%fmlHandle = fieldmlInfo%fmlHandle
+
+    CALL EXITS("CMISSFieldmlOutput_InitialiseInfoObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_InitialiseInfoObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_InitialiseInfoObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_InitialiseInfoObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_InitialiseInfoNumber( regionNumber, meshNumber, dimensions, location, baseName, fieldmlInfo, err )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: dimensions
+    CHARACTER(KIND=C_CHAR,LEN=*) :: location
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo
+    INTEGER(INTG), INTENT(OUT) :: err
+    
+    !Locals
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
+  
+    CALL ENTERS("CMISSFieldmlOutput_InitialiseInfoNumber",Err,ERROR,*999)
+
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+
+    CALL FieldmlOutput_InitialiseInfo( region, mesh, dimensions, location, baseName, fieldmlInfo, err, error, *999 )
+    fieldmlInfo%fmlHandle = fieldmlInfo%fmlHandle
+
+    CALL EXITS("CMISSFieldmlOutput_InitialiseInfoNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_InitialiseInfoNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_InitialiseInfoNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_InitialiseInfoNumber
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_AddFieldComponentsObj( fieldmlInfo, typeHandle, baseName, mesh, field, fieldComponentNumbers, &
+    & variableType, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    INTEGER(C_INT), INTENT(IN) :: typeHandle
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    TYPE(CMISSFieldType), INTENT(IN) :: field
+    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(INTG), INTENT(OUT) :: err
+  
+    CALL ENTERS("CMISSFieldmlOutput_AddFieldComponentsObj",Err,ERROR,*999)
+
+    CALL FieldmlOutput_AddFieldComponents( fieldmlInfo, typeHandle, baseName, mesh%MESH, field%FIELD, &
+      & fieldComponentNumbers, variableType, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_AddFieldComponentsObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_AddFieldComponentsObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_AddFieldComponentsObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_AddFieldComponentsObj
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_AddFieldComponentsNumber( fieldmlInfo, typeHandle, baseName, regionNumber, meshNumber, &
+    & fieldNumber, fieldComponentNumbers, variableType, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    INTEGER(C_INT), INTENT(IN) :: typeHandle
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: fieldNumber
+    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
+    INTEGER(INTG), INTENT(IN) :: variableType
+    INTEGER(INTG), INTENT(OUT) :: err
+  
+    !Locals
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(FIELD_TYPE), POINTER :: field
+
+    CALL ENTERS("CMISSFieldmlOutput_AddFieldComponentsNumber",Err,ERROR,*999)
+
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+
+    CALL FieldmlOutput_AddFieldComponents( fieldmlInfo, typeHandle, baseName, mesh, field, fieldComponentNumbers, &
+      & variableType, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_AddFieldComponentsNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_AddFieldComponentsNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_AddFieldComponentsNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_AddFieldComponentsNumber
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_CreateEnsembleType( fieldmlInfo, typeName, elementCount, typeHandle, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: typeName
+    INTEGER(INTG), INTENT(IN) :: elementCount
+    INTEGER(INTG), INTENT(OUT) :: typeHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+  
+    CALL ENTERS("CMISSFieldmlOutput_CreateEnsembleType",Err,ERROR,*999)
+
+    CALL FieldmlOutput_CreateEnsembleType( fieldmlInfo, typeName, elementCount, typeHandle, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_CreateEnsembleType")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_CreateEnsembleType",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_CreateEnsembleType")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_CreateEnsembleType
+
+  !  
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE CMISSFieldmlOutput_CreateContinuousType( fieldmlInfo, typeName, componentCount, typeHandle, err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: typeName
+    INTEGER(INTG), INTENT(IN) :: componentCount
+    INTEGER(INTG), INTENT(OUT) :: typeHandle
+    INTEGER(INTG), INTENT(OUT) :: err
+  
+    CALL ENTERS("CMISSFieldmlOutput_CreateContinuousType",Err,ERROR,*999)
+
+    CALL FieldmlOutput_CreateContinuousType( fieldmlInfo, typeName, componentCount, typeHandle, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlOutput_CreateContinuousType")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlOutput_CreateContinuousType",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutput_CreateContinuousType")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlOutput_CreateContinuousType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalises a FieldmlInfoType object.
+  SUBROUTINE CMISSFieldmlUtil_FinaliseInfo( fieldmlInfo, Err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo !<The FieldmlInfoType object to finalise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    
+    CALL ENTERS("CMISSFieldmlUtil_FinaliseInfo",Err,ERROR,*999)
+    
+    CALL FieldmlUtil_FinaliseInfo( fieldmlInfo )
+    fieldmlInfo%fmlHandle = fieldmlInfo%fmlHandle
+
+    CALL EXITS("CMISSFieldmlUtil_FinaliseInfo")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlUtil_FinaliseInfo",Err,ERROR)
+    CALL EXITS("CMISSFieldmlUtil_FinaliseInfo")    
+    CALL CMISS_HANDLE_ERROR( Err, ERROR )
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlUtil_FinaliseInfo
+  
+  !
   !================================================================================================================================
   !
 

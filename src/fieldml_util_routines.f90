@@ -48,10 +48,15 @@ MODULE FIELDML_UTIL_ROUTINES
 
   USE KINDS
   USE FIELDML_API
+  USE FIELDML_TYPES
   USE ISO_VARYING_STRING
   USE STRINGS
-  USE OPENCMISS
   USE BASE_ROUTINES
+  USE REGION_ROUTINES
+  USE COORDINATE_ROUTINES
+  USE BASIS_ROUTINES
+  USE FIELD_ROUTINES
+  USE TYPES
 
   IMPLICIT NONE
 
@@ -62,25 +67,7 @@ MODULE FIELDML_UTIL_ROUTINES
 
   CHARACTER(C_CHAR), PARAMETER :: NUL=C_NULL_CHAR
 
-  TYPE(VARYING_STRING) :: errorString
-
   !Interfaces
-  TYPE FieldmlInfoType
-    TYPE(C_PTR) :: fmlHandle
-    INTEGER(C_INT) :: nodesHandle
-    INTEGER(C_INT) :: nodesVariableHandle
-    INTEGER(C_INT) :: meshHandle
-    INTEGER(C_INT) :: elementsHandle
-    INTEGER(C_INT) :: elementsVariableHandle
-    INTEGER(C_INT) :: xiHandle
-    INTEGER(C_INT) :: xiVariableHandle
-    INTEGER(C_INT) :: nodeDofsHandle
-!    INTEGER(C_INT) :: elementDofsHandle
-!    INTEGER(C_INT) :: constantDofsHandle
-    INTEGER(C_INT), ALLOCATABLE :: componentHandles(:)
-    INTEGER(C_INT), ALLOCATABLE :: basisHandles(:)
-    INTEGER(C_INT), ALLOCATABLE :: basisConnectivityHandles(:)
-  END TYPE FieldmlInfoType
   
   INTERFACE FieldmlUtil_CheckError
     MODULE PROCEDURE FieldmlUtil_CheckLastError
@@ -91,7 +78,7 @@ MODULE FIELDML_UTIL_ROUTINES
   PUBLIC :: FieldmlInfoType
 
   PUBLIC :: FieldmlUtil_GetConnectivityEnsemble, FieldmlUtil_GetGenericType, &
-    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiType, FieldmlUtil_GetValueType, FieldmlUtil_FinalizeInfo, &
+    & FieldmlUtil_GetXiEnsemble, FieldmlUtil_GetXiType, FieldmlUtil_GetValueType, FieldmlUtil_FinaliseInfo, &
     & FieldmlUtil_GetCollapseSuffix, FieldmlUtil_CheckError, FieldmlUtil_GetTypeVariableHandle
 
 CONTAINS
@@ -109,7 +96,7 @@ CONTAINS
 
     !Local variables
     CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: name
-    INTEGER(INTG) :: length, err
+    INTEGER(INTG) :: length
     INTEGER(C_INT) :: handle
     
     length = Fieldml_CopyObjectName( fmlInfo%fmlHandle, typeHandle, name, BUFFER_SIZE )
@@ -197,17 +184,18 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetCoordinatesType( fieldmlHandle, coordsType, dimensions, typeHandle, err, * )
+  SUBROUTINE FieldmlUtil_GetCoordinatesType( fieldmlHandle, coordsType, dimensions, typeHandle, err, errorString, * )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fieldmlHandle
     INTEGER(C_INT), INTENT(IN) :: coordsType
     INTEGER(C_INT), INTENT(IN) :: dimensions
     INTEGER(C_INT), INTENT(OUT) :: typeHandle
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
 
     CALL ENTERS( "FieldmlUtil_GetCoordinatesType", err, errorString, *999 )
     
-    IF( coordsType == CMISSCoordinateRectangularCartesianType ) THEN
+    IF( coordsType == COORDINATE_RECTANGULAR_CARTESIAN_TYPE ) THEN
       IF( dimensions == 1 ) THEN
         typeHandle = Fieldml_GetObjectByName( fieldmlHandle, "library.coordinates.rc.1d"//NUL )
         CALL FieldmlUtil_CheckError( "Cannot get RC1 coordinates type", fieldmlHandle, errorString, *999 )
@@ -240,12 +228,13 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetGenericType( fieldmlHandle, dimensions, typeHandle, err, * )
+  SUBROUTINE FieldmlUtil_GetGenericType( fieldmlHandle, dimensions, typeHandle, err, errorString, * )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fieldmlHandle
     INTEGER(C_INT), INTENT(IN) :: dimensions
     INTEGER(C_INT), INTENT(OUT) :: typeHandle
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
 
     CALL ENTERS( "FieldmlUtil_GetGenericType", err, errorString, *999 )
     
@@ -276,12 +265,13 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetXiEnsemble( fieldmlHandle, dimensions, typeHandle, err, * )
+  SUBROUTINE FieldmlUtil_GetXiEnsemble( fieldmlHandle, dimensions, typeHandle, err, errorString, * )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fieldmlHandle
     INTEGER(C_INT), INTENT(IN) :: dimensions
     INTEGER(C_INT), INTENT(OUT) :: typeHandle
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
 
     CALL ENTERS( "FieldmlUtil_GetXiEnsemble", err, errorString, *999 )
     
@@ -312,12 +302,13 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetXiType( fieldmlHandle, dimensions, typeHandle, err, * )
+  SUBROUTINE FieldmlUtil_GetXiType( fieldmlHandle, dimensions, typeHandle, err, errorString, * )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fieldmlHandle
     INTEGER(C_INT), INTENT(IN) :: dimensions
     INTEGER(C_INT), INTENT(OUT) :: typeHandle
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
 
     CALL ENTERS( "FieldmlUtil_GetXiType", err, errorString, *999 )
     
@@ -348,22 +339,23 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err )
+  SUBROUTINE FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err, errorString )
     !Argument variables
     INTEGER(C_INT), INTENT(IN) :: collapseInfo(:)
     TYPE(VARYING_STRING), INTENT(OUT) :: suffix
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
     
     !Locals
     INTEGER(INTG) :: i
     
     suffix = ""
     DO i = 1, SIZE( collapseInfo )
-      IF( collapseInfo( i ) == CMISSBasisXiCollapsed ) THEN
+      IF( collapseInfo( i ) == BASIS_XI_COLLAPSED ) THEN
         suffix = suffix // "_xi"//TRIM(NUMBER_TO_VSTRING(i,"*",err,errorString))//"C"
-      ELSEIF( collapseInfo( i ) == CMISSBasisCollapsedAtXi0 ) THEN
+      ELSEIF( collapseInfo( i ) == BASIS_COLLAPSED_AT_XI0 ) THEN
         suffix = suffix // "_xi"//TRIM(NUMBER_TO_VSTRING(i,"*",err,errorString))//"0"
-      ELSEIF( collapseInfo( i ) == CMISSBasisCollapsedAtXi1 ) THEN
+      ELSEIF( collapseInfo( i ) == BASIS_COLLAPSED_AT_XI1 ) THEN
         suffix = suffix // "_xi"//TRIM(NUMBER_TO_VSTRING(i,"*",err,errorString))//"1"
       ENDIF
     ENDDO
@@ -374,13 +366,15 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, collapseInfo, typeHandle, err, * )
+  SUBROUTINE FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, collapseInfo, typeHandle, &
+    & err, errorString, * )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fieldmlHandle
     INTEGER(C_INT), INTENT(IN) :: xiInterpolations(:)
     INTEGER(C_INT), INTENT(IN) :: collapseInfo(:)
     INTEGER(C_INT), INTENT(OUT) :: typeHandle
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
 
     !Locals
     INTEGER(C_INT) :: xiCount, firstInterpolation, i
@@ -399,9 +393,9 @@ CONTAINS
       ENDIF
     ENDDO
 
-    CALL FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err )
+    CALL FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err, errorString )
       
-    IF( firstInterpolation == CMISSBasisQuadraticLagrangeInterpolation ) THEN
+    IF( firstInterpolation == BASIS_QUADRATIC_LAGRANGE_INTERPOLATION ) THEN
       IF( xiCount == 1 ) THEN
         typeHandle = Fieldml_GetObjectByName( fieldmlHandle, "library.local_nodes.line.3"//NUL )
         CALL FieldmlUtil_CheckError( "Cannot get quadratic local nodes type", fieldmlHandle, errorString, *999 )
@@ -417,7 +411,7 @@ CONTAINS
         CALL FieldmlUtil_CheckError( "Quadratic interpolation not support for more than 3 dimensions", &
           & err, errorString, *999 )
       ENDIF
-    ELSE IF( firstInterpolation == CMISSBasisLinearLagrangeInterpolation ) THEN
+    ELSE IF( firstInterpolation == BASIS_LINEAR_LAGRANGE_INTERPOLATION ) THEN
       IF( xiCount == 1 ) THEN
         typeHandle = Fieldml_GetObjectByName( fieldmlHandle, "library.local_nodes.line.2"//NUL )
         CALL FieldmlUtil_CheckError( "Cannot get linear local nodes type", fieldmlHandle, errorString, *999 )
@@ -450,12 +444,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlUtil_GetConnectivityEnsemble( fieldmlHandle, basisNumber, typeHandle, err, * )
+  SUBROUTINE FieldmlUtil_GetConnectivityEnsemble( fieldmlHandle, basis, typeHandle, err, errorString, * )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fieldmlHandle
-    INTEGER(C_INT), INTENT(IN) :: basisNumber
+    TYPE(BASIS_TYPE), POINTER :: basis
     INTEGER(C_INT), INTENT(OUT) :: typeHandle
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
 
     !Locals
     INTEGER(C_INT) :: basisType, xiCount
@@ -465,18 +460,17 @@ CONTAINS
 
     typeHandle = FML_INVALID_HANDLE
     
-    CALL CMISSBasisTypeGet( basisNumber, basisType, err )
-    CALL CMISSBasisNumberOfXiGet( basisNumber, xiCount, err )
-    CALL FieldmlUtil_CheckError( "Cannot get basis info for connectivity", err, errorString, *999 )
+    CALL BASIS_TYPE_GET( basis, basisType, err, errorString, *999 )
+    CALL BASIS_NUMBER_OF_XI_GET( basis, xiCount, err, errorString, *999 )
     
-    IF( basisType == CMISSBasisLagrangeHermiteTPType ) THEN
+    IF( basisType == BASIS_LAGRANGE_HERMITE_TP_TYPE ) THEN
       ALLOCATE( xiInterpolations( xiCount ) )
       ALLOCATE( collapseInfo( xiCount ) )
-      CALL CMISSBasisInterpolationXiGet( basisNumber, xiInterpolations, err )
-      CALL CMISSBasisCollapsedXiGet( basisNumber, collapseInfo, err )
-      CALL FieldmlUtil_CheckError( "Cannot get basis interpolation info for connectivity", err, errorString, *999 )
+      CALL BASIS_INTERPOLATION_XI_GET( basis, xiInterpolations, err, errorString, *999 )
+      CALL BASIS_COLLAPSED_XI_GET( basis, collapseInfo, err, errorString, *999 )
       
-      CALL FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, collapseInfo, typeHandle, err, *999 )
+      CALL FieldmlUtil_GetTPConnectivityEnsemble( fieldmlHandle, xiInterpolations, collapseInfo, typeHandle, &
+        & err, errorString, *999 )
       
       DEALLOCATE( xiInterpolations )
       DEALLOCATE( collapseInfo )
@@ -497,31 +491,30 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlUtil_GetValueType( fmlHandle, region, field, typeHandle, err, * )
+  SUBROUTINE FieldmlUtil_GetValueType( fmlHandle, region, field, typeHandle, err, errorString, * )
     !Argument variables
     TYPE(C_PTR), INTENT(IN) :: fmlHandle
-    TYPE(CMISSRegionType), INTENT(IN) :: region
-    TYPE(CMISSFieldType), INTENT(IN) :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(FIELD_TYPE), POINTER :: field
     INTEGER(C_INT), INTENT(OUT) :: typeHandle
     INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
 
     !Locals
     INTEGER(INTG) :: fieldType, subType, count
-    TYPE(CMISSCoordinateSystemType) coordinateSystem
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: coordinateSystem
 
     CALL ENTERS( "FieldmlUtil_GetValueType", err, errorString, *999 )
     
-    CALL CMISSFieldTypeGet( field, fieldType, err )
-    CALL CMISSFieldNumberOfComponentsGet( field, CMISSFieldUVariableType, count, err )
-    CALL FieldmlUtil_CheckError( "Cannot get field info for value type", err, errorString, *999 )
+    CALL FIELD_TYPE_GET( field, fieldType, err, errorString, *999 )
+    CALL FIELD_NUMBER_OF_COMPONENTS_GET( field, FIELD_U_VARIABLE_TYPE, count, err, errorString, *999 )
 
     SELECT CASE( fieldType )
-    CASE( CMISSFieldGeometricType )
-      CALL CMISSCoordinateSystemTypeInitialise( coordinateSystem, err )
-      CALL CMISSRegionCoordinateSystemGet( region, coordinateSystem, err )
-      CALL CMISSCoordinateSystemTypeGet( coordinateSystem, subType, err )
-      CALL FieldmlUtil_CheckError( "Cannot get coordinate system info for geometric field", err, errorString, *999 )
-      CALL FieldmlUtil_GetCoordinatesType( fmlHandle, subType, count, typeHandle, err, *999 )
+    CASE( FIELD_GEOMETRIC_TYPE )
+      NULLIFY( coordinateSystem )
+      CALL REGION_COORDINATE_SYSTEM_GET( region, coordinateSystem, err, errorString, *999 )
+      CALL COORDINATE_SYSTEM_TYPE_GET( coordinateSystem, subType, err, errorString, *999 )
+      CALL FieldmlUtil_GetCoordinatesType( fmlHandle, subType, count, typeHandle, err, errorString, *999 )
     
     !CASE( CMISSFieldFibreType )
 
@@ -530,7 +523,7 @@ CONTAINS
     !CASE( CMISSFieldMaterialType )
 
     CASE DEFAULT
-      CALL FieldmlUtil_GetGenericType( fmlHandle, count, typeHandle, err, *999 )
+      CALL FieldmlUtil_GetGenericType( fmlHandle, count, typeHandle, err, errorString, *999 )
     END SELECT
   
     CALL EXITS( "FieldmlUtil_GetValueType" )
@@ -544,7 +537,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  SUBROUTINE FieldmlUtil_FinalizeInfo( fieldmlInfo )
+  SUBROUTINE FieldmlUtil_FinaliseInfo( fieldmlInfo )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
 
@@ -575,7 +568,7 @@ CONTAINS
       DEALLOCATE( fieldmlInfo%basisConnectivityHandles )
     ENDIF
     
-  END SUBROUTINE FieldmlUtil_FinalizeInfo
+  END SUBROUTINE FieldmlUtil_FinaliseInfo
 
   !
   !================================================================================================================================

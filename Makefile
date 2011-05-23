@@ -55,6 +55,7 @@
 MAKEFLAGS = --no-builtin-rules --warn-undefined-variables
 
 #----------------------------------------------------------------------------------------------------------------------------------
+USEFIELDML := true
 
 ifndef OPENCMISS_ROOT
   OPENCMISS_ROOT = $(CURDIR)/../
@@ -82,8 +83,8 @@ ifndef USECELLML
 endif
 
 ifndef USEFIELDML
-  USEFIELDML := false
-#  USEFIELDML := true
+#  USEFIELDML := false
+  USEFIELDML := true
 endif
 
 ifeq ($(MPI),mpich2)
@@ -744,7 +745,8 @@ ifeq ($(USEFIELDML),true)
     FIELDML_OBJECT =  \
       $(OBJECT_DIR)/fieldml_util_routines.o \
       $(OBJECT_DIR)/fieldml_input_routines.o \
-      $(OBJECT_DIR)/fieldml_output_routines.o
+      $(OBJECT_DIR)/fieldml_output_routines.o \
+      $(OBJECT_DIR)/fieldml_types.o
 else
     FIELDML_OBJECT = #
 endif
@@ -896,6 +898,7 @@ MOD_FIELDML: $(FIELDML_OBJECT)
 	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod
 	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
+	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
 $(HEADER_INCLUDE) : $(HEADER_SOURCE_INC)
 	cp $(HEADER_SOURCE_INC) $@ 
@@ -1175,24 +1178,21 @@ $(OBJECT_DIR)/Darcy_pressure_equations_routines.o	:	$(SOURCE_DIR)/Darcy_pressure
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/fieldml_input_routines.o: $(SOURCE_DIR)/fieldml_input_routines.f90 \
-#	$(OBJECT_DIR)/fieldml_api.o \
 	$(OBJECT_DIR)/fieldml_util_routines.o \
-	$(OBJECT_DIR)/opencmiss.o \
+	$(OBJECT_DIR)/fieldml_types.o \
 	$(OBJECT_DIR)/util_array.o
 
 $(OBJECT_DIR)/fieldml_output_routines.o: $(SOURCE_DIR)/fieldml_output_routines.f90 \
 	$(OBJECT_DIR)/kinds.o \
-#	$(OBJECT_DIR)/fieldml_api.o \
 	$(OBJECT_DIR)/fieldml_util_routines.o \
+	$(OBJECT_DIR)/fieldml_types.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/opencmiss.o \
 	$(OBJECT_DIR)/strings.o
 
 $(OBJECT_DIR)/fieldml_util_routines.o: $(SOURCE_DIR)/fieldml_util_routines.f90 \
 	$(OBJECT_DIR)/kinds.o \
-#	$(OBJECT_DIR)/fieldml_api.o \
+	$(OBJECT_DIR)/fieldml_types.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
-	$(OBJECT_DIR)/opencmiss.o
 
 $(OBJECT_DIR)/finite_elasticity_Darcy_routines.o	:	$(SOURCE_DIR)/finite_elasticity_Darcy_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1941,6 +1941,10 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/field_IO_routines.o \
+	$(OBJECT_DIR)/fieldml_types.o \
+	$(OBJECT_DIR)/fieldml_util_routines.o \
+	$(OBJECT_DIR)/fieldml_input_routines.o \
+	$(OBJECT_DIR)/fieldml_output_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_routines.o \
