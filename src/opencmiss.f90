@@ -10398,6 +10398,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations to destroy the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations for.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -10869,8 +10870,8 @@ CONTAINS
         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,Err,ERROR,*999)
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-          CALL BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-            & ComponentNumber,Condition,Value,Err,ERROR,*999)
+          CALL BOUNDARY_CONDITIONS_ADD_NODE(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,VariableType,VersionNumber,DerivativeNumber, &
+            & NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("The equations set dependent field is not associated.",Err,ERROR,*999)
         ENDIF
@@ -10995,8 +10996,8 @@ CONTAINS
   !
   
   !>Sets the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object.
-  SUBROUTINE CMISSBoundaryConditionsSetNodeObj(BoundaryConditions,Field,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber,Condition,Value,Err)
+  SUBROUTINE CMISSBoundaryConditionsSetNodeObj(BoundaryConditions,Field,VariableType,VersionNumber,DerivativeNumber, &
+    & NodeUserNumber,ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to set the node to.
@@ -46072,7 +46073,7 @@ CONTAINS
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_EQUATIONS_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER_EQUATIONS,Err,ERROR,*999)
       IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(SOLVER_EQUATIONS,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(SOLVER_EQUATIONS,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="Solver equations with the given solver index and control loop identifier do not exist."
         CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
@@ -46117,7 +46118,7 @@ CONTAINS
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_SOLVER_EQUATIONS_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER_EQUATIONS,Err,ERROR,*999)
       IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(SOLVER_EQUATIONS,BOUNDARY_CONDITIONS,Err,ERROR,*999)
+        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(SOLVER_EQUATIONS,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="Solver equations with the given solver index and control loop identifier do not exist."
         CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
@@ -46144,6 +46145,7 @@ CONTAINS
 
     !Argument variables
     TYPE(CMISSSolverEquationsType), INTENT(IN) :: SolverEquations !<The solver equations containing the boundary conditions to finish.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSSolverEquationsBoundaryConditionsCreateFinishObj",Err,ERROR,*999)
@@ -46258,6 +46260,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSSolverEquationsType), INTENT(INOUT) :: SolverEquations !<The solver equations containing the boundary conditions to start.
     TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, the created boundary conditions.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSSolverEquationsBoundaryConditionsCreateStartObj",Err,ERROR,*999)

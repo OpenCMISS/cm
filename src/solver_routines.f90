@@ -6364,7 +6364,7 @@ CONTAINS
   !
 
   !>Finishes the creation of boundary conditions for the given solver equations
-  SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(SOLVER_EQUATIONS,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: SOLVER_EQUATIONS !<A pointer to the solver equations to create boundary conditions for
