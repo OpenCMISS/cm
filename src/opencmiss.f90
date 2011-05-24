@@ -2018,6 +2018,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionEquationType = EQUATIONS_SET_DIFFUSION_EQUATION_TYPE !<Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetAdvectionDiffusionEquationType = EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionEquationType = EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBurgersEquationType = EQUATIONS_SET_BURGERS_EQUATION_TYPE !<Burgers equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBiharmonicEquationType = EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE !<Biharmonic equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainEquationType = EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE !<Monodomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBidomainEquationType = EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE !<Bidomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
@@ -2187,6 +2188,9 @@ MODULE OPENCMISS
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE !<Multi-component transport advection-diffusion equations set \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = & 
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE !<Multi-component transport advection-diffusion equations set using SUPG scheme \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticBurgersSubtype = EQUATIONS_SET_STATIC_BURGERS_SUBTYPE !<Static burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDynamicBurgersSubtype = EQUATIONS_SET_DYNAMIC_BURGERS_SUBTYPE !<Dynamic burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainBuenoOrovioSubtype= EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainTenTusscher06Subtype= EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2300,6 +2304,14 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionFourCompThreeDim = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_FOUR_COMP_THREE_DIM !<Prescribed solution, using a source term to correct for error - 3D with 3 compartments
   !>@}
+  !> \addtogroup OPENCMISS_BurgersAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Burgers
+  !> \brief The analytic function types for a burgers equation.
+  !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
+  !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticBurgersOneDim1 = EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1 
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDynamicBurgersOneDim1 =  &
+    & EQUATIONS_SET_DYNAMIC_BURGERS_EQUATION_ONE_DIM_1 
+  !>@}
   !> \addtogroup OPENCMISS_AdvectionDiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::AdvectionDiffusion
   !> \brief The analytic function types for an advection-diffusion equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
@@ -2404,7 +2416,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetDarcyPressureEquationType, &
     & CMISSEquationsSetElectrostaticType,CMISSEquationsSetMagnetoStaticType,CMISSEquationsSetMaxwellsEquationType, &
     & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetPoiseuilleEquationType,CMISSEquationsSetPoissonEquationType, &
-    & CMISSEquationsSetHelmholtzEquationType, &
+    & CMISSEquationsSetHelmholtzEquationType, CMISSEquationsSetBurgersEquationType, &
     & CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetAdvectionDiffusionEquationType, &
     & CMISSEquationsSetReactionDiffusionEquationType,CMISSEquationsSetBiharmonicEquationType, &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType, &
@@ -2472,7 +2484,8 @@ MODULE OPENCMISS
     & CMISSEquationsSetVectorDataPreFittingSubtype,CMISSEquationsSetDivFreeVectorDataPreFittingSubtype, &  
     & CMISSEquationsSetMatPropertiesDataFittingSubtype,CMISSEquationsSetMatPropertiesInriaModelDataFittingSubtype, &
     & CMISSEquationsSetPGMNavierStokesSubtype, &
-    & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype
+    & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype, &
+    & CMISSEquationsSetStaticBurgersSubtype, CMISSEquationsSetDynamicBurgersSubtype
 
   PUBLIC CMISSEquationsSetFEMSolutionMethod,CMISSEquationsSetBEMSolutionMethod,CMISSEquationsSetFDSolutionMethod, &
     & CMISSEquationsSetFVSolutionMethod,CMISSEquationsSetGFEMSolutionMethod,CMISSEquationsSetGFDSolutionMethod, &
@@ -2496,6 +2509,8 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 
   PUBLIC CMISSEquationsSetPoiseuilleTwoDim1
+
+  PUBLIC CMISSEquationsSetStaticBurgersOneDim1, CMISSEquationsSetDynamicBurgersOneDim1
 
   PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonTwoDim2,CMISSEquationsSetPoissonTwoDim3
   PUBLIC CMISSEquationsSetPoissonThreeDim1,CMISSEquationsSetPoissonThreeDim2,CMISSEquationsSetPoissonThreeDim3
@@ -4440,6 +4455,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionEquationType = PROBLEM_DIFFUSION_EQUATION_TYPE !<Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemAdvectionDiffusionEquationType = PROBLEM_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionEquationType = PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemBurgersEquationType = PROBLEM_BURGERS_EQUATION_TYPE !<Burgers equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemBiharmonicEquationType = PROBLEM_BIHARMONIC_EQUATION_TYPE !<Bi-harmonic equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainEquationType = PROBLEM_MONODOMAIN_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemBidomainEquationType = PROBLEM_BIDOMAIN_EQUATION_TYPE !<Bidomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
@@ -4517,6 +4533,9 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = &
     & PROBLEM_NONLINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
+  INTEGER(INTG), PARAMETER :: CMISSProblemStaticBurgersSubtype = PROBLEM_STATIC_BURGERS_SUBTYPE !<static Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemDynamicBurgersSubtype = PROBLEM_DYNAMIC_BURGERS_SUBTYPE !<dynamic Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardDataFittingSubtype = &
     & PROBLEM_STANDARD_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemVectorDataFittingSubtype = &
@@ -4590,7 +4609,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSProblemLaplaceEquationType,CMISSProblemPoissonEquationType,CMISSProblemHelmholtzEquationType, &
     & CMISSProblemWaveEquationType,CMISSProblemDiffusionEquationType,CMISSProblemAdvectionDiffusionEquationType, &
-    & CMISSProblemReactionDiffusionEquationType,CMISSProblemBiharmonicEquationType
+    & CMISSProblemReactionDiffusionEquationType,CMISSProblemBiharmonicEquationType, CMISSProblemBurgersEquationType
 
   PUBLIC CMISSProblemMonodomainEquationType,CMISSProblemBidomainEquationType
 
@@ -4639,6 +4658,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSProblemNoSourceStaticAdvecDiffSubtype,CMISSProblemLinearSourceStaticAdvecDiffSubtype, &
     & CMISSProblemNonlinearSourceStaticAdvecDiffSubtype
+
+  PUBLIC CMISSProblemStaticBurgersSubtype, CMISSProblemDynamicBurgersSubtype
 
   PUBLIC CMISSProblemStandardDataFittingSubtype,CMISSProblemGeneralisedDataFittingSubtype, &
     & CMISSProblemVectorDataFittingSubtype,CMISSProblemDivFreeVectorDataFittingSubtype, &

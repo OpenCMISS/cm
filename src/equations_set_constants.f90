@@ -89,6 +89,7 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE=8
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE=9
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_HJ_EQUATION_TYPE=10
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_BURGERS_EQUATION_TYPE=11
  !Bioelectrics class
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE=1
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE=2
@@ -235,6 +236,9 @@ MODULE EQUATIONS_SET_CONSTANTS
     !Subtypes for multi-compartment coupled transport (advection-diffusion equation)
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE=18
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE=19
+  ! Burgers equation
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC_BURGERS_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DYNAMIC_BURGERS_SUBTYPE=2
   !Bioelectrics class
   !  Monodomain equation
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE=1
@@ -399,6 +403,12 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \brief The analytic function types for an advection-diffusion equation
   !>@{  
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1=1 !<u(x,y)=tanh(1 - alpha.(x.tan(Phi) - y)),this is a steady-state solution
+  !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_BurgersAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:BurgersAnalyticFunctionTypes
+  !> \brief The analytic function types for a burgers equation
+  !>@{  
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1=1 !<Solution to a static burgers equation
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DYNAMIC_BURGERS_EQUATION_ONE_DIM_1=1 !<Solution to a dynamic burgers equation
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_LinearElasticityAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:LinearElasticityAnalyticFunctionTypes
   !> \brief The analytic function types for a Linear Elasticity equation
