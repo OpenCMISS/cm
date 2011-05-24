@@ -3129,14 +3129,14 @@ CONTAINS
 !kmith
                 ENDIF
 
-                !Set the stress and strain components to that of the FIRST dependent component
-                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & 1,DEPENDENT_MESH_COMPONENT,ERR,ERROR,*999)
+                !Set the stress and strain components to that of the first geometric component
+                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & 1,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 DO component_idx=1,NUMBER_OF_COMPONENTS_2
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U1_VARIABLE_TYPE, &
-                    & component_idx,DEPENDENT_MESH_COMPONENT,ERR,ERROR,*999)
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
-                    & component_idx,DEPENDENT_MESH_COMPONENT,ERR,ERROR,*999)
+                    & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 ENDDO !component_idx
 
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
