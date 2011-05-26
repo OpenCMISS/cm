@@ -446,6 +446,8 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_DYNAMIC_TIMES_SET
 
+  PUBLIC SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET
+
   PUBLIC SOLVER_EQUATIONS_CREATE_FINISH,SOLVER_EQUATIONS_CREATE_START
 
   PUBLIC SOLVER_EQUATIONS_DESTROY
@@ -5890,6 +5892,46 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_EIGENPROBLEM_SOLVE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the boundary conditions for solver equations. \see OPENCMISS_CMISSSolverEquationsBoundaryConditionsGet
+  SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET(SOLVER_EQUATIONS,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to get the boundary conditions for
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<On exit, a pointer to the boundary conditions for the specified solver equations. Must not be associated on entry
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
+        IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+          CALL FLAG_ERROR("Boundary conditions is already associated.",ERR,ERROR,*999)
+        ELSE
+          BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+          IF(.NOT.ASSOCIATED(BOUNDARY_CONDITIONS)) CALL FLAG_ERROR("Solver equations boundary conditions is not associated.", &
+            & ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET",ERR,ERROR)
+    CALL EXITS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET")
+    RETURN 1
+
+  END SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET
 
   !
   !================================================================================================================================

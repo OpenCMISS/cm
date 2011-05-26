@@ -104,7 +104,7 @@ MODULE EQUATIONS_SET_ROUTINES
 
   PUBLIC EQUATIONS_SET_CREATE_START,EQUATIONS_SET_CREATE_FINISH
 
-  PUBLIC EQUATIONS_SET_DESTROY
+  PUBLIC EQUATIONS_SET_DESTROY, EQUATIONS_SET_BOUNDARY_CONDITIONS_GET
 
   PUBLIC EQUATIONS_SETS_FINALISE,EQUATIONS_SETS_INITIALISE
 
@@ -2075,6 +2075,46 @@ CONTAINS
    
   END SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the boundary conditions for an equations set. \see OPENCMISS_CMISSEquationsSetBoundaryConditionsGet
+  SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the boundary conditions for
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<On exit, a pointer to the boundary conditions in the specified equations set. Must not be associated on entry
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("EQUATIONS_SET_BOUNDARY_CONDITIONS_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
+        IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+          CALL FLAG_ERROR("Boundary conditions is already associated.",ERR,ERROR,*999)
+        ELSE
+          BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+          IF(.NOT.ASSOCIATED(BOUNDARY_CONDITIONS)) CALL FLAG_ERROR("Equations set boundary conditions is not associated.", &
+            & ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("EQUATIONS_SET_BOUNDARY_CONDITIONS_GET")
+    RETURN
+999 CALL ERRORS("EQUATIONS_SET_BOUNDARY_CONDITIONS_GET",ERR,ERROR)
+    CALL EXITS("EQUATIONS_SET_BOUNDARY_CONDITIONS_GET")
+    RETURN 1
+
+  END SUBROUTINE EQUATIONS_SET_BOUNDARY_CONDITIONS_GET
+
   !
   !================================================================================================================================
   !
