@@ -297,14 +297,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     REAL(DP) :: k,phi,A,B,C,D,A1,A2,A3,A4
-    REAL(DP) :: X_PARAM,T_PARAM,K_PARAM,CONST_PARAM,BETA_PARAM,LAMBDA_PARAM,MU_PARAM
+    REAL(DP) :: X_PARAM,T_PARAM,NU_PARAM,CONST_PARAM,BETA_PARAM,LAMBDA_PARAM,MU_PARAM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    !Solution parameters for 
-    A1 = 0.4_DP
-    A2 = 0.3_DP
-    A3 = 0.2_DP
-    A4 = 0.1_DP
 
     CALL ENTERS("BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
 
@@ -313,18 +307,18 @@ CONTAINS
       SELECT CASE(ANALYTIC_FUNCTION_TYPE)
       CASE(EQUATIONS_SET_DYNAMIC_BURGERS_EQUATION_ONE_DIM_1)
         !For del[u]/del[t] + u.(del[u]/del[x]) = nu.(del^2[u]/del[x]^2)
-        !u(x,t)=1-tanh(x-x_0-t)/(2.nu))   for
+        !u(x,t)=1-tanh(x-x_0-t)/(2.nu))   with BCs,
         !u(0,t) = 2, u_{n} = 2.u_{n-1} - u_{n-2}
         !see http://www.cfd-online.com/Wiki/Burgers_equation
-        !OpenCMISS has del[u]/del[t] + u.(del[u]/del[x]) + K.(del^2[u]/del[x]^2) = 0,
-        !u(x,t)= 1 - tanh(x-x_0 - t)/(2.K)
-        K_PARAM=MATERIALS_PARAMETERS(1)  !nu
+        !OpenCMISS has del[u]/del[t] + u.(del[u]/del[x]) - nu.(del^2[u]/del[x]^2) = 0,
+        !u(x,t)= 1 - tanh(x-x_0 - t)/(2.nu)
+        NU_PARAM=MATERIALS_PARAMETERS(1)  !nu
         X_PARAM = 0.0_DP   !x_0
         SELECT CASE(VARIABLE_TYPE)
         CASE(FIELD_U_VARIABLE_TYPE)
           SELECT CASE(GLOBAL_DERIVATIVE)
           CASE(NO_GLOBAL_DERIV)
-            VALUE=1.0_DP - TANH((X(1)-X_PARAM-TIME)/(2.0_DP*K_PARAM)) 
+            VALUE=1.0_DP - TANH((X(1)-X_PARAM-TIME)/(2.0_DP*NU_PARAM)) 
           CASE(GLOBAL_DERIV_S1)
             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
@@ -713,8 +707,8 @@ CONTAINS
                 IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DYNAMIC_BURGERS_SUBTYPE .OR. &
                   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_BURGERS_SUBTYPE) THEN
                   !1 Materials field component
-                  !i.e., k = viscosity*(-1) in du/dt + u*(du/dx) + k*(d^2u/dx^2) = 0
-                  NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS
+                  !i.e., nu = viscosity in du/dt + u*(du/dx) + nu*(d^2u/dx^2) = 0
+                  NUMBER_OF_MATERIALS_COMPONENTS=1
                 ELSE
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -724,7 +718,7 @@ CONTAINS
                 !Set the number of materials components
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_MATERIALS_COMPONENTS,ERR,ERROR,*999)
-                !Default the k materials components to the geometric interpolation setup with constant interpolation
+                !Default the nu materials components to the geometric interpolation setup with constant interpolation
                 DO component_idx=1,NUMBER_OF_DIMENSIONS
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & component_idx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
@@ -776,15 +770,15 @@ CONTAINS
                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_DYNAMIC_BURGERS_SUBTYPE .OR. &
                   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_BURGERS_SUBTYPE) THEN
                   !1 Materials field component
-                  !i.e., k = viscosity*(-1) in du/dt + u*(du/dx) + k*(d^2u/dx^2) = 0
-                  NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS
+                  !i.e., nu = viscosity in du/dt + u*(du/dx) + nu*(d^2u/dx^2) = 0
+                  NUMBER_OF_MATERIALS_COMPONENTS=1
                 ELSE
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a nonlinear burgers equation."
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
-                !First set the k values to 1.0
+                !First set the nu values to 1.0
                 DO component_idx=1,NUMBER_OF_DIMENSIONS
                   CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VALUES_SET_TYPE,component_idx,1.0_DP,ERR,ERROR,*999)
@@ -1059,6 +1053,22 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_SET_DYNAMIC_BURGERS_SUBTYPE)
+
+!            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+!            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+!              EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
+!              IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN              
+!                IF(EQUATIONS_MATERIALS%MATERIALS_FINISHED) THEN
+!                  CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
+!                  CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_NONLINEAR,ERR,ERROR,*999)
+!                  CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
+!                ELSE
+!                  CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
+!                ENDIF
+!              ELSE
+!                CALL FLAG_ERROR("Equations materials is not associated.",ERR,ERROR,*999)
+!              ENDIF
+
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
@@ -1068,6 +1078,7 @@ CONTAINS
               ELSE
                 CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
               ENDIF
+
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
               CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -1076,34 +1087,40 @@ CONTAINS
                 CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                 !Create the equations mapping.
                 CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
+
+                CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
-                CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
-                CALL EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
+                CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR, & 
+                  & ERROR,*999)
+                CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
                 !Create the equations matrices
                 CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
-                SELECT CASE(EQUATIONS%SPARSITY_TYPE)
-                CASE(EQUATIONS_MATRICES_FULL_MATRICES)
-                  CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
-                    & ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE, &
-                    & ERR,ERROR,*999)
-                CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
-                  CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
-                    & (/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
-                    & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
-                    & (/EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
-                    & EQUATIONS_MATRIX_FEM_STRUCTURE,ERR,ERROR,*999)
-                CASE DEFAULT
-                  LOCAL_ERROR="The equations matrices sparsity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-                CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
+
+!                SELECT CASE(EQUATIONS%SPARSITY_TYPE)
+!                CASE(EQUATIONS_MATRICES_FULL_MATRICES)
+!                  CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
+!                    & ERR,ERROR,*999)
+!                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE, &
+!                    & ERR,ERROR,*999)
+!                CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
+!                  CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
+!                    & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE, &
+!                    & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
+!                  CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+!                       & (/EQUATION_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
+!                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
+!                    & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,ERR,ERROR,*999)
+!                  CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
+!                    & EQUATIONS_MATRIX_FEM_STRUCTURE,ERR,ERROR,*999)
+!                CASE DEFAULT
+!                  LOCAL_ERROR="The equations matrices sparsity type of "// &
+!                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+!                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                END SELECT
+!                CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
+
                 !Set up matrix storage and structure
                 IF(EQUATIONS%LUMPING_TYPE==EQUATIONS_LUMPED_MATRICES) THEN
                   !Set up lumping
@@ -1177,6 +1194,7 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           END SELECT
+
         CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -1195,6 +1213,7 @@ CONTAINS
                 & " is invalid for a nonlinear burgers equation."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
+
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a nonlinear burgers equation."
