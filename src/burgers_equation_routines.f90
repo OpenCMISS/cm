@@ -366,7 +366,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets up the BURGERS equation type of a classical field equations set class.
+  !>Sets up the BURGERS equation type of a fluid mechanics equations set class.
   SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
@@ -387,7 +387,7 @@ CONTAINS
         CALL BURGERS_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a BURGERS equation type of a classical field equation set class."
+          & " is not valid for a BURGERS equation type of a fluid mechanics equation set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -405,7 +405,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the solution method for a burgers equation type of an classical field equations set class.
+  !>Sets/changes the solution method for a burgers equation type of an fluid mechanics equations set class.
   SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
@@ -440,7 +440,7 @@ CONTAINS
         END SELECT    
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a BURGERS equation type of an classical field equations set class."
+          & " is not valid for a BURGERS equation type of a fluid mechanics equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -458,7 +458,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a BURGERS equation type of a classical field equations set class.
+  !>Sets/changes the equation subtype for a BURGERS equation type of a fluid mechanics equations set class.
   SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
@@ -474,16 +474,16 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET_SUBTYPE)
       CASE(EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
+        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_BURGERS_EQUATION_TYPE
         EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_BURGERS_SUBTYPE
       CASE(EQUATIONS_SET_DYNAMIC_BURGERS_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
+        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_BURGERS_EQUATION_TYPE
         EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_DYNAMIC_BURGERS_SUBTYPE
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a BURGERS equation type of a classical field equations set class."
+          & " is not valid for a BURGERS equation type of a fluid mechanics equations set class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -1262,7 +1262,7 @@ CONTAINS
         CALL BURGERS_EQUATION_PROBLEM_NONLINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a BURGERS equation type of a classical field problem class."
+          & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -1313,7 +1313,7 @@ CONTAINS
             CALL BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a BURGERS equation type of a classical field problem class."
+              & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -1527,7 +1527,7 @@ CONTAINS
             END IF
           CASE DEFAULT
             LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a BURGERS equation type of a classical field problem class."
+              & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -1584,7 +1584,7 @@ CONTAINS
               ! do nothing ???
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a BURGERS equation type of a classical field problem class."
+                & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -1644,7 +1644,7 @@ CONTAINS
               ! do nothing ???
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a BURGERS equation type of a classical field problem class."
+                & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -1692,7 +1692,7 @@ CONTAINS
             !CALL BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a BURGERS type of a classical field problem class."
+              & " is not valid for a BURGERS type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -1797,7 +1797,7 @@ CONTAINS
               ENDIF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a BURGERS equation type of a classical field problem class."
+                & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -2014,7 +2014,7 @@ CONTAINS
           ENDIF        
         CASE DEFAULT
           LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a BURGERS equation type of a classical field equations set class."
+            & " is not valid for a BURGERS equation type of a fluid mechanics equations set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
@@ -2051,16 +2051,16 @@ CONTAINS
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_SUBTYPE)
       CASE(PROBLEM_STATIC_BURGERS_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
+        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
         PROBLEM%TYPE=PROBLEM_BURGERS_EQUATION_TYPE
         PROBLEM%SUBTYPE=PROBLEM_STATIC_BURGERS_SUBTYPE  
       CASE(PROBLEM_DYNAMIC_BURGERS_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
+        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
         PROBLEM%TYPE=PROBLEM_BURGERS_EQUATION_TYPE
         PROBLEM%SUBTYPE=PROBLEM_DYNAMIC_BURGERS_SUBTYPE
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a BURGERS equation type of a classical field problem class."
+          & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -2154,7 +2154,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a Burgers classical field."
+              & " is invalid for a Burgers fluid mechanics class."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
@@ -2185,7 +2185,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-              & " is invalid for a Burgers classical field."
+              & " is invalid for a Burgers fluid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
@@ -2263,7 +2263,7 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-                & " is invalid for a Burgers classical field."
+                & " is invalid for a Burgers fluid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
@@ -2523,7 +2523,7 @@ CONTAINS
           IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
         CASE DEFAULT
           LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a Burgers type of a classical field set class."
+            & " is not valid for a Burgers type of a fluid mechanics set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
@@ -2737,7 +2737,7 @@ CONTAINS
           IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
         CASE DEFAULT
           LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a BURGERS equation type of a classical field equations set class."
+            & " is not valid for a BURGERS equation type of a fluid mechanics equations set class."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
