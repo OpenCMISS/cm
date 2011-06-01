@@ -418,16 +418,21 @@ static int CMISSEquationsSetOptimisationClass = 8;
  * >@{
  */
 static int CMISSEquationsSetNoType = 0;
+
 static int CMISSEquationsSetLinearElasticityType = 1;
 static int CMISSEquationsSetFiniteElasticityType = 2;
+
 static int CMISSEquationsSetStokesEquationType = 1;
 static int CMISSEquationsSetNavierStokesEquationType = 2;
 static int CMISSEquationsSetDarcyEquationType = 3;
-static int CMISSEquationsSetPoiseuilleEquationType = 4;
-static int CMISSEquationsSetDarcyPressureEquationType = 5;
+static int CMISSEquationsSetDarcyPressureEquationType = 4;
+static int CMISSEquationsSetPoiseuilleEquationType = 5;
+static int CMISSEquationsSetBurgersEquationType = 6;
+
 static int CMISSEquationsSetElectrostaticType = 1;
 static int CMISSEquationsSetMagnetostaticType = 2;
 static int CMISSEquationsSetMaxwellsEquationType = 3;
+
 static int CMISSEquationsSetLaplaceEquationType = 1;
 static int CMISSEquationsSetPoissonEquationType = 2;
 static int CMISSEquationsSetHelmholtzEquationType = 3;
@@ -436,9 +441,12 @@ static int CMISSEquationsSetDiffusionEquationType = 5;
 static int CMISSEquationsSetAdvectionDiffusionEquationType = 6;
 static int CMISSEquationsSetReactionDiffusionEquationType = 7;
 static int CMISSEquationsSetBiharmonicEquationType = 8;
+
 static int CMISSEquationsSetMonodomainEquationType = 1;
 static int CMISSEquationsSetBidomainEquationType = 2;
+
 static int CMISSEquationsSetLinearElasticModalType = 1;
+
 static int CMISSEquationsSetDataFittingEquationType = 9;
 /*
  * >@}
@@ -448,26 +456,40 @@ static int CMISSEquationsSetDataFittingEquationType = 9;
  * >@{
  */
 static int CMISSEquationsSetNoSubtype = 0;
+
 static int CMISSEquationsSetThreeDimensionalSubtype = 1;
 static int CMISSEquationsSetPlaneStressSubtype = 2;
 static int CMISSEquationsSetPlaneStrainSubtype = 3;
 static int CMISSEquationsSetOneDimensionalSubtype = 4;
 static int CMISSEquationsSetPlateSubtype = 5;
 static int CMISSEquationsSetShellSubtype = 6;
+
 static int CMISSEquationsSetStaticStokesSubtype = 1;
-static int CMISSEquationsSetLaplaceStokesSubtype = 1;
+static int CMISSEquationsSetLaplaceStokesSubtype = 2;
 static int CMISSEquationsSetTransientStokesSubtype = 3;
-static int CMISSEquationsSetALEStokesSubtype = 5;
 static int CMISSEquationsSetOptimisedStokesSubtype = 4;
+static int CMISSEquationsSetALEStokesSubtype = 5;
+static int CMISSEquationsSetPGMStokesSubtype = 6;
+
 static int CMISSEquationsSetStaticNavierStokesSubtype = 1;
 static int CMISSEquationsSetLaplaceNavierStokesSubtype = 2;
 static int CMISSEquationsSetTransientNavierStokesSubtype = 3;
 static int CMISSEquationsSet1DTransientNavierStokesSubtype = 3;
-static int CMISSEquationsSetALENavierStokesSubtype = 5;
 static int CMISSEquationsSetOptimisedNavierStokesSubtype = 4;
+static int CMISSEquationsSetALENavierStokesSubtype = 5;
+
 static int CMISSEquationsSetStandardDarcySubtype = 1;
 static int CMISSEquationsSetQuasistaticDarcySubtype = 2;
 static int CMISSEquationsSetALEDarcySubtype = 3;
+
+static int CMISSEquationsSetStaticPoiseuilleSubtype = 1;
+static int CMISSEquationsSetDynamicPoiseuilleSubtype = 1;
+
+static int CMISSEquationsSetGeneralisedBurgersSubtype = 1;
+static int CMISSEquationsSetStaticBurgersSubtype = 2;
+static int CMISSEquationsSetDynamicBurgersSubtype = 3;
+static int CMISSEquationsSetInviscidBurgersSubtype = 4;
+
 static int CMISSEquationsSetStandardLaplaceSubtype = 1;
 static int CMISSEquationsSetGeneralisedLaplaceSubtype = 2;
 static int CMISSEquationsSetMovingMeshLaplaceSubtype = 3;

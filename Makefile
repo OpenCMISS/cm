@@ -1032,7 +1032,6 @@ $(OBJECT_DIR)/boundary_condition_routines.o  : $(SOURCE_DIR)/boundary_condition_
 $(OBJECT_DIR)/classical_field_routines.o	:	$(SOURCE_DIR)/classical_field_routines.f90 \
 	$(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/base_routines.o \
-	$(OBJECT_DIR)/burgers_equation_routines.o \
 	$(OBJECT_DIR)/diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/fitting_routines.o \
@@ -1557,6 +1556,7 @@ $(OBJECT_DIR)/finite_elasticity_routines.o	:	$(SOURCE_DIR)/finite_elasticity_rou
 
 $(OBJECT_DIR)/fluid_mechanics_routines.o	:	$(SOURCE_DIR)/fluid_mechanics_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/burgers_equation_routines.o \
 	$(OBJECT_DIR)/Darcy_equations_routines.o \
 	$(OBJECT_DIR)/Darcy_pressure_equations_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
