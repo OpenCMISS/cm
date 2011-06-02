@@ -5542,12 +5542,19 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsCreateFinishObj
   END INTERFACE !CMISSSolverEquationsBoundaryConditionsCreateFinish
 
-  !>Start the creation of materials for an equations set. \see OPENCMISS::CMISSSolverEquationsBoundaryConditionsCreateFinish
+  !>Start the creation of boundary conditions for solver equations. \see OPENCMISS::CMISSSolverEquationsBoundaryConditionsCreateFinish
   INTERFACE CMISSSolverEquationsBoundaryConditionsCreateStart
     MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsCreateStartNumber0
     MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsCreateStartNumber1
     MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsCreateStartObj
   END INTERFACE !CMISSSolverEquationsBoundaryConditionsCreateStart
+
+  !>Get the boundary conditions for solver equations. \see OPENCMISS::CMISSSolverEquationsBoundaryConditionsCreateFinish
+  INTERFACE CMISSSolverEquationsBoundaryConditionsGet
+    MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsGetNumber0
+    MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsGetNumber1
+    MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsGetObj
+  END INTERFACE !CMISSSolverEquationsBoundaryConditionsGet
 
   PUBLIC CMISSSolverLinearType,CMISSSolverNonlinearType,CMISSSolverDynamicType,CMISSSolverDAEType,CMISSSolverEigenproblemType, &
     & CMISSSolverOptimiserType
@@ -5691,6 +5698,8 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverEquationsSparsityTypeSet
 
   PUBLIC CMISSSolverEquationsBoundaryConditionsCreateFinish,CMISSSolverEquationsBoundaryConditionsCreateStart
+
+  PUBLIC CMISSSolverEquationsBoundaryConditionsGet
 
 !!==================================================================================================================================
 !!
@@ -11115,77 +11124,6 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSBoundaryConditionsAddDOFToBoundaryObj
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the boundary conditions for an equations set identified by a user number. 
-  SUBROUTINE CMISSEquationsSetBoundaryConditionsGetNumber(RegionUserNumber,EquationsSetUserNumber,BoundaryConditions,Err)
-  
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to get the boundary conditions for.
-    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified equations set.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSEquationsSetBoundaryConditionsGetNumber",Err,ERROR,*999)
-    
-    NULLIFY(REGION)
-    NULLIFY(EQUATIONS_SET)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
-       IF(ASSOCIATED(EQUATIONS_SET)) THEN
-         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BoundaryConditions%BOUNDARY_CONDITIONS,Err,ERROR,*999)
-      ELSE
-        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
-          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-      ENDIF
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsGetNumber",Err,ERROR)
-    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSEquationsSetBoundaryConditionsGetNumber
-  
-  !
-  !================================================================================================================================
-  !
-  
-  !>Gets the boundary conditions for an equations set identified by a user number. 
-  SUBROUTINE CMISSEquationsSetBoundaryConditionsGetObj(EquationsSet,BoundaryConditions,Err)
-  
-    !Argument variables
-    TYPE(CMISSEquationsSetType), INTENT(IN) :: EquationsSet !<The equations set to get the boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, the boundary conditions for the specified equations set.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    
-    CALL ENTERS("CMISSEquationsSetBoundaryConditionsGetObj",ERR,ERROR,*999)
-
-    CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EquationsSet%EQUATIONS_SET,BoundaryConditions%BOUNDARY_CONDITIONS,Err,ERROR,*999)
-
-    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetObj")
-    RETURN
-999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsGetObj",Err,ERROR)
-    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSEquationsSetBoundaryConditionsGetObj
 
 !!==================================================================================================================================
 !!
@@ -20547,9 +20485,80 @@ CONTAINS
 
   END SUBROUTINE CMISSEquationsSetAnalyticUserParamGetObj
 
-  !  
+  !
   !================================================================================================================================
-  !  
+  !
+
+  !>Gets the boundary conditions for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetBoundaryConditionsGetNumber(RegionuserNumber,EquationsSetUserNumber,BoundaryConditions,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to get the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the boundary conditions for.
+    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified equations set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSEquationsSetBoundaryConditionsGetNumber",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(EQUATIONS_SET)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL EQUATIONS_SET_USER_NUMBER_FIND(EquationsSetUserNumber,REGION,EQUATIONS_SET,Err,ERROR,*999)
+       IF(ASSOCIATED(EQUATIONS_SET)) THEN
+         CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BoundaryConditions%BOUNDARY_CONDITIONS,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An equations set with an user number of "//TRIM(NUMBER_TO_VSTRING(EquationsSetUserNumber,"*",Err,ERROR))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsGetNumber",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSetBoundaryConditionsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the boundary conditions for an equations set identified by a user number.
+  SUBROUTINE CMISSEquationsSetBoundaryConditionsGetObj(EquationsSet,BoundaryConditions,Err)
+
+    !Argument variables
+    TYPE(CMISSEquationsSetType), INTENT(IN) :: EquationsSet !<The equations set to get the boundary conditions for.
+    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, the boundary conditions for the specified equations set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSEquationsSetBoundaryConditionsGetObj",ERR,ERROR,*999)
+
+    CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EquationsSet%EQUATIONS_SET,BoundaryConditions%BOUNDARY_CONDITIONS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSEquationsSetBoundaryConditionsGetObj",Err,ERROR)
+    CALL EXITS("CMISSEquationsSetBoundaryConditionsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSEquationsSetBoundaryConditionsGetObj
+
+  !
+  !================================================================================================================================
+  !
 
   !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by a user number.
   SUBROUTINE CMISSEquationsSetBoundaryConditionsAnalyticNumber(RegionUserNumber,EquationsSetUserNumber,Err)
@@ -46281,6 +46290,120 @@ CONTAINS
   !================================================================================================================================
   !
 
+  SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+    & BoundaryConditions,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations to get the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the solver equations boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations boundary conditions for.
+    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolverEquationsBoundaryConditionsGetNumber0",Err,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER_EQUATIONS)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_EQUATIONS_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER_EQUATIONS,Err,ERROR,*999)
+      IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET(SOLVER_EQUATIONS,BoundaryConditions%BOUNDARY_CONDITIONS,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="Solver equations with the given solver index and control loop identifier do not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsBoundaryConditionsGetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsBoundaryConditionsGetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsBoundaryConditionsGetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+    & BoundaryConditions,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations to start the boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations boundary conditions for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations boundary conditions for.
+    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolverEquationsBoundaryConditionsGetNumber1",Err,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER_EQUATIONS)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_EQUATIONS_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER_EQUATIONS,Err,ERROR,*999)
+      IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+        CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET(SOLVER_EQUATIONS,BoundaryConditions%BOUNDARY_CONDITIONS,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="Solver equations with the given solver index and control loop identifier do not exist."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverEquationsBoundaryConditionsGetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsBoundaryConditionsGetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsBoundaryConditionsGetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber1
+
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetObj(SolverEquations,BoundaryConditions,Err)
+
+    !Argument variables
+    TYPE(CMISSSolverEquationsType), INTENT(IN) :: SolverEquations !<The solver equations to get the boundary conditions for.
+    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+
+    CALL ENTERS("CMISSSolverEquationsBoundaryConditionsGetObj",Err,ERROR,*999)
+
+    CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET(SolverEquations%SOLVER_EQUATIONS,BoundaryConditions%BOUNDARY_CONDITIONS, &
+      & Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverEquationsBoundaryConditionsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverEquationsBoundaryConditionsGetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverEquationsBoundaryConditionsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetObj
+
+  !
+  !================================================================================================================================
+  !
 
   !>Get the user number of the given region.
   SUBROUTINE CMISSUserNumberGetRegion( Region, userNumber, Err )
