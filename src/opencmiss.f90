@@ -67,6 +67,7 @@ MODULE OPENCMISS
   USE EQUATIONS_SET_CONSTANTS
   USE EQUATIONS_SET_ROUTINES
   USE FIELD_ROUTINES
+  USE FIELDML_TYPES
   USE FIELDML_INPUT_ROUTINES
   USE FIELDML_OUTPUT_ROUTINES
   USE FIELDML_UTIL_ROUTINES
@@ -5637,7 +5638,7 @@ MODULE OPENCMISS
     & CMISSFieldmlInput_GetCoordinateSystemInfo, CMISSFieldmlInput_CreateBasis, CMISSFieldmlInput_CreateMeshComponent, &
     & CMISSFieldmlInput_CreateField
 
-  PUBLIC :: CMISSFieldmlUtil_FinaliseInfo
+  PUBLIC :: CMISSFieldmlUtil_FinaliseInfo, CMISSFieldmlUtil_Import
 
   INTERFACE CMISSFieldmlOutput_AddField
     MODULE PROCEDURE CMISSFieldmlOutput_AddField_NoType_Obj
@@ -46712,6 +46713,36 @@ CONTAINS
     
   END SUBROUTINE CMISSFieldmlOutput_CreateContinuousType
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Imports a FieldML object from the library into the current session.
+  SUBROUTINE CMISSFieldmlUtil_Import( fieldmlInfo, name, handle, Err )
+    !Argument variables
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
+    CHARACTER(KIND=C_CHAR,LEN=*) :: name
+    INTEGER(C_INT), INTENT(OUT) :: handle
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    
+    !Locals
+    TYPE(VARYING_STRING) :: stringName
+    
+    CALL ENTERS("CMISSFieldmlUtil_Import",Err,ERROR,*999)
+    
+    stringName = name
+    
+    handle = FieldmlUtil_Import( fieldmlInfo%fmlHandle, stringName )
+
+    CALL EXITS("CMISSFieldmlUtil_Import")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlUtil_Import",Err,ERROR)
+    CALL EXITS("CMISSFieldmlUtil_Import")    
+    CALL CMISS_HANDLE_ERROR( Err, ERROR )
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlUtil_Import
+  
   !
   !================================================================================================================================
   !

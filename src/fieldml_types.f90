@@ -57,14 +57,14 @@ MODULE FIELDML_TYPES
   ! FieldML types
 
   TYPE FieldmlInfoType
-    TYPE(C_PTR) :: fmlHandle
+    INTEGER(C_INT) :: fmlHandle
     INTEGER(C_INT) :: nodesHandle
-    INTEGER(C_INT) :: nodesVariableHandle
+    INTEGER(C_INT) :: nodesArgumentHandle
     INTEGER(C_INT) :: meshHandle
     INTEGER(C_INT) :: elementsHandle
-    INTEGER(C_INT) :: elementsVariableHandle
+    INTEGER(C_INT) :: elementsArgumentHandle
     INTEGER(C_INT) :: xiHandle
-    INTEGER(C_INT) :: xiVariableHandle
+    INTEGER(C_INT) :: xiArgumentHandle
     INTEGER(C_INT) :: nodeDofsHandle
 !    INTEGER(C_INT) :: elementDofsHandle
 !    INTEGER(C_INT) :: constantDofsHandle
