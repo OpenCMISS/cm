@@ -69,6 +69,10 @@ else
   GLOBAL_CELLML_ROOT := $(GLOBAL_ROOT)/../cellml
 endif
 
+ifndef OPENCMISSEXAMPLES_ROOT
+  OPENCMISSEXAMPLES_ROOT := $(GLOBAL_ROOT)/examples
+endif
+
 include $(EXTERNAL_UTILS_ROOT)/Makefile.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -130,7 +134,9 @@ ifndef EXAMPLE_PATH
   EXAMPLE_PATH :=
 endif
 
-EXAMPLE_ROOT = $(GLOBAL_ROOT)/examples/$(EXAMPLE_PATH)$(EXAMPLE_NAME)
+ifndef EXAMPLE_ROOT
+  EXAMPLE_ROOT := $(OPENCMISSEXAMPLES_ROOT)/$(EXAMPLE_PATH)$(EXAMPLE_NAME)
+endif
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifdef COMPILER_VERSION
