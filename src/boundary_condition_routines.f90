@@ -291,8 +291,6 @@ CONTAINS
                       ENDDO
 
                       ! Store Dirichlet dof indices
-                      ! Todo: Figure out what's going on here and what to change now boundary conditions are associated
-                      !       with the solver equations
                       SOLVER_EQUATIONS=>BOUNDARY_CONDITIONS%SOLVER_EQUATIONS
                       IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                         IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
