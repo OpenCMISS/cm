@@ -2409,7 +2409,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetDarcyPressureEquationType, &
     & CMISSEquationsSetElectrostaticType,CMISSEquationsSetMagnetoStaticType,CMISSEquationsSetMaxwellsEquationType, &
     & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetPoiseuilleEquationType,CMISSEquationsSetPoissonEquationType, &
-    & CMISSEquationsSetHelmholtzEquationType, CMISSEquationsSetHJEquationType &
+    & CMISSEquationsSetHelmholtzEquationType, CMISSEquationsSetHJEquationType, &
     & CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType,CMISSEquationsSetAdvectionDiffusionEquationType, &
     & CMISSEquationsSetReactionDiffusionEquationType,CMISSEquationsSetBiharmonicEquationType, &
     & CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType,CMISSEquationsSetLinearElasticModalType, &

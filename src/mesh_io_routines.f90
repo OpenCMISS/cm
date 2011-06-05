@@ -1,7 +1,7 @@
 !> \file
 !> $Id$
-!> \author Chris Bradley
-!> \brief This module handles all Hamilton-Jacobi equations routines.
+!> \author Ali Pashaei and Martin Steghöfer
+!> \brief This module handles all Mesh I/O routines.
 !>
 !> \section LICENSE
 !>
@@ -190,7 +190,7 @@ CONTAINS
     DO i=1,NUMBER_OF_NODES
       READ (11,*) NODE_ID,NODE_COORDINATES
       DO j=1,NUMBER_OF_NODE_COMPONENTS
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,i,j, &
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1,i,j, &
           & NODE_COORDINATES(j),ERR,ERROR,*999)
       ENDDO
     ENDDO
@@ -246,7 +246,8 @@ CONTAINS
     
     DO node_idx=1,NUMBER_OF_NODES
       DO dim_idx=1,NUMBER_OF_DIMENSIONS
-        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP(1,node_idx)
+        local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+            & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
         WRITE(12,*) GEOMETRIC_PARAMETERS(local_ny)
       ENDDO
     ENDDO

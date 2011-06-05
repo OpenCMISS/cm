@@ -63,7 +63,6 @@ MODULE SOLVER_ROUTINES
   USE ISO_VARYING_STRING
   USE NODE_ROUTINES
   USE PROBLEM_CONSTANTS
-  USE REGION_ROUTINES
   USE SOLVER_MAPPING_ROUTINES
   USE SOLVER_MATRICES_ROUTINES
   USE STRINGS
@@ -15695,32 +15694,35 @@ CONTAINS
                 FIBRE_FIELD=>EQUATIONS_SET%GEOMETRY%FIBRE_FIELD
 #ifdef USEPROCPOINTER
                 IF(ASSOCIATED(FMM_SOLVER%SPEED_FUNCTION)) THEN
-                  CALL REGION_NODES_GET(DEPENDENT_FIELD%REGION,NODES,Err,ERROR,*999)
+!TODO: Replace the following by another function (maybe from "fields"?) - we're not allowed to use region_routines here
+!                  CALL REGION_NODES_GET(DEPENDENT_FIELD%REGION,NODES,Err,ERROR,*999)
                   CALL NODES_NUMBER_OF_NODES_GET(NODES,NumberOfNodes,Err,ERROR,*999)
                   DO node_a=1,NumberOfNodes
                     DO node_b=node_a,NumberOfNodes
-                      CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,node_a,1,act_time_a,ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,node_b,1,act_time_b,ERR,ERROR,*999)
-                      IF (act_time_a > 0.0_DP .or. act_time_b > 0.0_DP) THEN
-                        CALL FMM_SOLVER%SPEED_FUNCTION(EQUATIONS_SET,node_a,node_b,time,ERR,ERROR)
-                        IF (act_time_a > 0.0_DP) THEN
-                          new_act_time = act_time_a + time
-                          IF (new_act_time < act_time_b) THEN
-                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                              & FIELD_VALUES_SET_TYPE,1,node_b,1,new_act_time,ERR,ERROR,*999)
+                      !IF (connected(node_a, node_b)) THEN
+                        CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,0,node_a,1,act_time_a,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_GET_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,0,node_b,1,act_time_b,ERR,ERROR,*999)
+                        IF (act_time_a > 0.0_DP .or. act_time_b > 0.0_DP) THEN
+                          CALL FMM_SOLVER%SPEED_FUNCTION(EQUATIONS_SET,node_a,node_b,time,ERR,ERROR)
+                          IF (act_time_a > 0.0_DP) THEN
+                            new_act_time = act_time_a + time
+                            IF (new_act_time < act_time_b) THEN
+                              CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,1,0,node_b,1,new_act_time,ERR,ERROR,*999)
+                            ENDIF
                           ENDIF
-                        ENDIF
-                        IF (act_time_b > 0.0_DP) THEN
-                          new_act_time = act_time_b + time
-                          IF (new_act_time < act_time_a) THEN
-                            CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                              & FIELD_VALUES_SET_TYPE,1,node_a,1,new_act_time,ERR,ERROR,*999)
+                          IF (act_time_b > 0.0_DP) THEN
+                            new_act_time = act_time_b + time
+                            IF (new_act_time < act_time_a) THEN
+                              CALL FIELD_PARAMETER_SET_UPDATE_NODE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                                & FIELD_VALUES_SET_TYPE,1,0,node_a,1,new_act_time,ERR,ERROR,*999)
+                            ENDIF
                           ENDIF
+                          PRINT *,node_a,node_b,time
                         ENDIF
-                        PRINT *,node_a,node_b,time
-                      ENDIF
+                      !ENDIF
                     ENDDO
                   ENDDO
                 ELSE
@@ -15799,20 +15801,19 @@ CONTAINS
     FIBRE_FIELD=>EQUATIONS_SET%GEOMETRY%FIBRE_FIELD
     
     DO d=1,num_dims
-      CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,NODE_A, &
+      CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0,NODE_A, &
         & d,coordinates_a(d),ERR,ERROR,*999)
-      CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,NODE_B, &
+      CALL FIELD_PARAMETER_SET_GET_NODE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0,NODE_B, &
         & d,coordinates_b(d),ERR,ERROR,*999)
       dist(d) = coordinates_b(d)-coordinates_a(d)
       
-      CALL FIELD_PARAMETER_SET_GET_NODE(FIBRE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,NODE_A, &
+      CALL FIELD_PARAMETER_SET_GET_NODE(FIBRE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0,NODE_A, &
         & d,fibre_direction_a(d),ERR,ERROR,*999)
-      CALL FIELD_PARAMETER_SET_GET_NODE(FIBRE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,NODE_B, &
+      CALL FIELD_PARAMETER_SET_GET_NODE(FIBRE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0,NODE_B, &
         & d,fibre_direction_b(d),ERR,ERROR,*999)
     ENDDO
     
     !TODO: Get fiber direction A
-    
     !TODO: Get speed A
     CALL SOLVER_FMM_SOLVE_CREATE_FIBER_MATRIX_TRANSPOSED(fibre_direction_a, fibre_direction_matrix_a, ERR, ERROR, *999)
     CALL SOLVER_FMM_SOLVE_CALCULATE_TRAVEL_TIME(fibre_direction_matrix_a, dist, speed_b, time_a, ERR, ERROR, *999)
