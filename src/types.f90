@@ -1199,7 +1199,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: DATA_TYPE !<The data type of the field variable.  \see FIELD_ROUTINES_DataTypes,FIELD_ROUTINES
     INTEGER(INTG) :: DOF_ORDER_TYPE !<The order of the DOF's in the field variable \see FIELD_ROUTINES_DOFOrderTypes,FIELD_ROUTINES
     INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS !<The maximum number of interpolation parameters in an element for a field variable. 
-    INTEGER(INTG) :: MAX_NUMBER_OF_INTERPOLATION_PARAMETERS_VERSION !<The maximum number of interpolation parameters in an element for a field variable with versions. 
     INTEGER(INTG) :: NUMBER_OF_DOFS !<Number of local degress of freedom for this field variable (excluding ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: TOTAL_NUMBER_OF_DOFS !<Number of local degrees of freedom for this field variable (including ghosted dofs). Old CMISS name NYNR(0,0,nc,nr,nx).
     INTEGER(INTG) :: NUMBER_OF_GLOBAL_DOFS !<Number of global degrees of freedom for this field variable. Old CMISS name NYNR(0,0,nc,nr,nx).
@@ -1290,7 +1289,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: STRUCTURE_TYPE !<The structure type of the element matrix. \see EQUATIONS_MATRICES_ROUTINES_EquationsMatrixStructureTypes,EQUATIONS_MATRICES_ROUTINES
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The current number of rows in the element matrix.
     INTEGER(INTG) :: NUMBER_OF_COLUMNS !<The current number of columns in the element matrix.
-    LOGICAL :: VERSION_MATRIX_EXTENSION !<Is .TRUE. if there is a version
     INTEGER(INTG) :: MAX_NUMBER_OF_ROWS !<The maximum (allocated) number of rows in the element matrix.
     INTEGER(INTG) :: MAX_NUMBER_OF_COLUMNS !<The maximu (allocated) number of columns in the element matrix.
     INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:) !<ROW_DOFS(i). The equations row that the i'th row of the element matrix belongs to.
@@ -1301,7 +1299,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information for an element vector.
   TYPE ELEMENT_VECTOR_TYPE
     INTEGER(INTG) :: NUMBER_OF_ROWS !<The current number of rows in the element vector
-    LOGICAL :: VERSION_MATRIX_EXTENSION !<Is .TRUE. if there is a version
     INTEGER(INTG) :: MAX_NUMBER_OF_ROWS !<The maximum (allocated) number of rows in the element vecotr
     INTEGER(INTG), ALLOCATABLE :: ROW_DOFS(:) !<ROW_DOFS(i). The equations row that the i'th row of the element vector belongs to
     REAL(DP), ALLOCATABLE :: VECTOR(:) !<VECTOR(i). The value of the i'th row of the element vector
@@ -2451,6 +2448,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the Newton line search solver information
     TYPE(NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Newton trust region solver information
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
+    TYPE(SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the linked CellML solver
   END TYPE NEWTON_SOLVER_TYPE
     
   !>Contains information for a nonlinear solver
@@ -2479,14 +2477,22 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the CellML evaluation solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     TYPE(CELLML_TYPE), POINTER :: CELLML !<A pointer to the CellML environment for the solver
+    REAL(DP) :: CURRENT_TIME !<The current time value for the evaluator solver
   END TYPE CELLML_EVALUATOR_SOLVER_TYPE
 
-  !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
+   !>A buffer type to allow for an array of pointers to a SOLVER_TYPE \see TYPES::SOLVER_TYPE
+  TYPE SOLVER_PTR_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: PTR
+  END TYPE SOLVER_PTR_TYPE
+
+ !>Contains information on the type of solver to be used. \see OPENCMISS::CMISSSolverType
   TYPE SOLVER_TYPE
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer to the control loop solvers
     INTEGER(INTG) :: GLOBAL_NUMBER !<The global number of the solver in the list of solvers
     TYPE(SOLVER_TYPE), POINTER :: LINKING_SOLVER !<A pointer to any solver that is linking to this solver
-    TYPE(SOLVER_TYPE), POINTER :: LINKED_SOLVER !<A pointer to any linked solver
+    INTEGER(INTG) :: NUMBER_OF_LINKED_SOLVERS !<The number of linked solvers
+    TYPE(SOLVER_PTR_TYPE), ALLOCATABLE :: LINKED_SOLVERS(:) !<LINKED_SOLVERS(linked_solver_idx). A pointer to the linked solvers
+    TYPE(SOLVER_PTR_TYPE), ALLOCATABLE :: LINKED_SOLVER_TYPE_MAP(:) !<LINKED_SOLVER_TYPE_MAP(linked_solver_idx). The map from the available linked solver types to the linked solver types that are defined for the solver. linked_solver_idx varies from 1 to SOLVER_ROUTINES::SOLVER_NUMBER_OF_SOLVER_TYPES. If the particular linked solver type has not been defined on the solver then the LINKED_SOLVER_TYPE_MAP will be NULL. \see SOLVER_ROUTINES_SolverTypes
     LOGICAL :: SOLVER_FINISHED !<Is .TRUE. if the solver has finished being created, .FALSE. if not.
     TYPE(VARYING_STRING) :: LABEL !<A user defined label for the solver.
      
@@ -2506,11 +2512,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS !<A pointer to the CellML equations
     
   END TYPE SOLVER_TYPE
-
-  !>A buffer type to allow for an array of pointers to a SOLVER_TYPE \see TYPES::SOLVER_TYPE
-  TYPE SOLVER_PTR_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: PTR
-  END TYPE SOLVER_PTR_TYPE
 
   !>Contains information on the solvers to be used in a control loop
   TYPE SOLVERS_TYPE
@@ -2982,3 +2983,4 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
 
 END MODULE TYPES
+
