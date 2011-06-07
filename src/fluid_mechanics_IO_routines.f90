@@ -719,7 +719,7 @@ CONTAINS
              & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
              & cmiss%data_dp(K+NodesPerMeshComponent(1))
 
-            IF(NumberOfDimensions==3 .OR. NumberOfDimensions==1)THEN
+            IF(NumberOfDimensions==3)THEN
            NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
 !                & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
                & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
@@ -2250,7 +2250,7 @@ CONTAINS
       WRITE(14,'("    ", es25.16 )')NodeUValue(I)
       WRITE(14,'("    ", es25.16 )')NodeVValue(I)
 
-      IF(NumberOfDimensions==3 .OR. NumberOfDimensions==1) THEN
+      IF(NumberOfDimensions==3 .OR. NumberOfDimensions==2) THEN
       WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 

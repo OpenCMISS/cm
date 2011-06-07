@@ -1343,7 +1343,7 @@ CONTAINS
   SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*)
 
    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver to evaluate the residual for
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER, LINKING_SOLVER !<A pointer to the solver to evaluate the residual for
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -1351,11 +1351,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(SOLVER_TYPE), POINTER :: CELLML_SOLVER, LINKING_SOLVER
     
-    NULLIFY(CELLML_SOLVER)
-    NULLIFY(LINKING_SOLVER)
-
     CALL ENTERS("PROBLEM_SOLVER_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
@@ -1371,13 +1367,6 @@ CONTAINS
                 IF(LINKING_SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
                   !Update the field values from the dynamic factor * current solver values AND add in mean predicted displacements/
                   CALL SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE(SOLVER,ERR,ERROR,*999)
-                  !Caculate the strain field for an CellML evaluator solver
-                  CALL PROBLEM_PRE_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*999)
-                  !check for a linked CellML solver 
-                  CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
-                  IF(ASSOCIATED(CELLML_SOLVER)) THEN
-                    CALL SOLVER_SOLVE(CELLML_SOLVER,ERR,ERROR,*999)
-                  ENDIF
                   !Calculate the residual for each element (M, C, K and g)
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                     EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -1399,13 +1388,6 @@ CONTAINS
                 !Perform as normal nonlinear solver
                 !Copy the current solution vector to the dependent field
                 CALL SOLVER_VARIABLES_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
-                !Caculate the strain field for an CellML evaluator solver
-                CALL PROBLEM_PRE_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*999)
-                !check for a linked CellML solver 
-                CELLML_SOLVER=>SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
-                IF(ASSOCIATED(CELLML_SOLVER)) THEN
-                  CALL SOLVER_SOLVE(CELLML_SOLVER,ERR,ERROR,*999)
-                ENDIF
                 !Make sure the equations sets are up to date
                 DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
@@ -1430,7 +1412,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Solver solver equations mapping is not associated.",ERR,ERROR,*999)
         ENDIF
-        CALL PROBLEM_POST_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*999)
       ELSE
         CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
@@ -1444,254 +1425,6 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLVER_RESIDUAL_EVALUATE")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Pre-evaluates the residual for the solver
-  SUBROUTINE PROBLEM_PRE_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to pre-evaluate the residual for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: equations_set_idx
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("PROBLEM_PRE_RESIDUAL_EVALUATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-          SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-          IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-            DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                EQUATIONS=>EQUATIONS_SET%EQUATIONS
-                IF(ASSOCIATED(EQUATIONS)) THEN
-                  IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-                    SELECT CASE(EQUATIONS%LINEARITY)
-                    CASE(EQUATIONS_LINEAR)            
-                      CALL FLAG_ERROR("Can not pre-evaluate a residual for linear equations.",ERR,ERROR,*999)
-                    CASE(EQUATIONS_NONLINEAR)
-                      SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
-                      CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC,EQUATIONS_FIRST_ORDER_DYNAMIC) ! quasistatic handled like static
-                        SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
-                        CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                          SELECT CASE(EQUATIONS_SET%CLASS)
-                          CASE(EQUATIONS_SET_ELASTICITY_CLASS)
-                            CALL ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-                          CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                            !Pre residual evaluate not used
-                          CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-                            !Pre residual evaluate not used
-                          CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-                            !Pre residual evaluate not used
-                          CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-                            !Pre residual evaluate not used
-                          CASE(EQUATIONS_SET_MODAL_CLASS)
-                            !Pre residual evaluate not used
-                          CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
-                            !Pre residual evaluate not used
-                          CASE DEFAULT
-                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
-                              & " is not valid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT !EQUATIONS_SET%CLASS
-                        CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE DEFAULT
-                          LOCAL_ERROR="The equations set solution method  of "// &
-                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
-                            & " is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT !EQUATIONS_SET%SOLUTION_METHOD
-                      CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(EQUATIONS_TIME_STEPPING)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE DEFAULT
-                        LOCAL_ERROR="The equations set time dependence type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                    CASE(EQUATIONS_NONLINEAR_BCS)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The equations linearity of "// &
-                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("Equations have not been finished.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-                ENDIF      
-              ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ENDDO !equations_set_idx
-          ELSE
-            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF    
-       
-    CALL EXITS("PROBLEM_PRE_RESIDUAL_EVALUATE")
-    RETURN
-999 CALL ERRORS("PROBLEM_PRE_RESIDUAL_EVALUATE",ERR,ERROR)
-    CALL EXITS("PROBLEM_PRE_RESIDUAL_EVALUATE")
-    RETURN 1
-    
-  END SUBROUTINE PROBLEM_PRE_RESIDUAL_EVALUATE
-     
-  !
-  !================================================================================================================================
-  !
-
-  !>Post-evaluates the residual for the solver
-  SUBROUTINE PROBLEM_POST_RESIDUAL_EVALUATE(SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to post-evaluate the residual for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: equations_set_idx
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("PROBLEM_POST_RESIDUAL_EVALUATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(SOLVER)) THEN
-      IF(SOLVER%SOLVER_FINISHED) THEN
-        SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-        IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-          SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-          IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-            DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-              EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-              IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                EQUATIONS=>EQUATIONS_SET%EQUATIONS
-                IF(ASSOCIATED(EQUATIONS)) THEN
-                  IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-                    SELECT CASE(EQUATIONS%LINEARITY)
-                    CASE(EQUATIONS_LINEAR)            
-                      CALL FLAG_ERROR("Can not post-evaluate a residual for linear equations.",ERR,ERROR,*999)
-                    CASE(EQUATIONS_NONLINEAR)
-                      SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
-                      CASE(EQUATIONS_STATIC,EQUATIONS_QUASISTATIC,EQUATIONS_FIRST_ORDER_DYNAMIC) ! quasistatic handled like static
-                        SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
-                        CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                          SELECT CASE(EQUATIONS_SET%CLASS)
-                          CASE(EQUATIONS_SET_ELASTICITY_CLASS)
-                            CALL ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-                          CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                            !Post residual evaluate not used
-                          CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-                            !Post residual evaluate not used
-                          CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-                            !Post residual evaluate not used
-                          CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-                            !Post residual evaluate not used
-                          CASE(EQUATIONS_SET_MODAL_CLASS)
-                            !Post residual evaluate not used
-                          CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
-                            !Post residual evaluate not used
-                          CASE DEFAULT
-                            LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))// &
-                              & " is not valid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                          END SELECT !EQUATIONS_SET%CLASS
-                        CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                        CASE DEFAULT
-                          LOCAL_ERROR="The equations set solution method  of "// &
-                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
-                            & " is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT !EQUATIONS_SET%SOLUTION_METHOD
-                      CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE(EQUATIONS_TIME_STEPPING)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE DEFAULT
-                        LOCAL_ERROR="The equations set time dependence type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                    CASE(EQUATIONS_NONLINEAR_BCS)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The equations linearity of "// &
-                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                  ELSE
-                    CALL FLAG_ERROR("Equations have not been finished.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-                ENDIF      
-              ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ENDDO !equations_set_idx
-          ELSE
-            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    ENDIF    
-       
-    CALL EXITS("PROBLEM_POST_RESIDUAL_EVALUATE")
-    RETURN
-999 CALL ERRORS("PROBLEM_POST_RESIDUAL_EVALUATE",ERR,ERROR)
-    CALL EXITS("PROBLEM_POST_RESIDUAL_EVALUATE")
-    RETURN 1
-    
-  END SUBROUTINE PROBLEM_POST_RESIDUAL_EVALUATE
 
   !
   !================================================================================================================================
@@ -2255,82 +1988,107 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Solves dynamic nonlinear solver equations.
-  SUBROUTINE PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE(SOLVER_EQUATIONS,ERR,ERROR,*)
-    
-   !Argument variables
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to solve
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: equations_set_idx,loop_idx
-    REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_TIME_LOOP
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
-    TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
-    
-    CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-      SOLVER=>SOLVER_EQUATIONS%SOLVER
-      IF(ASSOCIATED(SOLVER)) THEN
-        SOLVERS=>SOLVER%SOLVERS
-        IF(ASSOCIATED(SOLVER)) THEN
-          CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
-          IF(ASSOCIATED(CONTROL_LOOP)) THEN
-            SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-            IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-             !Make sure the equations sets are up to date
-              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                !CALL EQUATIONS_SET_FIXED_CONDITIONS_APPLY(EQUATIONS_SET,ERR,ERROR,*999)
-                !Assemble the equations for nonlinear problems
-                CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
-                IF(.NOT.SOLVER%DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                  CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ENDIF
-              ENDDO !equations_set_idx
-              !Get current control loop times
-              CONTROL_TIME_LOOP=>CONTROL_LOOP
-              DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
-                IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-                  CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-                  EXIT
-                ENDIF
-                IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
-                  CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
-                ELSE
-                  CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
-                ENDIF
-              ENDDO
-              !Set the solver time
-              CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-              !Solve for the next time i.e., current time + time increment
-              CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-            ELSE
-              CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Solvers control loop is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE")
-    RETURN
-999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE",ERR,ERROR)
-    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE")
-    RETURN 1
-  END SUBROUTINE PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE
+!>Solves dynamic nonlinear solver equations.
+   SUBROUTINE PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE(SOLVER_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to solve
+     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+     !Local Variables
+     INTEGER(INTG) :: equations_set_idx,loop_idx
+     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
+     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP,CONTROL_TIME_LOOP
+     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+     TYPE(SOLVER_TYPE), POINTER :: SOLVER
+     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
+     TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+     CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE",ERR,ERROR,*999)
+
+     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+       SOLVER=>SOLVER_EQUATIONS%SOLVER
+       IF(ASSOCIATED(SOLVER)) THEN
+         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+           SOLVERS=>SOLVER%SOLVERS
+           IF(ASSOCIATED(SOLVER)) THEN
+             CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
+             IF(ASSOCIATED(CONTROL_LOOP)) THEN
+               SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+               IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                 DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                   IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+                     !If we need to restart or we haven't initialised yet, make sure the equations sets are up to date
+                     EQUATIONS=>EQUATIONS_SET%EQUATIONS
+                     IF(ASSOCIATED(EQUATIONS)) THEN
+                       SELECT CASE(EQUATIONS%LINEARITY)
+                       CASE(EQUATIONS_LINEAR)
+                         !Assemble the equations
+                         CALL EQUATIONS_SET_ASSEMBLE(EQUATIONS_SET,ERR,ERROR,*999)
+                       CASE(EQUATIONS_NONLINEAR)
+                         !Evaluate the residuals
+                         CALL EQUATIONS_SET_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+                       CASE(EQUATIONS_NONLINEAR_BCS)
+                         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                       CASE DEFAULT
+                         LOCAL_ERROR="The equations linearity type of "// &
+                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS%LINEARITY,"*",ERR,ERROR))// &
+                           & " is invalid."
+                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                       END SELECT
+                     ELSE
+                       CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                     ENDIF
+                   ENDIF
+                 ENDDO !equations_set_idx
+                 !Get current control loop times. The control loop may be a sub loop below a time loop, so iterate up
+                 !through loops checking for the time loop
+                 CONTROL_TIME_LOOP=>CONTROL_LOOP
+                 DO loop_idx=1,CONTROL_LOOP%CONTROL_LOOP_LEVEL
+                   IF(CONTROL_TIME_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+                     CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_TIME_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+                     EXIT
+                   ENDIF
+                   IF(ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
+                     CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
+                   ELSE
+                    CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+                   ENDIF
+                 ENDDO
+                 !Set the solver time
+                 CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+                 !Solve for the next time i.e., current time + time increment
+                 CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+              ELSE
+                 CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+             ELSE
+               CALL FLAG_ERROR("Solvers control loop is not associated.",ERR,ERROR,*999)
+             ENDIF
+           ELSE
+             CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
+           ENDIF
+         ELSE
+           CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+         ENDIF
+       ELSE
+         CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+       ENDIF
+     ELSE
+       CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+     ENDIF
+
+     CALL EXITS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE")
+     RETURN
+ 999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE",ERR,ERROR)
+     CALL EXITS("PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE")
+     RETURN 1
+   END SUBROUTINE PROBLEM_SOLVER_EQUATIONS_DYNAMIC_NONLINEAR_SOLVE
 
   !
   !================================================================================================================================
@@ -3489,4 +3247,5 @@ SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
 996 CALL FLAG_WARNING("Error evaluating nonlinear residual.",ERR,ERROR,*995)
 995 RETURN    
 END SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
-
+        
+ 

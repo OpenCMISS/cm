@@ -8394,7 +8394,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: NUMBER_OF_VERSIONS,ne,nn,derivative_idx,node_idx
+    INTEGER(INTG) :: NUMBER_OF_VERSIONS,ne,nn,derivative_idx,node_idx,version_idx
     INTEGER(INTG), ALLOCATABLE :: VERSIONS(:)
     TYPE(LIST_PTR_TYPE), POINTER :: NODE_VERSION_LIST(:,:)
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: ELEMENTS
@@ -8437,11 +8437,13 @@ CONTAINS
               CALL LIST_REMOVE_DUPLICATES(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,ERR,ERROR,*999)
               CALL LIST_DETACH_AND_DESTROY(NODE_VERSION_LIST(derivative_idx,node_idx)%PTR,NUMBER_OF_VERSIONS,VERSIONS, &
                 & ERR,ERROR,*999)
-              NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS = NUMBER_OF_VERSIONS
-              ALLOCATE(NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS(NUMBER_OF_VERSIONS),STAT=ERR)
+              NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS = MAXVAL(VERSIONS(1:NUMBER_OF_VERSIONS))
+              ALLOCATE(NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS(NODES%NODES(node_idx)% &
+                & DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate node global derivative index.",ERR,ERROR,*999)
-              !\todo Possible bug in LIST_REMOVE_DUPLICATES, when it comes time to LIST_DETACH_AND_DESTROY the deleted list values are still present. Or is this how lists are supposed to work - you shift the deleted one to the end of the list and just change the number of list values to -1 
-              NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS = VERSIONS(1:NUMBER_OF_VERSIONS)
+              DO version_idx=1,NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%NUMBER_OF_VERSIONS 
+                NODES%NODES(node_idx)%DERIVATIVES(derivative_idx)%USER_VERSION_NUMBERS(version_idx) = version_idx
+              ENDDO !version_idx
               DEALLOCATE(VERSIONS)
             ENDDO!derivative_idx
           ENDDO!node_idx
