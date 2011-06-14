@@ -7,6 +7,7 @@ the reader who would like to see his or her name in the nose AUTHORS file.
 """
 import traceback
 from nose.plugins import Plugin
+from datetime import date
 
 import inspect,os
 
@@ -59,19 +60,19 @@ class HtmlOutput(Plugin):
     def insertLog(self, test):
         compiler = os.environ['COMPILER']
         if str(test).find('test_build_library')!=-1 :
-          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + compiler 
-          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + compiler 
+          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + compiler + str(date.today()) 
+          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + compiler
         elif str(test).find('test_example')!=-1 :
           path = list(test.test.arg)[1]
           path = path[path.find("/examples/")+10:]
           if list(test.test.arg)[0]=='build' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + compiler
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + compiler + str(date.today())
             historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history_" + compiler
           elif list(test.test.arg)[0]=='run' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + compiler
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + compiler + str(date.today())
             historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history_" + compiler
           elif list(test.test.arg)[0]=='check' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + compiler
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + compiler + str(date.today())
             historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history_" + compiler
         self.html.append('&nbsp;<a href="'+logPath+'">log</a>')
         self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
