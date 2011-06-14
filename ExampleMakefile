@@ -85,6 +85,10 @@ ifndef USEFIELDML
   USEFIELDML := false
 endif
 
+ifndef USECUDA
+  USECUDA := false
+endif
+
 ifeq ($(MPI),mpich2)
   MPI := mpich2
 else
@@ -120,6 +124,17 @@ ifeq ($(MPIPROF),true)
       $(error intel trace collector not setup)
     endif
   endif
+endif
+
+ifeq ($(USECUDA),true)
+  ifndef CUDA_ROOT
+    $(error CUDA_ROOT is not defined)
+  endif
+  CUDA_DIR := ${CUDA_ROOT}
+  ifndef CUDA_SDK_ROOT
+    $(error CUDA_SDK_ROOT is not defined)
+  endif
+  CUDA_SDK_DIR := ${CUDA_SDK_ROOT}
 endif
 
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -839,6 +854,32 @@ else
   endif
 endif
 
+#CUDA
+CUDA_LIBRARIES =#
+CUDA_LIB_PATH =#
+CUDA_SDK_LIBRARIES =#
+CUDA_SDK_LIB_PATH =#
+ifeq ($(USECUDA),true)
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    CUDA_LIBRARIES += -lcudart
+    ifeq ($(API),32)
+      CUDA_LIB_PATH += $(addprefix -L, $(CUDA_DIR)/lib )
+      CUDA_SDK_LIBRARIES += -lcutil -lshrutil
+    else
+      CUDA_LIB_PATH += $(addprefix -L, $(CUDA_DIR)/lib64 )
+      CUDA_SDK_LIBRARIES += -lcutil_x86_64 -lshrutil_x86_64
+    endif
+    CUDA_SDK_LIB_PATH += $(addprefix -L, $(CUDA_SDK_DIR)/C/common/lib/linux )
+    CUDA_SDK_LIB_PATH += $(addprefix -L, $(CUDA_SDK_DIR)/shared/lib/linux )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+        $(error CUDA not implemented for AIX)
+    else# windows
+        $(error CUDA not implemented for Windows)
+    endif
+  endif
+endif
+
 OPENCMISS_LIBRARY = $(LIBRARY)
 OPENCMISS_INCLUDE_PATH = $(addprefix -I, $(INC_DIR) )
 
@@ -855,6 +896,11 @@ ifeq ($(USEFIELDML),true)
   EXTERNAL_LIBRARIES += $(FIELDML_LIBRARIES)
   EXTERNAL_LIB_PATH += $(FIELDML_LIB_PATH)
   EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
+endif
+
+ifeq ($(USECUDA),true)
+  EXTERNAL_LIBRARIES += $(CUDA_SDK_LIBRARIES) $(CUDA_LIBRARIES) 
+  EXTERNAL_LIB_PATH += $(CUDA_SDK_LIB_PATH) $(CUDA_LIB_PATH)
 endif
 
 EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
@@ -892,11 +938,11 @@ $(EXE_DIR) :
 	mkdir -p $@; 
 
 $(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
-	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES) -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -lcudart -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -L/usr/local/cuda/lib64/ -lcudart -lcutil_x86_64 -lshrutil_x86_64
+	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
+#	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES) -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -lcudart -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -L/usr/local/cuda/lib64/ -lcudart -lcutil_x86_64 -lshrutil_x86_64
 
 $(OPENCMISS_LIBRARY) :
 	( cd $(GLOBAL_ROOT); $(MAKE) )
-
 
 # Place the list of dependencies for the objects here.
 #
