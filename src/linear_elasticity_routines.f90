@@ -80,7 +80,8 @@ MODULE LINEAR_ELASTICITY_ROUTINES
   !Interfaces
 
   PUBLIC LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE,LINEAR_ELASTICITY_EQUATIONS_SET_SETUP, &
-    & LINEAR_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET,LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET, &
+    & LINEAR_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET,LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE, &
+    & LINEAR_ELASTICITY_EQUATIONS_SET_SUBTYPE_SET, &
     & LINEAR_ELASTICITY_PROBLEM_SUBTYPE_SET,LINEAR_ELASTICITY_PROBLEM_SETUP
 
 CONTAINS
@@ -90,10 +91,11 @@ CONTAINS
   !
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -103,7 +105,6 @@ CONTAINS
     REAL(DP) :: FORCE_Z
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
     LOGICAL :: SET_BC
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
@@ -349,7 +350,6 @@ CONTAINS
             ! SET BOUNDARY CONDITIONS & ANALYTIC SOLUTION VALUES
             !
             NULLIFY(BOUNDARY_CONDITIONS)
-            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
               DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
                 variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
@@ -1061,7 +1061,7 @@ CONTAINS
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
@@ -1812,20 +1812,6 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
             ENDIF
-          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                  CALL LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
-            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -2181,20 +2167,6 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
             ENDIF
-          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                  CALL LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
-            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -2548,20 +2520,6 @@ CONTAINS
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                  CALL LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &

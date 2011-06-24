@@ -81,6 +81,7 @@ MODULE DARCY_EQUATIONS_ROUTINES
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SETUP
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SUBTYPE_SET
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC DARCY_EQUATION_ANALYTIC_CALCULATE
 
   PUBLIC DARCY_EQUATION_PROBLEM_SETUP
   PUBLIC DARCY_EQUATION_PROBLEM_SUBTYPE_SET
@@ -1267,20 +1268,6 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
                   ENDIF
-                CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-                  IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                        CALL DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                      ELSE
-                        CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
-                  ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -1327,20 +1314,6 @@ CONTAINS
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-                  IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                        CALL DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                      ELSE
-                        CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
                   ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
@@ -4774,7 +4747,7 @@ CONTAINS
                             DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                             GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                             IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                              BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                              BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                 EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
@@ -5405,10 +5378,11 @@ CONTAINS
   !
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -5417,7 +5391,6 @@ CONTAINS
     REAL(DP) :: VALUE,X(3),ARG(3),L,XI_COORDINATES(3),FACT,PERM_OVER_VIS_PARAM
     REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2), T_COORDINATES(20,3)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
@@ -5464,7 +5437,6 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
               & ERR,ERROR,*999)
             NULLIFY(BOUNDARY_CONDITIONS)
-            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
               CURRENT_TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)
               DO variable_idx=3,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
@@ -5576,7 +5548,6 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
               & ERR,ERROR,*999)
             NULLIFY(BOUNDARY_CONDITIONS)
-            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
               DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
                 variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
@@ -6949,7 +6920,7 @@ CONTAINS
 ! !                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
 ! !                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
 ! !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-! ! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+! ! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 ! ! !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% & 
 ! ! !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
 ! ! !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN

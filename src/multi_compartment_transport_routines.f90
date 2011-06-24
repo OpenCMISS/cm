@@ -612,8 +612,8 @@ CONTAINS
                                       IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
                                         DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
                                         IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(EQUATIONS_SET%BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
-                                            & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                                          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                            & FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                                           IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                             !Loop over the local nodes excluding the ghosts.
                                             DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES

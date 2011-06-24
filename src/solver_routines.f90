@@ -10386,7 +10386,7 @@ CONTAINS
                                       & FIELD_VALUES_SET_TYPE,RHS_PARAMETERS,ERR,ERROR,*999)
                                     RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
                                     IF(ASSOCIATED(RHS_VECTOR)) THEN
-                                      BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                                      BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                                       IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
   !!TODO: what if the equations set doesn't have a RHS vector???
                                         rhs_variable_type=RHS_MAPPING%RHS_VARIABLE_TYPE
@@ -11601,7 +11601,7 @@ CONTAINS
                                       CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
-                                  BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                                  BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                                   IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
 !!TODO: what if the equations set doesn't have a RHS vector???
                                     RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE

@@ -9818,18 +9818,33 @@ CONTAINS
   !
 
   !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME= &
-    & "CMISSEquationsSetBoundaryConditionsAnalyticNum")
+  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum(RegionUserNumber,EquationsSetUserNumber,ProblemUserNumber, &
+    & ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex) &
+    & BIND(C, NAME="CMISSEquationsSetBoundaryConditionsAnalyticNum")
 
     !Argument variables
     INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the analytic boundary conditions for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the analytic boundary conditions for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations with the boundary conditions to set.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the location of the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index for the solver equations boundary conditions.
     !Function variable
     INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSEquationsSetBoundaryConditionsAnalytic(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsAnalyticCNum)
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSEquationsSetBoundaryConditionsAnalytic(RegionUserNumber,EquationsSetUserNumber,ProblemUserNumber, &
+          & ControlLoopIdentifiers,SolverIndex,CMISSEquationsSetBoundaryConditionsAnalyticCNum)
+      ELSE
+        CMISSEquationsSetBoundaryConditionsAnalyticCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSEquationsSetBoundaryConditionsAnalyticCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -9840,21 +9855,33 @@ CONTAINS
   !
 
   !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr(EquationsSetPtr) BIND(C, NAME = &
+  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
     & "CMISSEquationsSetBoundaryConditionsAnalytic")
 
     !Argument variables
     TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to set the analytic boundary conditions.
+    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set.
     !Function variable
     INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCPtr !<Error Code.
     !Local variables
     TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
 
     CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSNoError
     IF(C_ASSOCIATED(EquationsSetPtr)) THEN
       CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
       IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsAnalytic(EquationsSet,CMISSEquationsSetBoundaryConditionsAnalyticCPtr)
+        IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
+          CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
+          IF(ASSOCIATED(BoundaryConditions)) THEN
+            CALL CMISSEquationsSetBoundaryConditionsAnalytic(EquationsSet,BoundaryConditions, &
+              & CMISSEquationsSetBoundaryConditionsAnalyticCPtr)
+          ELSE
+            CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
+        ENDIF
         IF(ASSOCIATED(EquationsSet)) THEN
           EquationsSetPtr = C_LOC(EquationsSet)
         ELSE

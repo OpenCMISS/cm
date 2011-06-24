@@ -81,7 +81,7 @@ MODULE DIFFUSION_EQUATION_ROUTINES
 
   !Interfaces
 
-  PUBLIC DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE
+  PUBLIC DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE,DIFFUSION_EQUATION_ANALYTIC_CALCULATE
 
   PUBLIC DIFFUSION_EQUATION_EQUATIONS_SET_SETUP
 
@@ -116,17 +116,17 @@ CONTAINS
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
   !Calculates a two-dimensional unsteady heat equation solution (diffusion coefficient is 1)
-  SUBROUTINE DIFFUSION_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE DIFFUSION_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,version_idx
     REAL(DP) :: VALUE,X(3),INITIAL_VALUE,VALUE_START
     REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),GEOMETRIC_PARAMETERS(:),MATERIALS_PARAMETERS(:)
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,EQUATIONS_SET_FIELD_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
@@ -170,8 +170,6 @@ CONTAINS
               CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & MATERIALS_PARAMETERS,ERR,ERROR,*999)           
             ENDIF
-            NULLIFY(BOUNDARY_CONDITIONS)
-            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE)THEN
                 !If a multi-comp model, we will use the equations set field information to assign only the appropriate field
@@ -2242,21 +2240,6 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
             ENDIF
-          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-            EQUATIONS_ANALYTIC=>EQUATIONS_SET%ANALYTIC
-            IF(ASSOCIATED(EQUATIONS_ANALYTIC)) THEN
-              IF(EQUATIONS_ANALYTIC%ANALYTIC_FINISHED) THEN
-                IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-                  CALL DIFFUSION_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -3327,7 +3310,7 @@ CONTAINS
 !                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
 !                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
 !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-!                                               BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+!                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% & 
 !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
 !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
@@ -3448,7 +3431,7 @@ CONTAINS
 !                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
 !                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
 !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-!                                               BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+!                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR% & 
 !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
 !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
@@ -3644,9 +3627,9 @@ CONTAINS
                           variable_type=DEPENDENT_FIELD%VARIABLES(2*eqnset_idx-1)%VARIABLE_TYPE
                           FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                           IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                            BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_GET(EQUATIONS_SET%BOUNDARY_CONDITIONS, &
+                              CALL BOUNDARY_CONDITIONS_VARIABLE_GET(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
                                 & FIELD_VARIABLE,BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                 DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS

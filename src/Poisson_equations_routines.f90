@@ -81,6 +81,7 @@ MODULE POISSON_EQUATIONS_ROUTINES
   !Interfaces
 
   PUBLIC POISSON_EQUATION_EQUATIONS_SET_SETUP,POISSON_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET, &
+    & POISSON_EQUATION_ANALYTIC_CALCULATE, &
     & POISSON_EQUATION_EQUATIONS_SET_SUBTYPE_SET,POISSON_EQUATION_FINITE_ELEMENT_CALCULATE,POISSON_PRE_SOLVE, &
     & POISSON_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE,POISSON_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE, &
     & POISSON_EQUATION_PROBLEM_SUBTYPE_SET,POISSON_EQUATION_PROBLEM_SETUP,POISSON_POST_SOLVE
@@ -92,10 +93,11 @@ CONTAINS
   !
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE POISSON_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE POISSON_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -103,7 +105,6 @@ CONTAINS
     INTEGER(INTG) :: COUNT_DOF
     REAL(DP) :: VALUE,X(3)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
@@ -128,7 +129,6 @@ CONTAINS
               & ERR,ERROR,*999)
 
             NULLIFY(BOUNDARY_CONDITIONS)
-            BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
 
               !For testing Integrated Neumann Boundary Conditions
@@ -1133,7 +1133,7 @@ CONTAINS
                 & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
 
             ELSE
-              CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
@@ -1965,20 +1965,6 @@ CONTAINS
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                  CALL POISSON_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
@@ -3074,20 +3060,6 @@ CONTAINS
             ELSE
               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
             ENDIF
-          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                  CALL POISSON_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
-            ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -3542,20 +3514,6 @@ CONTAINS
               ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-            IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                  CALL POISSON_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
