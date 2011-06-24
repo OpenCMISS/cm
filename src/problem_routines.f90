@@ -377,8 +377,7 @@ CONTAINS
         !Solve this control loop
         IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
-!"CONTROL_LOOP%LABEL" is a structure and, as such, cannot directly be written out.
-!           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Control loop: ",CONTROL_LOOP%LABEL,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Control loop: ",CONTROL_LOOP%LABEL,ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Control loop level = ",CONTROL_LOOP%CONTROL_LOOP_LEVEL,ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Sub loop index     = ",CONTROL_LOOP%SUB_LOOP_INDEX,ERR,ERROR,*999)
         ENDIF
@@ -455,7 +454,7 @@ CONTAINS
         CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
-            TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME+TIME_LOOP%TIME_INCREMENT
+            TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME
             TIME_LOOP%ITERATION_NUMBER=0
             DO WHILE(TIME_LOOP%CURRENT_TIME<=TIME_LOOP%STOP_TIME)
               TIME_LOOP%ITERATION_NUMBER=TIME_LOOP%ITERATION_NUMBER+1
@@ -1266,10 +1265,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
+    INTEGER(INTG) :: equations_set_idx,solver_matrix_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_equations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_SOLVER_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
@@ -1279,6 +1281,26 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+            IF(SOLVER%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN
+              SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+              IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver vector values:",ERR,ERROR,*999)                 
+                DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                  SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                  IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
+                    CALL DISTRIBUTED_VECTOR_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
+                  ELSE
+                    LOCAL_ERROR="Solver matrix is not associated for solver matrix index "// &
+                      & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !solver_matrix_idx
+              ELSE
+                CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ENDIF
             IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
               !Check if the nonlinear solver is linked to a dynamic solver 
               LINKING_SOLVER=>SOLVER%LINKING_SOLVER
@@ -1347,10 +1369,13 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_set_idx
+    INTEGER(INTG) :: equations_set_idx,solver_matrix_idx
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_SOLVER_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
@@ -1360,6 +1385,26 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+            IF(SOLVER%OUTPUT_TYPE>=SOLVER_MATRIX_OUTPUT) THEN
+              SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+              IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver vector values:",ERR,ERROR,*999)                 
+                DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                  SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                  IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solver matrix : ",solver_matrix_idx,ERR,ERROR,*999)
+                    CALL DISTRIBUTED_VECTOR_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
+                  ELSE
+                    LOCAL_ERROR="Solver matrix is not associated for solver matrix index "// &
+                      & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//"."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !solver_matrix_idx
+              ELSE
+                CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ENDIF
             IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
               !Check if the nonlinear solver is linked to a dynamic solver 
               LINKING_SOLVER=>SOLVER%LINKING_SOLVER
