@@ -4457,18 +4457,16 @@ CONTAINS
                           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                             DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
                             IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                              IF(DYNAMIC_SOLVER%RESTART) THEN
-                                !As the dynamic solver may be part of a workflow of solvers within a control loop it is possible
-                                !that the current dependent field values are not equal to the current previous values that were set
-                                !at the beginning of the control loop. 
-                                !Copy the current field values to the previous values
-                                CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                  & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_RESIDUAL_SET_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,1.0_DP, &
-                                    & ERR,ERROR,*999)
-                                ENDIF
+                              !As the dynamic solver may be part of a workflow of solvers within a control loop it is possible
+                              !that the current dependent field values are not equal to the current previous values that were set
+                              !at the beginning of the control loop. 
+                              !Copy the current field values to the previous values
+                              CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                              IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & FIELD_RESIDUAL_SET_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,1.0_DP, &
+                                  & ERR,ERROR,*999)
                               ENDIF
                               !Calculate the mean predicted and predicted values for this dependent field.
                               SELECT CASE(DYNAMIC_SOLVER%DEGREE)
@@ -4955,8 +4953,16 @@ CONTAINS
             !Solve the linear dynamic problem
             LINEAR_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
             IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-              !If we need to initialise the solver
-              IF(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+              IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+                !Assemble the solver equations
+                CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
+                CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
+                !Solve the linear system
+                CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)
+                !Update dependent field with solution
+                CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+             ELSE
+                !If we need to initialise the solver
                 IF((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
                   & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)) THEN
                   !Assemble the solver equations
@@ -4970,11 +4976,6 @@ CONTAINS
                 !Set initialised flag
                 DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
               ENDIF
-              !Assemble the solver equations
-              CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
-              CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
-              !Solve the linear system
-              CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)              
             ELSE
               CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -4982,17 +4983,22 @@ CONTAINS
             !Solve the nonlinear dynamic problem
             NONLINEAR_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
             IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-              !If we need to initialise the solver
-              IF(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                IF(DYNAMIC_SOLVER%DEGREE/=DYNAMIC_SOLVER%ORDER) THEN
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                END IF
+              IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+                !Calculate predicted values
+                CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
+                !Solve the nonlinear system
+                CALL SOLVER_SOLVE(NONLINEAR_SOLVER,ERR,ERROR,*999)
+                !Update dependent field with solution
+                CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+              ELSE
+                !If we need to initialise the solver
+                !No solver for the first (starting) time step.
+!!TODO: still need to calculate starting velocities and accelerations etc.
+                !Update dependent field with solution
+                CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+                !Set initialised flag
                 DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
               ENDIF
-              !Assemble the solver equations
-              CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
-              !Solve the nonlinear system
-              CALL SOLVER_SOLVE(NONLINEAR_SOLVER,ERR,ERROR,*999)
             ELSE
               CALL FLAG_ERROR("Dynamic solver nonlinear solver is not associated.",ERR,ERROR,*999)
             ENDIF
@@ -5032,8 +5038,6 @@ CONTAINS
             CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
 #endif
           ENDIF
-          !Update dependent field with solution
-          CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
         ELSE
           CALL FLAG_ERROR("Dynamic solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -14816,8 +14820,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,DYNAMIC_VARIABLE_TYPE,equations_idx,equations_set_idx,solver_dof_idx,solver_matrix_idx,variable_dof
-    REAL(DP) :: ACCELERATION_VALUE,additive_constant,DELTA_T,DISPLACEMENT_VALUE,PREVIOUS_ACCELERATION,PREVIOUS_DISPLACEMENT, &
-      & PREVIOUS_VELOCITY,SOLVER_VALUE,variable_coefficient,VELOCITY_VALUE
+    REAL(DP) :: ACCELERATION_VALUE,additive_constant,DELTA_T,DISPLACEMENT_VALUE,PREDICTED_DISPLACEMENT,PREVIOUS_ACCELERATION, &
+      & PREVIOUS_DISPLACEMENT,PREVIOUS_VELOCITY,SOLVER_VALUE,variable_coefficient,VELOCITY_VALUE
     REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
@@ -14882,41 +14886,65 @@ CONTAINS
                                 IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
                                   SELECT CASE(DYNAMIC_SOLVER%DEGREE)
                                   CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-                                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                      & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
-                                      & ERR,ERROR,*999)
-                                    DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    !If we are nonlinear then use the previously calculated predicted displacement
+                                    IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    ELSE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    ENDIF
                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                       & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
                                   CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-                                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                      & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
-                                      & ERR,ERROR,*999)
+                                    !If we are nonlinear then use the previously calculated predicted displacement
+                                    IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    ELSE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
+                                    ENDIF
                                     CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                       & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
                                       & ERR,ERROR,*999)
-                                    DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
-                                      & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
                                     VELOCITY_VALUE=PREVIOUS_VELOCITY+DELTA_T*SOLVER_VALUE
                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                       & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                       & FIELD_VELOCITY_VALUES_SET_TYPE,variable_dof,VELOCITY_VALUE,ERR,ERROR,*999)
                                   CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                      & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
-                                      & ERR,ERROR,*999)
+                                    !If we are nonlinear then use the previously calculated predicted displacement
+                                    IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    ELSE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
+                                        & (DELTA_T*DELTA_T*DELTA_T/6.0_DP)*SOLVER_VALUE
+                                    ENDIF
                                     CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                       & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
                                       & ERR,ERROR,*999)
+                                    VELOCITY_VALUE=PREVIOUS_VELOCITY+DELTA_T*PREVIOUS_ACCELERATION+ &
+                                      & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
                                     CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
                                       & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,variable_dof,PREVIOUS_ACCELERATION, &
                                       & ERR,ERROR,*999)
-                                    DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
-                                      & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
-                                      & (DELTA_T*DELTA_T*DELTA_T/6.0_DP)*SOLVER_VALUE
-                                    VELOCITY_VALUE=PREVIOUS_VELOCITY+DELTA_T*PREVIOUS_ACCELERATION+ &
-                                      & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
                                     ACCELERATION_VALUE=PREVIOUS_ACCELERATION+DELTA_T*SOLVER_VALUE
                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                       & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)

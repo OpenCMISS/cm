@@ -404,8 +404,7 @@ CONTAINS
                 CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              !If there are sub loops the recursively solve those control
-              ! loops
+              !If there are sub loops the recursively solve those control loops
               DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                 CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
                 CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
@@ -439,8 +438,7 @@ CONTAINS
                   CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                !If there are sub loops the recursively solve those control
-                ! loops
+                !If there are sub loops the recursively solve those control loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
                   CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
@@ -454,10 +452,10 @@ CONTAINS
         CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
+            !Set the current time to be the start time. Solvers should use the first time step to do any initialisation.
             TIME_LOOP%CURRENT_TIME=TIME_LOOP%START_TIME
             TIME_LOOP%ITERATION_NUMBER=0
             DO WHILE(TIME_LOOP%CURRENT_TIME<=TIME_LOOP%STOP_TIME)
-              TIME_LOOP%ITERATION_NUMBER=TIME_LOOP%ITERATION_NUMBER+1
               IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Time control loop iteration: ",TIME_LOOP%ITERATION_NUMBER, &
@@ -469,6 +467,7 @@ CONTAINS
                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Time increment = ",TIME_LOOP%TIME_INCREMENT, &
                   & ERR,ERROR,*999)
               ENDIF
+              !Perform any pre-loop actions.
               CALL PROBLEM_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
               IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
                 !If there are no sub loops then solve.
@@ -484,16 +483,17 @@ CONTAINS
                   CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                !If there are sub loops the recursively solve those control
-                ! loops
+                !If there are sub loops the recursively solve those control loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
                   CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
                 ENDDO !loop_idx
               ENDIF
+              !Perform any post loop actions.
               CALL PROBLEM_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
-              TIME_LOOP%CURRENT_TIME=TIME_LOOP%CURRENT_TIME+TIME_LOOP&
-                &%TIME_INCREMENT
+              !Increment loop counter and time
+              TIME_LOOP%ITERATION_NUMBER=TIME_LOOP%ITERATION_NUMBER+1
+              TIME_LOOP%CURRENT_TIME=TIME_LOOP%CURRENT_TIME+TIME_LOOP%TIME_INCREMENT
             ENDDO !time loop
           ELSE
             CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
@@ -528,8 +528,7 @@ CONTAINS
                   CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                !If there are sub loops the recursively solve those control
-                ! loops
+                !If there are sub loops the recursively solve those control loops
                 DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                   CONTROL_LOOP2=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
                   CALL PROBLEM_CONTROL_LOOP_SOLVE(CONTROL_LOOP2,ERR,ERROR,*999)
@@ -1330,9 +1329,7 @@ CONTAINS
                   CALL EQUATIONS_SET_JACOBIAN_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                 ENDDO !equations_set_idx
                 !Assemble the static nonlinear solver matrices
-!!TODO: need to work out wether to assemble rhs and residual or residual only
                 CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_JACOBIAN_ONLY,ERR,ERROR,*999)          
-!               CALL SOLVER_MATRICES_STATIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_RESIDUAL_ONLY,ERR,ERROR,*999)
               END IF       
             ELSE
               CALL FLAG_ERROR("Solver equations solver type is not associated.",ERR,ERROR,*999)      
@@ -1410,7 +1407,7 @@ CONTAINS
               LINKING_SOLVER=>SOLVER%LINKING_SOLVER
               IF(ASSOCIATED(LINKING_SOLVER)) THEN
                 IF(LINKING_SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-                  !Update the field values from the dynamic factor * current solver values AND add in mean predicted displacements/
+                  !Update the field values from the dynamic factor*current solver values AND add in predicted displacements
                   CALL SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE(SOLVER,ERR,ERROR,*999)
                   !Calculate the residual for each element (M, C, K and g)
                   DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
