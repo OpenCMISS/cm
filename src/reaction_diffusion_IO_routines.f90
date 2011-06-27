@@ -1,5 +1,4 @@
 !> \file
-!> $Id: reaction_diffusion_IO_routines.f90 2025 2011-02-09 17:49:06Z vijayrajagopal $
 !> \author Vijay Rajagopal
 !> \brief This module handles some mesh/parameter input routines and cmgui output routines for reaction diffusion
 !> routines and should be eventually replaces by field_IO_routines.f90 

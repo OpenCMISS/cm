@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Ting Yu
 !> \brief This module handles all analytic analysis routines.
 !>

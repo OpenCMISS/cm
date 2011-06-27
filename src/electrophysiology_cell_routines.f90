@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Sander Land
 !> \brief This module contains some hardcoded cell models and integration routines for cardiac electrophysiology.
 !>

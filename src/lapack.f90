@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains the interface descriptions to the LAPACK routines.
 !>

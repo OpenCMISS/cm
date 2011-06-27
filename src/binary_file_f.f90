@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles the reading and writing of binary files.
 !> \todo Fix naming convention and update to current code standard.

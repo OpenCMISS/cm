@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief This module is a CMISS buffer module to the PETSc library.
 !>

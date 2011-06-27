@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief Implements lists of base types.
 !> \todo Fix up and have this module use the sorting module for sorts

@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all the low-level base routines e.g., all debug, control, and low-level communication routines.
 !>

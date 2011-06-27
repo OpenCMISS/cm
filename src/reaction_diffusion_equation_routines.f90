@@ -1,5 +1,4 @@
 !> \file
-!> $Id: reaction_diffusion_equation_routines.f90 1836 2010-12-20 17:25:14Z vijayrajagopal $
 !> \author Vijay Rajagopal
 !> \brief This module handles all reaction diffusion equation routines.
 !>

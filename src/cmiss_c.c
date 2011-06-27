@@ -1,5 +1,4 @@
 /* \file
- * $Id: cmiss.c 1669 2010-10-27 17:54:14Z chrispbradley $
  * \author Chris Bradley
  * \brief This file contains system level routines.
  *

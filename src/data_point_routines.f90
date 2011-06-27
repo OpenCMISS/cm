@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Tim Wu
 !> \brief This module handles all data point routines.
 !>

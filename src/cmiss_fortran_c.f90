@@ -1,5 +1,4 @@
 !> \file
-!> $Id: cmiss_fortran_c.f90 1923 2011-01-25 20:31:29Z chrispbradley $
 !> \author Chris Bradley
 !> \brief This module contains Fortran and C data conversion routines.
 !>

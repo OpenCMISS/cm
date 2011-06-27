@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \authors Andrew Cookson
 !> \brief This module handles all routines pertaining to diffusion coupled to diffusion.
 !>

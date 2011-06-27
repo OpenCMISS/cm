@@ -1,6 +1,5 @@
 #if 1==0
 /* \file
- * $Id$
  * \author Caton Little
  * \brief 
  *

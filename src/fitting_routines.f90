@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Sebastian Krittian
 !> \brief This module handles all fitting routines.
 !>

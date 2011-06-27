@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Ishani Roy & Sander Land
 !> \brief This module handles all Monodomain equations routines which use Strang Splitting with hard-coded cell models.
 !>

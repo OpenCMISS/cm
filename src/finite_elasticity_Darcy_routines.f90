@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \authors Christian Michler, Jack Lee
 !> \brief This module handles all routines pertaining to finite elasticity coupled with Darcy.
 !>

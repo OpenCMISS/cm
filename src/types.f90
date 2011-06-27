@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all type definitions in order to avoid cyclic module references.
 !>

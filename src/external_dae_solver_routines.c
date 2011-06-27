@@ -1,5 +1,4 @@
 /* \file
- * $Id$
  * \author Chris Bradley
  * \brief This file provides the routines for solving differential-algebraic equations with an external solver.
  *.

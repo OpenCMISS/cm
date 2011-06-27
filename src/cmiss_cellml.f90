@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author David Nickerson <nickerso@users.sourceforge.net>
 !> \brief This module is a OpenCMISS(cm) buffer module to OpenCMISS(cellml).
 !>

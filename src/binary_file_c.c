@@ -1,5 +1,4 @@
 /* \file
- * $Id$
  * \author Chris Bradley
  * \brief This file provides c utility routines for the binary_file module
  *.

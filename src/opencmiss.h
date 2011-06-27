@@ -1,6 +1,5 @@
 /* 
  * \file
- * $Id$
  * \author Chris Bradley
  * \brief The OpenCMISS library C header file.
  *

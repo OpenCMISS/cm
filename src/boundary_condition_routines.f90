@@ -1,5 +1,4 @@
 !> \file 
-!> $Id$
 !> \author Ting Yu
 !> \brief This module set the boundary conditions for the given equation set
 !>

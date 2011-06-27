@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Caton Little
 !> \brief This module handles writing out FieldML files.
 !>

@@ -1,5 +1,4 @@
 !> \file
-!> $Id: finite_elasticity_fluid_pressure_routines.f90 1970 2011-01-31 18:43:46Z jackisawesome $
 !> \authors Adam Reeve
 !> \brief This module handles all routines pertaining to finite elasticity coupled with fluid pressure for poroelasticity.
 !>

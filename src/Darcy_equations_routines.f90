@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Christian Michler
 !> \brief This module handles all Darcy equations routines.
 !>

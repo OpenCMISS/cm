@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief This module contains all routines dealing with (non-distributed) matrix and vectors types.
 !>

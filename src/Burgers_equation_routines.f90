@@ -1,5 +1,4 @@
 !> \file
-!> $Id: Burgers_equation_routines.f90 2099 2011-03-23 00:55:45Z chrispbradley $
 !> \author David Ladd
 !> \brief This module handles all Burgers equation routines.
 !>

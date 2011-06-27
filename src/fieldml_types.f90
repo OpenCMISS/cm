@@ -1,5 +1,4 @@
 !> \file
-!> $Id: fieldml_util_routines.f90 2031 2011-02-13 21:27:30Z catalept $
 !> \author Caton Little
 !> \brief This module handles non-IO FieldML logic.
 !>

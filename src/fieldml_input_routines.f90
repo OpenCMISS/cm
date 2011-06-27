@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Caton Little
 !> \brief This module handles reading in FieldML files.
 !>

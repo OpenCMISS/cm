@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author David Nordsletten
 !> \brief This module contains all interface routines.
 !>

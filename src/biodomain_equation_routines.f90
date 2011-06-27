@@ -1,6 +1,5 @@
 
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief This module handles all bioelectric domain equation routines.
 !>

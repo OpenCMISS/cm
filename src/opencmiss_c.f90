@@ -1,5 +1,4 @@
 !> \file
-!> $Id$
 !> \author Chris Bradley
 !> \brief The top level OpenCMISS module for C bindings.
 !>
