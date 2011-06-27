@@ -2087,7 +2087,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !< The error string
     !Local variables
-    INTEGER(INTG) :: model_idx,source_dof_idx
+    INTEGER(INTG) :: model_idx,source_dof_idx,first_dof_idx
     INTEGER(INTG), POINTER :: MODELS_DATA(:)
     TYPE(CELLML_TYPE), POINTER :: CELLML
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
@@ -2108,13 +2108,29 @@ CONTAINS
             IF(MODELS_VARIABLE%NUMBER_OF_DOFS>0) THEN
               CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & MODELS_DATA,ERR,ERROR,*999)
-              model_idx=MODELS_DATA(1)
+              !check for the first non-zero model index
+              source_dof_idx=0
+              first_dof_idx=1
+              DO source_dof_idx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                model_idx=MODELS_DATA(source_dof_idx)
+                IF(model_idx>=0) THEN
+                  MODELS_FIELD%ONLY_ONE_MODEL_INDEX=model_idx
+                  first_dof_idx=source_dof_idx
+                  IF(model_idx>0) THEN
+                    EXIT
+                  ENDIF
+                ELSE
+                  LOCAL_ERROR="The model index of "//TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))// &
+                   & " is invalid for source DOF 1. The model index must be >= 0 and <= "// &
+                   & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR("The models field has not been set for DOF 1.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO
               IF(model_idx>=0.AND.model_idx<=CELLML%NUMBER_OF_MODELS) THEN
-                MODELS_FIELD%ONLY_ONE_MODEL_INDEX=model_idx
-                DO source_dof_idx=2,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                DO source_dof_idx=(first_dof_idx+1),MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
                   model_idx=MODELS_DATA(source_dof_idx)
                   IF(model_idx>=0.AND.model_idx<=CELLML%NUMBER_OF_MODELS) THEN
-                    IF(model_idx/=MODELS_FIELD%ONLY_ONE_MODEL_INDEX) THEN
+                    IF(model_idx/=MODELS_FIELD%ONLY_ONE_MODEL_INDEX.AND.model_idx/=0) THEN
                       MODELS_FIELD%ONLY_ONE_MODEL_INDEX=CELLML_MODELS_FIELD_NOT_CONSTANT
                       EXIT
                     ENDIF
@@ -2933,56 +2949,55 @@ CONTAINS
   !! - may need to also provide a FIELD_VARIABLE_NUMBER (always 1?) for completeness
   !! - is the model ID also needed?
   !! - because the CellML fields should all be set up to allow direct use in the CellML code, the component number matches the index of the given variable in its associated array in the CellML generated code.
-  SUBROUTINE CELLML_FIELD_COMPONENT_GET_C(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,VARIABLE_ID,COMPONENT_USER_NUMBER,ERR,ERROR,*)
-    !Argument variables
-    TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object from which to get the field component.
-    INTEGER(INTG), INTENT(IN) :: MODEL_INDEX !<The index of the CellML model to map from.
-    INTEGER(INTG), INTENT(IN) :: CELLML_FIELD_TYPE !<The type of CellML field type to get the component for. \see CELLML_FieldTypes,CMISS_CELLML
-    CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_ID !<The ID of the model variable which needs to be located in the provided field.
-    INTEGER(INTG), INTENT(OUT) :: COMPONENT_USER_NUMBER !<On return, the field component for the model variable defined by the given ID.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    !Local variables
-    INTEGER(INTG) :: CELLML_VARIABLE_INDEX
-    INTEGER(C_INT) :: ERROR_C
-    TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    CHARACTER(LEN=1,KIND=C_CHAR) :: C_NAME(MAXSTRLEN)
-    !INTEGER(INTG) :: C_NAME_L
+ SUBROUTINE CELLML_FIELD_COMPONENT_GET_C(CELLML,MODEL_INDEX,CELLML_FIELD_TYPE,VARIABLE_ID,COMPONENT_USER_NUMBER,ERR,ERROR,*)
+   !Argument variables
+   TYPE(CELLML_TYPE), POINTER :: CELLML !<The CellML environment object from which to get the field component.
+   INTEGER(INTG), INTENT(IN) :: MODEL_INDEX !<The index of the CellML model to map from.
+   INTEGER(INTG), INTENT(IN) :: CELLML_FIELD_TYPE !<The type of CellML field type to get the component for. \see CELLML_FieldTypes,CMISS_CELLML
+   CHARACTER(LEN=*), INTENT(IN) :: VARIABLE_ID !<The ID of the model variable which needs to be located in the provided field.
+   INTEGER(INTG), INTENT(OUT) :: COMPONENT_USER_NUMBER !<On return, the field component for the model variable defined by the given ID.
+   INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+   TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+   !Local variables
+   INTEGER(INTG) :: CELLML_VARIABLE_INDEX
+   INTEGER(C_INT) :: ERROR_C
+   TYPE(CELLML_MODEL_TYPE), POINTER :: CELLML_MODEL
+   TYPE(VARYING_STRING) :: LOCAL_ERROR
+   CHARACTER(LEN=1,KIND=C_CHAR) :: C_NAME(MAXSTRLEN)
+   !INTEGER(INTG) :: C_NAME_L
 
-    CALL ENTERS("CELLML_FIELD_COMPONENT_GET_C",ERR,ERROR,*999)
+   CALL ENTERS("CELLML_FIELD_COMPONENT_GET_C",ERR,ERROR,*999)
 
 #ifdef USECELLML
 
-    IF(ASSOCIATED(CELLML)) THEN
-      CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
-      IF(ASSOCIATED(CELLML_MODEL)) THEN
-        CALL CMISSF2CString(VARIABLE_ID,C_NAME)
-        ERROR_C = CELLML_MODEL_DEFINITION_GET_VARIABLE_INDEX(CELLML_MODEL%PTR,C_NAME,CELLML_VARIABLE_INDEX)
-        IF(ERROR_C /= 0) THEN
-          LOCAL_ERROR="Failed to get the index for CellML variable: "// &
-            & VARIABLE_ID//"; with the error code: "//TRIM(NUMBER_TO_VSTRING(ERROR_C,"*",ERR,ERROR))
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        ENDIF
-        COMPONENT_USER_NUMBER=CELLML_VARIABLE_INDEX
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
-    ENDIF
+   IF(ASSOCIATED(CELLML)) THEN
+     CELLML_MODEL=>CELLML%MODELS(MODEL_INDEX)%PTR
+     IF(ASSOCIATED(CELLML_MODEL)) THEN
+       CALL CMISSF2CString(VARIABLE_ID,C_NAME)
+       ERROR_C = CELLML_MODEL_DEFINITION_GET_VARIABLE_INDEX(CELLML_MODEL%PTR,C_NAME,CELLML_VARIABLE_INDEX)
+       IF(ERROR_C /= 0) THEN
+         LOCAL_ERROR="Failed to get the index for CellML variable: "// &
+           & VARIABLE_ID//"; with the error code: "//TRIM(NUMBER_TO_VSTRING(ERROR_C,"*",ERR,ERROR))
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       ENDIF
+       COMPONENT_USER_NUMBER=CELLML_VARIABLE_INDEX
+     ENDIF
+   ELSE
+     CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+   ENDIF
 
 #else
 
-    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+   CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 
 #endif
 
-    CALL EXITS("CELLML_FIELD_COMPONENT_GET_C")
-    RETURN
+   CALL EXITS("CELLML_FIELD_COMPONENT_GET_C")
+   RETURN
 999 CALL ERRORS("CELLML_FIELD_COMPONENT_GET_C",ERR,ERROR)
-    CALL EXITS("CELLML_FIELD_COMPONENT_GET_C")
-    RETURN 1
-  END SUBROUTINE CELLML_FIELD_COMPONENT_GET_C
-
+   CALL EXITS("CELLML_FIELD_COMPONENT_GET_C")
+   RETURN 1
+ END SUBROUTINE CELLML_FIELD_COMPONENT_GET_C
   !
   !=================================================================================================================================
   !
@@ -4064,4 +4079,3 @@ CONTAINS
   END FUNCTION MAP_CELLML_FIELD_TYPE_TO_VARIABLE_TYPE_INTG
 
 END MODULE CMISS_CELLML
-
