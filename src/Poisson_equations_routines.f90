@@ -3405,11 +3405,11 @@ CONTAINS
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                 IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE) THEN
                   !Quadratic source. Materials field components are 1 for each dimension and 3 for the quadratic source
-                  !i.e., k and b, a and c in div(k.grad(u(x)))=b(x)u^2(x)+a(x)u(x)+c(x)
+                  !i.e., k and a, b and c in div(k.grad(u(x)))=a(x)+b(x)u(x)+c(x)u^2(x)
                   NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS+3
                 ELSE
                   !Exponential source. Matierals field components are 1 for each dimension and 3 for the exponential source
-                  !i.e., k, a and b in div(k.grad(u(x)))=a(x)e^[b(x)u(x)]+c(x)
+                  !i.e., k, a, b and c in div(k.grad(u(x)))=a(x)+b(x)e^[c(x)u(x)]
                   NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS+3
                 ENDIF
                 !Set the number of materials components
@@ -3469,11 +3469,11 @@ CONTAINS
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
                 IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE) THEN
                   !Quadratic source. Materials field components are 1 for each dimension and 3 for the quadratic source
-                  !i.e., k and b, a and c in div(k.grad(u(x)))=b(x)u^2(x)+a(x)u(x)+c(x)
+                  !i.e., k and a, b and c in div(k.grad(u(x)))=a(x)+b(x)u(x)+c(x)u^2(x)
                   NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS+3
                 ELSE
                   !Exponential source. Matierals field components are 1 for each dimension and 3 for the exponential source
-                  !i.e., k, a and b in div(k.grad(u(x)))=a(x)e^[b(x)u(x)]+c(x)
+                  !i.e., k, a, b and c in div(k.grad(u(x)))=a(x)+b(x)e^[c(x)u(x)]
                   NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS+3
                 ENDIF
                 !First set the k values to 1.0
@@ -4271,7 +4271,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,ms,nh,nhs,ns
-    REAL(DP) :: A_PARAM,B_PARAM,RWG,U_VALUE,VALUE
+    REAL(DP) :: B_PARAM,C_PARAM,RWG,U_VALUE,VALUE
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
@@ -4298,7 +4298,7 @@ CONTAINS
           EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
           NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
           JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-          IF(JACOBIAN_MATRIX%UPDATE_jacobian) THEN
+          IF(JACOBIAN_MATRIX%UPDATE_JACOBIAN) THEN
             !Store all these in equations matrices/somewhere else?????
             DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
             GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
@@ -4313,7 +4313,7 @@ CONTAINS
             GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
               & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
             QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
@@ -4333,8 +4333,8 @@ CONTAINS
               RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                 & QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
               !Find material parameters and u value at this Gauss point
-              B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+2,NO_PART_DERIV)
+              C_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+3,NO_PART_DERIV)
               U_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               !Loop over field components
               mhs=0
@@ -4347,7 +4347,7 @@ CONTAINS
                   DO nh=1,DEPENDENT_VARIABLE%NUMBER_OF_COMPONENTS
                     DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
-                      VALUE=-2.0_DP*B_PARAM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
+                      VALUE=-2.0_DP*C_PARAM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
                         & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*U_VALUE
                       JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+VALUE*RWG
                     ENDDO !ns
@@ -4395,10 +4395,10 @@ CONTAINS
               RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                 & QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
               !Find material parameter and u value at this Gauss point
-              A_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+1,NO_PART_DERIV)
               B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
                 & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+2,NO_PART_DERIV)
+              C_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+3,NO_PART_DERIV)
               U_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
               !Loop over field components
               mhs=0
@@ -4411,8 +4411,8 @@ CONTAINS
                   DO nh=1,DEPENDENT_VARIABLE%NUMBER_OF_COMPONENTS
                     DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                       nhs=nhs+1
-                      VALUE=-A_PARAM**B_PARAM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
-                        & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*EXP(B_PARAM*U_VALUE)
+                      VALUE=-B_PARAM*C_PARAM*QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)* &
+                        & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)*EXP(C_PARAM*U_VALUE)
                       JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+VALUE*RWG
                     ENDDO !ns
                   ENDDO !nh
@@ -4522,11 +4522,11 @@ CONTAINS
 !!TODO: Think about symmetric problems.
             WG=QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
             RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN*WG
-            B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-              & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+2,NO_PART_DERIV)
             !Loop over field components
             IF(EQUATIONS_MATRIX%FIRST_ASSEMBLY) THEN
               IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
+                B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                  & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+2,NO_PART_DERIV)
                 mhs=0
                 DO mh=1,DEPENDENT_VARIABLE%NUMBER_OF_COMPONENTS
                   !Loop over element rows
@@ -4564,8 +4564,7 @@ CONTAINS
             ENDIF
             IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
               IF(RHS_VECTOR%UPDATE_VECTOR) THEN
-                !!TODO: this should be a source and the material parameters should be source materials
-                C_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                A_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
                   & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+1,NO_PART_DERIV)
                 mhs=0
                 DO mh=1,DEPENDENT_VARIABLE%NUMBER_OF_COMPONENTS
@@ -4573,13 +4572,13 @@ CONTAINS
                   DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
                     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+ &
-                       & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*C_PARAM*RWG
+                       & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*A_PARAM*RWG
                   ENDDO !ms
                 ENDDO !mh
               ENDIF
             ENDIF
             IF(NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN
-              B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+              C_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
                 & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+3,NO_PART_DERIV)
               U_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
                 & VALUES(1,NO_PART_DERIV)
@@ -4589,7 +4588,7 @@ CONTAINS
                 DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                   mhs=mhs+1
                   NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)- &
-                    & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*B_PARAM*U_VALUE**2*RWG
+                    & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*C_PARAM*U_VALUE**2*RWG
                 ENDDO !ms
               ENDDO !mh
             ENDIF
@@ -4673,19 +4672,29 @@ CONTAINS
             ENDIF
             IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
               IF(RHS_VECTOR%UPDATE_VECTOR) THEN
-                RHS_VECTOR%ELEMENT_VECTOR%VECTOR=0.0_DP                  
+                A_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                  & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+1,NO_PART_DERIV)
+                mhs=0
+                DO mh=1,DEPENDENT_VARIABLE%NUMBER_OF_COMPONENTS
+                  !Loop over element rows
+                  DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+                    mhs=mhs+1
+                    RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+ &
+                       & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*A_PARAM*RWG
+                  ENDDO !ms
+                ENDDO !mh
               ENDIF
             ENDIF
             IF(NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN
-              A_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
-                & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+1,NO_PART_DERIV)
               B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
                 & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+2,NO_PART_DERIV)
+              C_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
+                & VALUES(GEOMETRIC_VARIABLE%NUMBER_OF_COMPONENTS+3,NO_PART_DERIV)
               U_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR% &
                 & VALUES(1,NO_PART_DERIV)
 !!TODO: Handle floating point exceptions better
-              IF((B_PARAM*U_VALUE)>20000.0_DP) THEN
-                LOCAL_ERROR="The value of "//TRIM(NUMBER_TO_VSTRING(B_PARAM*U_VALUE,"*",ERR,ERROR))// &
+              IF((C_PARAM*U_VALUE)>20000.0_DP) THEN
+                LOCAL_ERROR="The value of "//TRIM(NUMBER_TO_VSTRING(C_PARAM*U_VALUE,"*",ERR,ERROR))// &
                   & " is out of range for an exponential function."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
@@ -4695,7 +4704,7 @@ CONTAINS
                 DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
                   mhs=mhs+1
                   NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)- &
-                    & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*A_PARAM*EXP(B_PARAM*U_VALUE)*RWG
+                    & QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)*B_PARAM*EXP(C_PARAM*U_VALUE)*RWG
                 ENDDO !ms
               ENDDO !mh
             ENDIF

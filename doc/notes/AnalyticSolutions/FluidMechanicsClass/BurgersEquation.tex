@@ -1,0 +1,86 @@
+\subsection{Burgers' Equation} 
+
+\subsubsection{One Dimensional Analytic Function 1}
+
+The \oned Burgers' equation in \OpenCMISS form can be written as
+\begin{equation}
+  a\delby{u}{t}+b\deltwosqby{u}{x}+cu\delby{u}{x}=0
+  \label{eqn:OpenCMISSBurgerEquationOneDim}
+\end{equation}
+
+Adapted from \url{http://eqworld.ipmnet.ru/en/solutions/npde/npde1301.pdf} we
+have for the \oned Burgers' equation the analytic solution
+\begin{equation}
+  \fnof{u}{x,t}=\dfrac{A+ax}{B+ct}
+  \label{eqn:AnalyticBurgersEquationOneDim1}
+\end{equation}
+
+To prove the analytic solution we differentiate \eqnref{eqn:AnalyticBurgersEquationOneDim1} to give
+\begin{align}
+  \delby{u}{t} &= \dfrac{-c\pbrac{A+ax}}{\pbrac{B+ct}^{2}} \\
+  \delby{u}{x} &= \dfrac{a}{\pbrac{B+ct}} \\
+  \deltwosqby{u}{x} &= 0 \\
+  u\delby{u}{x} &= \dfrac{a\pbrac{A+ax}}{\pbrac{B+ct}^{2}} \\
+  \label{eqn:AnalyticBurgersEquationOneDim1Derivatives}
+\end{align}
+
+Substiting \eqnref{eqn:AnalyticBurgersEquationOneDim1Derivatives} into \eqnref{eqn:OpenCMISSBurgerEquationOneDim} gives
+\begin{align}
+  a\delby{u}{t}+b\deltwosqby{u}{x}+cu\delby{u}{x} &=
+  \dfrac{-ac\pbrac{A+ax}}{\pbrac{B+ct}^{2}}+b.0+\dfrac{ac\pbrac{A+ax}}{\pbrac{B+ct}^{2}}\\
+  &= 0
+\end{align}
+
+The analytic field component definitions in \OpenCMISS are shown in \tabref{tab:OpenCMISSAnalyticFieldBurgersEquationOneDim1}.
+
+\begin{table}[htb] \centering
+  \begin{tabular}{|c|c|} \hline
+    \emph{Analytic constant} & \emph{Analytic field component} \\ \hline \hline
+    $A$ & $1$ \\ 
+    $B$ & $2$ \\  \hline
+  \end{tabular}
+  \caption{\OpenCMISS analytic field components for the \oned diffusion equation
+    analytic function 1.}
+  \label{tab:OpenCMISSAnalyticFieldBurgersEquationOneDim1}
+\end{table}
+
+\subsubsection{One Dimensional Analytic Function 2}
+
+Adapted from \url{http://eqworld.ipmnet.ru/en/solutions/npde/npde1301.pdf} we
+have for the \oned Burgers's equation the analytic solution
+\begin{equation}
+  \fnof{u}{x,t}=aA+\dfrac{2b}{c\pbrac{x-cAt+B}}
+  \label{eqn:AnalyticBurgersEquationOneDim2}
+\end{equation}
+
+To prove the analytic solution we differentiate \eqnref{eqn:AnalyticBurgersEquationOneDim1} to give
+\begin{align}
+  \delby{u}{t} &= \dfrac{2bcA}{c\pbrac{x-cAt+B}^{2}} \\
+  \delby{u}{x} &= \dfrac{-2b}{c\pbrac{x-cAt+B}^{2}} \\
+  \deltwosqby{u}{x} &= \dfrac{4b}{c\pbrac{x-cAt+B}^{3}} \\
+  u\delby{u}{x} &= \dfrac{-2abA}{c\pbrac{x-cAt+B}^{2}} - \dfrac{4b^{2}}{c^{2}\pbrac{x-cAt+B}^{3}}  \\
+  \label{eqn:AnalyticBurgersEquationOneDim2Derivatives}
+\end{align}
+
+Substiting \eqnref{eqn:AnalyticBurgersEquationOneDim2Derivatives} into \eqnref{eqn:OpenCMISSBurgerEquationOneDim} gives
+\begin{align}
+  a\delby{u}{t}+b\deltwosqby{u}{x}+cu\delby{u}{x} &=
+  \dfrac{2abcA}{c\pbrac{x-cAt+B}^{2}}+\dfrac{4b^{2}}{c\pbrac{x-cAt+B}^{3}}- \\
+  & \qquad \dfrac{-2abcA}{c\pbrac{x-cAt+B}^{2}}-\dfrac{4b^{2}c}{c^{2}\pbrac{x-cAt+B}^{3}} \\
+  &=\dfrac{2abcA-2abcA}{c\pbrac{x-cAt+B}^{2}}+\dfrac{4b^{2}-4b^{2}}{c\pbrac{x-cAt+B}^{3}}\\
+  &= 0
+\end{align}
+
+The analytic field component definitions in \OpenCMISS are shown in \tabref{tab:OpenCMISSAnalyticFieldBurgersEquationOneDim2}.
+
+\begin{table}[htb] \centering
+  \begin{tabular}{|c|c|} \hline
+    \emph{Analytic constant} & \emph{Analytic field component} \\ \hline \hline
+    $A$ & $1$ \\ 
+    $B$ & $2$ \\  \hline
+  \end{tabular}
+  \caption{\OpenCMISS analytic field components for the \oned Burgers' equation
+    analytic function 2.}
+  \label{tab:OpenCMISSAnalyticFieldBurgersEquationOneDim2}
+\end{table}
+

@@ -1281,7 +1281,7 @@ CONTAINS
                 !Do nothing
               CASE DEFAULT
                 LOCAL_ERROR="Interpolation xi value "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_XI(ni),"*",ERR,ERROR))// &
-                  & " for xi direction "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))//" is invalid for a Lagrange-Hermite TP basis"
+                  & " for xi direction "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))//" is invalid for a Lagrange-Hermite TP basis."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDDO !ni
@@ -1291,12 +1291,12 @@ CONTAINS
               SELECT CASE(INTERPOLATION_XI(ni))
               CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION,BASIS_QUADRATIC_SIMPLEX_INTERPOLATION,BASIS_CUBIC_SIMPLEX_INTERPOLATION)
                 IF(INTERPOLATION_XI(ni)/=LAST_INTERP) THEN
-                  CALL FLAG_ERROR("The interpolation xi value must be the same for all xi directions for a simplex basis", &
+                  CALL FLAG_ERROR("The interpolation xi value must be the same for all xi directions for a simplex basis.", &
                     & ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="Interpolation xi value "//TRIM(NUMBER_TO_VSTRING(INTERPOLATION_XI(ni),"*",ERR,ERROR))// &
-                  & " for xi direction "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))//" is invalid for a simplex basis"
+                  & " for xi direction "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))//" is invalid for a simplex basis."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDDO !ni
@@ -1309,12 +1309,12 @@ CONTAINS
           LOCAL_ERROR="The size of the interpolation xi array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(INTERPOLATION_XI,1),"*",ERR,ERROR))//") does not match the number of xi directions ("// &
             & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//") for basis number "// &
-            & TRIM(NUMBER_TO_VSTRING(BASIS%USER_NUMBER,"*",ERR,ERROR))
+            & TRIM(NUMBER_TO_VSTRING(BASIS%USER_NUMBER,"*",ERR,ERROR))//"."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Basis is not associated.",ERR,ERROR,*999)
     ENDIF
     
     CALL EXITS("BASIS_INTERPOLATION_XI_SET_PTR")

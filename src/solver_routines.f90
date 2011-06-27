@@ -437,6 +437,8 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_DYNAMIC_SCHEME_SET
 
+  PUBLIC SOLVER_DYNAMIC_RESTART_GET,SOLVER_DYNAMIC_RESTART_SET
+
   PUBLIC SOLVER_DYNAMIC_THETA_SET 
 
   PUBLIC SOLVER_DYNAMIC_ALE_SET
@@ -4003,38 +4005,16 @@ CONTAINS
                             DYNAMIC_VARIABLE=>DYNAMIC_MAPPING%DYNAMIC_VARIABLE
                             DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
                             IF(ASSOCIATED(DYNAMIC_VARIABLE)) THEN
-                              SELECT CASE(DYNAMIC_SOLVER%DEGREE)
-                              CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_PREVIOUS_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
-                                  & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                    & SET_TYPE(FIELD_PREDICTED_DISPLACEMENT_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                    & SET_TYPE(FIELD_RESIDUAL_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                    & SET_TYPE(FIELD_PREVIOUS_RESIDUAL_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                END IF
-                              CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_PREVIOUS_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
-                                  & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                              !Set up the parameter sets to hold the required solver parameters
+                              !1st degree or higher so set up displacement parameter sets
+                              IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
+                                & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                & FIELD_PREVIOUS_VALUES_SET_TYPE,ERR,ERROR,*999)
+                              IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
+                                & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                                & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                              IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_SECOND_DEGREE) THEN
+                                !2nd degree or higher so set up velocity parameter sets
                                 IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_VELOCITY_VALUES_SET_TYPE)%PTR)) &
                                   & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
                                   & FIELD_VELOCITY_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -4044,79 +4024,39 @@ CONTAINS
                                 IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
                                   & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD, &
                                   & DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
+                                IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_THIRD_DEGREE) THEN
+                                  !3rd degree or higher so set up acceleration parameter sets
+                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_ACCELERATION_VALUES_SET_TYPE)% &
                                     & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                    & FIELD_ACCELERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
                                   IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
-                                    & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                    & FIELD_PREVIOUS_ACCELERATION_SET_TYPE)%PTR))  &
+                                    & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                    & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
                                   IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_PREDICTED_VELOCITY_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD, &
-                                    & DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                    & SET_TYPE(FIELD_RESIDUAL_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                    & SET_TYPE(FIELD_PREVIOUS_RESIDUAL_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                END IF
-                              CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_PREVIOUS_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
-                                  & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_VELOCITY_VALUES_SET_TYPE)%PTR)) &
-                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_VELOCITY_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VELOCITY_SET_TYPE)% &
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_PREVIOUS_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD, &
-                                  & DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_ACCELERATION_VALUES_SET_TYPE)% &
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_ACCELERATION_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_ACCELERATION_SET_TYPE)% &
-                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                  & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
-                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                  & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
-                                  & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, &
-                                  & ERR,ERROR,*999)
-                                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INCREMENTAL_VALUES_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
-                                    & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_PREDICTED_VELOCITY_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD, &
-                                    & DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
-                                    & FIELD_PREDICTED_ACCELERATION_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
-                                    & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_ACCELERATION_SET_TYPE, &
+                                    & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                                    & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, &
                                     & ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                    & SET_TYPE(FIELD_RESIDUAL_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                  IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
-                                    & SET_TYPE(FIELD_PREVIOUS_RESIDUAL_SET_TYPE)% & 
-                                    & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
-                                END IF
-                              CASE DEFAULT
-                                LOCAL_ERROR="The dynamic solver degree of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              END SELECT
+                                ENDIF
+                              ENDIF
+                              IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                !Nonlinear so set up nonlinear parameter sets
+                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
+                                  & FIELD_INCREMENTAL_VALUES_SET_TYPE)%PTR)) &
+                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS%SET_TYPE( &
+                                  & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE)%PTR)) CALL FIELD_PARAMETER_SET_CREATE( &
+                                  & DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
+                                  & SET_TYPE(FIELD_RESIDUAL_SET_TYPE)% & 
+                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                  & FIELD_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
+                                IF(.NOT.ASSOCIATED(DYNAMIC_VARIABLE%PARAMETER_SETS% & 
+                                  & SET_TYPE(FIELD_PREVIOUS_RESIDUAL_SET_TYPE)% & 
+                                  & PTR)) CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                  & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,ERR,ERROR,*999)
+                              END IF                              
                               !Create the dynamic matrices temporary vector for matrix-vector products
                               EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
                               IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
@@ -4154,9 +4094,6 @@ CONTAINS
                               ELSE
                                 CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
-                              !Store initial field in FIELD_PREVIOUS_VALUES_SET_TYPE before applying BC to FIELD_VALUES_SET_TYPE
-                              CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                             ELSE
                               CALL FLAG_ERROR("Dynamic mapping dynamic variable is not associated.",ERR,ERROR,*999)
                             ENDIF                            
@@ -4224,15 +4161,15 @@ CONTAINS
                     CALL SOLVER_MATRICES_LIBRARY_TYPE_GET(LINEAR_SOLVER,LINEAR_LIBRARY_TYPE,ERR,ERROR,*999)
                     CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,LINEAR_LIBRARY_TYPE,ERR,ERROR,*999)
                     IF(DYNAMIC_SOLVER%EXPLICIT) THEN
-                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE/), &
+                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE], &
                         & ERR,ERROR,*999)
                     ELSE
                       SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                       CASE(SOLVER_SPARSE_MATRICES)
-                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                           & ERR,ERROR,*999)
                       CASE(SOLVER_FULL_MATRICES)
-                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                           & ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -4257,15 +4194,15 @@ CONTAINS
                     CALL SOLVER_MATRICES_LIBRARY_TYPE_GET(NONLINEAR_SOLVER,NONLINEAR_LIBRARY_TYPE,ERR,ERROR,*999)
                     CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,NONLINEAR_LIBRARY_TYPE,ERR,ERROR,*999)
                     IF(DYNAMIC_SOLVER%EXPLICIT) THEN
-                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE/), &
+                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE], &
                         & ERR,ERROR,*999)
                     ELSE
                       SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                       CASE(SOLVER_SPARSE_MATRICES)
-                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                           & ERR,ERROR,*999)
                       CASE(SOLVER_FULL_MATRICES)
-                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                        CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                           & ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -4444,7 +4381,7 @@ CONTAINS
   !
 
   !>Finalise a dynamic solver and deallocates all memory
-  SUBROUTINE SOLVER_DYNAMIC_FINALISE(DYNAMIC_SOLVER,ERR,ERROR,*)
+  RECURSIVE SUBROUTINE SOLVER_DYNAMIC_FINALISE(DYNAMIC_SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER !<A pointer the dynamic solver to finalise
@@ -4507,6 +4444,7 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate theta.",ERR,ERROR,*999)
         DYNAMIC_SOLVER%THETA(1)=1.0_DP/2.0_DP
         DYNAMIC_SOLVER%EXPLICIT=.FALSE.
+        DYNAMIC_SOLVER%RESTART=.FALSE.
         DYNAMIC_SOLVER%ALE=.TRUE. !this should be .FALSE. eventually and set by the user
         DYNAMIC_SOLVER%UPDATE_BC=.TRUE.  !this should be .FALSE. eventually and set by the user
         DYNAMIC_SOLVER%CURRENT_TIME=0.0_DP
@@ -4515,7 +4453,6 @@ CONTAINS
         NULLIFY(DYNAMIC_SOLVER%NONLINEAR_SOLVER)
         !Make a linear solver by default, and allocate solver%linear_solver
         CALL SOLVER_DYNAMIC_LINEARITY_TYPE_SET(SOLVER,SOLVER_DYNAMIC_LINEAR,ERR,ERROR,*999)
-! xyz
       ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
@@ -4881,72 +4818,6 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
           IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-            IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-              !Copy current time to previous time
-              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
-                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                  DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                  IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                    EQUATIONS=>EQUATIONS_SET%EQUATIONS
-                    IF(ASSOCIATED(EQUATIONS)) THEN
-                      EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                      IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                        DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                        IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
-                          DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                          SELECT CASE(DYNAMIC_SOLVER%DEGREE)
-                          CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-!Commented out as FIELD_PREVIOUS_VALUES_SET_TYPE must not contain time-dependent boundary conditions
-!FIELD_PREVIOUS_VALUES_SET_TYPE is now stored at the end of each time-step instead
-!                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                               & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                          CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-                            CALL FLAG_ERROR("Not checked yet.",ERR,ERROR,*999)
-!                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                               & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                            CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VELOCITY_VALUES_SET_TYPE, &
-                              & FIELD_PREVIOUS_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                          CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                            CALL FLAG_ERROR("Not checked yet.",ERR,ERROR,*999)
-!                             CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-!                               & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                            CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VELOCITY_VALUES_SET_TYPE, &
-                              & FIELD_PREVIOUS_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                            CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                              & FIELD_ACCELERATION_VALUES_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                          CASE DEFAULT
-                            LOCAL_ERROR="The dynamic solver degree of "// &
-                              & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                        
-                          END SELECT
-                        ELSE
-                          LOCAL_ERROR="Equations mapping dynamic mapping is not associated for equations set index number "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        LOCAL_ERROR="Equations equations mapping is not associated for equations set index number "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      LOCAL_ERROR="Equations set equations is not associated for equations set index number "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    LOCAL_ERROR="Equations set dependent field is not associated for equations set index number "// &
-                      & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  LOCAL_ERROR="Equations set is not associated for equations set index number "// &
-                    & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                ENDIF
-              ENDDO !equations_set_idx
-            ENDIF
             SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
             IF(ASSOCIATED(SOLVER_MATRICES)) THEN
               IF(DYNAMIC_SOLVER%SOLVER_INITIALISED.OR.(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED.AND. &
@@ -4967,105 +4838,77 @@ CONTAINS
                           DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
                           IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                             DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                            IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                              !Store the solver residual from the previous nonlinear solve (or initial values) 
-                              NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                              IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                                IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-! ! !                                 residual_variable_type=NONLINEAR_MAPPING%RESIDUAL_VARIABLE_TYPE
-! ! !                                 RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLE
-! ! !                                 RESIDUAL_DOMAIN_MAPPING=>RESIDUAL_VARIABLE%DOMAIN_MAPPING
-                                  RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
-                                  !Loop over the rows in the equations set
-                                  DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
-                                    IF(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
-                                      & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
-                                      & NUMBER_OF_SOLVER_ROWS>0) THEN
-                                      !Get the equations residual contribution
-                                      CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,equations_row_number, &
-                                        & RESIDUAL_VALUE,ERR,ERROR,*999)
-                                      residual_variable_dof=NONLINEAR_MAPPING% & 
-                                        & EQUATIONS_ROW_TO_RESIDUAL_DOF_MAP(equations_row_number)
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & FIELD_PREVIOUS_RESIDUAL_SET_TYPE,residual_variable_dof,RESIDUAL_VALUE, &
-                                        & ERR,ERROR,*999)
-                                    ENDIF
-                                  ENDDO
-                                ELSE
-                                  CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                              ELSE
-                                CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ENDIF
                             IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                              !Calculate the mean predicted and predicted values for this dependent field
+                              !As the dynamic solver may be part of a workflow of solvers within a control loop it is possible
+                              !that the current dependent field values are not equal to the current previous values that were set
+                              !at the beginning of the control loop. 
+                              !Copy the current field values to the previous values
+                              CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                              IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & FIELD_RESIDUAL_SET_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,1.0_DP, &
+                                  & ERR,ERROR,*999)
+                              ENDIF
+                              !Calculate the mean predicted and predicted values for this dependent field.
                               SELECT CASE(DYNAMIC_SOLVER%DEGREE)
-                                CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-                                  !Copy the previous values to to the MEAN predicted values
+                              CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
+                                !The mean predicited displacement is the current displacement
+                                CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,1.0_DP, & 
+                                  & ERR,ERROR,*999)
+                                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                  !The predicted displacement is just the current displacement
                                   CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,1.0_DP, & 
+                                    & FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,1.0_DP, &
                                     & ERR,ERROR,*999)
-                                  ALPHA_FACTOR=1.0_DP/DELTA_T
-                                  !Generate update on alpha in FIELD_INCREMENTAL_VALUES_SET_TYPE by subtracting
-                                  !FIELD_PREVIOUS_VALUES_SET_TYPE (without BC) from FIELD_VALUES_SET_TYPE (with new BC)
-                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_VALUES_SET_TYPE,FIELD_INCREMENTAL_VALUES_SET_TYPE,ALPHA_FACTOR,ERR,ERROR,*999)
+                                ENDIF
+                              CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
+                                !The mean predicted displacement comes from the previous displacement and the previous velocity
+                                CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & [FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR], &
+                                  & [FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREVIOUS_VELOCITY_SET_TYPE], &
+                                  & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                !The mean predicted velocity is the current velocity
+                                CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                  !The predicted displacement comes from the previous displacement and the previous velocity
                                   CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & -ALPHA_FACTOR,FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                                    & FIELD_INCREMENTAL_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                    !Copy the previous values to to the predicted values
-                                    CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                                  ENDIF
-                                CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
+                                    & [FIRST_PREDICTION_FACTOR,SECOND_PREDICTION_FACTOR], &
+                                    & [FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREVIOUS_VELOCITY_SET_TYPE], &
+                                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                END IF
+                              CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
+                                !The mean predicted displacement comes from the previous displacement and the previous
+                                !velocity and acceleration
+                                CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & [FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR, &
+                                  & THIRD_MEAN_PREDICTION_FACTOR],[FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                                  & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE], &
+                                  & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                !The mean predicted velocity comes from the previous velocity and acceleration
+                                CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & [FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR], &
+                                  & [FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE], &
+                                  & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
+                                !The mean predicted acceleration is the current acceleration
+                                CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                  & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE,1.0_DP, &
+                                  & ERR,ERROR,*999)
+                                IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                  !The predicted displacement comes from the previous displacement and the previous
+                                  !velocity and acceleration
                                   CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR/), &
-                                    & (/FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREVIOUS_VELOCITY_SET_TYPE/), &
-                                    & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                                  IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                    CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & (/FIRST_PREDICTION_FACTOR,SECOND_PREDICTION_FACTOR/), &
-                                      & (/FIELD_PREVIOUS_VALUES_SET_TYPE,FIELD_PREVIOUS_VELOCITY_SET_TYPE/), &
-                                      & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                    CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREDICTED_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                                  END IF 
-                                CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                                  CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR, &
-                                    & THIRD_MEAN_PREDICTION_FACTOR/),(/FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                                    & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
-                                    & FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & (/FIRST_MEAN_PREDICTION_FACTOR,SECOND_MEAN_PREDICTION_FACTOR/), &
-                                    & (/FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
-                                    & FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE,1.0_DP, &
-                                    & ERR,ERROR,*999)
-                                  IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-                                    CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & (/FIRST_PREDICTION_FACTOR,SECOND_PREDICTION_FACTOR, &
-                                      & THIRD_PREDICTION_FACTOR/),(/FIELD_PREVIOUS_VALUES_SET_TYPE, &
-                                      & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
-                                      & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                                    CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & (/FIRST_PREDICTION_FACTOR,SECOND_PREDICTION_FACTOR/), &
-                                      & (/FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE/), &
-                                      & FIELD_PREDICTED_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                                    CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_PREDICTED_ACCELERATION_SET_TYPE,1.0_DP, &
-                                      & ERR,ERROR,*999)
-                                  END IF 
-                                CASE DEFAULT
-                                  LOCAL_ERROR="The dynamic solver degree of "// &
-                                    & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                        
+                                    & [FIRST_PREDICTION_FACTOR,SECOND_PREDICTION_FACTOR, &
+                                    & THIRD_PREDICTION_FACTOR],[FIELD_PREVIOUS_VALUES_SET_TYPE, &
+                                    & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_ACCELERATION_SET_TYPE], &
+                                    & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                                END IF
+                              CASE DEFAULT
+                                LOCAL_ERROR="The dynamic solver degree of "// &
+                                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                        
                               END SELECT
                             ENDIF
                           ELSE
@@ -5107,6 +4950,94 @@ CONTAINS
     CALL EXITS("SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE")
     RETURN 1
   END SUBROUTINE SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the restart value for a dynamic solver.
+  SUBROUTINE SOLVER_DYNAMIC_RESTART_GET(SOLVER,RESTART,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to get the degree for
+    LOGICAL, INTENT(OUT) :: RESTART !<On return, the restart value
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+    
+    CALL ENTERS("SOLVER_DYNAMIC_RESTART_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+            RESTART=DYNAMIC_SOLVER%RESTART
+          ELSE
+            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DYNAMIC_RESTART_GET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_RESTART_GET",ERR,ERROR)
+    CALL EXITS("SOLVER_DYNAMIC_RESTART_GET")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DYNAMIC_RESTART_GET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the restart value  for a dynamic solver.
+  SUBROUTINE SOLVER_DYNAMIC_RESTART_SET(SOLVER,RESTART,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the dynamic solver to set the theta value for
+    LOGICAL, INTENT(IN) :: RESTART !<The restart value to be set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
+    
+    CALL ENTERS("SOLVER_DYNAMIC_RESTART_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVER_FINISHED) THEN
+        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+          DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
+          IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
+            DYNAMIC_SOLVER%RESTART=RESTART
+          ELSE
+            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("SOLVER_DYNAMIC_RESTART_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_DYNAMIC_RESTART_SET",ERR,ERROR)
+    CALL EXITS("SOLVER_DYNAMIC_RESTART_SET")
+    RETURN 1
+    
+  END SUBROUTINE SOLVER_DYNAMIC_RESTART_SET
 
   !
   !================================================================================================================================
@@ -5253,69 +5184,69 @@ CONTAINS
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_ZLAMAL_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_SECOND_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/5.0_DP/6.0_DP,2.0_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[5.0_DP/6.0_DP,2.0_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_SECOND_DEGREE_GEAR_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_SECOND_DEGREE_GEAR_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_SECOND_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/3.0_DP/2.0_DP,2.0_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[3.0_DP/2.0_DP,2.0_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER1_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER1_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_SECOND_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/1.0848_DP,1.0_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[1.0848_DP,1.0_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER2_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER2_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_SECOND_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/1.2184_DP,1.292_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[1.2184_DP,1.292_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_NEWMARK1_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_NEWMARK1_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_SECOND_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_SECOND_ORDER,ERR,ERROR,*999)
               BETA=0.5_DP
               GAMMA=2.0_DP
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/GAMMA,2.0_DP*BETA/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[GAMMA,2.0_DP*BETA],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_NEWMARK2_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_NEWMARK2_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_SECOND_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_SECOND_ORDER,ERR,ERROR,*999)
               BETA=0.3025_DP
               GAMMA=0.6_DP
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/GAMMA,2.0_DP*BETA/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[GAMMA,2.0_DP*BETA],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_NEWMARK3_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_NEWMARK3_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_SECOND_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_SECOND_ORDER,ERR,ERROR,*999)
               BETA=0.25_DP
               GAMMA=0.5_DP
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/GAMMA,2.0_DP*BETA/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[GAMMA,2.0_DP*BETA],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/2.0_DP,11.0_DP/3.0_DP,6.0_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[2.0_DP,11.0_DP/3.0_DP,6.0_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/1.84_DP,3.07_DP,4.5_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[1.84_DP,3.07_DP,4.5_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_FIRST_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/0.80_DP,1.03_DP,1.29_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[0.80_DP,1.03_DP,1.29_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_HOUBOLT_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_HOUBOLT_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_SECOND_ORDER,ERR,ERROR,*999)
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/2.0_DP,11.0_DP/3.0_DP,6.0_DP/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[2.0_DP,11.0_DP/3.0_DP,6.0_DP],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_WILSON_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_WILSON_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
               CALL SOLVER_DYNAMIC_ORDER_SET(SOLVER,SOLVER_DYNAMIC_SECOND_ORDER,ERR,ERROR,*999)
               THETA=1.4_DP
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/THETA,THETA**2,THETA**3/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[THETA,THETA**2,THETA**3],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
@@ -5323,7 +5254,7 @@ CONTAINS
               ALPHA=-0.1_DP
               BETA=0.3025_DP
               GAMMA=0.5_DP-ALPHA
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/1.0_DP-ALPHA,2.0_DP/3.0_DP-ALPHA+2.0_DP*BETA,6.0_DP*BETA/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[1.0_DP-ALPHA,2.0_DP/3.0_DP-ALPHA+2.0_DP*BETA,6.0_DP*BETA],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
@@ -5331,7 +5262,7 @@ CONTAINS
               ALPHA=-0.1_DP
               BETA=1.0_DP/6.0_DP-1.0_DP/2.0_DP*ALPHA
               GAMMA=1.0_DP/2.0_DP-ALPHA
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/1.0_DP-ALPHA,1.0_DP-2.0_DP*ALPHA,1.0_DP-3.0_DP*ALPHA/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[1.0_DP-ALPHA,1.0_DP-2.0_DP*ALPHA,1.0_DP-3.0_DP*ALPHA],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
@@ -5339,8 +5270,8 @@ CONTAINS
               ALPHA=-0.1_DP
               BETA=0.3025_DP
               GAMMA=0.5_DP-ALPHA
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/1.0_DP,2.0_DP/3.0_DP+2.0_DP*BETA-2.0_DP*ALPHA**2, &
-                & 6.0_DP*BETA*(1.0_DP+ALPHA)/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[1.0_DP,2.0_DP/3.0_DP+2.0_DP*BETA-2.0_DP*ALPHA**2, &
+                & 6.0_DP*BETA*(1.0_DP+ALPHA)],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME
               CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_THIRD_DEGREE,ERR,ERROR,*999)
@@ -5348,8 +5279,8 @@ CONTAINS
               ALPHA=-0.3_DP
               BETA=0.3025_DP
               GAMMA=0.5_DP-ALPHA
-              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,(/1.0_DP,2.0_DP/3.0_DP+2.0_DP*BETA-2.0_DP*ALPHA**2, &
-                & 6.0_DP*BETA*(1.0_DP+ALPHA)/),ERR,ERROR,*999)
+              CALL SOLVER_DYNAMIC_THETA_SET(SOLVER,[1.0_DP,2.0_DP/3.0_DP+2.0_DP*BETA-2.0_DP*ALPHA**2, &
+                & 6.0_DP*BETA*(1.0_DP+ALPHA)],ERR,ERROR,*999)
             CASE(SOLVER_DYNAMIC_USER_DEFINED_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_USER_DEFINED_SCHEME
             CASE DEFAULT
@@ -5399,14 +5330,12 @@ CONTAINS
       CASE(SOLVER_CMISS_LIBRARY)
         SOLVER=>DYNAMIC_SOLVER%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN          
-         ! Solve the linear dynamic problem
-         IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_LINEAR) THEN
-          LINEAR_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
-          IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-            !If we need to initialise the solver
-            IF(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-              IF((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
-                & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)) THEN
+          SELECT CASE(DYNAMIC_SOLVER%LINEARITY)
+          CASE(SOLVER_DYNAMIC_LINEAR)
+            !Solve the linear dynamic problem
+            LINEAR_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
+            IF(ASSOCIATED(LINEAR_SOLVER)) THEN
+              IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
                 !Assemble the solver equations
                 CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
                 CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
@@ -5414,76 +5343,86 @@ CONTAINS
                 CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)
                 !Update dependent field with solution
                 CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
-              ENDIF
-              !Set initialised flag
-              DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
-            ENDIF
-            !Assemble the solver equations
-            CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
-            CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
-            !Solve the linear system
-            CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)
-              
-          ELSE
-            CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-          !Solve the nonlinear dynamic problem
-        ELSE IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
-          NONLINEAR_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
-          IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-            !If we need to initialise the solver
-            IF(.NOT.DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-              IF(DYNAMIC_SOLVER%DEGREE/=DYNAMIC_SOLVER%ORDER) THEN
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-              END IF
-              DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
-            ENDIF
-            !Assemble the solver equations
-            CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
-            !Solve the nonlinear system
-            CALL SOLVER_SOLVE(NONLINEAR_SOLVER,ERR,ERROR,*999)
-          ELSE
-            CALL FLAG_ERROR("Dynamic solver nonlinear solver is not associated.",ERR,ERROR,*999)
-          ENDIF
-         ELSE
-          CALL FLAG_ERROR("Dynamic solver linearity is not associated.",ERR,ERROR,*999)
-         END IF
-
-         IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
-           
-#ifdef TAUPROF
-           CALL TAU_STATIC_PHASE_START("Solution Output Phase")
-#endif
-           SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-           IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-             SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-             IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
-               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver solution vectors:",ERR,ERROR,*999)
-               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of solution vectors = ",SOLVER_MATRICES%NUMBER_OF_MATRICES, &
-                 & ERR,ERROR,*999)
-               DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
-                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solution vector for solver matrix : ",solver_matrix_idx, &
-                   & ERR,ERROR,*999)
-                 CALL DISTRIBUTED_VECTOR_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR% &
-                   & SOLVER_VECTOR,ERR,ERROR,*999)
-               ENDDO !solver_matrix_idx
              ELSE
-               CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
-             ENDIF
-           ELSE
-             CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-           ENDIF
-           
+                !If we need to initialise the solver
+                IF((DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_FIRST_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE).OR. &
+                  & (DYNAMIC_SOLVER%ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE)) THEN
+                  !Assemble the solver equations
+                  CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
+                  CALL SOLVER_MATRICES_DYNAMIC_ASSEMBLE(SOLVER,SOLVER_MATRICES_LINEAR_ONLY,ERR,ERROR,*999)
+                  !Solve the linear system
+                  CALL SOLVER_SOLVE(LINEAR_SOLVER,ERR,ERROR,*999)
+                  !Update dependent field with solution
+                  CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+                ENDIF
+                !Set initialised flag
+                DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_DYNAMIC_NONLINEAR) 
+            !Solve the nonlinear dynamic problem
+            NONLINEAR_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
+            IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+              IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
+                !Calculate predicted values
+                CALL SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE(SOLVER,ERR,ERROR,*999)
+                !Solve the nonlinear system
+                CALL SOLVER_SOLVE(NONLINEAR_SOLVER,ERR,ERROR,*999)
+                !Update dependent field with solution
+                CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+              ELSE
+                !If we need to initialise the solver
+                !No solver for the first (starting) time step.
+!!TODO: still need to calculate starting velocities and accelerations etc.
+                !Update dependent field with solution
+                CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+                !Set initialised flag
+                DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Dynamic solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE DEFAULT
+            LOCAL_ERROR="The dynamic solver linearity type of "// &
+              & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%LINEARITY,"*",ERR,ERROR))//" is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+          
+          IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
+            
 #ifdef TAUPROF
-           CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
+            CALL TAU_STATIC_PHASE_START("Solution Output Phase")
 #endif
-         ENDIF
-         !Update dependent field with solution
-         CALL SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE(SOLVER,ERR,ERROR,*999)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+              IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Solver solution vectors:",ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of solution vectors = ",SOLVER_MATRICES%NUMBER_OF_MATRICES, &
+                  & ERR,ERROR,*999)
+                DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Solution vector for solver matrix : ",solver_matrix_idx, &
+                    & ERR,ERROR,*999)
+                  CALL DISTRIBUTED_VECTOR_OUTPUT(GENERAL_OUTPUT_TYPE,SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR% &
+                    & SOLVER_VECTOR,ERR,ERROR,*999)
+                ENDDO !solver_matrix_idx
+              ELSE
+                CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            ENDIF
+            
+#ifdef TAUPROF
+            CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
+#endif
+          ENDIF
         ELSE
           CALL FLAG_ERROR("Dynamic solver solver is not associated.",ERR,ERROR,*999)
-        ENDIF          
+        ENDIF
       CASE(SOLVER_PETSC_LIBRARY)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
@@ -5494,9 +5433,8 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
     ENDIF
-        
+    
     CALL EXITS("SOLVER_DYNAMIC_SOLVE")
-
     RETURN
 999 CALL ERRORS("SOLVER_DYNAMIC_SOLVE",ERR,ERROR)    
     CALL EXITS("SOLVER_DYNAMIC_SOLVE")
@@ -5520,7 +5458,7 @@ CONTAINS
    
     CALL ENTERS("SOLVER_DYNAMIC_THETA_SET_DP1",ERR,ERROR,*999)
 
-    CALL SOLVER_DYNAMIC_THETA_SET_DP(SOLVER,(/THETA/),ERR,ERROR,*999)
+    CALL SOLVER_DYNAMIC_THETA_SET_DP(SOLVER,[THETA],ERR,ERROR,*999)
     
     CALL EXITS("SOLVER_DYNAMIC_THETA_SET_DP1")
     RETURN
@@ -6179,13 +6117,6 @@ CONTAINS
                     CASE DEFAULT
                       TIME_COMPATIBLE=.FALSE.
                     END SELECT
-                  CASE(SOLVER_EQUATIONS_TIME_STEPPING)
-                    SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
-                    CASE(EQUATIONS_TIME_STEPPING)
-                      !OK
-                    CASE DEFAULT
-                      TIME_COMPATIBLE=.FALSE.
-                    END SELECT
                   CASE DEFAULT
                     TIME_COMPATIBLE=.FALSE.
                     LOCAL_ERROR="Invalid time dependence for solver equations, "// &
@@ -6534,8 +6465,6 @@ CONTAINS
               SOLVER_EQUATIONS%TIME_DEPENDENCE=SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC
             CASE(SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC)
               SOLVER_EQUATIONS%TIME_DEPENDENCE=SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC
-            CASE(SOLVER_EQUATIONS_TIME_STEPPING)
-              SOLVER_EQUATIONS%TIME_DEPENDENCE=SOLVER_EQUATIONS_TIME_STEPPING
             CASE DEFAULT
               LOCAL_ERROR="The specified solver equations time dependence type of "// &
                 & TRIM(NUMBER_TO_VSTRING(TIME_DEPENDENCE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -7277,10 +7206,10 @@ CONTAINS
                   CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
                   SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                   CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -7313,10 +7242,10 @@ CONTAINS
                   CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
                   SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                   CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -7386,10 +7315,10 @@ CONTAINS
                   CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
                   SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                   CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -7467,10 +7396,10 @@ CONTAINS
                   CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
                   SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                   CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                       & ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -8406,10 +8335,10 @@ CONTAINS
                 CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
                 SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                 CASE(SOLVER_SPARSE_MATRICES)
-                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                     & ERR,ERROR,*999)
                 CASE(SOLVER_FULL_MATRICES)
-                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                     & ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -9868,9 +9797,10 @@ CONTAINS
     REAL(SP) :: SYSTEM_ELAPSED,SYSTEM_TIME1(1),SYSTEM_TIME2(1),USER_ELAPSED,USER_TIME1(1),USER_TIME2(1)
     REAL(DP) :: DAMPING_MATRIX_COEFFICIENT,DELTA_T,DYNAMIC_VALUE,FIRST_UPDATE_FACTOR,RESIDUAL_VALUE, &
       & LINEAR_VALUE,LINEAR_VALUE_SUM,MASS_MATRIX_COEFFICIENT,RHS_VALUE,row_coupling_coefficient,PREVIOUS_RESIDUAL_VALUE, &
-      & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE,JACOBIAN_MATRIX_COEFFICIENT,UPDATE_VALUE, &
-      & MATRIX_VALUE
-    REAL(DP), POINTER :: RHS_PARAMETERS(:), BOUNDARY_CONDITION_VECTOR(:)
+      & SECOND_UPDATE_FACTOR,SOURCE_VALUE,STIFFNESS_MATRIX_COEFFICIENT,VALUE,JACOBIAN_MATRIX_COEFFICIENT,ALPHA_VALUE, &
+      & MATRIX_VALUE,DYNAMIC_DISPLACEMENT_FACTOR,DYNAMIC_VELOCITY_FACTOR,DYNAMIC_ACCELERATION_FACTOR
+    REAL(DP), POINTER :: FIELD_VALUES_VECTOR(:),PREVIOUS_VALUES_VECTOR(:),PREVIOUS_VELOCITY_VECTOR(:), &
+      & PREVIOUS_ACCELERATION_VECTOR(:),RHS_PARAMETERS(:)
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS,DEPENDENT_BOUNDARY_CONDITIONS
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,SOLVER_DISTRIBUTED_MATRIX
@@ -9939,12 +9869,15 @@ CONTAINS
             DAMPING_MATRIX_COEFFICIENT=1.0_DP            
             MASS_MATRIX_COEFFICIENT=0.0_DP
             JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
+            DYNAMIC_DISPLACEMENT_FACTOR=DELTA_T
           CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
             STIFFNESS_MATRIX_COEFFICIENT=1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
             DAMPING_MATRIX_COEFFICIENT=1.0_DP*DYNAMIC_SOLVER%THETA(1)*DELTA_T
             MASS_MATRIX_COEFFICIENT=1.0_DP
             JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
             FIRST_UPDATE_FACTOR=DELTA_T
+            DYNAMIC_DISPLACEMENT_FACTOR=DELTA_T*DELTA_T/2.0_DP
+            DYNAMIC_VELOCITY_FACTOR=DELTA_T
           CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
             STIFFNESS_MATRIX_COEFFICIENT=1.0_DP*(DYNAMIC_SOLVER%THETA(3)*DELTA_T*DELTA_T*DELTA_T)/6.0_DP
             DAMPING_MATRIX_COEFFICIENT=1.0_DP*(DYNAMIC_SOLVER%THETA(2)*DELTA_T*DELTA_T)/2.0_DP
@@ -9952,6 +9885,9 @@ CONTAINS
             JACOBIAN_MATRIX_COEFFICIENT=STIFFNESS_MATRIX_COEFFICIENT
             FIRST_UPDATE_FACTOR=DELTA_T
             SECOND_UPDATE_FACTOR=DELTA_T*DELTA_T/2.0_DP
+            DYNAMIC_DISPLACEMENT_FACTOR=DELTA_T*DELTA_T*DELTA_T/6.0_DP
+            DYNAMIC_VELOCITY_FACTOR=DELTA_T*DELTA_T/2.0_DP
+            DYNAMIC_ACCELERATION_FACTOR=DELTA_T            
           CASE DEFAULT
             LOCAL_ERROR="The dynamic solver degree of "//TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
               & " is invalid."
@@ -10391,9 +10327,44 @@ CONTAINS
                                                 & ERR,ERROR,*999)
                                             ENDDO !solver_row_idx
                                           ENDDO !equations_row_number
-                                         NULLIFY(BOUNDARY_CONDITION_VECTOR)
-                                         CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                            FIELD_INCREMENTAL_VALUES_SET_TYPE,BOUNDARY_CONDITION_VECTOR,ERR,ERROR,*999)
+                                          
+                                          SELECT CASE(DYNAMIC_SOLVER%DEGREE)
+                                          CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
+                                            NULLIFY(FIELD_VALUES_VECTOR)
+                                            NULLIFY(PREVIOUS_VALUES_VECTOR)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_VALUES_SET_TYPE,FIELD_VALUES_VECTOR,ERR,ERROR,*999)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_PREVIOUS_VALUES_SET_TYPE,PREVIOUS_VALUES_VECTOR,ERR,ERROR,*999)
+                                          CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
+                                            NULLIFY(FIELD_VALUES_VECTOR)
+                                            NULLIFY(PREVIOUS_VALUES_VECTOR)
+                                            NULLIFY(PREVIOUS_VELOCITY_VECTOR)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_VALUES_SET_TYPE,FIELD_VALUES_VECTOR,ERR,ERROR,*999)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_PREVIOUS_VALUES_SET_TYPE,PREVIOUS_VALUES_VECTOR,ERR,ERROR,*999)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_PREVIOUS_VELOCITY_SET_TYPE,PREVIOUS_VELOCITY_VECTOR,ERR,ERROR,*999)
+                                          CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
+                                            NULLIFY(FIELD_VALUES_VECTOR)
+                                            NULLIFY(PREVIOUS_VALUES_VECTOR)
+                                            NULLIFY(PREVIOUS_VELOCITY_VECTOR)
+                                            NULLIFY(PREVIOUS_ACCELERATION_VECTOR)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_VALUES_SET_TYPE,FIELD_VALUES_VECTOR,ERR,ERROR,*999)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_PREVIOUS_VALUES_SET_TYPE,PREVIOUS_VALUES_VECTOR,ERR,ERROR,*999)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_PREVIOUS_VELOCITY_SET_TYPE,PREVIOUS_VELOCITY_VECTOR,ERR,ERROR,*999)
+                                            CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                              FIELD_PREVIOUS_ACCELERATION_SET_TYPE,PREVIOUS_ACCELERATION_VECTOR,ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The dynamic solver degree of "// &
+                                              & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+                                              & " is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          END SELECT
 
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
                                             !Get the dynamic contribution to the the RHS values
@@ -10463,24 +10434,46 @@ CONTAINS
                                                       !or does it not, since 'BOUNDARY_CONDITION_FIXED_INCREMENTED' does not
                                                       !show up here either ???
 
-                                                      UPDATE_VALUE=BOUNDARY_CONDITION_VECTOR(variable_dof)
+                                                      SELECT CASE(DYNAMIC_SOLVER%DEGREE)
+                                                      CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
+                                                        ALPHA_VALUE=(FIELD_VALUES_VECTOR(variable_dof)- &
+                                                          & PREVIOUS_VALUES_VECTOR(variable_dof))/ &
+                                                          & DYNAMIC_DISPLACEMENT_FACTOR
+                                                      CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
+                                                        ALPHA_VALUE=(FIELD_VALUES_VECTOR(variable_dof)- &
+                                                          & PREVIOUS_VALUES_VECTOR(variable_dof)- &
+                                                          & DYNAMIC_DISPLACEMENT_FACTOR*PREVIOUS_VELOCITY_VECTOR(variable_dof))/ &
+                                                          & DYNAMIC_VELOCITY_FACTOR
+                                                      CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
+                                                        ALPHA_VALUE=(FIELD_VALUES_VECTOR(variable_dof)- &
+                                                          & PREVIOUS_VALUES_VECTOR(variable_dof)- &
+                                                          & DYNAMIC_DISPLACEMENT_FACTOR*PREVIOUS_VELOCITY_VECTOR(variable_dof) - &
+                                                          & DYNAMIC_VELOCITY_FACTOR*PREVIOUS_ACCELERATION_VECTOR(variable_dof))/ &
+                                                          & DYNAMIC_ACCELERATION_FACTOR
+                                                       CASE DEFAULT
+                                                        LOCAL_ERROR="The dynamic solver degree of "// &
+                                                          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+                                                          & " is invalid."
+                                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                      END SELECT
+                                                         
 
-                                                      IF(ABS(UPDATE_VALUE)>=ZERO_TOLERANCE) THEN
+                                                      IF(ABS(ALPHA_VALUE)>=ZERO_TOLERANCE) THEN
                                                         DO equations_matrix_idx=1,DYNAMIC_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                           & variable_type)%NUMBER_OF_EQUATIONS_MATRICES
                                                           equations_matrix_number=DYNAMIC_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS( &
                                                             & variable_type)%EQUATIONS_MATRIX_NUMBERS(equations_matrix_idx)
                                                           IF(equations_matrix_number==DYNAMIC_MAPPING%STIFFNESS_MATRIX_NUMBER) & 
                                                             & THEN 
-                                                             UPDATE_VALUE=UPDATE_VALUE*STIFFNESS_MATRIX_COEFFICIENT
+                                                             ALPHA_VALUE=ALPHA_VALUE*STIFFNESS_MATRIX_COEFFICIENT
                                                           ENDIF
                                                           IF(equations_matrix_number==DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER) &
                                                             & THEN 
-                                                             UPDATE_VALUE=UPDATE_VALUE*DAMPING_MATRIX_COEFFICIENT
+                                                             ALPHA_VALUE=ALPHA_VALUE*DAMPING_MATRIX_COEFFICIENT
                                                           ENDIF
                                                           IF(equations_matrix_number==DYNAMIC_MAPPING%MASS_MATRIX_NUMBER) &
                                                             & THEN 
-                                                             UPDATE_VALUE=UPDATE_VALUE*MASS_MATRIX_COEFFICIENT
+                                                             ALPHA_VALUE=ALPHA_VALUE*MASS_MATRIX_COEFFICIENT
                                                           ENDIF
                                                           EQUATIONS_MATRIX=>DYNAMIC_MATRICES% &
                                                             & MATRICES(equations_matrix_number)%PTR
@@ -10521,7 +10514,7 @@ CONTAINS
                                                                         & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
                                                                         & dirichlet_row)%COUPLING_COEFFICIENTS( &
                                                                         & solver_row_idx)
-                                                                      VALUE=-1.0_DP*MATRIX_VALUE*UPDATE_VALUE* &
+                                                                      VALUE=-1.0_DP*MATRIX_VALUE*ALPHA_VALUE* &
                                                                         & row_coupling_coefficient
                                                                       CALL DISTRIBUTED_VECTOR_VALUES_ADD( &
                                                                         & SOLVER_RHS_VECTOR, &
@@ -10550,7 +10543,7 @@ CONTAINS
                                                                       & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
                                                                       & dirichlet_row)%COUPLING_COEFFICIENTS( &
                                                                       & solver_row_idx)
-                                                                    VALUE=-1.0_DP*MATRIX_VALUE*UPDATE_VALUE* &
+                                                                    VALUE=-1.0_DP*MATRIX_VALUE*ALPHA_VALUE* &
                                                                       & row_coupling_coefficient
                                                                     CALL DISTRIBUTED_VECTOR_VALUES_ADD( &
                                                                       & SOLVER_RHS_VECTOR, &
@@ -10591,7 +10584,7 @@ CONTAINS
                                                                           & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
                                                                           & dirichlet_row)%COUPLING_COEFFICIENTS( &
                                                                           & solver_row_idx)
-                                                                        VALUE=-1.0_DP*MATRIX_VALUE*UPDATE_VALUE* &
+                                                                        VALUE=-1.0_DP*MATRIX_VALUE*ALPHA_VALUE* &
                                                                           & row_coupling_coefficient
                                                                         CALL DISTRIBUTED_VECTOR_VALUES_ADD( &
                                                                           & SOLVER_RHS_VECTOR, &
@@ -10961,8 +10954,8 @@ CONTAINS
                                 CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIRST_UPDATE_FACTOR, &
                                   & FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                               CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-                                CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,(/FIRST_UPDATE_FACTOR, &
-                                  & SECOND_UPDATE_FACTOR/),(/FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE/), &
+                                CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,[FIRST_UPDATE_FACTOR, &
+                                  & SECOND_UPDATE_FACTOR],[FIELD_PREVIOUS_VELOCITY_SET_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE], &
                                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                                 CALL FIELD_PARAMETER_SETS_ADD(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIRST_UPDATE_FACTOR, &
                                   & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_VELOCITY_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -12682,10 +12675,10 @@ CONTAINS
                     CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
                     SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                     CASE(SOLVER_SPARSE_MATRICES)
-                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                         & ERR,ERROR,*999)
                     CASE(SOLVER_FULL_MATRICES)
-                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,(/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/), &
+                      CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
                         & ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The specified solver equations sparsity type of "// &
@@ -14527,6 +14520,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("SOLVER_NONLINEAR_MONITOR",ERR,ERROR,*999)
 
@@ -14537,13 +14532,28 @@ CONTAINS
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Iteration number = ",ITS,ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",NORM,ERR,ERROR,*999)
-      CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Just computed Function Norm    = ",NORM,ERR,ERROR,*999)
-      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of function evaluations = ",NONLINEAR_SOLVER% &
-      !  & TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS,ERR,ERROR,*999)
-      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of Jacobian evaluations = ",NONLINEAR_SOLVER% &
-      !  & TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS,ERR,ERROR,*999)            
-      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)      
-        
+      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+      CASE(SOLVER_NONLINEAR_NEWTON)
+        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+          CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Newton solver information: ",ERR,ERROR,*999)          
+          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of function evaluations = ",NEWTON_SOLVER% &
+            & TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of Jacobian evaluations = ",NEWTON_SOLVER% &
+            & TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS,ERR,ERROR,*999)            
+        ELSE
+          CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+        !Do nothing
+      CASE(SOLVER_NONLINEAR_SQP)
+        !Do nothing
+      CASE DEFAULT
+        LOCAL_ERROR="The nonlinear solver type of "// &
+          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+          & " is invalid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
     ELSE
       CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -15334,9 +15344,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,DYNAMIC_VARIABLE_TYPE,equations_idx,equations_set_idx,solver_dof_idx,solver_matrix_idx,variable_dof
-    REAL(DP) :: ACCELERATION_VALUE,additive_constant,DELTA_T,DISPLACEMENT_VALUE,DYNAMIC_ACCELERATION_FACTOR, &
-      & DYNAMIC_DISPLACEMENT_FACTOR,DYNAMIC_VELOCITY_FACTOR,SOLVER_VALUE,variable_coefficient,VELOCITY_VALUE,PREVIOUS_VALUE
-    REAL(DP), POINTER :: SOLVER_DATA(:),PREVIOUS_DATA(:)
+    REAL(DP) :: ACCELERATION_VALUE,additive_constant,DELTA_T,DISPLACEMENT_VALUE,PREDICTED_DISPLACEMENT,PREVIOUS_ACCELERATION, &
+      & PREVIOUS_DISPLACEMENT,PREVIOUS_VELOCITY,SOLVER_VALUE,variable_coefficient,VELOCITY_VALUE
+    REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -15359,24 +15369,7 @@ CONTAINS
       IF(SOLVER%SOLVER_FINISHED) THEN
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
-          IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-            DELTA_T=DYNAMIC_SOLVER%TIME_INCREMENT
-            SELECT CASE(DYNAMIC_SOLVER%DEGREE)
-            CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
-              DYNAMIC_DISPLACEMENT_FACTOR=DELTA_T
-            CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
-              DYNAMIC_DISPLACEMENT_FACTOR=DELTA_T*DELTA_T/2.0_DP
-              DYNAMIC_VELOCITY_FACTOR=DELTA_T
-            CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
-              DYNAMIC_DISPLACEMENT_FACTOR=DELTA_T*DELTA_T*DELTA_T/6.0_DP
-              DYNAMIC_VELOCITY_FACTOR=DELTA_T*DELTA_T/2.0_DP
-              DYNAMIC_ACCELERATION_FACTOR=DELTA_T            
-            CASE DEFAULT
-              LOCAL_ERROR="The dynamic solver degree of "//TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
-                & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-          ENDIF
+          DELTA_T=DYNAMIC_SOLVER%TIME_INCREMENT
           SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
           IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
             SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
@@ -15415,27 +15408,80 @@ CONTAINS
                                 SOLVER_VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
                                 !Set the dependent field dof
                                 IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
-                                  NULLIFY(PREVIOUS_DATA)
-                                  !Use FIELD_PREVIOUS_VALUES_SET_TYPE to calculate updated dynamic solution
-                                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
-                                    & FIELD_PREVIOUS_VALUES_SET_TYPE,PREVIOUS_DATA,ERR,ERROR,*999)
-                                  PREVIOUS_VALUE=PREVIOUS_DATA(variable_dof)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_VALUE,ERR,ERROR,*999)
-                                  
-                                  DISPLACEMENT_VALUE=DYNAMIC_DISPLACEMENT_FACTOR*SOLVER_VALUE
-                                  CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                    & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
-                                  IF(DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_FIRST_DEGREE) THEN
-                                    VELOCITY_VALUE=DYNAMIC_VELOCITY_FACTOR*SOLVER_VALUE
-                                    CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                      & FIELD_VELOCITY_VALUES_SET_TYPE,variable_dof,VELOCITY_VALUE,ERR,ERROR,*999)
-                                    IF(DYNAMIC_SOLVER%DEGREE>SOLVER_DYNAMIC_SECOND_DEGREE) THEN
-                                      ACCELERATION_VALUE=DYNAMIC_ACCELERATION_FACTOR*SOLVER_VALUE
-                                      CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & FIELD_ACCELERATION_VALUES_SET_TYPE,variable_dof,ACCELERATION_VALUE,ERR,ERROR,*999)
+                                  SELECT CASE(DYNAMIC_SOLVER%DEGREE)
+                                  CASE(SOLVER_DYNAMIC_FIRST_DEGREE)
+                                    !If we are nonlinear then use the previously calculated predicted displacement
+                                    IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    ELSE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*SOLVER_VALUE
                                     ENDIF
-                                  ENDIF
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
+                                  CASE(SOLVER_DYNAMIC_SECOND_DEGREE)
+                                    !If we are nonlinear then use the previously calculated predicted displacement
+                                    IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    ELSE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
+                                    ENDIF
+                                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                      & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                      & ERR,ERROR,*999)
+                                    VELOCITY_VALUE=PREVIOUS_VELOCITY+DELTA_T*SOLVER_VALUE
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_VELOCITY_VALUES_SET_TYPE,variable_dof,VELOCITY_VALUE,ERR,ERROR,*999)
+                                  CASE(SOLVER_DYNAMIC_THIRD_DEGREE)
+                                    !If we are nonlinear then use the previously calculated predicted displacement
+                                    IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREDICTED_DISPLACEMENT+DELTA_T*SOLVER_VALUE
+                                    ELSE
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                        & FIELD_VALUES_SET_TYPE,variable_dof,PREVIOUS_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      DISPLACEMENT_VALUE=PREVIOUS_DISPLACEMENT+DELTA_T*PREVIOUS_VELOCITY+ &
+                                        & (DELTA_T*DELTA_T/2.0_DP)*PREVIOUS_ACCELERATION+ &
+                                        & (DELTA_T*DELTA_T*DELTA_T/6.0_DP)*SOLVER_VALUE
+                                    ENDIF
+                                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                      & FIELD_PREVIOUS_VELOCITY_SET_TYPE,variable_dof,PREVIOUS_VELOCITY, &
+                                      & ERR,ERROR,*999)
+                                    VELOCITY_VALUE=PREVIOUS_VELOCITY+DELTA_T*PREVIOUS_ACCELERATION+ &
+                                      & (DELTA_T*DELTA_T/2.0_DP)*SOLVER_VALUE
+                                    CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, & 
+                                      & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,variable_dof,PREVIOUS_ACCELERATION, &
+                                      & ERR,ERROR,*999)
+                                    ACCELERATION_VALUE=PREVIOUS_ACCELERATION+DELTA_T*SOLVER_VALUE
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_VALUES_SET_TYPE,variable_dof,DISPLACEMENT_VALUE,ERR,ERROR,*999)
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_VELOCITY_VALUES_SET_TYPE,variable_dof,VELOCITY_VALUE,ERR,ERROR,*999)
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                      & FIELD_ACCELERATION_VALUES_SET_TYPE,variable_dof,ACCELERATION_VALUE,ERR,ERROR,*999)
+                                  CASE DEFAULT
+                                    LOCAL_ERROR="The dynamic solver degree of "// &
+                                      & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+                                      & " is invalid."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  END SELECT
                                 ELSE
                                   SELECT CASE(DYNAMIC_SOLVER%ORDER)
                                   CASE(SOLVER_DYNAMIC_FIRST_ORDER)
@@ -15663,19 +15709,24 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DYNAMIC_VARIABLE_TYPE,equations_idx,solver_dof_idx,solver_matrix_idx,var_idx
-    REAL(DP), POINTER :: SOLVER_DATA(:)
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
+    INTEGER(INTG) :: VARIABLE_TYPE,equations_set_idx,equations_row_number,residual_variable_dof,solver_matrix_idx, &
+      & residual_variable_idx,variable_idx
+    REAL(DP) :: RESIDUAL_VALUE
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
     TYPE(DYNAMIC_SOLVER_TYPE), POINTER :: DYNAMIC_SOLVER
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,RESIDUAL_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    NULLIFY(SOLVER_DATA)
 
     CALL ENTERS("SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE",ERR,ERROR,*999)
 
@@ -15690,49 +15741,71 @@ CONTAINS
               SOLVER_MAPPING=>SOLVER_MATRICES%SOLVER_MAPPING
               IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                 DO solver_matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
-                  SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
-                  IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                    SOLVER_VECTOR=>SOLVER_MATRIX%SOLVER_VECTOR
-                    IF(ASSOCIATED(SOLVER_VECTOR)) THEN
-                      !Get the solver variables data
-                     CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_VECTOR,SOLVER_DATA,ERR,ERROR,*999)
-                     solver_dof_idx=1
-                     equations_idx=1
-!                       DO solver_dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_DOFS
-                        !Loop over the equations sets associated with this dof
-!                         DO equations_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-!                           & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%NUMBER_OF_EQUATIONS
-                     DO var_idx=1,SOLVER_MAPPING%VARIABLES_LIST(1)%NUMBER_OF_VARIABLES
-                      SELECT CASE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
-                        & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%EQUATIONS_TYPES(equations_idx))
-                      CASE(SOLVER_MAPPING_EQUATIONS_EQUATIONS_SET)
-                        DEPENDENT_VARIABLE=>SOLVER_MAPPING%VARIABLES_LIST(1)%VARIABLES(var_idx)%VARIABLE
-                        IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
-                          DYNAMIC_VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
-                          NULLIFY(DEPENDENT_FIELD)
-                          DEPENDENT_FIELD=>DEPENDENT_VARIABLE%FIELD
-                        ELSE
-                          CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                  !Loop over the variables involved in the solver matrix.
+                  DO variable_idx=1,SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES
+                    FIELD_VARIABLE=>SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%VARIABLES(variable_idx)%VARIABLE
+                    IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                      VARIABLE_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                      FIELD=>FIELD_VARIABLE%FIELD
+                      !Copy the displacements
+                      CALL FIELD_PARAMETER_SETS_COPY(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                        & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                      IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_SECOND_DEGREE) THEN
+                        !Copy velocity
+                        CALL FIELD_PARAMETER_SETS_COPY(FIELD,VARIABLE_TYPE,FIELD_VELOCITY_VALUES_SET_TYPE, &
+                          & FIELD_PREVIOUS_VELOCITY_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                        IF(DYNAMIC_SOLVER%DEGREE>=SOLVER_DYNAMIC_THIRD_DEGREE) THEN
+                          !Copy acceleration
+                          CALL FIELD_PARAMETER_SETS_COPY(FIELD,VARIABLE_TYPE,FIELD_ACCELERATION_VALUES_SET_TYPE, &
+                            & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                         ENDIF
-                      CASE(SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                      CASE DEFAULT
-                        LOCAL_ERROR="The equations type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING% &
-                          & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)% &
-                          & EQUATIONS_TYPES(equations_idx),"*",ERR,ERROR))//" of equations index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_idx,"*",ERR,ERROR))//" for solver degree-of-freedom "// &
-                          & TRIM(NUMBER_TO_VSTRING(solver_dof_idx,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                      CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                         & FIELD_PREVIOUS_VALUES_SET_TYPE,1.0_DP,ERR,ERROR,*999)
-                     ENDDO !var_idx
-!                       ENDDO !solver_dof_idx
+                      ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                      LOCAL_ERROR="The solver mapping variables list variable is not associated for variable index "// &
+                        & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                  ENDDO !variable_idx
+                  IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
+                    !Loop over the equations sets and copy any residuals
+                    DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                      EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+                        IF(ASSOCIATED(EQUATIONS)) THEN
+                          IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN
+                            EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+                            IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                              NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                              IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
+                                DO residual_variable_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
+                                  RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(residual_variable_idx)%PTR
+                                  IF(ASSOCIATED(RESIDUAL_VARIABLE)) THEN
+                                    CALL FIELD_PARAMETER_SETS_COPY(RESIDUAL_VARIABLE%FIELD,RESIDUAL_VARIABLE%VARIABLE_TYPE, &
+                                      & FIELD_RESIDUAL_SET_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
+                                  ELSE
+                                    LOCAL_ERROR="Nonlinear mapping residual variable is not associated for "// &
+                                      "residual variable index "//TRIM(NUMBER_TO_VSTRING(residual_variable_idx,"*",ERR,ERROR))// &
+                                      & "."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
+                                ENDDO !residual_variable_idx
+                              ELSE
+                                CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                            ELSE
+                              CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                            ENDIF
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        LOCAL_ERROR="The solver mapping equations set is not associated for equations set index "// &
+                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      ENDIF
+                    ENDDO !equations_set_idx
                   ENDIF
                 ENDDO !solver_matrix_idx
               ELSE
@@ -15777,9 +15850,9 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: DUMMY_ERR,DYNAMIC_VARIABLE_TYPE,equations_idx,equations_set_idx,solver_dof_idx,solver_matrix_idx,variable_dof
     REAL(DP) :: additive_constant,DELTA_T,VALUE,variable_coefficient
-    REAL(DP) :: DYNAMIC_ALPHA_FACTOR, DYNAMIC_U_FACTOR
+    REAL(DP) :: ALPHA_VALUE,DYNAMIC_ALPHA_FACTOR, DYNAMIC_U_FACTOR,PREDICTED_DISPLACEMENT
     INTEGER(INTG) :: variable_idx,VARIABLE_TYPE
-    REAL(DP), POINTER :: SOLVER_DATA(:), MEAN_DATA(:) 
+    REAL(DP), POINTER :: SOLVER_DATA(:)
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR,PREDICTED_DISPLACEMENT_VECTOR
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
@@ -15806,6 +15879,7 @@ CONTAINS
     NULLIFY(SOLVER_DATA)
     
     CALL ENTERS("SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE",ERR,ERROR,*998)
+    
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
         SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -15872,13 +15946,6 @@ CONTAINS
                                     DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
                                     IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                                       DYNAMIC_VARIABLE_TYPE=DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
-                                      !Get the predicted displacement data       
-                                      NULLIFY(PREDICTED_DISPLACEMENT_VECTOR)
-                                      CALL FIELD_PARAMETER_SET_VECTOR_GET(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
-                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,PREDICTED_DISPLACEMENT_VECTOR, &
-                                        & ERR,ERROR,*999)
-                                      NULLIFY(MEAN_DATA)
-                                      CALL DISTRIBUTED_VECTOR_DATA_GET(PREDICTED_DISPLACEMENT_VECTOR,MEAN_DATA,ERR,ERROR,*999)   
                                       !Get the dependent field variable dof the solver dof is mapped to
                                       variable_dof=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                         & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_DOF(equations_idx)
@@ -15886,18 +15953,21 @@ CONTAINS
                                         & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%VARIABLE_COEFFICIENT(equations_idx)
                                       additive_constant=SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                         & SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)%ADDITIVE_CONSTANT(equations_idx)
-                                      
-                                      VALUE=0.0_DP 
-                                      !Calculate solver data only
-                                      VALUE=SOLVER_DATA(solver_dof_idx)*variable_coefficient+additive_constant
-                                      !Set solver data to FIELD_INCREMENTAL_VALUES_SET_TYPE in order to store solver data before modification
+                                      !Store the alpha increment
+                                      ALPHA_VALUE=SOLVER_DATA(solver_dof_idx)
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
-                                        & FIELD_INCREMENTAL_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
+                                        & FIELD_INCREMENTAL_VALUES_SET_TYPE,variable_dof,ALPHA_VALUE,ERR,ERROR,*999)
+                                       !Get the predicted displacement data       
+                                      CALL FIELD_PARAMETER_SET_GET_LOCAL_DOF(DEPENDENT_FIELD,DYNAMIC_VARIABLE_TYPE, &
+                                        & FIELD_PREDICTED_DISPLACEMENT_SET_TYPE,variable_dof,PREDICTED_DISPLACEMENT, &
+                                        & ERR,ERROR,*999)
+                                      !Calculate solver data only
+                                      VALUE=ALPHA_VALUE*variable_coefficient+additive_constant
                                       !Calculate modified input values for residual and Jacobian calculation
                                       IF(STABILITY_TEST) THEN
                                         VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
                                       ENDIF
-                                      VALUE=(VALUE*DYNAMIC_ALPHA_FACTOR)+MEAN_DATA(variable_dof)
+                                      VALUE=VALUE*DYNAMIC_ALPHA_FACTOR+PREDICTED_DISPLACEMENT
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
                                         & FIELD_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
                                     ELSE
@@ -15961,7 +16031,7 @@ CONTAINS
                         CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                         CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_INCREMENTAL_VALUES_SET_TYPE, &
                           & ERR,ERROR,*999)
-                      ENDDO !variable_idx
+                       ENDDO !variable_idx
                     ENDDO !equations_set_idx
                   ELSE
                     CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*998)

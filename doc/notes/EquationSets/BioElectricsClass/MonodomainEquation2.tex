@@ -1,0 +1,25 @@
+
+\subsection{Monodomain Equation}
+
+Under certain conditions the Biodomain equations given in
+\eqnref{eqn:bidomain1} and \eqnref{eqn:bidomain2} can be simplified to 
+
+\begin{equation}
+  A_{m}C_{m}\delby{V_{m}}{t}-\diverg{\pbrac{\tensor{\sigma}_{m}\grad{V_{m}}}}=-A_{m}I_{ion}+i_{i}
+  \label{eqn:monodomain}
+\end{equation}
+
+where $A_{m}$ is the surface to volume ratio for the cell, $C_{m}$ is
+the specific membrance capacitance, $I_{ion}$ is the ionic current, $i_{i}$ is the
+intracellular stimulus current and $\tensor{\sigma}_{m}$ is the
+conductivity tensor given by
+
+\begin{equation}
+  \tensor{\sigma}_{m}=\dfrac{\tensor{\sigma}_{i}\tensor{\sigma}_{e}}{\tensor{\sigma}_{i}+\tensor{\sigma}_{e}}
+  \label{eqn:monodomainconductivity}
+\end{equation}
+
+Rearrangign \eqnref{eqn:monodomain} to give
+\begin{equation}
+  A_{m}C_{m}\delby{V_{m}}{t}=\dfrac{\pbrac{\diverg{\pbrac{\tensor{\sigma}_{m}\grad{V_{m}}}}-I_{ion}+i_{i}}}{}
+\end{equation}

@@ -1,0 +1,189 @@
+\subsection{Diffusion Equation} 
+
+\subsubsection{One Dimensional Analytic Function 1}
+
+From \url{http://eqworld.ipmnet.ru/en/solutions/lpde/lpde101.pdf} we have for the \oned diffusion equation
+\begin{equation}
+  \delby{u}{t}=a\deltwosqby{u}{x}
+\end{equation}
+the analytic solution
+\begin{equation}
+  \fnof{u}{x,t}=Ae^{-a\mu^{2}t}\cos(\mu x + B) + C
+\end{equation}
+
+Now, \OpenCMISS solves diffusion equations of the form
+\begin{equation}
+  \delby{u}{t}+k\deltwosqby{u}{x}=0
+  \label{eqn:OpenCMISSDiffusionEquationOneDim}
+\end{equation}
+and therefore $a=-k$. Choosing $\mu=\dfrac{2\pi}{L}$ gives the
+\OpenCMISS diffusion equation one dimensional analytic function 1, namely
+\begin{equation}
+  \fnof{u}{x,t}=Ae^{\frac{4\pi^{2}kt}{L^{2}}}\cos(\frac{2\pi x}{L} + B) + C
+  \label{eqn:AnalyticDiffusionEquationOneDim1}
+\end{equation}
+
+To prove the analytic solution we differentiate
+\eqnref{eqn:AnalyticDiffusionEquationOneDim1} to give
+\begin{align}
+    \delby{u}{t} &=
+    \dfrac{4\pi^{2}k}{L^{2}}Ae^{\frac{4\pi^{2}kt}{L^{2}}}\cos(\frac{2\pi x}{L} + B) \\
+    \delby{u}{x} &=
+    \dfrac{-2\pi}{L}Ae^{\frac{4\pi^{2}kt}{L^{2}}}\sin(\frac{2\pi x}{L} + B) \\
+    \deltwosqby{u}{x} &=
+    \dfrac{2\pi}{L}\dfrac{-2\pi}{L}Ae^{\frac{4\pi^{2}kt}{L^{2}}}\cos(\frac{2\pi x}{L} + B) \\
+    & = \dfrac{-4\pi^{2}}{L^{2}}Ae^{\frac{4\pi^{2}kt}{L^{2}}}\cos(\frac{2\pi x}{L} + B)
+  \label{eqn:AnalyticDiffusionEquationOneDim1Derivatives}
+\end{align}
+
+Substiting \eqnref{eqn:AnalyticDiffusionEquationOneDim1Derivatives} into \eqnref{eqn:OpenCMISSDiffusionEquationOneDim} gives
+\begin{align}
+  \delby{u}{t}+k\deltwosqby{u}{x} &=
+  \dfrac{4\pi^{2}k}{L^{2}}Ae^{\frac{4\pi^{2}kt}{L^{2}}}\cos(\frac{2\pi x}{L}
+  + B) +
+  k\dfrac{-4\pi^{2}}{L^{2}}Ae^{\frac{4\pi^{2}kt}{L^{2}}}\cos(\frac{2\pi x}{L}
+  + B) \\
+  &= 0
+\end{align}
+
+The analytic field component definitions in \OpenCMISS are shown in \tabref{tab:OpenCMISSAnalyticFieldDiffusionEquationOneDim1}.
+
+\begin{table}[htb] \centering
+  \begin{tabular}{|c|c|} \hline
+    \emph{Analytic constant} & \emph{Analytic field component} \\ \hline \hline
+    $A$ & $1$ \\ 
+    $B$ & $2$ \\
+    $C$ & $3$ \\
+    $L$ & $4$ \\ \hline
+  \end{tabular}
+  \caption{\OpenCMISS analytic field components for the \oned diffusion equation
+    analytic function 1.}
+  \label{tab:OpenCMISSAnalyticFieldDiffusionEquationOneDim1}
+\end{table}
+
+\subsubsection{One Dimensional Quadratic Source Analytic Function 1}
+
+From \url{http://eqworld.ipmnet.ru/en/solutions/npde/npde1104.pdf} we have for
+the \oned polynomial source diffusion equation
+\begin{equation}
+  \delby{u}{t}=\deltwosqby{u}{x}+qw+rw^{m}
+\end{equation}
+the analytic solution
+\begin{equation}
+  \fnof{u}{x,t}=\sqbrac{\pm\beta+Ae^{\pbrac{\lambda t \pm\mu x}}}^\frac{2}{1-m}
+\end{equation}
+where
+\begin{equation}
+  \beta=\sqrt{\dfrac{-r}{q}}
+\end{equation}
+and
+\begin{equation}
+  \lambda=\dfrac{q\pbrac{1-m}\pbrac{m+3}}{2\pbrac{m+1}}
+\end{equation}
+and 
+\begin{equation}
+  \mu=\sqrt{\dfrac{q\pbrac{1-m}^{2}}{2\pbrac{m+1}}}
+\end{equation}
+
+Now, \OpenCMISS solves quadratic source diffusion equations of the form
+\begin{equation}
+  \delby{u}{t}+k\deltwosqby{u}{x}+a+bu+cu^{2}=0
+  \label{eqn:OpenCMISSQuadraticSourceDiffusionEquationOneDim}
+\end{equation}
+and therefore $k=-1$, $m=2$, $a=0$, $q=-b$ and $r=-c$. Choosing the positive wave gives the
+\OpenCMISS quadratic source diffusion equation one dimensional analytic function 1, namely
+\begin{equation}
+  \fnof{u}{x,t}=\dfrac{1}{\sqbrac{\beta+Ae^{\pbrac{\lambda t + \mu x}}}^{2}}
+  \label{eqn:AnalyticQuadraticSourceDiffusionEquationOneDim1}
+\end{equation}
+where
+\begin{equation}
+  \beta=\sqrt{\dfrac{-c}{b}}
+\end{equation}
+and
+\begin{equation}
+  \lambda=\dfrac{5b}{6}
+\end{equation}
+and 
+\begin{equation}
+  \mu=\sqrt{\dfrac{-b}{6}}
+\end{equation}
+
+To prove the analytic solution we differentiate
+\eqnref{eqn:AnalyticQuadraticSourceDiffusionEquationOneDim1} to give 
+\begin{align}
+  \delby{u}{t} &= \dfrac{2\lambda A\pbrac{\lambda t+\mu x}e^{\pbrac{\lambda t+\mu
+        x}}}{\sqbrac{\beta+Ae^{\pbrac{\lambda t + \mu x}}}^{3}} \\
+  \delby{u}{x} &= \dfrac{2\mu A\pbrac{\lambda t+\mu x}e^{\pbrac{\lambda t+\mu
+        x}}}{\sqbrac{\beta+Ae^{\pbrac{\lambda t + \mu x}}}^{3}} \\
+  \deltwosqby{u}{x} &=
+  \label{eqn:AnalyticDiffusionEquationOneDim1Derivatives}
+\end{align}
+
+The analytic field component definitions in \OpenCMISS are shown in \tabref{tab:OpenCMISSAnalyticFieldQuadraticFieldDiffusionEquationOneDim1}.
+
+\begin{table}[htb] \centering
+  \begin{tabular}{|c|c|} \hline
+    \emph{Analytic constant} & \emph{Analytic field component} \\ \hline \hline
+    $A$ & $1$ \\ \hline
+  \end{tabular}
+  \caption{\OpenCMISS analytic field components for the \oned quadratic
+    source diffusion equation analytic function 1.}
+  \label{tab:OpenCMISSAnalyticFieldQuadraticSoureDiffusionEquationOneDim1}
+\end{table}
+
+\subsubsection{One Dimensional Exponential Source Analytic Function 1}
+
+From \url{http://eqworld.ipmnet.ru/en/solutions/npde/npde1105.pdf} we have for
+the \oned exponential source diffusion equation
+\begin{equation}
+  \delby{u}{t}=\deltwosqby{u}{x}+q+re^{\lambda u}
+\end{equation}
+the analytic solution
+\begin{equation}
+  \fnof{u}{x,t}=\dfrac{-2}{\lambda}\ln\sqbrac{\pm\beta+Ae^{\pbrac{\pm\mu x - \frac{1}{2}q \lambda t}}}
+\end{equation}
+where
+\begin{equation}
+  \beta=\sqrt{\dfrac{-r}{q}}
+\end{equation}
+and 
+\begin{equation}
+  \mu=\sqrt{\dfrac{q\lambda}{2}}
+\end{equation}
+
+Now, \OpenCMISS solves diffusion equations of the form
+\begin{equation}
+  \delby{u}{t}+k\deltwosqby{u}{x}+a+be^{cx}=0
+  \label{eqn:OpenCMISSExponentialSourceDiffusionEquationOneDim}
+\end{equation}
+and therefore $k=-1$, $q=-a$ and $r=-b$. Choosing the positive wave gives the
+\OpenCMISS exponential source diffusion equation one dimensional analytic function 1, namely
+\begin{equation}
+  \fnof{u}{x,t}=\dfrac{-2}{c}\ln\sqbrac{\beta+Ae^{\mu\pbrac{x - \mu t}}}
+  \label{eqn:AnalyticExponentialSourceDiffusionEquationOneDim1}
+\end{equation}
+where
+\begin{equation}
+  \beta=\sqrt{\dfrac{-b}{a}}
+\end{equation}
+and 
+\begin{equation}
+  \mu=\sqrt{\dfrac{-ac}{2}}
+\end{equation}
+
+To prove the analytic solution we differentiate
+\eqnref{eqn:AnalyticExponentialSourceDiffusionEquationOneDim1} to give .....
+
+The analytic field component definitions in \OpenCMISS are shown in \tabref{tab:OpenCMISSAnalyticFieldExponentialFieldDiffusionEquationOneDim1}.
+
+\begin{table}[htb] \centering
+  \begin{tabular}{|c|c|} \hline
+    \emph{Analytic constant} & \emph{Analytic field component} \\ \hline \hline
+    $A$ & $1$ \\ \hline
+  \end{tabular}
+  \caption{\OpenCMISS analytic field components for the \oned exponential
+    source diffusion equation analytic function 1.}
+  \label{tab:OpenCMISSAnalyticFieldExponentialSoureDiffusionEquationOneDim1}
+\end{table}
+

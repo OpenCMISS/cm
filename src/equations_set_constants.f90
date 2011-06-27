@@ -72,8 +72,9 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STOKES_EQUATION_TYPE=1
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE=2
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DARCY_EQUATION_TYPE=3
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISEUILLE_EQUATION_TYPE=4
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE=5
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE=4
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISEUILLE_EQUATION_TYPE=5
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_BURGERS_EQUATION_TYPE=6
   !Electromagnetics class
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_ELECTROSTATIC_TYPE=1
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MAGNETOSTATIC_TYPE=2
@@ -164,6 +165,11 @@ MODULE EQUATIONS_SET_CONSTANTS
   !  Poiseuille equation
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE=1
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE=2
+  ! Burgers equation
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_BURGERS_SUBTYPE=1
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE=2
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC_BURGERS_SUBTYPE=3
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE=4
   !Electromagnetics class
   !Classical field class
   !  Laplace equation
@@ -385,9 +391,12 @@ MODULE EQUATIONS_SET_CONSTANTS
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DiffusionAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DiffusionAnalyticFunctionTypes
   !> \brief The analytic function types for a diffusion equation
   !>@{  
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1=1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1=2 !Prescribed solution, single compartment version of multi-comp solutions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_ONE_DIM_1=1
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1=2 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi)))
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1=3 !Prescribed solution, single compartment version of multi-comp solutions
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1=3
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1=1 !<Solution to a diffusion equation with a quadratic source.
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1=1 !<Solution to a diffusion equation with an exponential source.
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM=4 !<Prescribed solution, using a source term to correct for error - 2D with 2 compartments
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_THREE_DIM=5 !<Prescribed solution, using a source term to correct for error - 3D with 2 compartments
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_MULTI_COMP_DIFFUSION_THREE_COMP_THREE_DIM=6 !<Prescribed solution, using a source term to correct for error - 3D with 3 compartments
@@ -441,11 +450,6 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5=10 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1=11 !<u=tbd
   !>@}
-  !> \addtogroup EQUATIONS_SET_CONSTANTS_PoiseuilleAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:PoiseuilleAnalyticFunctionTypes
-  !> \brief The analytic function types for a Poiseuille equation
-  !>@{  
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1=1 !<u=tbd
-  !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DarcyAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DarcyAnalyticFunctionTypes
   !> \brief The analytic function types for a Darcy equation
   !>@{  
@@ -456,6 +460,19 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2=5 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3=6 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY=7 !<this is a solution where the finite elasticity solve is skipped to allow easy analytic testing of the mass increase & velocity solve step of incompressible poromechanical model
+  !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_PoiseuilleAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:PoiseuilleAnalyticFunctionTypes
+  !> \brief The analytic function types for a Poiseuille equation
+  !>@{  
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1=1 !<u=tbd
+  !>@}
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_BurgersAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:BurgersAnalyticFunctionTypes
+  !> \brief The analytic function types for a Burgers equation
+  !>@{  
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_BURGERS_EQUATION_ONE_DIM_1=1 !<Solution to Burgers equation
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_1=1 !<Solution to a generalised burgers equation
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2=2 !<Solution to a generalised burgers equation
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1=1 !<Solution to a static burgers equation
   !>@}
   !>@}
 

@@ -13,7 +13,8 @@
 %   Chris Bradley, 7 September 2000, Changed \lps to \Lps and \mMpLpms etc.
 %     to \mmolpLpms etc.
 %   Mark Trew, 8 June 2001. Made all macro arguments raised to a power
-%   protected by {}, e.g. replaced #2^ with {#2}^.
+%     protected by {}, e.g. replaced #2^ with {#2}^.
+%   Chris Bradley, 22 Feb 2011. Added svg figure support. 
 
 
 %
@@ -48,8 +49,6 @@
 \newcommand{\UNEMAP}{\textsf{UnEmap}\xspace}
 
 
-
-
 %
 % New commands
 %
@@ -66,6 +65,20 @@
 %
 % Figures etc.
 %
+\newcommand{\pdftexfigure}[4]{ %
+  \begin{figure}[htbp] \centering %
+    \def\svgwidth{\columnwidth} %
+    \input{#1} %
+    \ifthenelse{\equal{#2}{}}{ %
+      \caption{#3}}{ %
+      \caption[#2]{#3} %
+      } %
+    \label{#4} %
+  \end{figure} %
+  } % pdftex figure i.e. inkscape svgs
+    % e.g. \pdftexfigure{figure}{short caption}{long caption}{label}
+    % or \pdftexfigure{figure}{}{caption}{label}
+
 \newcommand{\pstexfigure}[4]{ %
   \begin{figure}[htbp] \centering %
     \input{#1} %
@@ -105,6 +118,7 @@
     % e.g. \incgrfigure{height/width options}{epsfig options}{short caption}
     %                  {long caption}{label}
     % or \incgrfigure{height/width options}{epsfig options}{}{caption}{label}
+
 %
 % Formats for references to equations, tables etc.
 %
@@ -283,6 +297,7 @@
 %
 \newcommand{\brac}[3]{\ensuremath{\left#1 #2 \right#3}} % bracket
 \newcommand{\dotprod}[2]{\ensuremath{#1\cdot#2}} % dot product
+\newcommand{\doubledotprod}[2]{\ensuremath{#1:#2}} % double dot product
 \newcommand{\crossprod}[2]{\ensuremath{#1\times#2}} % cross product
 \newcommand{\pbrac}[1]{\brac{(}{#1}{)}} % parenthesis ( bracket
 \newcommand{\normal}{\vect{n}} % normal
@@ -549,10 +564,15 @@
 \newcommand{\nodept}[2]{\ensuremath{ %
     {#1}^{#2} %
   }} % Nodal point (without derivative) e.g., \nodept{\psi}{n}=> nodal dof of \psi at node n.
+  }} % Nodal point (without derivative) e.g., \nodept{\psi}{n}=> nodal dof of \psi at node n.
 \newcommand{\nodedof}[3]{\ensuremath{ %
   \nodept{#1}{#2}_{,#3} %
 }} % Nodal DOF e.g., \nodedof{\psi}{n}{u} => nodal dof of \psi at node n
   % derivative u.
+\newcommand{\idxnodedof}[4]{\ensuremath{ %
+  \nodept{#1}{#3}_{#2,#4} %
+}} % Indexed nodal DOF e.g., \nodedof{\psi}{i}{n}{u} => nodal dof of ith
+   % component of \psi at node n derivative u.
 \newcommand{\chbfnsymb}[2]{\ensuremath{ %
     \Psi_{#1}^{#2} %
     }} % Cubic Hermite basis function symbol
@@ -589,9 +609,15 @@
 \newcommand{\gbfnsymb}[2]{\ensuremath{ %
     \psi_{#1}^{#2} %
     }} % Generic basis function symbol
+\newcommand{\idxgbfnsymb}[3]{\ensuremath{ %
+    \psi_{#1#2}^{#3} %
+    }} % Indexed generic basis function symbol
 \newcommand{\gbfn}[3]{\ensuremath{ %
     \fnof{\gbfnsymb{#1}{#2}}{#3} %
     }} % \gbfn{n}{i}{xi} => Generic bais function at n,i evaluated at xi
+\newcommand{\idxgbfn}[4]{\ensuremath{ %
+    \fnof{\idxgbfnsymb{#1}{#2}{#3}}{#4} %
+    }} % \gbfn{j}{n}{i}{xi} => Indexed j'th generic bais function at n,i evaluated at xi
 \newcommand{\esfone}[1]{\ensuremath{ %
     S^{#1} %
     }} % \esfone{e} => Element scale factor in one direction in element e

@@ -1,0 +1,88 @@
+\subsection{Burgers's Equation}
+
+\subsubsection{Governing equations:}
+
+For a given velocity $\fnof{u}{x,t}$ and a kinematic viscosity of $\nu$, Burgers's equation
+in one dimension is
+\begin{equation}
+  \delby{u}{t}+u\delby{u}{x}=\nu\deltwosqby{u}{x}
+  \label{eqn:Burgersequation}
+\end{equation}
+
+The general form of this equation in \OpenCMISS is
+\begin{equation}
+  \fnof{a}{\vect{x}}\delby{\fnof{\vect{u}}{\vect{x},t}}{t}+\fnof{b}{\vect{x}}\laplacian{\fnof{\vect{u}}{\vect{x},t}}+
+  \fnof{c}{\vect{x}}\dotprod{\fnof{\vect{u}}{\vect{x},t}}{\gradient{\fnof{\vect{u}}{\vect{x},t}}}=\vect{0}
+  \label{eqn:GeneralFormBurgersequation}
+\end{equation}
+where $\fnof{\vect{u}}{\vect{x},t}$ is the velocity vector and
+$\fnof{a}{\vect{x}}$, $\fnof{b}{\vect{x}}$ and $\fnof{c}{\vect{x}}$ are
+material parameters. The standard form of Burgers's equation can be found with
+$a=1$, $b=-\nu$ and $c=1$.
+
+\subsubsection{Weak formulation:}
+
+The corresponding weak form of \eqnref{eqn:GeneralFormBurgersequation} can be
+found by integrating over the domain with a test function \ie
+\begin{equation}
+  \gint{\tau}{}{\sqbrac{\gint{\Omega}{}{\pbrac{a\delby{\vect{u}}{t}+
+          b\laplacian{\vect{u}}+
+          c\dotprod{\vect{u}}{\gradient{\vect{u}}}}\vect{w}}{\Omega}}v}{\tau}=0
+  \label{eqn:Burgersweakform1}
+\end{equation}
+where $\vect{w}$ are suitable spatial test functions and $v$ is a suitable temporal
+test funtion.
+
+Applying the divergence theorem in \eqnref{eqn:DivergenceTheormScalarVector} to \eqnref{eqn:Burgersweakform} gives
+\begin{equation}
+  \gint{\tau}{}{\sqbrac{\gint{\Omega}{}{\pbrac{a\delby{\vect{u}}{t}}\vect{w}}{\Omega}-
+      \gint{\Omega}{}{b\dotprod{\gradient{\vect{u}}}{\gradient{\vect{w}}}}{\Omega}
+      +\gint{\Gamma}{}{\pbrac{b\dotprod{\gradient{\vect{u}}}{\vect{n}}}\vect{w}}{\Gamma}+
+      \gint{\Omega}{}{\pbrac{c\dotprod{\vect{u}}{\gradient{\vect{u}}}}\vect{w}}{\Omega}}v}{\tau}=0
+  \label{eqn:Burgersweakform2}
+\end{equation}
+
+\subsubsection{Tensor notation:}
+
+\Eqnref{eqn:Burgersweakform2} can be written in tensor notation as
+\begin{equation}
+  \gint{\tau}{}{\sqbrac{\gint{\Omega}{}{a\dot{u_{i}}w_{i}}{\Omega}-
+      \gint{\Omega}{}{bG^{jk}\covarderiv{u_{i}}{j}\covarderiv{w_{i}}{k}}{\Omega}+
+      \gint{\Gamma}{}{bG^{jk}\covarderiv{u_{i}}{k}n_{j}w_{i}}{\Gamma} +
+      \gint{\Omega}{}{cG^{jk}u_{j}\covarderiv{u_{i}}{k}w_{i}}{\Omega}}v}{\tau}=0
+  \label{eqn:Burgerstensorform1}
+\end{equation}
+where $G^{jk}$ is the contravariant metric tensor for the spatial coordinates.
+
+As \eqnref{eqn:Burgerstensorform1} must hold for an arbitrary choice of $v$
+then we can write the expression within the square brackets of
+\eqnref{eqn:Burgerstensorform1} as
+\begin{multline}
+  \gint{\Omega}{}{a\dot{u_{i}}w_{i}}{\Omega}-
+  \gint{\Omega}{}{bG^{jk}\pbrac{\partialderiv{u_{i}}{j}-\christoffel{i}{j}{l}u_{l}}\partialderiv{w_{i}}{k}}{\Omega}+\\
+  \gint{\Omega}{}{cG^{jk}u_{j}\pbrac{\partialderiv{u_{i}}{k}-\christoffel{i}{k}{l}u_{l}}w_{i}}{\Omega} =
+  -\gint{\Gamma}{}{bG^{jk}\pbrac{\partialderiv{u_{i}}{k}-\christoffel{i}{k}{l}u_{l}}n_{j}w_{i}}{\Gamma} 
+  \label{eqn:Burgerstensorform2}
+\end{multline}
+
+\subsubsection{Finite element formulation:}
+We can now discretise the domain into finite elements \ie $\Omega=
+\displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$
+If we now interpolate $\vect{u}$ using basis functions and use a Galerkin
+finite elements we have
+\begin{align}
+  \fnof{u_{i}}{\vect{\xi}} &=
+  \idxgbfn{i}{\alpha}{f}{\vect{\xi}}\fnof{\idxnodedof{u}{i}{\alpha}{f}}{t}\gsf{(\alpha)}{(f)}
+  \\
+  \fnof{w_{i}}{\vect{\xi}} &= \idxgbfn{i}{\beta}{f}{\vect{\xi}}
+\end{align}
+
+The equation within the square brackets of \eqnref{eqn:Burgerstensorform1} is
+of the form
+\begin{equation}
+  \matr{C}\fnof{\dot{\vect{u}}}{t}+\matr{K}\fnof{\vect{u}}{t}+\fnof{\vect{g}}{\fnof{\vect{u}}{t}}=\fnof{\vect{f}}{t}
+\end{equation}
+where
+\begin{align}
+  \matr{C} &=
+\end{align}

@@ -18,10 +18,10 @@ that is ready for implementation in the code.
 The generalised Laplace's equation on a domain $\Omega$ with boundary $\Gamma$
 can be stated as
 \begin{equation}
-  \diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}=0  \quad \mathrm{on} \, \Omega \,,
+  \diverg{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}\gradient{\fnof{\phi}{\vect{x}}}}}=0  \quad \mathrm{on} \, \Omega \,,
   \label{eqn:Laplacesequation}
 \end{equation}
-where $\phi$ is the potential and $\tensor{\sigma}$ is
+where $\fnof{\phi}{\vect{x}}$ is the potential and $\fnof{\tensor{\sigma}}{\vect{x}}$ is
 the (positive definite) conductivity tensor throughout the domain. Note that 
 $\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $\laplacian{\phi}=0$.
 
@@ -41,7 +41,6 @@ on the Neumann portion of the boundary~$\Gamma_N$
   \label{eqn:Laplace Dirichlet BC} 
 \end{equation}
 with $\Gamma = \Gamma_D \cup \Gamma_N$.
-
 
 \subsubsection{Weak formulation:}
 The corresponding weak form of \eqnref{eqn:Laplacesequation} is

@@ -183,6 +183,13 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
     MODULE PROCEDURE DISTRIBUTED_VECTOR_ALL_VALUES_SET_L
   END INTERFACE !DISTRIBUTED_VECTOR_ALL_VALUES_SET
 
+  INTERFACE DISTRIBUTED_VECTOR_COPY
+    MODULE PROCEDURE DISTRIBUTED_VECTOR_COPY_INTG
+    MODULE PROCEDURE DISTRIBUTED_VECTOR_COPY_SP
+    MODULE PROCEDURE DISTRIBUTED_VECTOR_COPY_DP
+    MODULE PROCEDURE DISTRIBUTED_VECTOR_COPY_L
+  END INTERFACE !DISTRIBUTED_VECTOR_COPY
+  
   INTERFACE DISTRIBUTED_VECTOR_DATA_GET
     MODULE PROCEDURE DISTRIBUTED_VECTOR_DATA_GET_INTG
     MODULE PROCEDURE DISTRIBUTED_VECTOR_DATA_GET_SP
@@ -242,26 +249,74 @@ MODULE DISTRIBUTED_MATRIX_VECTOR
 
   PUBLIC DISTRIBUTED_MATRIX_VECTOR_INCLUDE_GHOSTS_TYPE,DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE
   
-  PUBLIC DISTRIBUTED_MATRIX_ALL_VALUES_SET,DISTRIBUTED_MATRIX_CREATE_FINISH,DISTRIBUTED_MATRIX_CREATE_START, &
-    & DISTRIBUTED_MATRIX_DATA_GET,DISTRIBUTED_MATRIX_DATA_RESTORE,DISTRIBUTED_MATRIX_DATA_TYPE_SET,DISTRIBUTED_MATRIX_DESTROY, &
-    & DISTRIBUTED_MATRIX_DUPLICATE,DISTRIBUTED_MATRIX_FORM,DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET, &
-    & DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET,DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET,DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET, &
-    & DISTRIBUTED_MATRIX_OUTPUT,DISTRIBUTED_MATRIX_OVERRIDE_SET_ON,DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF, &
-    & DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET,DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET,DISTRIBUTED_MATRIX_STORAGE_TYPE_GET, &
-    & DISTRIBUTED_MATRIX_STORAGE_TYPE_SET,DISTRIBUTED_MATRIX_UPDATE_START,DISTRIBUTED_MATRIX_UPDATE_FINISH, &
-    & DISTRIBUTED_MATRIX_UPDATE_ISFINISHED,DISTRIBUTED_MATRIX_UPDATE_WAITFINISHED,DISTRIBUTED_MATRIX_VALUES_ADD, &
-    & DISTRIBUTED_MATRIX_VALUES_GET,DISTRIBUTED_MATRIX_VALUES_SET
+  PUBLIC DISTRIBUTED_MATRIX_ALL_VALUES_SET
+
+  PUBLIC DISTRIBUTED_MATRIX_CREATE_FINISH,DISTRIBUTED_MATRIX_CREATE_START
+
+  PUBLIC DISTRIBUTED_MATRIX_DATA_GET,DISTRIBUTED_MATRIX_DATA_RESTORE
+
+  PUBLIC DISTRIBUTED_MATRIX_DATA_TYPE_SET
+
+  PUBLIC DISTRIBUTED_MATRIX_DESTROY
+
+  PUBLIC DISTRIBUTED_MATRIX_DUPLICATE
+
+  PUBLIC DISTRIBUTED_MATRIX_FORM
+
+  PUBLIC DISTRIBUTED_MATRIX_LIBRARY_TYPE_SET
+
+  PUBLIC DISTRIBUTED_MATRIX_LINKLIST_SET,DISTRIBUTED_MATRIX_LINKLIST_GET
+
+  PUBLIC DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET
+
+  PUBLIC DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_SET,DISTRIBUTED_MATRIX_NUMBER_NON_ZEROS_GET
+
+  PUBLIC DISTRIBUTED_MATRIX_OUTPUT
+
+  PUBLIC DISTRIBUTED_MATRIX_OVERRIDE_SET_ON,DISTRIBUTED_MATRIX_OVERRIDE_SET_OFF
+
+  PUBLIC DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET,DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_SET
+
+  PUBLIC DISTRIBUTED_MATRIX_STORAGE_TYPE_GET,DISTRIBUTED_MATRIX_STORAGE_TYPE_SET
+
+  PUBLIC DISTRIBUTED_MATRIX_UPDATE_START,DISTRIBUTED_MATRIX_UPDATE_FINISH
+
+  PUBLIC DISTRIBUTED_MATRIX_UPDATE_ISFINISHED,DISTRIBUTED_MATRIX_UPDATE_WAITFINISHED
+
+  PUBLIC DISTRIBUTED_MATRIX_VALUES_ADD
+
+  PUBLIC DISTRIBUTED_MATRIX_VALUES_GET,DISTRIBUTED_MATRIX_VALUES_SET
 
   PUBLIC DISTRIBUTED_MATRIX_BY_VECTOR_ADD
   
-  PUBLIC DISTRIBUTED_VECTOR_ALL_VALUES_SET,DISTRIBUTED_VECTOR_CREATE_FINISH,DISTRIBUTED_VECTOR_CREATE_START, &
-    & DISTRIBUTED_VECTOR_DATA_GET,DISTRIBUTED_VECTOR_DATA_RESTORE,DISTRIBUTED_VECTOR_DATA_TYPE_SET,DISTRIBUTED_VECTOR_DESTROY, &
-    & DISTRIBUTED_VECTOR_DUPLICATE,DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET,DISTRIBUTED_VECTOR_OUTPUT, &
-    & DISTRIBUTED_VECTOR_OVERRIDE_SET_ON,DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF,DISTRIBUTED_VECTOR_VALUES_ADD, &
-    & DISTRIBUTED_VECTOR_VALUES_GET,DISTRIBUTED_VECTOR_VALUES_SET,DISTRIBUTED_VECTOR_UPDATE_START, &
-    & DISTRIBUTED_VECTOR_UPDATE_FINISH,DISTRIBUTED_VECTOR_UPDATE_ISFINISHED,DISTRIBUTED_VECTOR_UPDATE_WAITFINISHED
+  PUBLIC DISTRIBUTED_VECTOR_ALL_VALUES_SET
+
+  PUBLIC DISTRIBUTED_VECTOR_COPY
+
+  PUBLIC DISTRIBUTED_VECTOR_CREATE_FINISH,DISTRIBUTED_VECTOR_CREATE_START
+
+  PUBLIC DISTRIBUTED_VECTOR_DATA_GET,DISTRIBUTED_VECTOR_DATA_RESTORE
+
+  PUBLIC DISTRIBUTED_VECTOR_DATA_TYPE_SET
+
+  PUBLIC DISTRIBUTED_VECTOR_DESTROY
+
+  PUBLIC DISTRIBUTED_VECTOR_DUPLICATE
+
+  PUBLIC DISTRIBUTED_VECTOR_LIBRARY_TYPE_SET
+
+  PUBLIC DISTRIBUTED_VECTOR_OUTPUT
+
+  PUBLIC DISTRIBUTED_VECTOR_OVERRIDE_SET_ON,DISTRIBUTED_VECTOR_OVERRIDE_SET_OFF
+
+  PUBLIC DISTRIBUTED_VECTOR_UPDATE_START,DISTRIBUTED_VECTOR_UPDATE_FINISH
+
+  PUBLIC DISTRIBUTED_VECTOR_UPDATE_ISFINISHED,DISTRIBUTED_VECTOR_UPDATE_WAITFINISHED
   
-  PUBLIC DISTRIBUTED_MATRIX_LINKLIST_SET,DISTRIBUTED_MATRIX_LINKLIST_GET
+  PUBLIC DISTRIBUTED_VECTOR_VALUES_ADD
+
+  PUBLIC DISTRIBUTED_VECTOR_VALUES_GET,DISTRIBUTED_VECTOR_VALUES_SET
+
 CONTAINS  
   
   !
@@ -5241,6 +5296,370 @@ CONTAINS
     CALL EXITS("DISTRIBUTED_VECTOR_ALL_VALUES_SET_L")
     RETURN 1
   END SUBROUTINE DISTRIBUTED_VECTOR_ALL_VALUES_SET_L
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copies alpha times an integer distributed vector to another distributed vector.
+  SUBROUTINE DISTRIBUTED_VECTOR_COPY_INTG(FROM_VECTOR,TO_VECTOR,ALPHA,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: FROM_VECTOR !<A pointer to the distributed vector to copy from
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: TO_VECTOR !<A pointer to the distributed vector to copy to
+    INTEGER(INTG), INTENT(IN) :: ALPHA !<The multiplicative factor for the copy.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DISTRIBUTED_VECTOR_COPY_INTG",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FROM_VECTOR)) THEN
+      IF(FROM_VECTOR%VECTOR_FINISHED) THEN
+        IF(ASSOCIATED(TO_VECTOR)) THEN
+          IF(TO_VECTOR%VECTOR_FINISHED) THEN
+            IF(FROM_VECTOR%DATA_TYPE==TO_VECTOR%DATA_TYPE) THEN
+              IF(FROM_VECTOR%DATA_TYPE==DISTRIBUTED_MATRIX_VECTOR_INTG_TYPE) THEN
+                IF(FROM_VECTOR%LIBRARY_TYPE==TO_VECTOR%LIBRARY_TYPE) THEN
+                  !Vectors are of the same library type
+                  SELECT CASE(FROM_VECTOR%LIBRARY_TYPE)
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+                    IF(ASSOCIATED(FROM_VECTOR%CMISS)) THEN
+                      IF(ASSOCIATED(TO_VECTOR%CMISS)) THEN
+                        IF(ASSOCIATED(FROM_VECTOR%DOMAIN_MAPPING,TO_VECTOR%DOMAIN_MAPPING)) THEN
+                          TO_VECTOR%CMISS%DATA_INTG(1:TO_VECTOR%CMISS%N)=ALPHA*FROM_VECTOR%CMISS%DATA_INTG(1:FROM_VECTOR%CMISS%N)
+                        ELSE
+                          CALL FLAG_ERROR("The from vector does not have the same domain mapping as the to vector.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("To vector CMISS is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("From vector CMISS is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+                    CALL FLAG_ERROR("Cannot copy a vector fro an integer PETSc distributed vector.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The from vector library type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  !Vectors are of from different library types
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The from vector data type of "//TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                  & " does not match the integer data type of the supplied alpha value."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The from vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not match the to vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(TO_VECTOR%DATA_TYPE,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("To vector has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("To vector is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("From vector has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("From vector is not associated.",ERR,ERROR,*999)
+    ENDIF
+     
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_INTG")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_VECTOR_COPY_INTG",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_INTG")
+    RETURN 1
+    
+  END SUBROUTINE DISTRIBUTED_VECTOR_COPY_INTG
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copies alpha times a double precision distributed vector to another distributed vector.
+  SUBROUTINE DISTRIBUTED_VECTOR_COPY_DP(FROM_VECTOR,TO_VECTOR,ALPHA,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: FROM_VECTOR !<A pointer to the distributed vector to copy from
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: TO_VECTOR !<A pointer to the distributed vector to copy to
+    REAL(DP), INTENT(IN) :: ALPHA !<The multiplicative factor for the copy.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DISTRIBUTED_VECTOR_COPY_DP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FROM_VECTOR)) THEN
+      IF(FROM_VECTOR%VECTOR_FINISHED) THEN
+        IF(ASSOCIATED(TO_VECTOR)) THEN
+          IF(TO_VECTOR%VECTOR_FINISHED) THEN
+            IF(FROM_VECTOR%DATA_TYPE==TO_VECTOR%DATA_TYPE) THEN
+              IF(FROM_VECTOR%DATA_TYPE==DISTRIBUTED_MATRIX_VECTOR_DP_TYPE) THEN
+                IF(FROM_VECTOR%LIBRARY_TYPE==TO_VECTOR%LIBRARY_TYPE) THEN
+                  !Vectors are of the same library type
+                  SELECT CASE(FROM_VECTOR%LIBRARY_TYPE)
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+                    IF(ASSOCIATED(FROM_VECTOR%CMISS)) THEN
+                      IF(ASSOCIATED(TO_VECTOR%CMISS)) THEN
+                        IF(ASSOCIATED(FROM_VECTOR%DOMAIN_MAPPING,TO_VECTOR%DOMAIN_MAPPING)) THEN
+                          TO_VECTOR%CMISS%DATA_DP(1:TO_VECTOR%CMISS%N)=ALPHA*FROM_VECTOR%CMISS%DATA_DP(1:FROM_VECTOR%CMISS%N)
+                        ELSE
+                          CALL FLAG_ERROR("The from vector does not have the same domain mapping as the to vector.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("To vector CMISS is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("From vector CMISS is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+                    IF(ASSOCIATED(FROM_VECTOR%PETSC)) THEN
+                      IF(ASSOCIATED(TO_VECTOR%PETSC)) THEN
+                        IF(FROM_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                          IF(TO_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                            CALL PETSC_VECCOPY(FROM_VECTOR%PETSC%OVERRIDE_VECTOR,TO_VECTOR%PETSC%OVERRIDE_VECTOR,ERR,ERROR,*999)
+                            CALL PETSC_VECSCALE(TO_VECTOR%PETSC%OVERRIDE_VECTOR,ALPHA,ERR,ERROR,*999)
+                          ELSE
+                            CALL PETSC_VECCOPY(FROM_VECTOR%PETSC%OVERRIDE_VECTOR,TO_VECTOR%PETSC%VECTOR,ERR,ERROR,*999)
+                            CALL PETSC_VECSCALE(TO_VECTOR%PETSC%VECTOR,ALPHA,ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          IF(TO_VECTOR%PETSC%USE_OVERRIDE_VECTOR) THEN
+                            CALL PETSC_VECCOPY(FROM_VECTOR%PETSC%VECTOR,TO_VECTOR%PETSC%OVERRIDE_VECTOR,ERR,ERROR,*999)
+                            CALL PETSC_VECSCALE(TO_VECTOR%PETSC%OVERRIDE_VECTOR,ALPHA,ERR,ERROR,*999)
+                          ELSE
+                            CALL PETSC_VECCOPY(FROM_VECTOR%PETSC%VECTOR,TO_VECTOR%PETSC%VECTOR,ERR,ERROR,*999)
+                            CALL PETSC_VECSCALE(TO_VECTOR%PETSC%VECTOR,ALPHA,ERR,ERROR,*999)
+                          ENDIF
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("To vector PETSc is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("From vector PETSc is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE DEFAULT
+                    LOCAL_ERROR="The from vector library type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  !Vectors are of from different library types
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The from vector data type of "//TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                  & " does not match the double precision data type of the supplied alpha value."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The from vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not match the to vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(TO_VECTOR%DATA_TYPE,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("To vector has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("To vector is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("From vector has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("From vector is not associated.",ERR,ERROR,*999)
+    ENDIF
+     
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_DP")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_VECTOR_COPY_DP",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_DP")
+    RETURN 1
+    
+  END SUBROUTINE DISTRIBUTED_VECTOR_COPY_DP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copies alpha times a single precision distributed vector to another distributed vector.
+  SUBROUTINE DISTRIBUTED_VECTOR_COPY_SP(FROM_VECTOR,TO_VECTOR,ALPHA,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: FROM_VECTOR !<A pointer to the distributed vector to copy from
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: TO_VECTOR !<A pointer to the distributed vector to copy to
+    REAL(SP), INTENT(IN) :: ALPHA !<The multiplicative factor for the copy.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DISTRIBUTED_VECTOR_COPY_SP",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FROM_VECTOR)) THEN
+      IF(FROM_VECTOR%VECTOR_FINISHED) THEN
+        IF(ASSOCIATED(TO_VECTOR)) THEN
+          IF(TO_VECTOR%VECTOR_FINISHED) THEN
+            IF(FROM_VECTOR%DATA_TYPE==TO_VECTOR%DATA_TYPE) THEN
+              IF(FROM_VECTOR%DATA_TYPE==DISTRIBUTED_MATRIX_VECTOR_SP_TYPE) THEN
+                IF(FROM_VECTOR%LIBRARY_TYPE==TO_VECTOR%LIBRARY_TYPE) THEN
+                  !Vectors are of the same library type
+                  SELECT CASE(FROM_VECTOR%LIBRARY_TYPE)
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+                    IF(ASSOCIATED(FROM_VECTOR%CMISS)) THEN
+                      IF(ASSOCIATED(TO_VECTOR%CMISS)) THEN
+                        IF(ASSOCIATED(FROM_VECTOR%DOMAIN_MAPPING,TO_VECTOR%DOMAIN_MAPPING)) THEN
+                          TO_VECTOR%CMISS%DATA_SP(1:TO_VECTOR%CMISS%N)=ALPHA*FROM_VECTOR%CMISS%DATA_SP(1:FROM_VECTOR%CMISS%N)
+                        ELSE
+                          CALL FLAG_ERROR("The from vector does not have the same domain mapping as the to vector.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("To vector CMISS is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("From vector CMISS is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+                    CALL FLAG_ERROR("Cannot copy a vector for a single precision PETSc distributed vector.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                    LOCAL_ERROR="The from vector library type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  !Vectors are of from different library types
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The from vector data type of "//TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                  & " does not match the single precision data type of the supplied alpha value."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The from vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not match the to vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(TO_VECTOR%DATA_TYPE,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("To vector has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("To vector is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("From vector has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("From vector is not associated.",ERR,ERROR,*999)
+    ENDIF
+     
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_SP")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_VECTOR_COPY_SP",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_SP")
+    RETURN 1
+    
+  END SUBROUTINE DISTRIBUTED_VECTOR_COPY_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copies alpha times a logical distributed vector to another distributed vector.
+  SUBROUTINE DISTRIBUTED_VECTOR_COPY_L(FROM_VECTOR,TO_VECTOR,ALPHA,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: FROM_VECTOR !<A pointer to the distributed vector to copy from
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: TO_VECTOR !<A pointer to the distributed vector to copy to
+    LOGICAL, INTENT(IN) :: ALPHA !<The multiplicative factor for the copy.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("DISTRIBUTED_VECTOR_COPY_L",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(FROM_VECTOR)) THEN
+      IF(FROM_VECTOR%VECTOR_FINISHED) THEN
+        IF(ASSOCIATED(TO_VECTOR)) THEN
+          IF(TO_VECTOR%VECTOR_FINISHED) THEN
+            IF(FROM_VECTOR%DATA_TYPE==TO_VECTOR%DATA_TYPE) THEN
+              IF(FROM_VECTOR%DATA_TYPE==DISTRIBUTED_MATRIX_VECTOR_L_TYPE) THEN
+                IF(FROM_VECTOR%LIBRARY_TYPE==TO_VECTOR%LIBRARY_TYPE) THEN
+                  !Vectors are of the same library type
+                  SELECT CASE(FROM_VECTOR%LIBRARY_TYPE)
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
+                    IF(ASSOCIATED(FROM_VECTOR%CMISS)) THEN
+                      IF(ASSOCIATED(TO_VECTOR%CMISS)) THEN
+                        IF(ASSOCIATED(FROM_VECTOR%DOMAIN_MAPPING,TO_VECTOR%DOMAIN_MAPPING)) THEN
+                          TO_VECTOR%CMISS%DATA_L(1:TO_VECTOR%CMISS%N)=ALPHA.AND.FROM_VECTOR%CMISS%DATA_L(1:FROM_VECTOR%CMISS%N)
+                        ELSE
+                          CALL FLAG_ERROR("The from vector does not have the same domain mapping as the to vector.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("To vector CMISS is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("From vector CMISS is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE)
+                    CALL FLAG_ERROR("Cannot copy a vector for an integer PETSc distributed vector.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The from vector library type of "// &
+                      & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  END SELECT
+                ELSE
+                  !Vectors are of from different library types
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                LOCAL_ERROR="The from vector data type of "//TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                  & " does not match the logical data type of the supplied alpha value."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              LOCAL_ERROR="The from vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(FROM_VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+                & " does not match the to vector data type of "// &
+                & TRIM(NUMBER_TO_VSTRING(TO_VECTOR%DATA_TYPE,"*",ERR,ERROR))//"."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("To vector has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("To vector is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("From vector has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("From vector is not associated.",ERR,ERROR,*999)
+    ENDIF
+     
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_L")
+    RETURN
+999 CALL ERRORS("DISTRIBUTED_VECTOR_COPY_L",ERR,ERROR)
+    CALL EXITS("DISTRIBUTED_VECTOR_COPY_L")
+    RETURN 1
+    
+  END SUBROUTINE DISTRIBUTED_VECTOR_COPY_L
 
   !
   !================================================================================================================================

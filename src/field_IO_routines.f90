@@ -53,7 +53,6 @@ MODULE FIELD_IO_ROUTINES
   USE COMP_ENVIRONMENT
   USE COORDINATE_ROUTINES
   USE ISO_VARYING_STRING
-  USE REGION_ROUTINES
   USE MACHINE_CONSTANTS
   USE KINDS
   USE FIELD_ROUTINES
@@ -364,6 +363,7 @@ MODULE FIELD_IO_ROUTINES
     MODULE PROCEDURE REALLOCATE_ELEMENTS
     MODULE PROCEDURE REALLOCATE_COMPONENTS
     MODULE PROCEDURE REALLOCATE_BASIS
+    MODULE PROCEDURE REALLOCATE_FIELD
   END INTERFACE !REALLOCATE
 
   INTERFACE GROW_ARRAY
@@ -380,6 +380,7 @@ MODULE FIELD_IO_ROUTINES
     MODULE PROCEDURE CHECKED_DEALLOCATE_COMPONENTS
     MODULE PROCEDURE CHECKED_DEALLOCATE_ELEMENTS
     MODULE PROCEDURE CHECKED_DEALLOCATE_BASIS
+    MODULE PROCEDURE CHECKED_DEALLOCATE_FIELD
   END INTERFACE !CHECKED_DEALLOCATE
 
   PUBLIC :: FIELD_IO_FIELDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT
@@ -525,6 +526,33 @@ CONTAINS
     CALL EXITS("REALLOCATE_BASIS")
     RETURN 1
   END SUBROUTINE REALLOCATE_BASIS
+
+  !
+  !================================================================================================================================
+  !
+  
+  SUBROUTINE REALLOCATE_FIELD( array, newSize, errorMessage, ERR, ERROR, * )
+    TYPE(FIELD_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
+    INTEGER(INTG), INTENT(IN) :: newSize
+    CHARACTER(LEN=*), INTENT(IN) :: errorMessage
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    CALL ENTERS("REALLOCATE_FIELD",ERR,ERROR,*999)
+
+    IF( ALLOCATED( array ) ) THEN
+      DEALLOCATE( array )
+    ENDIF
+    
+    ALLOCATE( array( newSize ), STAT = ERR )
+    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    
+    CALL EXITS("REALLOCATE_FIELD")
+    RETURN
+999 CALL ERRORS("REALLOCATE_FIELD",ERR,ERROR)
+    CALL EXITS("REALLOCATE_FIELD")
+    RETURN 1
+  END SUBROUTINE REALLOCATE_FIELD
 
   !
   !================================================================================================================================
@@ -793,6 +821,18 @@ CONTAINS
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_BASIS
+  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CHECKED_DEALLOCATE_FIELD( array )
+    TYPE(FIELD_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
+ 
+    IF( ALLOCATED( array ) ) THEN
+      DEALLOCATE( array )
+    ENDIF
+
+  END SUBROUTINE CHECKED_DEALLOCATE_FIELD
   
   !
   !================================================================================================================================
@@ -2726,6 +2766,7 @@ CONTAINS
     CHARACTER(LEN=MAXSTRLEN) :: fvar_name
     CHARACTER(LEN=1, KIND=C_CHAR) :: cvar_name(MAXSTRLEN+1)
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(FIELD_PTR_TYPE), ALLOCATABLE :: listScaleFields(:)
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: variable_ptr
     TYPE(DOMAIN_TYPE), POINTER :: componentDomain !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS ! domain nodes
@@ -2758,6 +2799,8 @@ CONTAINS
       & "Could not allocate GROUP_LOCAL_NUMBER in exelem header", ERR, ERROR, *999 )
     CALL REALLOCATE( listScaleBases, elementalInfoSet%NUMBER_OF_COMPONENTS, &
       & "Could not allocate listScaleBases in exelem header", ERR, ERROR, *999 )
+    CALL REALLOCATE( listScaleFields, elementalInfoSet%NUMBER_OF_COMPONENTS, &
+      & "Could not allocate listScaleFields in exelem header", ERR, ERROR, *999 )
 
     !collect scale factor information
     DO comp_idx=1,elementalInfoSet%NUMBER_OF_COMPONENTS
@@ -2786,19 +2829,23 @@ CONTAINS
        IF(comp_idx == 1) THEN
           NUM_OF_SCALING_FACTOR_SETS = NUM_OF_SCALING_FACTOR_SETS + 1
           listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
+          listScaleFields( NUM_OF_SCALING_FACTOR_SETS )%PTR => variable_ptr%FIELD
           LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
        ELSE
           SWITCH=.FALSE.
           DO scaleIndex1=1, NUM_OF_SCALING_FACTOR_SETS
              IF( BASIS%GLOBAL_NUMBER == listScaleBases( scaleIndex1 )%PTR%GLOBAL_NUMBER ) THEN
-                SWITCH=.TRUE.
-                LIST_COMP_SCALE(comp_idx)=scaleIndex1
-                EXIT
+               IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == listScaleFields (scaleIndex1 )%PTR%SCALINGS%SCALING_TYPE ) THEN
+                 SWITCH=.TRUE.
+                 LIST_COMP_SCALE(comp_idx)=scaleIndex1
+                 EXIT
+               ENDIF
              ENDIF
           ENDDO !scaleIndex1
           IF(.NOT.SWITCH) THEN
              NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
              listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
+             listScaleFields( NUM_OF_SCALING_FACTOR_SETS )%PTR => variable_ptr%FIELD
              LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
           ENDIF
        ENDIF
@@ -3355,6 +3402,7 @@ CONTAINS
     ENDDO !comp_idx
 
     !release temporary memory
+    CALL CHECKED_DEALLOCATE( listScaleFields )
     CALL CHECKED_DEALLOCATE( listScaleBases )
     CALL CHECKED_DEALLOCATE( GROUP_LOCAL_NUMBER )
     CALL CHECKED_DEALLOCATE( GROUP_SCALE_FACTORS )

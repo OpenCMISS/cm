@@ -23,7 +23,7 @@ MY_MAINFILE=OpenCMISSNotes
 # more than one source quotation (") marks must be used around the
 # individual sources seperated by spaces.
 
-MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.tex EquationSets/EquationSets.tex EquationSets/ClassicalFieldClass/AdvectionDiffusionEquation.tex  EquationSets/ClassicalFieldClass/GeneralisedLaplaceEquation.tex EquationSets/ClassicalFieldClass/BiharmonicEquation.tex EquationSets/ClassicalFieldClass/DiffusionEquation.tex EquationSets/ClassicalFieldClass/HelmholtzEquation.tex EquationSets/ClassicalFieldClass/PoissonEquation.tex EquationSets/ClassicalFieldClass/ReactionDiffusionEquation.tex EquationSets/ClassicalFieldClass/WaveEquation.tex AnalyticSolutions/AnalyticSolutions.tex References/References.tex Index/Index.tex"
+MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.tex EquationSets/EquationSets.tex EquationSets/ClassicalFieldClass/AdvectionDiffusionEquation.tex  EquationSets/ClassicalFieldClass/GeneralisedLaplaceEquation.tex EquationSets/ClassicalFieldClass/BiharmonicEquation.tex EquationSets/ClassicalFieldClass/DiffusionEquation.tex EquationSets/ClassicalFieldClass/HelmholtzEquation.tex EquationSets/ClassicalFieldClass/PoissonEquation.tex EquationSets/ClassicalFieldClass/ReactionDiffusionEquation.tex EquationSets/ClassicalFieldClass/WaveEquation.tex EquationSets/FluidMechanicsClass/StokesEquation.tex EquationSets/FluidMechanicsClass/DarcyEquation.tex EquationSets/FluidMechanicsClass/NavierStokesEquation.tex EquationSets/FluidMechanicsClass/BurgersEquation.tex AnalyticSolutions/AnalyticSolutions.tex AnalyticSolutions/ClassicalFieldClass/DiffusionEquation.tex AnalyticSolutions/FluidMechanicsClass/BurgersEquation.tex References/References.tex Index/Index.tex"
 
 #
 # The names of the eps/figs/(gnu)plot files that go into the document. 
@@ -34,6 +34,7 @@ MY_TEX_SRC="TitlePage/TitlePage.tex Introduction/Introduction.tex Theory/Theory.
 #MY_EPS_SRC="epsfiles/*.eps"
 MY_EPS_SRC=
 MY_FIG_SRC=figs/Theory/*.fig
+MY_SVG_SRC=svgs/Theory/*.svg
 MY_PLOT_SRC=plots/Theory/*.gnu
 
 #
@@ -71,6 +72,7 @@ make -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile $* \
 	TEX_SRC="$MY_TEX_SRC" \
 	EPS_SRC="$MY_EPS_SRC" \
 	FIG_SRC="$MY_FIG_SRC" \
+	SVG_SRC="$MY_SVG_SRC" \
 	PLOT_SRC="$MY_PLOT_SRC" \
 	HTMLUPDATE_DIR=$MY_HTMLUPDATE_DIR \
 	HTMLIDXTYPE=$MY_HTMLIDXTYPE \

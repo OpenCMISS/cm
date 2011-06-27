@@ -7,6 +7,7 @@
 # UPDATES : 
 #   Leo Cheng, November 1998 - Adding option to generate 2 to a page ps.
 #   Martyn Nash, Feb 2006 - Adding option to generate 2 to a page pdf.
+#   Chris Bradley, Feb 2011 - Adding option to have svg figures.
 #
 #
 # DESCRIPTION :
@@ -26,9 +27,9 @@
 #     quick     - Always latex the document quickly (i.e. no rerun)
 #     pdf       - Generate the pdf version of the document
 #     pdf2      - Generate the 2 page landscape pdf version of the document
-#     pics      - Make sure the .pstex versions of the figures and the plots
+#     pics      - Make sure the .pstex versions of the figures, svgs and the plots
 #                    are up to date.
-#     pics_clean - Clean the figures and the plots.
+#     pics_clean - Clean the figures, svgs and the plots.
 #     print     - Print the document to the specified printer.
 #     print_range FIRST=# LAST=# - Print only the pages in the range
 #                    FIRST-LAST to the specified printer.
@@ -65,15 +66,16 @@ MAKEINDEX	=	makeindex
 PRINT           =       lpr
 PSNUP           =       psnup -2 -d0.1
 
-# plot and figure files
+# plot, figure and svg files
 MAKEFIGS	=	make -f ${OPENCMISS_ROOT}/cm/doc/latex/Makefigs
+MAKESVGS	=	make -f ${OPENCMISS_ROOT}/cm/doc/latex/Makesvgs
 MAKEPLOTS	=	make -f ${OPENCMISS_ROOT}/cm/doc/latex/Makeplots
 
 #
 # Standard TeX makefile follows
 #
 
-.SUFFIXES:	.pdf .ps .tex .fig .eps
+.SUFFIXES:	.pdf .ps .tex .fig .svg .gnu .eps
 
 .PRECIOUS:	$(MAINFILE).dvi
 
@@ -88,6 +90,10 @@ LATEX_PSQ	=	latex \\batchmode \
 $(MAINFILE).dvi	:	$(MAINFILE).tex $(TEX_SRC) $(BIBS) $(EPS_SRC) $(FIG_SRC) $(PLOT_SRC)
 	@if test -d figs ; \
 		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsmake ; \
+		else : ; \
+	fi
+	@if test -d svgs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile svgsmake ; \
 		else : ; \
 	fi
 	@if test -d plots ; \
@@ -142,9 +148,9 @@ help :
 	@echo "     pdf2        - Generate the 2 page landscape pdf version of the document."
 	@echo "     pdf_range FIRST=# LAST=# - Generate the pdf version of only"
 	@echo "                    the pages in the range FIRST-LAST."
-	@echo "     pics        - Make sure the .pstex versions of the figures and "
+	@echo "     pics        - Make sure the .pstex versions of the figures, svgs and "
 	@echo "                    the plots are up to date."
-	@echo "     pics_clean  - Clean the figures and plots."
+	@echo "     pics_clean  - Clean the figures, svgs and plots."
 	@echo "     print       - Print the document to the specified printer."
 	@echo "     print_range FIRST=# LAST=# - Print only the pages in the range"
 	@echo "                    FIRST-LAST to the specified printer."
@@ -173,9 +179,13 @@ $(MAINFILE)/index.html :	$(MAINFILE).tex
 quick	:	
 	$(LATEX_DVI) $(MAINFILE)
 
-pics :	$(FIG_SRC) $(PLOT_SRC)
+pics :	$(FIG_SRC) $(SVG_SRC) $(PLOT_SRC)
 	@if test -d figs ; \
 		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsmake ; \
+		else : ; \
+	fi
+	@if test -d svgs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile svgsmake ; \
 		else : ; \
 	fi
 	@if test -d plots ; \
@@ -186,6 +196,10 @@ pics :	$(FIG_SRC) $(PLOT_SRC)
 pics_clean :
 	@if test -d figs ; \
 		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsclean ; \
+		else : ; \
+	fi
+	@if test -d svgs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile svgsclean ; \
 		else : ; \
 	fi
 	@if test -d plots ; \
@@ -244,6 +258,10 @@ clean :	qclean
 		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile figsclean ; \
 		else : ; \
 	fi
+	@if test -d svgs ; \
+		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile svgsclean ; \
+		else : ; \
+	fi
 	@if test -d plots ; \
 		then $(MAKE) -f ${OPENCMISS_ROOT}/cm/doc/latex/Latex_Makefile plotsclean ; \
 		else : ; \
@@ -259,6 +277,12 @@ figsmake :
 
 figsclean :
 	@(cd figs ; $(MAKEFIGS) clean)
+
+svgsmake :
+	@(cd svgs ; $(MAKESVGS))
+
+svgsclean :
+	@(cd svgs ; $(MAKESVGS) clean)
 
 plotsmake :
 	@(cd plots ; $(MAKEPLOTS))

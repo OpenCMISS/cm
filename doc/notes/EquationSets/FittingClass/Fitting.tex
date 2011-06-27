@@ -1,0 +1,700 @@
+\subsection{Linear Fitting}
+
+\subsubsection{Problem formulation}
+
+The \emph{geometric fitting problem} is, given a set of data defining some
+geometry, find the nodal positions and derivatives that, for a given mesh,
+minimises the error in the mesh approximation to the data. Hence before a
+fitting problem can be formulated the error in the mesh approximation must be
+defined.
+
+Consider a set of rectangular Cartesian data with geometric locations
+$\dpt{\vect{z}}{d}$, $d=1,\ldots,D$. For each data point a point on the mesh
+that has the smallest distance to that data point can be found. This point is
+termed the \emph{orthogonal projection} of the data point onto the mesh. This
+point is specified by a local element coordinate, $\dpt{\vect{\xi}}{d}$, in
+the element of projection, $\dpt{\varepsilon}{d}$. The geometric location of
+this point, $\fnof{\vect{z}}{\dpt{\vect{\xi}}{d}}$, is found from
+interpolation \ie
+\begin{equation}
+  \fnof{\vect{z}}{\dpt{\vect{\xi}}{d}}=\gbfn{\alpha}{u}{\dpt{\vect{\xi}}{d}}
+  \npt{\vect{x}}{\alpha}_{,u}\gsf{(\alpha)}{(u)}
+  \label{eqn:dataprojectionpos}
+\end{equation}
+A schematic of this projection is shown in \figref{fig:dataprojection}.  To
+calculate $\dpt{\vect{\xi}}{d}$ a non-linear iterative calculation is
+required, details of which are given later in this subsection.
+
+\pstexfigure{figs/TorsoModel/dataprojection.pstex}{Schematic of an orthogonal
+  projection of a data point into an element.}{Schematic of an orthogonal
+  projection of a data point into an element. A data point at the geometric
+  location $\dpt{\vect{z}}{d}$ is projected into an element,
+  $\dpt{\varepsilon}{d}$, at a parametric element coordinate, $\dpt{\xi}{d}$,
+  and geometric position $\fnof{\vect{z}}{\dpt{\xi}{d}}$ such that the
+  distance between the projection and the data point is
+  minimised.}{fig:dataprojection}
+
+The measure of the error for each data point, $\dpt{f}{d}$, is defined as the
+Euclidean distance between the data point and its closest projection onto the
+current mesh \ie
+\begin{equation}
+  \fnof{\dpt{f}{d}}{\dpt{\vect{\xi}}{d}}=\norm{\fnof{\vect{z}}{
+      \dpt{\vect{\xi}}{d}}-\dpt{\vect{z}}{d}}
+\end{equation}
+
+For a given projection of the data points onto the mesh (\ie if
+$\dpt{\vect{\xi}}{d}$ are held constant), the \emph{data objective} function
+to be minimised in the fit is formed from the weighted sum of squares of the
+individual errors \ie
+\begin{equation}
+  \fnof{\mathcal{F}}{\vect{u}}=\gsum{e=1}{E}{\gsum{d=1}{D_{e}}{\dpt{\gamma}{d}
+      \pbrac{\fnof{\dpt{f}{d}}{\dpt{\vect{\xi}}{d}}}^{2}}}=\gsum{e=1}{E}{
+    \gsum{d=1}{D_{e}}{\dpt{\gamma}{d}\norm{\fnof{\vect{z}}{\dpt{
+            \vect{\xi}}{d}}-\dpt{\vect{z}}{d}}^{2}}}
+  \label{eqn:ldataresidualfn}
+\end{equation}
+where $\dpt{\gamma}{d}$ is a weight for each data point, $D_{e}$ the number of
+data points within an element $e$ and $\vect{u}$ is a vector of mesh
+parameters (nodal positions, derivatives and scale factors).
+
+The fitting problem is hence to find the set of mesh parameters that minimises
+this objective function. Substituting \eqnref{eqn:dataprojectionpos} into
+\eqnref{eqn:ldataresidualfn} and differentiating with respect to the mesh
+parameters within an element $e$ yields
+\begin{equation}
+  \begin{split}
+    \delby{\fnof{\mathcal{F}}{\vect{u}}}{\npt{x}{\beta}_{j,v}}&=2
+    \gsum{d=1}{D_{e}}{\dpt{\gamma}{d}\pbrac{\gbfn{\alpha}{u}{
+          \dpt{\vect{\xi}}{d}}\npt{x}{\alpha}_{j,u}\gsf{(\alpha)}{(u)}-
+        \dpt{z}{d}_{j}}\gbfn{\beta}{v}{\dpt{\vect{\xi}}{d}}
+      \gsf{(\beta)}{(v)}} \\
+    \delby{\fnof{\mathcal{F}}{\vect{u}}}{\gsf{\beta}{v}}&=2\gsum{d=1}{D_{e}}{
+      \dpt{\gamma}{d}\dotprod{\pbrac{\gbfn{\alpha}{u}{\dpt{\vect{\xi}}{d}}
+          \npt{\vect{x}}{\alpha}_{,u}\gsf{\pbrac{\alpha}}{\pbrac{u}}-
+          \dpt{\vect{z}}{d}}}{\gbfn{\beta}{v}{\dpt{\vect{\xi}}{d}}
+        \npt{\vect{x}}{\beta}_{,v}}}
+  \end{split}
+  \label{eqn:derivldataresidualfn}
+\end{equation}
+
+A minimum of the objective function is hence found by setting the derivatives
+of the objective function in \eqnref{eqn:derivldataresidualfn} to zero.  This
+will only result in a linear system if the scale factors are kept constant
+during the fit. That is, the vector $\vect{u}$ will only contain the nodal
+positions and the nodal \arclen derivatives.  With this restriction the
+derivative of \eqnref{eqn:ldataresidualfn} with respect to the scale factors
+can be ignored and the minimum of the objective function is given by
+\begin{equation}
+  \gsum{d=1}{D_{e}}{\dpt{\gamma}{d}\gbfn{\alpha}{u}{\dpt{\vect{\xi}}{d}}
+    \gsf{(\alpha)}{(u)}\gbfn{\beta}{v}{\dpt{\vect{\xi}}{d}}\gsf{(\beta)}{(v)}}
+  \npt{x}{\alpha}_{j,u}=\gsum{d=1}{D_{e}}{\dpt{\gamma}{d}\gbfn{\beta}{v}
+    {\dpt{\vect{\xi}}{d}}\gsf{(\beta)}{(v)}\dpt{z}{d}_{j}}
+\end{equation}
+that is, a linear elemental finite element stiffness matrix and residual
+vector system for each geometric index $j$ of the form
+\begin{equation}
+  K_{\alpha v}^{\beta u}\npt{u}{\alpha}_{j,u}=\npt{r}{\beta}_{vj}
+  \label{eqn:fittingelemstiffnessystem}
+\end{equation}
+where the scope of the $\alpha$, $\beta$, $u$ and $v$ indices depend on the
+basis functions used to interpolate the \nth{j} geometric variable.
+
+A linear system of equations governing the entire mesh is found by assembling
+a global stiffness matrix from all of the individual element matrices. This is
+then solved to yield the nodal positions and derivatives that minimise the
+error in the mesh.
+
+As the scale factors and data point projections are held constant during the
+above fitting procedure the resultant mesh may not completely minimise the
+error. It is hence necessary to iteratively apply the fitting procedure in
+order to obtain a mesh that best fits the data. The fit can be considered
+converged when the RMS error in the fit does not change significantly
+between iterations. The RMS error in the fit is defined as
+\begin{equation}
+  \text{RMS error}=\sqrt{\dfrac{\gsum{d=1}{D}{\norm{\fnof{\vect{z}}{
+            \dpt{\vect{\xi}}{d}}-\dpt{\vect{z}}{d}}^{2}}}{D}}
+\end{equation}
+
+The linear fitting algorithm used in this thesis is hence:
+\begin{enumerate}
+\item Define an initial mesh (and calculate the initial nodal scale factors).
+  \item Calculate the initial data point projections and initial error in the
+    mesh.
+  \item Repeat until converged or the maximum number of iterations is exceeded.
+  \begin{enumerate}
+  \item Fit the mesh by applying the linear fitting procedure.
+  \item Update the scale factors to be average \arclens based on the new
+    mesh.
+  \item Recalculate the data point projections on the new mesh.
+  \end{enumerate}
+\end{enumerate}
+
+\subsubsection{$\xi$ point calculation}
+\label{sec:xipointcalculation}
+
+The fitting method described above requires the location of the orthogonal
+projection of a data point (the point at which the distance between the data
+point and the projection is a minimum) onto the mesh to be determined. To find
+this point consider the distance between a data point and it's projection,
+$\dpt{f}{d}$, as the Euclidean norm of the error vector from some point (at a
+parametric elemental position of $\vect{\xi}$), $\fnof{\vect{z}}{\vect{\xi}}$,
+and the location of the data point, $\dpt{\vect{z}}{d}$ \ie
+\begin{equation}
+  \begin{split}
+    \fnof{\dpt{f}{d}}{\vect{\xi}}&=\norm{\fnof{\dpt{\vect{e}}{d}}{\vect{\xi}}} \\ 
+    &=\norm{\fnof{\vect{z}}{\vect{\xi}}-\dpt{\vect{z}}{d}} \\ 
+    &=\norm{\gbfn{\alpha}{u}{\vect{\xi}}\npt{\vect{x}}{\alpha}_{,u}
+      \gsf{\pbrac{\alpha}}{\pbrac{u}}-\dpt{\vect{z}}{d}}
+  \end{split}
+\end{equation}
+
+The parametric elemental location which minimises this distance (assuming
+that it exists within the element), $\dpt{\vect{\xi}}{d}$, is hence given by
+\begin{equation}
+  \delby{\fnof{\dpt{f}{d}}{\dpt{\vect{\xi}}{d}}}{\xi_{l}}=\dfrac{\delby{\gbfn{
+        \alpha}{u}{\dpt{\vect{\xi}}{d}}}{\xi_{l}}\dotprod{\npt{\vect{x}}{
+        \alpha}_{,u}\gsf{\pbrac{\alpha}}{\pbrac{u}}}{\fnof{\dpt{\vect{e}}{d}}{\dpt{
+          \vect{\xi}}{d}}}}{\norm{\fnof{\dpt{\vect{e}}{d}}{\dpt{\vect{\xi}}{d}}}}=0
+\end{equation}
+with $l$ varying from $1$ to the number of $\xi$ coordinates in the mesh under
+consideration.
+
+The parametric projection location, $\dpt{\vect{\xi}}{d}$, can hence be found
+from the (vector) root of the (vector) function
+\begin{equation}
+  \fnof{g_{l}}{\vect{\xi}}=\dotprod{\delby{\fnof{\vect{z}}{\vect{\xi}}}{
+      \xi_{l}}}{\fnof{\dpt{\vect{e}}{d}}{\vect{\xi}}}=0
+\end{equation}
+
+This root is easily found using an iterative Newton-Raphson method. If an
+initial location, $\vect{\xi}$, is assumed a correction to this position,
+$\Delta\vect{\xi}$, can be found from 
+\begin{equation}
+  \Delta\vect{\xi}=-\inverse{\fnof{\matr{J}}{\fnof{\vect{g}}{\vect{\xi}}}}
+  \fnof{\vect{g}}{\vect{\xi}}
+\end{equation}
+where $\fnof{\matr{J}}{\fnof{\vect{g}}{\vect{\xi}}}$ is the \emph{Jacobian
+  matrix} given by
+\begin{equation}
+  \fnof{\matr{J}}{\fnof{\vect{g}}{\vect{\xi}}}=\begin{bmatrix}
+    \delby{g_{1}}{\xi_{1}} & \delby{g_{1}}{\xi_{2}} & \ldots & 
+    \delby{g_{1}}{\xi_{n}} \\
+    \delby{g_{2}}{\xi_{1}} & \delby{g_{2}}{\xi_{2}} & \ldots & 
+    \delby{g_{2}}{\xi_{n}} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \delby{g_{m}}{\xi_{1}} & \delby{g_{m}}{\xi_{2}} & \ldots & 
+    \delby{g_{m}}{\xi_{n}}
+  \end{bmatrix}
+\end{equation}
+
+For the function considered here
+\begin{equation}
+  \fnof{J_{ij}}{\fnof{\vect{g}}{\vect{\xi}}}=\dotprod{\deltwoby{\fnof{
+        \vect{z}}{\vect{\xi}}}{\xi_{i}}{\xi_{j}}}{\fnof{\dpt{\vect{e}}{d}}{
+      \vect{\xi}}}+\dotprod{\delby{\fnof{\vect{z}}{\vect{\xi}}}{\xi_{i}}}{
+    \delby{\fnof{\dpt{\vect{e}}{d}}{\vect{\xi}}}{\xi_{j}}}
+\end{equation}
+
+The algorithm to find the orthogonal projections is hence:
+\begin{enumerate}
+\item For each data point, d.
+  \begin{enumerate}
+  \item For each element.
+    \begin{enumerate}
+    \item Guess an initial starting location for the projection (\eg the
+      middle of the element).
+    \item Iteratively apply the Newton-Raphson method until (a) The projection
+      is converged; (b) The maximum number of Newton-Raphson iterations is
+      exceeded; (c) The projection moves outside the element.
+    \item If a projection has been found inside the element and the distance
+      from this projection to the data point is smaller than other projections
+      in other elements set $\dpt{\varepsilon}{d}$ to this element and
+      $\dpt{\vect{\xi}}{d}$ to this projection.
+    \end{enumerate}
+  \end{enumerate}
+\end{enumerate}
+
+The initial calculation of the orthogonal projections is computationally
+expensive although the method is parallelisable at the data point loop level
+and steps can be taken to ensure that excessive
+computation is avoided (\eg immediately disregard elements at early stages in
+the Newton-Raphson iteration whose projections yield distances far greater
+than the current smallest projection). Once the initial projections have been
+calculated then, if the mesh is changed (as part of an iterative fitting
+procedure), the projections can be quickly and easily updated by applying the
+Newton-Raphson method from the current projections.
+
+\subsubsection{Sobelov smoothing for linear fitting}
+\label{sec:sobelovlinearfitting}
+
+With an insufficient number of data points, fitting 'noisy' data or fitting
+data that has an uneven spread, a smoothness constraint \cite{young:1989}
+can be introduced by adding a second term to the objective function:
+\begin{equation}
+  \fnof{F }{\vect{u}}=\gsum{e=1}{E}{\gsum{d=1}{D_{e}}{\dpt{\gamma}{d}
+    \norm{\fnof{\vect{z}}{\dpt{\vect{\xi}}{d}}-\dpt{\vect{z}}{d}}^{2}}}+
+  \gint{\Omega}{}{\fnof{g}{\fnof{\vect{u}}{\vect{\xi}}}}{\Omega}
+  \label{eqn:sobeloverrorfn}
+\end{equation}
+
+The first term in \eqnref{eqn:sobeloverrorfn} measures the error in the
+surface from the data and the second term measures deformation of the surface.
+To measure the deformation of the surface a $\nth{p}$ order weighted
+Sobelov norm \cite{terzopoulos:1986,zzz-tikhonov:1977} is used, defined by
+\begin{equation}
+  \fnof{g_{p,w}}{\fnof{\vect{u}}{\vect{\xi}}}=\gsum{q=0}{p}{\gsum{i+j=q}{}
+  {w_{ij}\norm{\delntwoby{q}{\vect{u}}{\xione}{i}{\xitwo}{j}}^{2}}}
+  \label{eqn:Sobelovnorm}
+\end{equation}
+where $w_{ij}$ are the weights for the norm. The addition to the objective
+function, called the \emph{Sobelov value}, is defined as
+\begin{equation}
+  \fnof{G}{\fnof{\vect{u}}{\vect{\xi}}}=\gint{\Omega}{}{\fnof{g}{
+      \fnof{\vect{u}}{\vect{\xi}}}}{\Omega}
+  \label{eqn:Sobelovvalue}
+\end{equation}
+where $\Omega$ is the mesh domain.
+
+For the case of \twodal fitting (\eg \cubicherm elements) $j=0$ (as there is
+no $\xitwo$ direction) and for the case of \threedal fitting (\eg \bicubicherm
+elements) $j=0,..,2$. Consider the case for $p=2$, and for \twods: $w_{0}=0,
+w_{1}=\tau, w_{2}=\kappa$, and for \threeds: $w_{00}=0, w_{01}=w_{10}=\tau,
+w_{20}=w_{02}= \kappa, w_{11}=2\kappa$. In \twods the Sobelov value now becomes
+\begin{equation}
+  \fnof{G}{\fnof{\vect{u}}{\vect{\xi}}}=\goneint{\pbrac{\tau
+      \norm{\dby{\vect{u}}{\xi}}^{2}+\kappa\norm{\dtwosqby{
+          \vect{u}}{\xi}}^{2}}}{\Omega}
+  \label{eqn:2DptwoSobelovnorm}
+\end{equation}
+and in \threeds it becomes
+\begin{equation}
+  \fnof{G}{\fnof{\vect{u}}{\vect{\xi}}}=\goneint{\pbrac{\tau\pbrac{
+        \norm{\delby{\vect{u}}{\xione}}^{2}+\norm{\delby{\vect{u}}
+          {\xitwo}}^{2}}+\kappa\pbrac{\norm{\deltwosqby{\vect{u}}{\xione}}^{2}+
+        2\norm{\deltwoby{\vect{u}}{\xione}{\xitwo}}^{2}+
+        \norm{\deltwosqby{\vect{u}}{\xitwo}}^{2}}}}{\Omega}
+  \label{eqn:3DptwoSobelovnorm}
+\end{equation}
+
+Thus the parameter $\tau$ controls the tension of the surface and the
+parameter $\kappa$ controls the degree of surface curvature
+\cite{terzopoulos:1986}.
+
+The additional elemental stiffness matrix terms for
+\eqnref{eqn:fittingelemstiffnessystem} are
+\begin{equation}
+  K_{\alpha v}^{\beta u}=2\gsf{\pbrac{\alpha}}{\pbrac{u}}
+  \gsf{\pbrac{\beta}}{\pbrac{v}}\gint{0}{1}{\pbrac{\tau\delby{
+        \gbfn{\alpha}{u}{\xi}}{\xi}\delby{\gbfn{\beta}{v}{\xi}}{\xi}+
+      \kappa\deltwosqby{\gbfn{\alpha}{u}{\xi}}{\xi}
+      \deltwosqby{\gbfn{\beta}{v}{\xi}}{\xi}}\fnof{J}{\xi}}{\xi}
+\end{equation}
+for \twods and 
+\begin{multline}
+  K_{\alpha v}^{\beta u}=2\gsf{\pbrac{\alpha}}{\pbrac{u}}
+  \gsf{\pbrac{\beta}}{\pbrac{v}}\dintl{\vect{0}}{\vect{1}}\left(\tau\pbrac{
+      \delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xione}
+      \delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}+
+      \delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xitwo}
+      \delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xitwo}}+\right. \\
+  \left.\kappa\pbrac{\deltwosqby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xione}
+      \deltwosqby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}+
+      \deltwoby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xione}{\xitwo}
+      \deltwoby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}{\xitwo}+
+      \deltwosqby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xitwo}
+      \deltwosqby{\gbfn{\beta}{v}{\vect{\xi}}}{\xitwo}}\right)
+  \jacobian\,d\vect{\xi}
+\end{multline}
+for \threeds.
+
+\subsection{Non-linear Fitting}
+\label{sec:nonlinearfitting}
+
+\subsubsection{Problem formulation}
+\label{sec:problemformulation}
+
+One problem that arises when using linear fitting with \cubicherm elements is
+that \arclen derivatives and average \arclen scaling are not maintained during
+the fit. In linear fitting there is no information supplied in the linear
+fitting model that enforces \arclen derivatives and the scale factors are held
+constant during the fit. In this section the question of how to fit the data
+whilst maintaining \arclen derivatives and an even spacing of \arclen with
+$\xi$ is considered.  Because both the value of the \arclen for the element
+and the relationship between the derivatives in the various spatial directions
+depend upon the mesh parameters in a \nonlin fashion, the only way to ensure
+that \arclen derivatives are maintained during fitting is to use a \nonlin
+fitting procedure.
+
+Consider the following: Let $\vect{u}$ be the vector of mesh parameters,
+$\dpt{\vect{z}}{d}$ be the vector of the location of data point $d$ in space
+and $\fnof{\vect{z}}{\vect{u},\dpt{\vect{\xi}}{d}}$ the vector of the location
+of the closest projection (at the points given by the vector
+$\dpt{\vect{\xi}}{d}$) of that data point onto the mesh. Now the error in the
+$d^{\text{th}}$ data point can be expressed in terms of an error vector
+\begin{equation}
+  \fnof{\dpt{\vect{e}}{d}}{\vect{u},\dpt{\vect{\xi}}{d}}=\fnof{\vect{z}}
+  {\vect{u},\dpt{\vect{\xi}}{d}}-\dpt{\vect{z}}{d}
+  \label{eqn:errorvector}
+\end{equation}
+and a residual
+\begin{equation}
+  \fnof{\dpt{f}{d}}{\vect{u},\dpt{\vect{\xi}}{d}}=\dpt{\gamma}{d}\norm{\fnof{
+      \dpt{\vect{e}}{d}}{\vect{u},\dpt{\vect{\xi}}{d}}}^{2}
+  \label{eqn:dataresidual}
+\end{equation}
+
+A \emph{data objective} function,
+$\fnof{\mathcal{F}}{\vect{u},\dpt{\vect{\xi}}{d}}$, is formed as the sum of
+squares of the individual residuals for the mesh $\vect{u}$ and projections
+$\dpt{\vect{\xi}}{d}$
+\begin{equation}
+  \fnof{\mathcal{F}}{\vect{u},\dpt{\vect{\xi}}{d}}=\fntof{\vect{f}}{\vect{u},
+    \dpt{\vect{\xi}}{d}}\fnof{\vect{f}}{\vect{u},\dpt{\vect{\xi}}{d}}
+  \label{eqn:nldataresidualfn}
+\end{equation}
+The fitting problem then becomes, for constant $\dpt{\vect{\xi}}{d}$,
+\begin{equation}
+  \min_{\vect{u} \in \mathbb{R}} \quad \fnof{\mathcal{F}}{\vect{u}}=\fntof{\vect{f}}
+  {\vect{u},\dpt{\vect{\xi}}{d}}\fnof{\vect{f}}{\vect{u},\dpt{\vect{\xi}}{d}}
+\end{equation}
+
+In order to maintain \arclen derivatives a \nonlin constraint is needed.  This
+constraint comes from the geometric properties of \arclen derivatives.  For a
+global node $A$ and $\xi$-direction $l$ the magnitude of the vector of \arclen
+derivatives in the various spatial directions must be of unit length as
+given in \eqnref{eqn:chnormconstraint}.  Hence the constraint is
+\begin{equation}
+  \npt{c}{A}_{l}=\norm{\npt{\vect{x}}{A}_{,l}}=1
+  \label{eqn:normconstraint}
+\end{equation}
+for $l=1,2$.
+
+This also implies simple bounds on the derivative variables:
+\begin{equation}
+  -1 \leq \npt{x}{A}_{j,l} \leq 1
+\end{equation}
+
+The fitting problem can thus be written in terms of the non-linearly
+constrained, \nonlin optimisation problem
+\begin{equation}
+  \begin{split}
+    \min_{\vect{u}\in\mathbb{R},~\dpt{\vect{\xi}}{d}\text{ constant}}\quad &
+    \fnof{\mathcal{F}}{\vect{u}}=\fntof{\vect{f}}{\vect{u},
+      \dpt{\vect{\xi}}{d}}\fnof{\vect{f}}{\vect{u},\dpt{\vect{\xi}}{d}} \\
+    \text{subject to} \quad & \vect{a} \leq 
+    \begin{pmatrix} 
+      \vect{u} \\ 
+      \fnof{\vect{c}}{\vect{u}}
+    \end{pmatrix} \leq \vect{b}
+  \end{split}
+  \label{eqn:nloproblem}
+\end{equation}
+where $\vect{a}$ is a vector of lower bounds, $\vect{b}$ a vector of upper
+bounds and $\fnof{\vect{c}}{\vect{u}}$ a vector of \nonlin constraints. This
+type of optimisation problem can be solved with readily available \nonlin
+optimisation packages such as NPSOL \cite{gill:1986}.
+
+In order to ensure that there is an approximately uniform spacing of $\xi$
+with \arclen two approaches can be used. The first approach is to use an
+iterative technique for the scale factors (as per the linear fitting case) and
+is detailed here. The second approach is to include the scale factors in the
+optimisation problem and is detailed in the next sub-section.
+
+The constraint on the nodal scale factors (being the average of the line
+lengths either side of the node) is placed upon the problem to ensure that the
+\arclen to $\xi$ spacing is approximately uniform. As this only yields
+approximately uniform \arclen to $\xi$ spacing the constraint on the nodal
+scale factors can be relaxed \ie if the nodal scale factors are held fixed
+during the fit then although there will not be average \arclen scaling
+throughout the fitting process there will be a reasonable approximation to it.
+With the nodal scale factors fixed the variables $\gsf{A}{l}$ can be removed
+from the vector of mesh parameters $\vect{u}$.
+
+Hence, the \nonlin fitting approach is to hold the scale factors constant, fit
+the mesh with these scale factors, and then update the scale factors (based on
+the new mesh) to be average \arclen. This process can be repeated iteratively
+until the desired fit has been achieved. It should be noted that as
+\eqnref{eqn:nloproblem} is only defined for constant data point projections,
+this iterative approach means that the data point projections can also be
+updated at the same time as the scale factors.
+
+The convergence of the fitting problem can be measured in two ways. The first
+is the convergence of the RMS error in the data and second is the convergence
+in the magnitude of the nodal scale factors.
+
+The algorithm is therefore:
+\begin{enumerate}
+\item Define an initial mesh (and calculate the initial nodal scale factors).
+  \item Calculate the initial data point projections and initial error in the
+    mesh.
+  \item Repeat until converged or the maximum number of iterations is exceeded.
+  \begin{enumerate}
+    \item Fit the mesh to the data by solving \eqnref{eqn:nloproblem}.
+    \item Update the scale factors to be average \arclens based on the new
+      mesh.
+    \item Recalculate the data point projections on the new mesh.
+  \end{enumerate}
+\end{enumerate}
+
+\subsubsection{Alternative formulation}
+\label{sec:alternativeformulation}
+
+An alternative approach to ensuring average \arclen scale factors can be
+formulated by including the scale factors in the optimisation problem as
+optimisation variables.  The vector of mesh parameters, $\vect{u}$, is hence
+extended to include the nodal scale factors. With this a new constraint is
+introduced to \eqnref{eqn:nloproblem} to ensure that a nodal scale factor is
+the average of the \arclens on either side of that node. If $\gsf{A}{l}$ is
+the nodal scale factor for global node $A$ in the $s_{l}$ direction, as given
+by \eqnref{eqn:avearclenscale}, then the constraint that the nodal scale
+factor equals the average \arclen is given by
+\begin{equation}
+  \npt{c}{A}_{l}=\dfrac{\fnof{s_{l}}{\fnof{A_{\ominus}}{l}}+
+    \fnof{s_{l}}{\fnof{A_{\oplus}}{l}}}{2}-\gsf{A}{l}=0
+\end{equation}
+or
+\begin{equation} 
+  \npt{c}{A}_{l}=\dfrac{1}{2}\pbrac{
+    \gint{0}{1}{\norm{\delby{\fnof{\vect{x}}{\vect{\xi}}}{\xi_{l}}}}{
+      \fnof{\xi_{l}}{\fnof{A_{\ominus}}{l}}}+
+    \gint{0}{1}{\norm{\delby{\fnof{\vect{x}}{\vect{\xi}}}{\xi_{l}}}}{
+      \fnof{\xi_{l}}{\fnof{A_{\oplus}}{l}}}}-\gsf{A}{l}=0
+  \label{eqn:avarclenconstraint}
+\end{equation}
+where $\fnof{A_{\ominus}}{l}$ is the element immediately preceding (in the
+\nth{l} direction) node $A$, and $\fnof{A_{\oplus}}{l}$ is the element
+immediately after (in the \nth{l} direction) node $A$. Note that when the
+infinitesimal in the integrals above contain
+$\fnof{A_{\ominus}}{l}$ ($\fnof{A_{\oplus}}{l}$) the $\xi_{l}$ variable is
+assumed to be taken over the previous (next) element from the global node $A$
+and thus the integrals are always \onedal.
+
+This also generates a simple bound on the scale-factors:
+\begin{equation}
+  \gsf{A}{l} > 0
+\end{equation}
+
+This alternative formulation of the \nonlin fitting problem does have one
+practical limitation. With average \arclen scaling the interpolation within an
+element depends on the \arclen in the neighbouring elements, and the \arclen
+in the neighbouring elements depends on their neighbouring elements and so on.
+This results in a \emph{global mesh} in that every part of the mesh is
+dependent on every other part of the mesh. The implication of this is that the
+entire mesh must be included in the fit otherwise average \arclen scaling
+cannot be achieved. This is clearly not a desirable feature for very large
+problems or for problems where only a small part of the mesh is in error and
+needs to be fitted. 
+
+This formulation still requires iteration to converge the data point
+projections but does have the advantage that the number of iterations required
+is reduced as the scale factors are found during the fit. This is at the
+expense of having to solve a much larger \nonlin optimisation problem with
+more variables and, more importantly, more \nonlin constraints.
+
+The fit can be considered converged when the RMS error in the fit does not
+change significantly between iterations.  The algorithm for the \nonlin data
+fitting procedure is as follows:
+\begin{enumerate}
+\item Define an initial mesh (and calculate the initial nodal scale factors).
+\item Calculate the initial data point projections.
+\item Repeat until converged or the maximum number of iterations is exceeded.
+  \begin{enumerate}
+  \item Fit the mesh to the data by solving \eqnref{eqn:nloproblem} (with
+    the new constraints).
+  \item Recalculate the data point projections on the new mesh.
+  \end{enumerate}
+\end{enumerate}
+
+\subsubsection{Residual and constraint Jacobians}
+\label{sec:resandcontjacs}
+
+Solution of the \nonlin problem given in \eqnref{eqn:nloproblem} will
+generally require the evaluation of the objective gradient (or residual vector
+Jacobian) and the constraint Jacobian with respect to the optimisation (mesh)
+parameters. These optimisation parameters fall into two basic types of
+variable: the nodal variables, $\npt{x}{\beta}_{j,v}$, and the nodal scale
+factors, $\gsf{\beta}{v}$.
+
+To find the residual Jacobian consider the error vector for the data point
+$d$, $\dpt{\vect{e}}{d}$, defined in \eqnref{eqn:errorvector}, and its
+corresponding residual, $\dpt{f}{d}$, defined in \eqnref{eqn:dataresidual}. The
+position of the projection of data point $d$ within the element
+$\dpt{\varepsilon}{d}$ is given by \eqnref{eqn:dataprojectionpos}. Hence the
+Jacobian of the residual vector for the various optimisation variables within
+$\dpt{\varepsilon}{d}$ can be found by substituting
+\eqnref{eqn:dataprojectionpos} into
+\eqnrefs{eqn:errorvector}{eqn:dataresidual} and differentiating \ie
+\begin{align}
+  \delby{\dpt{f}{d}}{\npt{x}{\beta}_{j,v}}&=2\gbfn{\beta}{v}{
+    \dpt{\vect{\xi}}{d}}\gsf{\pbrac{\beta}}{\pbrac{v}}\dpt{e}{d}_{j} 
+  \label{eqn:dataresjacnodevars} \\
+  \delby{\dpt{f}{d}}{\gsf{\beta}{v}}&=2\gbfn{\beta}{v}{\dpt{\vect{\xi}}{d}}
+  \dotprod{\npt{\vect{x}}{\pbrac{\beta}}_{,\pbrac{v}}}{\dpt{\vect{e}}{d}}
+  \label{eqn:dataresjacsfvars}
+\end{align}
+For the optimisation variables not contained within $\dpt{\varepsilon}{d}$ the
+Jacobian is zero.
+  
+Note that if the data residual is defined as
+\begin{equation}
+  \fnof{\dpt{f}{d}}{\vect{u},\dpt{\vect{\xi}}{d}}=\norm{
+    \fnof{\dpt{\vect{e}}{d}}{\vect{u},\dpt{\vect{\xi}}{d}}}
+\end{equation}
+then \eqnref{eqn:dataresjacnodevars} becomes
+\begin{equation}
+  \delby{\dpt{f}{d}}{\npt{x}{\beta}_{j,v}}=\dfrac{\gbfn{\beta}{v}{
+      \dpt{\vect{\xi}}{d}}\gsf{\pbrac{\beta}}{\pbrac{v}}
+    \dpt{e}{d}_{j}}{\dpt{f}{d}}
+\end{equation}
+which is singular at the optimal solution $\dpt{f}{d}=0$. To avoid numerical
+problems the residual is therefore defined by \eqnref{eqn:dataresidual} as the
+square of the Euclidean distance rather than the straight Euclidean distance
+as per the linear fitting case.
+
+Now consider the constraint Jacobians. Differentiating the first constraint,
+\eqnref{eqn:normconstraint}, with respect to the global mesh parameters gives
+the constraint gradients:
+\begin{align}
+  \delby{\npt{c}{A}_{l}}{\npt{x}{B}_{j,v}}&=\kronecker{A}{B}
+  \kronecker{l}{v}\dfrac{\npt{x}{B}_{j,v}}{\norm{
+      \npt{\vect{x}}{B}_{,v}}} \label{eqn:normjacderiv} \\ 
+  \delby{\npt{c}{A}_{l}}{\gsf{B}{v}}&=0 \label{eqn:normjacline}
+\end{align}
+for $l=1,2$.
+
+To calculate the gradients for the second constraint,
+\eqnref{eqn:avarclenconstraint}, the rate of change of $\vect{x}$ with respect
+to $\xi_{l}$ within an element is first computed by differentiating the
+generalised form of \eqnref{eqn:chsfinterpolation} \ie
+\begin{equation}
+  \delby{\fnof{\vect{x}}{\vect{\xi}}}{\xi_{l}}=\delby{\gbfn{\alpha}{u}{
+      \vect{\xi}}}{\xi_{l}}\npt{\vect{x}}{\alpha}_{,u}\gsf{\pbrac{
+      \alpha}}{\pbrac{u}}
+  \label{eqn:delxdelxiinterp}
+\end{equation}
+
+Substituting \eqnref{eqn:delxdelxiinterp} into \eqnref{eqn:avarclenconstraint}
+and differentiating with respect to the optimisation variables gives the
+constraint gradients: 
+\begin{multline}
+  \delby{c_{l}^{A}}{\npt{x}{B}_{j,v}}=\dfrac{1}{2}\left(\kronecker{B}{
+      \fnof{\Delta}{\beta,\fnof{A_{\ominus}}{l}}}\gint{0}{1}{\dfrac{\delby{
+          \gbfn{\beta}{v}{\vect{\xi}}}{\xi_{l}}\gsf{\pbrac{\beta}}{\pbrac{v}}
+        \delby{\fnof{x_{j}}{\vect{\xi}}}{\xi_{l}}}{\norm{\delby{\fnof{
+              \vect{x}}{\vect{\xi}}}{\xi_{l}}}}}{\fnof{\xi_{l}}{
+        \fnof{A_{\ominus}}{l}}+\right.\\  
+    \left.\kronecker{B}{\fnof{\Delta}{\beta,\fnof{A_{\oplus}}{l}}}\gint{0}{1}{
+        \dfrac{\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi_{l}}
+          \gsf{\pbrac{\beta}}{\pbrac{v}}\delby{\fnof{x_{j}}{
+              \vect{\xi}}}{\xi_{l}}}{\norm{\delby{\fnof{\vect{x}}{
+                \vect{\xi}}}{\xi_{l}}}}}{\fnof{\xi_{l}}{
+          \fnof{A_{\oplus}}{l}}}}\right) 
+  \label{eqn:arclenjacnode}
+\end{multline}
+and
+\begin{multline}  
+  \delby{c_{l}^{A}}{\gsf{B}{v}}=\dfrac{1}{2}\left(\kronecker{B}{
+      \fnof{\Delta}{\beta,\fnof{A_{\ominus}}{l}}}\gint{0}{1}{\dfrac{\delby{
+          \gbfn{\beta}{v}{\vect{\xi}}}{\xi_{l}}\dotprod{\npt{
+            \vect{x}}{\beta}_{,v}}{\delby{\fnof{\vect{x}}{\vect{\xi}}}{
+            \xi_{l}}}}{\norm{\delby{\fnof{\vect{x}}{\vect{\xi}}}{\xi_{l}}}}}{
+      \fnof{\xi_{l}}{\fnof{A_{\ominus}}{l}}}+\right. \\ 
+  \left.\kronecker{B}{\fnof{\Delta}{\beta,\fnof{A_{\oplus}}{l}}}\gint{0}{1}{
+      \dfrac{\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi_{l}}\dotprod{\npt{\vect{x}}{
+            \beta}_{,v}}{\delby{\fnof{\vect{x}}{\vect{\xi}}}
+          {\xi_{l}}}}{\norm{\delby{\fnof{\vect{x}}{\vect{\xi}}}{\xi_{l}}}}}{
+      \fnof{\xi_{l}}{\fnof{A_{\oplus}}{l}}}\right)-
+  \kronecker{A}{B}\kronecker{l}{v} \label{eqn:arclenjacline}
+\end{multline}
+where $\beta$ ranges from one to the number of local nodes in the element.
+Again when the infinitesimal in the integrals above contain
+$\fnof{A_{\ominus}}{l}$ ($\fnof{A_{\oplus}}{l}$) the $\xi_{l}$ variable is
+assumed to be taken over the previous (next) element and the integrals are
+thus always \onedal. In the above formulae the Kronecker delta is used to
+extract out the local node and derivative that corresponds to the global
+degree-of-freedom which the gradient is taken with respect to.
+
+\subsubsection{Sobelov smoothing for non-linear fitting}
+
+To implement Sobelov smoothing in the form of the \nonlin optimisation problem
+given in \eqnref{eqn:nloproblem} the residual vector is modified by defining
+an additional residual equal to the Sobelov value for the mesh being fitted \ie
+\begin{equation}
+  \fnof{f^{D+1}}{\vect{u},\vect{\xi}}=\fnof{G}{\fnof{\vect{u}}{\vect{\xi}}}
+  \label{eqn:addSobresidual}
+\end{equation}
+where $\fnof{G}{\fnof{\vect{u}}{\vect{\xi}}}$ is defined in
+\eqnref{eqn:Sobelovvalue}.  The objective function to minimise now becomes
+\begin{equation}
+  \fnof{F}{\vect{u}}=\fnof{\mathcal{F}}{\vect{u}}+\fnof{G^{2}}{\vect{u}}=
+  \fnof{\mathcal{F}}{\vect{u}}+\fnof{\mathcal{G}}{\vect{u}}
+\end{equation}
+where $\fnof{\mathcal{F}}{\vect{u}}$ is the data objective defined in
+\eqnref{eqn:nldataresidualfn} and
+$\fnof{\mathcal{G}}{\vect{u}}=\fnof{G^{2}}{\vect{u}}$ is the \emph{Sobelov
+objective}.
+
+The gradients of this additional residual can then be found by differentiating
+either \eqnref{eqn:2DptwoSobelovnorm} or \eqnref{eqn:3DptwoSobelovnorm} with
+respect to the optimisation (mesh) parameters. For \twodal fitting these
+gradients can be found by breaking the domain up into elements \ie
+\begin{equation}
+  \fnof{G}{\vect{u}}=\dsum_{e}\gint{0}{1}{\pbrac{\tau\norm{\delby{
+          \fnof{\vect{x}}{\xi}}{\xi}}^{2}+\kappa\norm{\deltwosqby{\fnof{
+            \vect{x}}{\xi}}{\xi}}^{2}}\fnof{J}{\xi}}{\xi}
+\end{equation}
+
+Interpolating within an element and differentiating with respect to the
+different optimisation parameters within that element gives the additional
+residual gradients. For \twods these are
+\begin{align}
+  \delby{f^{D+1}}{\npt{x}{\beta}_{j,v}}&=2\gint{0}{1}{\pbrac{\tau
+      \delby{\gbfn{\beta}{v}{\xi}}{\xi}\gsf{\pbrac{\beta}}{\pbrac{v}}
+      \delby{\fnof{x_{j}}{\xi}}{\xi}+\kappa\deltwosqby{\gbfn{\beta}{v}{\xi}}{\xi}
+      \gsf{\pbrac{\beta}}{\pbrac{v}}
+      \deltwosqby{\fnof{x_{j}}{\xi}}{\xi}}\fnof{J}{\xi}}{\xi} 
+  \label{eqn:2Dsobjacnode} \\
+  \delby{f^{D+1}}{\gsf{\beta}{v}}&=2\gint{0}{1}{\pbrac{\tau\delby{
+        \gbfn{\beta}{v}{\xi}}{\xi}\dotprod{\npt{\vect{x}}{\beta}_{,v}}{
+        \delby{\fnof{\vect{x}}{\xi}}{\xi}}+\kappa\deltwosqby{
+        \gbfn{\beta}{v}{\xi}}{\xi}\dotprod{\npt{\vect{x}}{\beta}_{,v}}{
+        \deltwosqby{\fnof{\vect{x}}{\xi}}{\xi}}}\fnof{J}{\xi}}{\xi}
+  \label{eqn:2Dsobjacline}
+\end{align}
+
+In \threeds the additional residual gradients become
+\begin{multline}
+  \delby{f^{D+1}}{\npt{x}{\beta}_{j,v}}=2\dintl{\vect{0}}{\vect{1}}\left(\tau
+    \pbrac{\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}\gsf{\pbrac{\beta}}{
+        \pbrac{v}}\delby{\fnof{x_{j}}{\vect{\xi}}}{\xione}+\delby{
+        \gbfn{\beta}{v}{\vect{\xi}}}{\xitwo}\gsf{\pbrac{\beta}}{\pbrac{v}}
+      \delby{\fnof{x_{j}}{\vect{\xi}}}{\xitwo}}+\right. \\
+  \left.\kappa\pbrac{\deltwosqby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}
+      \gsf{\pbrac{\beta}}{\pbrac{v}}\deltwosqby{\fnof{x_{j}}{\vect{\xi}}}{\xione}
+      +2\deltwoby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}{\xitwo}
+      \gsf{\pbrac{\beta}}{\pbrac{v}}\deltwoby{\fnof{x_{j}}{\vect{\xi}}}{
+        \xione}{\xitwo}+\deltwosqby{\gbfn{\beta}{v}{\vect{\xi}}}{\xitwo}
+      \gsf{\pbrac{\beta}}{\pbrac{v}}\deltwosqby{\fnof{x_{j}}{\vect{\xi}}}{\xitwo}}
+  \right)\jacobian\,d\vect{\xi}
+\end{multline}
+and
+\begin{multline}
+  \delby{f^{D+1}}{\gsf{\beta}{v}}=2\dintl{\vect{0}}{\vect{1}}\left(\tau
+    \pbrac{\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}\dotprod{\npt{\vect{x}}{
+          \beta}_{,v}}{\delby{\fnof{\vect{x}}{\vect{\xi}}}{\xione}}+\delby{\gbfn{
+          \beta}{v}{\vect{\xi}}}{\xitwo}\dotprod{\npt{\vect{x}}{\beta}_{,v}}{
+        \delby{\fnof{\vect{x}}{\vect{\xi}}}{\xitwo}}}+\right. \\
+  \left.\kappa\pbrac{\deltwosqby{\gbfn{\beta}{v}{\vect{\xi}}}{\xione}
+      \dotprod{\npt{\vect{x}}{\beta}_{,v}}{\deltwosqby{\fnof{\vect{x}}{
+            \vect{\xi}}}{\xione}}+2\deltwoby{\gbfn{\beta}{v}{\vect{\xi}}}{
+        \xione}{\xitwo}\dotprod{\npt{\vect{x}}{\beta}_{,v}}{\deltwoby{
+          \fnof{\vect{x}}{\vect{\xi}}}{\xione}{\xitwo}}+\deltwosqby{
+        \gbfn{\beta}{v}{\vect{\xi}}}{\xitwo}\dotprod{\npt{\vect{x}}{\beta}_{,v}}{
+        \deltwosqby{\fnof{\vect{x}}{\vect{\xi}}}{\xitwo}}}\right)\jacobian
+  \,d\vect{\xi}
+\end{multline}
+ 
+Note that the above integrals are for a single element. To obtain the complete
+residual gradients with respect to the optimisation parameters the
+contributions from each element need to be summed.
+
