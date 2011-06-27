@@ -118,6 +118,8 @@ MODULE PROBLEM_ROUTINES
   
   PUBLIC PROBLEM_CONTROL_LOOP_GET
   
+  PUBLIC PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC
+
   PUBLIC PROBLEM_SOLVER_EQUATIONS_CREATE_START,PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH
   
   PUBLIC PROBLEM_SOLVER_EQUATIONS_DESTROY
@@ -2814,6 +2816,61 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLVERS_DESTROY")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLVERS_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for solver equations according to the analytic equations. \see OPENCMISS_CMISSProblemSolverEquationsBoundaryConditionsAnalytic
+  SUBROUTINE PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC(SOLVER_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to get the boundary conditions for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+
+    CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
+        BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+        IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+          SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+          IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+            DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+              EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+              IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Equations set is not associated for index "//TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*", &
+                  & ERR,ERROR))//".",ERR,ERROR,*999)
+              ENDIF
+            ENDDO
+          ELSE
+            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver equations boundary conditions are not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC")
+    RETURN 1
+
+  END SUBROUTINE PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC
 
   !
   !================================================================================================================================

@@ -409,8 +409,6 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSEquationsSetAnalyticTimeSetCNum, CMISSEquationsSetAnalyticTimeSetCPtr
 
- PUBLIC CMISSEquationsSetBoundaryConditionsAnalyticCNum, CMISSEquationsSetBoundaryConditionsAnalyticCPtr
-
  PUBLIC CMISSEquationsSetBoundaryConditionsCreateFinishCNum, CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
 
  PUBLIC CMISSEquationsSetBoundaryConditionsCreateStartCNum, CMISSEquationsSetBoundaryConditionsCreateStartCPtr
@@ -923,6 +921,8 @@ MODULE OPENCMISS_C
  PUBLIC CMISSSolverNonlinearTypeSetCNum, CMISSSolverNonlinearTypeSetCPtr
 
  PUBLIC CMISSSolverOutputTypeSetCNum, CMISSSolverOutputTypeSetCPtr
+
+ PUBLIC CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum, CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr
 
  PUBLIC CMISSSolverEquationsBoundaryConditionsCreateStartCNum, CMISSSolverEquationsBoundaryConditionsCreateStartCPtr
 
@@ -9812,341 +9812,6 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSEquationsSetAnalyticTimeSetCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum(RegionUserNumber,EquationsSetUserNumber,ProblemUserNumber, &
-    & ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex) &
-    & BIND(C, NAME="CMISSEquationsSetBoundaryConditionsAnalyticNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the analytic boundary conditions for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the analytic boundary conditions for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations with the boundary conditions to set.
-    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
-    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the location of the control loop identifiers.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index for the solver equations boundary conditions.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCNum !<Error Code.
-    !Local variables
-    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
-
-    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
-      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
-      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsAnalytic(RegionUserNumber,EquationsSetUserNumber,ProblemUserNumber, &
-          & ControlLoopIdentifiers,SolverIndex,CMISSEquationsSetBoundaryConditionsAnalyticCNum)
-      ELSE
-        CMISSEquationsSetBoundaryConditionsAnalyticCNum = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsAnalyticCNum = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsAnalytic")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to set the analytic boundary conditions.
-    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
-
-    CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
-          CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
-          IF(ASSOCIATED(BoundaryConditions)) THEN
-            CALL CMISSEquationsSetBoundaryConditionsAnalytic(EquationsSet,BoundaryConditions, &
-              & CMISSEquationsSetBoundaryConditionsAnalyticCPtr)
-          ELSE
-            CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
-          ENDIF
-        ELSE
-          CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
-        ENDIF
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finish the creation of boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
-    & "CMISSEquationsSetBoundaryConditionsCreateFinishNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to finish, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of boundary conditions for, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSEquationsSetBoundaryConditionsCreateFinish(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsCreateFinishCNum)
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finish the creation of a boundary conditions for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsCreateFinish")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of boundary conditions for.
-    !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-
-    CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsCreateFinish(EquationsSet,CMISSEquationsSetBoundaryConditionsCreateFinishCPtr)
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Start the creation of boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
-    & "CMISSEquationsSetBoundaryConditionsCreateStartNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to start, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of boundary conditions for, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSEquationsSetBoundaryConditionsCreateStart(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsCreateStartCNum)
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Start the creation of boundary conditions for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsCreateStart")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the equations set to start the creation of boundary conditions on.
-    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<C pointer to the created boundary conditions.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
-
-    CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSNoError
-    IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
-      CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
-      IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsCreateStart(EquationsSet,BoundaryConditions, &
-          & CMISSEquationsSetBoundaryConditionsCreateStartCPtr)
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-          IF(ASSOCIATED(BoundaryConditions)) THEN
-            BoundaryConditionsPtr = C_LOC(BoundaryConditions)
-          ELSE
-            CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
-          ENDIF
-        ELSE
-          CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Destroy the boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
-    & "CMISSEquationsSetBoundaryConditionsDestroyNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to destroy, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the boundary conditions for, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSEquationsSetBoundaryConditionsDestroy(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsDestroyCNum)
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Destroy the boundary conditions for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCPtr(EquationsSetPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsDestroy")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the boundary conditions for.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-
-    CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsDestroy(EquationsSet, CMISSEquationsSetBoundaryConditionsDestroyCPtr)
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsGetCNum(RegionUserNumber,EquationsSetUserNumber,BoundaryConditionsPtr)  &
-    & BIND(C, NAME = "CMISSEquationsSetBoundaryConditionsGetNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to get the boundary conditions for, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the boundary conditions for, for C.
-    TYPE(C_PTR), INTENT(OUT) :: BoundaryConditionsPtr !<C pointer to the boundary conditions for the specified equations set.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsGetCNum !<Error Code.
-    !Local variables
-    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
-
-    CMISSEquationsSetBoundaryConditionsGetCNum = CMISSNoError
-    CALL CMISSEquationsSetBoundaryConditionsGet(RegionUserNumber,EquationsSetUserNumber,BoundaryConditions, &
-      & CMISSEquationsSetBoundaryConditionsGetCNum)
-    IF(ASSOCIATED(BoundaryConditions)) THEN
-      BoundaryConditionsPtr = C_LOC(BoundaryConditions)
-    ELSE
-      CMISSEquationsSetBoundaryConditionsGetCNum = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsGetCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsGetCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsGet")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to get the boundary conditions for.
-    TYPE(C_PTR), INTENT(OUT) :: BoundaryConditionsPtr !<C pointer to the boundary conditions for the specified equations set.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsGetCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
-
-    CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr,EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsGet(EquationsSet,BoundaryConditions, CMISSEquationsSetBoundaryConditionsGetCPtr)
-        IF(ASSOCIATED(BoundaryConditions)) THEN
-          BoundaryConditionsPtr = C_LOC(BoundaryConditions)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsGetCPtr
 
   !
   !================================================================================================================================
@@ -25090,6 +24755,91 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSSolverOutputTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by a user number for C.
+  FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum(RegionUserNumber,EquationsSetUserNumber,ProblemUserNumber, &
+    & ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex) &
+    & BIND(C, NAME="CMISSProblemSolverEquationsBoundaryConditionsAnalyticNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the analytic boundary conditions for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the analytic boundary conditions for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations with the boundary conditions to set.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the location of the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index for the solver equations boundary conditions.
+    !Function variable
+    INTEGER(C_INT) :: CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSEquationsSetBoundaryConditionsAnalytic(RegionUserNumber,EquationsSetUserNumber,ProblemUserNumber, &
+          & ControlLoopIdentifiers,SolverIndex,CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum)
+      ELSE
+        CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by an object for C.
+  FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
+    & "CMISSProblemSolverEquationsBoundaryConditionsAnalytic")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to set the analytic boundary conditions.
+    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set.
+    !Function variable
+    INTEGER(C_INT) :: CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
+    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+
+    CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSNoError
+    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
+      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
+      IF(ASSOCIATED(EquationsSet)) THEN
+        IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
+          CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
+          IF(ASSOCIATED(BoundaryConditions)) THEN
+            CALL CMISSEquationsSetBoundaryConditionsAnalytic(EquationsSet,BoundaryConditions, &
+              & CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr)
+          ELSE
+            CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
+        ENDIF
+        IF(ASSOCIATED(EquationsSet)) THEN
+          EquationsSetPtr = C_LOC(EquationsSet)
+        ELSE
+          CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr
 
   !
   !================================================================================================================================
