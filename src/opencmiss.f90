@@ -273,8 +273,7 @@ MODULE OPENCMISS
     PRIVATE
     TYPE(COMPUTATIONAL_WORK_GROUP_TYPE), POINTER :: COMPUTATIONAL_WORK_GROUP
   END TYPE CMISSComputationalWorkGroupType
-  
-  
+
   !Module variables
 
   TYPE(VARYING_STRING) :: ERROR
@@ -1621,6 +1620,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataPointsProjectionXiGetNumber
     MODULE PROCEDURE CMISSDataPointsProjectionXiGetObj
   END INTERFACE !CMISSDataPointsProjectionXiGet
+ 
 
   !>Returns the user number for a data point identified by a given global number.
   INTERFACE CMISSDataPointsUserNumberGet
@@ -1663,11 +1663,12 @@ MODULE OPENCMISS
   PUBLIC CMISSDataPointsDestroy
 
   PUBLIC CMISSDataPointsLabelGet,CMISSDataPointsLabelSet
+
   
   PUBLIC CMISSDataPointsProjectionDistanceGet,CMISSDataPointsProjectionElementNumberGet
   
   PUBLIC CMISSDataPointsProjectionElementFaceNumberGet,CMISSDataPointsProjectionElementLineNumberGet
-
+ 
   PUBLIC CMISSDataPointsProjectionExitTagGet,CMISSDataPointsProjectionXiGet
   
   PUBLIC CMISSDataPointsUserNumberGet,CMISSDataPointsUserNumberSet
@@ -2005,21 +2006,17 @@ MODULE OPENCMISS
   !> \see OPENCMISS::EquationsSet,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoType = EQUATIONS_SET_NO_TYPE !<No equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityType = EQUATIONS_SET_LINEAR_ELASTICITY_TYPE !<Linear elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityType = EQUATIONS_SET_FINITE_ELASTICITY_TYPE !<Finite elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesEquationType = EQUATIONS_SET_STOKES_EQUATION_TYPE !<Stokes equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesEquationType = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyEquationType = EQUATIONS_SET_DARCY_EQUATION_TYPE !<Darcy equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyPressureEquationType = EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE !<Darcy pressure equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoiseuilleEquationType = EQUATIONS_SET_POISEUILLE_EQUATION_TYPE !<Poiseuille equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBurgersEquationType = EQUATIONS_SET_BURGERS_EQUATION_TYPE !<Burgers equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetElectrostaticType = EQUATIONS_SET_ELECTROSTATIC_TYPE !<Electrostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMagnetoStaticType = EQUATIONS_SET_MAGNETOSTATIC_TYPE !<Magnetostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMaxwellsEquationType = EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE !<Maxwells equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationType = EQUATIONS_SET_LAPLACE_EQUATION_TYPE !<Laplace equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonEquationType = EQUATIONS_SET_POISSON_EQUATION_TYPE !<Poisson equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetHelmholtzEquationType = EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE !<Helmholtz equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
@@ -2028,14 +2025,10 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetAdvectionDiffusionEquationType = EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionEquationType = EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBiharmonicEquationType = EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE !<Biharmonic equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainEquationType = EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE !<Monodomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBidomainEquationType = EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE !<Bidomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticModalType = EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE !<Linear elasticity modal equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetDataFittingEquationType = EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityDarcyType = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityStokesType = EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = &
@@ -2105,7 +2098,6 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientDarcySubtype = EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE !<Transient Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientALEDarcySubtype = EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE !<Transient ALE Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompartmentDarcySubtype = EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE !<Multi Compartment Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetBurgersSubtype = EQUATIONS_SET_BURGERS_SUBTYPE !<Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedBurgersSubtype = EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE !<Generalised Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticBurgersSubtype = EQUATIONS_SET_STATIC_BURGERS_SUBTYPE !<Static Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2155,7 +2147,6 @@ MODULE OPENCMISS
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype = &
     & EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE !<In CellML evaluated incompressible material law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEAdvectionDiffusionSubtype = & 
     & EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceALEAdvectionDiffusionSubtype = &
@@ -2208,6 +2199,16 @@ MODULE OPENCMISS
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE !<Multi-component transport advection-diffusion equations set \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = & 
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE !<Multi-component transport advection-diffusion equations set using SUPG scheme \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionCellMLReacSplitSubtype = &
+    & EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE !CellML Reaction Diffusion with order splitting \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionCellMLReacNoSplitSubtype = &
+    & EQUATIONS_SET_CELLML_REAC_NO_SPLIT_REAC_DIFF_SUBTYPE !CellML Reaction Diffusion without order splitting \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionConstantReacSubtype = &
+    & EQUATIONS_SET_CONSTANT_REAC_DIFF_SUBTYPE !Standard Reaction Diffusion without order splitting, and constant source \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+
+  
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainBuenoOrovioSubtype= EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainTenTusscher06Subtype= EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
@@ -2311,6 +2312,7 @@ MODULE OPENCMISS
     & EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionOneDim1 = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1 
+
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM !<Prescribed solution, using a source term to correct for error - 2D with 2 compartments
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim = &
@@ -2376,6 +2378,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedBurgersOneDim2 = EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticBurgersOneDim1 = EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1 
   !>@}
+
   !> \addtogroup OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::LinearElasticity
   !> \brief The analytic function types for a LinearElasticity equation
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
@@ -2505,6 +2508,10 @@ MODULE OPENCMISS
     & CMISSEquationsSetBurgersSubtype,CMISSEquationsSetGeneralisedBurgersSubtype,CMISSEquationsSetStaticBurgersSubtype, &
     & CMISSEquationsSetInviscidBurgersSubtype
 
+
+  PUBLIC CMISSEquationsSetReactionDiffusionCellMLReacSplitSubtype, CMISSEquationsSetReactionDiffusionCellMLReacNoSplitSubtype, &
+    & CMISSEquationsSetReactionDiffusionConstantReacSubtype
+
   PUBLIC CMISSEquationsSetFEMSolutionMethod,CMISSEquationsSetBEMSolutionMethod,CMISSEquationsSetFDSolutionMethod, &
     & CMISSEquationsSetFVSolutionMethod,CMISSEquationsSetGFEMSolutionMethod,CMISSEquationsSetGFDSolutionMethod, &
     & CMISSEquationsSetGFVSolutionMethod
@@ -2523,6 +2530,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetExponentialSourceDiffusionOneDim1,CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim, &
     & CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim,CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim, &
     & CMISSEquationsSetMultiCompDiffusionFourCompThreeDim
+
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 
@@ -2589,7 +2597,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSetAnalyticDestroyNumber
     MODULE PROCEDURE CMISSEquationsSetAnalyticDestroyObj
   END INTERFACE !CMISSEquationsSetAnalyticDestroy
-  
+
   !>Evaluates the current analytic solution for an equations set.
   INTERFACE CMISSEquationsSetAnalyticEvaluate
     MODULE PROCEDURE CMISSEquationsSetAnalyticEvaluateNumber
@@ -2607,6 +2615,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsSetAnalyticTimeSetNumber
     MODULE PROCEDURE CMISSEquationsSetAnalyticTimeSetObj
   END INTERFACE !CMISSEquationsSetAnalyticTimeSet
+ 
   
   !>Set boundary conditions for an equation set according to the analytic equations.
   INTERFACE CMISSEquationsSetBoundaryConditionsAnalytic
@@ -2779,7 +2788,7 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSetAnalyticCreateFinish,CMISSEquationsSetAnalyticCreateStart
   
   PUBLIC CMISSEquationsSetAnalyticDestroy
-  
+
   PUBLIC CMISSEquationsSetAnalyticEvaluate
   
   PUBLIC CMISSEquationsSetAnalyticTimeGet,CMISSEquationsSetAnalyticTimeSet
@@ -3275,7 +3284,7 @@ MODULE OPENCMISS
   END INTERFACE !CMISSFieldParameterSetGetNode
 
   !>Returns from the given parameter set a value for the specified element and Gauss point of a field variable component.
-  INTERFACE CMISSFieldParameterSetGetGaussPoint ! \todo : other versions
+  INTERFACE CMISSFieldParameterSetGetGaussPoint ! TODO: other versions
     MODULE PROCEDURE CMISSFieldParameterSetGetGaussPointDPObj
   END INTERFACE !CMISSFieldParameterSetGetGaussPoint
 
@@ -4279,6 +4288,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSMeshElementsLocalElementNodeVersionSetObj
   END INTERFACE !CMISSMeshElementsLocalElementNodeVersionSet
 
+
   !>Returns the element user number for an element in a mesh. 
   INTERFACE CMISSMeshElementsUserNumberGet
     MODULE PROCEDURE CMISSMeshElementsUserNumberGetNumber
@@ -4342,9 +4352,9 @@ MODULE OPENCMISS
   PUBLIC CMISSMeshElementsNodesGet,CMISSMeshElementsNodesSet
 
   PUBLIC CMISSMeshElementsUserNumberGet,CMISSMeshElementsUserNumberSet
-  
-  PUBLIC CMISSMeshNodeExists,CMISSMeshElementExists
 
+  PUBLIC CMISSMeshNodeExists,CMISSMeshElementExists
+  
   PUBLIC CMISSDecompositionNodeDomainGet,CMISSMeshElementsUserNodeVersionSet, CMISSMeshElementsLocalElementNodeVersionSet
 
   PUBLIC CMISSMeshSurroundingElementsCalculateSet
@@ -4487,6 +4497,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionAdvectionDiffusionType = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMultiCompartmentTransportType = PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE !<Multi-compartment transport problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityFluidPressureType = PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE !<Finite elasticity fluid pressure problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+ 
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplittingEquationType = &
     & PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   !>@}
@@ -4551,9 +4562,14 @@ MODULE OPENCMISS
     & PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Linear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = &
     & PROBLEM_NONLINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-
   INTEGER(INTG), PARAMETER :: CMISSProblemStaticBurgersSubtype = PROBLEM_STATIC_BURGERS_SUBTYPE !<static Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemDynamicBurgersSubtype = PROBLEM_DYNAMIC_BURGERS_SUBTYPE !<dynamic Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionCellMLReacIntegStrangSplitSubtype = &
+    & PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE !CellML reaction integrated strang-split subtype of reaction diffusion \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionCellMLReacEvalNoSplitSubtype = &
+    & PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE !CellML reaction evaluated no-split subtype of reaction diffusion \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionConstantReacNoSplitSubtype = &
+    & PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE !Standard constant reaction reaction diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardDataFittingSubtype = &
     & PROBLEM_STANDARD_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4641,7 +4657,7 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemFiniteElasticityDarcyType, &
     & CMISSProblemFiniteElasticityStokesType, CMISSProblemFiniteElasticityNavierStokesType, &
     & CMISSProblemDiffusionDiffusionType, CMISSProblemDiffusionAdvectionDiffusionType, &
-    & CMISSProblemMultiCompartmentTransportType, CMISSProblemFiniteElasticityFluidPressureType 
+    & CMISSProblemMultiCompartmentTransportType,CMISSProblemFiniteElasticityFluidPressureType 
 
   PUBLIC CMISSProblemNoSubtype
 
@@ -4682,6 +4698,11 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemNoSourceStaticAdvecDiffSubtype,CMISSProblemLinearSourceStaticAdvecDiffSubtype, &
     & CMISSProblemNonlinearSourceStaticAdvecDiffSubtype
 
+  PUBLIC CMISSProblemReactionDiffusionCellMLReacIntegStrangSplitSubtype, &
+    & CMISSProblemReactionDiffusionCellMLReacEvalNoSplitSubtype, &
+    & CMISSProblemReactionDiffusionConstantReacNoSplitSubtype
+
+
   PUBLIC CMISSProblemStandardDataFittingSubtype,CMISSProblemGeneralisedDataFittingSubtype, &
     & CMISSProblemVectorDataFittingSubtype,CMISSProblemDivFreeVectorDataFittingSubtype, &
     & CMISSProblemVectorDataPreFittingSubtype,CMISSProblemDivFreeVectorDataPreFittingSubtype, &
@@ -4698,10 +4719,9 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
    & CMISSProblemQuasistaticElasticityTransientDarcySubtype,CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype, &
    & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
-   & CMISSProblemStandardMultiCompartmentTransportSubtype, CMISSProblemStandardElasticityFluidPressureSubtype 
+   & CMISSProblemStandardMultiCompartmentTransportSubtype,CMISSProblemStandardElasticityFluidPressureSubtype
 
   PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype,CMISSProblemFiniteElasticityCellMLSubtype
-  
 !!==================================================================================================================================
 !!
 !! PROBLEM_ROUTINES
@@ -5409,14 +5429,14 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverNewtonLinearSolverGetNumber1
     MODULE PROCEDURE CMISSSolverNewtonLinearSolverGetObj
   END INTERFACE !CMISSSolverNewtonLinearSolverGet
-  
+
   !>Returns the linear solver associated with a nonlinear Newton solver.
   INTERFACE CMISSSolverNewtonCellMLSolverGet
     MODULE PROCEDURE CMISSSolverNewtonCellMLSolverGetNumber0
     MODULE PROCEDURE CMISSSolverNewtonCellMLSolverGetNumber1
     MODULE PROCEDURE CMISSSolverNewtonCellMLSolverGetObj
   END INTERFACE !CMISSSolverNewtonCellMLSolverGet
-
+  
   !>Sets/changes the line search alpha for a nonlinear Newton solver.
   INTERFACE CMISSSolverNewtonLineSearchAlphaSet
     MODULE PROCEDURE CMISSSolverNewtonLineSearchAlphaSetNumber0
@@ -5723,29 +5743,12 @@ MODULE OPENCMISS
     
 !!==================================================================================================================================
 !!
+
+!!==================================================================================================================================
+!!
 !! GENERAL_ROUTINES
 !!
 !!==================================================================================================================================
-
-  !>Returns the user number of an object.
-  INTERFACE CMISSUserNumberGet
-    MODULE PROCEDURE CMISSUserNumberGetRegion
-    MODULE PROCEDURE CMISSUserNumberGetMesh
-    MODULE PROCEDURE CMISSUserNumberGetBasis
-  END INTERFACE !CMISSUserNumberGet
-
-  PUBLIC CMISSUserNumberGet
- 
-!!
-!!==================================================================================================================================
-!!
-  
-CONTAINS
-
-  !
-  !================================================================================================================================
-  !
-
   SUBROUTINE UserNumberToRegion( userNumber, region, err, error, * )
     !Arguments
     INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the region to find
@@ -5872,6 +5875,28 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE UserNumberToDecomposition
+
+  !
+  !================================================================================================================================
+  !
+   
+ 
+   !>Finalises CMISS.
+
+  !>Returns the user number of an object.
+  INTERFACE CMISSUserNumberGet
+    MODULE PROCEDURE CMISSUserNumberGetRegion
+    MODULE PROCEDURE CMISSUserNumberGetMesh
+    MODULE PROCEDURE CMISSUserNumberGetBasis
+  END INTERFACE !CMISSUserNumberGet
+
+  PUBLIC CMISSUserNumberGet
+ 
+!!
+!!==================================================================================================================================
+!!
+  
+CONTAINS
 
   !
   !================================================================================================================================
@@ -7507,7 +7532,7 @@ CONTAINS
 
   !>Get absolute error value for the node in a field specified by a user number compared to the analytic value.
   SUBROUTINE CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber(RegionUserNumber,FieldUserNumber,VariableType,VersionNumber, &
-    & DerivativeNumber,NodeNumber,ComponentNumber,Value,Err)
+    & DerivativeNumber, NodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
@@ -7533,7 +7558,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(FIELD,VariableType,VersionNumber,DerivativeNumber,NodeNumber, &
-          & ComponentNumber,Value,ERR,ERROR,*999)
+          & ComponentNumber,Value,ERR, ERROR,*999)
       ELSE
         LOCAL_ERROR="An field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -10739,7 +10764,7 @@ CONTAINS
   
   !>Adds the value to the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by a user number.
   SUBROUTINE CMISSBoundaryConditionsAddNodeNumber(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber, &
-    & DerivativeNumber,NodeUserNumber,ComponentNumber,Condition,Value,Err)
+    & DerivativeNumber, NodeUserNumber,ComponentNumber,Condition,Value,Err)
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for.
@@ -10795,7 +10820,7 @@ CONTAINS
   
   !>Adds to the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object.
   SUBROUTINE CMISSBoundaryConditionsAddNodeObj(BoundaryConditions,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber,Condition,Value,Err)
+    & ComponentNumber, Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to add the node to.
@@ -10812,7 +10837,7 @@ CONTAINS
     CALL ENTERS("CMISSBoundaryConditionsAddNodeObj",Err,ERROR,*999)
     
     CALL BOUNDARY_CONDITIONS_ADD_NODE(BoundaryConditions%BOUNDARY_CONDITIONS,VariableType,VersionNumber,DerivativeNumber, &
-      & NodeUserNumber,ComponentNumber,Condition,Value,Err,ERROR,*999)
+      & NodeUserNumber, ComponentNumber,Condition,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSBoundaryConditionsAddNodeObj")
     RETURN
@@ -10885,7 +10910,7 @@ CONTAINS
   
   !>Sets the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object.
   SUBROUTINE CMISSBoundaryConditionsSetNodeObj(BoundaryConditions,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber,Condition,Value,Err)
+    & ComponentNumber, Condition,Value,Err)
   
     !Argument variables
     TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: BoundaryConditions !<The boundary conditions to set the node to.
@@ -17108,6 +17133,7 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSDataPointsLabelSetVSObj
+
   
   !  
   !================================================================================================================================
@@ -17149,9 +17175,10 @@ CONTAINS
     
   END SUBROUTINE CMISSDataPointsProjectionDistanceGetNumber
 
-  !  
-  !================================================================================================================================
-  !  
+
+   !  
+   !================================================================================================================================
+   !  
  
   !>Returns the projection distance for a data point in a set of data points identified by an object.
   SUBROUTINE CMISSDataPointsProjectionDistanceGetObj(DataPoints,DataPointGlobalNumber,DataPointProjectionDistance,Err)
@@ -17407,7 +17434,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("CMISSDataPointsProjectionExitTagGetNumber",Err,ERROR,*999)
- 
+
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
     CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
@@ -17523,6 +17550,10 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSDataPointsProjectionXiGetObj
+
+  !  
+  !================================================================================================================================
+  !  
 
   !  
   !================================================================================================================================
@@ -20053,6 +20084,7 @@ CONTAINS
     
   END SUBROUTINE CMISSEquationsSetAnalyticDestroyObj
 
+ 
   !  
   !================================================================================================================================
   !  
@@ -20263,6 +20295,7 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSEquationsSetAnalyticTimeSetObj
+
 
   !
   !================================================================================================================================
@@ -25770,7 +25803,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetAddNodeIntgObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+    CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, & 
       & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetAddNodeIntgObj")
@@ -25787,7 +25820,7 @@ CONTAINS
   !   
 
   !>Adds the given single precision value to an node in the given parameter set for field variable component for a field identified by a user number.
-  SUBROUTINE CMISSFieldParameterSetAddNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, &
+  SUBROUTINE CMISSFieldParameterSetAddNodeSPNumber(RegionUserNumber,FieldUserNumber,VariableType,FieldSetType,VersionNumber, & 
     & DerivativeNumber,UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
@@ -26015,7 +26048,7 @@ CONTAINS
  
   !>Adds the given logical value to an node in the given parameter set for field variable component for a field identified by an object.
   SUBROUTINE CMISSFieldParameterSetAddNodeLObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value,Err)
+    & ComponentNumber, Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to add the value to the node in the field parameter set.
@@ -26032,7 +26065,7 @@ CONTAINS
     CALL ENTERS("CMISSFieldParameterSetAddNodeLObj",Err,ERROR,*999)
  
     CALL FIELD_PARAMETER_SET_ADD_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-      & ComponentNumber,Value,Err,ERROR,*999)
+      & ComponentNumber, Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetAddNodeLObj")
     RETURN
@@ -27501,7 +27534,7 @@ CONTAINS
     CALL ENTERS("CMISSFieldParameterSetGetNodeIntgObj",Err,ERROR,*999)
  
     CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-      & ComponentNumber,Value,Err,ERROR,*999)
+      & ComponentNumber, Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetGetNodeIntgObj")
     RETURN
@@ -27675,7 +27708,7 @@ CONTAINS
     CALL ENTERS("CMISSFieldParameterSetGetNodeDPObj",Err,ERROR,*999)
  
     CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-      & ComponentNumber,Value,Err,ERROR,*999)
+      & ComponentNumber, Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetGetNodeDPObj")
     RETURN
@@ -27719,7 +27752,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL FIELD_PARAMETER_SET_GET_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-          & ComponentNumber,Value,Err,ERROR,*999)
+          & ComponentNumber, Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -27761,7 +27794,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetGetNodeLObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
+    CALL FIELD_PARAMETER_SET_GET_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, & 
       & ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetGetNodeLObj")
@@ -28582,7 +28615,7 @@ CONTAINS
  
   !>Updates the given parameter set with the given integer value for the node and derivative of the field variable component for a field identified by an object.
 
-  SUBROUTINE CMISSFieldParameterSetUpdateNodeIntgObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+  SUBROUTINE CMISSFieldParameterSetUpdateNodeIntgObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber, & 
     & UserNodeNumber,ComponentNumber,Value,Err)
   
     !Argument variables
@@ -28599,8 +28632,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeIntgObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-      & ComponentNumber,Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber, & 
+      & UserNodeNumber,ComponentNumber, Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeIntgObj")
     RETURN
@@ -28644,7 +28677,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-          & ComponentNumber,Value,Err,ERROR,*999)
+          & ComponentNumber, Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -28670,8 +28703,8 @@ CONTAINS
  
   !>Updates the given parameter set with the given single precision value for the node and derivative of the field variable component for a field identified by an object.
 
-  SUBROUTINE CMISSFieldParameterSetUpdateNodeSPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-    & ComponentNumber,Value,Err)
+  SUBROUTINE CMISSFieldParameterSetUpdateNodeSPObj(Field,VariableType,FieldSetType,VersionNumber,DerivativeNumber, & 
+    & UserNodeNumber, ComponentNumber,Value,Err)
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to update the nodal value for the field parameter set.
@@ -28687,8 +28720,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeSPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-      & ComponentNumber,Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+      & UserNodeNumber,ComponentNumber, Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeSPObj")
     RETURN
@@ -28731,8 +28764,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-          & ComponentNumber,Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber, & 
+          & UserNodeNumber,ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -28775,8 +28808,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeDPObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-      & ComponentNumber,Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber, & 
+      & UserNodeNumber,ComponentNumber,Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeDPObj")
     RETURN
@@ -28819,8 +28852,8 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-          & ComponentNumber,Value,Err,ERROR,*999)
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+          & UserNodeNumber,ComponentNumber Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -28863,8 +28896,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldParameterSetUpdateNodeLObj",Err,ERROR,*999)
  
-    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber,UserNodeNumber, &
-      & ComponentNumber,Value,Err,ERROR,*999)
+    CALL FIELD_PARAMETER_SET_UPDATE_NODE(Field%FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
+      & UserNodeNumber,ComponentNumber, Value,Err,ERROR,*999)
 
     CALL EXITS("CMISSFieldParameterSetUpdateNodeLObj")
     RETURN
@@ -36709,6 +36742,7 @@ CONTAINS
     
   END SUBROUTINE CMISSMeshElementsNodesSetObj
 
+
   !  
   !================================================================================================================================
   !  
@@ -36782,7 +36816,7 @@ CONTAINS
 
   !  
   !================================================================================================================================
-  !  
+   !  
  
   !>Sets/changes the element nodes for an element in a mesh identified by an object. \todo should the global element number be a user number?
   SUBROUTINE CMISSMeshElementsUserNodeVersionSetObj(MeshElements,GlobalElementNumber,VersionNumber,DerivativeNumber, &
@@ -36917,7 +36951,11 @@ CONTAINS
   !  
   !================================================================================================================================
   !  
-
+  
+  !  
+  !================================================================================================================================
+  !  
+ 
   !>Returns the user number for an element in a mesh identified by an user number. 
   SUBROUTINE CMISSMeshElementsUserNumberGetNumber(RegionUserNumber,MeshUserNumber,MeshComponentNumber,ElementGlobalNumber, &
     & ElementUserNumber,Err)
@@ -37952,10 +37990,6 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSNodesUserNumberSetObj
-
-  !  
-  !================================================================================================================================
-  !
 
 !!==================================================================================================================================
 !!
@@ -44044,8 +44078,7 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSSolverNewtonLinearSolverGetNumber1
-  
-  !
+
   !================================================================================================================================
   !  
  
@@ -44188,9 +44221,7 @@ CONTAINS
   END SUBROUTINE CMISSSolverNewtonCellMLSolverGetObj
   
   !  
-  !================================================================================================================================
-  !
-  
+  !================================================================================================================================  
   !>Sets/changes the line search alpha for an Newton linesearch solver identified by an user number.
   SUBROUTINE CMISSSolverNewtonLineSearchAlphaSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Alpha,Err)
   
@@ -46398,7 +46429,6 @@ CONTAINS
   !  
   !================================================================================================================================
   !
-
   SUBROUTINE CMISSFieldmlInput_InitialiseFromFile( fieldmlInfo, filename, err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
@@ -46486,28 +46516,27 @@ CONTAINS
       & err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInput_GetCoordinateSystemInfo")
-    RETURN
+   RETURN
 999 CALL ERRORS("CMISSFieldmlInput_GetCoordinateSystemInfo",Err,ERROR)
     CALL EXITS("CMISSFieldmlInput_GetCoordinateSystemInfo")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldmlInput_GetCoordinateSystemInfo
+ END SUBROUTINE CMISSFieldmlInput_GetCoordinateSystemInfo
   
   !  
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISSFieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err )
+ SUBROUTINE CMISSFieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
     INTEGER(INTG), INTENT(IN) :: userNumber
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
-    INTEGER(INTG), INTENT(IN) :: gaussQuadrature(:)
+   INTEGER(INTG), INTENT(IN) :: gaussQuadrature(:)
     INTEGER(INTG), INTENT(OUT) :: err
 
     CALL ENTERS("CMISSFieldmlInput_CreateBasis",Err,ERROR,*999)
-
     CALL FieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInput_CreateBasis")
@@ -46515,18 +46544,18 @@ CONTAINS
 999 CALL ERRORS("CMISSFieldmlInput_CreateBasis",Err,ERROR)
     CALL EXITS("CMISSFieldmlInput_CreateBasis")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
+   RETURN
     
   END SUBROUTINE CMISSFieldmlInput_CreateBasis
   
-  !  
+ !  
   !================================================================================================================================
   !
 
   SUBROUTINE CMISSFieldmlInput_CreateMeshComponentObj( fieldmlInfo, mesh, componentNumber, evaluatorName, err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+   TYPE(CMISSMeshType), INTENT(IN) :: mesh
     INTEGER(INTG), INTENT(IN) :: componentNumber
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
     INTEGER(INTG), INTENT(OUT) :: err
@@ -46838,7 +46867,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionNumber
     INTEGER(INTG), INTENT(IN) :: meshNumber
-    INTEGER(INTG), INTENT(IN) :: dimensions
+-    INTEGER(INTG), INTENT(IN) :: dimensions
     CHARACTER(KIND=C_CHAR,LEN=*) :: location
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
     TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo
