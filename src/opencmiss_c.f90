@@ -5301,7 +5301,7 @@ CONTAINS
 
   !>Sets the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object for C.
   FUNCTION CMISSBoundaryConditionsSetNodeCPtr(BoundaryConditionsPtr,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber, aCondition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNode")
+    & ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNode")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set the node to.

@@ -5740,15 +5740,32 @@ MODULE OPENCMISS
 
   PUBLIC :: CMISSFieldmlOutput_Write, CMISSFieldmlOutput_CreateEnsembleType, CMISSFieldmlOutput_CreateContinuousType, &
     & CMISSFieldmlOutput_AddField, CMISSFieldmlOutput_InitialiseInfo, CMISSFieldmlOutput_AddFieldComponents
-    
-!!==================================================================================================================================
-!!
 
 !!==================================================================================================================================
 !!
 !! GENERAL_ROUTINES
 !!
 !!==================================================================================================================================
+
+  !>Returns the user number of an object.
+  INTERFACE CMISSUserNumberGet
+    MODULE PROCEDURE CMISSUserNumberGetRegion
+    MODULE PROCEDURE CMISSUserNumberGetMesh
+    MODULE PROCEDURE CMISSUserNumberGetBasis
+  END INTERFACE !CMISSUserNumberGet
+
+  PUBLIC CMISSUserNumberGet
+
+!!
+!!==================================================================================================================================
+!!
+
+CONTAINS
+
+  !
+  !================================================================================================================================
+  !
+
   SUBROUTINE UserNumberToRegion( userNumber, region, err, error, * )
     !Arguments
     INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the region to find
@@ -5879,29 +5896,6 @@ MODULE OPENCMISS
   !
   !================================================================================================================================
   !
-   
- 
-   !>Finalises CMISS.
-
-  !>Returns the user number of an object.
-  INTERFACE CMISSUserNumberGet
-    MODULE PROCEDURE CMISSUserNumberGetRegion
-    MODULE PROCEDURE CMISSUserNumberGetMesh
-    MODULE PROCEDURE CMISSUserNumberGetBasis
-  END INTERFACE !CMISSUserNumberGet
-
-  PUBLIC CMISSUserNumberGet
- 
-!!
-!!==================================================================================================================================
-!!
-  
-CONTAINS
-
-  !
-  !================================================================================================================================
-  !
-  
 
   !>Finalises CMISS.
   SUBROUTINE CMISSFinalise(Err)
@@ -28853,7 +28847,7 @@ CONTAINS
       CALL FIELD_USER_NUMBER_FIND(FieldUserNumber,REGION,FIELD,Err,ERROR,*999)
       IF(ASSOCIATED(FIELD)) THEN
         CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,VariableType,FieldSetType,VersionNumber,DerivativeNumber, &
-          & UserNodeNumber,ComponentNumber Value,Err,ERROR,*999)
+          & UserNodeNumber,ComponentNumber,Value,Err,ERROR,*999)
       ELSE
         LOCAL_ERROR="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(FieldUserNumber,"*",Err,ERROR))// &
           & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
@@ -46867,7 +46861,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionNumber
     INTEGER(INTG), INTENT(IN) :: meshNumber
--    INTEGER(INTG), INTENT(IN) :: dimensions
+    INTEGER(INTG), INTENT(IN) :: dimensions
     CHARACTER(KIND=C_CHAR,LEN=*) :: location
     CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
     TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo
