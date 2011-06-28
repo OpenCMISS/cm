@@ -1,0 +1,16 @@
+# Built files
+object/
+bin/
+lib/
+/include/
+
+# OpenCMISS examples repository
+/examples
+
+# OpenCMISS output
+*.diag
+*.out
+
+# Editor files
+*.swp
+*~
