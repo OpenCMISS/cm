@@ -349,7 +349,6 @@ CONTAINS
             !
             ! SET BOUNDARY CONDITIONS & ANALYTIC SOLUTION VALUES
             !
-            NULLIFY(BOUNDARY_CONDITIONS)
             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
               DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
                 variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
