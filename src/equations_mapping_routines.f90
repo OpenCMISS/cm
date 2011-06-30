@@ -1974,10 +1974,10 @@ CONTAINS
 !
                     IF(EQUATIONS%LINEARITY==EQUATIONS_LINEAR) THEN
                       DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
-                        IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==DYNAMIC_VARIABLE_TYPE) THEN
+                        IF(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)==DYNAMIC_VARIABLE_TYPE) THEN
                           LOCAL_ERROR="The specified dynamic variable type of "// &
                             & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                            & " is the same as the variable type for the residual vector."
+                            & " is the same as a linear variable type."
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ENDDO
@@ -1991,7 +1991,7 @@ CONTAINS
                       IF(IS_RESIDUAL_TYPE.NEQV..TRUE.) THEN
                         LOCAL_ERROR="The specified dynamic variable type of "// &
                           & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                          & " is not the same as the variable type for the residual vector."
+                          & " is not the same as any residual variable type."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
