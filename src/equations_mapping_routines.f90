@@ -1970,18 +1970,7 @@ CONTAINS
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN                 
                     !Check the dynamic variable type is not being by other equations matrices or vectors
-! sebk 16/09/2009
-!
-                    IF(EQUATIONS%LINEARITY==EQUATIONS_LINEAR) THEN
-                      DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
-                        IF(CREATE_VALUES_CACHE%LINEAR_MATRIX_VARIABLE_TYPES(matrix_idx)==DYNAMIC_VARIABLE_TYPE) THEN
-                          LOCAL_ERROR="The specified dynamic variable type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
-                            & " is the same as a linear variable type."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        ENDIF
-                      ENDDO
-                    ELSE IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN 
+                    IF(EQUATIONS%LINEARITY==EQUATIONS_NONLINEAR) THEN
                       IS_RESIDUAL_TYPE=.FALSE.
                       DO matrix_idx=1,CREATE_VALUES_CACHE%NUMBER_OF_RESIDUAL_VARIABLES
                         IF(CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx)==DYNAMIC_VARIABLE_TYPE) THEN
@@ -1994,11 +1983,7 @@ CONTAINS
                           & " is not the same as any residual variable type."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("The equations set linearity is not set.",ERR,ERROR,*999)
-                    END IF  
-!
-! sebk 16/09/2009
+                    END IF
                     IF(CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE==DYNAMIC_VARIABLE_TYPE) THEN
                       LOCAL_ERROR="The specified dynamic variable type of "// &
                         & TRIM(NUMBER_TO_VSTRING(DYNAMIC_VARIABLE_TYPE,"*",ERR,ERROR))// &
