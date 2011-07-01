@@ -81,6 +81,7 @@ MODULE DARCY_EQUATIONS_ROUTINES
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SETUP
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SUBTYPE_SET
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC DARCY_EQUATION_ANALYTIC_CALCULATE
 
   PUBLIC DARCY_EQUATION_PROBLEM_SETUP
   PUBLIC DARCY_EQUATION_PROBLEM_SUBTYPE_SET
@@ -179,7 +180,6 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: GEOMETRIC_SCALING_TYPE, GEOMETRIC_MESH_COMPONENT,NUMBER_OF_COMPONENTS,NUMBER_OF_DARCY_COMPONENTS
     INTEGER(INTG) :: imy_matrix,Ncompartments
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DECOMPOSITION_TYPE), POINTER :: GEOMETRIC_DECOMPOSITION
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: EQUATIONS_MATERIALS
@@ -211,7 +211,6 @@ CONTAINS
     NULLIFY(EQUATIONS_MAPPING)
     NULLIFY(EQUATIONS_MATRICES)
     NULLIFY(GEOMETRIC_DECOMPOSITION)
-    NULLIFY(BOUNDARY_CONDITIONS)
     NULLIFY(EQUATIONS_EQUATIONS_SET_FIELD)
     NULLIFY(EQUATIONS_SET_FIELD_FIELD)
    
@@ -1269,20 +1268,6 @@ CONTAINS
                   ELSE
                     CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
                   ENDIF
-                CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-                  IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                        CALL DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                      ELSE
-                        CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
-                  ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
@@ -1329,20 +1314,6 @@ CONTAINS
                     ENDIF
                   ELSE
                     CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
-                  IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-                        CALL DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-                      ELSE
-                        CALL FLAG_ERROR("Equations set analytic has not been finished.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
                   ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
@@ -1823,39 +1794,6 @@ CONTAINS
               & " for a setup subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is invalid for a Darcy equation."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-
-        !-----------------------------------------------------------------
-        !   b o u n d a r y   c o n d i t i o n s   t y p e 
-        !-----------------------------------------------------------------
-        CASE(EQUATIONS_SET_SETUP_BOUNDARY_CONDITIONS_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
-          CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
-            & EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE, EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
-            & EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
-            & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE,EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE, &
-            & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
-            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-            CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-              IF(ASSOCIATED(EQUATIONS)) THEN
-                IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-                  CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Equations set equations has not been finished.",ERR,ERROR,*999)               
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-              CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_GET(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-              CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            CASE DEFAULT
-              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-                & " is invalid for a standard or quasistatic Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
           END SELECT
 
         !-----------------------------------------------------------------
@@ -4809,7 +4747,7 @@ CONTAINS
                             DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                             GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                             IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                              BOUNDARY_CONDITIONS=>EQUATIONS_SET%BOUNDARY_CONDITIONS
+                              BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                               IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
                                 EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
                                 IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
@@ -4829,8 +4767,8 @@ CONTAINS
                                   IF(ASSOCIATED(FIELD_VARIABLE)) THEN
                                     FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
 
-                                    BOUNDARY_CONDITIONS_VARIABLE=>BOUNDARY_CONDITIONS% & 
-                                      & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR
+                                    CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                                      & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                                     IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
                                       NULLIFY(MESH_VELOCITY_VALUES)
                                       CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -5440,10 +5378,11 @@ CONTAINS
   !
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET 
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -5452,7 +5391,6 @@ CONTAINS
     REAL(DP) :: VALUE,X(3),ARG(3),L,XI_COORDINATES(3),FACT,PERM_OVER_VIS_PARAM
     REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2), T_COORDINATES(20,3)
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
@@ -5490,90 +5428,91 @@ CONTAINS
       CASE(EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY)
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-         GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-         IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
-          CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-          NULLIFY(GEOMETRIC_VARIABLE)
-          NULLIFY(GEOMETRIC_PARAMETERS)
-          CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
-          CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
-            & ERR,ERROR,*999)
-             NULLIFY(BOUNDARY_CONDITIONS)
-             CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-             CURRENT_TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)
-             DO variable_idx=3,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                    IF(ASSOCIATED(DOMAIN)) THEN
-                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                          !Loop over the local nodes excluding the ghosts.
-                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                            !!TODO \todo We should interpolate the geometric field here and the node position.
-                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              !Default to version 1 of each node derivative
-                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
-                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
-                            ENDDO !dim_idx
-                            !Loop over the derivatives
-                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                              ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX
-!                               CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,variable_type, & 
-!                                 & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
+          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            NULLIFY(GEOMETRIC_VARIABLE)
+            NULLIFY(GEOMETRIC_PARAMETERS)
+            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+              & ERR,ERROR,*999)
+            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+              CURRENT_TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)
+              DO variable_idx=3,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                      IF(ASSOCIATED(DOMAIN)) THEN
+                        IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                          DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Loop over the local nodes excluding the ghosts.
+                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                              !!TODO \todo We should interpolate the geometric field here and the node position.
+                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                !Default to version 1 of each node derivative
+                                local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                  & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
+                                X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                              ENDDO !dim_idx
+                              !Loop over the derivatives
+                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX
+!                                 CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,CURRENT_TIME,variable_type, &
+!                                   & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,ERR,ERROR,*999)
 !!!!!!!!!!!!NEED TO SET APPROPRIATE VALUE DEPENDING ON WHETHER IT IS A VELOCITY COMPONENT OR THE MASS INCREASE COMPONENT
-                              VALUE=0.0_DP
-                              !Default to version 1 of each node derivative
-                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                              IF(variable_type==FIELD_V_VARIABLE_TYPE) THEN
-                                IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                                  !If we are a boundary node then set the analytic value on the boundary
-                                  CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                    & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                ELSE
-                                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                  & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                VALUE=0.0_DP
+                                !Default to version 1 of each node derivative
+                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                IF(variable_type==FIELD_V_VARIABLE_TYPE) THEN
+                                  IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                    !If we are a boundary node then set the analytic value on the boundary
+                                    CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
+                                      & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                  ELSE
+                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                    & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                  ENDIF
                                 ENDIF
-                              ENDIF
-                            ENDDO !deriv_idx
-                          ENDDO !node_idx
+                              ENDDO !deriv_idx
+                            ENDDO !node_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
-                  ENDIF
-                ENDDO !component_idx
-                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-              ENDIF
-             ENDDO !variable_idx
-             CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-         ELSE
+                  ENDDO !component_idx
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO !variable_idx
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+            ELSE
+              CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
-         ENDIF            
+          ENDIF
         ELSE
           CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -5607,589 +5546,588 @@ CONTAINS
             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
               & ERR,ERROR,*999)
-            NULLIFY(BOUNDARY_CONDITIONS)
-            CALL BOUNDARY_CONDITIONS_CREATE_START(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  BOUND_COUNT=0
-                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                    IF(ASSOCIATED(DOMAIN)) THEN
-                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                          !Loop over the local nodes excluding the ghosts.
-                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                    BOUND_COUNT=0
+                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                      IF(ASSOCIATED(DOMAIN)) THEN
+                        IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                          DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Loop over the local nodes excluding the ghosts.
+                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
 
-                            element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
-                            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
-                              & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
+                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
 
 !                             DO I=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
 !                               IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(I)=node_idx THEN
 
-                            en_idx=0
-                            XI_COORDINATES=0.0_DP
-                            number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)
-                            number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(2)
-                            IF(NUMBER_OF_DIMENSIONS==3) THEN
-                              number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(3)
-                            ELSE
-                              number_of_nodes_xic(3)=1
-                            ENDIF
-
-                            IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
-                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
-                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
-                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
-                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
-                              & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
-
-                              DO K=1,number_of_nodes_xic(3)
-                                DO J=1,number_of_nodes_xic(2)
-                                  DO I=1,number_of_nodes_xic(1)
-                                    en_idx=en_idx+1
-                                    IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                    XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
-                                  ENDDO
-                                    IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                    XI_COORDINATES(1)=0.0_DP
-                                    XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
-                                ENDDO
-                                IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                XI_COORDINATES(1)=0.0_DP
-                                XI_COORDINATES(2)=0.0_DP
-                                IF(number_of_nodes_xic(3)/=1) THEN
-                                  XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
-                                ENDIF
-                              ENDDO
-                              CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
-                                & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                            ELSE
-                              IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
-                                T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
-                                T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
-                                T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
-                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
-                                & NUMBER_OF_DIMENSIONS==2) THEN
-                                T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
-                                T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
-                                T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
-                                T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
-                                T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-                                T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
-                                & NUMBER_OF_DIMENSIONS==3) THEN
-                                T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
-                                T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
-                                T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
-                                T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
-                                T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
-                              ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                              en_idx=0
+                              XI_COORDINATES=0.0_DP
+                              number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)
+                              number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(2)
+                              IF(NUMBER_OF_DIMENSIONS==3) THEN
+                                number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(3)
+                              ELSE
+                                number_of_nodes_xic(3)=1
                               ENDIF
 
-                              DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
-                                IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
-                              ENDDO
+                              IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
 
-                              IF(NUMBER_OF_DIMENSIONS==2) THEN
-                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
+                                DO K=1,number_of_nodes_xic(3)
+                                  DO J=1,number_of_nodes_xic(2)
+                                    DO I=1,number_of_nodes_xic(1)
+                                      en_idx=en_idx+1
+                                      IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                      XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
+                                    ENDDO
+                                      IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                      XI_COORDINATES(1)=0.0_DP
+                                      XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
+                                  ENDDO
+                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                  XI_COORDINATES(1)=0.0_DP
+                                  XI_COORDINATES(2)=0.0_DP
+                                  IF(number_of_nodes_xic(3)/=1) THEN
+                                    XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
+                                  ENDIF
+                                ENDDO
+                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
                                   & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                              ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
-                                  & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                              ENDIF 
-                            ENDIF
+                              ELSE
+                                IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
+                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
+                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                  T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
+                                  T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
+                                  T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
+                                  & NUMBER_OF_DIMENSIONS==2) THEN
+                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                  T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
+                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
+                                  & NUMBER_OF_DIMENSIONS==3) THEN
+                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
+                                  T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
+                                  T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
+                                  T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
+                                  T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                ENDIF
 
-                            X=0.0_DP
-                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                              X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
-                            ENDDO !dim_idx
+                                DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
+                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
+                                ENDDO
 
-                            !Loop over the derivatives
-                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                              SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                              CASE(EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_1)
-                                IF(NUMBER_OF_DIMENSIONS==2.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
+                                IF(NUMBER_OF_DIMENSIONS==2) THEN
+                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
+                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
+                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                ENDIF
+                              ENDIF
+
+                              X=0.0_DP
+                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
+                              ENDDO !dim_idx
+
+                              !Loop over the derivatives
+                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                                CASE(EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_1)
+                                  IF(NUMBER_OF_DIMENSIONS==2.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
 !POLYNOM
-                                  SELECT CASE(variable_type)
-                                    CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          FACT = PERM_OVER_VIS_PARAM
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE = - FACT * ( 2.0_DP*X(1) + 2.0_DP*X(2) )
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE = - FACT * ( 2.0_DP*X(1) - 2.0_DP*X(2) )
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate p
-                                            VALUE = X(1)**2.0_DP + 2.0_DP*X(1)*X(2) - X(2)**2.0_DP 
-                                          ELSE
+                                    SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            FACT = PERM_OVER_VIS_PARAM
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE = - FACT * ( 2.0_DP*X(1) + 2.0_DP*X(2) )
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE = - FACT * ( 2.0_DP*X(1) - 2.0_DP*X(2) )
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate p
+                                              VALUE = X(1)**2.0_DP + 2.0_DP*X(1)*X(2) - X(2)**2.0_DP
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                            VALUE= 0.0_DP
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                        & " is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT      
-                                ELSE 
-                                  LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                ENDIF
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                              VALUE= 0.0_DP
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
+                                          & " is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                  ELSE
+                                    LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
 
 
-                              CASE(EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_2)
-                                IF(NUMBER_OF_DIMENSIONS==2.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
+                                CASE(EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_2)
+                                  IF(NUMBER_OF_DIMENSIONS==2.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
 !EXPONENTIAL
-                                  SELECT CASE(variable_type)
-                                    CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          FACT   = PERM_OVER_VIS_PARAM / L
-                                          ARG(1) = X(1) / L
-                                          ARG(2) = X(2) / L
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) )
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) )
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate p
-                                            VALUE =          EXP( ARG(1) ) * EXP( ARG(2) )
-                                          ELSE
+                                    SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            FACT   = PERM_OVER_VIS_PARAM / L
+                                            ARG(1) = X(1) / L
+                                            ARG(2) = X(2) / L
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) )
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) )
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate p
+                                              VALUE =          EXP( ARG(1) ) * EXP( ARG(2) )
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE= 0.0_DP
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE= 0.0_DP
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate p
-                                            VALUE= 0.0_DP
-                                          ELSE
+                                          CASE(GLOBAL_DERIV_S2)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE= 0.0_DP
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE= 0.0_DP
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate p
+                                              VALUE= 0.0_DP
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
 
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
 
 
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                        & " is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT      
-                                ELSE 
-                                  LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                ENDIF
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
+                                          & " is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                  ELSE
+                                    LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
 
 
-                              CASE(EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_3)
-                                IF(NUMBER_OF_DIMENSIONS==2.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
+                                CASE(EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_3)
+                                  IF(NUMBER_OF_DIMENSIONS==2.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
 !SINUS/COSINUS
-                                  SELECT CASE(variable_type)
-                                    CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          FACT = 2.0_DP * PI * PERM_OVER_VIS_PARAM / L
-                                          ARG(1) = 2.0_DP * PI * X(1) / L
-                                          ARG(2) = 2.0_DP * PI * X(2) / L
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE = - FACT * COS( ARG(1) ) * SIN( ARG(2) )
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE = - FACT * SIN( ARG(1) ) * COS( ARG(2) )
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate p
-                                            VALUE =          SIN( ARG(1) ) * SIN( ARG(2) )
-                                          ELSE
+                                    SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            FACT = 2.0_DP * PI * PERM_OVER_VIS_PARAM / L
+                                            ARG(1) = 2.0_DP * PI * X(1) / L
+                                            ARG(2) = 2.0_DP * PI * X(2) / L
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE = - FACT * COS( ARG(1) ) * SIN( ARG(2) )
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE = - FACT * SIN( ARG(1) ) * COS( ARG(2) )
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate p
+                                              VALUE =          SIN( ARG(1) ) * SIN( ARG(2) )
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate p
-                                            VALUE=0.0_DP
-                                          ELSE
+                                          CASE(GLOBAL_DERIV_S2)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                        & " is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT      
-                                ELSE 
-                                  LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                ENDIF
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate p
+                                              VALUE=0.0_DP
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
+                                          & " is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                  ELSE
+                                    LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
 
-                              CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1)
-                                IF(NUMBER_OF_DIMENSIONS==3.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                                CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1)
+                                  IF(NUMBER_OF_DIMENSIONS==3.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
 !POLYNOM
-                                  SELECT CASE(variable_type)
-                                    CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          FACT = PERM_OVER_VIS_PARAM
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE = - FACT * ( 2.0_DP*X(1) + 2.0_DP*X(2) + X(3) )
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE = - FACT * ( 2.0_DP*X(1) - 2.0_DP*X(2) + X(3) )
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate w
-                                            VALUE = - FACT * ( 3.0_DP + X(1) + X(2) )
-                                          ELSE IF(component_idx==4) THEN
-                                            !calculate p
-                                            VALUE = X(1)**2.0_DP + 2.0_DP*X(1)*X(2) - X(2)**2.0_DP + &
-                                                     & 3.0_DP*X(3) + X(3)*X(1) + X(3)*X(2)
-                                          ELSE
+                                    SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            FACT = PERM_OVER_VIS_PARAM
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE = - FACT * ( 2.0_DP*X(1) + 2.0_DP*X(2) + X(3) )
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE = - FACT * ( 2.0_DP*X(1) - 2.0_DP*X(2) + X(3) )
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate w
+                                              VALUE = - FACT * ( 3.0_DP + X(1) + X(2) )
+                                            ELSE IF(component_idx==4) THEN
+                                              !calculate p
+                                              VALUE = X(1)**2.0_DP + 2.0_DP*X(1)*X(2) - X(2)**2.0_DP + &
+                                                       & 3.0_DP*X(3) + X(3)*X(1) + X(3)*X(2)
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT   
-                                    CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          VALUE=0.0_DP
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                        & " is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT      
-                                ELSE 
-                                  LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                ENDIF
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            VALUE=0.0_DP
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
+                                          & " is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                  ELSE
+                                    LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
 
 
-                              CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2)
-                                IF(NUMBER_OF_DIMENSIONS==3.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                                CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2)
+                                  IF(NUMBER_OF_DIMENSIONS==3.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
 !EXPONENTIAL
-                                  SELECT CASE(variable_type)
-                                    CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          FACT   = PERM_OVER_VIS_PARAM / L
-                                          ARG(1) = X(1) / L
-                                          ARG(2) = X(2) / L
-                                          ARG(3) = X(3) / L
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate w
-                                            VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
-                                          ELSE IF(component_idx==4) THEN
-                                            !calculate p
-                                            VALUE =          EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
-                                          ELSE
+                                    SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            FACT   = PERM_OVER_VIS_PARAM / L
+                                            ARG(1) = X(1) / L
+                                            ARG(2) = X(2) / L
+                                            ARG(3) = X(3) / L
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate w
+                                              VALUE = - FACT * EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
+                                            ELSE IF(component_idx==4) THEN
+                                              !calculate p
+                                              VALUE =          EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT   
-                                    CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate w
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==4) THEN
-                                            !calculate p
-                                            VALUE=0.0_DP
-                                          ELSE
+                                          CASE(GLOBAL_DERIV_S2)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate w
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==4) THEN
+                                              !calculate p
+                                              VALUE=0.0_DP
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
 
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                        & " is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT      
-                                ELSE 
-                                  LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
+                                          & " is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                  ELSE
+                                    LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
 
-                              CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3)
-                                IF(NUMBER_OF_DIMENSIONS==3.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-!SINE/COSINE
-                                  SELECT CASE(variable_type)
-                                    CASE(FIELD_U_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          FACT = 2.0_DP * PI * PERM_OVER_VIS_PARAM / L
-                                          ARG(1) = 2.0_DP * PI * X(1) / L
-                                          ARG(2) = 2.0_DP * PI * X(2) / L
-                                          ARG(3) = 2.0_DP * PI * X(3) / L
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE = - FACT * COS( ARG(1) ) * SIN( ARG(2) )  * SIN( ARG(3) )
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE = - FACT * SIN( ARG(1) ) * COS( ARG(2) )  * SIN( ARG(3) )
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate w
-                                            VALUE = - FACT * SIN( ARG(1) ) * SIN( ARG(2) )  * COS( ARG(3) )
-                                          ELSE IF(component_idx==4) THEN
-                                            !calculate p
-                                            VALUE =          SIN( ARG(1) ) * SIN( ARG(2) )  * SIN( ARG(3) )
-                                          ELSE
+                                CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3)
+                                  IF(NUMBER_OF_DIMENSIONS==3.AND.FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+  !SINE/COSINE
+                                    SELECT CASE(variable_type)
+                                      CASE(FIELD_U_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            FACT = 2.0_DP * PI * PERM_OVER_VIS_PARAM / L
+                                            ARG(1) = 2.0_DP * PI * X(1) / L
+                                            ARG(2) = 2.0_DP * PI * X(2) / L
+                                            ARG(3) = 2.0_DP * PI * X(3) / L
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE = - FACT * COS( ARG(1) ) * SIN( ARG(2) )  * SIN( ARG(3) )
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE = - FACT * SIN( ARG(1) ) * COS( ARG(2) )  * SIN( ARG(3) )
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate w
+                                              VALUE = - FACT * SIN( ARG(1) ) * SIN( ARG(2) )  * COS( ARG(3) )
+                                            ELSE IF(component_idx==4) THEN
+                                              !calculate p
+                                              VALUE =          SIN( ARG(1) ) * SIN( ARG(2) )  * SIN( ARG(3) )
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT   
-                                    CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                                      SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
-                                        CASE(NO_GLOBAL_DERIV)
-                                          IF(component_idx==1) THEN
-                                            !calculate u
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==2) THEN
-                                            !calculate v
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==3) THEN
-                                            !calculate w
-                                            VALUE=0.0_DP
-                                          ELSE IF(component_idx==4) THEN
-                                            !calculate p
-                                            VALUE=0.0_DP
-                                          ELSE
+                                          CASE(GLOBAL_DERIV_S2)
                                             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                          ENDIF
-                                        CASE(GLOBAL_DERIV_S1)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE(GLOBAL_DERIV_S1_S2)
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                                        CASE DEFAULT
-                                          LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                                            & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
-                                            & ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                      END SELECT
-                                    CASE DEFAULT
-                                      LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                                        & " is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                  END SELECT      
-                                ELSE 
-                                  LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                                        SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
+                                          CASE(NO_GLOBAL_DERIV)
+                                            IF(component_idx==1) THEN
+                                              !calculate u
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==2) THEN
+                                              !calculate v
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==3) THEN
+                                              !calculate w
+                                              VALUE=0.0_DP
+                                            ELSE IF(component_idx==4) THEN
+                                              !calculate p
+                                              VALUE=0.0_DP
+                                            ELSE
+                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            ENDIF
+                                          CASE(GLOBAL_DERIV_S1)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE(GLOBAL_DERIV_S1_S2)
+                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CASE DEFAULT
+                                            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                                              & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
+                                              & ERR,ERROR))//" is invalid."
+                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        END SELECT
+                                      CASE DEFAULT
+                                        LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
+                                          & " is invalid."
+                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    END SELECT
+                                  ELSE
+                                    LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  ENDIF
+                                CASE DEFAULT
+                                  LOCAL_ERROR="The analytic function type of "// &
+                                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                    & " is invalid."
                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                                ENDIF
-                              CASE DEFAULT
-                                LOCAL_ERROR="The analytic function type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                                  & " is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                              END SELECT
-                              !Default to version 1 of each node derivative
-                              local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                              IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
+                                END SELECT
+                                !Default to version 1 of each node derivative
+                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
 
 
 ! ! !                                 IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
@@ -6209,131 +6147,132 @@ CONTAINS
 
 
 
-                                !If we are a boundary node then set the analytic value on the boundary
-                                IF(NUMBER_OF_DIMENSIONS==2) THEN
-                                  IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) THEN
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                        & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                    BOUND_COUNT=BOUND_COUNT+1
+                                  !If we are a boundary node then set the analytic value on the boundary
+                                  IF(NUMBER_OF_DIMENSIONS==2) THEN
+                                    IF(ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE) THEN
+                                      IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                        CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
+                                          & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                      BOUND_COUNT=BOUND_COUNT+1
 !Apply boundary conditions check for pressure nodes
-                                    ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
-                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==6.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==10) THEN
+                                      ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
+                                        IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
+                                          & DOMAIN%topology%elements%maximum_number_of_element_parameters==6.OR. &
+                                          & DOMAIN%topology%elements%maximum_number_of_element_parameters==10) THEN
 
-                                      IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND.&
-                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
-                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
-                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
-                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) &
-                                        & THEN
-                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                            & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                          BOUND_COUNT=BOUND_COUNT+1
+                                        IF(ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.AND. &
+                                          & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.OR. &
+                                          & ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.AND.&
+                                          & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE.OR. &
+                                          & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.AND.&
+                                          & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.OR. &
+                                          & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.AND.&
+                                          & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE) &
+                                          & THEN
+                                            CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
+                                              & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                            BOUND_COUNT=BOUND_COUNT+1
+                                        ENDIF
+                                        ENDIF
                                       ENDIF
+                                    ELSE
+                                      IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                          & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                       ENDIF
                                     ENDIF
-                                  ELSE
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                    ENDIF
-                                  ENDIF
-                                ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                  IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                    & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                        & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                    BOUND_COUNT=BOUND_COUNT+1
+                                  ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+                                    IF(ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(3)-BOUNDARY_X(3,1))<BOUNDARY_TOLERANCE.OR. &
+                                      & ABS(X(3)-BOUNDARY_X(3,2))<BOUNDARY_TOLERANCE) THEN
+                                      IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                        CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
+                                          & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                      BOUND_COUNT=BOUND_COUNT+1
 !Apply boundary conditions check for pressure nodes
-                                    ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
-                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==10.OR. &
-                                        & DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                      IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-                                       & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-                                       & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
-                                         CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-                                           & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                         BOUND_COUNT=BOUND_COUNT+1
+                                      ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
+                                        IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
+                                          & DOMAIN%topology%elements%maximum_number_of_element_parameters==10.OR. &
+                                          & DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+                                        IF(ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,1))<BOUNDARY_TOLERANCE.OR. &
+                                         & ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,2))<BOUNDARY_TOLERANCE.OR. &
+                                         & ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,1))<BOUNDARY_TOLERANCE.OR. &
+                                         & ABS(X(1)-BOUNDARY_X(1,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,2))<BOUNDARY_TOLERANCE.OR. &
+                                         & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,1))<BOUNDARY_TOLERANCE.OR. &
+                                         & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,1))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,2))<BOUNDARY_TOLERANCE.OR. &
+                                         & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,1))<BOUNDARY_TOLERANCE.OR. &
+                                         & ABS(X(1)-BOUNDARY_X(1,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(2)-BOUNDARY_X(2,2))<BOUNDARY_TOLERANCE.AND. &
+                                         & ABS(X(3)-BOUNDARY_X(3,2))<BOUNDARY_TOLERANCE) THEN
+                                           CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
+                                             & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                           BOUND_COUNT=BOUND_COUNT+1
+                                        ENDIF
+                                        ENDIF
                                       ENDIF
+                                    ELSE
+                                      IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                        CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                          & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                       ENDIF
-                                    ENDIF
-                                  ELSE
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
                                 ENDIF
-                              ENDIF
-                            ENDDO !deriv_idx
-                          ENDDO !node_idx
+                              ENDDO !deriv_idx
+                            ENDDO !node_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
-                  ENDIF
-WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT             
-                ENDDO !component_idx
-                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                  & ERR,ERROR,*999)
-              ELSE
-                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ENDDO !variable_idx
-            CALL BOUNDARY_CONDITIONS_CREATE_FINISH(BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-            CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                  ENDDO !component_idx
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO !variable_idx
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+            ELSE
+              CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+            ENDIF
           ELSE
             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
-          ENDIF            
+          ENDIF
         ELSE
           CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
@@ -6979,7 +6918,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 ! !                                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
 ! !                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
 ! !                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-! ! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=EQUATIONS_SET%BOUNDARY_CONDITIONS% & 
+! ! !                                               BOUNDARY_CONDITION_CHECK_VARIABLE=SOLVER_EQUATIONS%BOUNDARY_CONDITIONS% &
 ! ! !                                                 & BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type)%PTR% & 
 ! ! !                                                 & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
 ! ! !                                               IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN

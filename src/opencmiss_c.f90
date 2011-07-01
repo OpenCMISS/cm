@@ -240,8 +240,6 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSBoundaryConditionsSetNodeCNum, CMISSBoundaryConditionsSetNodeCPtr
 
- PUBLIC CMISSEquationsSetBoundaryConditionsGetCNum, CMISSEquationsSetBoundaryConditionsGetCPtr
-
 !!==================================================================================================================================
 !!
 !! CMISS
@@ -410,14 +408,6 @@ MODULE OPENCMISS_C
  PUBLIC CMISSEquationsSetAnalyticTimeGetCNum, CMISSEquationsSetAnalyticTimeGetCPtr
 
  PUBLIC CMISSEquationsSetAnalyticTimeSetCNum, CMISSEquationsSetAnalyticTimeSetCPtr
-
- PUBLIC CMISSEquationsSetBoundaryConditionsAnalyticCNum, CMISSEquationsSetBoundaryConditionsAnalyticCPtr
-
- PUBLIC CMISSEquationsSetBoundaryConditionsCreateFinishCNum, CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
-
- PUBLIC CMISSEquationsSetBoundaryConditionsCreateStartCNum, CMISSEquationsSetBoundaryConditionsCreateStartCPtr
-
- PUBLIC CMISSEquationsSetBoundaryConditionsDestroyCNum, CMISSEquationsSetBoundaryConditionsDestroyCPtr
 
  PUBLIC CMISSEquationsSetCreateFinishCNum, CMISSEquationsSetCreateFinishCPtr
 
@@ -924,12 +914,19 @@ MODULE OPENCMISS_C
 
  PUBLIC CMISSSolverOutputTypeSetCNum, CMISSSolverOutputTypeSetCPtr
 
+ PUBLIC CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum, CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr
+
+ PUBLIC CMISSSolverEquationsBoundaryConditionsCreateStartCNum, CMISSSolverEquationsBoundaryConditionsCreateStartCPtr
+
+ PUBLIC CMISSSolverEquationsBoundaryConditionsCreateFinishCNum, CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr
+
+ PUBLIC CMISSSolverEquationsBoundaryConditionsGetCNum, CMISSSolverEquationsBoundaryConditionsGetCPtr
+
  PUBLIC CMISSSolverSolverEquationsGetCNum, CMISSSolverSolverEquationsGetCPtr
 
  PUBLIC CMISSSolverEquationsEquationsSetAddCNum, CMISSSolverEquationsEquationsSetAddCPtr
 
  PUBLIC CMISSSolverEquationsSparsityTypeSetCNum, CMISSSolverEquationsSparsityTypeSetCPtr
-
 
 CONTAINS
 
@@ -4894,17 +4891,31 @@ CONTAINS
 !!==================================================================================================================================
 
   !>Destroys the boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSBoundaryConditionsDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME = &
-    & "CMISSBoundaryConditionsDestroyNum")
+  FUNCTION CMISSBoundaryConditionsDestroyCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex) &
+    & BIND(C, NAME = "CMISSBoundaryConditionsDestroyNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the equations set to destroy the boundary conditions for.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number, for C, of the equations set to destroy the boundary conditions for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<User number of the problem with the boundary conditions to destroy.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the location of the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index to destroy the boundary conditions for for.
     !Function variable
     INTEGER(C_INT) :: CMISSBoundaryConditionsDestroyCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSBoundaryConditionsDestroy(RegionUserNumber,EquationsSetUserNumber,CMISSBoundaryConditionsDestroyCNum)
+    CMISSBoundaryConditionsDestroyCNum = CMISSNoError
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSBoundaryConditionsDestroy(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,CMISSBoundaryConditionsDestroyCNum)
+      ELSE
+        CMISSBoundaryConditionsDestroyCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSBoundaryConditionsDestroyCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -4928,12 +4939,7 @@ CONTAINS
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsDestroy(BoundaryConditions, CMISSBoundaryConditionsDestroyCPtr)
-        IF(ASSOCIATED(BoundaryConditions)) THEN
-          BoundaryConditionsPtr = C_LOC(BoundaryConditions)
-        ELSE
-          CMISSBoundaryConditionsDestroyCPtr = CMISSPointerIsNULL
-        ENDIF
+        CALL CMISSBoundaryConditionsDestroy(BoundaryConditions,CMISSBoundaryConditionsDestroyCPtr)
       ELSE
         CMISSBoundaryConditionsDestroyCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -4950,12 +4956,17 @@ CONTAINS
   !
 
   !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant for boundary conditions identified by a user number for C.
-  FUNCTION CMISSBoundaryConditionsAddConstantCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,ComponentNumber, &
-    &  Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddConstantNum")
+  FUNCTION CMISSBoundaryConditionsAddConstantCNum(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,FieldUserNumber,VariableType,ComponentNumber,Condition,Value) &
+    & BIND(C, NAME = "CMISSBoundaryConditionsAddConstantNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the equations set to add the boundary conditions for.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number, for C, of the equations set to add the boundary conditions for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the dependent field for the boundary conditions.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the dependent field for the boundary conditions
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field, for C, to add the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number, for C, of the dependent field to add the boundary condition at.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set for C. \see OPENCMISS_BoundaryConditions,OPENCMISS
@@ -4963,9 +4974,21 @@ CONTAINS
     !Function variable
     INTEGER(C_INT) :: CMISSBoundaryConditionsAddConstantCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSBoundaryConditionsAddConstant(RegionUserNumber,EquationsSetUserNumber,VariableType,ComponentNumber, &
-      &  Condition,Value,CMISSBoundaryConditionsAddConstantCNum)
+    CMISSBoundaryConditionsAddConstantCNum = CMISSNoError
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSBoundaryConditionsAddConstant(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & FieldUserNumber,VariableType,ComponentNumber,Condition,Value,CMISSBoundaryConditionsAddConstantCNum)
+      ELSE
+        CMISSBoundaryConditionsAddConstantCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSBoundaryConditionsAddConstantCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -4976,11 +4999,12 @@ CONTAINS
   !
 
   !>Adds to the value of the specified constant and sets this as a boundary condition on the specified constant for boundary conditions identified by an object for C.
-  FUNCTION CMISSBoundaryConditionsAddConstantCPtr(BoundaryConditionsPtr,VariableType,ComponentNumber,Condition,Value) BIND(C, &
-    & NAME = "CMISSBoundaryConditionsAddConstant")
+  FUNCTION CMISSBoundaryConditionsAddConstantCPtr(BoundaryConditionsPtr,FieldPtr,VariableType,ComponentNumber,Condition,Value) &
+    & BIND(C,NAME = "CMISSBoundaryConditionsAddConstant")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to add the constant to.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to set the boundary condition on.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field, for C, to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number, for C, of the dependent field to set the boundary condition at.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set for C. \see OPENCMISS_BoundaryConditions,OPENCMISS
@@ -4989,13 +5013,23 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsAddConstantCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+    TYPE(CMISSFieldType), POINTER :: Field
 
     CMISSBoundaryConditionsAddConstantCPtr = CMISSNoError
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsAddConstant(BoundaryConditions,VariableType,ComponentNumber,Condition,Value, &
-          & CMISSBoundaryConditionsAddConstantCPtr)
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CALL C_F_POINTER(FieldPtr, Field)
+          IF(ASSOCIATED(Field)) THEN
+            CALL CMISSBoundaryConditionsAddConstant(BoundaryConditions,Field,VariableType,ComponentNumber,Condition,Value, &
+              & CMISSBoundaryConditionsAddConstantCPtr)
+          ELSE
+            CMISSBoundaryConditionsAddConstantCPtr  = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSBoundaryConditionsAddConstantCPtr  = CMISSPointerIsNULL
+        ENDIF
       ELSE
         CMISSBoundaryConditionsAddConstantCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5013,12 +5047,17 @@ CONTAINS
 
 
   !>Sets the value of the specified constant as a boundary condition on the specified constant for boundary conditions identified by a user number, for C.
-  FUNCTION CMISSBoundaryConditionsSetConstantCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,ComponentNumber, &
-    & Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetConstantNum")
+  FUNCTION CMISSBoundaryConditionsSetConstantCNum(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,FieldUserNumber,VariableType,ComponentNumber,Condition,Value) &
+    & BIND(C, NAME = "CMISSBoundaryConditionsSetConstantNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the equations set to set the boundary conditions for.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number, for C, of the equations set to set the boundary conditions for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the dependent field for the boundary conditions.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the dependent field for the boundary conditions
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field, for C, to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field, for C, to set the boundary condition at.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
@@ -5026,9 +5065,22 @@ CONTAINS
     !Function variable
     INTEGER(C_INT) :: CMISSBoundaryConditionsSetConstantCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSBoundaryConditionsSetConstant(RegionUserNumber,EquationsSetUserNumber,VariableType,ComponentNumber, &
-      & Condition,Value, CMISSBoundaryConditionsSetConstantCNum)
+    CMISSBoundaryConditionsSetConstantCNum = CMISSNoError
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSBoundaryConditionsSetConstant(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & FieldUserNumber,VariableType,ComponentNumber,Condition,Value,CMISSBoundaryConditionsSetConstantCNum)
+      ELSE
+        CMISSBoundaryConditionsSetConstantCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSBoundaryConditionsSetConstantCNum = CMISSPointerIsNULL
+    ENDIF
+
 
     RETURN
 
@@ -5039,11 +5091,12 @@ CONTAINS
   !
 
   !>Sets the value of the specified constant and sets this as a boundary condition on the specified constant for boundary conditions identified by an object, for C.
-  FUNCTION CMISSBoundaryConditionsSetConstantCPtr(BoundaryConditionsPtr,VariableType,ComponentNumber,Condition,Value) BIND(C, &
-    & NAME = "CMISSBoundaryConditionsSetConstant")
+  FUNCTION CMISSBoundaryConditionsSetConstantCPtr(BoundaryConditionsPtr,FieldPtr,VariableType,ComponentNumber,Condition, &
+    & Value) BIND(C,NAME = "CMISSBoundaryConditionsSetConstant")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set the constant to.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to set the boundary condition on.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field, for C, to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field, for C, to set the boundary condition at.
     INTEGER(C_INT), VALUE, INTENT(IN) :: Condition !<The boundary condition type to set, for C \see OPENCMISS_BoundaryConditions,OPENCMISS
@@ -5052,13 +5105,23 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsSetConstantCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+    TYPE(CMISSFieldType), POINTER :: Field
 
     CMISSBoundaryConditionsSetConstantCPtr = CMISSNoError
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsSetConstant(BoundaryConditions, VariableType, ComponentNumber, Condition, Value, &
-          & CMISSBoundaryConditionsSetConstantCPtr)
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CALL C_F_POINTER(FieldPtr, Field)
+          IF(ASSOCIATED(Field)) THEN
+            CALL CMISSBoundaryConditionsSetConstant(BoundaryConditions, Field, VariableType, ComponentNumber, Condition, Value, &
+              & CMISSBoundaryConditionsSetConstantCPtr)
+          ELSE
+            CMISSBoundaryConditionsSetConstantCPtr  = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSBoundaryConditionsSetConstantCPtr = CMISSPointerIsNULL
+        ENDIF
       ELSE
         CMISSBoundaryConditionsSetConstantCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5075,12 +5138,17 @@ CONTAINS
   !
 
   !>Adds the value to the specified element and sets this as a boundary condition on the specified element for boundary conditions identified by a user number, for C.
-  FUNCTION CMISSBoundaryConditionsAddElementCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,ElementUserNumber, &
-    & ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddElementNum")
+  FUNCTION CMISSBoundaryConditionsAddElementCNum(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,FieldUserNumber,VariableType,ElementUserNumber,ComponentNumber,Condition,Value) &
+    & BIND(C, NAME = "CMISSBoundaryConditionsAddElementNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the equations set to add the boundary conditions for.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set, for C, to add the boundary conditions for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the dependent field for the boundary conditions.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the dependent field for the boundary conditions
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field, for C, to add the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementUserNumber !<The user number of the element, for C, to add the boundary conditions for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field, for C, to add the boundary condition at.
@@ -5089,9 +5157,21 @@ CONTAINS
     !Function variable
     INTEGER(C_INT) :: CMISSBoundaryConditionsAddElementCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSBoundaryConditionsAddElement(RegionUserNumber,EquationsSetUserNumber,VariableType,ElementUserNumber, &
-      & ComponentNumber,Condition,Value, CMISSBoundaryConditionsAddElementCNum)
+    CMISSBoundaryConditionsAddElementCNum = CMISSNoError
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSBoundaryConditionsAddElement(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & FieldUserNumber,VariableType,ElementUserNumber,ComponentNumber,Condition,Value,CMISSBoundaryConditionsAddElementCNum)
+      ELSE
+        CMISSBoundaryConditionsAddElementCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSBoundaryConditionsAddElementCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -5102,11 +5182,12 @@ CONTAINS
   !
 
   !>Adds to the value of the specified element and sets this as a boundary condition on the specified element for boundary conditions identified by an object, for C.
-  FUNCTION CMISSBoundaryConditionsAddElementCPtr(BoundaryConditionsPtr,VariableType,ElementUserNumber,ComponentNumber, &
+  FUNCTION CMISSBoundaryConditionsAddElementCPtr(BoundaryConditionsPtr,FieldPtr,VariableType,ElementUserNumber,ComponentNumber, &
     & Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddElement")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to add the element to.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to set the boundary condition on.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field, for C, to add the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementUserNumber !<The user number, for C, of the element to add the boundary conditions for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number, for C, of the dependent field to add the boundary condition at.
@@ -5116,13 +5197,23 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsAddElementCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+    TYPE(CMISSFieldType), POINTER :: Field
 
     CMISSBoundaryConditionsAddElementCPtr = CMISSNoError
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsAddElement(BoundaryConditions, VariableType,ElementUserNumber,ComponentNumber,Condition, &
-          & Value, CMISSBoundaryConditionsAddElementCPtr)
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CALL C_F_POINTER(FieldPtr, Field)
+          IF(ASSOCIATED(Field)) THEN
+            CALL CMISSBoundaryConditionsAddElement(BoundaryConditions, Field, VariableType,ElementUserNumber,ComponentNumber, &
+              & Condition, Value, CMISSBoundaryConditionsAddElementCPtr)
+          ELSE
+            CMISSBoundaryConditionsAddElementCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSBoundaryConditionsAddElementCPtr = CMISSPointerIsNULL
+        ENDIF
       ELSE
         CMISSBoundaryConditionsAddElementCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5139,12 +5230,17 @@ CONTAINS
   !
 
   !>Sets the value of the specified element as a boundary condition on the specified element for boundary conditions identified by a user number for C.
-  FUNCTION CMISSBoundaryConditionsSetElementCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,ElementUserNumber, &
-    & ComponentNumber,Condition,Value)  BIND(C, NAME = "CMISSBoundaryConditionsSetElementNum")
+  FUNCTION CMISSBoundaryConditionsSetElementCNum(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,FieldUserNumber,VariableType,ElementUserNumber,ComponentNumber,Condition,Value) &
+    & BIND(C, NAME = "CMISSBoundaryConditionsSetElementNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number, for C, of the region containing the equations set to set the boundary conditions for.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number, for C, of the equations set to set the boundary conditions for.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the dependent field for the boundary conditions.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the dependent field for the boundary conditions
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type, for C, of the dependent field to set the boundary condition at. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementUserNumber !<The user number, for C, of the element to set the boundary conditions for.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number, for C, of the dependent field to set the boundary condition at.
@@ -5153,9 +5249,21 @@ CONTAINS
     !Function variable
     INTEGER(C_INT) :: CMISSBoundaryConditionsSetElementCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSBoundaryConditionsSetElement(RegionUserNumber,EquationsSetUserNumber,VariableType,ElementUserNumber, &
-      & ComponentNumber,Condition,Value, CMISSBoundaryConditionsSetElementCNum)
+    CMISSBoundaryConditionsSetElementCNum = CMISSNoError
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSBoundaryConditionsSetElement(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & FieldUserNumber,VariableType,ElementUserNumber,ComponentNumber,Condition,Value,CMISSBoundaryConditionsSetElementCNum)
+      ELSE
+        CMISSBoundaryConditionsSetElementCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSBoundaryConditionsSetElementCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -5166,11 +5274,12 @@ CONTAINS
   !
 
   !>Sets the value of the specified element and sets this as a boundary condition on the specified elements for boundary conditions identified by an object for C.
-  FUNCTION CMISSBoundaryConditionsSetElementCPtr(BoundaryConditionsPtr,VariableType,ElementUserNumber,ComponentNumber, &
+  FUNCTION CMISSBoundaryConditionsSetElementCPtr(BoundaryConditionsPtr,FieldPtr,VariableType,ElementUserNumber,ComponentNumber, &
     & Condition,Value)  BIND(C, NAME = "CMISSBoundaryConditionsSetElement")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set the element to.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to set the boundary condition on.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: ElementUserNumber !<The user number of the element to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: ComponentNumber !<The component number of the dependent field to set the boundary condition at, for C.
@@ -5180,13 +5289,23 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsSetElementCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+    TYPE(CMISSFieldType), POINTER :: Field
 
     CMISSBoundaryConditionsSetElementCPtr = CMISSNoError
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsSetElement(BoundaryConditions, VariableType,ElementUserNumber,ComponentNumber,Condition, &
-          & Value, CMISSBoundaryConditionsSetElementCPtr)
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CALL C_F_POINTER(FieldPtr, Field)
+          IF(ASSOCIATED(Field)) THEN
+            CALL CMISSBoundaryConditionsSetElement(BoundaryConditions, Field, VariableType,ElementUserNumber,ComponentNumber, &
+              & Condition, Value, CMISSBoundaryConditionsSetElementCPtr)
+          ELSE
+            CMISSBoundaryConditionsSetElementCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSBoundaryConditionsSetElementCPtr = CMISSPointerIsNULL
+        ENDIF
       ELSE
         CMISSBoundaryConditionsSetElementCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5203,12 +5322,17 @@ CONTAINS
   !
 
   !>Adds the value to the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by a user number for C.
-  FUNCTION CMISSBoundaryConditionsAddNodeCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber, & 
-    & DerivativeNumber, NodeUserNumber,ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNodeNum")
+  FUNCTION CMISSBoundaryConditionsAddNodeCNum(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,FieldUserNumber,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+    & ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNodeNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to add the boundary conditions for, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to add the boundary conditions for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the dependent field for the boundary conditions.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the dependent field for the boundary conditions
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to add the boundary conditions for, for C.
@@ -5219,9 +5343,22 @@ CONTAINS
     !Function variable
     INTEGER(C_INT) :: CMISSBoundaryConditionsAddNodeCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSBoundaryConditionsAddNode(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber,DerivativeNumber, &
-      & NodeUserNumber, ComponentNumber,Condition,Value, CMISSBoundaryConditionsAddNodeCNum)
+    CMISSBoundaryConditionsAddNodeCNum = CMISSNoError
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSBoundaryConditionsAddNode(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & FieldUserNumber,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber,ComponentNumber,Condition,Value, &
+          & CMISSBoundaryConditionsAddNodeCNum)
+      ELSE
+        CMISSBoundaryConditionsAddNodeCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSBoundaryConditionsAddNodeCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -5232,11 +5369,12 @@ CONTAINS
   !
 
   !>Adds to the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object for C.
-  FUNCTION CMISSBoundaryConditionsAddNodeCPtr(BoundaryConditionsPtr,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber, Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNode")
+  FUNCTION CMISSBoundaryConditionsAddNodeCPtr(BoundaryConditionsPtr,FieldPtr,VariableType,VersionNumber,DerivativeNumber, &
+    & NodeUserNumber, ComponentNumber, Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsAddNode")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to add the node to.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to set the boundary condition on.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to add the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to add the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to add the boundary conditions for, for C.
@@ -5248,13 +5386,23 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsAddNodeCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+    TYPE(CMISSFieldType), POINTER :: Field
 
     CMISSBoundaryConditionsAddNodeCPtr = CMISSNoError
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsAddNode(BoundaryConditions, VariableType, VersionNumber, DerivativeNumber,NodeUserNumber, & 
-          & ComponentNumber, Condition, Value, CMISSBoundaryConditionsAddNodeCPtr)
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CALL C_F_POINTER(FieldPtr, Field)
+          IF(ASSOCIATED(Field)) THEN
+            CALL CMISSBoundaryConditionsAddNode(BoundaryConditions, Field, VariableType, VersionNumber, DerivativeNumber, &
+              & NodeUserNumber, ComponentNumber, Condition, Value, CMISSBoundaryConditionsAddNodeCPtr)
+          ELSE
+            CMISSBoundaryConditionsAddNodeCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSBoundaryConditionsAddNodeCPtr = CMISSPointerIsNULL
+        ENDIF
       ELSE
         CMISSBoundaryConditionsAddNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5271,12 +5419,17 @@ CONTAINS
   !
 
   !>Sets the value of the specified node as a boundary condition on the specified node for boundary conditions identified by a user number for C.
-  FUNCTION CMISSBoundaryConditionsSetNodeCNum(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber, &
-    & DerivativeNumber, NodeUserNumber,ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNodeNum")
+  FUNCTION CMISSBoundaryConditionsSetNodeCNum(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex,FieldUserNumber,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
+    & ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNodeNum")
 
     !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to set the boundary conditions for, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the boundary conditions for, for C.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the dependent field for the boundary conditions.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: FieldUserNumber !<The user number of the dependent field for the boundary conditions
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to set the boundary conditions for, for C.
@@ -5287,9 +5440,22 @@ CONTAINS
     !Function variable
     INTEGER(C_INT) :: CMISSBoundaryConditionsSetNodeCNum !<Error Code.
     !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
 
-    CALL CMISSBoundaryConditionsSetNode(RegionUserNumber,EquationsSetUserNumber,VariableType,VersionNumber,DerivativeNumber, &
-      & NodeUserNumber, ComponentNumber,Condition,Value, CMISSBoundaryConditionsSetNodeCNum)
+    CMISSBoundaryConditionsSetNodeCNum = CMISSNoError
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr, ControlLoopIdentifiers, ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSBoundaryConditionsSetNode(RegionUserNumber,ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & FieldUserNumber,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber,ComponentNumber,Condition,Value, &
+          & CMISSBoundaryConditionsSetNodeCNum)
+      ELSE
+        CMISSBoundaryConditionsSetNodeCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSBoundaryConditionsSetNodeCNum = CMISSPointerIsNULL
+    ENDIF
 
     RETURN
 
@@ -5300,11 +5466,12 @@ CONTAINS
   !
 
   !>Sets the value of the specified node and sets this as a boundary condition on the specified node for boundary conditions identified by an object for C.
-  FUNCTION CMISSBoundaryConditionsSetNodeCPtr(BoundaryConditionsPtr,VariableType,VersionNumber,DerivativeNumber,NodeUserNumber, &
-    & ComponentNumber,Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNode")
+  FUNCTION CMISSBoundaryConditionsSetNodeCPtr(BoundaryConditionsPtr,FieldPtr,VariableType,VersionNumber,DerivativeNumber, &
+    & NodeUserNumber, ComponentNumber, Condition,Value) BIND(C, NAME = "CMISSBoundaryConditionsSetNode")
 
     !Argument variables
     TYPE(C_PTR), VALUE, INTENT(IN) :: BoundaryConditionsPtr !<C pointer to the boundary conditions to set the node to.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: FieldPtr !<C pointer to the dependent field to set the boundary condition on.
     INTEGER(C_INT), VALUE, INTENT(IN) :: VariableType !<The variable type of the dependent field to set the boundary condition at, for C. \see OPENCMISS_FieldVariableTypes
     INTEGER(C_INT), VALUE, INTENT(IN) :: VersionNumber !<The user number of the node derivative version to set the boundary conditions for, for C.
     INTEGER(C_INT), VALUE, INTENT(IN) :: DerivativeNumber !<The user number of the node derivative to set the boundary conditions for, for C.
@@ -5316,13 +5483,23 @@ CONTAINS
     INTEGER(C_INT) :: CMISSBoundaryConditionsSetNodeCPtr !<Error Code.
     !Local variables
     TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+    TYPE(CMISSFieldType), POINTER :: Field
 
     CMISSBoundaryConditionsSetNodeCPtr = CMISSNoError
     IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
       CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
       IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSBoundaryConditionsSetNode(BoundaryConditions, VariableType, VersionNumber, DerivativeNumber,NodeUserNumber, &
-          & ComponentNumber, Condition,Value, CMISSBoundaryConditionsSetNodeCPtr)
+        IF(C_ASSOCIATED(FieldPtr)) THEN
+          CALL C_F_POINTER(FieldPtr, Field)
+          IF(ASSOCIATED(Field)) THEN
+            CALL CMISSBoundaryConditionsSetNode(BoundaryConditions, Field, VariableType, VersionNumber, DerivativeNumber, &
+              & NodeUserNumber, ComponentNumber, Condition,Value, CMISSBoundaryConditionsSetNodeCPtr)
+          ELSE
+            CMISSBoundaryConditionsSetNodeCPtr = CMISSErrorConvertingPointer
+          ENDIF
+        ELSE
+          CMISSBoundaryConditionsSetNodeCPtr = CMISSPointerIsNULL
+        ENDIF
       ELSE
         CMISSBoundaryConditionsSetNodeCPtr = CMISSErrorConvertingPointer
       ENDIF
@@ -5333,74 +5510,6 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSBoundaryConditionsSetNodeCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsGetCNum(RegionUserNumber,EquationsSetUserNumber,BoundaryConditionsPtr)  BIND(C, &
-    & NAME = "CMISSEquationsSetBoundaryConditionsGetNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the region containing the equations set to get the boundary conditions for, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to get the boundary conditions for, for C.
-    TYPE(C_PTR), INTENT(OUT) :: BoundaryConditionsPtr !<C pointer to the boundary conditions for the specified equations set.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsGetCNum !<Error Code.
-    !Local variables
-    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
-
-    CMISSEquationsSetBoundaryConditionsGetCNum = CMISSNoError
-    CALL CMISSEquationsSetBoundaryConditionsGet(RegionUserNumber,EquationsSetUserNumber,BoundaryConditions, &
-      & CMISSEquationsSetBoundaryConditionsGetCNum)
-    IF(ASSOCIATED(BoundaryConditions)) THEN
-      BoundaryConditionsPtr = C_LOC(BoundaryConditions)
-    ELSE
-      CMISSEquationsSetBoundaryConditionsGetCNum = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsGetCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsGetCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsGet")
-
-    !Argument variables
-    TYPE(C_PTR), VALUE, INTENT(IN) :: EquationsSetPtr !<C pointer to the equations set to get the boundary conditions for.
-    TYPE(C_PTR), INTENT(OUT) :: BoundaryConditionsPtr !<C pointer to the boundary conditions for the specified equations set.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsGetCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
-
-    CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr,EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsGet(EquationsSet,BoundaryConditions, CMISSEquationsSetBoundaryConditionsGetCPtr)
-        IF(ASSOCIATED(BoundaryConditions)) THEN
-          BoundaryConditionsPtr = C_LOC(BoundaryConditions)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsGetCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsGetCPtr
 
 !!==================================================================================================================================
 !!
@@ -9695,246 +9804,6 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSEquationsSetAnalyticTimeSetCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C, NAME= &
-    & "CMISSEquationsSetBoundaryConditionsAnalyticNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the equations set to set the analytic boundary conditions for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to set the analytic boundary conditions for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSEquationsSetBoundaryConditionsAnalytic(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsAnalyticCNum)
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr(EquationsSetPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsAnalytic")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to set the analytic boundary conditions.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsAnalyticCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-
-    CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsAnalytic(EquationsSet,CMISSEquationsSetBoundaryConditionsAnalyticCPtr)
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsAnalyticCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finish the creation of boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
-    & "CMISSEquationsSetBoundaryConditionsCreateFinishNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to finish, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to finish the creation of boundary conditions for, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSEquationsSetBoundaryConditionsCreateFinish(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsCreateFinishCNum)
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Finish the creation of a boundary conditions for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCPtr(EquationsSetPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsCreateFinish")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to finish the creation of boundary conditions for.
-    !Function variables
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateFinishCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-
-    CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsCreateFinish(EquationsSet,CMISSEquationsSetBoundaryConditionsCreateFinishCPtr)
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsCreateFinishCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateFinishCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Start the creation of boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
-    & "CMISSEquationsSetBoundaryConditionsCreateStartNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to start, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to start the creation of boundary conditions for, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSEquationsSetBoundaryConditionsCreateStart(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsCreateStartCNum)
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Start the creation of boundary conditions for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCPtr(EquationsSetPtr,BoundaryConditionsPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsCreateStart")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(OUT) :: EquationsSetPtr !<C pointer to the equations set to start the creation of boundary conditions on.
-    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<C pointer to the created boundary conditions.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsCreateStartCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
-
-    CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSNoError
-    IF(C_ASSOCIATED(BoundaryConditionsPtr)) THEN
-      CALL C_F_POINTER(BoundaryConditionsPtr, BoundaryConditions)
-      IF(ASSOCIATED(BoundaryConditions)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsCreateStart(EquationsSet,BoundaryConditions, &
-          & CMISSEquationsSetBoundaryConditionsCreateStartCPtr)
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-          IF(ASSOCIATED(BoundaryConditions)) THEN
-            BoundaryConditionsPtr = C_LOC(BoundaryConditions)
-          ELSE
-            CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
-          ENDIF
-        ELSE
-          CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsCreateStartCPtr
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Destroy the boundary conditions for an equations set identified by a user number for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCNum(RegionUserNumber,EquationsSetUserNumber) BIND(C,NAME= &
-    & "CMISSEquationsSetBoundaryConditionsDestroyNum")
-
-    !Argument variables
-    INTEGER(C_INT), VALUE, INTENT(IN) :: RegionUserNumber !<The user number of the Region containing the boundary conditions to destroy, for C.
-    INTEGER(C_INT), VALUE, INTENT(IN) :: EquationsSetUserNumber !<The user number of the equations set to destroy the boundary conditions for, for C.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCNum !<Error Code.
-    !Local variables
-
-    CALL CMISSEquationsSetBoundaryConditionsDestroy(RegionUserNumber,EquationsSetUserNumber, &
-      & CMISSEquationsSetBoundaryConditionsDestroyCNum)
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCNum
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Destroy the boundary conditions for an equations set identified by an object for C.
-  FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCPtr(EquationsSetPtr) BIND(C, NAME = &
-    & "CMISSEquationsSetBoundaryConditionsDestroy")
-
-    !Argument variables
-    TYPE(C_PTR), INTENT(INOUT) :: EquationsSetPtr !<C pointer to the equations set to destroy the boundary conditions for.
-    !Function variable
-    INTEGER(C_INT) :: CMISSEquationsSetBoundaryConditionsDestroyCPtr !<Error Code.
-    !Local variables
-    TYPE(CMISSEquationsSetType), POINTER :: EquationsSet
-
-    CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSNoError
-    IF(C_ASSOCIATED(EquationsSetPtr)) THEN
-      CALL C_F_POINTER(EquationsSetPtr, EquationsSet)
-      IF(ASSOCIATED(EquationsSet)) THEN
-        CALL CMISSEquationsSetBoundaryConditionsDestroy(EquationsSet, CMISSEquationsSetBoundaryConditionsDestroyCPtr)
-        IF(ASSOCIATED(EquationsSet)) THEN
-          EquationsSetPtr = C_LOC(EquationsSet)
-        ELSE
-          CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSPointerIsNULL
-        ENDIF
-      ELSE
-        CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSErrorConvertingPointer
-      ENDIF
-    ELSE
-      CMISSEquationsSetBoundaryConditionsDestroyCPtr = CMISSPointerIsNULL
-    ENDIF
-
-    RETURN
-
-  END FUNCTION CMISSEquationsSetBoundaryConditionsDestroyCPtr
 
   !
   !================================================================================================================================
@@ -24878,6 +24747,295 @@ CONTAINS
     RETURN
 
   END FUNCTION CMISSSolverOutputTypeSetCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by a user number for C.
+  FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum(ProblemUserNumber, &
+    & ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr,SolverIndex) &
+    & BIND(C, NAME="CMISSProblemSolverEquationsBoundaryConditionsAnalyticNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations with the boundary conditions to set.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<Size of the control loop identifiers for C.
+    TYPE(C_PTR), INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the location of the control loop identifiers.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index for the solver equations boundary conditions.
+    !Function variable
+    INTEGER(C_INT) :: CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSProblemSolverEquationsBoundaryConditionsAnalytic(ProblemUserNumber, &
+          & ControlLoopIdentifiers,SolverIndex,CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum)
+      ELSE
+        CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for an equation set according to the analytic equations for an equations set identified by an object for C.
+  FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr(SolverEquationsPtr) BIND(C, NAME = &
+    & "CMISSProblemSolverEquationsBoundaryConditionsAnalytic")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(INOUT) :: SolverEquationsPtr !<C pointer to the solver equations to set the analytic boundary conditions.
+    !Function variable
+    INTEGER(C_INT) :: CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+
+    CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+      CALL C_F_POINTER(SolverEquationsPtr, SolverEquations)
+      IF(ASSOCIATED(SolverEquations)) THEN
+        CALL CMISSProblemSolverEquationsBoundaryConditionsAnalytic(SolverEquations, &
+          & CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr)
+      ELSE
+        CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSProblemSolverEquationsBoundaryConditionsAnalyticCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish creation of the solver equations boundary conditions using user numbers, for C.
+  FUNCTION CMISSSolverEquationsBoundaryConditionsCreateFinishCNum(ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex) BIND(C, NAME = "CMISSSolverEquationsBoundaryConditionsCreateFinishNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsBoundaryConditionsCreateFinishCNum !<Error Code.
+    !Local variables
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverEquationsBoundaryConditionsCreateFinishCNum  = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverEquationsEquationsBoundaryConditionsCreateFinish(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & CMISSSolverEquationsBoundaryConditionsCreateFinishCNum)
+      ELSE
+        CMISSSolverEquationsBoundaryConditionsCreateFinishCNum  = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsBoundaryConditionsCreateFinishCNum  = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsBoundaryConditionsCreateFinishCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Finish creation of the solver equations boundary conditions, for C.
+  FUNCTION CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr(SolverEquationsPtr)  &
+    & BIND(C, NAME = "CMISSSolverEquationsBoundaryConditionsCreateFinish")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: SolverEquationsPtr !<C pointer to the solver equations to finish the boundary conditions for.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+
+    CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+      CALL C_F_POINTER(SolverEquationsPtr,SolverEquations)
+      IF(ASSOCIATED(SolverEquations)) THEN
+        CALL CMISSSolverEquationsBoundaryConditionsCreateFinish(SolverEquations, &
+          & CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr)
+      ELSE
+        CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsBoundaryConditionsCreateFinishCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start creation of the solver equations boundary conditions using user numbers, for C.
+  FUNCTION CMISSSolverEquationsBoundaryConditionsCreateStartCNum(ProblemUserNumber,ControlLoopIdentifiersSize, &
+    & ControlLoopIdentifiersPtr,SolverIndex) BIND(C, NAME = "CMISSSolverEquationsBoundaryConditionsCreateStartNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsBoundaryConditionsCreateStartCNum !<Error Code.
+    !Local variable
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+
+    CMISSSolverEquationsBoundaryConditionsCreateStartCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverEquationsBoundaryConditionsCreateStart(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+          & CMISSSolverEquationsBoundaryConditionsCreateStartCNum)
+      ELSE
+        CMISSSolverEquationsBoundaryConditionsCreateStartCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsBoundaryConditionsCreateStartCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsBoundaryConditionsCreateStartCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Start creation of the solver equations boundary conditions, for C.
+  FUNCTION CMISSSolverEquationsBoundaryConditionsCreateStartCPtr(SolverEquationsPtr,BoundaryConditionsPtr) &
+    & BIND(C, NAME = "CMISSSolverEquationsBoundaryConditionsCreateStart")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: SolverEquationsPtr !<C pointer to the solver equations to start the boundary conditions for.
+    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<On return, C pointer to the boundary conditions.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsBoundaryConditionsCreateStartCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+
+    CMISSSolverEquationsBoundaryConditionsCreateStartCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+      CALL C_F_POINTER(SolverEquationsPtr,SolverEquations)
+      IF(ASSOCIATED(SolverEquations)) THEN
+        CALL CMISSSolverEquationsBoundaryConditionsCreateStart(SolverEquations,BoundaryConditions, &
+          & CMISSSolverEquationsBoundaryConditionsCreateStartCPtr)
+        IF(ASSOCIATED(BoundaryConditions)) THEN
+          BoundaryConditionsPtr = C_LOC(BoundaryConditions)
+        ELSE
+          CMISSSolverEquationsBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverEquationsBoundaryConditionsCreateStartCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsBoundaryConditionsCreateStartCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsBoundaryConditionsCreateStartCPtr
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the solver equations boundary conditions using user numbers, for C.
+  FUNCTION CMISSSolverEquationsBoundaryConditionsGetCNum(ProblemUserNumber,ControlLoopIdentifiersSize,ControlLoopIdentifiersPtr, &
+    & SolverIndex,BoundaryConditionsPtr) BIND(C, NAME = "CMISSSolverEquationsBoundaryConditionsGetNum")
+
+    !Argument variables
+    INTEGER(C_INT), VALUE, INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver equations.
+    INTEGER(C_INT), INTENT(IN) :: ControlLoopIdentifiersSize(1) !<The size of the control loop identifiers.
+    TYPE(C_PTR), VALUE, INTENT(IN) :: ControlLoopIdentifiersPtr !<C pointer to the i'th control loop identifier for the solver equations.
+    INTEGER(C_INT), VALUE, INTENT(IN) :: SolverIndex !<The solver index from the solver equations.
+    TYPE(C_PTR), INTENT(OUT) :: BoundaryConditionsPtr !<On return, a C pointer to the boundary conditions
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsBoundaryConditionsGetCNum !<Error Code.
+    !Local variable
+    INTEGER(C_INT), POINTER :: ControlLoopIdentifiers(:)
+    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+
+    CMISSSolverEquationsBoundaryConditionsGetCNum = CMISSNoError
+    IF(C_ASSOCIATED(ControlLoopIdentifiersPtr)) THEN
+      CALL C_F_POINTER(ControlLoopIdentifiersPtr,ControlLoopIdentifiers,ControlLoopIdentifiersSize)
+      IF(ASSOCIATED(ControlLoopIdentifiers)) THEN
+        CALL CMISSSolverEquationsBoundaryConditionsGet(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,BoundaryConditions, &
+          & CMISSSolverEquationsBoundaryConditionsGetCNum)
+        IF(ASSOCIATED(BoundaryConditions)) THEN
+          BoundaryConditionsPtr = C_LOC(BoundaryConditions)
+        ELSE
+          CMISSSolverEquationsBoundaryConditionsGetCNum = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverEquationsBoundaryConditionsGetCNum = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsBoundaryConditionsGetCNum = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsBoundaryConditionsGetCNum
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Get the solver equations boundary conditions, for C.
+  FUNCTION CMISSSolverEquationsBoundaryConditionsGetCPtr(SolverEquationsPtr,BoundaryConditionsPtr) &
+    & BIND(C, NAME = "CMISSSolverEquationsBoundaryConditionsGet")
+
+    !Argument variables
+    TYPE(C_PTR), INTENT(IN) :: SolverEquationsPtr !<C pointer to the solver equations to get the boundary conditions for.
+    TYPE(C_PTR), INTENT(INOUT) :: BoundaryConditionsPtr !<On return, C pointer to the boundary conditions.
+    !Function variable
+    INTEGER(C_INT) :: CMISSSolverEquationsBoundaryConditionsGetCPtr !<Error Code.
+    !Local variables
+    TYPE(CMISSSolverEquationsType), POINTER :: SolverEquations
+    TYPE(CMISSBoundaryConditionsType), POINTER :: BoundaryConditions
+
+    CMISSSolverEquationsBoundaryConditionsGetCPtr = CMISSNoError
+    IF(C_ASSOCIATED(SolverEquationsPtr)) THEN
+      CALL C_F_POINTER(SolverEquationsPtr,SolverEquations)
+      IF(ASSOCIATED(SolverEquations)) THEN
+        CALL CMISSSolverEquationsBoundaryConditionsGet(SolverEquations,BoundaryConditions, &
+          & CMISSSolverEquationsBoundaryConditionsGetCPtr)
+        IF(ASSOCIATED(BoundaryConditions)) THEN
+          BoundaryConditionsPtr = C_LOC(BoundaryConditions)
+        ELSE
+          CMISSSolverEquationsBoundaryConditionsGetCPtr = CMISSPointerIsNULL
+        ENDIF
+      ELSE
+        CMISSSolverEquationsBoundaryConditionsGetCPtr = CMISSErrorConvertingPointer
+      ENDIF
+    ELSE
+      CMISSSolverEquationsBoundaryConditionsGetCPtr = CMISSPointerIsNULL
+    ENDIF
+
+    RETURN
+
+  END FUNCTION CMISSSolverEquationsBoundaryConditionsGetCPtr
 
   !
   !================================================================================================================================
