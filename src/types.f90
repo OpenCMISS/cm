@@ -1639,7 +1639,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
-    INTEGER(INTG) :: NUMBER_OF_NEUMANN_BOUNDARIES
     TYPE(BOUNDARY_CONDITIONS_PRESSURE_INCREMENTED_TYPE), POINTER :: PRESSURE_INCREMENTED_BOUNDARY_CONDITIONS !<A pointer to the pressure incremented condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_INCREMENTED_CONDITIONS !<Number of pressure incremented boundary conditions associated with this variable (\todo: is this the best place?)
     INTEGER(INTG) :: NUMBER_OF_PRESSURE_CONDITIONS !<Number of pressure boundary conditions (not incremented) associated with this variable.
@@ -1654,12 +1653,13 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: PTR !<A pointer to the boundary conditions variable
   END TYPE BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE
-  
-  !>Contains information on the boundary conditions for the equations set. \see OPENCMISS::CMISSBoundaryConditionsType
+
+  !>Contains information on the boundary conditions for the solver equations. \see OPENCMISS::CMISSBoundaryConditionsType
   TYPE BOUNDARY_CONDITIONS_TYPE
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations.
     LOGICAL :: BOUNDARY_CONDITIONS_FINISHED !<Is .TRUE. if the boundary conditions for the equations set has finished being created, .FALSE. if not.
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(:) !<BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx). BOUNDARY_CONDITIONS_VARIABLE_TYPE_MAP(variable_type_idx)%PTR is the pointer to the variable_type_idx'th BOUNDARY_CONDITIONS_VARIABLE
+    INTEGER(INTG) :: NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES !<The number of boundary conditions variables
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_PTR_TYPE), ALLOCATABLE :: BOUNDARY_CONDITIONS_VARIABLES(:) !<BOUNDARY_CONDITIONS_VARIABLES(variable_idx). BOUNDARY_CONDITIONS_VARIABLES(variable_idx)%PTR is the pointer to the variable_idx'th boundary conditions variable. variable_idx ranges from 1 to NUMBER_OF_BOUNDARY_CONDITIONS_VARIABLES
   END TYPE BOUNDARY_CONDITIONS_TYPE
 
   !>A buffer type to allow for an array of pointers to a BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE \see TYPES::BOUNDARY_CONDITIONS_SPARSITY_INDICES_TYPE
@@ -1670,8 +1670,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !> Contains information on dofs with associated dirichlet conditions and corresponding non-zero elements in the equations matrices
   TYPE BOUNDARY_CONDITIONS_DIRICHLET_TYPE
     INTEGER(INTG), ALLOCATABLE :: DIRICHLET_DOF_INDICES(:)  !<DIRICHLET_DOF_INDICES(idx). Stores the dof_idx of the dofs which are subject to a dirichlet boundary condition \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
-    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: LINEAR_SPARSITY_INDICES(:) !<LINEAR_SPARSITY_INDICES(equ_matrix_idx). Stores the indices of the non-zero elements of the 'equ_matrix_idx'th linear equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
-    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: DYNAMIC_SPARSITY_INDICES(:) !<DYNAMIC_SPARSITY_INDICES(equ_matrix_idx). Stores the indices of the non-zero elements of the 'equ_matrix_idx'th dynamic equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: LINEAR_SPARSITY_INDICES(:,:) !<LINEAR_SPARSITY_INDICES(equ_set_idx,equ_matrix_idx). Stores the indices of the non-zero elements of the equ_set_idx'th equation set and equ_matrix_idx'th linear equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
+    TYPE(BOUNDARY_CONDITIONS_SPARSITY_INDICES_PTR_TYPE), ALLOCATABLE :: DYNAMIC_SPARSITY_INDICES(:,:) !<DYNAMIC_SPARSITY_INDICES(equ_set_idx,equ_matrix_idx). Stores the indices of the non-zero elements of the equ_set_idx'th equation set and equ_matrix_idx'th dynamic equation matrix in the columns corresponding to the dofs which are subject to a dirichlet boundary condition
   END TYPE BOUNDARY_CONDITIONS_DIRICHLET_TYPE
 
   !> Contains information on indices of non-zero elements with associated dirichlet conditions
@@ -2250,12 +2250,14 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: TIME_DEPENDENCE !<The time dependence type of the solver equations
 
     INTEGER(INTG) :: SPARSITY_TYPE !<The type of sparsity to use in the solver matrices \see SOLVER_ROTUINES_SparsityTypes,SOLVER_ROUTINES
-    
+
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES !<A pointer to the solver matrices for the problem
-    
+
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the solver equations.
+
   END TYPE SOLVER_EQUATIONS_TYPE
-  
+
   !
   !================================================================================================================================
   !

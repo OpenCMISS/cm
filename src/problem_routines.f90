@@ -118,6 +118,8 @@ MODULE PROBLEM_ROUTINES
   
   PUBLIC PROBLEM_CONTROL_LOOP_GET
   
+  PUBLIC PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC
+
   PUBLIC PROBLEM_SOLVER_EQUATIONS_CREATE_START,PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH
   
   PUBLIC PROBLEM_SOLVER_EQUATIONS_DESTROY
@@ -1874,7 +1876,8 @@ CONTAINS
         !Make sure the equations sets are up to date
         DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
           EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-          CALL EQUATIONS_SET_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
+          CALL EQUATIONS_SET_LOAD_INCREMENT_APPLY(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ITERATION_NUMBER, &
+            & MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
         ENDDO !equations_set_idx
       ELSE
         CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
@@ -2267,7 +2270,7 @@ CONTAINS
               !Back-substitute to find flux values for linear problems
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
               ENDDO !equations_set_idx
             ELSE
               CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
@@ -2443,7 +2446,7 @@ CONTAINS
               !Back-substitute to find flux values for linear problems
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
               ENDDO !equations_set_idx
             ELSE
               CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
@@ -2604,7 +2607,7 @@ CONTAINS
           !Back-substitute to find flux values for linear problems
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+            CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
           ENDDO !equations_set_idx
 #ifdef TAUPROF
           CALL TAU_STATIC_PHASE_STOP('EQUATIONS_SET_BACKSUBSTITUTE()')
@@ -2686,9 +2689,9 @@ CONTAINS
             IF(ASSOCIATED(EQUATIONS)) THEN
               SELECT CASE(EQUATIONS%LINEARITY)
               CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
-                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,ERR,ERROR,*999)
+                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
               CASE(EQUATIONS_NONLINEAR)
-                CALL EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,ERR,ERROR,*999)
+                CALL EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
               CASE DEFAULT
                 CALL FLAG_ERROR("Invalid linearity for equations set equations",ERR,ERROR,*999)
               END SELECT
@@ -2813,6 +2816,61 @@ CONTAINS
     CALL EXITS("PROBLEM_SOLVERS_DESTROY")
     RETURN 1
   END SUBROUTINE PROBLEM_SOLVERS_DESTROY
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set boundary conditions for solver equations according to the analytic equations. \see OPENCMISS_CMISSProblemSolverEquationsBoundaryConditionsAnalytic
+  SUBROUTINE PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC(SOLVER_EQUATIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS !<A pointer to the solver equations to get the boundary conditions for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: equations_set_idx
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+
+    CALL ENTERS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+      IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
+        BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+        IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+          SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+          IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+            DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+              EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+              IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                CALL EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Equations set is not associated for index "//TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*", &
+                  & ERR,ERROR))//".",ERR,ERROR,*999)
+              ENDIF
+            ENDDO
+          ELSE
+            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Solver equations boundary conditions are not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver equations has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC")
+    RETURN
+999 CALL ERRORS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR)
+    CALL EXITS("PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC")
+    RETURN 1
+
+  END SUBROUTINE PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC
 
   !
   !================================================================================================================================

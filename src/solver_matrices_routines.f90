@@ -228,8 +228,6 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished",ERR,ERROR,*998)
-      ELSE
         IF(ASSOCIATED(SOLVER_MATRICES)) THEN
           CALL FLAG_ERROR("Solver matrices is already associated",ERR,ERROR,*998)
         ELSE
@@ -237,7 +235,9 @@ CONTAINS
           CALL SOLVER_MATRICES_INITIALISE(SOLVER_EQUATIONS,ERR,ERROR,*999)
           SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
         ENDIF
-     ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver equations are not finished",ERR,ERROR,*998)
+      ENDIF
     ELSE
       CALL FLAG_ERROR("Solver is not associated",ERR,ERROR,*998)
     ENDIF
