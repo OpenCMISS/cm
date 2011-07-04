@@ -3,9 +3,11 @@
 \input{../latex/macros} %define new commands etc.
 \input{../latex/defns} %define pagesetup and std. packages etc.
 \input{../latex/abbreviations} %define packages etc.
-\input{ParameterEstimation/include} %define new commands etc.
+%\input{ParameterEstimation/include} %define new commands etc.
 
-\usepackage{mybook} %define book style
+%\usepackage{mybook} %define book style
+\usepackage[center,sc,small]{caption}      % Alter caption styles
+\setcaptionmargin{0.25in}
 \usepackage{listings}
 \usepackage{times} %use the times font
 \usepackage{listings}
@@ -36,9 +38,9 @@
 \include{Solvers/Solvers}                     %input from Solvers/Solvers.tex
 \include{Coupling/Coupling}                   %input from Coupling/Coupling.tex
 \include{BoundaryConditions/BoundaryConditions}
-\include{Modules/Modules}                     %input from Modules/Modules.tex
+%\include{Modules/Modules}                     %input from Modules/Modules.tex
 \include{DevelopersDocument/DevelopersDoc}
-\include{ParameterEstimation/ParameterEstimation}                         %input from ParameterEstimation/ParameterEstimation.tex
+%\include{ParameterEstimation/ParameterEstimation}                         %input from ParameterEstimation/ParameterEstimation.tex
 
 \include{References/References}               %input from References/References.tex
 

@@ -1,4 +1,4 @@
-#!/bin/sh -f
+#!/bin/bash -f
 #
 # This shell script is used to invoke the Latex_Makefile for general 
 # documents. It should be copied into the individual document directory
