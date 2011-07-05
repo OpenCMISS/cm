@@ -69,7 +69,7 @@ else
 endif
 
 ifndef OPENCMISSEXAMPLES_ROOT
-  OPENCMISSEXAMPLES_ROOT := $(GLOBAL_ROOT)/examples
+  OPENCMISSEXAMPLES_ROOT := $(GLOBAL_ROOT)/../examples
 endif
 
 include $(EXTERNAL_UTILS_ROOT)/Makefile.inc
