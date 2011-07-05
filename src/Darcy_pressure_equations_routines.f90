@@ -567,7 +567,7 @@ CONTAINS
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
               & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_QUADRATIC_SUBTYPE)
-            NUMBER_OF_COMPONENTS=7 !permeability tensor + density
+            NUMBER_OF_COMPONENTS=8 !permeability tensor + density + original porosity
             NUMBER_OF_SOLID_COMPONENTS=6
           CASE DEFAULT
             LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
