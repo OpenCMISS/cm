@@ -5917,28 +5917,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalises CMISS for C.
-  FUNCTION CMISSFinaliseC() BIND(C,NAME="CMISS_Finalise")
-  
-    !Argument variables
-    !Function variable
-    INTEGER(C_INT) :: CMISSFinaliseC
-    !Local variables
-
-    CALL CMISSFinalise(CMISSFinaliseC)
-
-#ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_STOP('OpenCMISS World Phase')
-#endif
-
-    RETURN
-    
-  END FUNCTION CMISSFinaliseC
-
-  !
-  !================================================================================================================================
-  !
-  
   !>Initialises CMISS returning a user number to the world coordinate system and region.
   SUBROUTINE CMISSInitialiseNumber(WorldCoordinateSystemUserNumber,WorldRegionUserNumber,Err)
   
