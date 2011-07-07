@@ -54,7 +54,6 @@
 MAKEFLAGS = --no-builtin-rules --warn-undefined-variables
 
 #----------------------------------------------------------------------------------------------------------------------------------
-USEFIELDML := true
 
 ifndef OPENCMISS_ROOT
   OPENCMISS_ROOT = $(CURDIR)/../
@@ -1992,10 +1991,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/field_IO_routines.o \
-	$(OBJECT_DIR)/fieldml_types.o \
-	$(OBJECT_DIR)/fieldml_util_routines.o \
-	$(OBJECT_DIR)/fieldml_input_routines.o \
-	$(OBJECT_DIR)/fieldml_output_routines.o \
+	$(FIELDML_OBJECT) \
 	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_routines.o \
