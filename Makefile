@@ -59,10 +59,20 @@ USEFIELDML := true
 ifndef OPENCMISS_ROOT
   OPENCMISS_ROOT = $(CURDIR)/../
 endif
+
 GLOBAL_CM_ROOT = $(CURDIR)
-GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
-GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
-GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
+
+ifndef GLOBAL_CELLML_ROOT
+  GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
+endif
+
+ifndef GLOBAL_FIELDML_ROOT
+  GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
+endif
+
+ifndef GLOBAL_UTILS_ROOT
+  GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
+endif
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
