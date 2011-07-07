@@ -1,0 +1,28 @@
+#LaTeX outputs
+*.aux
+*.bbl
+*.blg
+*.toc
+*.idx
+*.log
+
+*.eps
+*.pdf_tex
+*.pstex
+
+notes/OpenCMISSNotes.dvi
+notes/OpenCMISSNotes.ps
+OpenCMISSNotes.pdf
+
+#HTML output
+notes/OpenCMISSNotes
+
+#Doxygen
+doxygen/Programmer
+doxygen/User
+
+#Relocated
+doxy/latexhtml
+doxy/programmer
+doxy/user
+
