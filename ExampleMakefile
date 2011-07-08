@@ -105,10 +105,18 @@ else
     ifeq ($(MPI),openmpi)
       MPI := openmpi
     else
-      ifeq ($(MPI),poe)
-        MPI := poe
+      ifeq ($(MPI),mvapich2)
+        MPI := mvapich2
       else
-        $(error unknown MPI type - $(MPI))
+        ifeq ($(MPI),cray)
+          MPI := cray
+        else
+          ifeq ($(MPI),poe)
+            MPI := poe
+          else
+            $(error unknown MPI type - $(MPI))
+          endif
+        endif
       endif
     endif
   endif
@@ -814,9 +822,15 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
-      MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+      ifeq ($(MPI),mvapich2)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+        MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
+        MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+      else
+        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
+        MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+      endif 
     endif
   endif
 else
