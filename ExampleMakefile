@@ -55,12 +55,21 @@ ifndef OPENCMISSEXTRAS_ROOT
   OPENCMISSEXTRAS_ROOT := ../../opencmissextras
 endif
 
-
-EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
-EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
-EXTERNAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
-EXTERNAL_COMMON_ROOT := ${OPENCMISSEXTRAS_ROOT}/common
-EXTERNAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
+ifndef EXTERNAL_CM_ROOT
+  EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
+endif
+ifndef EXTERNAL_CELLML_ROOT
+  EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
+endif
+ifndef EXTERNAL_FIELDML_ROOT
+  EXTERNAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
+endif
+ifndef EXTERNAL_COMMON_ROOT
+  EXTERNAL_COMMON_ROOT := ${OPENCMISSEXTRAS_ROOT}/common
+endif
+ifndef EXTERNAL_UTILS_ROOT
+  EXTERNAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
+endif
 
 ifndef GLOBAL_ROOT
   $(error GLOBAL_ROOT is not setup)
@@ -105,10 +114,18 @@ else
     ifeq ($(MPI),openmpi)
       MPI := openmpi
     else
-      ifeq ($(MPI),poe)
-        MPI := poe
+      ifeq ($(MPI),mvapich2)
+        MPI := mvapich2
       else
-        $(error unknown MPI type - $(MPI))
+        ifeq ($(MPI),cray)
+          MPI := cray
+        else
+          ifeq ($(MPI),poe)
+            MPI := poe
+          else
+            $(error unknown MPI type - $(MPI))
+          endif
+        endif
       endif
     endif
   endif
@@ -139,7 +156,9 @@ endif
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifdef COMPILER_VERSION
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
     EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)
@@ -149,7 +168,9 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     LIB_DIR := $(GLOBAL_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
     EXE_DIR := $(EXAMPLE_ROOT)/bin/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
   else
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
     EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
@@ -161,12 +182,16 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)
     EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
   else# windows
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    endif
     EXTERNAL_CELLML_DIR := $(EXTERNAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     EXTERNAL_FIELDML_DIR := $(EXTERNAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     EXTERNAL_COMMON_DIR := $(EXTERNAL_COMMON_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
@@ -814,9 +839,15 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
-      MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-      MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+      ifeq ($(MPI),mvapich2)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+        MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
+        MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+      else
+        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
+        MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+      endif 
     endif
   endif
 else
