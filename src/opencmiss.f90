@@ -12283,7 +12283,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating.
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The Region containing the field to start the CellML enviroment creation on.
-    TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<On return, the created CellML environment.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<On return, the created CellML environment.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -12501,7 +12501,7 @@ CONTAINS
   SUBROUTINE CMISSCellMLFieldMapsCreateStartObj(CellML,Err)
   
     !Argument variables
-    TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<The CellML environment object to start the creation of maps for.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment object to start the creation of maps for.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -14147,7 +14147,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifier !<The root control loop identifier.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14187,7 +14187,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifiers(:) !<The root control loop identifiers.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14227,7 +14227,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifier !<The root control loop identifier.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14267,7 +14267,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifiers(:) !<The root control loop identifiers.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14306,7 +14306,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoopRoot !<The root control loop.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -14333,7 +14333,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoopRoot !<The root control loop.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -16045,7 +16045,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to start creating.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: CoordinateSystem !<On return, the coordinate system that has been created.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the coordinate system that has been created.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
  
@@ -20803,8 +20803,8 @@ CONTAINS
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to create the equations set on.
     TYPE(CMISSFieldType), INTENT(IN) :: GeomFibreField !<The Geometric/Fibre field for the creation of the equations set.
     INTEGER(INTG), INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field
-    TYPE(CMISSFieldType), INTENT(OUT) :: EquationsSetFieldField !<On return, a pointer to the equations set field
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<On return, the created equations set.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: EquationsSetFieldField !<On return, a pointer to the equations set field
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<On return, the created equations set.
     INTEGER(INTG), INTENT(IN) :: EquationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
     INTEGER(INTG), INTENT(IN) :: EquationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
     INTEGER(INTG), INTENT(IN) :: EquationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
@@ -24061,7 +24061,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the geometric field for.
-    TYPE(CMISSFieldType), INTENT(OUT) :: GeometricField !<On return, the geometric field for the field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: GeometricField !<On return, the geometric field for the field.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -24582,7 +24582,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the mesh decomposition for.
-    TYPE(CMISSDecompositionType), INTENT(OUT) :: MeshDecomposition !<On return, the mesh decomposition for the field.
+    TYPE(CMISSDecompositionType), INTENT(INOUT) :: MeshDecomposition !<On return, the mesh decomposition for the field.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -30067,7 +30067,7 @@ CONTAINS
 
     !Argument variables
     TYPE(CMISSGeneratedMeshType), INTENT(IN) :: GeneratedMesh !<The generated mesh to get the basis for.
-    TYPE(CMISSBasisType), INTENT(OUT) :: Bases(:) !<On return, the array of bases.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: Bases(:) !<On return, the array of bases.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_PTR_TYPE), POINTER :: BASIS_PTRS(:)
@@ -32352,7 +32352,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to start the creation of the meshes connectivity for
     TYPE(CMISSMeshType), INTENT(IN) :: INTERFACE_MESH
-    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(OUT) :: InterfaceMeshConnectivity !<On return, the created meshes connectivity
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(INOUT) :: InterfaceMeshConnectivity !<On return, the created meshes connectivity
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -34336,7 +34336,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<The user number of the decomposition to create.
     TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to create the decomposition for.
-    TYPE(CMISSDecompositionType), INTENT(OUT) :: Decomposition !<On return, the created decomposition.
+    TYPE(CMISSDecompositionType), INTENT(INOUT) :: Decomposition !<On return, the created decomposition.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -35568,7 +35568,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of.
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region containing the mesh to start the creation of.
     INTEGER(INTG), INTENT(IN) :: NumberOfDimensions !<The number of dimensions for the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: Mesh !<On return, the created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<On return, the created mesh.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -35600,7 +35600,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of.
     TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface containing the mesh to start the creation of.
     INTEGER(INTG), INTENT(IN) :: NumberOfDimensions !<The number of dimensions for the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: Mesh !<On return, the created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<On return, the created mesh.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -36194,7 +36194,7 @@ CONTAINS
     TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<The mesh to start the creation of elements for.
     INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number of the mesh to start creating the elements for.
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The default basis to use for the elements. 
-    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<On return, the created mesh elements.
+    TYPE(CMISSMeshElementsType), INTENT(INOUT) :: MeshElements !<On return, the created mesh elements.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -36223,7 +36223,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the elements for.
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to get the elements for.
     INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to get the elements for.
-    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<The mesh elements.
+    TYPE(CMISSMeshElementsType), INTENT(INOUT) :: MeshElements !<The mesh elements.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
     !Local variables
@@ -36272,7 +36272,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to get the elements for.
     INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to get the elements for.
-    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<The mesh elements.
+    TYPE(CMISSMeshElementsType), INTENT(INOUT) :: MeshElements !<The mesh elements.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
     !Local variables
@@ -36364,7 +36364,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSMeshElementsType), INTENT(IN) :: MeshElements !<The mesh elements to get the basis for.
     INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to get the basis for.
-    TYPE(CMISSBasisType), INTENT(OUT) :: Basis !<On return, the basis for the element.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: Basis !<On return, the basis for the element.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -39691,7 +39691,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the coordinate system for.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: CoordinateSystem !<On return, the regions coordinate system.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the regions coordinate system.
    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -39898,7 +39898,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of.
     TYPE(CMISSRegionType), INTENT(IN) :: ParentRegion !<The parent region to  to start the creation of the region in.
-    TYPE(CMISSRegionType), INTENT(OUT) :: Region !<On return, the created region.
+    TYPE(CMISSRegionType), INTENT(INOUT) :: Region !<On return, the created region.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -40232,7 +40232,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the nodes for.
-    TYPE(CMISSNodesType), INTENT(OUT) :: Nodes !<On return, the regions nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: Nodes !<On return, the regions nodes.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -46420,7 +46420,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations to get the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the solver equations boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -46465,7 +46465,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations to start the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -46507,7 +46507,7 @@ CONTAINS
 
     !Argument variables
     TYPE(CMISSSolverEquationsType), INTENT(IN) :: SolverEquations !<The solver equations to get the boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
     CALL ENTERS("CMISSSolverEquationsBoundaryConditionsGetObj",Err,ERROR,*999)
