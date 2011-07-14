@@ -26119,7 +26119,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    INTEGER(INTG), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26165,7 +26165,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    INTEGER(INTG), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26194,7 +26194,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(SP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26240,7 +26240,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(SP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26269,7 +26269,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(DP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26315,7 +26315,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(DP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26344,7 +26344,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    LOGICAL, INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26390,7 +26390,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    LOGICAL, INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
