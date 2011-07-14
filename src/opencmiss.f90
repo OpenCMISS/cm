@@ -19267,7 +19267,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The region user number of the data projection to get starting xi for.
-    REAL(DP), ALLOCATABLE, INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
+    REAL(DP), INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables   
     TYPE(REGION_TYPE), POINTER :: REGION
@@ -19309,7 +19309,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSDataProjectionType), INTENT(INOUT) :: DataProjection !<The data projection to get starting xi for.
-    REAL(DP), ALLOCATABLE, INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
+    REAL(DP), INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
