@@ -82,7 +82,7 @@ MODULE OPENCMISS
   USE INTERFACE_CONDITIONS_CONSTANTS
   USE INTERFACE_CONDITIONS_ROUTINES
   USE INTERFACE_EQUATIONS_ROUTINES
-  !USE ISO_C_BINDING
+  USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
   USE MESH_ROUTINES
@@ -297,7 +297,7 @@ MODULE OPENCMISS
   !PUBLIC CMISS_Finalise,CMISS_Initialise
   PUBLIC CMISSFinalise,CMISSInitialise
 
-  PUBLIC CMISSBasisType,CMISSBasisTypeFinalise,CMISSBasisTypeInitialise
+  PUBLIC CMISSBasisType,CMISSBasisTypesCopy,CMISSBasisTypeFinalise,CMISSBasisTypeInitialise
 
   PUBLIC CMISSBoundaryConditionsType,CMISSBoundaryConditionsTypeFinalise,CMISSBoundaryConditionsTypeInitialise
 
@@ -5973,6 +5973,52 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSInitialiseObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copy an array of CMISSBasisTypes from C to an allocated Fortran array, for use by the C bindings
+  SUBROUTINE CMISSBasisTypesCopy(Bases,BasesSize,BasesPtr,Err)
+
+    !Argument variables
+    TYPE(CMISSBasisType), INTENT(INOUT), POINTER :: Bases(:)
+    INTEGER(C_INT), INTENT(IN) :: BasesSize
+    TYPE(C_PTR), INTENT(IN) :: BasesPtr
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    INTEGER(INTG) :: basis_idx
+    TYPE(C_PTR), POINTER :: BasesCPtrs(:)
+    TYPE(CMISSBasisType), POINTER :: Basis
+
+    CALL ENTERS("CMISSBasisTypesCopy",Err,ERROR,*999)
+
+    IF(C_ASSOCIATED(BasesPtr)) THEN
+      CALL C_F_POINTER(BasesPtr,BasesCPtrs,[BasesSize])
+      IF(ASSOCIATED(BasesCPtrs)) THEN
+        DO basis_idx=1,BasesSize
+          CALL C_F_POINTER(BasesCPtrs(basis_idx),Basis)
+          IF(ASSOCIATED(BasesCPtrs)) THEN
+            Bases(basis_idx)%BASIS => Basis%BASIS
+          ELSE
+            CALL FLAG_ERROR("Error converting C pointer.",ERR,ERROR,*999)
+          ENDIF
+        ENDDO
+      ELSE
+        CALL FLAG_ERROR("Error converting C pointer.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Bases C pointer is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSBasisTypesCopy")
+    RETURN
+999 CALL ERRORS("CMISSBasisTypesCopy",Err,ERROR)
+    CALL EXITS("CMISSBasisTypesCopy")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSBasisTypesCopy
 
   !
   !================================================================================================================================
