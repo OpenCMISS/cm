@@ -26465,7 +26465,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    INTEGER(INTG), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26511,7 +26511,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    INTEGER(INTG), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26540,7 +26540,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    REAL(SP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26586,7 +26586,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(SP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26615,7 +26615,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    REAL(DP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26661,7 +26661,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(DP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26690,7 +26690,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    LOGICAL, INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26736,7 +26736,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    LOGICAL, INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -30040,7 +30040,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the basis for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the basis for.
-    INTEGER(INTG), INTENT(OUT) :: BasisUserNumbers(:) !<On return, the user numbers of the bases.
+    INTEGER(INTG), INTENT(INOUT) :: BasisUserNumbers(:) !<On return, the user numbers of the bases.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:)
