@@ -6483,7 +6483,10 @@ CMISSError CMISSBoundaryConditionsDestroyNum(const int RegionUserNumber,
 CMISSError CMISSBoundaryConditionsDestroy(CMISSBoundaryConditionsType *BoundaryConditions);
 
 CMISSError CMISSBoundaryConditionsAddConstantNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
+    const int ProblemUserNumber;
+    const int *ControlLoopIdentifiers;
+    const int SolverIndex;
+    const int FieldUserNumber;
 		const int VariableType,
 		const int ComponentNumber,
 		const int Condition,
@@ -6496,7 +6499,10 @@ CMISSError CMISSBoundaryConditionsAddConstant(const CMISSBoundaryConditionsType 
 		const double Value);
 
 CMISSError CMISSBoundaryConditionsSetConstantNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
+    const int ProblemUserNumber;
+    const int *ControlLoopIdentifiers;
+    const int SolverIndex;
+    const int FieldUserNumber;
 		const int VariableType,
 		const int ComponentNumber,
 		const int Condition,
@@ -6509,7 +6515,10 @@ CMISSError CMISSBoundaryConditionsSetConstant(const CMISSBoundaryConditionsType 
 		const double Value);
 
 CMISSError CMISSBoundaryConditionsAddElementNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
+    const int ProblemUserNumber;
+    const int *ControlLoopIdentifiers;
+    const int SolverIndex;
+    const int FieldUserNumber;
 		const int VariableType,
 		const int ElementUserNumber,
 		const int ComponentNumber,
@@ -6524,7 +6533,10 @@ CMISSError CMISSBoundaryConditionsAddElement(const CMISSBoundaryConditionsType B
 		const double Value);
 
 CMISSError CMISSBoundaryConditionsSetElementNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
+    const int ProblemUserNumber;
+    const int *ControlLoopIdentifiers;
+    const int SolverIndex;
+    const int FieldUserNumber;
 		const int VariableType,
 		const int ElementUserNumber,
 		const int ComponentNumber,
@@ -6539,7 +6551,10 @@ CMISSError CMISSBoundaryConditionsSetElement(const CMISSBoundaryConditionsType B
 		const double Value);
 
 CMISSError CMISSBoundaryConditionsAddNodeNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
+    const int ProblemUserNumber;
+    const int *ControlLoopIdentifiers;
+    const int SolverIndex;
+    const int FieldUserNumber;
 		const int VariableType,
 		const int DerivativeNumber,
 		const int NodeUserNumber,
@@ -6556,7 +6571,10 @@ CMISSError CMISSBoundaryConditionsAddNode(const CMISSBoundaryConditionsType Boun
 		const double Value);
 
 CMISSError CMISSBoundaryConditionsSetNodeNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
+    const int ProblemUserNumber;
+    const int *ControlLoopIdentifiers;
+    const int SolverIndex;
+    const int FieldUserNumber;
 		const int VariableType,
 		const int DerivativeNumber,
 		const int NodeUserNumber,
@@ -6571,16 +6589,6 @@ CMISSError CMISSBoundaryConditionsSetNode(const CMISSBoundaryConditionsType Boun
 		const int ComponentNumber,
 		const int Condition,
 		const double Value);
-
-CMISSError CMISSEquationsSetBoundaryConditionsGetNum(const int RegionUserNumber,
-		const int EquationsSetUserNumber,
-		CMISSBoundaryConditionsType *BoundaryConditions);
-
-CMISSError CMISSEquationsSetBoundaryConditionsGet(const CMISSEquationsSetType EquationsSet,
-		CMISSBoundaryConditionsType *BoundaryConditions);
-
-
-
 
 /*
  *=================================================================================================================================
@@ -7141,6 +7149,13 @@ CMISSError CMISSEquationsSetBoundaryConditionsDestroyNum(const int RegionUserNum
 		const int EquationsSetUserNumber);
 
 CMISSError CMISSEquationsSetBoundaryConditionsDestroy(const CMISSEquationsSetType EquationsSet);
+
+CMISSError CMISSEquationsSetBoundaryConditionsGetNum(const int RegionUserNumber,
+		const int EquationsSetUserNumber,
+		CMISSBoundaryConditionsType *BoundaryConditions);
+
+CMISSError CMISSEquationsSetBoundaryConditionsGet(const CMISSEquationsSetType EquationsSet,
+		CMISSBoundaryConditionsType *BoundaryConditions);
 
 CMISSError CMISSEquationsSetCreateFinishNum(const int RegionUserNumber,
 		const int EquationsSetUserNumber);
@@ -9414,6 +9429,30 @@ CMISSError CMISSSolverSolverEquationsGetNum(const int ProblemUserNumber,
 
 CMISSError CMISSSolverSolverEquationsGet(const CMISSSolverType Solver,
 		CMISSSolverEquationsType *SolverEquations);
+
+CMISSError CMISSSolverEquationsBoundaryConditionsCreateFinishNum(const int ProblemUserNumber,
+    const int ControlLoopIdentifiersSize[1],
+    const int *ControlLoopIdentifiers,
+    const int SolverIndex);
+
+CMISSError CMISSSolverEquationsBoundaryConditionsCreateFinish(const CMISSSolverEquationsType SolverEquations);
+
+CMISSError CMISSSolverEquationsBoundaryConditionsCreateStartNum(const int ProblemUserNumber,
+    const int ControlLoopIdentifiersSize[1],
+    const int *ControlLoopIdentifiers,
+    const int SolverIndex);
+
+CMISSError CMISSSolverEquationsBoundaryConditionsCreateStart(const CMISSSolverEquationsType SolverEquations,
+		CMISSBoundaryConditionsType *BoundaryConditions);
+
+CMISSError CMISSSolverEquationsBoundaryConditionsGetNum(const int ProblemUserNumber,
+		const int ControlLoopIdentifiersSize[1],
+		const int *ControlLoopIdentifiers,
+		const int SolverIndex,
+		CMISSBoundaryConditionsType *BoundaryConditions);
+
+CMISSError CMISSSolverEquationsBoundaryConditionsGet(const CMISSSolverEquationsType SolverEquations,
+		CMISSBoundaryConditionsType *BoundaryConditions);
 
 CMISSError CMISSSolverEquationsEquationsSetAddNum(const int ProblemUserNumber,
 		const int ControlLoopIdentifiersSize[1],

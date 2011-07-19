@@ -226,12 +226,8 @@ solver equations with a call to \emph{CellML} equations.
 integrator} and the \emph{CellMLevaluator}. \emph{CellML} is a project 
 that is still evolving.
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.7\textwidth]{figs/Modules/cellml_interface.eps}
-\caption{Diagram showing \emph{OpenCMISS} field and \emph{CellML} fields.}
-\label{cellml_interface}
-\end{figure}
+\epsfigure{epsfiles/Modules/cellml_interface.eps}{}{
+  Diagram showing \OpenCMISS field and \CellML fields.}{cellml_interface}
 
 
 \section{Library: \emph{FieldML}}
@@ -343,71 +339,31 @@ calculation of the derivative in the third dimension at the face.
 In this module the node numbering of the elements is set. The node 
 numbering is as follows:
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/2D_linear.eps}
-\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
-for a 2D arrangement of four elements with linear interpolation.}
-\label{2D_linear}
+\epsfigure{epsfiles/Modules/2D_linear.eps}{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a 2D arrangement of four elements with linear interpolation.}{}{2D_linear}
+
+\epsfigure{epsfiles/Modules/2D_quadratic.eps}n{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a 2D arrangement of four elements with quadratic interpolation.}{}{2D_quadratic}
+
+\epsfigure{epsfiles/Modules/2D_cubic.eps}{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a 2D arrangement of four elements with cubic interpolation.}{}{2D_cubic}
+
+\epsfigure{epsfiles/Modules/cube.eps}{Diagram showing node numbering, line numbering and $\xi$ directions 
+for a single 3D element with quadratic interpolation.}{}{cube}
 \end{figure}
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/2D_quadratic.eps}
-\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
-for a 2D arrangement of four elements with quadratic interpolation.}
-\label{2D_quadratic}
+\epsfigure{epsfiles/Modules/tri_elements.eps}{Diagram showing node and line numbering for single 2D tri elements 
+with linear (top left), quadratic (top right) and cubic (bottom) interpolation.}{}{tri_elements}
 \end{figure}
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/2D_cubic.eps}
-\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
-for a 2D arrangement of four elements with cubic interpolation.}
-\label{2D_cubic}
-\end{figure}
+\epsfigure{epsfiles/Modules/tet_elements.eps}{Diagram showing node and line numbering for single 3D tet elements 
+with linear (top left), quadratic (top right) and cubic (bottom) interpolation.}{}{tet_elements}
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/cube.eps}
-\caption{Diagram showing node numbering, line numbering and $\xi$ directions 
-for a single 3D element with quadratic interpolation.}
-\label{cube}
-\end{figure}
+\epsfigure{epsfiles/Modules/tet_normals.eps}{Diagram showing $\xi$ directions for a tet element (left) and  
+a tri element (right), both with linear interpolation.}{}{tet_normals}
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/tri_elements.eps}
-\caption{Diagram showing node and line numbering for single 2D tri elements 
-with linear (top left), quadratic (top right) and cubic (bottom) 
-interpolation.}
-\label{tri_elements}
-\end{figure}
-
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/tet_elements.eps}
-\caption{Diagram showing node and line numbering for single 3D tet elements 
-with linear (top left), quadratic (top right) and cubic (bottom) 
-interpolation.}
-\label{tet_elements}
-\end{figure}
-
-\begin{figure}
-\centering
-      \includegraphics[width=0.7\textwidth]{figs/Modules/tet_normals.eps}
-\caption{Diagram showing $\xi$ directions for a tet element (left) and  
-a tri element (right), both with linear interpolation.}
-\label{tet_normals}
-\end{figure}
-
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/Tri_area_coordinates.eps}
-\caption{Diagram showing $L1$, $L2$ and $L3$ area coordinates for a 2D 
-tri element.}
-\label{Tri_area_coordinates}
-\end{figure}
+\epsfigure{epsfiles/Modules/Tri_area_coordinates.eps}{Diagram showing $L1$, $L2$ and $L3$ area coordinates for a 2D 
+tri element.}{}{Tri_area_coordinates}
 
 
 \section{Module: \emph{boundary\_condition\_routines}} 
@@ -487,13 +443,8 @@ Each control loop has a number of sub loops, if a control loop has no sub loops
 it can have a number of solvers. Each solver deals with a particular numerical 
 problem solver.
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.6\textwidth]{figs/Modules/control_loops.eps}
-\caption{Diagram showing sub-control loops and associated solvers within a 
-control loop.}
-\label{control_loops}
-\end{figure}
+\epsfigure{epsfiles/Modules/control_loops.eps}{Diagram showing sub-control loops and associated solvers within a 
+control loop.}{}{control_loops}
 
 
 
@@ -732,25 +683,11 @@ contains \emph{total} then this refers to local and ghost dofs, or if it
 contains \emph{global} then this refers to all local and ghost dofs across all 
 elements (the total number of undistributed items).
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.7\textwidth]{figs/Modules/variable_mapping_1.eps}
-\caption{Diagram showing showing variable mappings.}
-\label{variable_mapping_1}
-\end{figure}
+\epsfigure{epsfiles/Modules/variable_mapping_1.eps}{Diagram showing showing variable mappings.}{}{variable_mapping_1}
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.7\textwidth]{figs/Modules/variable_mapping_2.eps}
-\caption{Diagram showing showing variable mappings.}
-\label{variable_mapping_2}
-\end{figure}
+\epsfigure{epsfiles/Modules/variable_mapping_2.eps}{Diagram showing showing variable mappings.}{}{variable_mapping_2}
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.7\textwidth]{figs/Modules/variable_mapping_3.eps}
-\caption{Diagram showing showing variable mappings.}
-\label{variable_mapping_3}
+\epsfigure{epsfiles/Modules/variable_mapping_3.eps}{Diagram showing showing variable mappings.}{}{variable_mapping_3}
 \end{figure}
 
 
@@ -825,14 +762,7 @@ Surface coupling is not currently working in parallel, this remains
 \emph{work in progress}, when complete, both coupled regions will 
 parallelise in a similar fashion.
 
-\begin{figure}
-\centering
-      \includegraphics[width=0.7\textwidth]{figs/Modules/interfaces.eps}
-\caption{Diagram showing the interface between two regions.}
-\label{Interfaces}
-\end{figure}
-
-
+\epsfigure{epsfiles/Modules/interfaces.eps}{Diagram showing the interface between two regions.}{}{Interfaces}
 
 \section{Module: \emph{kinds}}
 \label{sec:kinds}
@@ -893,11 +823,7 @@ component is required for each different form of interpolation e.g., one mesh
 component could be bilinear Lagrange whilst the other could be biquadratic 
 Lagrange.
 
-\begin{figure}
-\centering
-      \includegraphics[width=1\textwidth]{figs/Modules/mesh_components.eps}
-\caption{Diagram showing the multiple mesh components of a mesh.}
-\label{mesh_components}
+\epsfigure{epsfiles/Modules/mesh_components.eps}{Diagram showing the multiple mesh components of a mesh.}{}{mesh_components}
 \end{figure}
 
 The \emph{ParMETIS} library (\emph{ParMETIS} is a parallel graph partitioning 
