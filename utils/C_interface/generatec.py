@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import with_statement
 """
 OpenCMISS C Interface Generation
 --------------------------------
@@ -24,6 +23,7 @@ Limitations
 
 """
 
+from __future__ import with_statement
 import sys
 import re
 from operator import attrgetter
@@ -58,7 +58,7 @@ class LibrarySource(object):
             """
             Run through file once, getting everything we'll need
             """
-            source_lines = join_lines(open(self.file_path,'r').read()).splitlines(True)
+            source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
             in_subroutine = False
             in_interface = False
             in_type = False
@@ -186,7 +186,6 @@ class LibrarySource(object):
                     else:
                         assignment = source.constants[assignment].assignment
         if not self.lib_source.constants[constant].resolved:
-            #This should just be stuff like CMISSIntg which we don't need for the C interface:
             sys.stderr.write("Warning: Couldn't resolve constant value: %s\n" % constant)
 
     def write_c_header(self,output):
@@ -200,9 +199,9 @@ class LibrarySource(object):
             '#ifndef OPENCMISS_H\n' + \
             '#define OPENCMISS_H\n' + \
             '\n/*\n * Defines\n */\n\n' + \
-            'const int CMISSTrue=1;\n' + \
-            'const int CMISSFalse=0;\n' + \
-            'const int CMISSNoError=0;\n' + \
+            'const int CMISSTrue = 1;\n' + \
+            'const int CMISSFalse = 0;\n' + \
+            'const int CMISSNoError = 0;\n' + \
             'const int CMISSPointerIsNULL = -1;\n' + \
             'const int CMISSPointerNotNULL = -2;\n' + \
             'const int CMISSCouldNotAllocatePointer = -3;\n' + \
@@ -382,7 +381,7 @@ class Subroutine(object):
         self.lines = [line]
         self.parameters = None
         self.interface = None
-        self.get_c_name()
+        self._set_c_name()
 
     def get_parameters(self):
         """
@@ -428,7 +427,7 @@ class Subroutine(object):
         for param in self.parameters:
             self.c_parameters.extend(param.to_c())
 
-    def get_c_name(self):
+    def _set_c_name(self):
         """
         Get the name of the routine as used from C and as used in opencmiss_c.f90
 
@@ -467,7 +466,7 @@ class Subroutine(object):
         to and from C variables
         """
         local_variables = [param.local_variables for param in self.parameters]
-        return list(chain_iterable(ifilter(lambda x: len(x) > 0,local_variables)))
+        return list(_chain_iterable(ifilter(lambda x: len(x) > 0,local_variables)))
 
     def pre_call(self):
         """
@@ -475,7 +474,7 @@ class Subroutine(object):
         to and from C
         """
         pre_lines = [param.pre_call for param in self.parameters]
-        return list(chain_iterable(ifilter(lambda x: len(x) > 0,pre_lines)))
+        return list(_chain_iterable(ifilter(lambda x: len(x) > 0,pre_lines)))
 
     def post_call(self):
         """
@@ -485,7 +484,7 @@ class Subroutine(object):
         #reverse to keep everything in order, as some if statements need to line up
         #from the pre_call lines
         post_lines = [param.post_call for param in reversed(self.parameters)]
-        return list(chain_iterable(ifilter(lambda x: len(x) > 0,post_lines)))
+        return list(_chain_iterable(ifilter(lambda x: len(x) > 0,post_lines)))
 
     def to_c_f90(self):
         """
@@ -514,14 +513,14 @@ class Subroutine(object):
         content.extend(self.pre_call())
         content.append('CALL %s(%s)' % (function_call,','.join([p.call_name() for p in self.parameters]+[self.c_f90_name])))
         content.extend(self.post_call())
-        output += indent_lines(content,2,4)
+        output += _indent_lines(content,2,4)
 
         output += '\n    RETURN\n\n'
         output += '  END FUNCTION %s\n\n' % self.c_f90_name
         output += '  !\n'
         output += '  !'+'='*129+'\n'
         output += '  !\n\n'
-        output = '\n'.join([fix_length(line) for line in output.split('\n')])
+        output = '\n'.join([_fix_length(line) for line in output.split('\n')])
         return output
 
 
@@ -569,6 +568,7 @@ class Parameter(object):
                 sys.stderr.write("         Using DIMENSION goes against the OpenCMISS style guidelines.\n")
             if extra_stuff.find('POINTER') > -1:
                 self.pointer = True
+        #Get parameter intent
         if intent is None:
             #cintent is the intent used in opencmiss_c.f90, which may be different to the intent in opencmiss.f90
             self.intent = 'INOUT'
@@ -577,14 +577,19 @@ class Parameter(object):
         else:
             self.intent = intent
             self.cintent = intent
+        #Get array dimensions and work out how many dimension sizes are variable
         if array != '':
             self.array_spec = [a.strip() for a in array.split(',')]
             self.array_dims = len(self.array_spec)
             self.required_sizes = self.array_spec.count(':')
+            if self.array_dims > 0 and not self.pointer:
+                #Need to pass C pointer by value
+                self.cintent = 'IN'
         else:
             self.array_spec = []
             self.array_dims = 0
             self.required_sizes = 0
+        #Work out the type of parameter
         param_type = param_type.upper()
         if param_type.startswith('INTEGER'):
             self.var_type = Parameter.INTEGER
@@ -600,6 +605,8 @@ class Parameter(object):
             self.array_spec.append(':')
             self.array_dims += 1
             self.required_sizes += 1
+            #Need to pass C pointer by value
+            self.cintent = 'IN'
         elif param_type.startswith('LOGICAL'):
             self.var_type = Parameter.LOGICAL
         elif param_type.startswith('TYPE'):
@@ -612,10 +619,10 @@ class Parameter(object):
             sys.stderr.write("Error: Unknown type %s for routine %s\n" % (param_type,routine.name))
             self.var_type = None
             self.type_name = param_type
-        self.get_size_list()
-        self.get_conversion_lines()
+        self._set_size_list()
+        self._set_conversion_lines()
 
-    def get_size_list(self):
+    def _set_size_list(self):
         """
         Get the list of dimension sizes for an array, as constants or variable names
 
@@ -641,7 +648,7 @@ class Parameter(object):
             else:
                 self.size_list += dim
 
-    def get_conversion_lines(self):
+    def _set_conversion_lines(self):
         """
         Get any pointer or string conversions/checks as well as extra local variables required
 
@@ -731,7 +738,7 @@ class Parameter(object):
                 char_sizes = ''
             self.local_variables.append('CHARACTER(LEN=%s-1) :: Fortran%s%s' % (self.size_list[-1],self.name,char_sizes))
             self.local_variables.append('%s, POINTER :: %sCChars(%s)' % (Parameter.F90TYPES[self.var_type],self.name,','.join(':'*self.array_dims)))
-            if self.cintent == 'IN':
+            if self.intent == 'IN':
                 #reverse to account for difference in storage order
                 self.pre_call.append('CALL C_F_POINTER(%s,%sCChars,[%s])' % (self.name,self.name,','.join(reversed(self.size_list))))
                 if self.array_dims > 1:
@@ -747,7 +754,6 @@ class Parameter(object):
                 self.post_call.append('CALL CMISSF2CString(Fortran%s,%sCChars)' % (self.name,self.name))
         #Arrays of floats, integers or logicals
         elif self.array_dims > 0:
-            # Memory should first be allocated from the C side, so always check for association to start with.
             if self.var_type == Parameter.CHARACTER:
                 self.local_variables.append('CHARACTER, POINTER :: %s(%s)' % (self.name,','.join([':']*self.array_dims)))
             else:
@@ -774,7 +780,7 @@ class Parameter(object):
                     'ELSE',
                     '%s = CMISSPointerIsNULL' % self.routine.c_f90_name,
                     'ENDIF'))
-        # Convert from logicals to integers for C
+        # Convert from logicals to C integers
         if self.var_type == Parameter.LOGICAL and self.intent != 'IN':
             if self.array_dims > 0:
                 #todo if ever required: support more than one dimension
@@ -797,6 +803,7 @@ class Parameter(object):
             if self.pointer == True and self.intent == 'OUT':
                 post_call = ['ALLOCATE(%s(SIZE(%sLogical,1)))' % (self.name,self.name)]+post_call
             self.post_call = post_call+self.post_call
+        # Convert from C integers to logicals
         elif self.var_type == Parameter.LOGICAL and self.intent == 'IN':
             if self.array_dims > 0:
                 #todo if ever required: support more than one dimension
@@ -843,11 +850,8 @@ class Parameter(object):
         output = ''
 
         #pass by value?
-        if self.cintent == 'IN' or (self.array_dims>0 and not self.pointer):
+        if self.cintent == 'IN':
             value = 'VALUE, '
-            #Change intent so we can pass by value, for arrays where we don't change the actual pointer value
-            #but change the data it's pointing to
-            self.cintent = 'IN'
         else:
             value = ''
 
@@ -897,7 +901,7 @@ class Parameter(object):
         else:
             param = self.type_name+' '+param
         #const?
-        if self.cintent == 'IN':
+        if self.intent == 'IN':
             param = 'const '+param
         #size?
         if self.pointer == True and self.cintent == 'OUT':
@@ -927,13 +931,13 @@ class Type(object):
         self.lines = [line]
 
 
-def join_lines(source):
+def _join_lines(source):
     """
     Remove Fortran line continuations
     """
     return re.sub(r'[\t ]*&[\t ]*\n[\t ]*&[\t ]*',' ',source)
 
-def fix_length(line,max_length=132):
+def _fix_length(line,max_length=132):
     """
     Add Fortran line continuations to break up long lines
 
@@ -952,7 +956,7 @@ def fix_length(line,max_length=132):
     if content.strip() == '':
         return line
     remaining_content = content
-    indent = get_indent(content)
+    indent = _get_indent(content)
     content = ''
     while len(remaining_content) > max_length:
         break_pos = remaining_content.rfind(',',0,130)+1
@@ -966,14 +970,14 @@ def fix_length(line,max_length=132):
         content = content+'!'+comment
     return content
 
-def get_indent(line):
+def _get_indent(line):
     """
     Return the indentation in front of a line
     """
     indent = line.replace(line.lstrip(),'')
     return indent
 
-def chain_iterable(iterables):
+def _chain_iterable(iterables):
     """
     Implement itertools.chain.from_iterable to be compatible with Python 2.5
     """
@@ -981,7 +985,7 @@ def chain_iterable(iterables):
         for element in it:
             yield element
 
-def indent_lines(lines,indent_size=2,initial_indent=4):
+def _indent_lines(lines,indent_size=2,initial_indent=4):
     """
     Indent function content to show nesting of if, else and endif statements
     """
