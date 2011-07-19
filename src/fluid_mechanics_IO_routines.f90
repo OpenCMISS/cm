@@ -704,8 +704,12 @@ CONTAINS
           IF ((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) .OR. &
           & (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)) THEN
             NodeUValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(1,1)
-            NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
-            NodeWValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
+            IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
+              NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
+            ENDIF
+            IF(NumberOfDimensions==3)THEN
+              NodeWValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
+            ENDIF
           ENDIF
         ELSE
 !           NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
@@ -714,12 +718,12 @@ CONTAINS
 !           NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field%variables(1) &
           IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS .OR. &
             & EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) THEN  
-           NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+            NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
              & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
              & cmiss%data_dp(K+NodesPerMeshComponent(1))
 
             IF(NumberOfDimensions==3)THEN
-           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
+              NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
 !                & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
                & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
                & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
@@ -2247,9 +2251,12 @@ CONTAINS
       END IF
 
       WRITE(14,'("    ", es25.16 )')NodeUValue(I)
-      WRITE(14,'("    ", es25.16 )')NodeVValue(I)
 
-      IF(NumberOfDimensions==3 .OR. NumberOfDimensions==2) THEN
+      IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3) THEN
+      WRITE(14,'("    ", es25.16 )')NodeVValue(I)
+      ENDIF
+
+      IF(NumberOfDimensions==3) THEN
       WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 
