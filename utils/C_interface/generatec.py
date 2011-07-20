@@ -19,7 +19,7 @@ Limitations
 
 - Doesn't support multi-dimensional arrays of CMISS types or Logicals, but this can be added if required.
 
-- Doesn't account for the difference in storage order of multi-dimensional arrays between C and Fortran, except in CMISSC2FString.
+- Doesn't account for the difference in storage order of multi-dimensional arrays between C and Fortran, except in CMISSC2FStrings.
 
 """
 
@@ -27,7 +27,6 @@ from __future__ import with_statement
 import sys
 import re
 from operator import attrgetter
-from itertools import ifilter
 
 class LibrarySource(object):
     """
@@ -466,7 +465,7 @@ class Subroutine(object):
         to and from C variables
         """
         local_variables = [param.local_variables for param in self.parameters]
-        return list(_chain_iterable(ifilter(lambda x: len(x) > 0,local_variables)))
+        return list(_chain_iterable(local_variables))
 
     def pre_call(self):
         """
@@ -474,7 +473,7 @@ class Subroutine(object):
         to and from C
         """
         pre_lines = [param.pre_call for param in self.parameters]
-        return list(_chain_iterable(ifilter(lambda x: len(x) > 0,pre_lines)))
+        return list(_chain_iterable(pre_lines))
 
     def post_call(self):
         """
@@ -484,7 +483,7 @@ class Subroutine(object):
         #reverse to keep everything in order, as some if statements need to line up
         #from the pre_call lines
         post_lines = [param.post_call for param in reversed(self.parameters)]
-        return list(_chain_iterable(ifilter(lambda x: len(x) > 0,post_lines)))
+        return list(_chain_iterable(post_lines))
 
     def to_c_f90(self):
         """
@@ -646,7 +645,7 @@ class Parameter(object):
                 i += 1
                 self.required_size_list.append(self.size_list[-1])
             else:
-                self.size_list += dim
+                self.size_list.append(dim)
 
     def _set_conversion_lines(self):
         """
