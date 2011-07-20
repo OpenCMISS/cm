@@ -1184,23 +1184,27 @@ CONTAINS
         CASE(GENERATED_MESH_REGULAR_MESH_TYPE)
           REGULAR_MESH=>GENERATED_MESH%REGULAR_MESH
           IF(ASSOCIATED(REGULAR_MESH)) THEN
-            BASIS=>REGULAR_MESH%BASES(1)%PTR !Number of xi will be the same for all bases
-            IF(ASSOCIATED(BASIS)) THEN
-              IF(SIZE(NUMBER_OF_ELEMENTS_XI,1)==BASIS%NUMBER_OF_XI) THEN
-                IF(ALL(NUMBER_OF_ELEMENTS_XI>0)) THEN
-                  IF(ALLOCATED(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)) DEALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)
-                  ALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(BASIS%NUMBER_OF_XI),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
-                  REGULAR_MESH%NUMBER_OF_ELEMENTS_XI=NUMBER_OF_ELEMENTS_XI
+            IF(ALLOCATED(REGULAR_MESH%BASES)) THEN
+              BASIS=>REGULAR_MESH%BASES(1)%PTR !Number of xi will be the same for all bases
+              IF(ASSOCIATED(BASIS)) THEN
+                IF(SIZE(NUMBER_OF_ELEMENTS_XI,1)==BASIS%NUMBER_OF_XI) THEN
+                  IF(ALL(NUMBER_OF_ELEMENTS_XI>0)) THEN
+                    IF(ALLOCATED(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)) DEALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI)
+                    ALLOCATE(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(BASIS%NUMBER_OF_XI),STAT=ERR)
+                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of elements xi.",ERR,ERROR,*999)
+                    REGULAR_MESH%NUMBER_OF_ELEMENTS_XI=NUMBER_OF_ELEMENTS_XI
+                  ELSE
+                    CALL FLAG_ERROR("Must have 1 or more elements in all directions.",ERR,ERROR,*999)
+                  ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Must have 1 or more elements in all directions.",ERR,ERROR,*999)
+                  LOCAL_ERROR="The number of elements xi size of "// &
+                    & TRIM(NUMBER_TO_VSTRING(SIZE(NUMBER_OF_ELEMENTS_XI,1),"*",ERR,ERROR))// &
+                    & " is invalid. The number of elements xi size must match the basis number of xi dimensions of "// &
+                    & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//"."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                LOCAL_ERROR="The number of elements xi size of "// &
-                  & TRIM(NUMBER_TO_VSTRING(SIZE(NUMBER_OF_ELEMENTS_XI,1),"*",ERR,ERROR))// &
-                  & " is invalid. The number of elements xi size must match the basis number of xi dimensions of "// &
-                  & TRIM(NUMBER_TO_VSTRING(BASIS%NUMBER_OF_XI,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FLAG_ERROR("Must set the generated mesh basis before setting the number of elements.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL FLAG_ERROR("Must set the generated mesh basis before setting the number of elements.",ERR,ERROR,*999)
