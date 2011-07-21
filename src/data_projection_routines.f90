@@ -2580,18 +2580,23 @@ CONTAINS
 
     !Argument variables
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<A pointer to the data projection to get the starting xi for
-    REAL(DP), ALLOCATABLE, INTENT(OUT) :: STARTING_XI(:) !<On exit, the starting xi of the specified data projection
+    REAL(DP), INTENT(OUT) :: STARTING_XI(:) !<On exit, the starting xi of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+    CHARACTER(LEN=MAXSTRLEN) :: LOCAL_ERROR
     
     CALL ENTERS("DATA_PROJECTION_STARTING_XI_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_PROJECTION)) THEN
       IF(DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
-        ALLOCATE(STARTING_XI(SIZE(DATA_PROJECTION%STARTING_XI,1)),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate starting xi.",ERR,ERROR,*999)
-        STARTING_XI=DATA_PROJECTION%STARTING_XI       
+        IF(SIZE(STARTING_XI,1)>=SIZE(DATA_PROJECTION%STARTING_XI,1)) THEN
+          STARTING_XI(1:SIZE(DATA_PROJECTION%STARTING_XI,1))=DATA_PROJECTION%STARTING_XI(1:SIZE(DATA_PROJECTION%STARTING_XI,1))
+        ELSE
+          WRITE(LOCAL_ERROR,'("The size of the supplied starting xi  array of ",I2," is too small. The size must be >= ",I2,".")') &
+            & SIZE(STARTING_XI,1),SIZE(DATA_PROJECTION%STARTING_XI,1)
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
       ELSE
         CALL FLAG_ERROR("Data projection have not been finished.",ERR,ERROR,*999)
       ENDIF

@@ -54,15 +54,24 @@
 MAKEFLAGS = --no-builtin-rules --warn-undefined-variables
 
 #----------------------------------------------------------------------------------------------------------------------------------
-USEFIELDML := true
 
 ifndef OPENCMISS_ROOT
   OPENCMISS_ROOT = $(CURDIR)/../
 endif
+
 GLOBAL_CM_ROOT = $(CURDIR)
-GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
-GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
-GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
+
+ifndef GLOBAL_CELLML_ROOT
+  GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
+endif
+
+ifndef GLOBAL_FIELDML_ROOT
+  GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
+endif
+
+ifndef GLOBAL_UTILS_ROOT
+  GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
+endif
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -136,21 +145,29 @@ endif
 BASE_LIB_NAME = OpenCMISS
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifdef COMPILER_VERSION
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    endif
     OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
     INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
     LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
   else
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
     OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
     INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
     LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
   endif
 else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
   else# windows
-    EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    ifndef EXTERNAL_CM_DIR
+      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    endif
   endif
   OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
   INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
@@ -163,7 +180,7 @@ MOD_INCLUDE := $(INC_DIR)/$(MOD_INC_NAME)
 MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
 HEADER_INC_NAME := opencmiss.h
 HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
-HEADER_SOURCE_INC := $(SOURCE_DIR)/$(HEADER_INC_NAME)
+C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
 
@@ -902,8 +919,8 @@ MOD_FIELDML: $(FIELDML_OBJECT)
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
-$(HEADER_INCLUDE) : $(HEADER_SOURCE_INC)
-	cp $(HEADER_SOURCE_INC) $@ 
+$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90
+	python $(GLOBAL_CM_ROOT)/utils/C_interface/generatec.py $(GLOBAL_CM_ROOT) $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
 #
@@ -1974,10 +1991,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/equations_set_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/field_IO_routines.o \
-	$(OBJECT_DIR)/fieldml_types.o \
-	$(OBJECT_DIR)/fieldml_util_routines.o \
-	$(OBJECT_DIR)/fieldml_input_routines.o \
-	$(OBJECT_DIR)/fieldml_output_routines.o \
+	$(FIELDML_OBJECT) \
 	$(OBJECT_DIR)/finite_elasticity_routines.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/interface_routines.o \
@@ -1996,7 +2010,7 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o 
 
-$(OBJECT_DIR)/opencmiss_c.o	:	$(SOURCE_DIR)/opencmiss_c.f90 \
+$(OBJECT_DIR)/opencmiss_c.o	:	$(C_F90_SOURCE) \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
 	$(OBJECT_DIR)/opencmiss.o 
 
@@ -2247,7 +2261,7 @@ $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 
 clean:
 	@echo "Cleaning house ..."
-	rm -rf $(OBJECT_DIR) $(LIBRARY) $(MOD_INCLUDE) $(HEADER_INCLUDE)
+	rm -rf $(OBJECT_DIR) $(LIBRARY) $(MOD_INCLUDE) $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 allclean:
 	@echo "Cleaning house ..."
