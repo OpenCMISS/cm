@@ -409,6 +409,7 @@ class Subroutine(object):
             %s                                   # Parameter name
             (\([0-9,:]+\))?                      # Array dimensions if present
             [,\s$]                               # Whitespace, comma or end of line to make sure we've matched the full parameter name
+            [^!]*(!<.*$)?                            # Doxygen comment
             """ % param
             param_re = re.compile(param_pattern,re.IGNORECASE|re.VERBOSE)
             for line in self.lines:
@@ -417,18 +418,21 @@ class Subroutine(object):
                     param_type = match.group(1)
                     type_pt2 = match.group(2)
                     extra_stuff = match.group(3)
+                    if extra_stuff is None:
+                        extra_stuff = ''
+                    doxygen = match.group(5)
+                    if doxygen is None:
+                        doxygen = ''
+                    else:
+                        doxygen = doxygen.strip()[2:]
                     if match.group(4) is not None:
                         array = match.group(4).replace('(','').replace(')','')
                     else:
                         array = ''
-                    self.parameters.append(Parameter(param,self,param_type,type_pt2,extra_stuff,array))
+                    self.parameters.append(Parameter(param,self,param_type,type_pt2,extra_stuff,array,doxygen))
                     break
             if not match:
                 raise RuntimeError, "Couldn't find parameter %s for subroutine %s" % (param,self.name)
-        # work out parameters passed to c_f90 routine
-        self.c_parameters = []
-        for param in self.parameters:
-            self.c_parameters.extend(param.to_c())
 
     def _set_c_name(self):
         """
@@ -459,8 +463,10 @@ class Subroutine(object):
         if self.parameters is None:
             self.get_parameters()
         output = 'CMISSError %s(' % self.c_name
-        output += ',\n    '.join(self.c_parameters)
-        output = output+');\n\n'
+        c_parameters = _chain_iterable([p.to_c() for p in self.parameters])
+        comments = _chain_iterable([p.doxygen_comments() for p in self.parameters])
+        output += ',\n    '.join(['%s /*< %s */' % (p,c) for (p,c) in zip(c_parameters,comments)])
+        output += ');\n\n'
         return output
 
     def local_c_f90_vars(self):
@@ -546,7 +552,7 @@ class Parameter(object):
     #Variable types as used in opencmiss_c.f90
     F90TYPES = ('INTEGER(C_INT)','REAL(C_FLOAT)','REAL(C_DOUBLE)','CHARACTER(LEN=1,KIND=C_CHAR)','INTEGER(C_INT)','TYPE(C_PTR)')
 
-    def __init__(self,name,routine,param_type,type_pt2,extra_stuff,array=''):
+    def __init__(self,name,routine,param_type,type_pt2,extra_stuff,array,doxygen):
         """
         Initialise a parameter
 
@@ -557,12 +563,14 @@ class Parameter(object):
         type_pt2 -- Any extra parameter type specification, eg "(DP)" for a real
         extra_stuff -- Any extra parameter properties listed after the type, including intent
         array -- The array dimensions included after the parameter name if they exist, otherwise an empty string
+        doxygen -- The doxygen comment after the parameteter
         """
         self.name = name
         self.routine = routine
         self.pointer = False
+        self.doxygen = doxygen
         intent = None
-        if extra_stuff is not None:
+        if extra_stuff != '':
             match = re.search(r'INTENT\(([A-Z]+)\)?',extra_stuff,re.IGNORECASE)
             if match is not None:
                 intent = match.group(1)
@@ -629,23 +637,31 @@ class Parameter(object):
         """
         Get the list of dimension sizes for an array, as constants or variable names
 
-        Sets the size_list and required_size_list properties
+        Sets the size_list, required_size_list and size_doxygen properties
         required_size_list does not include any dimensions that are constant
+        size_doxygen has the same length as required_size_list
         """
         self.size_list = []
         self.required_size_list = []
+        self.size_doxygen = []
         i=0
         for dim in self.array_spec:
             if dim == ':':
                 if self.required_sizes == 1:
                     self.size_list.append('%sSize' % (self.name))
+                    if self.var_type == Parameter.CHARACTER:
+                        self.size_doxygen.append('Length of %s string' % self.name)
+                    else:
+                        self.size_doxygen.append('Length of %s' % self.name)
                 elif self.var_type == Parameter.CHARACTER:
                     try:
                         self.size_list.append(['%sNumStrings' % self.name, '%sStringLength' % self.name][i])
+                        self.size_doxygen.append(['Number of strings in %s' % self.name, 'Length of strings in %s' % self.name][i])
                     except IndexError:
                         raise ValueError, ">2D arrays of strings not supported"
                 else:
                     self.size_list.append('%sSize%d' % (self.name,i+1))
+                    self.size_doxygen.append('Size of dimension %d of %s' % (i+1,self.name))
                 i += 1
                 self.required_size_list.append(self.size_list[-1])
             else:
@@ -902,6 +918,13 @@ class Parameter(object):
         else:
             size_type = 'const int '
         return tuple([size_type+size_name for size_name in self.required_size_list]+[param])
+
+    def doxygen_comments(self):
+        """
+        Return a list of doxygen comments corresponding to the list of
+        parameters returned by to_c
+        """
+        return self.size_doxygen+[self.doxygen]
 
 
 class Type(object):
