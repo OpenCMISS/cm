@@ -186,7 +186,7 @@ class LibrarySource(object):
                     else:
                         assignment = source.constants[assignment].assignment
                         break
-                if i == len(self.sources):
+                if i == (len(self.sources) - 1):
                     exhausted = True
         if not self.lib_source.constants[constant].resolved:
             sys.stderr.write("Warning: Couldn't resolve constant value: %s\n" % constant)
