@@ -175,8 +175,9 @@ class LibrarySource(object):
         constant -- Name of the constant to get the value for
         """
         assignment = self.lib_source.constants[constant].assignment
-        if not self.lib_source.constants[constant].resolved:
-            for source in self.sources:
+        exhausted = False
+        while (not self.lib_source.constants[constant].resolved) and (not exhausted):
+            for (i,source) in enumerate(self.sources):
                 if source.constants.has_key(assignment):
                     if source.constants[assignment].resolved:
                         self.lib_source.constants[constant].value=source.constants[assignment].value
@@ -184,6 +185,9 @@ class LibrarySource(object):
                         break
                     else:
                         assignment = source.constants[assignment].assignment
+                        break
+                if i == len(self.sources):
+                    exhausted = True
         if not self.lib_source.constants[constant].resolved:
             sys.stderr.write("Warning: Couldn't resolve constant value: %s\n" % constant)
 
