@@ -68,14 +68,18 @@ class LibrarySource(object):
             re_type_start = re.compile(r'^\s*TYPE\s+([A-Z0-9_]+)',re.IGNORECASE)
             re_type_end = re.compile(r'^\s*END\s+TYPE',re.IGNORECASE)
             re_public = re.compile(r'^\s*PUBLIC\s+([A-Z0-9_,\s]+)',re.IGNORECASE)
-            re_constant = re.compile(r'^\s*INTEGER\([A-Z0-9\(\),_\s]+::\s*([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)',re.IGNORECASE)
+            re_constant = re.compile(r'^\s*INTEGER\([A-Z0-9\(\),_\s]+::\s*([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)[^!]*(!<.*$)?',re.IGNORECASE)
             if params_only:
                 for (lineno,line) in enumerate(source_lines):
                     #Integer parameter
                     match = re_constant.search(line)
                     if match:
                         name = match.group(1)
-                        self.constants[name] = Constant(name,match.group(2),lineno,line)
+                        if match.group(3) is None:
+                            doxy = ''
+                        else:
+                            doxy = match.group(3)[2:].strip()
+                        self.constants[name] = Constant(name,match.group(2),doxy,lineno,line)
             else:
                 for (lineno,line) in enumerate(source_lines):
                     if line.strip() == '' or line.strip().startswith('!'):
@@ -106,7 +110,11 @@ class LibrarySource(object):
                     match = re_constant.search(line)
                     if match:
                         name = match.group(1)
-                        self.constants[name] = Constant(name,match.group(2),lineno,line)
+                        if match.group(3) is None:
+                            doxy = ''
+                        else:
+                            doxy = match.group(3)[2:].strip()
+                        self.constants[name] = Constant(name,match.group(2),doxy,lineno,line)
                         continue
                     #Subroutine
                     match = re_subroutine_start.search(line)
@@ -257,13 +265,14 @@ class Constant(object):
     """
     Information on a public constant
     """
-    def __init__(self,name,assignment,lineno,line):
+    def __init__(self,name,assignment,doxygen_comment,lineno,line):
         """
         Initialise Constant
 
         Arguments:
         name -- Variable name
         assignment -- Value or another variable assigned to this variable
+        doxygen_comment -- Contents of the doxygen comment describing the constant
         lineno -- Line number in the source file where this variable is defined
         line -- Contents of line defining this Constant
         """
@@ -271,6 +280,7 @@ class Constant(object):
         self.lineno = lineno
         self.line = line
         self.assignment = assignment
+        self.doxygen_comment = doxygen_comment
         try:
             self.value = int(self.assignment)
             self.resolved = True
@@ -286,7 +296,10 @@ class Constant(object):
         Return the C definition of this constant
         """
         if self.resolved:
-            return 'static int %s = %d;\n' % (self.name,self.value)
+            if self.doxygen_comment != '':
+                return 'static int %s = %d; /*< %s */\n' % (self.name,self.value,self.doxygen_comment)
+            else:
+                return 'static int %s = %d;\n' % (self.name,self.value)
         else:
             return ''
 
@@ -424,7 +437,7 @@ class Subroutine(object):
                     if doxygen is None:
                         doxygen = ''
                     else:
-                        doxygen = doxygen.strip()[2:]
+                        doxygen = doxygen[2:].strip()
                     if match.group(4) is not None:
                         array = match.group(4).replace('(','').replace(')','')
                     else:
