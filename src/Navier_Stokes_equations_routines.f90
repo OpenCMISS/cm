@@ -558,325 +558,333 @@ CONTAINS
 
               ENDIF    
               !Specify finish action
-              CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-                IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
-                  CALL FIELD_CREATE_FINISH(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_MESH_VELOCITY_SET_TYPE,ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_BOUNDARY_SET_TYPE,ERR,ERROR,*999)
-                ENDIF
-                  CASE DEFAULT
-                    LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a standard Navier-Stokes fluid"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is invalid for a Navier-Stokes equation."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            !Define analytic field  
-            CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
-              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-                SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-                !Set start action
-                CASE(EQUATIONS_SET_SETUP_START_ACTION)
-                  IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-                    IF(ASSOCIATED(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD)) THEN
-                      IF(ASSOCIATED(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD)) THEN
-                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                        SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5
-                        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
-                          !Set analtyic function type
-                          EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1
-                        CASE DEFAULT
-                          LOCAL_ERROR="The specified analytic function type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                            & " is invalid for an analytic Navier-Stokes problem."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                        END SELECT
-                      ELSE
-                        CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
-                    ENDIF
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
+                CALL FIELD_CREATE_FINISH(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_MESH_VELOCITY_SET_TYPE,ERR,ERROR,*999)
+                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_BOUNDARY_SET_TYPE,ERR,ERROR,*999)
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for a standard Navier-Stokes fluid"
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          CASE DEFAULT
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " is invalid for a Navier-Stokes equation."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        !-----------------------------------------------------------------
+        ! A n a l y t i c 
+        !-----------------------------------------------------------------
+        CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
+          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            !Set start action
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
+                IF(ASSOCIATED(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD)) THEN
+                  IF(ASSOCIATED(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD)) THEN
+                    CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                    SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5
+                    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
+                      !Set analtyic function type
+                      EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1
+                    CASE DEFAULT
+                      LOCAL_ERROR="The specified analytic function type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                        & " is invalid for an analytic Navier-Stokes problem."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
                   ELSE
-                    CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
                   ENDIF
-                CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-                  IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                    IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD)) THEN
-                      IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD_AUTO_CREATED) THEN
-                        CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
-                      ENDIF
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                CASE DEFAULT
-                  LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
-                    & " is invalid for an analytic Navier-Stokes problem."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is invalid for a Navier-Stokes equation."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            !Define materials field
-            CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
-              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-                !variable X with has Y components, here Y represents viscosity only
-                MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-                  MATERIAL_FIELD_NUMBER_OF_COMPONENTS=6!Y
                 ELSE
-                  MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
+                  CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
                 ENDIF
-                SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-                !Specify start action
-                CASE(EQUATIONS_SET_SETUP_START_ACTION)
-                  EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
-                  IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
-                    IF(EQUATIONS_MATERIALS%MATERIALS_FIELD_AUTO_CREATED) THEN
-                      !Create the auto created materials field
-                      !start field creation with name 'MATERIAL_FIELD'
-                      CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, & 
-                        & EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
-                      CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
-                      !label the field
-                      CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,"Materials Field",ERR,ERROR,*999)
-                      CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_INDEPENDENT_TYPE, &
-                        & ERR,ERROR,*999)
-                      CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, & 
-                        & ERR,ERROR,*999)
-                      !apply decomposition rule found on new created field
-                      CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%MATERIALS%MATERIALS_FIELD, & 
-                        & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
-                      !point new field to geometric field
-                      CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,EQUATIONS_SET%GEOMETRY% &
-                        & GEOMETRIC_FIELD,ERR,ERROR,*999)
-                      CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD, & 
-                        & MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
-                      CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD, & 
-                        &(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
-                      CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
-                      CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_DP_TYPE,ERR,ERROR,*999)
-                      CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD, & 
-                        & FIELD_U_VARIABLE_TYPE,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
-                      CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, & 
-                        & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                      CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                      CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
-                      CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & 2,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
-                      !Default the field scaling to that of the geometric field
-                      CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, & 
-                        & ERR,ERROR,*999)
-                      CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
-                    ELSE
-                      !Check the user specified field
-                      CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
-                      CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
-                      CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                      CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
-                      CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, & 
-                        & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
-                      CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE, & 
-                        & ERR,ERROR,*999)
-                      CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                      CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
-                  END IF
-                  !Specify start action
-                CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-                  EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
-                  IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
-                    IF(EQUATIONS_MATERIALS%MATERIALS_FIELD_AUTO_CREATED) THEN
-                      !Finish creating the materials field
-                      CALL FIELD_CREATE_FINISH(EQUATIONS_MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
-                      !Set the default values for the materials field
-                      !First set the mu values to 0.001
-                      !MATERIAL_FIELD_NUMBER_OF_COMPONENTS
-                      ! viscosity=1
-                      CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,1,1.0_DP,ERR,ERROR,*999)
-                      ! density=2
-                      CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & FIELD_VALUES_SET_TYPE,2,1.0_DP,ERR,ERROR,*999)
-                      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-                        ! elasticity=3
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,3,1.0_DP,ERR,ERROR,*999)
-                        ! thickness=4
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,4,1.0_DP,ERR,ERROR,*999)
-                        ! area=5
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,5,1.0_DP,ERR,ERROR,*999)
-                        ! sigma=6
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,6,1.0_DP,ERR,ERROR,*999)
-                      ENDIF
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              ENDIF
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD)) THEN
+                  IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD_AUTO_CREATED) THEN
+                    CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
                   ENDIF
-                CASE DEFAULT
-                  LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*", & 
-                    & ERR,ERROR))//" for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*", & 
-                    & ERR,ERROR))//" is invalid for Navier-Stokes equation."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is invalid for a Navier-Stokes equation."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            !Define source field
-            CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
-              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, & 
-                & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for an analytic Navier-Stokes problem."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          CASE DEFAULT
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " is invalid for a Navier-Stokes equation."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        !-----------------------------------------------------------------
+        ! M a t e r i a l s   f i e l d 
+        !-----------------------------------------------------------------
+        CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
+          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+            !variable X with has Y components, here Y represents viscosity only
+            MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+              MATERIAL_FIELD_NUMBER_OF_COMPONENTS=6!Y
+            ELSE
+              MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
+            ENDIF
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            !Specify start action
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
+              IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
+                IF(EQUATIONS_MATERIALS%MATERIALS_FIELD_AUTO_CREATED) THEN
+                  !Create the auto created materials field
+                  !start field creation with name 'MATERIAL_FIELD'
+                  CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, & 
+                    & EQUATIONS_SET%MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
+                  CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
+                  !label the field
+                  CALL FIELD_LABEL_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,"Materials Field",ERR,ERROR,*999)
+                  CALL FIELD_DEPENDENT_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_INDEPENDENT_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION, & 
+                    & ERR,ERROR,*999)
+                  !apply decomposition rule found on new created field
+                  CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET%MATERIALS%MATERIALS_FIELD, & 
+                    & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                  !point new field to geometric field
+                  CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,EQUATIONS_SET%GEOMETRY% &
+                    & GEOMETRIC_FIELD,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD, & 
+                    & MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                  CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD, & 
+                    &(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                  CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_DP_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD, & 
+                    & FIELD_U_VARIABLE_TYPE,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, & 
+                    & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & 2,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                  !Default the field scaling to that of the geometric field
+                  CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE, & 
+                    & ERR,ERROR,*999)
+                  CALL FIELD_SCALING_TYPE_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                ELSE
+                  !Check the user specified field
+                  CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
+                  CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                  CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, & 
+                    & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                  CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE, & 
+                    & ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                  CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              END IF
+            !Specify start action
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
+              IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
+                IF(EQUATIONS_MATERIALS%MATERIALS_FIELD_AUTO_CREATED) THEN
+                  !Finish creating the materials field
+                  CALL FIELD_CREATE_FINISH(EQUATIONS_MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
+                  !Set the default values for the materials field
+                  !First set the mu values to 0.001
+                  !MATERIAL_FIELD_NUMBER_OF_COMPONENTS
+                  ! viscosity=1
+                  CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,1,1.0_DP,ERR,ERROR,*999)
+                  ! density=2
+                  CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,2,1.0_DP,ERR,ERROR,*999)
+                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+                    ! elasticity=3
+                    CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,3,1.0_DP,ERR,ERROR,*999)
+                    ! thickness=4
+                    CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,4,1.0_DP,ERR,ERROR,*999)
+                    ! area=5
+                    CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,5,1.0_DP,ERR,ERROR,*999)
+                    ! sigma=6
+                    CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & FIELD_VALUES_SET_TYPE,6,1.0_DP,ERR,ERROR,*999)
+                  ENDIF
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              ENDIF
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*", & 
+                & ERR,ERROR))//" for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*", & 
+                & ERR,ERROR))//" is invalid for Navier-Stokes equation."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          CASE DEFAULT
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " is invalid for a Navier-Stokes equation."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        !-----------------------------------------------------------------
+        ! S o u r c e   f i e l d
+        !-----------------------------------------------------------------
+        CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
+          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, & 
+            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
 !\todo: Think about gravity
-                SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-                CASE(EQUATIONS_SET_SETUP_START_ACTION)
-                  !Do nothing
-                CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-                  !Do nothing
-                  !? Maybe set finished flag????
-                CASE DEFAULT
-                  LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*", &
-                    & ERR,ERROR))//" for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*", & 
-                    & ERR,ERROR))//" is invalid for a Navier-Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  &  " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  &  " is invalid for a Navier-Stokes equation."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            !Equations type 
-            CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
-              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
-                SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
-                CASE(EQUATIONS_SET_SETUP_START_ACTION)
-                  EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
-                  IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN              
-                    IF(EQUATIONS_MATERIALS%MATERIALS_FINISHED) THEN
-                      CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-                      CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_NONLINEAR,ERR,ERROR,*999)
-                      CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
-                    ELSE
-                      CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
-                    ENDIF
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              !Do nothing
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              !Do nothing
+              !? Maybe set finished flag????
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*", &
+                & ERR,ERROR))//" for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*", & 
+                & ERR,ERROR))//" is invalid for a Navier-Stokes fluid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          CASE DEFAULT
+            LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              &  " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              &  " is invalid for a Navier-Stokes equation."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        !-----------------------------------------------------------------
+        ! E q u a t i o n s    t y p e
+        !-----------------------------------------------------------------
+          CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
+            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+            CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE)
+              SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+              CASE(EQUATIONS_SET_SETUP_START_ACTION)
+                EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
+                IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN              
+                  IF(EQUATIONS_MATERIALS%MATERIALS_FINISHED) THEN
+                    CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
+                    CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_NONLINEAR,ERR,ERROR,*999)
+                    CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Equations materials is not associated.",ERR,ERROR,*999)
+                    CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
                   ENDIF
-                CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
-                  SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
-                  CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-                    !Finish the creation of the equations
-                    CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
-                    CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
-                    !Create the equations mapping.
-                    CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                    CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-                    CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+                ELSE
+                  CALL FLAG_ERROR("Equations materials is not associated.",ERR,ERROR,*999)
+                ENDIF
+              CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+                SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
+                CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
+                  !Finish the creation of the equations
+                  CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
+                  CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
+                  !Create the equations mapping.
+                  CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
+                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+                    & ERR,ERROR,*999)
+                  CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE, & 
+                    & ERR,ERROR,*999)
+                  CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
+                  !Create the equations matrices
+                  CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
+                  SELECT CASE(EQUATIONS%SPARSITY_TYPE)
+                  CASE(EQUATIONS_MATRICES_FULL_MATRICES)
+                    CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
                       & ERR,ERROR,*999)
-                    CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE, & 
+                    CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE, &
                       & ERR,ERROR,*999)
-                    CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
-                    !Create the equations matrices
-                    CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
-                    SELECT CASE(EQUATIONS%SPARSITY_TYPE)
-                    CASE(EQUATIONS_MATRICES_FULL_MATRICES)
-                      CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
-                        & ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE, &
-                        & ERR,ERROR,*999)
-                      CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
-                        CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
-                          & (/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
-                        CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
-                          & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,ERR,ERROR,*999)
-                        CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
-                          & (/EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
-                        CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
-                          & EQUATIONS_MATRIX_FEM_STRUCTURE,ERR,ERROR,*999)
-                      CASE DEFAULT
-                        LOCAL_ERROR="The equations matrices sparsity type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                      END SELECT
-                      CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
-                    CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
+                    CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
+                      CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
+                        & (/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
+                      CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
+                        & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,ERR,ERROR,*999)
+                      CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
+                        & (/EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
+                      CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
+                        & EQUATIONS_MATRIX_FEM_STRUCTURE,ERR,ERROR,*999)
+                    CASE DEFAULT
+                      LOCAL_ERROR="The equations matrices sparsity type of "// &
+                        & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    END SELECT
+                    CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
+                  CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
                       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
