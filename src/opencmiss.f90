@@ -9516,7 +9516,7 @@ CONTAINS
     
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
-    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -9551,7 +9551,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to get the interpolation xi for.
-    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -9577,7 +9577,7 @@ CONTAINS
   
     !Argument variables
      INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
-     INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+     INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -9612,7 +9612,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to get the interpolation xi for.
-    INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+    INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
