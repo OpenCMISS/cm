@@ -224,7 +224,7 @@ class LibrarySource(object):
             output.write(subroutine.to_c_declaration())
         output.write('#endif\n')
 
-    def write_c_f90(self,output,extra_routines_path):
+    def write_c_f90(self,output):
         """
         Write opencmiss_c.f90 containing Fortran routines
 
@@ -235,7 +235,8 @@ class LibrarySource(object):
             'MODULE OPENCMISS_C\n\n' + \
             '  USE ISO_C_BINDING\n' + \
             '  USE ISO_VARYING_STRING\n' + \
-            '  USE OPENCMISS\n\n' + \
+            '  USE OPENCMISS\n' + \
+            '  USE CMISS_FORTRAN_C\n\n' + \
             '  IMPLICIT NONE\n\n' + \
             '  PRIVATE\n\n' + \
             '  INTEGER(C_INT), PARAMETER :: CMISSTrue = 1\n' + \
@@ -247,7 +248,6 @@ class LibrarySource(object):
             '  INTEGER(C_INT), PARAMETER :: CMISSErrorConvertingPointer = -4\n\n')
         output.write('\n'.join(('  PUBLIC %s' % subroutine.c_f90_name for subroutine in self.public_subroutines)))
         output.write('\nCONTAINS\n\n')
-        output.write(open(extra_routines_path,'r').read())
         for subroutine in self.public_subroutines:
             output.write(subroutine.to_c_f90())
         output.write('END MODULE OPENCMISS_C')
@@ -1025,4 +1025,4 @@ if __name__ == '__main__':
     with open(opencmiss_h_path,'w') as opencmissh:
         library.write_c_header(opencmissh)
     with open(opencmiss_c_f90_path,'w') as opencmisscf90:
-        library.write_c_f90(opencmisscf90,os.sep.join((cm_path,'utils','C_interface','extra_routines.f90')))
+        library.write_c_f90(opencmisscf90)
