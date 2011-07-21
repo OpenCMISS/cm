@@ -665,7 +665,7 @@ class Parameter(object):
         #CMISS Types
         if self.var_type == Parameter.CUSTOM_TYPE:
             if self.array_dims > 0:
-                self.local_variables.append('TYPE(%s), POINTER :: %s(%s)' % (self.type_name,self.name,','.join([':']*self.array_dims)))
+                self.local_variables.append('TYPE(%s), TARGET :: %s(%s)' % (self.type_name,self.name,','.join(self.size_list)))
                 self.local_variables.append('INTEGER(C_INT) :: Err')
             else:
                 self.local_variables.append('TYPE(%s), POINTER :: %s' % (self.type_name,self.name))
@@ -702,9 +702,7 @@ class Parameter(object):
                     'ENDIF'))
             else:
                 if self.array_dims > 0:
-                    self.pre_call.extend(('IF(C_ASSOCIATED(%sPtr)) THEN' % self.name,
-                        'ALLOCATE(%s(%sSize),STAT=Err)' % (self.name,self.name),
-                        'IF(Err == 0) THEN'))
+                    self.pre_call.append('IF(C_ASSOCIATED(%sPtr)) THEN' % self.name)
                     if self.intent == 'IN':
                         # Passing an array of CMISS Types to Fortran
                         self.pre_call.append('CALL %ssCopy(%s,%sSize,%sPtr,%s)' % (self.type_name,self.name,self.name,self.name,self.routine.c_f90_name))
@@ -717,9 +715,6 @@ class Parameter(object):
                             '%sCPtrs(%sIndex) = C_LOC(%s(%sIndex))' % ((self.name,) * 4),
                             'ENDDO'))
                     self.post_call.extend(('ELSE',
-                        '%s = CMISSCouldNotAllocatePointer' % self.routine.c_f90_name,
-                        'ENDIF',
-                        'ELSE',
                         '%s = CMISSPointerIsNULL' % self.routine.c_f90_name,
                         'ENDIF'))
                 else:
