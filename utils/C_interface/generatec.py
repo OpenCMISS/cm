@@ -666,7 +666,6 @@ class Parameter(object):
         if self.var_type == Parameter.CUSTOM_TYPE:
             if self.array_dims > 0:
                 self.local_variables.append('TYPE(%s), TARGET :: %s(%s)' % (self.type_name,self.name,','.join(self.size_list)))
-                self.local_variables.append('INTEGER(C_INT) :: Err')
             else:
                 self.local_variables.append('TYPE(%s), POINTER :: %s' % (self.type_name,self.name))
             # If we're in a CMISS...TypeInitialise routine, then objects get allocated
@@ -803,8 +802,7 @@ class Parameter(object):
             self.post_call = post_call+self.post_call
         # Convert from C integers to logicals
         elif self.var_type == Parameter.LOGICAL and self.intent == 'IN':
-            if self.array_dims > 0:
-                #todo if ever required: support more than one dimension
+            if self.array_dims > 0 and self.pointer:
                 self.local_variables.append('LOGICAL, POINTER :: %sLogical(%s)' % (self.name,','.join([':']*self.array_dims)))
                 self.local_variables.append('INTEGER(C_INT) :: %sLogicalIndex' % (self.name))
                 self.pre_call.extend(['ALLOCATE(%sLogical(%s))' % (self.name,','.join(self.size_list)),
@@ -815,13 +813,6 @@ class Parameter(object):
                     '%sLogical(%sLogicalIndex) = .FALSE.' % (self.name,self.name),
                     'ENDIF',
                     'ENDDO'])
-            else:
-                self.local_variables.append('LOGICAL :: %sLogical' % (self.name))
-                self.pre_call.extend(['IF(%s == CMISSTrue) THEN' % self.name,
-                    '%sLogical = .TRUE.' % self.name,
-                    'ELSE',
-                    '%sLogical = .FALSE.' % self.name,
-                    'ENDIF'])
 
     def c_f90_name(self):
         """
@@ -874,7 +865,10 @@ class Parameter(object):
         """
         output = self.name
         if self.var_type == Parameter.LOGICAL:
-            output += 'Logical'
+            if self.intent == 'IN' and not self.pointer:
+                output += '==CMISSTrue'
+            else:
+                output += 'Logical'
         elif self.var_type == Parameter.CHARACTER:
             output = 'Fortran'+output
         return output
