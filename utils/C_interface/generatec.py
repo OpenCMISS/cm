@@ -57,7 +57,11 @@ class LibrarySource(object):
             """
             Run through file once, getting everything we'll need
             """
-            source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
+            #only keep the source_lines if we need them
+            if params_only:
+                source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
+            else:
+                self.source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
             in_subroutine = False
             in_interface = False
             in_type = False
@@ -81,7 +85,7 @@ class LibrarySource(object):
                             doxy = match.group(3)[2:].strip()
                         self.constants[name] = Constant(name,match.group(2),doxy,lineno,line)
             else:
-                for (lineno,line) in enumerate(source_lines):
+                for (lineno,line) in enumerate(self.source_lines):
                     if line.strip() == '' or line.strip().startswith('!'):
                         continue
                     #If inside a subroutine, interface or type
@@ -121,7 +125,7 @@ class LibrarySource(object):
                     if match:
                         name = match.group(2)
                         in_subroutine = True
-                        subroutine = Subroutine(name,lineno,line)
+                        subroutine = Subroutine(name,lineno,line,self)
                         self.subroutines[name] = subroutine
                         continue
                     #Interface
@@ -390,14 +394,16 @@ class Subroutine(object):
     """
     Store information for a subroutine
     """
-    def __init__(self,name,lineno,line):
+    def __init__(self,name,lineno,line,source_file):
         self.name = name
         self.lineno = lineno
         self.line = line
         self.lines = [line]
+        self.source_file = source_file
         self.parameters = None
         self.interface = None
         self._set_c_name()
+        self._get_comments()
 
     def get_parameters(self):
         """
@@ -469,13 +475,26 @@ class Subroutine(object):
         if self.c_f90_name == self.name:
             self.c_f90_name = self.name+'C'
 
+    def _get_comments(self):
+        """
+        Sets the comment_lines property, a list of comments above the subroutine definition
+        """
+        self.comment_lines = []
+        line_num = self.lineno - 1
+        while self.source_file.source_lines[line_num].strip().startswith('!>'):
+            self.comment_lines.append(self.source_file.source_lines[line_num].strip()[2:].strip())
+            line_num -= 1
+
     def to_c_declaration(self):
         """
         Returns the function declaration in C
         """
         if self.parameters is None:
             self.get_parameters()
-        output = 'CMISSError %s(' % self.c_name
+        output = '/*> '
+        output += '\n *>'.join(self.comment_lines)
+        output += ' */\n'
+        output += 'CMISSError %s(' % self.c_name
         c_parameters = _chain_iterable([p.to_c() for p in self.parameters])
         comments = _chain_iterable([p.doxygen_comments() for p in self.parameters])
         output += ',\n    '.join(['%s /*< %s */' % (p,c) for (p,c) in zip(c_parameters,comments)])
