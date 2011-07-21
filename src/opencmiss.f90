@@ -5982,9 +5982,9 @@ CONTAINS
   SUBROUTINE CMISSBasisTypesCopy(Bases,BasesSize,BasesPtr,Err)
 
     !Argument variables
-    TYPE(CMISSBasisType), INTENT(INOUT), POINTER :: Bases(:)
-    INTEGER(C_INT), INTENT(IN) :: BasesSize
-    TYPE(C_PTR), INTENT(IN) :: BasesPtr
+    TYPE(CMISSBasisType), INTENT(INOUT) :: Bases(:) !<On return, the array of CMISSBasisTypes
+    INTEGER(C_INT), INTENT(IN) :: BasesSize !<The length of the C array of pointers to CMISSBasisTypes
+    TYPE(C_PTR), INTENT(IN) :: BasesPtr !<The pointer to the first CMISSBasisType pointer
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     INTEGER(INTG) :: basis_idx
