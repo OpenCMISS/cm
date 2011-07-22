@@ -453,6 +453,10 @@ class Subroutine(object):
         Sets the Subroutines parameters property as a list of all parameters, excluding the Err parameter
         """
 
+        def filter_match(string):
+            if string is None: return ''
+            else: return string.strip()
+
         self.parameters = []
         match = re.search(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(([A-Z0-9_,\s]*)\)',self.lines[0],re.IGNORECASE)
         parameters = [p.strip() for p in match.group(3).split(',')]
@@ -463,15 +467,15 @@ class Subroutine(object):
 
         for param in parameters:
             param_pattern = r"""
-            ^\s*([A-Z_]+\s*(\([A-Z_=\*0-9]+\))?) # parameter type at start of line, followed by possible type parameters in brackets
-            \s*([A-Z0-9\s_\(\):,\s]+)?\s*        # extra specifications such as intent
+            ^\s*([A-Z_]+\s*(\(([A-Z_=\*0-9]+)\))?) # parameter type at start of line, followed by possible type parameters in brackets
+            \s*([A-Z0-9\s_\(\):,\s]+)?\s*          # extra specifications such as intent
             ::
-            [A-Z_,\s\(\):]*                      # Allow for other parameters to be included on the same line
-            [,\s:]                               # Make sure we matched the full parameter name
-            %s                                   # Parameter name
-            (\([0-9,:]+\))?                      # Array dimensions if present
-            [,\s$]                               # Whitespace, comma or end of line to make sure we've matched the full parameter name
-            [^!]*(!<.*$)?                            # Doxygen comment
+            [A-Z_,\s\(\):]*                        # Allow for other parameters to be included on the same line
+            [,\s:]                                 # Make sure we matched the full parameter name
+            %s                                     # Parameter name
+            (\(([0-9,:]+)\))?                      # Array dimensions if present
+            [,\s$]                                 # Whitespace, comma or end of line to make sure we've matched the full parameter name
+            [^!]*(!<(.*)$)?                        # Doxygen comment
             """ % param
             param_re = re.compile(param_pattern,re.IGNORECASE|re.VERBOSE)
 
@@ -479,19 +483,7 @@ class Subroutine(object):
                 match = param_re.search(line)
                 if match:
                     param_type = match.group(1)
-                    type_params = match.group(2).replace('(','').replace(')','')
-                    extra_stuff = match.group(3)
-                    if extra_stuff is None:
-                        extra_stuff = ''
-                    doxygen = match.group(5)
-                    if doxygen is None:
-                        doxygen = ''
-                    else:
-                        doxygen = doxygen[2:].strip()
-                    if match.group(4) is not None:
-                        array = match.group(4).replace('(','').replace(')','')
-                    else:
-                        array = ''
+                    (type_params,extra_stuff,array,doxygen) = (filter_match(match.group(i)) for i in (3,4,6,8))
                     self.parameters.append(Parameter(param,self,param_type,type_params,extra_stuff,array,doxygen))
                     break
             if not match:
