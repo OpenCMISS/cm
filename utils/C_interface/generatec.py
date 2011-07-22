@@ -57,6 +57,85 @@ class LibrarySource(object):
     class SourceFile(object):
         """Info for an individual source file"""
 
+        class SectionFinder(object):
+            """Match a section within a source file"""
+
+            def __init__(self,source_file):
+                self.match = None
+                self.lineno = 0
+                self.lines = []
+                self.source_file = source_file
+
+            def check_for_end(self,line):
+                if self.end_re.search(line):
+                    self.finish()
+                    self.lines = []
+                    return True
+                return False
+
+            def check_for_start(self,lineno,line):
+                match = self.start_re.search(line)
+                if match:
+                    self.match = match
+                    self.lineno = lineno
+                    self.lines.append(line)
+                    return True
+                return False
+
+        class LineFinder(object):
+            """Match a line within a source file"""
+
+            def __init__(self,source_file):
+                self.source_file = source_file
+
+            def check_match(self,line):
+                match = self.line_re.search(line)
+                if match:
+                    self.add(match)
+
+        class SubroutineFinder(SectionFinder):
+            start_re = re.compile(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(',re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s+SUBROUTINE',re.IGNORECASE)
+
+            def finish(self):
+                name = self.match.group(2)
+                self.source_file.subroutines[name] = Subroutine(name,self.lineno,self.lines,self.source_file)
+
+        class InterfaceFinder(SectionFinder):
+            start_re = re.compile(r'^\s*INTERFACE\s+([A-Z0-9_]+)',re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s+INTERFACE',re.IGNORECASE)
+
+            def finish(self):
+                name = self.match.group(1)
+                self.source_file.interfaces[name] = Interface(name,self.lineno,self.lines,self.source_file)
+
+        class TypeFinder(SectionFinder):
+            start_re = re.compile(r'^\s*TYPE\s+([A-Z0-9_]+)',re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s+TYPE',re.IGNORECASE)
+
+            def finish(self):
+                name = self.match.group(1)
+                self.source_file.types[name] = Type(name,self.lineno,self.lines,self.source_file)
+
+        class PublicFinder(LineFinder):
+            line_re = re.compile(r'^\s*PUBLIC\s+([A-Z0-9_,\s]+)',re.IGNORECASE)
+
+            def add(self,match):
+                for symbol in match.group(1).split(','):
+                    self.source_file.public.append(symbol.strip())
+
+        class ConstantFinder(LineFinder):
+            line_re = re.compile(r'^\s*INTEGER\([A-Z0-9\(\),_\s]+::\s*([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)[^!]*(!<.*$)?',re.IGNORECASE)
+
+            def add(self,match):
+                name = match.group(1)
+                assignment = match.group(2)
+                if match.group(3) is None:
+                    doxy = ''
+                else:
+                    doxy = match.group(3)[2:].strip()
+                self.source_file.constants[name] = Constant(name,assignment,doxy)
+
         def __init__(self,source_file,params_only=False):
             """Initialise SourceFile object
 
@@ -75,94 +154,37 @@ class LibrarySource(object):
         def parse_file(self,params_only=False):
             """Run through file once, getting everything we'll need"""
 
-            #only keep the source_lines if we need them
-            if params_only:
-                source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
-            else:
-                self.source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
-            in_subroutine = False
-            in_interface = False
-            in_type = False
-            re_subroutine_start = re.compile(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(',re.IGNORECASE)
-            re_subroutine_end = re.compile(r'^\s*END\s+SUBROUTINE',re.IGNORECASE)
-            re_interface_start = re.compile(r'^\s*INTERFACE\s+([A-Z0-9_]+)',re.IGNORECASE)
-            re_interface_end = re.compile(r'^\s*END\s+INTERFACE',re.IGNORECASE)
-            re_type_start = re.compile(r'^\s*TYPE\s+([A-Z0-9_]+)',re.IGNORECASE)
-            re_type_end = re.compile(r'^\s*END\s+TYPE',re.IGNORECASE)
-            re_public = re.compile(r'^\s*PUBLIC\s+([A-Z0-9_,\s]+)',re.IGNORECASE)
-            re_constant = re.compile(r'^\s*INTEGER\([A-Z0-9\(\),_\s]+::\s*([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)[^!]*(!<.*$)?',re.IGNORECASE)
-            if params_only:
-                for (lineno,line) in enumerate(source_lines):
-                    #Integer parameter
-                    match = re_constant.search(line)
-                    if match:
-                        name = match.group(1)
-                        if match.group(3) is None:
-                            doxy = ''
-                        else:
-                            doxy = match.group(3)[2:].strip()
-                        self.constants[name] = Constant(name,match.group(2),doxy,lineno,line)
-            else:
-                for (lineno,line) in enumerate(self.source_lines):
-                    if line.strip() == '' or line.strip().startswith('!'):
-                        continue
-                    #If inside a subroutine, interface or type
-                    if in_subroutine:
-                        subroutine.lines.append(line)
-                        if re_subroutine_end.search(line):
-                            in_subroutine = False
-                            continue
-                    if in_interface:
-                        interface.lines.append(line)
-                        if re_interface_end.search(line):
-                            in_interface = False
-                            continue
-                    if in_type:
-                        type.lines.append(line)
-                        if re_type_end.search(line):
-                            in_type = False
-                            continue
-                    #Public declaration
-                    match = re_public.search(line)
-                    if match:
-                        for symbol in match.group(1).split(','):
-                            self.public.append(symbol.strip())
-                        continue
-                    #Integer parameter
-                    match = re_constant.search(line)
-                    if match:
-                        name = match.group(1)
-                        if match.group(3) is None:
-                            doxy = ''
-                        else:
-                            doxy = match.group(3)[2:].strip()
-                        self.constants[name] = Constant(name,match.group(2),doxy,lineno,line)
-                        continue
-                    #Subroutine
-                    match = re_subroutine_start.search(line)
-                    if match:
-                        name = match.group(2)
-                        in_subroutine = True
-                        subroutine = Subroutine(name,lineno,line,self)
-                        self.subroutines[name] = subroutine
-                        continue
-                    #Interface
-                    match = re_interface_start.search(line)
-                    if match:
-                        name = match.group(1)
-                        in_interface = True
-                        interface = Interface(name,self,lineno,line)
-                        self.interfaces[name] = interface
-                        continue
-                    #Type
-                    match = re_type_start.search(line)
-                    if match:
-                        name = match.group(1)
-                        in_type = True
-                        type = Type(name,lineno,line,self)
-                        self.types[name] = type
-                        continue
+            source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
+            if not params_only:
+                #only keep the source_lines if we need them
+                self.source_lines = source_lines
 
+            #Set the things we want to find
+            line_finders = []
+            section_finders = []
+            line_finders.append(self.ConstantFinder(self))
+            if not params_only:
+                line_finders.append(self.PublicFinder(self))
+                section_finders.extend([
+                    self.SubroutineFinder(self),
+                    self.InterfaceFinder(self),
+                    self.TypeFinder(self)])
+
+            #Find them
+            current_section = None
+            for (lineno,line) in enumerate(source_lines):
+                if current_section is not None:
+                    current_section.lines.append(line)
+                    if current_section.check_for_end(line):
+                        current_section = None
+                else:
+                    for line_finder in line_finders:
+                        line_finder.check_match(line)
+
+                    for section in section_finders:
+                        if section.check_for_start(lineno,line):
+                            current_section = section
+                            break
 
     def __init__(self,lib_source,source_files):
         """Load library information from source files
@@ -294,20 +316,16 @@ class LibrarySource(object):
 class Constant(object):
     """Information on a public constant"""
 
-    def __init__(self,name,assignment,doxygen_comment,lineno,line):
+    def __init__(self,name,assignment,doxygen_comment):
         """Initialise Constant
 
         Arguments:
         name -- Variable name
         assignment -- Value or another variable assigned to this variable
         doxygen_comment -- Contents of the doxygen comment describing the constant
-        lineno -- Line number in the source file where this variable is defined
-        line -- Contents of line defining this Constant
         """
 
         self.name = name
-        self.lineno = lineno
-        self.line = line
         self.assignment = assignment
         self.doxygen_comment = doxygen_comment
         try:
@@ -336,12 +354,20 @@ class Constant(object):
 class Interface(object):
     """Information on an interface"""
 
-    def __init__(self,name,source,lineno,line):
+    def __init__(self,name,lineno,lines,source_file):
+        """Initialise an interface
+
+        Arguments:
+        name -- Interface name
+        lineno -- Line number where the interface starts
+        lines -- Contents of interface as a list of lines
+        source_file -- Source file containing the interface
+        """
+
         self.name = name
-        self.source = source
         self.lineno = lineno
-        self.line = line
-        self.lines = [line]
+        self.lines = lines
+        self.source = source_file
 
     def get_subroutines(self):
         """Find the subroutines for an interface
@@ -411,11 +437,10 @@ class Interface(object):
 class Subroutine(object):
     """Store information for a subroutine"""
 
-    def __init__(self,name,lineno,line,source_file):
+    def __init__(self,name,lineno,lines,source_file):
         self.name = name
         self.lineno = lineno
-        self.line = line
-        self.lines = [line]
+        self.lines = lines
         self.source_file = source_file
         self.parameters = None
         self.interface = None
@@ -429,7 +454,7 @@ class Subroutine(object):
         """
 
         self.parameters = []
-        match = re.search(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(([A-Z0-9_,\s]*)\)',self.line,re.IGNORECASE)
+        match = re.search(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(([A-Z0-9_,\s]*)\)',self.lines[0],re.IGNORECASE)
         parameters = [p.strip() for p in match.group(3).split(',')]
         try:
             parameters.remove('Err')
@@ -997,19 +1022,18 @@ class Parameter(object):
 class Type(object):
     """Information on a Fortran type"""
 
-    def __init__(self,name,lineno,line,source_file):
+    def __init__(self,name,lineno,lines,source_file):
         """Initialise type
 
         Arguments:
         name -- Type name
         lineno -- Line number in source where this is defined
-        line -- Contents of first line where this type is defined
+        lines -- Contents of lines where this type is defined
         """
 
         self.name = name
         self.lineno = lineno
-        self.line = line
-        self.lines = [line]
+        self.lines = lines
         self.source_file = source_file
         self._get_comments()
 
