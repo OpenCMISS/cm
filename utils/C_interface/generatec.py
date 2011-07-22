@@ -7,8 +7,8 @@ This python script generates the C interface for the OpenCMISS library from open
 
 It finds integer constants from the source code and includes them in opencmiss.h
 
-It generates C functions in opencmiss_c.f90 from subroutines in opencmiss.f90 and puts the function
-declaration in opencmiss.h.
+It generates C functions in opencmiss_c.f90 from subroutines in opencmiss.f90 and puts
+the function declaration in opencmiss.h.
 
 For interfaces where one routine takes parameters as scalars and another takes them as arrays,
 only the routine that takes arrays is included. This is done by checking the routine names for
@@ -17,9 +17,11 @@ only the routine that takes arrays is included. This is done by checking the rou
 Limitations
 -----------
 
-- Doesn't support multi-dimensional arrays of CMISS types or Logicals, but this can be added if required.
+- Doesn't support multi-dimensional arrays of CMISS types or Logicals, but this can be added
+  if required.
 
-- Doesn't account for the difference in storage order of multi-dimensional arrays between C and Fortran, except in CMISSC2FStrings.
+- Doesn't account for the difference in storage order of multi-dimensional arrays between C
+  and Fortran, except in CMISSC2FStrings.
 
 """
 
@@ -28,23 +30,40 @@ import sys
 import re
 from operator import attrgetter
 
+def main():
+    import os
+    if len(sys.argv) == 4:
+        (cm_path,opencmiss_h_path,opencmiss_c_f90_path) = sys.argv[1:]
+    else:
+        sys.stderr.write('Usage: %s cm_path opencmiss_h_path opencmiss_c_f90_path\n' % sys.argv[0])
+        exit(1)
+
+    cm_source_path=cm_path+os.sep+'src'
+    sources = [cm_source_path+os.sep+file_name \
+            for file_name in os.listdir(cm_source_path) \
+            if file_name.endswith('.f90') and file_name != 'opencmiss.f90']
+
+    library = LibrarySource(cm_source_path+os.sep+'opencmiss.f90',sources)
+
+    with open(opencmiss_h_path,'w') as opencmissh:
+        library.write_c_header(opencmissh)
+    with open(opencmiss_c_f90_path,'w') as opencmisscf90:
+        library.write_c_f90(opencmisscf90)
+
+
 class LibrarySource(object):
-    """
-    Holds info on all the library source code
-    """
+    """Holds info on all the library source code"""
 
     class SourceFile(object):
-        """
-        Info for an individual source file
-        """
+        """Info for an individual source file"""
 
         def __init__(self,source_file,params_only=False):
-            """
-            Initialise SourceFile object
+            """Initialise SourceFile object
 
             Arguments:
             source_file -- Path to the source file
             """
+
             self.file_path = source_file
             self.public = []
             self.interfaces = {}
@@ -54,9 +73,8 @@ class LibrarySource(object):
             self.parse_file(params_only)
 
         def parse_file(self,params_only=False):
-            """
-            Run through file once, getting everything we'll need
-            """
+            """Run through file once, getting everything we'll need"""
+
             #only keep the source_lines if we need them
             if params_only:
                 source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
@@ -147,24 +165,33 @@ class LibrarySource(object):
 
 
     def __init__(self,lib_source,source_files):
-        """
-        Load library information from source files
+        """Load library information from source files
 
         Arguments:
         lib_source -- Path to library source file
         source_files -- List of other source files used by the library
         """
+
         self.lib_source = self.SourceFile(lib_source)
         self.sources = [self.SourceFile(source,params_only=True) for source in source_files]
+
         self.resolve_constants()
-        self.public_types=[t for t in self.lib_source.types.values() if t.name in self.lib_source.public]
+
+        self.public_types=[t for t in self.lib_source.types.values() \
+                if t.name in self.lib_source.public]
         self.public_types=sorted(self.public_types,key=attrgetter('name'))
-        self.public_constants=[const for const in self.lib_source.constants.values() if const.name in self.lib_source.public]
+
+        self.public_constants=[const for const in self.lib_source.constants.values() \
+                if const.name in self.lib_source.public]
         self.public_constants=sorted(self.public_constants,key=attrgetter('name'))
-        self.public_subroutines=[routine for routine in self.lib_source.subroutines.values() if routine.name in self.lib_source.public]
+
+        self.public_subroutines=[routine for routine in self.lib_source.subroutines.values() \
+                if routine.name in self.lib_source.public]
+
         for interface in self.lib_source.interfaces.values():
             if interface.name in self.lib_source.public:
-                self.public_subroutines+=[self.lib_source.subroutines[routine] for routine in interface.get_subroutines()]
+                self.public_subroutines+=[self.lib_source.subroutines[routine] \
+                        for routine in interface.get_subroutines()]
         self.public_subroutines=sorted(self.public_subroutines,key=attrgetter('name'))
 
         #Remove CMISS...TypesCopy routines, as these are only used within the C bindings
@@ -172,20 +199,19 @@ class LibrarySource(object):
         self.public_subroutines = filter(lambda r: not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or r.name.endswith('TypesCopy')),self.public_subroutines)
 
     def resolve_constants(self):
-        """
-        Go through all public constants and work out their actual values
-        """
+        """Go through all public constants and work out their actual values"""
+
         for pub in self.lib_source.public:
             if self.lib_source.constants.has_key(pub):
                 self.get_constant_value(pub)
 
     def get_constant_value(self,constant):
-        """
-        Get the actual value for a constant from the source files
+        """Get the actual value for a constant from the source files
 
         Arguments:
         constant -- Name of the constant to get the value for
         """
+
         assignment = self.lib_source.constants[constant].assignment
         exhausted = False
         while (not self.lib_source.constants[constant].resolved) and (not exhausted):
@@ -204,12 +230,12 @@ class LibrarySource(object):
             sys.stderr.write("Warning: Couldn't resolve constant value: %s\n" % constant)
 
     def write_c_header(self,output):
-        """
-        Write opencmiss.h containing constants, typedefs and routine declarations
+        """Write opencmiss.h containing constants, typedefs and routine declarations
 
         Arguments:
         output -- File to write to
         """
+
         output.write('/*\n * opencmiss.h automatically generated from opencmiss.f90\n * Do not edit this file directly, instead edit opencmiss.f90 or generatec.py\n */\n\n' + \
             '#ifndef OPENCMISS_H\n' + \
             '#define OPENCMISS_H\n' + \
@@ -237,12 +263,12 @@ class LibrarySource(object):
         output.write('#endif\n')
 
     def write_c_f90(self,output):
-        """
-        Write opencmiss_c.f90 containing Fortran routines
+        """Write opencmiss_c.f90 containing Fortran routines
 
         Arguments:
         output -- File to write to
         """
+
         output.write('!\n! opencmiss_c.f90 automatically generated from opencmiss.f90\n! Do not edit this file directly, instead edit opencmiss.f90 or generatec.py\n!\n' + \
             'MODULE OPENCMISS_C\n\n' + \
             '  USE ISO_C_BINDING\n' + \
@@ -266,12 +292,10 @@ class LibrarySource(object):
 
 
 class Constant(object):
-    """
-    Information on a public constant
-    """
+    """Information on a public constant"""
+
     def __init__(self,name,assignment,doxygen_comment,lineno,line):
-        """
-        Initialise Constant
+        """Initialise Constant
 
         Arguments:
         name -- Variable name
@@ -280,6 +304,7 @@ class Constant(object):
         lineno -- Line number in the source file where this variable is defined
         line -- Contents of line defining this Constant
         """
+
         self.name = name
         self.lineno = lineno
         self.line = line
@@ -295,10 +320,10 @@ class Constant(object):
             except ValueError:
                 self.value = None
                 self.resolved = False
+
     def to_c(self):
-        """
-        Return the C definition of this constant
-        """
+        """Return the C definition of this constant"""
+
         if self.resolved:
             if self.doxygen_comment != '':
                 return 'static int %s = %d; /*<%s */\n' % (self.name,self.value,self.doxygen_comment)
@@ -309,9 +334,8 @@ class Constant(object):
 
 
 class Interface(object):
-    """
-    Information on an interface
-    """
+    """Information on an interface"""
+
     def __init__(self,name,source,lineno,line):
         self.name = name
         self.source = source
@@ -320,14 +344,14 @@ class Interface(object):
         self.lines = [line]
 
     def get_subroutines(self):
-        """
-        Find the subroutines for an interface
+        """Find the subroutines for an interface
 
         Choose the one with the highest number if there are options. This
         corresponds to the routine that takes array parameters
 
         Returns a list of subroutines
         """
+
         all_subroutines = []
         routine_re=re.compile(r'MODULE PROCEDURE ([A-Z0-9_]+)',re.IGNORECASE)
         varying_string_re=re.compile(r'VSC*(Obj|Number|)[0-9]*$',re.IGNORECASE)
@@ -350,13 +374,13 @@ class Interface(object):
         return subroutines
 
     def _get_array_routines(self,routine_list):
-        """
-        Return a list of the routines that take array parameters if there
+        """Return a list of the routines that take array parameters if there
         is an option between passing an array or a scalar
 
         Arguments:
         routine_list -- List of subroutine names
         """
+
         routine_groups = {}
         routines = []
 
@@ -385,9 +409,8 @@ class Interface(object):
 
 
 class Subroutine(object):
-    """
-    Store information for a subroutine
-    """
+    """Store information for a subroutine"""
+
     def __init__(self,name,lineno,line,source_file):
         self.name = name
         self.lineno = lineno
@@ -400,11 +423,11 @@ class Subroutine(object):
         self._get_comments()
 
     def get_parameters(self):
-        """
-        Get details of the subroutine parameters
+        """Get details of the subroutine parameters
 
-        Sets the Subroutines parameters property as a list of all parameters
+        Sets the Subroutines parameters property as a list of all parameters, excluding the Err parameter
         """
+
         self.parameters = []
         match = re.search(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(([A-Z0-9_,\s]*)\)',self.line,re.IGNORECASE)
         parameters = [p.strip() for p in match.group(3).split(',')]
@@ -412,6 +435,7 @@ class Subroutine(object):
             parameters.remove('Err')
         except ValueError:
             sys.stderr.write("Warning: Routine doesn't take Err parameter: %s\n" % self.name)
+
         for param in parameters:
             param_pattern = r"""
             ^\s*([A-Z_]+\s*(\([A-Z_=\*0-9]+\))?) # parameter type at start of line, followed by possible extra specification in brackets
@@ -425,6 +449,7 @@ class Subroutine(object):
             [^!]*(!<.*$)?                            # Doxygen comment
             """ % param
             param_re = re.compile(param_pattern,re.IGNORECASE|re.VERBOSE)
+
             for line in self.lines:
                 match = param_re.search(line)
                 if match:
@@ -448,11 +473,11 @@ class Subroutine(object):
                 raise RuntimeError, "Couldn't find parameter %s for subroutine %s" % (param,self.name)
 
     def _set_c_name(self):
-        """
-        Get the name of the routine as used from C and as used in opencmiss_c.f90
+        """Get the name of the routine as used from C and as used in opencmiss_c.f90
 
         Sets the subroutines c_name and c_f90_name parameters
         """
+
         #Note that some interfaces have a 'C' variant with C in the name already:
         if re.search(r'Obj[0-9]*C?$',self.name):
             #For routines with a Region and Interface variant, the Region one is default
@@ -470,9 +495,8 @@ class Subroutine(object):
             self.c_f90_name = self.name+'C'
 
     def _get_comments(self):
-        """
-        Sets the comment_lines property, a list of comments above the subroutine definition
-        """
+        """Sets the comment_lines property, a list of comments above the subroutine definition"""
+
         self.comment_lines = []
         line_num = self.lineno - 1
         while self.source_file.source_lines[line_num].strip().startswith('!>'):
@@ -481,51 +505,51 @@ class Subroutine(object):
         self.comment_lines.reverse()
 
     def to_c_declaration(self):
-        """
-        Returns the function declaration in C
-        """
+        """Returns the function declaration in C"""
+
         if self.parameters is None:
             self.get_parameters()
         output = '/*>'
         output += '\n *>'.join(self.comment_lines)
         output += ' */\n'
         output += 'CMISSError %s(' % self.c_name
+
         c_parameters = _chain_iterable([p.to_c() for p in self.parameters])
         comments = _chain_iterable([p.doxygen_comments() for p in self.parameters])
         output += ',\n    '.join(['%s /*<%s */' % (p,c) for (p,c) in zip(c_parameters,comments)])
         output += ');\n\n'
+
         return output
 
     def local_c_f90_vars(self):
-        """
-        Returns a list of extra local variables required for this subroutine, for use in converting
+        """Returns a list of extra local variables required for this subroutine, for use in converting
         to and from C variables
         """
+
         local_variables = [param.local_variables for param in self.parameters]
         return list(_chain_iterable(local_variables))
 
     def pre_call(self):
+        """Returns a list of lines to add before calling the Fortran routine
+        for converting to and from C
         """
-        Returns a list of lines to add before calling the Fortran routine for converting
-        to and from C
-        """
+
         pre_lines = [param.pre_call for param in self.parameters]
         return list(_chain_iterable(pre_lines))
 
     def post_call(self):
+        """Returns a list of lines to add after calling the Fortran routine
+        for converting to and from C
         """
-        Returns a list of lines to add after calling the Fortran routine for converting
-        to and from C
-        """
+
         #reverse to keep everything in order, as some if statements need to line up
         #from the pre_call lines
         post_lines = [param.post_call for param in reversed(self.parameters)]
         return list(_chain_iterable(post_lines))
 
     def to_c_f90(self):
-        """
-        Returns the C function implemented in Fortran for opencmiss_c.f90
-        """
+        """Returns the C function implemented in Fortran for opencmiss_c.f90"""
+
         if self.parameters is None:
             self.get_parameters()
         c_f90_params = [param.c_f90_names() for param in self.parameters]
@@ -561,9 +585,8 @@ class Subroutine(object):
 
 
 class Parameter(object):
-    """
-    Information on a subroutine parameter
-    """
+    """Information on a subroutine parameter"""
+
     #Parameter types enum:
     (INTEGER, \
     FLOAT, \
@@ -580,8 +603,7 @@ class Parameter(object):
     F90TYPES = ('INTEGER(C_INT)','REAL(C_FLOAT)','REAL(C_DOUBLE)','CHARACTER(LEN=1,KIND=C_CHAR)','INTEGER(C_INT)','TYPE(C_PTR)')
 
     def __init__(self,name,routine,param_type,type_pt2,extra_stuff,array,doxygen):
-        """
-        Initialise a parameter
+        """Initialise a parameter
 
         Arguments:
         name -- Parameter name
@@ -592,20 +614,25 @@ class Parameter(object):
         array -- The array dimensions included after the parameter name if they exist, otherwise an empty string
         doxygen -- The doxygen comment after the parameteter
         """
+
         self.name = name
         self.routine = routine
         self.pointer = False
         self.doxygen = doxygen
         intent = None
+
         if extra_stuff != '':
             match = re.search(r'INTENT\(([A-Z]+)\)?',extra_stuff,re.IGNORECASE)
             if match is not None:
                 intent = match.group(1)
+
             if extra_stuff.find('DIMENSION') > -1:
                 sys.stderr.write("Warning: Ignoring DIMENSION specification on parameter %s of routine %s\n" % (self.name,routine.name))
                 sys.stderr.write("         Using DIMENSION goes against the OpenCMISS style guidelines.\n")
+
             if extra_stuff.find('POINTER') > -1:
                 self.pointer = True
+
         #Get parameter intent
         if intent is None:
             #cintent is the intent used in opencmiss_c.f90, which may be different to the intent in opencmiss.f90
@@ -615,6 +642,7 @@ class Parameter(object):
         else:
             self.intent = intent
             self.cintent = intent
+
         #Get array dimensions and work out how many dimension sizes are variable
         if array != '':
             self.array_spec = [a.strip() for a in array.split(',')]
@@ -627,6 +655,7 @@ class Parameter(object):
             self.array_spec = []
             self.array_dims = 0
             self.required_sizes = 0
+
         #Work out the type of parameter
         param_type = param_type.upper()
         if param_type.startswith('INTEGER'):
@@ -637,6 +666,7 @@ class Parameter(object):
                 self.var_type = Parameter.DOUBLE
             else:
                 self.var_type = Parameter.FLOAT
+
         elif param_type.startswith('CHARACTER'):
             self.var_type = Parameter.CHARACTER
             #Add extra dimension, 1D array of strings in Fortran is a 2D array of chars in C
@@ -645,29 +675,33 @@ class Parameter(object):
             self.required_sizes += 1
             #Need to pass C pointer by value
             self.cintent = 'IN'
+
         elif param_type.startswith('LOGICAL'):
             self.var_type = Parameter.LOGICAL
+
         elif param_type.startswith('TYPE'):
             self.var_type = Parameter.CUSTOM_TYPE
             self.type_name = type_pt2.replace('(','').replace(')','')
             if self.array_dims == 0 and self.intent == 'INOUT':
                 #Should actually be in, as we need to pass the pointer by value
                 self.cintent = 'IN'
+
         else:
             sys.stderr.write("Error: Unknown type %s for routine %s\n" % (param_type,routine.name))
             self.var_type = None
             self.type_name = param_type
+
         self._set_size_list()
         self._set_conversion_lines()
 
     def _set_size_list(self):
-        """
-        Get the list of dimension sizes for an array, as constants or variable names
+        """Get the list of dimension sizes for an array, as constants or variable names
 
         Sets the size_list, required_size_list and size_doxygen properties
         required_size_list does not include any dimensions that are constant
         size_doxygen has the same length as required_size_list
         """
+
         self.size_list = []
         self.required_size_list = []
         self.size_doxygen = []
@@ -695,12 +729,12 @@ class Parameter(object):
                 self.size_list.append(dim)
 
     def _set_conversion_lines(self):
-        """
-        Get any pointer or string conversions/checks as well as extra local variables required
+        """Get any pointer or string conversions/checks as well as extra local variables required
 
         Sets pre_call and post_call properties, which are lines to add before and after calling
         the routine in opencmiss.f90
         """
+
         self.local_variables = []
         self.pre_call = []
         self.post_call = []
@@ -769,6 +803,7 @@ class Parameter(object):
                         'ELSE',
                         '%s = CMISSPointerIsNULL' % self.routine.c_f90_name,
                         'ENDIF'))
+
         #Character arrays
         elif self.var_type == Parameter.CHARACTER:
             if self.array_dims > 1:
@@ -792,6 +827,7 @@ class Parameter(object):
                     raise ValueError, "output of strings >1D not implemented"
                 self.post_call.append('CALL C_F_POINTER(%s,%sCChars,[%s])' % (self.name,self.name,self.size_list[0]))
                 self.post_call.append('CALL CMISSF2CString(Fortran%s,%sCChars)' % (self.name,self.name))
+
         #Arrays of floats, integers or logicals
         elif self.array_dims > 0:
             if self.var_type == Parameter.CHARACTER:
@@ -820,6 +856,7 @@ class Parameter(object):
                     'ELSE',
                     '%s = CMISSPointerIsNULL' % self.routine.c_f90_name,
                     'ENDIF'))
+
         # Convert from logicals to C integers
         if self.var_type == Parameter.LOGICAL and self.intent != 'IN':
             if self.array_dims > 0:
@@ -843,6 +880,7 @@ class Parameter(object):
             if self.pointer == True and self.intent == 'OUT':
                 post_call = ['ALLOCATE(%s(SIZE(%sLogical,1)))' % (self.name,self.name)]+post_call
             self.post_call = post_call+self.post_call
+
         # Convert from C integers to logicals
         elif self.var_type == Parameter.LOGICAL and self.intent == 'IN':
             if self.array_dims > 0 and self.pointer:
@@ -858,9 +896,8 @@ class Parameter(object):
                     'ENDDO'])
 
     def c_f90_name(self):
-        """
-        Return the name of the parameter as used by the routine in opencmiss_c.f90
-        """
+        """Return the name of the parameter as used by the routine in opencmiss_c.f90"""
+
         c_f90_name = self.name
         if self.var_type == Parameter.CUSTOM_TYPE or \
                 (self.array_dims > 0 and self.var_type != Parameter.CHARACTER):
@@ -868,16 +905,15 @@ class Parameter(object):
         return c_f90_name
 
     def c_f90_names(self):
+        """Return param name + name of size param if it exists,
+        separated by a comma for use in the function declaration in Fortran
         """
-        Return param name + name of size param if it exists, separated by a comma for use in the
-        function declaration in Fortran
-        """
+
         return ','.join([s for s in self.required_size_list]+[self.c_f90_name()])
 
     def c_f90_declaration(self):
-        """
-        Return the parameter declaration for use in the subroutine in opencmiss_c.f90
-        """
+        """Return the parameter declaration for use in the subroutine in opencmiss_c.f90"""
+
         c_f90_name=self.c_f90_name()
         output = ''
 
@@ -901,11 +937,11 @@ class Parameter(object):
         return output
 
     def call_name(self):
-        """
-        Return the parameter name to be used in the opencmiss.f90 subroutine call
+        """Return the parameter name to be used in the opencmiss.f90 subroutine call
 
         Used to pass the name of a converted variable
         """
+
         output = self.name
         if self.var_type == Parameter.LOGICAL:
             if self.intent == 'IN' and not self.pointer:
@@ -917,11 +953,11 @@ class Parameter(object):
         return output
 
     def to_c(self):
-        """
-        Calculate C parameter declaration for opencmiss.h
+        """Calculate C parameter declaration for opencmiss.h
 
         For arrays, return two parameters with the first being the size
         """
+
         param = self.name
         #pointer argument?
         if self.array_dims > 0 or self.var_type == Parameter.CHARACTER \
@@ -930,43 +966,46 @@ class Parameter(object):
         if self.cintent == 'OUT' and self.pointer == True:
             #add another * as we need a pointer to a pointer, to modify the pointer value
             param = '*'+param
+
         #parameter type
         if self.var_type != Parameter.CUSTOM_TYPE:
             param = Parameter.CTYPES[self.var_type]+' '+param
         else:
             param = self.type_name+' '+param
+
         #const?
         if self.intent == 'IN':
             param = 'const '+param
+
         #size?
         if self.pointer == True and self.cintent == 'OUT':
             #Size is an output
             size_type = 'int *'
         else:
             size_type = 'const int '
+
         return tuple([size_type+size_name for size_name in self.required_size_list]+[param])
 
     def doxygen_comments(self):
-        """
-        Return a list of doxygen comments corresponding to the list of
+        """Return a list of doxygen comments corresponding to the list of
         parameters returned by to_c
         """
+
         return self.size_doxygen+[self.doxygen]
 
 
 class Type(object):
-    """
-    Information on a Fortran type
-    """
+    """Information on a Fortran type"""
+
     def __init__(self,name,lineno,line,source_file):
-        """
-        Initialise type
+        """Initialise type
 
         Arguments:
         name -- Type name
         lineno -- Line number in source where this is defined
         line -- Contents of first line where this type is defined
         """
+
         self.name = name
         self.lineno = lineno
         self.line = line
@@ -975,9 +1014,8 @@ class Type(object):
         self._get_comments()
 
     def _get_comments(self):
-        """
-        Sets the comment_lines property, a list of comments above the type definition
-        """
+        """Sets the comment_lines property, a list of comments above the type definition"""
+
         self.comment_lines = []
         line_num = self.lineno - 1
         while self.source_file.source_lines[line_num].strip().startswith('!>'):
@@ -986,15 +1024,13 @@ class Type(object):
         self.comment_lines.reverse()
 
     def to_c_struct(self):
-        """
-        Return the struct definition
-        """
+        """Return the struct definition"""
+
         return 'struct %s_;\n' % self.name
 
     def to_c_typedef(self):
-        """
-        Return the typedef defintion
-        """
+        """Return the typedef defintion"""
+
         output = '/*>'
         output += '\n *>'.join(self.comment_lines)
         output += ' */\n'
@@ -1003,17 +1039,17 @@ class Type(object):
 
 
 def _join_lines(source):
-    """
-    Remove Fortran line continuations
-    """
+    """Remove Fortran line continuations"""
+
     return re.sub(r'[\t ]*&[\t ]*\n[\t ]*&[\t ]*',' ',source)
 
+
 def _fix_length(line,max_length=132):
-    """
-    Add Fortran line continuations to break up long lines
+    """Add Fortran line continuations to break up long lines
 
     Tries to put the line continuation after a comma
     """
+
     max_length=132
     line = line.rstrip()
     #account for comments
@@ -1041,25 +1077,25 @@ def _fix_length(line,max_length=132):
         content = content+'!'+comment
     return content
 
+
 def _get_indent(line):
-    """
-    Return the indentation in front of a line
-    """
+    """Return the indentation in front of a line"""
+
     indent = line.replace(line.lstrip(),'')
     return indent
 
+
 def _chain_iterable(iterables):
-    """
-    Implement itertools.chain.from_iterable to be compatible with Python 2.5
-    """
+    """Implement itertools.chain.from_iterable so we can use it in Python 2.5"""
+
     for it in iterables:
         for element in it:
             yield element
 
+
 def _indent_lines(lines,indent_size=2,initial_indent=4):
-    """
-    Indent function content to show nesting of if, else and endif statements
-    """
+    """Indent function content to show nesting of if, else and endif statements"""
+
     output = ''
     indent = 0
     for line in lines:
@@ -1076,21 +1112,4 @@ def _indent_lines(lines,indent_size=2,initial_indent=4):
 
 
 if __name__ == '__main__':
-    import os
-    if len(sys.argv) == 4:
-        (cm_path,opencmiss_h_path,opencmiss_c_f90_path) = sys.argv[1:]
-    else:
-        sys.stderr.write('Usage: %s cm_path opencmiss_h_path opencmiss_c_f90_path\n' % sys.argv[0])
-        exit(1)
-
-    cm_source_path=cm_path+os.sep+'src'
-    sources = [cm_source_path+os.sep+file_name \
-            for file_name in os.listdir(cm_source_path) \
-            if file_name.endswith('.f90') and file_name != 'opencmiss.f90']
-
-    library = LibrarySource(cm_source_path+os.sep+'opencmiss.f90',sources)
-
-    with open(opencmiss_h_path,'w') as opencmissh:
-        library.write_c_header(opencmissh)
-    with open(opencmiss_c_f90_path,'w') as opencmisscf90:
-        library.write_c_f90(opencmisscf90)
+    main()
