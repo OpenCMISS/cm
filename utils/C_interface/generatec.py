@@ -463,7 +463,7 @@ class Subroutine(object):
 
         for param in parameters:
             param_pattern = r"""
-            ^\s*([A-Z_]+\s*(\([A-Z_=\*0-9]+\))?) # parameter type at start of line, followed by possible extra specification in brackets
+            ^\s*([A-Z_]+\s*(\([A-Z_=\*0-9]+\))?) # parameter type at start of line, followed by possible type parameters in brackets
             \s*([A-Z0-9\s_\(\):,\s]+)?\s*        # extra specifications such as intent
             ::
             [A-Z_,\s\(\):]*                      # Allow for other parameters to be included on the same line
@@ -479,7 +479,7 @@ class Subroutine(object):
                 match = param_re.search(line)
                 if match:
                     param_type = match.group(1)
-                    type_pt2 = match.group(2)
+                    type_params = match.group(2).replace('(','').replace(')','')
                     extra_stuff = match.group(3)
                     if extra_stuff is None:
                         extra_stuff = ''
@@ -492,7 +492,7 @@ class Subroutine(object):
                         array = match.group(4).replace('(','').replace(')','')
                     else:
                         array = ''
-                    self.parameters.append(Parameter(param,self,param_type,type_pt2,extra_stuff,array,doxygen))
+                    self.parameters.append(Parameter(param,self,param_type,type_params,extra_stuff,array,doxygen))
                     break
             if not match:
                 raise RuntimeError, "Couldn't find parameter %s for subroutine %s" % (param,self.name)
@@ -627,14 +627,14 @@ class Parameter(object):
     #Variable types as used in opencmiss_c.f90
     F90TYPES = ('INTEGER(C_INT)','REAL(C_FLOAT)','REAL(C_DOUBLE)','CHARACTER(LEN=1,KIND=C_CHAR)','INTEGER(C_INT)','TYPE(C_PTR)')
 
-    def __init__(self,name,routine,param_type,type_pt2,extra_stuff,array,doxygen):
+    def __init__(self,name,routine,param_type,type_params,extra_stuff,array,doxygen):
         """Initialise a parameter
 
         Arguments:
         name -- Parameter name
         routine -- Pointer back to the subroutine this parameter belongs to
         param_type -- String from the parameter declaration
-        type_pt2 -- Any extra parameter type specification, eg "(DP)" for a real
+        type_params -- Any parameters for parameter type, eg "DP" for a real
         extra_stuff -- Any extra parameter properties listed after the type, including intent
         array -- The array dimensions included after the parameter name if they exist, otherwise an empty string
         doxygen -- The doxygen comment after the parameteter
@@ -686,7 +686,7 @@ class Parameter(object):
         if param_type.startswith('INTEGER'):
             self.var_type = Parameter.INTEGER
         elif param_type.startswith('REAL'):
-            self.precision = type_pt2.replace('(','').replace(')','')
+            self.precision = type_params
             if self.precision == 'DP':
                 self.var_type = Parameter.DOUBLE
             else:
@@ -706,7 +706,7 @@ class Parameter(object):
 
         elif param_type.startswith('TYPE'):
             self.var_type = Parameter.CUSTOM_TYPE
-            self.type_name = type_pt2.replace('(','').replace(')','')
+            self.type_name = type_params
             if self.array_dims == 0 and self.intent == 'INOUT':
                 #Should actually be in, as we need to pass the pointer by value
                 self.cintent = 'IN'
