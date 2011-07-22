@@ -141,7 +141,7 @@ class LibrarySource(object):
                     if match:
                         name = match.group(1)
                         in_type = True
-                        type = Type(name,lineno,line)
+                        type = Type(name,lineno,line,self)
                         self.types[name] = type
                         continue
 
@@ -223,12 +223,12 @@ class LibrarySource(object):
             'const int CMISSErrorConvertingPointer = -4;\n\n' + \
             '\n/*\n * Struct defs\n */\n\n')
         for t in self.public_types:
-            output.write('struct %s_;\n' % t.name)
+            output.write(t.to_c_struct())
         output.write('\n/*\n * Type defs\n */\n\n')
         output.write('typedef int CMISSError;\n')
         for t in self.public_types:
-            output.write('typedef struct %s_ *%s;\n' % (t.name,t.name))
-        output.write('\n/*\n * Parameters\n */\n\n')
+            output.write(t.to_c_typedef())
+        output.write('/*\n * Parameters\n */\n\n')
         for const in self.public_constants:
             output.write(const.to_c())
         output.write('\n/*\n * Routines\n */\n\n')
@@ -301,7 +301,7 @@ class Constant(object):
         """
         if self.resolved:
             if self.doxygen_comment != '':
-                return 'static int %s = %d; /*< %s */\n' % (self.name,self.value,self.doxygen_comment)
+                return 'static int %s = %d; /*<%s */\n' % (self.name,self.value,self.doxygen_comment)
             else:
                 return 'static int %s = %d;\n' % (self.name,self.value)
         else:
@@ -484,6 +484,7 @@ class Subroutine(object):
         while self.source_file.source_lines[line_num].strip().startswith('!>'):
             self.comment_lines.append(self.source_file.source_lines[line_num].strip()[2:].strip())
             line_num -= 1
+        self.comment_lines.reverse()
 
     def to_c_declaration(self):
         """
@@ -491,13 +492,13 @@ class Subroutine(object):
         """
         if self.parameters is None:
             self.get_parameters()
-        output = '/*> '
+        output = '/*>'
         output += '\n *>'.join(self.comment_lines)
         output += ' */\n'
         output += 'CMISSError %s(' % self.c_name
         c_parameters = _chain_iterable([p.to_c() for p in self.parameters])
         comments = _chain_iterable([p.doxygen_comments() for p in self.parameters])
-        output += ',\n    '.join(['%s /*< %s */' % (p,c) for (p,c) in zip(c_parameters,comments)])
+        output += ',\n    '.join(['%s /*<%s */' % (p,c) for (p,c) in zip(c_parameters,comments)])
         output += ');\n\n'
         return output
 
@@ -963,7 +964,7 @@ class Type(object):
     """
     Information on a Fortran type
     """
-    def __init__(self,name,lineno,line):
+    def __init__(self,name,lineno,line,source_file):
         """
         Initialise type
 
@@ -976,6 +977,35 @@ class Type(object):
         self.lineno = lineno
         self.line = line
         self.lines = [line]
+        self.source_file = source_file
+        self._get_comments()
+
+    def _get_comments(self):
+        """
+        Sets the comment_lines property, a list of comments above the type definition
+        """
+        self.comment_lines = []
+        line_num = self.lineno - 1
+        while self.source_file.source_lines[line_num].strip().startswith('!>'):
+            self.comment_lines.append(self.source_file.source_lines[line_num].strip()[2:].strip())
+            line_num -= 1
+        self.comment_lines.reverse()
+
+    def to_c_struct(self):
+        """
+        Return the struct definition
+        """
+        return 'struct %s_;\n' % self.name
+
+    def to_c_typedef(self):
+        """
+        Return the typedef defintion
+        """
+        output = '/*>'
+        output += '\n *>'.join(self.comment_lines)
+        output += ' */\n'
+        output += 'typedef struct %s_ *%s;\n\n' % (self.name,self.name)
+        return output
 
 
 def _join_lines(source):
