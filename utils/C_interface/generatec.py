@@ -95,7 +95,7 @@ class LibrarySource(object):
 
         class SubroutineFinder(SectionFinder):
             start_re = re.compile(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(',re.IGNORECASE)
-            end_re = re.compile(r'^\s*END\s+SUBROUTINE',re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s*SUBROUTINE',re.IGNORECASE)
 
             def finish(self):
                 name = self.match.group(2)
@@ -103,7 +103,7 @@ class LibrarySource(object):
 
         class InterfaceFinder(SectionFinder):
             start_re = re.compile(r'^\s*INTERFACE\s+([A-Z0-9_]+)',re.IGNORECASE)
-            end_re = re.compile(r'^\s*END\s+INTERFACE',re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s*INTERFACE',re.IGNORECASE)
 
             def finish(self):
                 name = self.match.group(1)
@@ -111,7 +111,7 @@ class LibrarySource(object):
 
         class TypeFinder(SectionFinder):
             start_re = re.compile(r'^\s*TYPE\s+([A-Z0-9_]+)',re.IGNORECASE)
-            end_re = re.compile(r'^\s*END\s+TYPE',re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s*TYPE',re.IGNORECASE)
 
             def finish(self):
                 name = self.match.group(1)
