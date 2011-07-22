@@ -328,66 +328,60 @@ class Interface(object):
 
         Returns a list of subroutines
         """
-        subroutines = []
-        obj_routines = []
-        number_routines = []
-        other_dim_routines = []
-        other_routines = []
+        all_subroutines = []
         routine_re=re.compile(r'MODULE PROCEDURE ([A-Z0-9_]+)',re.IGNORECASE)
         varying_string_re=re.compile(r'VSC*(Obj|Number|)[0-9]*$',re.IGNORECASE)
+
         for line in self.lines:
             match = routine_re.search(line)
             if match:
                 routine_name = match.group(1)
-                obj_match = re.search(r'ObjC?([0-9]*)C?$',routine_name)
-                number_match = re.search(r'NumberC?([0-9]*)C?$',routine_name)
-                other_dim_match = re.search(r'([0-9]+)C?$',routine_name)
                 if varying_string_re.search(routine_name):
                     #Don't include routines using varying_string parameters
                     pass
-                elif obj_match:
-                    obj_routines.append((routine_name,obj_match.group(1)))
-                elif number_match:
-                    number_routines.append((routine_name,number_match.group(1)))
-                elif other_dim_match:
-                    number_routines.append((routine_name,other_dim_match.group(1)))
                 else:
-                    other_routines.append(routine_name)
-        #find routines with highest number (parameters passed as arrays rather than scalars)
-        if len(obj_routines) > 0:
-            max_routine = obj_routines[0]
-            for routine in obj_routines[1:]:
-                try:
-                    if int(routine[1]) > int(max_routine[1]):
-                        max_routine = routine
-                except ValueError:
-                    subroutines.append(routine[0])
-                    self.source.subroutines[routine[0]].interface = self
-            subroutines.append(max_routine[0])
-            self.source.subroutines[max_routine[0]].interface = self
-        if len(number_routines) > 0:
-            max_routine = number_routines[0]
-            for routine in number_routines[1:]:
-                try:
-                    if int(routine[1]) > int(max_routine[1]):
-                        max_routine = routine
-                except ValueError:
-                    subroutines.append(routine[0])
-                    self.source.subroutines[routine[0]].interface = self
-            subroutines.append(max_routine[0])
-            self.source.subroutines[max_routine[0]].interface = self
-        if len(other_dim_routines) > 0:
-            max_routine = other_dim_routines[0]
-            for routine in number_routines[1:]:
-                if int(routine[1]) > int(max_routine[1]):
-                    max_routine = routine
-            subroutines.append(max_routine[0])
-            self.source.subroutines[max_routine[0]].interface = self
-        if len(other_routines) > 0:
-            for routine in other_routines:
-                subroutines.append(routine)
-                self.source.subroutines[routine].interface = self
+                    all_subroutines.append(routine_name)
+
+        subroutines = self._get_array_routines(all_subroutines)
+
+        for routine in subroutines:
+            self.source.subroutines[routine].interface = self
+
         return subroutines
+
+    def _get_array_routines(self,routine_list):
+        """
+        Return a list of the routines that take array parameters if there
+        is an option between passing an array or a scalar
+
+        Arguments:
+        routine_list -- List of subroutine names
+        """
+        routine_groups = {}
+        routines = []
+
+        #Group routines depending on their name, minus any number indicating
+        #whether they take a scalar or array
+        for routine in routine_list:
+            routine_group = re.sub('\d','0',routine)
+            if routine_groups.has_key(routine_group):
+                routine_groups[routine_group].append(routine)
+            else:
+                routine_groups[routine_group] = [routine]
+
+        for group in routine_groups.keys():
+            max_number = -1
+            for routine in routine_groups[group]:
+                try:
+                    number = int(filter(str.isdigit,routine))
+                    if number > max_number:
+                        array_routine = routine
+                except ValueError:
+                    #only one routine in group
+                    array_routine = routine
+            routines.append(array_routine)
+
+        return routines
 
 
 class Subroutine(object):
