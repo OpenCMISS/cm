@@ -2234,6 +2234,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = &
     & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardMonodomainElasticitySubtype =  &
+    & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE !<Standard Monodomain Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
@@ -2504,7 +2506,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype, &
     & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype, &
     & CMISSEquationsSetBurgersSubtype,CMISSEquationsSetGeneralisedBurgersSubtype,CMISSEquationsSetStaticBurgersSubtype, &
-    & CMISSEquationsSetInviscidBurgersSubtype
+    & CMISSEquationsSetInviscidBurgersSubtype,CMISSEquationsSetStandardMonodomainElasticitySubtype
 
 
   PUBLIC CMISSEquationsSetReactionDiffusionCellMLReacSplitSubtype, CMISSEquationsSetReactionDiffusionCellMLReacNoSplitSubtype, &
@@ -4464,6 +4466,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionAdvectionDiffusionType = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMultiCompartmentTransportType = PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE !<Multi-compartment transport problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityFluidPressureType = PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE !<Finite elasticity fluid pressure problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemBioelectricFiniteElasticityType = PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE !<Monodomain finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
  
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplittingEquationType = &
     & PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
@@ -4567,6 +4570,8 @@ MODULE OPENCMISS
     & PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE !<Standard multi-compartment transport problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityFluidPressureSubtype = & 
     & PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE !<Standard elasticity fluid pressure problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemGudunovMonodomainSimpleElasticitySubtype = & 
+    & PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityCellMLSubtype = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4624,7 +4629,8 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemFiniteElasticityDarcyType, &
     & CMISSProblemFiniteElasticityStokesType, CMISSProblemFiniteElasticityNavierStokesType, &
     & CMISSProblemDiffusionDiffusionType, CMISSProblemDiffusionAdvectionDiffusionType, &
-    & CMISSProblemMultiCompartmentTransportType,CMISSProblemFiniteElasticityFluidPressureType 
+    & CMISSProblemMultiCompartmentTransportType,CMISSProblemFiniteElasticityFluidPressureType, &
+    & CMISSProblemBioelectricFiniteElasticityType 
 
   PUBLIC CMISSProblemNoSubtype
 
@@ -4686,7 +4692,8 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
    & CMISSProblemQuasistaticElasticityTransientDarcySubtype,CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype, &
    & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
-   & CMISSProblemStandardMultiCompartmentTransportSubtype,CMISSProblemStandardElasticityFluidPressureSubtype
+   & CMISSProblemStandardMultiCompartmentTransportSubtype,CMISSProblemStandardElasticityFluidPressureSubtype, &
+   & CMISSProblemGudunovMonodomainSimpleElasticitySubtype
 
   PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype,CMISSProblemFiniteElasticityCellMLSubtype
 !!==================================================================================================================================

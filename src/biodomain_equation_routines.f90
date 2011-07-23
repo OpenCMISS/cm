@@ -1178,6 +1178,24 @@ CONTAINS
                   & " is invalid for a bidomain problem type."
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
+            CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
+              SELECT CASE(PROBLEM%SUBTYPE)
+              CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE)
+                SELECT CASE(SOLVER%GLOBAL_NUMBER)
+                CASE(1)
+                  CALL SOLVER_DAE_TIMES_SET(SOLVER,CURRENT_TIME,CURRENT_TIME+TIME_INCREMENT,ERR,ERROR,*999)
+                CASE(2)
+                  !Do nothing
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver global number of "//TRIM(NUMBER_TO_VSTRING(SOLVER%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                    & " is invalid for a bioelectrics finite elasticity problem."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              CASE DEFAULT
+                LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                  & " is invalid for a monodomain problem type."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
                 & " is invalid."

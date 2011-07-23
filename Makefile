@@ -805,6 +805,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/Darcy_pressure_equations_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o \
+	$(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
 	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
@@ -1263,6 +1264,24 @@ $(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o	:	$(SOURCE_DIR)/finite
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o	:	$(SOURCE_DIR)/bioelectric_finite_elasticity_routines.f90 \
+                                                                                                           $(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/finite_elasticity_routines.o \
+	$(OBJECT_DIR)/bioelectric_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/data_point_routines.o	:	$(SOURCE_DIR)/data_point_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1930,6 +1949,7 @@ $(OBJECT_DIR)/multi_physics_routines.o	:	$(SOURCE_DIR)/multi_physics_routines.f9
 	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o \
+	$(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
