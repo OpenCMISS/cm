@@ -88,10 +88,10 @@ class LibrarySource(object):
             def __init__(self,source_file):
                 self.source_file = source_file
 
-            def check_match(self,line):
+            def check_match(self,line,lineno):
                 match = self.line_re.search(line)
                 if match:
-                    self.add(match)
+                    self.add(match,lineno)
 
         class SubroutineFinder(SectionFinder):
             start_re = re.compile(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(',re.IGNORECASE)
@@ -120,21 +120,32 @@ class LibrarySource(object):
         class PublicFinder(LineFinder):
             line_re = re.compile(r'^\s*PUBLIC\s+([A-Z0-9_,\s]+)',re.IGNORECASE)
 
-            def add(self,match):
+            def add(self,match,lineno):
                 for symbol in match.group(1).split(','):
                     self.source_file.public.append(symbol.strip())
 
         class ConstantFinder(LineFinder):
             line_re = re.compile(r'^\s*INTEGER\([A-Z0-9\(\),_\s]+::\s*([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)[^!]*(!<.*$)?',re.IGNORECASE)
 
-            def add(self,match):
+            def add(self,match,lineno):
                 name = match.group(1)
                 assignment = match.group(2)
                 if match.group(3) is None:
                     doxy = ''
                 else:
                     doxy = match.group(3)[2:].strip()
-                self.source_file.constants[name] = Constant(name,assignment,doxy)
+                self.source_file.constants[name] = Constant(name,lineno,assignment,doxy)
+
+        class DoxygenGroupingFinder(LineFinder):
+            #match at least one whitespace character before the ! to make sure
+            #we don't get stuff from the file header
+            line_re = re.compile(r'^\s+!\s*>\s*(\\(addtogroup|brief|see)|@[\{\}])(.*$)',re.IGNORECASE)
+
+            def add(self,match,lineno):
+                line = match.group(1)
+                if match.group(3) is not None:
+                    line += match.group(3)
+                self.source_file.doxygen_groupings.append(DoxygenGrouping(lineno,line))
 
         def __init__(self,source_file,params_only=False):
             """Initialise SourceFile object
@@ -145,6 +156,7 @@ class LibrarySource(object):
 
             self.file_path = source_file
             self.public = []
+            self.doxygen_groupings = []
             self.interfaces = {}
             self.subroutines = {}
             self.constants = {}
@@ -164,11 +176,13 @@ class LibrarySource(object):
             section_finders = []
             line_finders.append(self.ConstantFinder(self))
             if not params_only:
-                line_finders.append(self.PublicFinder(self))
-                section_finders.extend([
+                line_finders.extend((
+                    self.PublicFinder(self),
+                    self.DoxygenGroupingFinder(self)))
+                section_finders.extend((
                     self.SubroutineFinder(self),
                     self.InterfaceFinder(self),
-                    self.TypeFinder(self)])
+                    self.TypeFinder(self)))
 
             #Find them
             current_section = None
@@ -179,7 +193,7 @@ class LibrarySource(object):
                         current_section = None
                 else:
                     for line_finder in line_finders:
-                        line_finder.check_match(line)
+                        line_finder.check_match(line,lineno)
 
                     for section in section_finders:
                         if section.check_for_start(lineno,line):
@@ -199,26 +213,35 @@ class LibrarySource(object):
 
         self.resolve_constants()
 
-        self.public_types=[t for t in self.lib_source.types.values() \
-                if t.name in self.lib_source.public]
-        self.public_types=sorted(self.public_types,key=attrgetter('name'))
+        #Get all public types, constants and routines to include
+        #Store all objects to be output in a dictionary with line number as key
+        self.public_objects = {}
+        for t in self.lib_source.types.values():
+            if t.name in self.lib_source.public:
+                self.public_objects[t.lineno] = t
 
-        self.public_constants=[const for const in self.lib_source.constants.values() \
-                if const.name in self.lib_source.public]
-        self.public_constants=sorted(self.public_constants,key=attrgetter('name'))
+        for const in self.lib_source.constants.values():
+            if const.name in self.lib_source.public:
+                self.public_objects[const.lineno] = const
 
         self.public_subroutines=[routine for routine in self.lib_source.subroutines.values() \
-                if routine.name in self.lib_source.public]
+            if routine.name in self.lib_source.public]
 
         for interface in self.lib_source.interfaces.values():
             if interface.name in self.lib_source.public:
-                self.public_subroutines+=[self.lib_source.subroutines[routine] \
+                self.public_subroutines += [self.lib_source.subroutines[routine] \
                         for routine in interface.get_subroutines()]
-        self.public_subroutines=sorted(self.public_subroutines,key=attrgetter('name'))
 
+        self.public_subroutines=sorted(self.public_subroutines,key=attrgetter('name'))
         #Remove CMISS...TypesCopy routines, as these are only used within the C bindings
         #Also remove CMISSGeneratedMeshSurfaceGet for now as it takes an allocatable array but will be removed soon anyways.
         self.public_subroutines = filter(lambda r: not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or r.name.endswith('TypesCopy')),self.public_subroutines)
+
+        for routine in self.public_subroutines:
+            self.public_objects[routine.lineno] = routine
+
+        for doxygen_grouping in self.lib_source.doxygen_groupings:
+            self.public_objects[doxygen_grouping.lineno] = doxygen_grouping
 
     def resolve_constants(self):
         """Go through all public constants and work out their actual values"""
@@ -268,21 +291,11 @@ class LibrarySource(object):
             'const int CMISSPointerIsNULL = -1;\n' + \
             'const int CMISSPointerNotNULL = -2;\n' + \
             'const int CMISSCouldNotAllocatePointer = -3;\n' + \
-            'const int CMISSErrorConvertingPointer = -4;\n\n' + \
-            '\n/*\n * Struct defs\n */\n\n')
-        for t in self.public_types:
-            output.write(t.to_c_struct())
-        output.write('\n/*\n * Type defs\n */\n\n')
-        output.write('typedef int CMISSError;\n')
-        for t in self.public_types:
-            output.write(t.to_c_typedef())
-        output.write('/*\n * Parameters\n */\n\n')
-        for const in self.public_constants:
-            output.write(const.to_c())
-        output.write('\n/*\n * Routines\n */\n\n')
-        for subroutine in self.public_subroutines:
-            output.write(subroutine.to_c_declaration())
-        output.write('#endif\n')
+            'const int CMISSErrorConvertingPointer = -4;\n\n')
+        output.write('typedef int CMISSError;\n\n')
+        for lineno in sorted(self.public_objects.keys()):
+            output.write(self.public_objects[lineno].to_c_header())
+        output.write('\n#endif\n')
 
     def write_c_f90(self,output):
         """Write opencmiss_c.f90 containing Fortran routines
@@ -316,7 +329,7 @@ class LibrarySource(object):
 class Constant(object):
     """Information on a public constant"""
 
-    def __init__(self,name,assignment,doxygen_comment):
+    def __init__(self,name,lineno,assignment,doxygen_comment):
         """Initialise Constant
 
         Arguments:
@@ -326,6 +339,7 @@ class Constant(object):
         """
 
         self.name = name
+        self.lineno = lineno
         self.assignment = assignment
         self.doxygen_comment = doxygen_comment
         try:
@@ -339,7 +353,7 @@ class Constant(object):
                 self.value = None
                 self.resolved = False
 
-    def to_c(self):
+    def to_c_header(self):
         """Return the C definition of this constant"""
 
         if self.resolved:
@@ -521,12 +535,12 @@ class Subroutine(object):
             line_num -= 1
         self.comment_lines.reverse()
 
-    def to_c_declaration(self):
+    def to_c_header(self):
         """Returns the function declaration in C"""
 
         if self.parameters is None:
             self.get_parameters()
-        output = '/*>'
+        output = '\n/*>'
         output += '\n *>'.join(self.comment_lines)
         output += ' */\n'
         output += 'CMISSError %s(' % self.c_name
@@ -534,7 +548,7 @@ class Subroutine(object):
         c_parameters = _chain_iterable([p.to_c() for p in self.parameters])
         comments = _chain_iterable([p.doxygen_comments() for p in self.parameters])
         output += ',\n    '.join(['%s /*<%s */' % (p,c) for (p,c) in zip(c_parameters,comments)])
-        output += ');\n\n'
+        output += ');\n'
 
         return output
 
@@ -1039,19 +1053,27 @@ class Type(object):
             line_num -= 1
         self.comment_lines.reverse()
 
-    def to_c_struct(self):
-        """Return the struct definition"""
+    def to_c_header(self):
+        """Return the struct and typedef definition for use in opencmiss.h"""
 
-        return 'struct %s_;\n' % self.name
-
-    def to_c_typedef(self):
-        """Return the typedef defintion"""
-
-        output = '/*>'
+        output = 'struct %s_;\n' % self.name
+        output += '/*>'
         output += '\n *>'.join(self.comment_lines)
         output += ' */\n'
         output += 'typedef struct %s_ *%s;\n\n' % (self.name,self.name)
         return output
+
+
+class DoxygenGrouping(object):
+    """Store a line used for grouping in Doxygen"""
+
+    def __init__(self,lineno,line):
+        self.lineno = lineno
+        self.line = line.strip()
+
+    def to_c_header(self):
+        """Return the doxygen comment for use in opencmiss.h"""
+        return '/*>'+self.line+' */\n'
 
 
 def _join_lines(source):
