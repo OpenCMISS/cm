@@ -73,22 +73,1012 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
 
   PRIVATE
 
+  PUBLIC NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE
+  PUBLIC NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
-  PUBLIC NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE
   PUBLIC NAVIER_STOKES_EQUATIONS_SET_SETUP
+  PUBLIC NAVIER_STOKES_PRE_SOLVE
+  PUBLIC NAVIER_STOKES_POST_SOLVE
   PUBLIC NAVIER_STOKES_PROBLEM_SUBTYPE_SET
   PUBLIC NAVIER_STOKES_PROBLEM_SETUP
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
   PUBLIC NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
-  PUBLIC NAVIER_STOKES_POST_SOLVE
-  PUBLIC NAVIER_STOKES_PRE_SOLVE
-  PUBLIC NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS
   PUBLIC NAVIER_STOKES_CONTROL_TIME_LOOP_PRE_LOOP
 
   INTEGER(INTG) :: SOLVER_NUMBER_NAVIER_STOKES
 
 CONTAINS 
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
+  SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,I,J,K
+    INTEGER(INTG) :: number_of_nodes_xic(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX
+    REAL(DP) :: VALUE,X(3),XI_COORDINATES(3)
+!     REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2),MU_PARAM,L
+    REAL(DP) :: T_COORDINATES(20,3),CURRENT_TIME,MU_PARAM,RHO_PARAM
+    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
+!     TYPE(VARYING_STRING) :: LOCAL_ERROR    
+
+! ! !     !Temp variables
+! ! !     INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
+
+    CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+!\todo: Introduce user call to set parameters
+    BOUND_COUNT=0
+! ! ! !     L=10.0_DP
+    XI_COORDINATES(3)=0.0_DP
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN     
+            NULLIFY(INTERPOLATION_PARAMETERS)
+            NULLIFY(INTERPOLATED_POINT) 
+            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+
+            NULLIFY(GEOMETRIC_VARIABLE)
+            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+            NULLIFY(GEOMETRIC_PARAMETERS)
+            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+              & ERR,ERROR,*999)
+            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                  CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                    BOUND_COUNT=0
+                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
+                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                      IF(ASSOCIATED(DOMAIN)) THEN
+                        IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                          DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                            !Loop over the local nodes excluding the ghosts.
+                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                              element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
+                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+                                & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              en_idx=0
+                              XI_COORDINATES=0.0_DP
+                              number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)
+                              number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(2)
+                              IF(NUMBER_OF_DIMENSIONS==3) THEN
+                                number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(3)
+                              ELSE
+                                number_of_nodes_xic(3)=1
+                              ENDIF
+!\todo: Use boundary flag
+                              IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
+                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
+                                DO K=1,number_of_nodes_xic(3)
+                                  DO J=1,number_of_nodes_xic(2)
+                                    DO I=1,number_of_nodes_xic(1)
+                                      en_idx=en_idx+1
+                                      IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                      XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
+                                    ENDDO
+                                      IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                      XI_COORDINATES(1)=0.0_DP
+                                      XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
+                                  ENDDO
+                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
+                                  XI_COORDINATES(1)=0.0_DP
+                                  XI_COORDINATES(2)=0.0_DP
+                                  IF(number_of_nodes_xic(3)/=1) THEN
+                                    XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
+                                  ENDIF
+                                ENDDO
+                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
+                                  & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                              ELSE
+!\todo: Use boundary flag
+                                IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
+                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
+                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                  T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
+                                  T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
+                                  T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
+                                  & NUMBER_OF_DIMENSIONS==2) THEN
+                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                  T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
+                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
+                                  & NUMBER_OF_DIMENSIONS==3) THEN
+                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
+                                  T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
+                                  T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
+                                  T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
+                                  T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+                                  T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+                                  T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                ENDIF
+                                DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
+                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
+                                ENDDO
+                                IF(NUMBER_OF_DIMENSIONS==2) THEN
+                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
+                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
+                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                                ENDIF
+                              ENDIF
+                              X=0.0_DP
+                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
+                              ENDDO !dim_idx
+
+                              !Loop over the derivatives
+                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
+                                  & GLOBAL_DERIVATIVE_INDEX
+                                CURRENT_TIME=0.0_DP
+                                MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                                !Define MU_PARAM, density=1
+                                MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                  & parameters%cmiss%data_dp(1)
+                                !Define RHO_PARAM, density=2
+                                RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+                                  & parameters%cmiss%data_dp(2)
+                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME, &
+                                  & variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
+                                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
+                                !Default to version 1 of each node derivative
+                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
+! \todo: This part should work even for simplex elements as soon as adjacent element calculation has been fixed
+                                  IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
+                                    !If we are a boundary node then set the analytic value on the boundary
+                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
+                                        & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                      BOUND_COUNT=BOUND_COUNT+1
+                                    ELSE
+! \todo: This is just a workaround for linear pressure fields in simplex element components
+                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
+                                        IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5) THEN
+                                          IF(-0.001_DP<X(1).AND.X(1)<0.001_DP.AND.-0.001_DP<X(2).AND.X(2)<0.001_DP.OR. &
+                                            &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.-0.001_DP<X(2).AND. &
+                                            & X(2)<0.001_DP.OR. &
+                                            &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<10.0_DP+0.001_DP.OR. &
+                                            &  -0.001_DP<X(1).AND.X(1)<0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<10.0_DP+0.001_DP) THEN
+                                              CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
+                                                & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                              BOUND_COUNT=BOUND_COUNT+1
+                                          ENDIF
+                                        ENDIF
+                                      ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND. &
+                                        & NUMBER_OF_DIMENSIONS==3) THEN
+                                        IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4.OR. &
+                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
+                                          IF(-5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                            & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
+                                            & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                            & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
+                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
+                                            & X(2)<-5.0_DP+ 0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP) THEN
+                                            CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
+                                              & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                            BOUND_COUNT=BOUND_COUNT+1
+                                          ENDIF
+                                        ENDIF
+! \todo: This is how it should be if adjacent elements would be working
+                                      ELSE IF(BOUND_COUNT==0) THEN
+                                        CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
+                                          & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
+                                        BOUND_COUNT=BOUND_COUNT+1
+                                      ENDIF
+                                    ENDIF
+                                  ELSE
+                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
+                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+                                    ENDIF
+                                  ENDIF
+
+                                ENDIF
+                              ENDDO !deriv_idx
+                            ENDDO !node_idx
+                          ELSE
+                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                    ENDIF
+WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
+                  ENDDO !component_idx
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
+                    & ERR,ERROR,*999)
+                ELSE
+                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                ENDIF
+              ENDDO !variable_idx
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+            ELSE
+              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE")
+    RETURN
+999 CALL ERRORS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
+    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE")
+    RETURN 1    
+  END SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE
+
+
+  !
+  !================================================================================================================================
+  !
+  !>Calculates the various analytic solutions given X and time, can be called from within analytic calculate or elsewhere if needed
+  SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME,VARIABLE_TYPE, & 
+    & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX,ERR,ERROR,*)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    REAL(DP), INTENT(OUT) :: VALUE
+    REAL(DP) :: MU_PARAM,RHO_PARAM
+    REAL(DP), INTENT(IN) :: CURRENT_TIME
+    REAL(DP), INTENT(IN), DIMENSION(3) :: X
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX
+    !Local variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
+    !TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
+    !TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
+    REAL(DP) :: INTERNAL_TIME
+
+    CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
+
+!\todo: Introduce user-defined or default values instead for density and viscosity
+    INTERNAL_TIME=CURRENT_TIME
+     SELECT CASE(ANALYTIC_FUNCTION_TYPE)
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
+         IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
+           !Polynomial function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate Q
+                     VALUE=X(1)**2/10.0_DP**2
+                   ELSE IF(component_idx==2) THEN
+                     !calculate A
+                     VALUE=X(1)**2/10.0_DP**2
+                   ELSE IF(component_idx==3) THEN
+                     !calculate P
+                     VALUE=X(1)**2/10.0_DP**2
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   VALUE= 0.0_DP
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
+         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+           !Polynomial function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=X(2)**2/10.0_DP**2
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=X(1)**2/10.0_DP**2
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE=2.0_DP/3.0_DP*X(1)*(3.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(1)**2*X(2))/(10.0_DP ** 4)
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   VALUE= 0.0_DP
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
+         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+           !Exponential function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE= EXP((X(1)-X(2))/10.0_DP)
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE= EXP((X(1)-X(2))/10.0_DP)
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE= 2.0_DP*MU_PARAM/10.0_DP*EXP((X(1)-X(2))/10.0_DP)
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE= 0.0_DP
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE= 0.0_DP
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE= 0.0_DP
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
+         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+           !Sine and cosine function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(2)/10.0_DP)
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE=4.0_DP*MU_PARAM*PI/10.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)+ &
+                       & 0.5_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=16.0_DP*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/ 10.0_DP)*cos(2.0_DP*PI*X(1)/10.0_DP)
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE=0.0_DP
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
+         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+           !Taylor-Green vortex solution
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=SIN(X(1)/10.0_DP*2.0_DP*PI)*COS(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                     VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+!                      VALUE=SIN(X(1))*COS(X(2))
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=-COS(X(1)/10.0_DP*2.0_DP*PI)*SIN(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                     VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+!                      VALUE=-COS(X(1))*SIN(X(2))
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*2.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*2.0_DP*PI))* &
+                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
+                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
+                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
+!                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=0.0_DP         
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE=0.0_DP
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1)
+         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+           !Polynomial function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=X(2)**2/10.0_DP**2+X(3)**2/10.0_DP**2
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=X(1)**2/10.0_DP**2+X(3)**2/10.0_DP** 2
+                   ELSE IF(component_idx==3) THEN
+                     !calculate w
+                     VALUE=X(1)**2/10.0_DP**2+X(2)**2/10.0_DP** 2
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=2.0_DP/3.0_DP*X(1)*(6.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(2)*X(1)**2-3.0_DP* & 
+                       & RHO_PARAM*X(2)* &
+                       & X(3)**2-RHO_PARAM*X(3)*X(1)**2-3.0_DP*RHO_PARAM*X(3)*X(2)**2)/(10.0_DP**4)
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT   
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   VALUE=0.0_DP
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              CASE DEFAULT
+                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2)
+         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+           !Exponential function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(3)-X(1))/10.0_DP)
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
+                   ELSE IF(component_idx==3) THEN
+                     !calculate w
+                     VALUE=EXP((X(3)-X(1))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=1.0_DP/10.0_DP*(2.0_DP*MU_PARAM*EXP((X(1)-X(2))/10.0_DP)- & 
+                       & 2.0_DP*MU_PARAM*EXP((X(3)-X(1))/10.0_DP)+RHO_PARAM*10.0_DP*EXP((X(1)-X(3))/10.0_DP)+ & 
+                       & RHO_PARAM*10.0_DP*EXP((X(2)-X(1))/10.0_DP))
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT   
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(1)-X(2))+EXP(X(2)-X(3)))
+                   ELSE IF(component_idx==3) THEN
+                     !calculate w
+                     VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(3)-X(1))+EXP(X(2)-X(3)))
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=0.0_DP
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3)
+         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+           !Sine/cosine function
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=2.0_DP*cos(2.0_DP*PI*x(1)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)*cos(2.0_DP*PI*X(2)/10.0_DP)
+                   ELSE IF(component_idx==3) THEN
+                     !calculate w
+                     VALUE=-cos(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*cos(2.0_DP*PI*X(3)/10.0_DP)
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=-COS(2.0_DP*PI*X(1)/10.0_DP)*(-12.0_DP*MU_PARAM*PI*SIN(2.0_DP*PI*X(2)/10.0_DP)* & 
+                       & SIN(2.0_DP*PI*X(3)/10.0_DP)-RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP+ &
+                       & 2.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(3)/10.0_DP)**2- &
+                       & RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP/2.0_DP
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT   
+              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+                SELECT CASE(GLOBAL_DERIV_INDEX)
+                  CASE(NO_GLOBAL_DERIV)
+                    IF(component_idx==1) THEN
+                      !calculate u
+                      VALUE=0.0_DP
+                    ELSE IF(component_idx==2) THEN
+                      !calculate v
+                      VALUE=36*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)* & 
+                        & cos(2.0_DP*PI*X(1)/10.0_DP)
+                    ELSE IF(component_idx==3) THEN
+                      !calculate w
+                      VALUE=0.0_DP
+                    ELSE IF(component_idx==4) THEN
+                      !calculate p
+                      VALUE=0.0_DP
+                    ELSE
+                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    ENDIF
+                  CASE(GLOBAL_DERIV_S1)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE(GLOBAL_DERIV_S2)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                  CASE(GLOBAL_DERIV_S1_S2)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CASE DEFAULT
+                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                      & " is invalid."
+                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+              CASE DEFAULT
+                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT      
+          ELSE 
+            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          ENDIF
+       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
+         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+           !Taylor-Green vortex solution
+           SELECT CASE(variable_type)
+             CASE(FIELD_U_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+                   ELSE IF(component_idx==3) THEN
+                     !calculate v
+                     VALUE=0.0_DP
+!                      VALUE=-COS(X(1))*SIN(X(2))
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
+                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
+!                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+               SELECT CASE(GLOBAL_DERIV_INDEX)
+                 CASE(NO_GLOBAL_DERIV)
+                   IF(component_idx==1) THEN
+                     !calculate u
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==2) THEN
+                     !calculate v
+                     VALUE=0.0_DP         
+                   ELSE IF(component_idx==3) THEN
+                     !calculate p
+                     VALUE=0.0_DP
+                   ELSE IF(component_idx==4) THEN
+                     !calculate p
+                     VALUE=0.0_DP
+                   ELSE
+                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   ENDIF
+                 CASE(GLOBAL_DERIV_S1)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE(GLOBAL_DERIV_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                 CASE(GLOBAL_DERIV_S1_S2)
+                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                 CASE DEFAULT
+                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & " is invalid."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               END SELECT
+             CASE DEFAULT
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+                 & " is invalid."
+               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT      
+         ELSE 
+           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         ENDIF
+        CASE DEFAULT
+          LOCAL_ERROR="The analytic function type of "// &
+            & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE")
+    RETURN
+999 CALL ERRORS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR)
+    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE")
+    RETURN 1
+  END SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE
 
 !
 !================================================================================================================================
@@ -1056,6 +2046,201 @@ CONTAINS
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_EQUATIONS_SET_SETUP
 
+  !
+  !================================================================================================================================
+  !
+
+
+  !>Sets up the Navier-Stokes problem pre solve.
+  SUBROUTINE NAVIER_STOKES_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
+!     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
+    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
+    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
+    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER_NAVIER_STOKES  !<A pointer to the solvers
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: solver_matrix_idx
+
+    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR,*999)
+    NULLIFY(SOLVER2)
+ 
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
+              ! do nothing ???
+            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+                !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
+                SOLVER_NUMBER_NAVIER_STOKES=1
+                !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
+                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                    SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                    IF(ASSOCIATED(SOLVER_MATRICES)) THEN
+                      DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
+                        SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
+                        IF(ASSOCIATED(SOLVER_MATRIX)) THEN
+                          SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
+                        ELSE
+                          CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
+                        ENDIF
+                      ENDDO
+                    ELSE
+                      CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
+                    ENDIF
+                  ELSE
+                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                  ENDIF
+                ELSE
+                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                ENDIF
+                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
+              ! do nothing ???
+                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
+              ! do nothing ???
+              !First update mesh and calculates boundary velocity values
+              CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              !Then apply both normal and moving mesh boundary conditions
+              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
+              !Pre solve for the linear solver
+              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement pre solve... ",ERR,ERROR,*999)
+                !Update boundary conditions for mesh-movement
+                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
+                IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
+                  SOLVER2%DYNAMIC_SOLVER%ALE=.FALSE.
+                ELSE  
+                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
+                END IF
+                !Update material properties for Laplace mesh movement
+                CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              !Pre solve for the linear solver
+              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Navier-Stokes pre solve... ",ERR,ERROR,*999)
+                IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
+                  !First update mesh and calculates boundary velocity values
+                  CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                  !Then apply both normal and moving mesh boundary conditions
+                  CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                ELSE  
+                  CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+                END IF
+              ELSE  
+                CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("NAVIER_STOKES_PRE_SOLVE")
+    RETURN
+999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR)
+    CALL EXITS("NAVIER_STOKES_PRE_SOLVE")
+    RETURN 1
+  END SUBROUTINE NAVIER_STOKES_PRE_SOLVE
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets up the Navier-Stokes problem post solve.
+  SUBROUTINE NAVIER_STOKES_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER!<A pointer to the solver
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR,*999)
+    NULLIFY(SOLVER2)
+
+    IF(ASSOCIATED(CONTROL_LOOP)) THEN
+      IF(ASSOCIATED(SOLVER)) THEN
+        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
+              !Post solve for the linear solver
+              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement post solve... ",ERR,ERROR,*999)
+                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
+                IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
+                  SOLVER2%DYNAMIC_SOLVER%ALE=.TRUE.
+                ELSE  
+                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
+                END IF
+              !Post solve for the dynamic solver
+              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Navier-Stokes post solve... ",ERR,ERROR,*999)
+                CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              END IF
+            CASE DEFAULT
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("NAVIER_STOKES_POST_SOLVE")
+    RETURN
+999 CALL ERRORS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR)
+    CALL EXITS("NAVIER_STOKES_POST_SOLVE")
+    RETURN 1
+  END SUBROUTINE NAVIER_STOKES_POST_SOLVE
+
+
 ! 
 !================================================================================================================================
 !
@@ -1658,6 +2843,577 @@ CONTAINS
     CALL EXITS("NAVIER_STOKES_PROBLEM_SETUP")
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_PROBLEM_SETUP
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Evaluates the Jacobian element stiffness matrices and RHS for a Navier-Stokes equation finite element equations set.
+  SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
+    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
+    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3)
+    REAL(DP), POINTER :: BIF_VALUES(:)
+    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
+    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
+    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX !, DAMPING_MATRIX
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: x
+
+    LOGICAL :: UPDATE_JACOBIAN_MATRIX
+
+    !REAL(DP) :: test(89,89),test2(89,89),scaling,square
+    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
+    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+    REAL(DP) :: J_MATRIX(256,256)
+    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
+    REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
+
+    CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+
+    J1_MATRIX=0.0_DP
+    J2_MATRIX=0.0_DP
+    J_MATRIX=0.0_DP
+
+!\todo: Check whether or not update flags work properly and how much time is spent in each section
+
+    UPDATE_JACOBIAN_MATRIX=.FALSE.
+
+    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      NULLIFY(EQUATIONS)
+      EQUATIONS=>EQUATIONS_SET%EQUATIONS
+      IF(ASSOCIATED(EQUATIONS)) THEN
+        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+            !Set some general and case-specific pointers
+            DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
+            GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
+            MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
+            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+            GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+            DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+            QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+!            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+            EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
+            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+                & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
+                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+!               SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+              CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
+                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+              CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
+                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+              CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
+                INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
+                INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
+                  & PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
+                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
+                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
+                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
+                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
+                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% & 
+                  & INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              CASE DEFAULT
+                LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                  & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+            !Loop over all Gauss points 
+            DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+ !               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
+                & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+                CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                  & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                  W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                  W_VALUE(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                  IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                    W_VALUE(3)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                  END IF 
+              ELSE
+                W_VALUE=0.0_DP
+              END IF
+              !Define MU_PARAM, viscosity=1
+              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+              !Define RHO_PARAM, density=2
+              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+
+             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+
+                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S1)
+                U_DERIV(1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S2)
+                U_DERIV(2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S1)
+                U_DERIV(2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S2)
+                IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                  U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                  U_DERIV(3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S1)
+                  U_DERIV(3,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S2)
+                  U_DERIV(3,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S3)
+                  U_DERIV(1,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S3)
+                  U_DERIV(2,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S3)
+                ELSE
+                  U_VALUE(3)=0.0_DP
+                  U_DERIV(3,1)=0.0_DP
+                  U_DERIV(3,2)=0.0_DP
+                  U_DERIV(3,3)=0.0_DP
+                  U_DERIV(1,3)=0.0_DP
+                  U_DERIV(2,3)=0.0_DP
+                END IF
+                !Start with calculation of partial matrices
+                !Here W_VALUES must be ZERO if ALE part of linear matrix
+                W_VALUE=0.0_DP
+             END IF
+
+              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+                !Loop over field components
+                mhs=0
+                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
+                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                    mhs=mhs+1
+                    nhs=0
+                    IF(UPDATE_JACOBIAN_MATRIX) THEN
+                      !Loop over element columns
+                      DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
+                        MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                        DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
+                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
+                        ! &GAUSS_WEIGHTS(ng)                        
+                        DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+                          !Calculate some general values needed below
+!\todo: Check how much time is spent here 
+                          DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                            DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                              DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                                & DXI_DX(mi,ni)
+                            END DO
+                            DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                            DPHINS_DXI(ni)=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                          END DO !ni
+                            PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                            PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+                          SUM=0.0_DP
+                          IF(UPDATE_JACOBIAN_MATRIX) THEN
+                            !Calculate J1 only
+                            DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                              SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
+                            ENDDO 
+                            !Calculate MATRIX  
+                            J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+                            !Calculate J2 only
+                            IF(nh==mh) THEN 
+                              SUM=0.0_DP
+                              !Calculate SUM 
+                              DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                  SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
+                                ENDDO !mi
+                              ENDDO !x
+                              !Calculate MATRIX
+                              J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
+                        ENDDO !ns    
+                      ENDDO !nh
+                    ENDIF
+                  ENDDO !ms
+                ENDDO !mh
+              END IF
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!! 1D TRANSIENT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+!                P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
+                A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
+!                P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
+                MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
+                A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
+                SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
+
+                !Loop over field components
+                mhs=0
+                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
+                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
+
+                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                    mhs=mhs+1
+                    nhs=0
+
+                    IF(UPDATE_JACOBIAN_MATRIX) THEN
+                      !Loop over element columns
+                     DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                        MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
+                        DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                        QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP&
+                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
+
+                        DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                          nhs=nhs+1
+ 
+                          DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
+                          DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
+                          DPHINS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,FIRST_PART_DERIV,ng)
+                          PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                          PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
+
+!                          !J1 ONLY
+!                          IF(mh==1) THEN
+!                            IF(nh==1) THEN
+!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                            END IF
+!                          END IF
+!
+!                          !J2 ONLY
+!                          IF(mh==2) THEN
+!                            IF(nh==1) THEN
+!                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                            END IF
+!                          END IF
+!
+!                          !J3 ONLY
+!                          IF(mh==2) THEN
+!                            IF(nh==2) THEN
+!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                            END IF
+!                          END IF
+
+                        !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+                        IF(ELEMENT_NUMBER==1) THEN
+                          !J1 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
+                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
+                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J2 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==2) THEN
+                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
+                              J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J3 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==1) THEN
+                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+                              J_MATRIX(mhs+3,nhs)=J_MATRIX(mhs+3,nhs)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J4 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==2) THEN
+                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          IF(mh==2 .AND. ms==1 .AND. nh==2) THEN
+                            SUM=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
+                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) )
+                            J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+                          END IF
+
+                        ELSEIF(ELEMENT_NUMBER==2) THEN
+                          !J1 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
+                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
+                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J2 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==2) THEN
+                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
+                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J3 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==1) THEN
+                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J4 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==2) THEN
+                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                            END IF
+                          END IF
+
+                          IF(mh==1 .AND. ms==2 .AND. nh==2) THEN
+                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) ) 
+                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+                          END IF
+
+                        ELSEIF(ELEMENT_NUMBER==3) THEN
+                          !J1 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==1) THEN
+                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
+                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
+                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J2 ONLY
+                          IF(mh==1) THEN
+                            IF(nh==2) THEN
+                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
+                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J3 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==1) THEN
+                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
+                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+                            END IF
+                          END IF
+
+                          !J4 ONLY
+                          IF(mh==2) THEN
+                            IF(nh==2) THEN
+                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
+                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                            END IF
+                          END IF
+
+                          IF(mh==1 .AND. ms==3 .AND. nh==2) THEN
+                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                               & ( 0.25*PHINS*(A_VALUE**(-0.75) ) )   
+                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+                          ENDIF
+                        END IF
+                        ENDDO !ns
+                      ENDDO !nh
+                    ENDIF
+                  ENDDO !ms
+                ENDDO !mh
+              END IF
+        ENDDO !ng
+
+            !Assemble matrices and vectors 
+            mhs_min=mhs
+            mhs_max=nhs
+            nhs_min=mhs
+            nhs_max=nhs
+            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+              !Assemble Jacobian matrix first
+              IF(UPDATE_JACOBIAN_MATRIX) THEN
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
+                  & J2_MATRIX(1:mhs_min,1:nhs_min)
+              END IF
+            ENDIF
+
+            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+              IF(UPDATE_JACOBIAN_MATRIX) THEN
+              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+              NULLIFY(BIF_VALUES)
+              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+
+              U_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(2)
+              U_BI_VALUE(1)=BIF_VALUES(U_BI_VALUE(1))
+
+              A_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(2)
+              A_BI_VALUE(1)=BIF_VALUES(A_BI_VALUE(1))
+
+              U_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(3)
+              U_BI_VALUE(2)=BIF_VALUES(U_BI_VALUE(2))
+
+              A_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(3)
+              A_BI_VALUE(2)=BIF_VALUES(A_BI_VALUE(2))
+
+              U_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(4)
+              U_BI_VALUE(3)=BIF_VALUES(U_BI_VALUE(3))
+
+              A_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
+                     & DERIVATIVES(1)%VERSIONS(4)
+              A_BI_VALUE(3)=BIF_VALUES(A_BI_VALUE(3))
+
+              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
+
+              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+              IF(ELEMENT_NUMBER==1) THEN
+                J_MATRIX(4,10)=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
+                             & ( 0.25*(A_BI_VALUE(1)**(-0.75)) )
+                J_MATRIX(10,4)=A_BI_VALUE(1)
+                J_MATRIX(10,10)=U_BI_VALUE(1)
+
+              ELSEIF(ELEMENT_NUMBER==2) THEN
+                J_MATRIX(2,8)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                             & ( 0.25*(A_BI_VALUE(2)**(-0.75)) ) 
+                J_MATRIX(7,2)=-A_BI_VALUE(2)
+                J_MATRIX(7,8)=-U_BI_VALUE(2)
+
+              ELSEIF(ELEMENT_NUMBER==3) THEN
+                J_MATRIX(3,9)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                             & ( 0.25*(A_BI_VALUE(3)**(-0.75) ))   
+                J_MATRIX(7,3)=-A_BI_VALUE(3)
+                J_MATRIX(7,9)=-U_BI_VALUE(3)
+
+              ENDIF
+              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
+
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs+6,1:nhs+6)=J_MATRIX(1:mhs+6,1:nhs+6)
+              END IF
+            ENDIF
+
+          CASE DEFAULT
+            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE
+        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+    ENDIF
+       
+    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN
+999 CALL ERRORS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
+    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    RETURN 1
+  END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
 
   !
   !================================================================================================================================
@@ -2638,768 +4394,6 @@ CONTAINS
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
 
-  !
-  !================================================================================================================================
-  !
-
-  !>Evaluates the Jacobian element stiffness matrices and RHS for a Navier-Stokes equation finite element equations set.
-  SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
-    REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3)
-    REAL(DP), POINTER :: BIF_VALUES(:)
-    TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
-    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX !, DAMPING_MATRIX
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
-    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: x
-
-    LOGICAL :: UPDATE_JACOBIAN_MATRIX
-
-    !REAL(DP) :: test(89,89),test2(89,89),scaling,square
-    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
-    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
-    REAL(DP) :: J_MATRIX(256,256)
-    REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
-    REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
-
-    CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
-
-    J1_MATRIX=0.0_DP
-    J2_MATRIX=0.0_DP
-    J_MATRIX=0.0_DP
-
-!\todo: Check whether or not update flags work properly and how much time is spent in each section
-
-    UPDATE_JACOBIAN_MATRIX=.FALSE.
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      NULLIFY(EQUATIONS)
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
-          CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-            !Set some general and case-specific pointers
-            DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-            GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-            MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
-            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-            GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-            DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-              & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-            QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-!            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
-            EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-            SELECT CASE(EQUATIONS_SET%SUBTYPE)
-              CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-                & EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-!               SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
-                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX=0.0_DP
-                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-              CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
-                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-              CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
-                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-              CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
-                INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
-                INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
-                  & PTR%TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX=0.0_DP
-                DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-                DYNAMIC_MAPPING=>EQUATIONS_MAPPING%DYNAMIC_MAPPING
-                FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
-                FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% & 
-                  & INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CASE DEFAULT
-                LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is not valid for a Navier-Stokes fluid type of a fluid mechanics equations set class."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-              & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-              & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-              & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            !Loop over all Gauss points 
-            DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
- !               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
-                & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-                CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                  & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                  W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                  W_VALUE(2)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                  IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-                    W_VALUE(3)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                  END IF 
-              ELSE
-                W_VALUE=0.0_DP
-              END IF
-              !Define MU_PARAM, viscosity=1
-              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              !Define RHO_PARAM, density=2
-              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-
-             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-
-                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S1)
-                U_DERIV(1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S2)
-                U_DERIV(2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S1)
-                U_DERIV(2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S2)
-                IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-                  U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                  U_DERIV(3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S1)
-                  U_DERIV(3,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S2)
-                  U_DERIV(3,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S3)
-                  U_DERIV(1,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S3)
-                  U_DERIV(2,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S3)
-                ELSE
-                  U_VALUE(3)=0.0_DP
-                  U_DERIV(3,1)=0.0_DP
-                  U_DERIV(3,2)=0.0_DP
-                  U_DERIV(3,3)=0.0_DP
-                  U_DERIV(1,3)=0.0_DP
-                  U_DERIV(2,3)=0.0_DP
-                END IF
-                !Start with calculation of partial matrices
-                !Here W_VALUES must be ZERO if ALE part of linear matrix
-                W_VALUE=0.0_DP
-             END IF
-
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-                !Loop over field components
-                mhs=0
-                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
-                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                    mhs=mhs+1
-                    nhs=0
-                    IF(UPDATE_JACOBIAN_MATRIX) THEN
-                      !Loop over element columns
-                      DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
-                        MESH_COMPONENT2=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                        DEPENDENT_BASIS2=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT2)%PTR% &
-                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                        QUADRATURE_SCHEME2=>DEPENDENT_BASIS2%QUADRATURE%QUADRATURE_SCHEME_MAP&
-                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%&
-                        ! &GAUSS_WEIGHTS(ng)                        
-                        DO ns=1,DEPENDENT_BASIS2%NUMBER_OF_ELEMENT_PARAMETERS
-                          nhs=nhs+1
-                          !Calculate some general values needed below
-!\todo: Check how much time is spent here 
-                          DO ni=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                            DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                              DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
-                                & DXI_DX(mi,ni)
-                            END DO
-                            DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                            DPHINS_DXI(ni)=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                          END DO !ni
-                            PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                            PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-                          SUM=0.0_DP
-                          IF(UPDATE_JACOBIAN_MATRIX) THEN
-                            !Calculate J1 only
-                            DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                              SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
-                            ENDDO 
-                            !Calculate MATRIX  
-                            J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-                            !Calculate J2 only
-                            IF(nh==mh) THEN 
-                              SUM=0.0_DP
-                              !Calculate SUM 
-                              DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                  SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
-                                ENDDO !mi
-                              ENDDO !x
-                              !Calculate MATRIX
-                              J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
-                            END IF
-                          END IF
-                        ENDDO !ns    
-                      ENDDO !nh
-                    ENDIF
-                  ENDDO !ms
-                ENDDO !mh
-              END IF
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! 1D TRANSIENT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                A_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-!                P_VALUE=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,FIRST_PART_DERIV)
-                A_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,FIRST_PART_DERIV)
-!                P_DERIV=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,FIRST_PART_DERIV)
-                MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                E_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                H0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(4,NO_PART_DERIV)
-                A0_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(5,NO_PART_DERIV)
-                SIGMA_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(6,NO_PART_DERIV)
-
-                !Loop over field components
-                mhs=0
-                DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
-                    & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
-
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                    mhs=mhs+1
-                    nhs=0
-
-                    IF(UPDATE_JACOBIAN_MATRIX) THEN
-                      !Loop over element columns
-                     DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                        MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(nh)%MESH_COMPONENT_NUMBER
-                        DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                          & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                        QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP&
-                          &(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                        ! JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS%JACOBIAN*QUADRATURE_SCHEME2%GAUSS_WEIGHTS(ng)
-
-                        DO ns=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                          nhs=nhs+1
- 
-                          DXI_DX(1,1)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(1,1)
-                          DPHIMS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,FIRST_PART_DERIV,ng)
-                          DPHINS_DXI(1)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,FIRST_PART_DERIV,ng)
-                          PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                          PHINS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
-
-!                          !J1 ONLY
-!                          IF(mh==1) THEN
-!                            IF(nh==1) THEN
-!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                            END IF
-!                          END IF
-!
-!                          !J2 ONLY
-!                          IF(mh==2) THEN
-!                            IF(nh==1) THEN
-!                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                            END IF
-!                          END IF
-!
-!                          !J3 ONLY
-!                          IF(mh==2) THEN
-!                            IF(nh==2) THEN
-!                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                            END IF
-!                          END IF
-
-                        !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-                        IF(ELEMENT_NUMBER==1) THEN
-                          !J1 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==1) THEN
-                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
-                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J2 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==2) THEN
-                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-                              J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J3 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==1) THEN
-                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+3,nhs)=J_MATRIX(mhs+3,nhs)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J4 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==2) THEN
-                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          IF(mh==2 .AND. ms==1 .AND. nh==2) THEN
-                            SUM=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
-                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) )
-                            J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
-                          END IF
-
-                        ELSEIF(ELEMENT_NUMBER==2) THEN
-                          !J1 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==1) THEN
-                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
-                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J2 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==2) THEN
-                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J3 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==1) THEN
-                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J4 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==2) THEN
-                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
-                            END IF
-                          END IF
-
-                          IF(mh==1 .AND. ms==2 .AND. nh==2) THEN
-                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                               & ( 0.25*PHINS*(A_VALUE**(-0.75)) ) 
-                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
-                          END IF
-
-                        ELSEIF(ELEMENT_NUMBER==3) THEN
-                          !J1 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==1) THEN
-                              SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
-                                 & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J2 ONLY
-                          IF(mh==1) THEN
-                            IF(nh==2) THEN
-                              SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J3 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==1) THEN
-                              SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
-                            END IF
-                          END IF
-
-                          !J4 ONLY
-                          IF(mh==2) THEN
-                            IF(nh==2) THEN
-                              SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
-                            END IF
-                          END IF
-
-                          IF(mh==1 .AND. ms==3 .AND. nh==2) THEN
-                            SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                               & ( 0.25*PHINS*(A_VALUE**(-0.75) ) )   
-                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
-                          ENDIF
-                        END IF
-                        ENDDO !ns
-                      ENDDO !nh
-                    ENDIF
-                  ENDDO !ms
-                ENDDO !mh
-              END IF
-        ENDDO !ng
-
-            !Assemble matrices and vectors 
-            mhs_min=mhs
-            mhs_max=nhs
-            nhs_min=mhs
-            nhs_max=nhs
-            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-              !Assemble Jacobian matrix first
-              IF(UPDATE_JACOBIAN_MATRIX) THEN
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
-                  & J2_MATRIX(1:mhs_min,1:nhs_min)
-              END IF
-            ENDIF
-
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-              IF(UPDATE_JACOBIAN_MATRIX) THEN
-              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-              NULLIFY(BIF_VALUES)
-              CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-
-              U_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(2)
-              U_BI_VALUE(1)=BIF_VALUES(U_BI_VALUE(1))
-
-              A_BI_VALUE(1)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(2)
-              A_BI_VALUE(1)=BIF_VALUES(A_BI_VALUE(1))
-
-              U_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(3)
-              U_BI_VALUE(2)=BIF_VALUES(U_BI_VALUE(2))
-
-              A_BI_VALUE(2)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(3)
-              A_BI_VALUE(2)=BIF_VALUES(A_BI_VALUE(2))
-
-              U_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(1)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(4)
-              U_BI_VALUE(3)=BIF_VALUES(U_BI_VALUE(3))
-
-              A_BI_VALUE(3)=FIELD_VARIABLE%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(3)% & 
-                     & DERIVATIVES(1)%VERSIONS(4)
-              A_BI_VALUE(3)=BIF_VALUES(A_BI_VALUE(3))
-
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_VALUES_SET_TYPE,BIF_VALUES,ERR,ERROR,*999)
-
-              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-              IF(ELEMENT_NUMBER==1) THEN
-                J_MATRIX(4,10)=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
-                             & ( 0.25*(A_BI_VALUE(1)**(-0.75)) )
-                J_MATRIX(10,4)=A_BI_VALUE(1)
-                J_MATRIX(10,10)=U_BI_VALUE(1)
-
-              ELSEIF(ELEMENT_NUMBER==2) THEN
-                J_MATRIX(2,8)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                             & ( 0.25*(A_BI_VALUE(2)**(-0.75)) ) 
-                J_MATRIX(7,2)=-A_BI_VALUE(2)
-                J_MATRIX(7,8)=-U_BI_VALUE(2)
-
-              ELSEIF(ELEMENT_NUMBER==3) THEN
-                J_MATRIX(3,9)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
-                             & ( 0.25*(A_BI_VALUE(3)**(-0.75) ))   
-                J_MATRIX(7,3)=-A_BI_VALUE(3)
-                J_MATRIX(7,9)=-U_BI_VALUE(3)
-
-              ENDIF
-              !--JACOBIAN MATRIX BIFURCATION MATRIX--!
-
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs+6,1:nhs+6)=J_MATRIX(1:mhs+6,1:nhs+6)
-              END IF
-            ENDIF
-
-          CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-      ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets up the Navier-Stokes problem post solve.
-  SUBROUTINE NAVIER_STOKES_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER!<A pointer to the solver
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR,*999)
-    NULLIFY(SOLVER2)
-
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(SOLVER)) THEN
-        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
-              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-              CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
-              !Post solve for the linear solver
-              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement post solve... ",ERR,ERROR,*999)
-                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
-                IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
-                  SOLVER2%DYNAMIC_SOLVER%ALE=.TRUE.
-                ELSE  
-                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
-                END IF
-              !Post solve for the dynamic solver
-              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Navier-Stokes post solve... ",ERR,ERROR,*999)
-                CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              END IF
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("NAVIER_STOKES_POST_SOLVE")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_POST_SOLVE")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_POST_SOLVE
-
-  !
-  !================================================================================================================================
-  !
-
-
-  !>Sets up the Navier-Stokes problem pre solve.
-  SUBROUTINE NAVIER_STOKES_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the solver
-!     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
-!     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
-    TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
-    TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
-    TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER_NAVIER_STOKES  !<A pointer to the solvers
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: solver_matrix_idx
-
-    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR,*999)
-    NULLIFY(SOLVER2)
- 
-    IF(ASSOCIATED(CONTROL_LOOP)) THEN
-      IF(ASSOCIATED(SOLVER)) THEN
-        IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-              ! do nothing ???
-            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-                !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
-                SOLVER_NUMBER_NAVIER_STOKES=1
-                !--- Set explicitly 'SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.'
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                    SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                    IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-                      DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-                        SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(solver_matrix_idx)%PTR
-                        IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                          SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
-                        ELSE
-                          CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ENDDO
-                    ELSE
-                      CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-              ! do nothing ???
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
-              ! do nothing ???
-              !First update mesh and calculates boundary velocity values
-              CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              !Then apply both normal and moving mesh boundary conditions
-              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-            CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
-              !Pre solve for the linear solver
-              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement pre solve... ",ERR,ERROR,*999)
-                !Update boundary conditions for mesh-movement
-                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER2,ERR,ERROR,*999)
-                IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
-                  SOLVER2%DYNAMIC_SOLVER%ALE=.FALSE.
-                ELSE  
-                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
-                END IF
-                !Update material properties for Laplace mesh movement
-                CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              !Pre solve for the linear solver
-              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Navier-Stokes pre solve... ",ERR,ERROR,*999)
-                IF(SOLVER%DYNAMIC_SOLVER%ALE) THEN
-                  !First update mesh and calculates boundary velocity values
-                  CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                  !Then apply both normal and moving mesh boundary conditions
-                  CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-                ELSE  
-                  CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
-                END IF
-              ELSE  
-                CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
-              END IF
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a Navier-Stokes fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_PRE_SOLVE
 
   !
   !================================================================================================================================
@@ -4923,1120 +5917,8 @@ CONTAINS
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA
 
-  !
-  !================================================================================================================================
-  !
 
-  !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,I,J,K
-    INTEGER(INTG) :: number_of_nodes_xic(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX
-    REAL(DP) :: VALUE,X(3),XI_COORDINATES(3)
-!     REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2),MU_PARAM,L
-    REAL(DP) :: T_COORDINATES(20,3),CURRENT_TIME,MU_PARAM,RHO_PARAM
-    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
-    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
-!     TYPE(VARYING_STRING) :: LOCAL_ERROR    
-
-! ! !     !Temp variables
-! ! !     INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
-
-    CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
-!\todo: Introduce user call to set parameters
-    BOUND_COUNT=0
-! ! ! !     L=10.0_DP
-    XI_COORDINATES(3)=0.0_DP
-!     BOUNDARY_TOLERANCE=0.000000001_DP
-! ! !     BOUNDARY_X=0.0_DP
-! ! !     T_COORDINATES=0.0_DP
-! ! !     number_of_element_nodes=0
-! ! !     temp_local_node_number=0
-! ! !     temp_local_ny=0
-! ! !     temp_node_number=0
-! ! !     velocity_DOF_check=0
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN     
-            NULLIFY(INTERPOLATION_PARAMETERS)
-            NULLIFY(INTERPOLATED_POINT) 
-            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
-            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-!\todo: Check if adjacent element calculation works for simplex elements now and then switch to boundary flag instead
-! ! !             IF(NUMBER_OF_DIMENSIONS==2) THEN
-! ! !               BOUNDARY_X(1,1)=0.0_DP
-! ! !               BOUNDARY_X(1,2)=10.0_DP
-! ! !               BOUNDARY_X(2,1)=0.0_DP
-! ! !               BOUNDARY_X(2,2)=10.0_DP
-! ! !               IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4.OR. &
-! ! !                 & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5) THEN
-! ! !                 BOUNDARY_X(1,1)=0.0_DP/L*PI
-! ! !                 BOUNDARY_X(1,2)=L/L*PI
-! ! !                 BOUNDARY_X(2,1)=0.0_DP/L*PI
-! ! !                 BOUNDARY_X(2,2)=L/L*PI
-! ! !               ENDIF
-! ! !             ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-! ! !               BOUNDARY_X(1,1)=-5.0_DP
-! ! !               BOUNDARY_X(1,2)=5.0_DP
-! ! !               BOUNDARY_X(2,1)=-5.0_DP
-! ! !               BOUNDARY_X(2,2)=5.0_DP
-! ! !               BOUNDARY_X(3,1)=-5.0_DP
-! ! !               BOUNDARY_X(3,2)=5.0_DP
-! ! !             ENDIF
-            NULLIFY(GEOMETRIC_VARIABLE)
-            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
-            NULLIFY(GEOMETRIC_PARAMETERS)
-            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
-              & ERR,ERROR,*999)
-            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-              DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                  CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    BOUND_COUNT=0
-                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN
-                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                      IF(ASSOCIATED(DOMAIN)) THEN
-                        IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                          DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                            !Loop over the local nodes excluding the ghosts.
-                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                              element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
-                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
-                                & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                              en_idx=0
-                              XI_COORDINATES=0.0_DP
-                              number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(1)
-                              number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(2)
-                              IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis%number_of_nodes_xic(3)
-                              ELSE
-                                number_of_nodes_xic(3)=1
-                              ENDIF
-!\todo: Use boundary flag
-                              IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND.NUMBER_OF_DIMENSIONS==2 .OR. &
-                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
-                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
-                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
-                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
-                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==64) THEN
-                                DO K=1,number_of_nodes_xic(3)
-                                  DO J=1,number_of_nodes_xic(2)
-                                    DO I=1,number_of_nodes_xic(1)
-                                      en_idx=en_idx+1
-                                      IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                      XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
-                                    ENDDO
-                                      IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                      XI_COORDINATES(1)=0.0_DP
-                                      XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
-                                  ENDDO
-                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(en_idx)==node_idx) EXIT
-                                  XI_COORDINATES(1)=0.0_DP
-                                  XI_COORDINATES(2)=0.0_DP
-                                  IF(number_of_nodes_xic(3)/=1) THEN
-                                    XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
-                                  ENDIF
-                                ENDDO
-                                CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
-                                  & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                              ELSE
-!\todo: Use boundary flag
-                                IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
-                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                  T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
-                                  T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
-                                  T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
-                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
-                                  & NUMBER_OF_DIMENSIONS==2) THEN
-                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                  T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
-                                  & NUMBER_OF_DIMENSIONS==3) THEN
-                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
-                                  T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
-                                  T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
-                                  T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
-                                  T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
-                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                ENDIF
-                                DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
-                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
-                                ENDDO
-                                IF(NUMBER_OF_DIMENSIONS==2) THEN
-                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
-                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
-                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                ENDIF
-                              ENDIF
-                              X=0.0_DP
-                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
-                              ENDDO !dim_idx
-
-                              !Loop over the derivatives
-                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
-                                  & GLOBAL_DERIVATIVE_INDEX
-                                CURRENT_TIME=0.0_DP
-                                MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
-                                !Define MU_PARAM, density=1
-                                MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
-                                  & parameters%cmiss%data_dp(1)
-                                !Define RHO_PARAM, density=2
-                                RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
-                                  & parameters%cmiss%data_dp(2)
-                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME, &
-                                  & variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
-                                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
-                                !Default to version 1 of each node derivative
-                                local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                  & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                IF(variable_type==FIELD_U_VARIABLE_TYPE) THEN
-! \todo: This part should work even for simplex elements as soon as adjacent element calculation has been fixed
-                                  IF(DOMAIN_NODES%NODES(node_idx)%BOUNDARY_NODE) THEN
-                                    !If we are a boundary node then set the analytic value on the boundary
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
-                                        & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                      BOUND_COUNT=BOUND_COUNT+1
-                                    ELSE
-! \todo: This is just a workaround for linear pressure fields in simplex element components
-                                      IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                        IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5) THEN
-                                          IF(-0.001_DP<X(1).AND.X(1)<0.001_DP.AND.-0.001_DP<X(2).AND.X(2)<0.001_DP.OR. &
-                                            &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.-0.001_DP<X(2).AND. &
-                                            & X(2)<0.001_DP.OR. &
-                                            &  10.0_DP-0.001_DP<X(1).AND.X(1)<10.0_DP+0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<10.0_DP+0.001_DP.OR. &
-                                            &  -0.001_DP<X(1).AND.X(1)<0.001_DP.AND.10.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<10.0_DP+0.001_DP) THEN
-                                              CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
-                                                & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                              BOUND_COUNT=BOUND_COUNT+1
-                                          ENDIF
-                                        ENDIF
-                                      ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.AND. &
-                                        & NUMBER_OF_DIMENSIONS==3) THEN
-                                        IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4.OR. &
-                                          & ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5) THEN
-                                          IF(-5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                            & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(3).AND.X(3)<-5.0_DP+0.001_DP.OR. &
-                                            & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
-                                            & -5.0_DP-0.001_DP<X(1).AND.X(1)<-5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
-                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<5.0_DP+0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP.OR. &
-                                            & 5.0_DP-0.001_DP<X(1).AND.X(1)<5.0_DP+0.001_DP.AND.-5.0_DP-0.001_DP<X(2).AND. &
-                                            & X(2)<-5.0_DP+ 0.001_DP.AND.5.0_DP-0.001_DP<X(3).AND.X(3)<5.0_DP+0.001_DP) THEN
-                                            CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD, &
-                                              & variable_type,local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                            BOUND_COUNT=BOUND_COUNT+1
-                                          ENDIF
-                                        ENDIF
-! \todo: This is how it should be if adjacent elements would be working
-                                      ELSE IF(BOUND_COUNT==0) THEN
-                                        CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,DEPENDENT_FIELD,variable_type, &
-                                          & local_ny,BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-                                        BOUND_COUNT=BOUND_COUNT+1
-                                      ENDIF
-                                    ENDIF
-                                  ELSE
-                                    IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-                                        & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                    ENDIF
-                                  ENDIF
-! \todo: Use boundary node flag
-! ! !                                 !If we are a boundary node then set the analytic value on the boundary
-! ! !                                 IF(NUMBER_OF_DIMENSIONS==2) THEN
-! ! !                                   IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) THEN
-! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-! ! !                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-! ! !                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-! ! !                                     BOUND_COUNT=BOUND_COUNT+1
-! ! !                                     !Apply boundary conditions check for pressure nodes
-! ! !                                     ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
-! ! !                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-! ! !                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE) &
-! ! !                                         & THEN
-! ! !                                            ! Commented out for testing purposes
-! ! !                                           CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-! ! !                                             & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-! ! !                                           BOUND_COUNT=BOUND_COUNT+1
-! ! !                                       ENDIF
-! ! !                                       ENDIF
-! ! ! !\todo: Again, ...
-! ! !                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3.OR. &
-! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==6.OR. &
-! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==10) THEN
-! ! !                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                         & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND.&
-! ! !                                         & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                         & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
-! ! !                                         & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                         & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND.&
-! ! !                                         & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE) &
-! ! !                                         & THEN
-! ! !                                           CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-! ! !                                             & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-! ! !                                           BOUND_COUNT=BOUND_COUNT+1
-! ! !                                       ENDIF
-! ! !                                       ENDIF
-! ! !                                     ENDIF
-! ! !                                   ENDIF
-! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS+1) THEN
-! ! !                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-! ! !                                         & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-! ! !                                     ENDIF
-! ! !                                 ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-! ! !                                   IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                     & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
-! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS) THEN
-! ! !                                       CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-! ! !                                         & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-! ! !                                     BOUND_COUNT=BOUND_COUNT+1
-! ! !                                     !Apply boundary conditions check for pressure nodes
-! ! !                                     ELSE IF(component_idx>NUMBER_OF_DIMENSIONS) THEN
-! ! !                                       IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
-! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==10.OR. &
-! ! !                                         & DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-! ! !                                       IF(X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                        & X(1)<BOUNDARY_X(1,1)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,1)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,1)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,1)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,1)-BOUNDARY_TOLERANCE.OR. &
-! ! !                                        & X(1)<BOUNDARY_X(1,2)+BOUNDARY_TOLERANCE.AND.X(1)>BOUNDARY_X(1,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(2)<BOUNDARY_X(2,2)+BOUNDARY_TOLERANCE.AND.X(2)>BOUNDARY_X(2,2)-BOUNDARY_TOLERANCE.AND. &
-! ! !                                        & X(3)<BOUNDARY_X(3,2)+BOUNDARY_TOLERANCE.AND.X(3)>BOUNDARY_X(3,2)-BOUNDARY_TOLERANCE) THEN
-! ! !                                          CALL BOUNDARY_CONDITIONS_SET_LOCAL_DOF(BOUNDARY_CONDITIONS,variable_type,local_ny, &
-! ! !                                            & BOUNDARY_CONDITION_FIXED,VALUE,ERR,ERROR,*999)
-! ! !                                          BOUND_COUNT=BOUND_COUNT+1
-! ! !                                       ENDIF
-! ! !                                       ENDIF
-! ! !                                     ENDIF
-! ! !                                   ELSE
-! ! !                                     IF(component_idx<=NUMBER_OF_DIMENSIONS+1) THEN
-! ! !                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
-! ! !                                         & FIELD_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-! ! !                                     ENDIF
-! ! !                                   ENDIF
-! ! !                                 ENDIF
-                                ENDIF
-                              ENDDO !deriv_idx
-                            ENDDO !node_idx
-                          ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
-                    ENDIF
-WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
-                  ENDDO !component_idx
-                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
-                    & ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ENDDO !variable_idx
-              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-            ELSE
-              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE")
-    RETURN 1    
-  END SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_CALCULATE
-
-  !
-  !================================================================================================================================
-  !
-  !>Calculates the various analytic solutions given X and time, can be called from within analytic calculate or elsewhere if needed
-  SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS(VALUE,X,MU_PARAM,RHO_PARAM,CURRENT_TIME,VARIABLE_TYPE, & 
-    & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX,ERR,ERROR,*)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    REAL(DP), INTENT(OUT) :: VALUE
-    REAL(DP) :: MU_PARAM,RHO_PARAM
-    REAL(DP), INTENT(IN) :: CURRENT_TIME
-    REAL(DP), INTENT(IN), DIMENSION(3) :: X
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX
-    !Local variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
-    !TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
-    !TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    REAL(DP) :: INTERNAL_TIME
-
-    CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR,*999)
-
-!\todo: Introduce user-defined or default values instead for density and viscosity
-    INTERNAL_TIME=CURRENT_TIME
-     SELECT CASE(ANALYTIC_FUNCTION_TYPE)
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
-         IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Polynomial function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate Q
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE IF(component_idx==2) THEN
-                     !calculate A
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE IF(component_idx==3) THEN
-                     !calculate P
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   VALUE= 0.0_DP
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Polynomial function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=X(2)**2/10.0_DP**2
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE=2.0_DP/3.0_DP*X(1)*(3.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(1)**2*X(2))/(10.0_DP ** 4)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   VALUE= 0.0_DP
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Exponential function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE= EXP((X(1)-X(2))/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE= EXP((X(1)-X(2))/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE= 2.0_DP*MU_PARAM/10.0_DP*EXP((X(1)-X(2))/10.0_DP)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE= 0.0_DP
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE= 0.0_DP
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE= 0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Sine and cosine function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE=4.0_DP*MU_PARAM*PI/10.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)+ &
-                       & 0.5_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=16.0_DP*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/ 10.0_DP)*cos(2.0_DP*PI*X(1)/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Taylor-Green vortex solution
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=SIN(X(1)/10.0_DP*2.0_DP*PI)*COS(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                     VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-!                      VALUE=SIN(X(1))*COS(X(2))
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=-COS(X(1)/10.0_DP*2.0_DP*PI)*SIN(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                     VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-!                      VALUE=-COS(X(1))*SIN(X(2))
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*2.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*2.0_DP*PI))* &
-                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
-                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
-!                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=0.0_DP         
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Polynomial function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=X(2)**2/10.0_DP**2+X(3)**2/10.0_DP**2
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=X(1)**2/10.0_DP**2+X(3)**2/10.0_DP** 2
-                   ELSE IF(component_idx==3) THEN
-                     !calculate w
-                     VALUE=X(1)**2/10.0_DP**2+X(2)**2/10.0_DP** 2
-                   ELSE IF(component_idx==4) THEN
-                     !calculate p
-                     VALUE=2.0_DP/3.0_DP*X(1)*(6.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(2)*X(1)**2-3.0_DP* & 
-                       & RHO_PARAM*X(2)* &
-                       & X(3)**2-RHO_PARAM*X(3)*X(1)**2-3.0_DP*RHO_PARAM*X(3)*X(2)**2)/(10.0_DP**4)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT   
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   VALUE=0.0_DP
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                  & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Exponential function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(3)-X(1))/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
-                     !calculate w
-                     VALUE=EXP((X(3)-X(1))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
-                   ELSE IF(component_idx==4) THEN
-                     !calculate p
-                     VALUE=1.0_DP/10.0_DP*(2.0_DP*MU_PARAM*EXP((X(1)-X(2))/10.0_DP)- & 
-                       & 2.0_DP*MU_PARAM*EXP((X(3)-X(1))/10.0_DP)+RHO_PARAM*10.0_DP*EXP((X(1)-X(3))/10.0_DP)+ & 
-                       & RHO_PARAM*10.0_DP*EXP((X(2)-X(1))/10.0_DP))
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT   
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(1)-X(2))+EXP(X(2)-X(3)))
-                   ELSE IF(component_idx==3) THEN
-                     !calculate w
-                     VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(3)-X(1))+EXP(X(2)-X(3)))
-                   ELSE IF(component_idx==4) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Sine/cosine function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=2.0_DP*cos(2.0_DP*PI*x(1)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)*cos(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(component_idx==3) THEN
-                     !calculate w
-                     VALUE=-cos(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*cos(2.0_DP*PI*X(3)/10.0_DP)
-                   ELSE IF(component_idx==4) THEN
-                     !calculate p
-                     VALUE=-COS(2.0_DP*PI*X(1)/10.0_DP)*(-12.0_DP*MU_PARAM*PI*SIN(2.0_DP*PI*X(2)/10.0_DP)* & 
-                       & SIN(2.0_DP*PI*X(3)/10.0_DP)-RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP+ &
-                       & 2.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(3)/10.0_DP)**2- &
-                       & RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP/2.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT   
-              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                SELECT CASE(GLOBAL_DERIV_INDEX)
-                  CASE(NO_GLOBAL_DERIV)
-                    IF(component_idx==1) THEN
-                      !calculate u
-                      VALUE=0.0_DP
-                    ELSE IF(component_idx==2) THEN
-                      !calculate v
-                      VALUE=36*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)* & 
-                        & cos(2.0_DP*PI*X(1)/10.0_DP)
-                    ELSE IF(component_idx==3) THEN
-                      !calculate w
-                      VALUE=0.0_DP
-                    ELSE IF(component_idx==4) THEN
-                      !calculate p
-                      VALUE=0.0_DP
-                    ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    ENDIF
-                  CASE(GLOBAL_DERIV_S1)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                  CASE(GLOBAL_DERIV_S2)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                  CASE(GLOBAL_DERIV_S1_S2)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                  & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT      
-          ELSE 
-            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          ENDIF
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Taylor-Green vortex solution
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                   ELSE IF(component_idx==3) THEN
-                     !calculate v
-                     VALUE=0.0_DP
-!                      VALUE=-COS(X(1))*SIN(X(2))
-                   ELSE IF(component_idx==4) THEN
-                     !calculate p
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
-                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
-!                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(component_idx==2) THEN
-                     !calculate v
-                     VALUE=0.0_DP         
-                   ELSE IF(component_idx==3) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE IF(component_idx==4) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
-        CASE DEFAULT
-          LOCAL_ERROR="The analytic function type of "// &
-            & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-            & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS")
-    RETURN
-999 CALL ERRORS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS")
-    RETURN 1
-  END SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS
   !
   !================================================================================================================================
   !
