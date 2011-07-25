@@ -443,7 +443,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    INTEGER(INTG) :: variable_type,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
+    INTEGER(INTG) :: VARIABLE_TYPE,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
     !TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     !TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     REAL(DP) :: INTERNAL_TIME
@@ -453,67 +453,132 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 !\todo: Introduce user-defined or default values instead for density and viscosity
     INTERNAL_TIME=CURRENT_TIME
      SELECT CASE(ANALYTIC_FUNCTION_TYPE)
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
-         IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Polynomial function
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(component_idx==1) THEN
-                     !calculate Q
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE IF(component_idx==2) THEN
-                     !calculate A
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE IF(component_idx==3) THEN
-                     !calculate P
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   ENDIF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   VALUE= 0.0_DP
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
+       IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
+         !Polynomial function
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF(component_idx==1) THEN
+               !calculate Q
+               VALUE=X(1)**2/10.0_DP**2
+             ELSE IF(component_idx==2) THEN
+               !calculate A
+               VALUE=X(1)**2/10.0_DP**2
+             ELSE IF(component_idx==3) THEN
+               !calculate P
+               VALUE=X(1)**2/10.0_DP**2
+             ELSE
+               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+             ENDIF
+           CASE(GLOBAL_DERIV_S1)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S1_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE(GLOBAL_DERIV_S1)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+           CASE(GLOBAL_DERIV_S1_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+               & " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         ENDIF
+         END SELECT      
+       ELSE 
+         LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       ENDIF
+
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE)
+       !For fully developed 2D laminar flow through a channel, NSE should yield a parabolic profile, 
+       !U = Umax(1-y^2/H^2), Umax = (-dP/dx)*(H^2/(2*MU)), Umax = (3/2)*Umean 
+       IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+         MU_PARAM = MATERIALS_PARAMETERS(1)
+         RHO_PARAM = MATERIALS_PARAMETERS(2)
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           L_PARAM = ANALYTIC_PARAMETERS(1) ! channel length in x-direction
+           H_PARAM = ANALYTIC_PARAMETERS(2) ! channel height in y-direction
+           U_PARAM = ANALYTIC_PARAMETERS(3) ! mean (inlet) velocity
+           DP_VALUE = -3.0_DP*L_PARAM*MU_PARAM*U_PARAM/(H_PARAM**2)           
+
+           UMAX = (-1*DP/L_PARAM)*(H_PARAM**2/(2*MU_PARAM))
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF(component_idx==1) THEN
+               !calculate u
+               VALUE=UMAX*(1.0_DP-(Y**2)/(H**2))
+             ELSE IF(component_idx==2) THEN
+               !calculate v
+               VALUE=0.0_DP
+             ELSE IF(component_idx==3) THEN
+               !calculate p
+
+             ELSE
+               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+             ENDIF
+           CASE(GLOBAL_DERIV_S1)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S1_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+               & " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE(GLOBAL_DERIV_S1)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+           CASE(GLOBAL_DERIV_S1_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+               & " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT      
+       ELSE 
+         LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+       ENDIF
 
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Polynomial function
-           SELECT CASE(variable_type)
+           SELECT CASE(VARIABLE_TYPE)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
@@ -558,7 +623,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
                  & " is invalid."
                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
@@ -570,7 +635,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Exponential function
-           SELECT CASE(variable_type)
+           SELECT CASE(VARIABLE_TYPE)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
@@ -626,7 +691,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
                  & " is invalid."
                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
@@ -638,7 +703,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Sine and cosine function
-           SELECT CASE(variable_type)
+           SELECT CASE(VARIABLE_TYPE)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
@@ -695,7 +760,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
                  & " is invalid."
                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
@@ -706,7 +771,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Taylor-Green vortex solution
-           SELECT CASE(variable_type)
+           SELECT CASE(VARIABLE_TYPE)
              CASE(FIELD_U_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
@@ -770,7 +835,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
                  & " is invalid."
                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
