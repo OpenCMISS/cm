@@ -1,19 +1,31 @@
  /*!
 \page installation Obtaining the Code and Setting up the Development Environment
 \section obtain_code_and_libraries Obtaining the Code and Libraries
-To obtain the OpenCMISS source you need to check it out from the subversion repository. 
-There are two parts to OpenCMISS to obtain - OpenCMISS itself and the various libraries it needs.
-In your root OpenCMISS directory, make the opencmiss and opencmissextras directories. Within the opencmiss and opencmissextras directories there are two parts - cm and cellml.
+To obtain the OpenCMISS source you need to clone the Git repository.
+There are three parts of OpenCMISS to obtain - OpenCMISS itself, the OpenCMISS examples, and the various libraries it needs.
+In your root OpenCMISS directory, make the opencmiss and opencmissextras directories.
+Within the opencmiss directory there are three repositories - cm, examples and cellml.
+Within the opencmissextras directory there are cm and cellml directories.
 \subsection obtain_the_code Obtain the Code
-The OpenCMISS cm repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm .
-To check out the main trunk of OpenCMISS issue the following command in the opencmiss directory:
-\code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cm/trunk cm \endcode
-If you are not familar with subversion, have a look at http://svnbook.red-bean.com .
-The OpenCMISS cellml repository is at https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cellml . 
-To check out the main trunk of OpenCMISS issue the following command in the opencmiss directory:
-\code svn co https://opencmiss.svn.sourceforge.net/svnroot/opencmiss/cellml/trunk cellml \endcode
+If you wish to make changes to OpenCMISS it is recommended that you fork the repositories on GitHub so that
+your changes can be pulled into the central repository from your GitHub account.
+The process of forking the OpenCMISS repositories and the workflow to use with Git is described in
+a page on the OpenCMISS wiki (https://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Proposed_Workflow).
+The OpenCMISS cm repository is at https://github.com/OpenCMISS/cm and the OpenCMISS examples
+repository is at https://github.com/OpenCMISS/examples/.
+The OpenCMISS cellml repository is at https://github.com/OpenCMISS/cellml/.
+Once you have forked the OpenCMISS cm, examples and cellml repositories on GitHub, you can clone them
+to your local machine by issuing the following commands in the opencmiss directory,
+where <username> should be replaced with your GitHub username:
+\code git clone https://github.com/<username>/cm.git cm
+ git clone https://github.com/<username>/examples.git examples
+ git clone https://github.com/<username>/cellml.git cellml \endcode
+If you know you will not need to make changes to one or more of the repositories you can
+clone them directly from https://github.com/OpenCMISS/.
 \subsection obtain_the_libraries Obtain the Libraries
-The OpenCMISS libraries repository is at https://svn.physiomeproject.org/svn/opencmissextras/. There are a number of different components to the library. To use OpenCMISS you will need to check out libraries from the cm, fieldml, cellml, common and utils components. 
+The libraries required for building and running OpenCMISS are in a Subversion repository at https://svn.physiomeproject.org/svn/opencmissextras/.
+There are a number of different components to the libraries. To use OpenCMISS you will need to
+check out libraries from the cm, fieldml, cellml, common and utils components.
 
 To check out the main trunk of the various cm libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/architecture cm/external/architecture \endcode
@@ -82,6 +94,8 @@ Set environment variable to point to OpenCMISS
 \code setenv OPENCMISS_ROOT <path to your opencmiss folder>\endcode or \code export OPENCMISS_ROOT=<path to your opencmiss folder>\endcode
 Set environment variable to point to OpenCMISS-extras
 \code setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder>\endcode or \code export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>\endcode
+Set environment variable to point to OpenCMISS examples
+\code setenv OPENCMISSEXAMPLES_ROOT <path to your opencmiss folder>/examples\endcode or \code export OPENCMISSEXAMPLES_ROOT=<path to your opencmiss folder>/examples\endcode
 \subsubsection project_setup_hpc_mpi Set MPI
 Create a file called hostfile.list in your home directory.
 Inside the file, add several lines of "hpc.bioeng.auckland.ac.nz"
@@ -118,6 +132,7 @@ If you use the bash shell you can do this by adding the following lines to your 
 \code 
 export OPENCMISS_ROOT=<path to your opencmiss folder>
 export OPENCMISSEXTRAS_ROOT=<path to your opencmissextras folder>
+export OPENCMISSEXAMPLES_ROOT=<path to your opencmiss folder>/examples
 if [ -x ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.sh ]; then
   . ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.sh
 fi
@@ -126,6 +141,7 @@ If you use a c to tc shell you can do this by adding the following lines to your
 \code 
 setenv OPENCMISS_ROOT <path to your opencmiss folder> 
 setenv OPENCMISSEXTRAS_ROOT <path to your opencmissextras folder> 
+setenv OPENCMISSEXAMPLES_ROOT <path to your opencmiss folder>/examples
 if ( -r ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.csh ) then
   source ${OPENCMISSEXTRAS_ROOT}/utils/scripts/opencmiss_programmer.csh 
 endif
