@@ -444,6 +444,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: VARIABLE_TYPE,GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE
+    REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM
     !TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     !TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     REAL(DP) :: INTERNAL_TIME
@@ -511,7 +512,8 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
 
      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE)
        !For fully developed 2D laminar flow through a channel, NSE should yield a parabolic profile, 
-       !U = Umax(1-y^2/H^2), Umax = (-dP/dx)*(H^2/(2*MU)), Umax = (3/2)*Umean 
+       !U = Umax(1-y^2/H^2), Umax = (-dP/dx)*(H^2/(2*MU)), Umax = (3/2)*Umean
+       !Note: assumes a flat inlet profile
        IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
          MU_PARAM = MATERIALS_PARAMETERS(1)
          RHO_PARAM = MATERIALS_PARAMETERS(2)
@@ -520,20 +522,18 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
            L_PARAM = ANALYTIC_PARAMETERS(1) ! channel length in x-direction
            H_PARAM = ANALYTIC_PARAMETERS(2) ! channel height in y-direction
            U_PARAM = ANALYTIC_PARAMETERS(3) ! mean (inlet) velocity
-           DP_VALUE = -3.0_DP*L_PARAM*MU_PARAM*U_PARAM/(H_PARAM**2)           
-
-           UMAX = (-1*DP/L_PARAM)*(H_PARAM**2/(2*MU_PARAM))
+           P_PARAM = ANALYTIC_PARAMETERS(3) ! pressure value at outlet
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              IF(component_idx==1) THEN
                !calculate u
-               VALUE=UMAX*(1.0_DP-(Y**2)/(H**2))
+               VALUE=(3.0_DP/2.0_DP)*U_PARAM*(1.0_DP-(X(2)**2)/(H**2))
              ELSE IF(component_idx==2) THEN
                !calculate v
                VALUE=0.0_DP
              ELSE IF(component_idx==3) THEN
                !calculate p
-
+               VALUE = (3.0_DP*MU_PARAM*U_PARAM*(X(1)-L_PARAM))/(H_PARAM**2)+P_PARAM
              ELSE
                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
              ENDIF
@@ -551,7 +551,7 @@ WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
            END SELECT
          CASE(FIELD_DELUDELN_VARIABLE_TYPE)
            SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
+           CASE( NO_GLOBAL_DERIV)
              VALUE= 0.0_DP
            CASE(GLOBAL_DERIV_S1)
              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
