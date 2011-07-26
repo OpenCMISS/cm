@@ -5982,9 +5982,9 @@ CONTAINS
   SUBROUTINE CMISSBasisTypesCopy(Bases,BasesSize,BasesPtr,Err)
 
     !Argument variables
-    TYPE(CMISSBasisType), INTENT(INOUT), POINTER :: Bases(:)
-    INTEGER(C_INT), INTENT(IN) :: BasesSize
-    TYPE(C_PTR), INTENT(IN) :: BasesPtr
+    TYPE(CMISSBasisType), INTENT(INOUT) :: Bases(:) !<On return, the array of CMISSBasisTypes
+    INTEGER(C_INT), INTENT(IN) :: BasesSize !<The length of the C array of pointers to CMISSBasisTypes
+    TYPE(C_PTR), INTENT(IN) :: BasesPtr !<The pointer to the first CMISSBasisType pointer
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     INTEGER(INTG) :: basis_idx
@@ -46229,6 +46229,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of the boundary conditions for the solver equations identified by the user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateFinishNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Err)
 
     !Argument variables
@@ -46274,6 +46275,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of the boundary conditions for the solver equations identified by the user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateFinishNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Err)
 
     !Argument variables
@@ -46319,6 +46321,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of the boundary conditions for the solver equations
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateFinishObj(SolverEquations,Err)
 
     !Argument variables
@@ -46343,6 +46346,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Start the creation of boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateStartNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Err)
 
     !Argument variables
@@ -46388,6 +46392,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Start the creation of boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateStartNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Err)
 
     !Argument variables
@@ -46433,6 +46438,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Start the creation of boundary conditions for solver equations
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateStartObj(SolverEquations,BoundaryConditions,Err)
 
     !Argument variables
@@ -46459,6 +46465,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
     & BoundaryConditions,Err)
 
@@ -46504,6 +46511,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
     & BoundaryConditions,Err)
 
@@ -46549,6 +46557,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the boundary conditions for solver equations
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetObj(SolverEquations,BoundaryConditions,Err)
 
     !Argument variables

@@ -181,6 +181,7 @@ MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
 HEADER_INC_NAME := opencmiss.h
 HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
 C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
+C_GENERATE_SCRIPT := $(GLOBAL_CM_ROOT)/utils/C_interface/generatec.py
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
 
@@ -919,8 +920,8 @@ MOD_FIELDML: $(FIELDML_OBJECT)
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
-$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90
-	python $(GLOBAL_CM_ROOT)/utils/C_interface/generatec.py $(GLOBAL_CM_ROOT) $(HEADER_INCLUDE) $(C_F90_SOURCE)
+$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(C_GENERATE_SCRIPT)
+	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
 #
