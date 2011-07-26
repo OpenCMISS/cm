@@ -285,14 +285,15 @@ class LibrarySource(object):
             '#ifndef OPENCMISS_H\n' + \
             '#define OPENCMISS_H\n' + \
             '\n/*\n * Defines\n */\n\n' + \
-            'const int CMISSTrue = 1;\n' + \
-            'const int CMISSFalse = 0;\n' + \
             'const int CMISSNoError = 0;\n' + \
             'const int CMISSPointerIsNULL = -1;\n' + \
             'const int CMISSPointerNotNULL = -2;\n' + \
             'const int CMISSCouldNotAllocatePointer = -3;\n' + \
-            'const int CMISSErrorConvertingPointer = -4;\n\n')
-        output.write('typedef int CMISSError;\n\n')
+            'const int CMISSErrorConvertingPointer = -4;\n\n' + \
+            'typedef %s CMISSBool;\n' % _logical_type() + \
+            'const CMISSBool CMISSTrue = 1;\n' + \
+            'const CMISSBool CMISSFalse = 0;\n\n' + \
+            'typedef int CMISSError;\n\n')
         for lineno in sorted(self.public_objects.keys()):
             output.write(self.public_objects[lineno].to_c_header())
         output.write('\n#endif\n')
@@ -628,10 +629,10 @@ class Parameter(object):
         = range(6)
 
     #Corresponding variable types for C
-    CTYPES = ('int','float','double','char','int',None)
+    CTYPES = ('int','float','double','char','CMISSBool',None)
 
     #Variable types as used in opencmiss_c.f90
-    F90TYPES = ('INTEGER(C_INT)','REAL(C_FLOAT)','REAL(C_DOUBLE)','CHARACTER(LEN=1,KIND=C_CHAR)','INTEGER(C_INT)','TYPE(C_PTR)')
+    F90TYPES = ('INTEGER(C_INT)','REAL(C_FLOAT)','REAL(C_DOUBLE)','CHARACTER(LEN=1,KIND=C_CHAR)','LOGICAL','TYPE(C_PTR)')
 
     def __init__(self,name,routine,param_type,type_params,extra_stuff,array,doxygen):
         """Initialise a parameter
@@ -867,10 +868,7 @@ class Parameter(object):
                 self.local_variables.append('%s, POINTER :: %s(%s)' % (Parameter.F90TYPES[self.var_type],self.name,','.join([':']*self.array_dims)))
             if self.pointer == True and self.cintent == 'OUT':
                 #we are setting the value of a pointer
-                if self.var_type == Parameter.LOGICAL:
-                    self.pre_call.append('NULLIFY(%sLogical)' % self.name)
-                else:
-                    self.pre_call.append('NULLIFY(%s)' % self.name)
+                self.pre_call.append('NULLIFY(%s)' % self.name)
                 self.post_call.extend(('%sPtr = C_LOC(%s(1))' % (self.name,self.name),
                     '%sSize = SIZE(%s,1)' % (self.name,self.name),
                     'IF(.NOT.C_ASSOCIATED(%sPtr)) THEN' % self.name,
@@ -888,43 +886,6 @@ class Parameter(object):
                     '%s = CMISSPointerIsNULL' % self.routine.c_f90_name,
                     'ENDIF'))
 
-        # Convert from logicals to C integers
-        if self.var_type == Parameter.LOGICAL and self.intent != 'IN':
-            if self.array_dims > 0:
-                #todo if ever required: support more than one dimension
-                self.local_variables.append('LOGICAL, POINTER :: %sLogical(%s)' % (self.name,','.join([':']*self.array_dims)))
-                self.local_variables.append('INTEGER(C_INT) :: %sLogicalIndex' % (self.name))
-                post_call = ['DO %sLogicalIndex=1,SIZE(%sLogical,1)' % (self.name,self.name),
-                    'IF(%sLogical(%sLogicalIndex)) THEN' % (self.name,self.name),
-                    '%s(%sLogicalIndex) = CMISSTrue' % (self.name,self.name),
-                    'ELSE',
-                    '%s(%sLogicalIndex) = CMISSFalse' % (self.name,self.name),
-                    'ENDIF',
-                    'ENDDO']
-            else:
-                self.local_variables.append('LOGICAL :: %sLogical' % (self.name))
-                post_call = ['IF(%sLogical) THEN' % self.name,
-                    '%s = CMISSTrue' % self.name,
-                    'ELSE',
-                    '%s = CMISSFalse' % self.name,
-                    'ENDIF']
-            if self.pointer == True and self.intent == 'OUT':
-                post_call = ['ALLOCATE(%s(SIZE(%sLogical,1)))' % (self.name,self.name)]+post_call
-            self.post_call = post_call+self.post_call
-
-        # Convert from C integers to logicals
-        elif self.var_type == Parameter.LOGICAL and self.intent == 'IN':
-            if self.array_dims > 0 and self.pointer:
-                self.local_variables.append('LOGICAL, POINTER :: %sLogical(%s)' % (self.name,','.join([':']*self.array_dims)))
-                self.local_variables.append('INTEGER(C_INT) :: %sLogicalIndex' % (self.name))
-                self.pre_call.extend(['ALLOCATE(%sLogical(%s))' % (self.name,','.join(self.size_list)),
-                    'DO %sLogicalIndex=1,%sSize' % (self.name,self.name),
-                    'IF(%s(%sLogicalIndex) == CMISSTrue) THEN' % (self.name,self.name),
-                    '%sLogical(%sLogicalIndex) = .TRUE.' % (self.name,self.name),
-                    'ELSE',
-                    '%sLogical(%sLogicalIndex) = .FALSE.' % (self.name,self.name),
-                    'ENDIF',
-                    'ENDDO'])
 
     def c_f90_name(self):
         """Return the name of the parameter as used by the routine in opencmiss_c.f90"""
@@ -974,12 +935,7 @@ class Parameter(object):
         """
 
         output = self.name
-        if self.var_type == Parameter.LOGICAL:
-            if self.intent == 'IN' and not self.pointer:
-                output += '==CMISSTrue'
-            else:
-                output += 'Logical'
-        elif self.var_type == Parameter.CHARACTER:
+        if self.var_type == Parameter.CHARACTER:
             output = 'Fortran'+output
         return output
 
@@ -1147,6 +1103,12 @@ def _indent_lines(lines,indent_size=2,initial_indent=4):
             or line.startswith('DO'):
             indent += 1
     return output
+
+def _logical_type():
+    """Return the C type to match Fortran logical type depending on the compiler used"""
+    #Both ifortran and gfortran use 4 bytes
+    #uint32_t is optional so might not be defined
+    return "unsigned int"
 
 
 if __name__ == '__main__':
