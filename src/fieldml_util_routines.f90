@@ -624,6 +624,9 @@ CONTAINS
     IF( ALLOCATED( fieldmlInfo%basisConnectivityHandles ) ) THEN
       DEALLOCATE( fieldmlInfo%basisConnectivityHandles )
     ENDIF
+    IF( ALLOCATED( fieldmlInfo%basisLayoutHandles ) ) THEN
+      DEALLOCATE( fieldmlInfo%basisLayoutHandles )
+    ENDIF
     
   END SUBROUTINE FieldmlUtil_FinaliseInfo
 

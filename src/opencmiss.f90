@@ -5710,14 +5710,34 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldmlInput_CreateMeshComponentNumber
   END INTERFACE CMISSFieldmlInput_CreateMeshComponent
 
-  INTERFACE CMISSFieldmlInput_CreateField
-    MODULE PROCEDURE CMISSFieldmlInput_CreateFieldObj
-    MODULE PROCEDURE CMISSFieldmlInput_CreateFieldNumber
-  END INTERFACE CMISSFieldmlInput_CreateField
+  INTERFACE CMISSFieldmlInput_FieldCreate
+    MODULE PROCEDURE CMISSFieldmlInput_FieldCreateObj
+    MODULE PROCEDURE CMISSFieldmlInput_FieldCreateNumber
+  END INTERFACE CMISSFieldmlInput_FieldCreate
 
-  PUBLIC :: CMISSFieldmlInput_InitialiseFromFile, CMISSFieldmlInput_SetDofVariables, CMISSFieldmlInput_ReadMeshInfo, &
-    & CMISSFieldmlInput_GetCoordinateSystemInfo, CMISSFieldmlInput_CreateBasis, CMISSFieldmlInput_CreateMeshComponent, &
-    & CMISSFieldmlInput_CreateField
+  INTERFACE CMISSFieldmlInput_BasisCreateStart
+    MODULE PROCEDURE CMISSFieldmlInput_BasisCreateStartObj
+    MODULE PROCEDURE CMISSFieldmlInput_BasisCreateStartNumber
+  END INTERFACE CMISSFieldmlInput_BasisCreateStart
+
+  INTERFACE CMISSFieldmlInput_NodesCreateStart
+    MODULE PROCEDURE CMISSFieldmlInput_NodesCreateStartObj
+    MODULE PROCEDURE CMISSFieldmlInput_NodesCreateStartNumber
+  END INTERFACE CMISSFieldmlInput_NodesCreateStart
+
+  INTERFACE CMISSFieldmlInput_CoordinateSystemCreateStart
+    MODULE PROCEDURE CMISSFieldmlInput_CoordinateSystemCreateStartObj
+    MODULE PROCEDURE CMISSFieldmlInput_CoordinateSystemCreateStartNumber
+  END INTERFACE CMISSFieldmlInput_CoordinateSystemCreateStart
+
+  INTERFACE CMISSFieldmlInput_MeshCreateStart
+    MODULE PROCEDURE CMISSFieldmlInput_MeshCreateStartObj
+    MODULE PROCEDURE CMISSFieldmlInput_MeshCreateStartNumber
+  END INTERFACE CMISSFieldmlInput_MeshCreateStart
+
+  PUBLIC :: CMISSFieldmlInput_InitialiseFromFile, CMISSFieldmlInput_SetDofVariables, CMISSFieldmlInput_MeshCreateStart, &
+    & CMISSFieldmlInput_CoordinateSystemCreateStart, CMISSFieldmlInput_CreateMeshComponent, &
+    & CMISSFieldmlInput_FieldCreate, CMISSFieldmlInput_BasisCreateStart, CMISSFieldmlInput_NodesCreateStart
 
   PUBLIC :: CMISSFieldmlUtil_FinaliseInfo, CMISSFieldmlUtil_Import
 
@@ -46829,77 +46849,222 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISSFieldmlInput_ReadMeshInfo( fieldmlInfo, meshName, nodesEnsembleName, err )
+  SUBROUTINE CMISSFieldmlInput_MeshCreateStartObj( fieldmlInfo, meshArgumentName, mesh, meshNumber, region, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: meshArgumentName
+    TYPE(CMISSMeshType), INTENT(INOUT) :: mesh
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    TYPE(CMISSRegionType), INTENT(IN) :: region
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_MeshCreateStartObj",Err,ERROR,*999)
+
+    CALL FieldmlInput_MeshCreateStart( fieldmlInfo, meshArgumentName, mesh%MESH, meshNumber, region%REGION, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_MeshCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_MeshCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_MeshCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_MeshCreateStartObj
+  
+  !  
+  !================================================================================================================================
+  !
+  SUBROUTINE CMISSFieldmlInput_MeshCreateStartNumber( fieldmlInfo, meshName, meshNumber, regionNumber, err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
     CHARACTER(LEN=*), INTENT(IN) :: meshName
-    CHARACTER(LEN=*), INTENT(IN) :: nodesEnsembleName
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: regionNumber
     INTEGER(INTG), INTENT(OUT) :: err
 
-    CALL ENTERS("CMISSFieldmlInput_ReadMeshInfo",Err,ERROR,*999)
+    !Locals
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
 
-    CALL FieldmlInput_ReadMeshInfo( fieldmlInfo, meshName, nodesEnsembleName, err, error, *999 )
+    CALL ENTERS("CMISSFieldmlInput_MeshCreateStartNumber",Err,ERROR,*999)
 
-    CALL EXITS("CMISSFieldmlInput_ReadMeshInfo")
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    NULLIFY( mesh )
+    CALL FieldmlInput_MeshCreateStart( fieldmlInfo, meshName, mesh, meshNumber, region, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_MeshCreateStartNumber")
     RETURN
-999 CALL ERRORS("CMISSFieldmlInput_ReadMeshInfo",Err,ERROR)
-    CALL EXITS("CMISSFieldmlInput_ReadMeshInfo")
+999 CALL ERRORS("CMISSFieldmlInput_MeshCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_MeshCreateStartNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldmlInput_ReadMeshInfo
+  END SUBROUTINE CMISSFieldmlInput_MeshCreateStartNumber
   
   !  
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISSFieldmlInput_GetCoordinateSystemInfo( fieldmlInfo, evaluatorHandle, coordinateType, coordinateCount, err )
+  SUBROUTINE CMISSFieldmlInput_CoordinateSystemCreateStartObj( fieldmlInfo, evaluatorName, coordinateSystem, userNumber, err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    INTEGER(C_INT), INTENT(IN) :: evaluatorHandle
-    INTEGER(INTG), INTENT(OUT) :: coordinateType
-    INTEGER(INTG), INTENT(OUT) :: coordinateCount
-    INTEGER(INTG), INTENT(OUT) :: err
-
-    CALL ENTERS("CMISSFieldmlInput_GetCoordinateSystemInfo",Err,ERROR,*999)
-
-    CALL FieldmlInput_GetCoordinateSystemInfo( fieldmlInfo, evaluatorHandle, coordinateType, coordinateCount, &
-      & err, error, *999 )
-
-    CALL EXITS("CMISSFieldmlInput_GetCoordinateSystemInfo")
-   RETURN
-999 CALL ERRORS("CMISSFieldmlInput_GetCoordinateSystemInfo",Err,ERROR)
-    CALL EXITS("CMISSFieldmlInput_GetCoordinateSystemInfo")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
- END SUBROUTINE CMISSFieldmlInput_GetCoordinateSystemInfo
-  
-  !  
-  !================================================================================================================================
-  !
-
- SUBROUTINE CMISSFieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err )
-    !Arguments
-    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    INTEGER(INTG), INTENT(IN) :: userNumber
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
-   INTEGER(INTG), INTENT(IN) :: gaussQuadrature(:)
+    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: coordinateSystem !<On return, the world coordinate system.
+    INTEGER(INTG), INTENT(IN) :: userNumber
     INTEGER(INTG), INTENT(OUT) :: err
 
-    CALL ENTERS("CMISSFieldmlInput_CreateBasis",Err,ERROR,*999)
-    CALL FieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err, error, *999 )
+    CALL ENTERS("CMISSFieldmlInput_CoordinateSystemCreateStartObj",Err,ERROR,*999)
 
-    CALL EXITS("CMISSFieldmlInput_CreateBasis")
+    CALL CMISSCoordinateSystemTypeInitialise( coordinateSystem, err )
+    CALL FieldmlInput_CoordinateSystemCreateStart( fieldmlInfo, evaluatorName, coordinateSystem%COORDINATE_SYSTEM, & 
+      & userNumber, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_CoordinateSystemCreateStartObj")
+   RETURN
+999 CALL ERRORS("CMISSFieldmlInput_CoordinateSystemCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_CoordinateSystemCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
-999 CALL ERRORS("CMISSFieldmlInput_CreateBasis",Err,ERROR)
-    CALL EXITS("CMISSFieldmlInput_CreateBasis")
+    
+ END SUBROUTINE CMISSFieldmlInput_CoordinateSystemCreateStartObj
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_CoordinateSystemCreateStartNumber( fieldmlInfo, evaluatorName, userNumber, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(IN) :: userNumber
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Locals
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+
+    CALL ENTERS("CMISSFieldmlInput_CoordinateSystemCreateStartNumber",Err,ERROR,*999)
+
+    NULLIFY( COORDINATE_SYSTEM )
+    CALL FieldmlInput_CoordinateSystemCreateStart( fieldmlInfo, evaluatorName, COORDINATE_SYSTEM, & 
+      & userNumber, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_CoordinateSystemCreateStartNumber")
+   RETURN
+999 CALL ERRORS("CMISSFieldmlInput_CoordinateSystemCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_CoordinateSystemCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+ END SUBROUTINE CMISSFieldmlInput_CoordinateSystemCreateStartNumber
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_BasisCreateStartNumber( fieldmlInfo, evaluatorName, userNumber, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(IN) :: userNumber
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Locals
+    TYPE(BASIS_TYPE), POINTER :: basis
+
+    CALL ENTERS("CMISSFieldmlInput_BasisCreateStartNumber",Err,ERROR,*999)
+
+    NULLIFY( basis )
+    CALL FieldmlInput_BasisCreateStart( fieldmlInfo, evaluatorName, userNumber, basis, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_BasisCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_BasisCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_BasisCreateStartNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
    RETURN
     
-  END SUBROUTINE CMISSFieldmlInput_CreateBasis
+  END SUBROUTINE CMISSFieldmlInput_BasisCreateStartNumber
   
- !  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_BasisCreateStartObj( fieldmlInfo, evaluatorName, userNumber, basis, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(IN) :: userNumber
+    TYPE(CMISSBasisType), INTENT(INOUT) :: basis !<On exit, the newly created basis.
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_BasisCreateStartObj",Err,ERROR,*999)
+
+    CALL FieldmlInput_BasisCreateStart( fieldmlInfo, evaluatorName, userNumber, basis%BASIS, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_BasisCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_BasisCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_BasisCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+   RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_BasisCreateStartObj
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_NodesCreateStartNumber( fieldmlInfo, nodesArgumentName, regionNumber, nodes, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    TYPE(CMISSNodesType), INTENT(OUT) :: nodes
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Locals
+    TYPE(REGION_TYPE), POINTER :: region
+    
+    CALL ENTERS("CMISSFieldmlInput_NodesCreateStartNumber",Err,ERROR,*999)
+
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL FieldmlInput_NodesCreateStart( fieldmlInfo, nodesArgumentName, region, nodes%NODES, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_NodesCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_NodesCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_NodesCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+   RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_NodesCreateStartNumber
+  
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_NodesCreateStartObj( fieldmlInfo, nodesArgumentName, region, nodes, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName
+    TYPE(CMISSRegionType), INTENT(IN) :: region
+    TYPE(CMISSNodesType), INTENT(OUT) :: nodes
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_NodesCreateStartObj",Err,ERROR,*999)
+
+    CALL FieldmlInput_NodesCreateStart( fieldmlInfo, nodesArgumentName, region%REGION, nodes%NODES, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_NodesCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_NodesCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_NodesCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+   RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_NodesCreateStartObj
+  
+  !  
   !================================================================================================================================
   !
 
@@ -46962,7 +47127,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISSFieldmlInput_CreateFieldObj( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, evaluatorName, err )
+  SUBROUTINE CMISSFieldmlInput_FieldCreateObj( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, evaluatorName, &
+    & err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
     TYPE(CMISSRegionType), INTENT(IN) :: region
@@ -46973,25 +47139,25 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
     INTEGER(INTG), INTENT(OUT) :: err
 
-    CALL ENTERS("CMISSFieldmlInput_CreateFieldObj",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldmlInput_FieldCreateObj",Err,ERROR,*999)
 
-    CALL FieldmlInput_CreateField( fieldmlInfo, region%REGION, mesh%MESH, decomposition%DECOMPOSITION, fieldNumber, &
+    CALL FieldmlInput_FieldCreateStart( fieldmlInfo, region%REGION, mesh%MESH, decomposition%DECOMPOSITION, fieldNumber, &
       & field%FIELD, evaluatorName, err, error, *999 )
 
-    CALL EXITS("CMISSFieldmlInput_CreateFieldObj")
+    CALL EXITS("CMISSFieldmlInput_FieldCreateObj")
     RETURN
-999 CALL ERRORS("CMISSFieldmlInput_CreateFieldObj",Err,ERROR)
-    CALL EXITS("CMISSFieldmlInput_CreateFieldObj")
+999 CALL ERRORS("CMISSFieldmlInput_FieldCreateObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_FieldCreateObj")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldmlInput_CreateFieldObj
+  END SUBROUTINE CMISSFieldmlInput_FieldCreateObj
 
   !  
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISSFieldmlInput_CreateFieldNumber( fieldmlInfo, regionNumber, meshNumber, decompositionNumber, fieldNumber, &
+  SUBROUTINE CMISSFieldmlInput_FieldCreateNumber( fieldmlInfo, regionNumber, meshNumber, decompositionNumber, fieldNumber, &
     & evaluatorName, err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
@@ -47008,24 +47174,24 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(FIELD_TYPE), POINTER :: field
 
-    CALL ENTERS("CMISSFieldmlInput_CreateFieldNumber",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldmlInput_FieldCreateNumber",Err,ERROR,*999)
 
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
     CALL UserNumberToDecomposition( decompositionNumber, mesh, decomposition, err, error, *999 )
 
     NULLIFY( field )
-    CALL FieldmlInput_CreateField( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, &
+    CALL FieldmlInput_FieldCreateStart( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, &
       & evaluatorName, err, error, *999 )
 
-    CALL EXITS("CMISSFieldmlInput_CreateFieldNumber")
+    CALL EXITS("CMISSFieldmlInput_FieldCreateNumber")
     RETURN
-999 CALL ERRORS("CMISSFieldmlInput_CreateFieldNumber",Err,ERROR)
-    CALL EXITS("CMISSFieldmlInput_CreateFieldNumber")
+999 CALL ERRORS("CMISSFieldmlInput_FieldCreateNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_FieldCreateNumber")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldmlInput_CreateFieldNumber
+  END SUBROUTINE CMISSFieldmlInput_FieldCreateNumber
 
   !  
   !================================================================================================================================
@@ -47418,7 +47584,7 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldmlUtil_FinaliseInfo
-#endif // USEFIELDML
+#endif !USEFIELDML
 
   !
   !================================================================================================================================

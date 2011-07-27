@@ -52,6 +52,7 @@ MODULE FIELDML_INPUT_ROUTINES
   USE BASIS_ROUTINES
   USE COORDINATE_ROUTINES
   USE MESH_ROUTINES
+  USE NODE_ROUTINES
   USE UTIL_ARRAY
   USE CMISS
 
@@ -84,9 +85,9 @@ MODULE FIELDML_INPUT_ROUTINES
 
   END INTERFACE
 
-  PUBLIC :: FieldmlInput_InitialiseFromFile, FieldmlInput_SetDofVariables, FieldmlInput_ReadMeshInfo, &
-    & FieldmlInput_GetCoordinateSystemInfo, FieldmlInput_CreateBasis, FieldmlInput_CreateMeshComponent, &
-    & FieldmlInput_CreateField
+  PUBLIC :: FieldmlInput_InitialiseFromFile, FieldmlInput_SetDofVariables, FieldmlInput_MeshCreateStart, &
+    & FieldmlInput_CoordinateSystemCreateStart, FieldmlInput_BasisCreateStart, FieldmlInput_CreateMeshComponent, &
+    & FieldmlInput_FieldCreateStart, FieldmlInput_NodesCreateStart
 
 CONTAINS
 
@@ -94,17 +95,19 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlInput_GetBasisConnectivityInfo( fmlInfo, basisHandle, connectivityHandle, layoutHandle, err, errorString, * )
+  SUBROUTINE FieldmlInput_GetBasisConnectivityInfo( fmlInfo, basisHandle, paramArgHandle, connectivityHandle, layoutHandle, err, &
+    & errorString, * )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fmlInfo
     INTEGER(C_INT), INTENT(IN) :: basisHandle
+    INTEGER(C_INT), INTENT(IN) :: paramArgHandle
     INTEGER(C_INT), INTENT(OUT) :: connectivityHandle
     INTEGER(C_INT), INTENT(OUT) :: layoutHandle
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString
     
     !Local variables
-    INTEGER(C_INT) :: count, paramsHandle, handle1, handle2
+    INTEGER(C_INT) :: count, bindNumber, paramsHandle, argHandle, layoutIndexHandle
     
     CALL ENTERS( "FieldmlInput_GetBasisConnectivityInfo", err, errorString, *999 )
 
@@ -114,18 +117,18 @@ CONTAINS
       CALL FieldmlUtil_CheckError( "Library basis evaluators must have exactly two binds", fmlInfo, errorString, *999 )
     END IF
     
-    handle1 = Fieldml_GetBindEvaluator( fmlInfo%fmlHandle, basisHandle, 1 )
-    CALL FieldmlUtil_CheckError( "Cannot get first bind for FEM evaluator", fmlInfo%fmlHandle, errorString, *999 )
-    handle2 = Fieldml_GetBindEvaluator( fmlInfo%fmlHandle, basisHandle, 2 )
-    CALL FieldmlUtil_CheckError( "Cannot get second bind for FEM evaluator", fmlInfo%fmlHandle, errorString, *999 )
+    paramsHandle = FML_INVALID_HANDLE
+    DO bindNumber = 1, count
+      argHandle = Fieldml_GetBindArgument( fmlInfo%fmlHandle, basisHandle, bindNumber )
+      CALL FieldmlUtil_CheckError( "Cannot get bind for interpolator", fmlInfo%fmlHandle, errorString, *999 )
+      IF( argHandle == paramArgHandle ) THEN
+        paramsHandle = Fieldml_GetBindEvaluator( fmlInfo%fmlHandle, basisHandle, bindNumber )
+      ENDIF
+    ENDDO
 
-    IF( handle1 == fmlInfo%xiArgumentHandle ) THEN
-      paramsHandle = handle2
-    ELSE IF( handle2 == fmlInfo%xiArgumentHandle ) THEN
-      paramsHandle = handle1
-    ELSE
+    IF( paramsHandle == FML_INVALID_HANDLE ) THEN
       err = FML_ERR_INVALID_BASIS
-      CALL FieldmlUtil_CheckErrorNumber( "Library interpolators must a xi bind", err, errorString, *999 )
+      CALL FieldmlUtil_CheckErrorNumber( "Library interpolators must have a correct parameter bind", err, errorString, *999 )
     ENDIF
 
     IF( Fieldml_GetObjectType( fmlInfo%fmlHandle, paramsHandle ) /= FHT_AGGREGATE_EVALUATOR ) THEN
@@ -148,8 +151,8 @@ CONTAINS
     CALL FieldmlUtil_CheckError( "Cannot get connectivity source for nodal parameters", fmlInfo%fmlHandle, &
       & errorString, *999 )
       
-    handle1 = Fieldml_GetIndexEvaluator( fmlInfo%fmlHandle, paramsHandle, 1 )
-    layoutHandle = Fieldml_GetValueType( fmlInfo%fmlHandle, handle1 )
+    layoutIndexHandle = Fieldml_GetIndexEvaluator( fmlInfo%fmlHandle, paramsHandle, 1 )
+    layoutHandle = Fieldml_GetValueType( fmlInfo%fmlHandle, layoutIndexHandle )
     CALL FieldmlUtil_CheckError( "Cannot get connectivity source for nodal parameters", fmlInfo%fmlHandle, &
       & errorString, *999 )
 
@@ -208,12 +211,13 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlInput_GetBasisInfo( fmlInfo, objectHandle, connectivityHandle, basisType, basisInterpolations, collapse, &
-    & err, errorString, * )
+  SUBROUTINE FieldmlInput_GetBasisInfo( fmlInfo, objectHandle, connectivityHandle, layoutHandle, basisType, basisInterpolations, &
+    & collapse, err, errorString, * )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fmlInfo
     INTEGER(C_INT), INTENT(IN) :: objectHandle
     INTEGER(C_INT), INTENT(OUT) :: connectivityHandle
+    INTEGER(C_INT), INTENT(OUT) :: layoutHandle
     INTEGER(INTG), INTENT(OUT) :: basisType
     INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: basisInterpolations(:)
     INTEGER(INTG), ALLOCATABLE, INTENT(OUT) :: collapse(:)
@@ -221,7 +225,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString
 
     !Locals
-    INTEGER(C_INT) :: length, layoutHandle, libraryBasisHandle
+    INTEGER(C_INT) :: length, libraryBasisHandle, paramArgHandle
     CHARACTER(LEN=BUFFER_SIZE) :: name
     
     CALL ENTERS( "FieldmlInput_GetBasisInfo", err, errorString, *999 )
@@ -241,11 +245,14 @@ CONTAINS
     CALL FieldmlUtil_CheckError( "Cannot get name of basis evaluator", fmlInfo, errorString, *999 )
 
     IF( INDEX( name, 'interpolator.3d.unit.triquadraticLagrange') == 1 ) THEN
+      paramArgHandle = Fieldml_GetObjectByDeclaredName( fmlInfo%fmlHandle, &
+        & "parameters.3d.unit.triquadraticLagrange.argument"//NUL )
       CALL REALLOCATE_INT( basisInterpolations, 3, "", err, errorString, *999 )
       CALL REALLOCATE_INT( collapse, 3, "", err, errorString, *999 )
       basisInterpolations = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
       basisType = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( name, 'interpolator.3d.unit.trilinearLagrange') == 1 ) THEN
+      paramArgHandle = Fieldml_GetObjectByDeclaredName( fmlInfo%fmlHandle, "parameters.3d.unit.trilinearLagrange.argument"//NUL )
       CALL REALLOCATE_INT( basisInterpolations, 3, "", err, errorString, *999 )
       CALL REALLOCATE_INT( collapse, 3, "", err, errorString, *999 )
       basisInterpolations = BASIS_LINEAR_LAGRANGE_INTERPOLATION
@@ -259,7 +266,8 @@ CONTAINS
       CALL FieldmlInput_GetBasisCollapse( name(1:length), collapse )
     ENDIF
     
-    CALL FieldmlInput_GetBasisConnectivityInfo( fmlInfo, objectHandle, connectivityHandle, layoutHandle, err, errorString, *999 )
+    CALL FieldmlInput_GetBasisConnectivityInfo( fmlInfo, objectHandle, paramArgHandle, connectivityHandle, layoutHandle, &
+      & err, errorString, *999 )
 
     CALL EXITS( "FieldmlInput_GetBasisInfo" )
     RETURN
@@ -281,10 +289,9 @@ CONTAINS
     
     !Function
     LOGICAL :: FieldmlInput_IsKnownBasis
-    TYPE(VARYING_STRING) :: errorString
 
     !Locals
-    INTEGER(C_INT) :: length, connectivityHandle, layoutHandle, libraryBasisHandle
+    INTEGER(C_INT) :: length, libraryBasisHandle
     CHARACTER(LEN=BUFFER_SIZE) :: name
     
     FieldmlInput_IsKnownBasis = .FALSE.
@@ -303,17 +310,10 @@ CONTAINS
       RETURN
     ENDIF
     
-    CALL FieldmlInput_GetBasisConnectivityInfo( fmlInfo, objectHandle, connectivityHandle, layoutHandle, err, errorString, *999 )
-    IF( connectivityHandle == FML_INVALID_HANDLE ) THEN
-      err = FML_ERR_INVALID_BASIS
-      RETURN
-    ENDIF
-    
     FieldmlInput_IsKnownBasis = .TRUE.
     RETURN
 
     err = FML_ERR_INVALID_BASIS
-999 RETURN
     
   END FUNCTION FieldmlInput_IsKnownBasis
   
@@ -515,23 +515,29 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlInput_GetCoordinateSystemInfo( fmlInfo, evaluatorHandle, coordinateType, coordinateCount, &
+  SUBROUTINE FieldmlInput_CoordinateSystemCreateStart( fmlInfo, evaluatorName, coordinateSystem, userNumber, &
     & err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fmlInfo
-    INTEGER(C_INT), INTENT(IN) :: evaluatorHandle
-    INTEGER(INTG), INTENT(OUT) :: coordinateType
-    INTEGER(INTG), INTENT(OUT) :: coordinateCount
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER, INTENT(IN) :: coordinateSystem
+    INTEGER(INTG), INTENT(IN) :: userNumber
     INTEGER(INTG), INTENT(OUT) :: err
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString
 
     !Locals
+    INTEGER(C_INT) :: evaluatorHandle
     INTEGER(C_INT) :: typeHandle, length
     CHARACTER(LEN=BUFFER_SIZE) :: name
+    INTEGER(INTG) :: coordinateType
+    INTEGER(INTG) :: coordinateCount
 
-    CALL ENTERS( "FieldmlInput_GetCoordinateSystemInfo", err, errorString, *999 )
+    CALL ENTERS( "FieldmlInput_CoordinateSystemCreateStart", err, errorString, *999 )
 
     coordinateType = 0 !There doesn't seem to be a COORDINATE_UNKNOWN_TYPE
+
+    evaluatorHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, evaluatorName//NUL )
+    CALL FieldmlUtil_CheckError( "Cannot get coordinate evaluator for geometric field", fmlInfo%fmlHandle, errorString, *999 )
 
     typeHandle = Fieldml_GetValueType( fmlInfo%fmlHandle, evaluatorHandle )
     CALL FieldmlUtil_CheckError( "Cannot get value type for geometric field", fmlInfo%fmlHandle, errorString, *999 )
@@ -549,13 +555,18 @@ CONTAINS
       CALL FieldmlUtil_CheckErrorNumber( "Coordinate system not yet supported", err, errorString, *999 )
     ENDIF
 
-    CALL EXITS( "FieldmlInput_GetCoordinateSystemInfo" )
+    CALL COORDINATE_SYSTEM_CREATE_START( userNumber, coordinateSystem, err, errorString, *999 )
+    !Set the coordinate system dimension and type
+    CALL COORDINATE_SYSTEM_DIMENSION_SET( coordinateSystem, coordinateCount, err, errorString, *999 )
+    CALL COORDINATE_SYSTEM_TYPE_SET( coordinateSystem, coordinateType, err, errorString, *999 )
+
+    CALL EXITS( "FieldmlInput_CoordinateSystemCreateStart" )
     RETURN
-999 CALL ERRORS( "FieldmlInput_GetCoordinateSystemInfo", err, errorString )
-    CALL EXITS( "FieldmlInput_GetCoordinateSystemInfo" )
+999 CALL ERRORS( "FieldmlInput_CoordinateSystemCreateStart", err, errorString )
+    CALL EXITS( "FieldmlInput_CoordinateSystemCreateStart" )
     RETURN 1
 
-  END SUBROUTINE FieldmlInput_GetCoordinateSystemInfo
+  END SUBROUTINE FieldmlInput_CoordinateSystemCreateStart
 
 
   !
@@ -563,138 +574,127 @@ CONTAINS
   !
   
   
-  SUBROUTINE FieldmlInput_GetConnectivityInfo( fmlInfo, connectivityHandle, layoutHandle, err, errorString, * )
+  SUBROUTINE FieldmlInput_NodesCreateStart( fmlInfo, nodesArgumentName, region, nodes, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fmlInfo
-    INTEGER(C_INT), INTENT(IN) :: connectivityHandle
-    INTEGER(C_INT), INTENT(OUT) :: layoutHandle
+    CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName
+    TYPE(REGION_TYPE), POINTER, INTENT(IN) :: region
+    TYPE(NODES_TYPE), POINTER, INTENT(INOUT) :: nodes
     INTEGER(INTG), INTENT(OUT) :: err
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString
 
     !Locals
-    INTEGER(C_INT) :: evaluatorHandle, type1, type2
-
-    CALL ENTERS( "FieldmlInput_GetConnectivityInfo", err, errorString, *999 )
-
-    IF( fmlInfo%nodesHandle /= Fieldml_GetValueType( fmlInfo%fmlHandle, connectivityHandle ) ) THEN
-      err = FML_ERR_INVALID_CONNECTIVITY
-      CALL FieldmlUtil_CheckErrorNumber( "Connectivity evaluator must vary over the correct point ensemble", &
-        & err, errorString, *999 )
-    ENDIF
-
-    IF( Fieldml_GetIndexEvaluatorCount( fmlInfo%fmlHandle, connectivityHandle ) /= 2 ) THEN
-      err = FML_ERR_INVALID_CONNECTIVITY
-      CALL FieldmlUtil_CheckErrorNumber( "Connectivity evaluator must only vary over two ensembles", err, errorString, *999 )
-    END IF
-
-    evaluatorHandle = Fieldml_GetIndexEvaluator( fmlInfo%fmlHandle, connectivityHandle, 1 )
-    type1 = Fieldml_GetValueType( fmlInfo%fmlHandle, evaluatorHandle )
-
-    evaluatorHandle = Fieldml_GetIndexEvaluator( fmlInfo%fmlHandle, connectivityHandle, 2 )
-    type2 = Fieldml_GetValueType( fmlInfo%fmlHandle, evaluatorHandle )
-
-    IF( ( type1 /= fmlInfo%elementsHandle ) .AND. &
-      & ( type2 /= fmlInfo%elementsHandle ) ) THEN
+    INTEGER(C_INT) :: nodesArgumentHandle, nodesHandle, nodeCount
+    
+    nodesArgumentHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, nodesArgumentName//NUL )
+    IF( nodesArgumentHandle == FML_INVALID_HANDLE ) THEN
+      CALL FieldmlUtil_CheckErrorNumber( "Nodes argument name is invalid", err, errorString, *999 )
     END IF
     
-    IF( type1 == fmlInfo%elementsHandle ) THEN
-      layoutHandle = type2
-    ELSEIF( type2 == fmlInfo%elementsHandle ) THEN
-      layoutHandle = type1
-    ELSE
-      err = FML_ERR_INVALID_CONNECTIVITY
-      CALL FieldmlUtil_CheckErrorNumber( "Connectivity evaluator must vary over mesh elements type", err, errorString, *999 )
-    ENDIF
-      
-    CALL EXITS( "FieldmlInput_GetConnectivityInfo" )
+    nodesHandle = Fieldml_GetValueType( fmlInfo%fmlHandle, nodesArgumentHandle )
+    IF( nodesHandle == FML_INVALID_HANDLE ) THEN
+      CALL FieldmlUtil_CheckErrorNumber( "Nodes argument type is invalid", err, errorString, *999 )
+    END IF
+
+    fmlInfo%nodesArgumentHandle = nodesArgumentHandle
+    fmlInfo%nodesHandle = nodesHandle
+
+    nodeCount = Fieldml_GetMemberCount( fmlInfo%fmlHandle, fmlInfo%nodesHandle )
+    NULLIFY( nodes )
+    CALL NODES_CREATE_START( region, nodeCount, nodes, err, errorString, *999 )
+
+    CALL EXITS( "FieldmlInput_NodesCreateStart" )
     RETURN
-999 CALL ERRORS( "FieldmlInput_GetConnectivityInfo", err, errorString )
-    CALL EXITS( "FieldmlInput_GetConnectivityInfo" )
+999 CALL ERRORS( "FieldmlInput_NodesCreateStart", err, errorString )
+    CALL EXITS( "FieldmlInput_NodesCreateStart" )
     RETURN 1
 
-  END SUBROUTINE FieldmlInput_GetConnectivityInfo
+  END SUBROUTINE FieldmlInput_NodesCreateStart
 
 
   !
   !================================================================================================================================
   !
 
-
-  SUBROUTINE FieldmlInput_ReadMeshInfo( fmlInfo, meshName, nodesEnsembleName, err, errorString, * )
+  SUBROUTINE FieldmlInput_MeshCreateStart( fmlInfo, meshArgumentName, mesh, meshNumber, region, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fmlInfo
-    CHARACTER(LEN=*), INTENT(IN) :: meshName
-    CHARACTER(LEN=*), INTENT(IN) :: nodesEnsembleName
+    CHARACTER(LEN=*), INTENT(IN) :: meshArgumentName
+    TYPE(MESH_TYPE), POINTER, INTENT(INOUT) :: mesh
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    TYPE(REGION_TYPE), POINTER, INTENT(IN) :: region
     INTEGER(INTG), INTENT(OUT) :: err
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString
 
     !Locals
     INTEGER(INTG) :: count
+    INTEGER(C_INT) :: meshArgument, xiDimensions, elementCount
 
-    CALL ENTERS( "FieldmlInput_ReadMeshInfo", err, errorString, *999 )
+    CALL ENTERS( "FieldmlInput_MeshCreateStart", err, errorString, *999 )
+    
+    meshArgument = Fieldml_GetObjectByName( fmlInfo%fmlHandle, meshArgumentName//NUL )
+    IF( meshArgument == FML_INVALID_HANDLE ) THEN
+      CALL FieldmlUtil_CheckError( "Named mesh argument not found", fmlInfo, errorString, *999 )
+    ENDIF
 
-    fmlInfo%meshHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, meshName//NUL )
+    fmlInfo%meshHandle = Fieldml_GetValueType( fmlInfo%fmlHandle, meshArgument )
     IF( fmlInfo%meshHandle == FML_INVALID_HANDLE ) THEN
-      err = Fieldml_GetLastError( fmlInfo%fmlHandle )
-      CALL FieldmlUtil_CheckErrorNumber( "Named mesh cannot be found", err, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Invalid mesh argument", fmlInfo, errorString, *999 )
     ENDIF
     
     fmlInfo%elementsHandle = Fieldml_GetMeshElementsType( fmlInfo%fmlHandle, fmlInfo%meshHandle )
-    fmlInfo%elementsArgumentHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, meshName//".argument.element"//NUL )
+    fmlInfo%elementsArgumentHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, meshArgumentName//".element"//NUL )
 
     fmlInfo%xiHandle = Fieldml_GetMeshChartType( fmlInfo%fmlHandle, fmlInfo%meshHandle )
-    fmlInfo%xiArgumentHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, meshName//".argument.xi"//NUL )
+    fmlInfo%xiArgumentHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, meshArgumentName//".xi"//NUL )
 
     count = Fieldml_GetTypeComponentCount( fmlInfo%fmlHandle, fmlInfo%xiHandle )
     IF( ( count < 1 ) .OR. ( count > 3 ) ) THEN
       err = FML_ERR_UNKNOWN_MESH_XI
       CALL FieldmlUtil_CheckErrorNumber( "Mesh dimension cannot be greater than 3, or less than 1", err, errorString, *999 )
     ENDIF
+
+    xiDimensions = Fieldml_GetTypeComponentCount( fmlInfo%fmlHandle, fmlInfo%xiHandle )
+    elementCount = Fieldml_GetMemberCount( fmlInfo%fmlHandle, fmlInfo%elementsHandle )
+    NULLIFY( mesh )
+    CALL MESH_CREATE_START( meshNumber, region, xiDimensions, mesh, err, errorString, *999 )
+    CALL MESH_NUMBER_OF_ELEMENTS_SET( mesh, elementCount, err, errorString, *999 )
     
-    fmlInfo%nodesHandle = Fieldml_GetObjectByName( fmlInfo%fmlHandle, nodesEnsembleName//NUL )
-    IF( fmlInfo%nodesHandle == FML_INVALID_HANDLE ) THEN
-      err = FML_ERR_INVALID_CONNECTIVITY
-      CALL FieldmlUtil_CheckErrorNumber( "No valid point ensemble found for mesh connectivity", err, errorString, *999 )
-    END IF
-
-    fmlInfo%nodesArgumentHandle = FieldmlUtil_GetTypeArgumentHandle( fmlInfo, fmlInfo%nodesHandle, .FALSE. )
-
-    CALL EXITS( "FieldmlInput_ReadMeshInfo" )
+    CALL EXITS( "FieldmlInput_MeshCreateStart" )
     RETURN
-999 CALL ERRORS( "FieldmlInput_ReadMeshInfo", err, errorString )
-    CALL EXITS( "FieldmlInput_ReadMeshInfo" )
+999 CALL ERRORS( "FieldmlInput_MeshCreateStart", err, errorString )
+    CALL EXITS( "FieldmlInput_MeshCreateStart" )
     RETURN 1
 
-  END SUBROUTINE FieldmlInput_ReadMeshInfo
+  END SUBROUTINE FieldmlInput_MeshCreateStart
 
   !
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlInput_CreateBasis( fieldmlInfo, userNumber, evaluatorName, gaussQuadrature, err, errorString, * )
+  SUBROUTINE FieldmlInput_BasisCreateStart( fieldmlInfo, evaluatorName, userNumber, basis, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    INTEGER(INTG), INTENT(IN) :: userNumber
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
-    INTEGER(INTG), INTENT(IN) :: gaussQuadrature(:)
+    INTEGER(INTG), INTENT(IN) :: userNumber
+    TYPE(BASIS_TYPE), POINTER, INTENT(INOUT) :: basis
     INTEGER(INTG), INTENT(OUT) :: err
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString
 
     !Locals
     INTEGER(INTG) :: count, i
-    INTEGER(C_INT) :: handle, connectivityHandle
+    INTEGER(C_INT) :: handle, connectivityHandle, layoutHandle
     INTEGER(C_INT), ALLOCATABLE :: tempHandles(:)
     INTEGER(INTG) :: basisType
     INTEGER(INTG), ALLOCATABLE :: basisInterpolations(:)
     INTEGER(INTG), ALLOCATABLE :: collapse(:)
-    TYPE(BASIS_TYPE), POINTER :: basis
     
-    CALL ENTERS( "FieldmlInput_CreateBasis", err, errorString, *999 )
+    CALL ENTERS( "FieldmlInput_BasisCreateStart", err, errorString, *999 )
 
     handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
     CALL FieldmlUtil_CheckError( "Named basis not found", fieldmlInfo, errorString, *999 )
-    CALL FieldmlInput_GetBasisInfo( fieldmlInfo, handle, connectivityHandle, basisType, basisInterpolations, collapse, &
-      & err, errorString, *999 )
+    CALL FieldmlInput_GetBasisInfo( fieldmlInfo, handle, connectivityHandle, layoutHandle, basisType, basisInterpolations, &
+      & collapse, err, errorString, *999 )
     
     IF( ALLOCATED( fieldmlInfo%basisHandles ) ) THEN
       count = SIZE( fieldmlInfo%basisHandles )
@@ -715,28 +715,31 @@ CONTAINS
       ALLOCATE( fieldmlInfo%basisConnectivityHandles( count + 1 ) )
       fieldmlInfo%basisConnectivityHandles(1:count) = tempHandles(1:count)
 
+      tempHandles(1:count) = fieldmlInfo%basisLayoutHandles(1:count)
+      DEALLOCATE( fieldmlInfo%basisLayoutHandles )
+      ALLOCATE( fieldmlInfo%basisLayoutHandles( count + 1 ) )
+      fieldmlInfo%basisLayoutHandles(1:count) = tempHandles(1:count)
+
       DEALLOCATE( tempHandles )
     ELSE
       count = 0
       ALLOCATE( fieldmlInfo%basisHandles( 1 ) )
       ALLOCATE( fieldmlInfo%basisConnectivityHandles( 1 ) )
+      ALLOCATE( fieldmlInfo%basisLayoutHandles( 1 ) )
     ENDIF
     
     count = count + 1
     fieldmlInfo%basisHandles( count ) = handle
     fieldmlInfo%basisConnectivityHandles( count ) = connectivityHandle
+    fieldmlInfo%basisLayoutHandles( count ) = layoutHandle
     err = Fieldml_SetObjectInt( fieldmlInfo%fmlHandle, handle, userNumber )
   
-    NULLIFY(BASIS)
+    NULLIFY(basis)
     CALL BASIS_CREATE_START( userNumber, basis, err, errorString, *999 )
     CALL BASIS_TYPE_SET( basis, basisType, err, errorString, *999 )
     CALL BASIS_NUMBER_OF_XI_SET( basis, size( basisInterpolations ), err, errorString, *999 )
     CALL BASIS_INTERPOLATION_XI_SET( basis, basisInterpolations, err, errorString, *999 )
     CALL BASIS_COLLAPSED_XI_SET( basis, collapse, err, errorString, *999 )
-    IF( SIZE( gaussQuadrature ) > 0 ) THEN
-      CALL BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET( basis, gaussQuadrature, err, errorString, *999 )
-    ENDIF
-    CALL BASIS_CREATE_FINISH( basis, err, errorString, *999 )
     
     IF( ALLOCATED( basisInterpolations ) ) THEN
       DEALLOCATE( basisInterpolations )
@@ -745,10 +748,10 @@ CONTAINS
       DEALLOCATE( collapse )
     ENDIF
     
-    CALL EXITS( "FieldmlInput_CreateBasis" )
+    CALL EXITS( "FieldmlInput_BasisCreateStart" )
     RETURN
-999 CALL ERRORS( "FieldmlInput_CreateBasis", err, errorString )
-    CALL EXITS( "FieldmlInput_CreateBasis" )
+999 CALL ERRORS( "FieldmlInput_BasisCreateStart", err, errorString )
+    CALL EXITS( "FieldmlInput_BasisCreateStart" )
     RETURN 1
 
   END SUBROUTINE
@@ -847,9 +850,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldInput_Reorder( fieldmlInfo, inputBuffer, order, count, outputBuffer, err, errorString, * )
+  SUBROUTINE FieldInput_Reorder( inputBuffer, order, count, outputBuffer, err, errorString, * )
     !Argument
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
     INTEGER(C_INT), INTENT(IN) :: inputBuffer(:)
     INTEGER(C_INT), ALLOCATABLE, INTENT(IN) :: order(:)
     INTEGER(C_INT), INTENT(IN) :: count
@@ -937,8 +939,8 @@ CONTAINS
     
     maxBasisNodesCount = 0
     DO knownBasisNumber = 1, knownBasisCount
-      CALL FieldmlInput_GetBasisConnectivityInfo( fieldmlInfo, &
-        & fieldmlInfo%basisHandles(knownBasisNumber), connectivityHandle, layoutHandle, err, errorString, *999 )
+      layoutHandle = fieldmlInfo%basisLayoutHandles(knownBasisNumber)
+      connectivityHandle = fieldmlInfo%basisConnectivityHandles(knownBasisNumber)
         
       basisNodesCount = Fieldml_GetMemberCount( fieldmlInfo%fmlHandle, layoutHandle )
       CALL FieldmlUtil_CheckError( "Cannot get local node count for layout", fieldmlInfo, errorString, *999 )
@@ -971,9 +973,6 @@ CONTAINS
       CALL FieldmlUtil_CheckError( "Cannot get element evaluator from mesh component", fieldmlInfo, errorString, *999 )
       
       IF( basisReferenceHandle /= lastBasisHandle ) THEN
-        CALL FieldmlInput_GetBasisConnectivityInfo( fieldmlInfo, basisReferenceHandle, &
-          & connectivityHandle, layoutHandle, err, errorString, *999 )
-    
         basisNumber = Fieldml_GetObjectInt( fieldmlInfo%fmlHandle, basisReferenceHandle )
         CALL FieldmlUtil_CheckError( "Cannot get basis user number for element evaluator", fieldmlInfo, errorString, *999 )
         CALL BASIS_USER_NUMBER_FIND( basisNumber, basis, err, errorString, *999 )
@@ -995,7 +994,7 @@ CONTAINS
           CALL FieldmlUtil_CheckErrorNumber( "Error reading connectivity", err, errorString, *999 )
         ENDIF
         IF( fieldmlInfo%basisHandles(knownBasisNumber) == basisReferenceHandle ) THEN
-          CALL FieldInput_Reorder( fieldmlInfo, rawBuffer, connectivityOrders(knownBasisNumber)%array, basisNodesCount, &
+          CALL FieldInput_Reorder( rawBuffer, connectivityOrders(knownBasisNumber)%array, basisNodesCount, &
             & nodesBuffer, err, errorString, *999 )
           CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET( elementNumber, meshElements, nodesBuffer(1:basisNodesCount), &
             & err, errorString, *999 )
@@ -1081,7 +1080,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlInput_CreateField( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, evaluatorName, &
+  SUBROUTINE FieldmlInput_FieldCreateStart( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, evaluatorName, &
     & err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
@@ -1097,12 +1096,12 @@ CONTAINS
     !Locals
     INTEGER(C_INT) :: fieldHandle, templateHandle, nodalDofsHandle, typeHandle, count, dataSource
     INTEGER(INTG) :: versionNumber,componentNumber, templateComponentNumber, nodeNumber, fieldDimensions, meshNodeCount, gNode
-    INTEGER(INTG), ALLOCATABLE :: componentNumbers(:)
+    INTEGER(INTG) :: meshComponent
     LOGICAL :: nodeExists
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: buffer(:)
     INTEGER(C_INT) :: reader
 
-    CALL ENTERS( "FieldmlInput_CreateField", err, errorString, *999 )
+    CALL ENTERS( "FieldmlInput_FieldCreateStart", err, errorString, *999 )
 
     fieldHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
     CALL FieldmlUtil_CheckError( "Cannot get named field evaluator", fieldmlInfo, errorString, *999 )
@@ -1122,7 +1121,6 @@ CONTAINS
     CALL FIELD_MESH_DECOMPOSITION_SET( field, decomposition, err, errorString, *999 )
     CALL FIELD_SCALING_TYPE_SET( field, FIELD_NO_SCALING, err, errorString, *999 )
 
-    ALLOCATE( componentNumbers( fieldDimensions ) )
     DO componentNumber = 1, fieldDimensions
       templateHandle = Fieldml_GetElementEvaluator( fieldmlInfo%fmlHandle, fieldHandle, componentNumber, 1 )
       CALL FieldmlUtil_CheckError( "Cannot get field component evaluator", fieldmlInfo, errorString, *999 )
@@ -1132,8 +1130,6 @@ CONTAINS
 
       CALL FIELD_COMPONENT_MESH_COMPONENT_SET( field, FIELD_U_VARIABLE_TYPE, componentNumber, templateComponentNumber, &
         & err, errorString, *999 )
-
-      componentNumbers( componentNumber ) = templateComponentNumber
     ENDDO
 
     CALL FIELD_CREATE_FINISH( field, err, errorString, *999 )
@@ -1157,7 +1153,9 @@ CONTAINS
         ENDIF
 
         DO componentNumber = 1, fieldDimensions
-          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS( mesh, componentNumbers( componentNumber ), nodeNumber, nodeExists, gNode, &
+          CALL FIELD_COMPONENT_MESH_COMPONENT_GET( field, FIELD_U_VARIABLE_TYPE, componentNumber, meshComponent, &
+            & err, errorString, *999 )
+          CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS( mesh, meshComponent, nodeNumber, nodeExists, gNode, &
             & err, errorString, *999 )
   
           IF( nodeExists ) THEN
@@ -1180,15 +1178,13 @@ CONTAINS
 
     !TODO Set element and constant parameters
     
-    DEALLOCATE( componentNumbers )
-
-    CALL EXITS( "FieldmlInput_CreateField" )
+    CALL EXITS( "FieldmlInput_FieldCreateStart" )
     RETURN
-999 CALL ERRORS( "FieldmlInput_CreateField", err, errorString )
-    CALL EXITS( "FieldmlInput_CreateField" )
+999 CALL ERRORS( "FieldmlInput_FieldCreateStart", err, errorString )
+    CALL EXITS( "FieldmlInput_FieldCreateStart" )
     RETURN 1
   
-  END SUBROUTINE
+  END SUBROUTINE FieldmlInput_FieldCreateStart
 
   !
   !================================================================================================================================

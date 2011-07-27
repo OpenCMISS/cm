@@ -70,6 +70,7 @@ MODULE FIELDML_TYPES
     INTEGER(C_INT), ALLOCATABLE :: componentHandles(:)
     INTEGER(C_INT), ALLOCATABLE :: basisHandles(:)
     INTEGER(C_INT), ALLOCATABLE :: basisConnectivityHandles(:)
+    INTEGER(C_INT), ALLOCATABLE :: basisLayoutHandles(:)
   END TYPE FieldmlInfoType
 
   !Interfaces
