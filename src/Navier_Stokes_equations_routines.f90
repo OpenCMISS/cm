@@ -4810,6 +4810,12 @@ CONTAINS
     REAL(DP) :: T_COORDINATES(20,3)
     REAL(DP) :: X(3),MU_PARAM,RHO_PARAM,VELOCITY,PRESSURE
 
+    REAL(DP), INTENT(IN) :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
+    REAL(DP), INTENT(IN) :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
+    REAL(DP), INTENT(IN) :: TIME !<The time to evaluate at
+    REAL(DP), INTENT(IN) :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
+    REAL(DP), INTENT(IN) :: MATERIALS_PARAMETERS(:) !<A pointer to any materials field parameters
+
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
     INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
@@ -5000,23 +5006,40 @@ CONTAINS
                                                 ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                                 GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                                   & GLOBAL_DERIVATIVE_INDEX
-                                                MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
-                                                !Define MU_PARAM, density=1
-                                                MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
-                                                  & parameters%cmiss%data_dp(1)
-                                                !Define RHO_PARAM, density=2
-                                                RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
-                                                  & parameters%cmiss%data_dp(2)
-                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(VALUE,X,MU_PARAM, & 
-                                                  & RHO_PARAM,CURRENT_TIME,variable_type, & 
-                                                  & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
-                                                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
-! pick up here!
 
+                                                NULLIFY(ANALYTIC_VARIABLE)
+                                                NULLIFY(ANALYTIC_PARAMETERS)
+                                                IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                                                  CALL FIELD_VARIABLE_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,ANALYTIC_VARIABLE,ERR,ERROR,*999)
+                                                  CALL FIELD_PARAMETER_SET_DATA_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                                    & ANALYTIC_PARAMETERS,ERR,ERROR,*999)           
+                                                ENDIF
+                                                NULLIFY(MATERIALS_FIELD)
+                                                NULLIFY(MATERIALS_VARIABLE)
+                                                NULLIFY(MATERIALS_PARAMETERS)
+                                                IF(ASSOCIATED(EQUATIONS_SET%MATERIALS)) THEN
+                                                  MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                                                  CALL FIELD_VARIABLE_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,MATERIALS_VARIABLE,ERR,ERROR,*999)
+                                                  CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                                    & MATERIALS_PARAMETERS,ERR,ERROR,*999)           
+                                                ENDIF
+                                                TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
 
-                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
-                                  & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,TIME,variable_type,GLOBAL_DERIV_INDEX,component_idx, &
-                                  & ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
+!                                                MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+!                                                !Define MU_PARAM, density=1
+!                                                MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+!                                                  & parameters%cmiss%data_dp(1)
+!                                                !Define RHO_PARAM, density=2
+!                                                RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
+!                                                  & parameters%cmiss%data_dp(2)
+!                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(VALUE,X,MU_PARAM, & 
+!                                                  & RHO_PARAM,CURRENT_TIME,variable_type, & 
+!                                                  & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
+!                                                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
+
+                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
+                                                  & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,TIME,variable_type,GLOBAL_DERIV_INDEX,component_idx, &
+                                                  & ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
 
                                                 !Default to version 1 of each node derivative
                                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
