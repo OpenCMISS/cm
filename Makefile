@@ -6,7 +6,7 @@
 #----------------------------------------------------------------------------------------------------------------------------------
 # Makefile for compiling OpenCMISS library
 #
-# Original by Chris Bradley adapted from the CMISS Makefile by Karl Tomlinson 
+# Original by Chris Bradley adapted from the CMISS Makefile by Karl Tomlinson
 # Changes:
 #
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -61,119 +61,13 @@ endif
 
 GLOBAL_CM_ROOT = $(CURDIR)
 
-ifndef GLOBAL_CELLML_ROOT
-  GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
-endif
-
-ifndef GLOBAL_FIELDML_ROOT
-  GLOBAL_FIELDML_ROOT := ${OPENCMISSEXTRAS_ROOT}/fieldml
-endif
-
-ifndef GLOBAL_UTILS_ROOT
-  GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
-endif
+include $(GLOBAL_CM_ROOT)/utils/MakefileCommon.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
-
-include $(GLOBAL_UTILS_ROOT)/Makefile.inc
-
-#----------------------------------------------------------------------------------------------------------------------------------
-
-ifndef MPI
-  MPI := mpich2
-endif
-
-ifndef USECELLML
-  USECELLML := false
-  #USECELLML := true
-endif
-
-ifndef USEFIELDML
-#  USEFIELDML := false
-  USEFIELDML := true
-endif
-
-ifeq ($(MPI),mpich2)
-  MPI := mpich2
-else
-  ifeq ($(MPI),intel)
-    ifeq ($(OPERATING_SYSTEM),linux)
-      ifdef I_MPI_ROOT
-        MPI := intel
-      else
-        $(error Intel MPI libraries not setup)
-      endif
-    else
-      $(error can only use intel mpi with Linux)
-    endif
-  else
-    ifeq ($(MPI),openmpi)
-      MPI := openmpi
-    else
-      ifeq ($(MPI),mvapich2)
-        MPI := mvapich2
-      else
-        ifeq ($(MPI),cray)
-          MPI := cray
-        else
-          ifeq ($(MPI),poe)
-            MPI := poe
-          else
-            $(error unknown MPI type - $(MPI))
-          endif
-        endif
-      endif
-    endif
-  endif
-endif
-
-ifeq ($(MPIPROF),true)
-  ifeq ($(MPI),intel)
-    ifndef VT_ROOT
-      $(error intel trace collector not setup)
-    endif
-    ifndef VT_ADD_LIBS
-      $(error intel trace collector not setup)
-    endif
-  endif
-endif
-
-#----------------------------------------------------------------------------------------------------------------------------------
-
-BASE_LIB_NAME = OpenCMISS
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifdef COMPILER_VERSION
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-    endif
-    OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-    INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-    LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
-  else
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    endif
-    OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-    LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-  endif
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-    endif
-  else# windows
-    ifndef EXTERNAL_CM_DIR
-      EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
-    endif
-  endif
-  OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
-  INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-  LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
-endif
 SOURCE_DIR = $(GLOBAL_CM_ROOT)/src
+OBJECT_DIR := $(MAIN_OBJECT_DIR)
+BASE_LIB_NAME = OpenCMISS
 MODULE_DIR := $(OBJECT_DIR)
 MOD_INC_NAME := opencmiss.mod
 MOD_INCLUDE := $(INC_DIR)/$(MOD_INC_NAME)
@@ -185,570 +79,15 @@ C_GENERATE_SCRIPT := $(GLOBAL_CM_ROOT)/utils/C_interface/generatec.py
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
 
-C_INCLUDE_DIRS := $(SOURCE_DIR) 
+C_INCLUDE_DIRS := $(SOURCE_DIR)
 F_INCLUDE_DIRS := $(MODULE_DIR)
-
-#----------------------------------------------------------------------------------------------------------------------------------
-# compiling commands
-
-ifeq ($(MPI),mpich2)
-  MPIFC = mpif90
-  MPICC = mpicc
-else
-  MPIFC = mpiifort
-  MPICC = mpiicc
-endif
-FC = $(MPIFC)
-CC = $(MPICC)
-AR = ar
-EXE_LINK = $(FC)
-DSO_LINK = ld
-
-DBGCF_FLGS = -g #OPT=false flags for C and fortran
-# Option lists
-# (suboption lists become more specific so that later ones overrule previous)
-CFLAGS = $(strip $(CFL_FLGS) $(CFE_FLGS) $(CF_FLGS) $(C_FLGS))
-FFLAGS = $(strip $(CFL_FLGS) $(CFE_FLGS) $(CF_FLGS) $(F_FLGS))
-CPPFLAGS := $(addprefix -I, $(C_INCLUDE_DIRS) )
-FPPFLAGS := $(addprefix -I, $(F_INCLUDE_DIRS) )
-ELFLAGS = $(strip $(CFL_FLGS) $(L_FLGS) $(CFE_FLGS))
-DLFLAGS = $(strip $(CFL_FLGS) $(L_FLGS) $(D_FLGS))
-ifneq ($(DEBUG),false)
-  CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
-  FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
-  CPPFLAGS += -DDEBUG
-else
-  ifneq ($(MPIPROF),false)
-    CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
-    FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
-    CPPFLAGS += -DDEBUG
-  else
-    CFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTC_FLGS))
-    FFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTF_FLGS))
-    ELFLAGS += $(OPTCFE_FLGS)
-  endif
-endif
-ifneq ($(MP),false)
-  CFLAGS += $(MP_FLGS)
-  FFLAGS += $(MP_FLGS)
-endif
-ARFLAGS = -crsv
-# suboption lists
-CFL_FLGS =#	flags for C fortran and linking
-L_FLGS =#	flags for linking only
-CFE_FLGS =#	flags for C fortran and linking executables only
-CF_FLGS = -c#	flags for C and fortran only
-C_FLGS =#       flags for C only
-F_FLGS =#       flags for fortran only
-D_FLGS = -shared#     for linking dynamic shared objects only
-DBGC_FLGS =#	OPT=false flags for C only
-DBGF_FLGS =#	OPT=false flags for fortran only
-OPTCFE_FLGS =#	OPT=true flags for C and fortran and linking executables
-OPTCF_FLGS = -O#OPT=true flags for C and fortran only
-OPTC_FLGS =#	OPT=true flags for C only
-OPTF_FLGS =#	OPT=true flags for fortran only
-
-# The list of objects may be too long for the operating system limit on
-# argument length so the list of objects is stored in a file.  This linker
-# arguments for this file depend on the linker.  If the linker cannot
-# interpret such a file then try to use the shell and hope the list isn't too
-# long.
-olist_args = `cat $1`
-
-#----------------------------------------------------------------------------------------------------------------------------------
-ifeq ($(OPERATING_SYSTEM),linux)
-  OPTCF_FLGS =# Use separate flags for fortran and c
-  olist_args = $1
-
-  CC = gcc
-  FC = gfortran
-
-  ifeq ($(COMPILER),intel)
-
-    #Use Intel compilers if available (icc -V sends output to STDERR and exits with error).
-    ifneq (,$(shell icc -V 2>&1 | grep -i intel))
-      CC = icc
-    endif
-    ifneq (,$(shell ifort -V 2>&1 | grep -i intel))
-      FC = ifort
-    endif
-
-  endif	
-
-  # Set the flags for the various different CC compilers
-  ifeq ($(CC),gcc)# gcc
-    C_FLGS += -pipe -m$(ABI)
-    # Position independent code is actually only required for objects
-    # in shared libraries but debug version may be built as shared libraries.
-    DBGC_FLGS += -fPIC
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        C_FLGS += -march=nocona
-      endif
-    endif
-    DBGC_FLGS += -O0 -fbounds-check
-    OPTC_FLGS = -O3 -funroll-all-loops
-    ifeq ($(PROF),false)
-      ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
-        OPTC_FLGS += -momit-leaf-frame-pointer
-      endif
-    else
-      C_FLGS += -g -pg -fprofile-arcs -ftest-coverage
-    endif
-  endif
-  ifeq ($(CC),icc)
-    # Turn on all warnings
-    C_FLGS += -Wall -m$(ABI)
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
-          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
-            C_FLGS += -xT# Core2 Duo	
-          else
-            C_FLGS += -x0# Core Duo
-          endif        
-        else
-          C_FLGS += -xP# for sse3 (90nm Pentium 4 series)
-        endif
-      else
-        C_FLGS += -xW# Pentium4 compatible (?sse2)
-      endif
-    endif
-    ifeq ($(filter-out i%86,$(MACHNAME)),)
-      ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
-        C_FLGS += -xN# for Pentium 4
-      endif
-    endif
-    DBGC_FLGS += -O0
-    OPTC_FLGS = -O3 -ansi_alias
-    ifneq ($(PROF),false)
-      C_FLGS += -g -pg
-      ELFLAGS += -pg
-    endif
-    ifeq ($(MPIPROF),true)
-      ifeq ($(MPI),mpich2)
-        C_FLGS += -Wl,--export-dyanmic
-        DBGC_FLGS += -Wl,--export-dyanmic
-      else
-        C_FLGS += -tcollect
-      endif
-    endif
-  endif
-  ifeq ($(filter-out xlc%,$(CC)),)# xlc* C compiler
-    CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
-    C_FLGS += -q$(ABI) -qarch=auto -qhalt=e
-    # -qinitauto for C is bytewise: 7F gives large integers.
-    DBGC_FLGS += -qfullpath -C -qflttrap=inv:en -qinitauto=7F
-    OPTC_FLGS += -O3
-    # for trailing _ on fortran symbols
-    CPPFLAGS += -Dunix
-  endif
-  ifeq ($(CC),cc)# cray cc
-    DBGC_FLGS += -O0 -g
-    OPTC_FLGS = -O3 
-    ifeq ($(PROF),true)
-      C_FLGS += -g -pg
-    endif
-  endif
-
-  # Set the flags for the various different Fortran compilers
-  ifeq ($(FC),gfortran)
-    #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
-    # -fstatck-check
-    F_FLGS += -pipe  -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input
-    # Restrict line length to 132
-    F_FLGS += -ffree-line-length-132
-    # for now change max identifier length. Should restrict to 63 (F2003) in future
-    F_FLGS += -fmax-identifier-length=63
-    # Position independent code is actually only required for objects
-    # in shared libraries but debug version may be built as shared libraries.
-    DBGF_FLGS += -fPIC
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -march=nocona
-      endif
-    endif
-    DBGF_FLGS += -O0 -ffpe-trap=invalid,zero
-    ifdef COMPILER_VERSION
-      ifeq ($(COMPILER_VERSION),4.5)
-        DBGF_FLGS += -fcheck=all
-      endif
-      ifeq ($(COMPILER_VERSION),4.4)
-        DBGF_FLGS += -fbounds-check
-      endif
-    endif
-    OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
-    #OPTF_FLGS = -g -O3 -Wuninitialized -funroll-all-loops
-    ifeq ($(PROF),false)
-      ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
-        OPTF_FLGS += -momit-leaf-frame-pointer
-      endif
-    else
-      F_FLGS += -g -pg -fprofile-arcs -ftest-coverage
-      ELFLAGS += -pg -fprofile-arcs -ftest-coverage
-    endif
-    ELFLAGS += -m$(ABI)
-  endif
-  ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003
-    DBGF_FLGS += -fPIC
-    DBGF_FLGS += -O0 -fbounds-check
-    OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
-    ELFLAGS += -m$(ABI)
-    #$(error g95 not implemented)
-  endif
-  ifeq ($(FC),ifort)
-    # turn on preprocessing,
-    # turn on warnings,
-    # warn about non-standard Fortran 95
-    F_FLGS += -cpp -warn all -m$(ABI)
-    ifeq ($(MACHNAME),x86_64)
-      ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
-        ifneq ($(shell grep Duo /proc/cpuinfo 2>/dev/null),)
-          ifneq ($(shell grep "Core(TM)2" /proc/cpuinfo 2>/dev/null),)
-            F_FLGS += -xT# Core2 Duo	
-          else
-            F_FLGS += -x0# Core Duo
-          endif        
-        else
-          F_FLGS += -xP# for sse3 (90nm Pentium 4 series)
-        endif
-      else
-        F_FLGS += -xW# Pentium4 compatible (?sse2)
-      endif
-    endif
-    ifeq ($(filter-out i%86,$(MACHNAME)),)
-      ifneq ($(shell grep sse2 /proc/cpuinfo 2>/dev/null),)
-        F_FLGS += -xN# for Pentium 4
-      endif
-    endif
-    DBGF_FLGS += -O0 -check all -traceback -debug all
-    OPTF_FLGS = -O3
-    ifneq ($(PROF),false)
-      F_FLGS += -g -pg
-      ELFLAGS += -pg
-    endif
-    ifeq ($(MPIPROF),true)
-      ifeq ($(MPI),mpich2)
-        F_FLAS += -Wl,--export-dyanmic
-        DBGF_FLGS += -Wl,--export-dyanmic
-      else
-        F_FLGS += -tcollect
-      endif
-    endif
-#    MP_FLGS = -openmp
-    ELFLAGS += -nofor_main -m$(ABI) -traceback
-  endif
-  ifeq ($(filter-out xlf%,$(FC)),)# xlf* fortran compiler
-    F_FLGS += -q$(ABI) -qarch=auto -qhalt=e -qextname -qsuffix=cpp=f90
-    ELFLAGS += -q$(ABI)
-    ifeq ($(ABI),64)
-      F_FLGS += -qwarn64
-    endif
-    ifeq ($(DEBUG),false)
-      MP_FLGS = -qsmp=omp
-    else
-      MP_FLGS = -qsmp=omp:noopt
-    endif
-    # -qinitauto for Fortran 7FF7FFFF is a large integer or NaNQ real*4 or NaNS real*8
-    DBGF_FLGS += -qfullpath -C -qflttrap=inv:en -qextchk -qinitauto=7FF7FFFF
-    OPTF_FLGS += -O3
-  endif
-  ifeq ($(FC),ftn)
-    DBGF_FLGS += -O0 -g
-    OPTF_FLGS = -O3 
-    ifeq ($(PROF),true)
-      F_FLGS += -g -pg
-      ELFLAGS += -pg
-    endif
-  endif
-
-  # Avoid versioning problems with libgcc_s by linking statically.
-
-  # libgcc2.c from gcc 3.4.4 says:
-  # In addition to the permissions in the GNU General Public License, the
-  # Free Software Foundation gives you unlimited permission to link the
-  # compiled version of this file into combinations with other programs,
-  # and to distribute those combinations without any restriction coming
-  # from the use of this file.
-
-  # (With dynamic version, should copy libgcc_s.so.N if copying libstdc++.so.N)
-  ELFLAGS += -static-libgcc
-
-  # Use the BSD timers
-  CPPFLAGS += -DBSD_TIMERS
-endif
-ifeq ($(OPERATING_SYSTEM),win32)
-  FC = gfortran
-  F_FLGS += -fno-second-underscore
-  OPTCF_FLGS = -O2
-  ELFLAGS += -Wl,-static
-  # Use the ANSI C timers
-  CPPFLAGS += -DANSI_C_TIMERS
-  olist_args = $1
-endif
-ifeq ($(OPERATING_SYSTEM),aix)
-  ifeq ($(MP),false)
-    FC = mpxlf95
-    CC = xlc
-  else
-    FC = mpxlf95_r
-    CC = xlc_r
-  endif
-  F_FLGS += -qsuffix=cpp=f90 -qnoextname
-  CFLAGS += -qinfo=gen:ini:por:pro:trd:tru:use
-  ELFLAGS += -q$(ABI) 
-  CFE_FLGS += -q$(ABI) -qarch=auto -qhalt=e
-  L_FLGS += -b$(ABI)
-  D_FLGS = -G -bexpall -bnoentry
-  ifeq ($(ABI),32)
-    # Without -bmaxdata, the only one 256M virtual segment is available for
-    # data.
-    # In AIX 5.3, 0xAFFFFFFF is the largest value we can use here and still
-    # use global shared libraries. (see aixprggd/genprogc/lrg_prg_support.htm)
-    # However, 0xAFFFFFFF/dsa causes the system to crash on loading of perl
-    # modules (File::Find and Time::HiRes atleast).  0x80000000 seems to work.
-    # dsa allows segments to be allocated dynamically for shmat/mmap or data
-    # as required.
-    ELFLAGS += -bmaxdata:0x80000000/dsa
-  else
-    CF_FLGS += -qwarn64 
-    # It seems that somewhere between AIX 5.1 and 5.3 the kernel loader
-    # started modifying a process's soft data resource limit to match to match
-    # its maxdata value (if non-zero).  As 32-bit applications need a non-zero
-    # maxdata value to access more than 256M of data many applications
-    # (including perl) will cause the data limit to be lowered to a 32-bit
-    # addressable value.  As cmiss is likely to be a child of such 32-bit
-    # processes, to access more than 32-bit addressable memory, it either
-    # needs to raise its data limit or use its own maxdata value.
-    # max heap size is 0x06FFFFFFFFFFFFF8
-    # Arbitrary.  0x0000100000000000 should provide ~16TB.
-    ELFLAGS += -bmaxdata:0x0000100000000000
-  endif
-  ifeq ($(DEBUG),false)
-    MP_FLGS = -qsmp=omp
-  else
-    MP_FLGS = -qsmp=omp:noopt
-  endif
-  # Should -qflttrap=nans be used as well or instead of -qflttrap=inv:en?
-  DBGCF_FLGS += -qfullpath -C -qflttrap=inv:en -qextchk
-  # -qinitauto for Fortran: 7FF7FFFF is a large integer or NaNQ real*4 or NaNS real*8
-  # -qinitauto for C is bytewise: 7F gives large integers.
-  DBGF_FLGS += -qinitauto=7FF7FFFF
-  DBGC_FLGS += -qinitauto=7F
-  OPTCF_FLGS = -O3 
-  OPTC_FLGS += -qnoignerrno
-  olist_args = -f $1
-  # Use the BSD timers
-  CPPFLAGS += -DBSD_TIMERS
-endif
-
-# This returns an empty string if not found
-searchdirs = $(firstword $(wildcard $(addsuffix /$(strip $2),$1)))
-# This still returns the name of the desired file if not found and so is useful for error checking and reporting.
-searchdirsforce = $(firstword $(wildcard $(addsuffix /$(strip $2),$1)) $2)
-
-# Check that call function works (for searchdirs, olist_args, etc.)
-ifeq ($(call olist_args,test),)
-  $(error call function not available.  Use GNU make version 3.78 or newer)
-endif
-
-#TAO
-TAO_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/finclude )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/finclude )
-  else# windows
-    TAO_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-  endif
-endif
-
-#PETSc
-PETSC_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/conf )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    PETSC_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/conf/ )
-  else# windows
-    PETSC_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    PETSC_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-  endif
-endif
-
-#SUNDIALS
-SUNDIALS_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    SUNDIALS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  else# windows
-    SUNDIALS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-  endif
-endif
-
-#HYPRE
-HYPRE_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    HYPRE_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  else# windows
-    HYPRE_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-  endif
-endif
-
-#MUMPS
-MUMPS_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    MUMPS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  else# windows
-    MUMPS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-  endif
-endif
-
-#ScaLAPACK
-SCALAPACK_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    SCALAPACK_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  else# windows
-    SCALAPACK_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-  endif
-endif
-
-#BLACS
-BLACS_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    BLACS_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  else# windows
-    BLACS_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-  endif
-endif
-
-#ParMETIS
-PARMETIS_INCLUDE_PATH =#
-
-#CELLML
-CELLML_INCLUDE_PATH =#
-ifeq ($(USECELLML),true)
-  ifeq ($(OPERATING_SYSTEM),linux)# Linux
-    ifdef COMPILER_VERSION
-      CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/include/ )
-    else
-      CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-    endif
-  else
-    ifeq ($(OPERATING_SYSTEM),aix)# AIX
-         CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-    else# windows
-         CELLML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_CELLML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-    endif
-  endif
-endif
-
-#FIELDML
-FIELDML_INCLUDE_PATH =#
-MOD_FIELDML_TARGET = #
-
-ifeq ($(USEFIELDML),true)
-  MOD_FIELDML_TARGET = MOD_FIELDML
-  ifeq ($(OPERATING_SYSTEM),linux)# Linux
-    ifdef COMPILER_VERSION
-      FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)_$(COMPILER_VERSION)/include/ )
-    else
-      FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-    endif
-  else
-    ifeq ($(OPERATING_SYSTEM),aix)# AIX
-       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-    else# windows
-       FIELDML_INCLUDE_PATH += $(addprefix -I, $(GLOBAL_FIELDML_ROOT)/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(COMPILER)/include/ )
-    endif
-  endif
-endif
-
-#TAU/PAPI
-ifeq ($(TAUPROF),true)
-  CPPFLAGS += -DTAUPROF
-  FPPFLAGS += -DTAUPROF
-endif
-
-#MPI
-MPI_INCLUDE_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  ifeq ($(MPI),mpich2)
-  else
-    ifeq ($(MPI),intel)
-      ifeq ($(MPIPROF),true)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
-      endif
-      ifeq ($(ABI),64)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
-      else
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
-      endif
-    else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
-    endif
-  endif
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-  else# windows
-  endif
-endif
-
-#BLAS/lapack
-BLAS_INCLUDE_PATH =#
-
-EXTERNAL_INCLUDE_PATH = $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPACK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
-
-ifeq ($(USECELLML),true)
-  EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
-  FPPFLAGS += -DUSECELLML
-  CPPFLAGS += -DUSECELLML
-endif
-
-ifeq ($(USEFIELDML),true)
-  EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
-  FPPFLAGS += -DUSEFIELDML
-  CPPFLAGS += -DUSEFIELDML
-endif
 
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
 FPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
-
 ELFLAGS += $(EXTERNAL_LIB_PATH)
+
+CPPFLAGS += $(addprefix -I, $(C_INCLUDE_DIRS) )
+FPPFLAGS += $(addprefix -I, $(F_INCLUDE_DIRS) )
 
 .SUFFIXES:	.f90	.c
 
@@ -773,7 +112,7 @@ ifeq ($(COMPILER),intel) # TODO: temporarily disable intel build for opencmiss.f
     MOD_INCLUDE := #
     MOD_SOURCE_INC := #
     MOD_FIELDML_TARGET := #
-    WRAPPER_OBJECTS = #   
+    WRAPPER_OBJECTS = #
 else
     WRAPPER_OBJECTS =  \
     $(OBJECT_DIR)/opencmiss.o \
@@ -875,7 +214,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
-	$(FIELDML_OBJECT) 
+	$(FIELDML_OBJECT)
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
@@ -903,18 +242,18 @@ $(OBJECT_DIR) :
 	mkdir -p $@
 
 $(INC_DIR) :
-	mkdir -p $@; 
+	mkdir -p $@;
 
 $(LIB_DIR) :
-	mkdir -p $@; 
+	mkdir -p $@;
 
-$(LIBRARY) : $(OBJECTS) 
+$(LIBRARY) : $(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
 $(MOD_INCLUDE) : $(MOD_SOURCE_INC)
-	cp $(MOD_SOURCE_INC) $@ 
+	cp $(MOD_SOURCE_INC) $@
 
-MOD_FIELDML: $(FIELDML_OBJECT) 
+MOD_FIELDML: $(FIELDML_OBJECT)
 	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod
 	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
@@ -1085,7 +424,7 @@ $(OBJECT_DIR)/cmiss.o	:	$(SOURCE_DIR)/cmiss.f90 \
 	$(OBJECT_DIR)/types.o \
 	$(MACHINE_OBJECTS)
 
-$(OBJECT_DIR)/cmiss_c.o	:	$(SOURCE_DIR)/cmiss_c.c 
+$(OBJECT_DIR)/cmiss_c.o	:	$(SOURCE_DIR)/cmiss_c.c
 
 $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
@@ -1095,9 +434,9 @@ $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/cmiss_cellml_dummy.o	:	$(SOURCE_DIR)/cmiss_cellml_dummy.f90 
+$(OBJECT_DIR)/cmiss_cellml_dummy.o	:	$(SOURCE_DIR)/cmiss_cellml_dummy.f90
 
-$(OBJECT_DIR)/cmiss_fortran_c.o	:	$(SOURCE_DIR)/cmiss_fortran_c.f90 
+$(OBJECT_DIR)/cmiss_fortran_c.o	:	$(SOURCE_DIR)/cmiss_fortran_c.f90
 
 $(OBJECT_DIR)/cmiss_mpi.o	:	$(SOURCE_DIR)/cmiss_mpi.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1119,7 +458,7 @@ $(OBJECT_DIR)/cmiss_petsc.o	:	$(SOURCE_DIR)/cmiss_petsc.f90 \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/cmiss_petsc_types.o	:	$(SOURCE_DIR)/cmiss_petsc_types.f90 \
-	$(OBJECT_DIR)/kinds.o 
+	$(OBJECT_DIR)/kinds.o
 
 $(OBJECT_DIR)/computational_environment.o	:	$(SOURCE_DIR)/computational_environment.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1741,7 +1080,7 @@ $(OBJECT_DIR)/interface_matrices_routines.o	:	$(SOURCE_DIR)/interface_matrices_r
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/iso_varying_string.o	:	$(SOURCE_DIR)/iso_varying_string.f90 
+$(OBJECT_DIR)/iso_varying_string.o	:	$(SOURCE_DIR)/iso_varying_string.f90
 
 $(OBJECT_DIR)/kinds.o	:	$(SOURCE_DIR)/kinds.f90
 
@@ -1789,7 +1128,7 @@ $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(SOURCE_DIR)/Laplace_equations_rou
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o 
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/linear_elasticity_routines.o	:	$(SOURCE_DIR)/linear_elasticity_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1826,7 +1165,7 @@ $(OBJECT_DIR)/lists.o	:	$(SOURCE_DIR)/lists.f90 \
 $(OBJECT_DIR)/linkedlist_routines.o	:	$(SOURCE_DIR)/linkedlist_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/constants.o \
-	$(OBJECT_DIR)/kinds.o 
+	$(OBJECT_DIR)/kinds.o
 
 $(OBJECT_DIR)/machine_constants_aix.o	:	$(SOURCE_DIR)/machine_constants_aix.f90 \
 	$(OBJECT_DIR)/constants.o \
@@ -2009,11 +1348,11 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/test_framework_routines.o \
 	$(OBJECT_DIR)/timer_f.o \
-	$(OBJECT_DIR)/types.o 
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/opencmiss_c.o	:	$(C_F90_SOURCE) \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
-	$(OBJECT_DIR)/opencmiss.o 
+	$(OBJECT_DIR)/opencmiss.o
 
 $(OBJECT_DIR)/Poiseuille_equations_routines.o	:	$(SOURCE_DIR)/Poiseuille_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -2229,7 +1568,7 @@ $(OBJECT_DIR)/test_framework_routines.o	:	$(SOURCE_DIR)/test_framework_routines.
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/strings.o
 
-$(OBJECT_DIR)/timer_c.o		:	$(SOURCE_DIR)/timer_c.c 
+$(OBJECT_DIR)/timer_c.o		:	$(SOURCE_DIR)/timer_c.c
 
 $(OBJECT_DIR)/timer_f.o	:	$(SOURCE_DIR)/timer_f.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -2292,7 +1631,7 @@ clobber: clean
 	rm -f $(LIBRARY)
 
 externallibs:
-	$(MAKE) --no-print-directory -f $(EXTERNAL_CM_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI) 
+	$(MAKE) --no-print-directory -f $(EXTERNAL_CM_ROOT)/packages/Makefile DEBUG=$(DEBUG) ABI=$(ABI)
 
 debug opt debug64 opt64:
 	$(MAKE) --no-print-directory DEBUG=$(DEBUG) ABI=$(ABI)
@@ -2332,7 +1671,7 @@ help:
 	@echo "	COMPILER=(intel|gnu|ibm|cray)"
 	@echo "	USECELLML=(false|true)"
 	@echo "	USEFIELDML=(false|true)"
-	@echo 
+	@echo
 	@echo "Available targets:                            "
 	@echo
 	@echo "	clean"
