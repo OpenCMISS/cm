@@ -861,7 +861,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/problem_routines.o \
 	$(OBJECT_DIR)/reaction_diffusion_equation_routines.o \
-        $(OBJECT_DIR)/reaction_diffusion_IO_routines.o \
+	$(OBJECT_DIR)/reaction_diffusion_IO_routines.o \
 	$(OBJECT_DIR)/region_routines.o \
 	$(OBJECT_DIR)/Stokes_equations_routines.o \
 	$(OBJECT_DIR)/solver_routines.o \
@@ -2255,6 +2255,26 @@ $(OBJECT_DIR)/types.o	:	$(SOURCE_DIR)/types.f90 \
 $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/types.o
+
+# ----------------------------------------------------------------------------
+#
+# SWIG bindings to other languages
+
+BINDINGS_DIR = $(GLOBAL_CM_ROOT)/bindings
+SWIG_INTERFACE = $(BINDINGS_DIR)/interface/opencmiss.i
+
+PYTHON_MODULE = $(BINDINGS_DIR)/python/_opencmiss.so
+PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss_wrap.c
+PYTHON_INCLUDES = $(shell python-config --includes)
+
+python: $(PYTHON_MODULE)
+
+$(PYTHON_WRAPPER) : $(SWIG_INTERFACE) $(HEADER_INCLUDE)
+	( cd $(BINDINGS_DIR)/python ; swig -python -o $(PYTHON_WRAPPER) -outdir . -I$(INC_DIR) $(SWIG_INTERFACE) )
+
+$(PYTHON_MODULE) : $(PYTHON_WRAPPER) $(OBJECTS)
+	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss_wrap.o )
+	( cd $(BINDINGS_DIR)/python ; $(DSO_LINK) -shared opencmiss_wrap.o $(OBJECTS) -o $(PYTHON_MODULE) )
 
 # ----------------------------------------------------------------------------
 #
