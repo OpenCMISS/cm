@@ -111,7 +111,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: equations_set_idx
-    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
+    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP,TIME_LOOP_2
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -153,8 +154,24 @@ CONTAINS
                       DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                       NULLIFY(DEPENDENT_REGION)
                       CALL FIELD_REGION_GET(DEPENDENT_FIELD,DEPENDENT_REGION,ERR,ERROR,*999)
-                      FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                        & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
+                      NULLIFY(PARENT_LOOP)
+                      PARENT_LOOP=>CONTROL_LOOP%PARENT_LOOP
+                      IF(ASSOCIATED(PARENT_LOOP)) THEN
+                        !add the iteration number of the parent loop to the filename
+                        NULLIFY(TIME_LOOP_2)
+                        TIME_LOOP_2=>PARENT_LOOP%TIME_LOOP
+                        IF(ASSOCIATED(TIME_LOOP_2)) THEN
+                          FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP_2%ITERATION_NUMBER,"*",ERR,ERROR))// &
+                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
+                        ELSE
+                          FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
+                        ENDIF
+                      ELSE
+                        FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
+                          & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
+                      ENDIF
                       METHOD="FORTRAN"
                       CALL FIELD_IO_NODES_EXPORT(DEPENDENT_REGION%FIELDS,FILENAME,METHOD,ERR,ERROR,*999)
                     ELSE
