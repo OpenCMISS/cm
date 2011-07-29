@@ -75,7 +75,8 @@ MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
 HEADER_INC_NAME := opencmiss.h
 HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
 C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
-C_GENERATE_SCRIPT := $(GLOBAL_CM_ROOT)/utils/C_interface/generatec.py
+BINDINGS_DIR = $(GLOBAL_CM_ROOT)/bindings
+C_GENERATE_SCRIPT := $(BINDINGS_DIR)/generatec.py
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
 
@@ -1599,7 +1600,6 @@ $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 #
 # SWIG bindings to other languages
 
-BINDINGS_DIR = $(GLOBAL_CM_ROOT)/bindings
 SWIG_INTERFACE = $(BINDINGS_DIR)/interface/opencmiss.i
 
 PYTHON_MODULE = $(BINDINGS_DIR)/python/_opencmiss.so
