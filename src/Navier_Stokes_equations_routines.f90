@@ -104,17 +104,20 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: component_idx,deriv_idx,dim_idx,local_ny,node_idx,NUMBER_OF_DIMENSIONS,variable_idx,variable_type,I,J,K
-    INTEGER(INTG) :: number_of_nodes_xic(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX
-    REAL(DP) :: VALUE,X(3),XI_COORDINATES(3)
+    INTEGER(INTG) :: number_of_nodes_xic(3),element_idx,en_idx,BOUND_COUNT,ANALYTIC_FUNCTION_TYPE,GLOBAL_DERIV_INDEX,version_idx
+    REAL(DP) :: VALUE,X(3),XI_COORDINATES(3),INITIAL_VALUE
 !     REAL(DP) :: BOUNDARY_TOLERANCE, BOUNDARY_X(3,2),MU_PARAM,L
     REAL(DP) :: T_COORDINATES(20,3),CURRENT_TIME,MU_PARAM,RHO_PARAM
-    REAL(DP), POINTER :: GEOMETRIC_PARAMETERS(:)
+    REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:),GEOMETRIC_PARAMETERS(:),MATERIALS_PARAMETERS(:)
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE,ANALYTIC_VARIABLE,MATERIALS_VARIABLE
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
     TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: INTERPOLATION_PARAMETERS(:)
+    !THESE ARE TEMPORARY VARIABLES - they need to be replace by constant field values and the current simulation time
+    REAL(DP) :: TIME,NORMAL(3),TANGENTS(3,3)
+
 !     TYPE(VARYING_STRING) :: LOCAL_ERROR    
 
 ! ! !     !Temp variables
@@ -159,16 +162,16 @@ CONTAINS
             ENDIF
             TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
             
-            NULLIFY(INTERPOLATION_PARAMETERS)
-            NULLIFY(INTERPOLATED_POINT) 
-            CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
-            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-            NULLIFY(GEOMETRIC_VARIABLE)
-            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
-            NULLIFY(GEOMETRIC_PARAMETERS)
-            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
-                 & ERR,ERROR,*999)
+!             NULLIFY(INTERPOLATION_PARAMETERS)
+!             NULLIFY(INTERPOLATED_POINT) 
+!             CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+!             CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+!             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+!             NULLIFY(GEOMETRIC_VARIABLE)
+!             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+!             NULLIFY(GEOMETRIC_PARAMETERS)
+!             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS, &
+!                  & ERR,ERROR,*999)
 
             IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
               DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
@@ -188,7 +191,6 @@ CONTAINS
                           IF(ASSOCIATED(DOMAIN_NODES)) THEN
                             !Loop over the local nodes excluding the ghosts.
                             DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-
 
                              element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
@@ -508,7 +510,7 @@ CONTAINS
   !
   !>Calculates the various analytic values for NSE examples with exact solutions
   SUBROUTINE NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SUBTYPE,ANALYTIC_FUNCTION_TYPE,X, &
-    & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIVATIVE,COMPONENT_NUMBER,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
+    & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIV_INDEX,COMPONENT_NUMBER,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
     & VALUE,ERR,ERROR,*)
 
     !Argument variables
@@ -519,7 +521,7 @@ CONTAINS
     REAL(DP), INTENT(IN) :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
     REAL(DP), INTENT(IN) :: TIME !<The time to evaluate at
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The field variable type to evaluate at
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_DERIVATIVE !<The global derivative direction to evaluate at
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_DERIV_INDEX !<The global derivative to evaluate at
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The dependent field component number to evaluate
     REAL(DP), INTENT(IN) :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
     REAL(DP), INTENT(IN) :: MATERIALS_PARAMETERS(:) !<A pointer to any materials field parameters
@@ -527,14 +529,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,RHO_PARAM,INTERNAL_TIME
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,COMPONENT_IDX
+    REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME
+    INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
 
 !\todo: Introduce user-defined or default values instead for density and viscosity
-    INTERNAL_TIME=CURRENT_TIME
+    INTERNAL_TIME=TIME
+    CURRENT_TIME=TIME
      SELECT CASE(ANALYTIC_FUNCTION_TYPE)
      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
        IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
@@ -566,7 +569,7 @@ CONTAINS
                & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT
-         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              VALUE= 0.0_DP
@@ -605,12 +608,12 @@ CONTAINS
            L_PARAM = ANALYTIC_PARAMETERS(1) ! channel length in x-direction
            H_PARAM = ANALYTIC_PARAMETERS(2) ! channel height in y-direction
            U_PARAM = ANALYTIC_PARAMETERS(3) ! mean (inlet) velocity
-           P_PARAM = ANALYTIC_PARAMETERS(4) ! pressure value at outlet
+           P_PARAM = ANALYTIC_PARAMETERS(4) ! pressure value at outlet 
            SELECT CASE(GLOBAL_DERIV_INDEX)
            CASE(NO_GLOBAL_DERIV)
              IF(component_idx==1) THEN
                !calculate u
-               VALUE=(3.0_DP/2.0_DP)*U_PARAM*(1.0_DP-(X(2)**2)/(H**2))
+               VALUE=(3.0_DP/2.0_DP)*U_PARAM*(1.0_DP-(X(2)**2)/(H_PARAM**2))
              ELSE IF(component_idx==2) THEN
                !calculate v
                VALUE=0.0_DP
@@ -811,7 +814,7 @@ CONTAINS
                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+                     & GLOBAL_DERIV_index,"*",ERR,ERROR))// &
                      & " is invalid."
                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
@@ -1373,6 +1376,8 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: EQUATIONS_MATERIALS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: component_idx,NUMBER_OF_ANALYTIC_COMPONENTS,NUMBER_OF_DEPENDENT_COMPONENTS,NUMBER_OF_GEOMETRIC_COMPONENTS, &
+      & NUMBER_OF_MATERIALS_COMPONENTS
     INTEGER(INTG) :: DEPENDENT_FIELD_NUMBER_OF_VARIABLES,DEPENDENT_FIELD_NUMBER_OF_COMPONENTS
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,GEOMETRIC_COMPONENT_NUMBER
     INTEGER(INTG) :: INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,INDEPENDENT_FIELD_NUMBER_OF_VARIABLES
@@ -4786,6 +4791,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
+
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS  !<A pointer to the solver equations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the solver mapping
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -4794,8 +4800,8 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
+    TYPE(FIELD_TYPE), POINTER ::  ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: ANALYTIC_VARIABLE,FIELD_VARIABLE,GEOMETRIC_VARIABLE,MATERIALS_VARIABLE
     TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: INTERPOLATED_POINT(:)
@@ -4810,14 +4816,15 @@ CONTAINS
     REAL(DP) :: T_COORDINATES(20,3)
     REAL(DP) :: X(3),MU_PARAM,RHO_PARAM,VELOCITY,PRESSURE
 
-    REAL(DP), INTENT(IN) :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
-    REAL(DP), INTENT(IN) :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
-    REAL(DP), INTENT(IN) :: TIME !<The time to evaluate at
-    REAL(DP), INTENT(IN) :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
-    REAL(DP), INTENT(IN) :: MATERIALS_PARAMETERS(:) !<A pointer to any materials field parameters
+    REAL(DP), POINTER :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
+    REAL(DP), POINTER :: NORMAL(:) !<NORMAL(dimension_idx). The normal vector at the point to evaluate at.
+    REAL(DP), POINTER :: TIME !<The time to evaluate at
+    REAL(DP), POINTER :: ANALYTIC_PARAMETERS(:) !<A pointer to any analytic field parameters
+    REAL(DP), POINTER :: MATERIALS_PARAMETERS(:) !<A pointer to any materials field parameters
 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_CHECK_VARIABLE,GLOBAL_DERIV_INDEX,node_idx,variable_type
-    INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx
+    INTEGER(INTG) :: variable_idx,local_ny,ANALYTIC_FUNCTION_TYPE,component_idx,deriv_idx,dim_idx,version_idx
+!    INTEGER(INTG) :: component_idx,node_idx,NUMBER_OF_DIMENSIONS,variable_type
     INTEGER(INTG) :: element_idx,en_idx,I,J,K,number_of_nodes_xic(3)
     INTEGER(INTG) :: FIELD_VAR_TYPE
     INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
@@ -4830,201 +4837,228 @@ CONTAINS
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-              ! do nothing ???
-            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
-              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                IF(ASSOCIATED(EQUATIONS)) THEN
-                  EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                  IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                    IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 .OR. &
-                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 .OR. &
-                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 .OR. &
-                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5 .OR. &
-                      & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
-                      IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                        IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                          DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                          IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                            GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                            IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
-                              CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
-                                & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                              NULLIFY(INTERPOLATION_PARAMETERS)
-                              NULLIFY(INTERPOLATED_POINT) 
-                              CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR, &
-                                & *999)
-                              CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
-                              NULLIFY(GEOMETRIC_VARIABLE)
-                              CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
-                              NULLIFY(GEOMETRIC_PARAMETERS)
-                              CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,& 
-                                & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-                               DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                                variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                                FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                                IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                    IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
-                                      & FIELD_NODE_BASED_INTERPOLATION) THEN
-                                      DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                                      IF(ASSOCIATED(DOMAIN)) THEN
-                                        IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                                          DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                                          IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                            !Should be replaced by boundary node flag
-                                            DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                              element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
-                                              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
-                                                & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                              en_idx=0
-                                              XI_COORDINATES=0.0_DP
-                                              number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)% &
-                                                & basis%number_of_nodes_xic(1)
-                                              number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)% & 
-                                                & basis%number_of_nodes_xic(2)
-                                              IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                                number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis% &
-                                                  & number_of_nodes_xic(3)
-                                              ELSE
-                                                number_of_nodes_xic(3)=1
-                                              ENDIF
-!\todo: change definitions as soon as adjacent elements / boundary elements calculation works for simplex
-                                              IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
-                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
-                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
-                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
-                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
-                                                & DOMAIN%topology%elements%maximum_number_of_element_parameters==64.) THEN
-                                                  DO K=1,number_of_nodes_xic(3)
-                                                    DO J=1,number_of_nodes_xic(2)
-                                                      DO I=1,number_of_nodes_xic(1)
-                                                        en_idx=en_idx+1
-                                                        IF(DOMAIN%topology%elements%elements(element_idx)% & 
-                                                          & element_nodes(en_idx)==node_idx) EXIT
-                                                        XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
-                                                      ENDDO
-                                                      IF(DOMAIN%topology%elements%elements(element_idx)% &
-                                                        & element_nodes(en_idx)==node_idx) EXIT
-                                                        XI_COORDINATES(1)=0.0_DP
-                                                        XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
-                                                    ENDDO
-                                                    IF(DOMAIN%topology%elements%elements(element_idx)% & 
-                                                      & element_nodes(en_idx)==node_idx) EXIT
-                                                    XI_COORDINATES(1)=0.0_DP
-                                                    XI_COORDINATES(2)=0.0_DP
-                                                    IF(number_of_nodes_xic(3)/=1) THEN
-                                                      XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
-                                                    ENDIF
-                                                  ENDDO
-                                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
-                                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                              ELSE
-!\todo: Use boundary flag
-                                                IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
-                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
-                                                  T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
-                                                  T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
-                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
-                                                  & NUMBER_OF_DIMENSIONS==2) THEN
-                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
-                                                  & NUMBER_OF_DIMENSIONS==3) THEN
-                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
-                                                  T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
-                                                  T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
-                                                  T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
-                                                  T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
-                                                ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                ENDIF
-                                                DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
-                                                  IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
-                                                ENDDO
-                                                IF(NUMBER_OF_DIMENSIONS==2) THEN
-                                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
-                                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                                ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
-                                                  CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
-                                                    & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                                                ENDIF 
-                                              ENDIF
-                                              X=0.0_DP
-                                              DO dim_idx=1,NUMBER_OF_DIMENSIONS
-                                                X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
-                                              ENDDO !dim_idx
-                                              !Loop over the derivatives
-                                              DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                                ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
-                                                GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
-                                                  & GLOBAL_DERIVATIVE_INDEX
+          CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
+            ! do nothing ???
+          CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+              IF(ASSOCIATED(EQUATIONS)) THEN
+                EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                  IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 .OR. &
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 .OR. &
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 .OR. &
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5 .OR. &
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
+!                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+!                      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
+                          GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                          IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
 
-                                                NULLIFY(ANALYTIC_VARIABLE)
-                                                NULLIFY(ANALYTIC_PARAMETERS)
-                                                IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
-                                                  CALL FIELD_VARIABLE_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,ANALYTIC_VARIABLE,ERR,ERROR,*999)
-                                                  CALL FIELD_PARAMETER_SET_DATA_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                                    & ANALYTIC_PARAMETERS,ERR,ERROR,*999)           
-                                                ENDIF
-                                                NULLIFY(MATERIALS_FIELD)
-                                                NULLIFY(MATERIALS_VARIABLE)
-                                                NULLIFY(MATERIALS_PARAMETERS)
-                                                IF(ASSOCIATED(EQUATIONS_SET%MATERIALS)) THEN
-                                                  MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
-                                                  CALL FIELD_VARIABLE_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,MATERIALS_VARIABLE,ERR,ERROR,*999)
-                                                  CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                                    & MATERIALS_PARAMETERS,ERR,ERROR,*999)           
-                                                ENDIF
-                                                TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
+                            ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+                            ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
+                            CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR, & 
+                              & ERROR,*999)
+                            NULLIFY(GEOMETRIC_VARIABLE)
+                            NULLIFY(GEOMETRIC_PARAMETERS)
+                            CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+                            CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                              & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+                            NULLIFY(ANALYTIC_VARIABLE)
+                            NULLIFY(ANALYTIC_PARAMETERS)
+                            IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
+                              CALL FIELD_VARIABLE_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,ANALYTIC_VARIABLE,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_DATA_GET(ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & ANALYTIC_PARAMETERS,ERR,ERROR,*999)           
+                            ENDIF
+                            NULLIFY(MATERIALS_FIELD)
+                            NULLIFY(MATERIALS_VARIABLE)
+                            NULLIFY(MATERIALS_PARAMETERS)
+                            IF(ASSOCIATED(EQUATIONS_SET%MATERIALS)) THEN
+                              MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
+                              CALL FIELD_VARIABLE_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,MATERIALS_VARIABLE,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                                & MATERIALS_PARAMETERS,ERR,ERROR,*999)           
+                            ENDIF
+                            TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
 
+!                             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
+!                               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+!                             NULLIFY(INTERPOLATION_PARAMETERS)
+!                             NULLIFY(INTERPOLATED_POINT) 
+!                             CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(GEOMETRIC_FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR, &
+!                               & *999)
+!                             CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
+!                             NULLIFY(GEOMETRIC_VARIABLE)
+!                             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
+!                             NULLIFY(GEOMETRIC_PARAMETERS)
+!                             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,& 
+!                               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+
+                             DO variable_idx=1,DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                              variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                              FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                              IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                                DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                                  IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
+                                    & FIELD_NODE_BASED_INTERPOLATION) THEN
+                                    DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                                    IF(ASSOCIATED(DOMAIN)) THEN
+                                      IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                        DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                        IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                          !Should be replaced by boundary node flag
+                                          DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+
+!                                             element_idx=DOMAIN%topology%nodes%nodes(node_idx)%surrounding_elements(1)
+!                                             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,element_idx, &
+!                                               & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!                                             en_idx=0
+!                                             XI_COORDINATES=0.0_DP
+!                                             number_of_nodes_xic(1)=DOMAIN%topology%elements%elements(element_idx)% &
+!                                               & basis%number_of_nodes_xic(1)
+!                                             number_of_nodes_xic(2)=DOMAIN%topology%elements%elements(element_idx)% & 
+!                                               & basis%number_of_nodes_xic(2)
+!                                             IF(NUMBER_OF_DIMENSIONS==3) THEN
+!                                               number_of_nodes_xic(3)=DOMAIN%topology%elements%elements(element_idx)%basis% &
+!                                                 & number_of_nodes_xic(3)
+!                                             ELSE
+!                                               number_of_nodes_xic(3)=1
+!                                             ENDIF
+
+
+! !\todo: change definitions as soon as adjacent elements / boundary elements calculation works for simplex
+!                                             IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4.OR. &
+!                                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==9.OR. &
+!                                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==16.OR. &
+!                                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==8.OR. &
+!                                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==27.OR. &
+!                                               & DOMAIN%topology%elements%maximum_number_of_element_parameters==64.) THEN
+!                                                 DO K=1,number_of_nodes_xic(3)
+!                                                   DO J=1,number_of_nodes_xic(2)
+!                                                     DO I=1,number_of_nodes_xic(1)
+!                                                       en_idx=en_idx+1
+!                                                       IF(DOMAIN%topology%elements%elements(element_idx)% & 
+!                                                         & element_nodes(en_idx)==node_idx) EXIT
+!                                                       XI_COORDINATES(1)=XI_COORDINATES(1)+(1.0_DP/(number_of_nodes_xic(1)-1))
+!                                                     ENDDO
+!                                                     IF(DOMAIN%topology%elements%elements(element_idx)% &
+!                                                       & element_nodes(en_idx)==node_idx) EXIT
+!                                                       XI_COORDINATES(1)=0.0_DP
+!                                                       XI_COORDINATES(2)=XI_COORDINATES(2)+(1.0_DP/(number_of_nodes_xic(2)-1))
+!                                                   ENDDO
+!                                                   IF(DOMAIN%topology%elements%elements(element_idx)% & 
+!                                                     & element_nodes(en_idx)==node_idx) EXIT
+!                                                   XI_COORDINATES(1)=0.0_DP
+!                                                   XI_COORDINATES(2)=0.0_DP
+!                                                   IF(number_of_nodes_xic(3)/=1) THEN
+!                                                     XI_COORDINATES(3)=XI_COORDINATES(3)+(1.0_DP/(number_of_nodes_xic(3)-1))
+!                                                   ENDIF
+!                                                 ENDDO
+!                                                 CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES, &
+!                                                   & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!                                             ELSE
+! !\todo: Use boundary flag
+!                                               IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
+!                                                 T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+!                                                 T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+!                                               ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
+!                                                 T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+!                                                 T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
+!                                                 T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
+!                                                 T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+!                                               ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
+!                                                 & NUMBER_OF_DIMENSIONS==2) THEN
+!                                                 T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
+!                                                 T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+!                                               ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
+!                                                 T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+!                                                 T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+!                                               ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
+!                                                 & NUMBER_OF_DIMENSIONS==3) THEN
+!                                                 T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+!                                                 T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
+!                                                 T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
+!                                                 T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
+!                                                 T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
+!                                                 T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+!                                               ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
+!                                                 T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
+!                                                 T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
+!                                                 T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
+!                                                 T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+!                                               ENDIF
+!                                               DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
+!                                                 IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
+!                                               ENDDO
+!                                               IF(NUMBER_OF_DIMENSIONS==2) THEN
+!                                                 CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:2), &
+!                                                   & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!                                               ELSE IF(NUMBER_OF_DIMENSIONS==3) THEN
+!                                                 CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,T_COORDINATES(K,1:3), &
+!                                                   & INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+!                                               ENDIF 
+!                                             ENDIF
+!                                             X=0.0_DP
+!                                             DO dim_idx=1,NUMBER_OF_DIMENSIONS
+!                                               X(dim_idx)=INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(dim_idx,1)
+!                                             ENDDO !dim_idx
+
+!TODO \todo We should interpolate the geometric field here and the node position.
+                                            DO dim_idx=1,NUMBER_OF_DIMENSIONS
+                                              !Default to version 1 of each node derivative
+                                              local_ny=GEOMETRIC_VARIABLE%COMPONENTS(dim_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
+                                                & NODES(node_idx)%DERIVATIVES(1)%VERSIONS(1)
+                                              X(dim_idx)=GEOMETRIC_PARAMETERS(local_ny)
+                                            ENDDO !dim_idx
+
+                                            !Loop over the derivatives
+                                            DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                              GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
+                                                & GLOBAL_DERIVATIVE_INDEX
+
+!                                             !Loop over the derivatives
+!                                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+!                                               ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+!                                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
+!                                                 & GLOBAL_DERIVATIVE_INDEX
 !                                                MATERIALS_FIELD=>EQUATIONS_SET%MATERIALS%MATERIALS_FIELD
 !                                                !Define MU_PARAM, density=1
 !                                                MU_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
@@ -5037,13 +5071,37 @@ CONTAINS
 !                                                  & GLOBAL_DERIV_INDEX,ANALYTIC_FUNCTION_TYPE,NUMBER_OF_DIMENSIONS, &
 !                                                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
 
-                                                CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
-                                                  & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,TIME,variable_type,GLOBAL_DERIV_INDEX,component_idx, &
-                                                  & ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
+                                              CALL NAVIER_STOKES_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
+                                                & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,TIME,variable_type, &
+                                                & GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
+                                                & VALUE,ERR,ERROR,*999)
 
-                                                !Default to version 1 of each node derivative
+!                                               !Default to version 1 of each node derivative
+!                                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+!                                                 & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+!                                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
+!                                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
+!                                               CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_FIELD% &
+!                                                 & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR,BOUNDARY_CONDITIONS_VARIABLE, &
+!                                                 & ERR,ERROR,*999)
+!                                               IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+!                                                 BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+!                                                   & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+!                                                 IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
+!                                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+!                                                    & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &
+!                                                    & VALUE,ERR,ERROR,*999)
+!                                                 ENDIF
+!                                               ELSE
+!                                                 CALL FLAG_ERROR("Boundary conditions U variable is not associated.", &
+!                                                   & ERR,ERROR,*999)
+!                                               ENDIF
+
+                                              DO version_idx=1, &
+                                                & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%NUMBER_OF_VERSIONS
                                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                                  & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(version_idx)
+
                                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                                   & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
                                                 CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_FIELD% &
@@ -5061,138 +5119,222 @@ CONTAINS
                                                   CALL FLAG_ERROR("Boundary conditions U variable is not associated.", &
                                                     & ERR,ERROR,*999)
                                                 ENDIF
-                                              ENDDO !deriv_idx
-                                            ENDDO !node_idx
-                                          ELSE
-                                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
-                                          ENDIF
+
+                                              ENDDO !version_idx
+
+                                            ENDDO !deriv_idx
+                                          ENDDO !node_idx
                                         ELSE
-                                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
                                     ENDIF
-                                  ENDDO !component_idx
-                                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
-                                   & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
-                                   & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
-                                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                  CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
-                                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                ELSE
-                                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
-                                ENDIF
-                               ENDDO !variable_idx
-                               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
-                                & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-                            ELSE
-                              CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
-                            ENDIF
+                                  ELSE
+                                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                  ENDIF
+                                ENDDO !component_idx
+                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_ANALYTIC_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
+                                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                              ELSE
+                                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                              ENDIF
+                             ENDDO !variable_idx
+                             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
+                              & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                        ENDIF
+!                       ELSE
+!                         CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+!                       ENDIF
+!                     ELSE
+!                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+!                     ENDIF
+                  ENDIF
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+            END IF
+            CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+          CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                IF(ASSOCIATED(EQUATIONS)) THEN
+                  EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
+                      CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Navier Stokes update boundary conditions ... ",ERR,ERROR,*999)
+                    ENDIF
+                    DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
+                    GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
+                    IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
+                      BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                        EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
+                        IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
+                          FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
+                          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                            FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+                            CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                              & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                            IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                              IF(DIAGNOSTICS1) THEN
+                                NULLIFY( DUMMY_VALUES1 )
+                                CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                   & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
+                                NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
+                                CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
+                                   & NDOFS_TO_PRINT,DUMMY_VALUES1, &
+                                   & '(" DEPENDENT_FIELD,FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE (before) = ",4(X,E13.6))', &
+                                   & '4(4(X,E13.6))',ERR,ERROR,*999)
+                              ENDIF
+                              NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
+
+                              VELOCITY =( (.05*SIN(0.001*(CURRENT_TIME-100)*3.1416))+.05 )
+
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+                                 & FIELD_VALUES_SET_TYPE,1,VELOCITY,ERR,ERROR,*999)
+
+                              CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
+                                 & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, & 
+                                 & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+                            ELSE
+                              CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                            END IF
+                          ELSE
+                            CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                          ENDIF
+                        ELSE
+                          CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ENDIF
-                  ENDIF
+                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  END IF
                 ELSE
                   CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
                 END IF
               ELSE
-                CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-              END IF
-              CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-            CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
-              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                  IF(ASSOCIATED(EQUATIONS)) THEN
-                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                      IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
-                        CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Navier Stokes update boundary conditions ... ",ERR,ERROR,*999)
-                      ENDIF
-                      DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-                      GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
-                      IF(ASSOCIATED(DEPENDENT_FIELD).AND.ASSOCIATED(GEOMETRIC_FIELD)) THEN
-                        BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
-                        IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                          EQUATIONS_MAPPING=>EQUATIONS_SET%EQUATIONS%EQUATIONS_MAPPING
-                          IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                            FIELD_VARIABLE=>EQUATIONS_MAPPING%DYNAMIC_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(1)%VARIABLE
-                            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                              FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
-                                & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
-                              IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                                IF(DIAGNOSTICS1) THEN
-                                  NULLIFY( DUMMY_VALUES1 )
-                                  CALL FIELD_PARAMETER_SET_DATA_GET(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES1,ERR,ERROR,*999)
-                                  NDOFS_TO_PRINT = SIZE(DUMMY_VALUES1,1)
-                                  CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,NDOFS_TO_PRINT,NDOFS_TO_PRINT, &
-                                     & NDOFS_TO_PRINT,DUMMY_VALUES1, &
-                                     & '(" DEPENDENT_FIELD,FIELD_VAR_TYPE,FIELD_VALUES_SET_TYPE (before) = ",4(X,E13.6))', &
-                                     & '4(4(X,E13.6))',ERR,ERROR,*999)
-                                ENDIF
-                                NUMBER_OF_DOFS = DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_VAR_TYPE)%PTR%NUMBER_OF_DOFS
-
-                                VELOCITY =( (.05*SIN(0.001*(CURRENT_TIME-100)*3.1416))+.05 )
-
-                                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                                   & FIELD_VALUES_SET_TYPE,1,VELOCITY,ERR,ERROR,*999)
-
-                                CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD, &
-                                   & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, & 
-                                   & FIELD_VAR_TYPE, FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                              ELSE
-                                CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                              END IF
-                            ELSE
-                              CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                        ELSE
-                          CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
-                        END IF
-                      ELSE
-                        CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
-                      END IF
+                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+            END IF
+            CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
+              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+          CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
+            !Pre solve for the linear solver
+            SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+            IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+              SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+              EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+              IF(ASSOCIATED(EQUATIONS)) THEN
+                EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                  BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                  IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                    FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                    IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                      CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                        & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                    END IF
-                  ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                  END IF
-                ELSE
-                  CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-              END IF
-              CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
-                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-            CASE(PROBLEM_QUASISTATIC_NAVIER_STOKES_SUBTYPE)
-              !Pre solve for the linear solver
+                      CALL FLAG_ERROR("Field U variable is not associated",ERR,ERROR,*999)
+                    ENDIF
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                     CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                      & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                     NULLIFY(BOUNDARY_VALUES)
+                     CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+                       & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
+                     CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_NONLINEAR_TYPE,BOUNDARY_VALUES, &
+                       & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
+                       & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
+                     DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                       variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                       FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                       IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                         DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                           DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                           IF(ASSOCIATED(DOMAIN)) THEN
+                             IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                               DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                               IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                 !Loop over the local nodes excluding the ghosts.
+                                 DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                   DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                     !Default to version 1 of each node derivative
+                                     local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                       & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                     BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+                                       & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                     IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
+                                         & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, &
+                                         & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
+                                     END IF
+                                   ENDDO !deriv_idx
+                                 ENDDO !node_idx
+                               ENDIF
+                             ENDIF
+                           ENDIF
+                         ENDDO !component_idx
+                       ENDIF
+                     ENDDO !variable_idx
+
+!\todo: This part should be read in out of a file eventually
+                   ELSE
+                     CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                   END IF
+                 ELSE
+                   CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                 END IF
+               ELSE
+                 CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+               END IF
+             ELSE
+               CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+             END IF
+            ELSE
+              CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+            END IF
+            CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+          CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
+           !Pre solve for the dynamic solver
+           IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -5210,332 +5352,251 @@ CONTAINS
                         CALL FLAG_ERROR("Field U variable is not associated",ERR,ERROR,*999)
                       ENDIF
                       IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                        & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                       NULLIFY(BOUNDARY_VALUES)
-                       CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
-                         & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-                       CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_NONLINEAR_TYPE,BOUNDARY_VALUES, &
-                         & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
-                         & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
-                       DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                         variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                         FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                         IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                           DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                             DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                             IF(ASSOCIATED(DOMAIN)) THEN
-                               IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                                 DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                                 IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                   !Loop over the local nodes excluding the ghosts.
-                                   DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                     DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                       !Default to version 1 of each node derivative
-                                       local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                         & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                       BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                         & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-                                       IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
-                                           & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, &
-                                           & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
-                                       END IF
-                                     ENDDO !deriv_idx
-                                   ENDDO !node_idx
-                                 ENDIF
-                               ENDIF
-                             ENDIF
-                           ENDDO !component_idx
-                         ENDIF
-                       ENDDO !variable_idx
-
-!\todo: This part should be read in out of a file eventually
-                     ELSE
-                       CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                     END IF
-                   ELSE
-                     CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
-                   END IF
-                 ELSE
-                   CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                 END IF
-               ELSE
-                 CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-               END IF
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                        NULLIFY(MESH_VELOCITY_VALUES)
+                        CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                        NULLIFY(BOUNDARY_VALUES)
+                        CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
+                        CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
+                          & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
+                          & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
+                        DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                          variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                          FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                            DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                              DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                              IF(ASSOCIATED(DOMAIN)) THEN
+                                IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                  DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                  IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                    !Loop over the local nodes excluding the ghosts.
+                                    DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                      DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                        !Default to version 1 of each node derivative
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                          & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                        DISPLACEMENT_VALUE=0.0_DP
+                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                          & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                        IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                            & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
+                                        ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                            & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
+                                        END IF
+                                      ENDDO !deriv_idx
+                                    ENDDO !node_idx
+                                  ENDIF
+                                ENDIF
+                              ENDIF
+                            ENDDO !component_idx
+                          ENDIF
+                        ENDDO !variable_idx
+                      ELSE
+                        CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                      END IF
+                    ELSE
+                      CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                END IF                
               ELSE
                 CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-              END IF
-              CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+              END IF  
+              CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
+              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-            CASE(PROBLEM_PGM_NAVIER_STOKES_SUBTYPE)
-             !Pre solve for the dynamic solver
-             IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                  IF(ASSOCIATED(EQUATIONS)) THEN
-                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                      BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
-                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                        FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                        IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
-                            & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Field U variable is not associated",ERR,ERROR,*999)
-                        ENDIF
-                        IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                          CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                            & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                          NULLIFY(MESH_VELOCITY_VALUES)
-                          CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-                          NULLIFY(BOUNDARY_VALUES)
-                          CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-                          CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
-                            & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
-                            & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
-                          DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                            variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                            FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                              DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                                IF(ASSOCIATED(DOMAIN)) THEN
-                                  IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                                    DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                                    IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                      !Loop over the local nodes excluding the ghosts.
-                                      DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                        DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                          !Default to version 1 of each node derivative
-                                          local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                          DISPLACEMENT_VALUE=0.0_DP
-                                          BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                            & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-                                          IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
-                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                              & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
-                                          ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                              & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
-                                          END IF
-                                        ENDDO !deriv_idx
-                                      ENDDO !node_idx
-                                    ENDIF
-                                  ENDIF
-                                ENDIF
-                              ENDDO !component_idx
-                            ENDIF
-                          ENDDO !variable_idx
-                        ELSE
-                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                        END IF
+            END IF
+          CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
+            !Pre solve for the linear solver
+            IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                IF(ASSOCIATED(EQUATIONS)) THEN
+                  EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                      FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                        CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                          & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
-                      END IF
-                    ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-                    END IF
-                  ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                  END IF                
-                ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-                END IF  
-                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              END IF
-            CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
-              !Pre solve for the linear solver
-              IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
-                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                  IF(ASSOCIATED(EQUATIONS)) THEN
-                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                      BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
-                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                        FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                        IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
-                            & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Field U variable is not associated",ERR,ERROR,*999)
-                        ENDIF
-                        IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                          CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                            & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                          NULLIFY(BOUNDARY_VALUES)
-                          CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-                          CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
-                            & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_MOVED_WALL,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
-                            & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
-                          DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                            variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                            FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                              DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                                IF(ASSOCIATED(DOMAIN)) THEN
-                                  IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                                    DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                                    IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                      !Loop over the local nodes excluding the ghosts.
-                                      DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                        DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                          !Default to version 1 of each node derivative
-                                          local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                          BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                            & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-                                          IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
-                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                              & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
-                                          END IF
-                                        ENDDO !deriv_idx
-                                      ENDDO !node_idx
-                                    ENDIF
+                        CALL FLAG_ERROR("Field U variable is not associated",ERR,ERROR,*999)
+                      ENDIF
+                      IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                        NULLIFY(BOUNDARY_VALUES)
+                        CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
+                        CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
+                          & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_MOVED_WALL,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
+                          & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
+                        DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                          variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                          FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                            DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                              DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                              IF(ASSOCIATED(DOMAIN)) THEN
+                                IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                  DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                  IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                    !Loop over the local nodes excluding the ghosts.
+                                    DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                      DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                        !Default to version 1 of each node derivative
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                          & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                          & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                        IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                            & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
+                                        END IF
+                                      ENDDO !deriv_idx
+                                    ENDDO !node_idx
                                   ENDIF
                                 ENDIF
-                              ENDDO !component_idx
-                            ENDIF
-                          ENDDO !variable_idx
-                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
-                            & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
+                              ENDIF
+                            ENDDO !component_idx
+                          ENDIF
+                        ENDDO !variable_idx
+                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
 !\todo: This part should be read in out of a file eventually
-                        ELSE
-                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                        END IF
                       ELSE
-                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                  END IF                
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  END IF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-                END IF  
-                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              !Pre solve for the dynamic solver
-              ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-                  EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
-                  IF(ASSOCIATED(EQUATIONS)) THEN
-                    EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
-                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-                      BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
-                      IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                        FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
-                        IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                          CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
-                            & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Field U variable is not associated",ERR,ERROR,*999)
-                        ENDIF
-                        IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                          CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                            & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                          NULLIFY(MESH_VELOCITY_VALUES)
-                          CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-                          NULLIFY(BOUNDARY_VALUES)
-                          CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                            & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-                          CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
-                            & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
-                            & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
-                          DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
-                            variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
-                            FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
-                            IF(ASSOCIATED(FIELD_VARIABLE)) THEN
-                              DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                                DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
-                                IF(ASSOCIATED(DOMAIN)) THEN
-                                  IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
-                                    DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
-                                    IF(ASSOCIATED(DOMAIN_NODES)) THEN
-                                      !Loop over the local nodes excluding the ghosts.
-                                      DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
-                                        DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
-                                          !Default to version 1 of each node derivative
-                                          local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
-                                            & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
-                                          DISPLACEMENT_VALUE=0.0_DP
-                                          BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
-                                            & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-                                          IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
-                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                              & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
-                                          ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
-                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
-                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
-                                              & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
-                                          END IF
-                                        ENDDO !deriv_idx
-                                      ENDDO !node_idx
-                                    ENDIF
+                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                END IF                
+              ELSE
+                CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+              END IF  
+              CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            !Pre solve for the dynamic solver
+            ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
+             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Mesh movement change boundary conditions... ",ERR,ERROR,*999)
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                EQUATIONS=>SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(1)%EQUATIONS
+                IF(ASSOCIATED(EQUATIONS)) THEN
+                  EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
+                  IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                    BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
+                    IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
+                      FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+                      IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                        CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,FIELD_VARIABLE, &
+                          & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
+                      ELSE
+                        CALL FLAG_ERROR("Field U variable is not associated",ERR,ERROR,*999)
+                      ENDIF
+                      IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                        CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+                        NULLIFY(MESH_VELOCITY_VALUES)
+                        CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                        NULLIFY(BOUNDARY_VALUES)
+                        CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                          & FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
+                        CALL FLUID_MECHANICS_IO_READ_BOUNDARY_CONDITIONS(SOLVER_LINEAR_TYPE,BOUNDARY_VALUES, & 
+                          & NUMBER_OF_DIMENSIONS,BOUNDARY_CONDITION_FIXED_INLET,CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER, &
+                          & CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,CURRENT_TIME,1.0_DP)
+                        DO variable_idx=1,EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%NUMBER_OF_VARIABLES
+                          variable_type=EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
+                          FIELD_VARIABLE=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
+                          IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+                            DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+                              DOMAIN=>FIELD_VARIABLE%COMPONENTS(component_idx)%DOMAIN
+                              IF(ASSOCIATED(DOMAIN)) THEN
+                                IF(ASSOCIATED(DOMAIN%TOPOLOGY)) THEN
+                                  DOMAIN_NODES=>DOMAIN%TOPOLOGY%NODES
+                                  IF(ASSOCIATED(DOMAIN_NODES)) THEN
+                                    !Loop over the local nodes excluding the ghosts.
+                                    DO node_idx=1,DOMAIN_NODES%NUMBER_OF_NODES
+                                      DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                        !Default to version 1 of each node derivative
+                                        local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
+                                          & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
+                                        DISPLACEMENT_VALUE=0.0_DP
+                                        BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% & 
+                                          & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                        IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL) THEN
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                            & MESH_VELOCITY_VALUES(local_ny),ERR,ERROR,*999)
+                                        ELSE IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_INLET) THEN
+                                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, & 
+                                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                            & BOUNDARY_VALUES(local_ny),ERR,ERROR,*999)
+                                        END IF
+                                      ENDDO !deriv_idx
+                                    ENDDO !node_idx
                                   ENDIF
                                 ENDIF
-                              ENDDO !component_idx
-                            ENDIF
-                          ENDDO !variable_idx
-                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
-                            & FIELD_U_VARIABLE_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
-                          CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
-                            & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
-                        ELSE
-                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
-                        END IF
+                              ENDIF
+                            ENDDO !component_idx
+                          ENDIF
+                        ENDDO !variable_idx
+                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & FIELD_U_VARIABLE_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,MESH_VELOCITY_VALUES,ERR,ERROR,*999)
+                        CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
+                          & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                        CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
-                  END IF                
+                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                  END IF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
-                END IF  
-                CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
-                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-              END IF
-              ! do nothing ???
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a Navier-Stokes equation fluid type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                END IF                
+              ELSE
+                CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+              END IF  
+              CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
+                & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+            END IF
+            ! do nothing ???
+          CASE DEFAULT
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              & " is not valid for a Navier-Stokes equation fluid type of a fluid mechanics problem class."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
           CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
