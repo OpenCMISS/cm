@@ -208,6 +208,7 @@ DLFLAGS = $(strip $(CFL_FLGS) $(L_FLGS) $(D_FLGS))
 ifneq ($(DEBUG),false)
   CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
   FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
+  DLFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
   CPPFLAGS += -DDEBUG
 else
   ifneq ($(MPIPROF),false)

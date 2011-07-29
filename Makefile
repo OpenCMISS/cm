@@ -86,6 +86,8 @@ F_INCLUDE_DIRS := $(MODULE_DIR)
 CPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
 FPPFLAGS += $(EXTERNAL_INCLUDE_PATH)
 ELFLAGS += $(EXTERNAL_LIB_PATH)
+DLFLAGS += $(EXTERNAL_LIB_PATH)
+DLFLAGS += $(EXTERNAL_LIBRARIES)
 
 CPPFLAGS += $(addprefix -I, $(C_INCLUDE_DIRS) )
 FPPFLAGS += $(addprefix -I, $(F_INCLUDE_DIRS) )
@@ -1611,9 +1613,9 @@ python: $(PYTHON_MODULE)
 $(PYTHON_WRAPPER) : $(SWIG_INTERFACE) $(HEADER_INCLUDE)
 	( cd $(BINDINGS_DIR)/python ; swig -python -o $(PYTHON_WRAPPER) -outdir . -I$(INC_DIR) $(SWIG_INTERFACE) )
 
-$(PYTHON_MODULE) : $(PYTHON_WRAPPER) $(OBJECTS)
-	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss_wrap.o )
-	( cd $(BINDINGS_DIR)/python ; $(DSO_LINK) -shared opencmiss_wrap.o $(OBJECTS) -o $(PYTHON_MODULE) )
+$(PYTHON_MODULE) : main $(PYTHON_WRAPPER) $(OBJECTS)
+	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss_wrap.o )
+	( cd $(BINDINGS_DIR)/python ; $(DSO_LINK) opencmiss_wrap.o $(DLFLAGS) $(OBJECTS) -o $(PYTHON_MODULE) )
 
 # ----------------------------------------------------------------------------
 #
