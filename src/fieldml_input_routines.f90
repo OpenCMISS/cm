@@ -53,6 +53,7 @@ MODULE FIELDML_INPUT_ROUTINES
   USE COORDINATE_ROUTINES
   USE MESH_ROUTINES
   USE NODE_ROUTINES
+  USE REGION_ROUTINES
   USE UTIL_ARRAY
   USE CMISS
 
@@ -85,9 +86,9 @@ MODULE FIELDML_INPUT_ROUTINES
 
   END INTERFACE
 
-  PUBLIC :: FieldmlInput_InitialiseFromFile, FieldmlInput_SetDofVariables, FieldmlInput_MeshCreateStart, &
+  PUBLIC :: FieldmlInput_InitialiseFromFile, FieldmlInput_MeshCreateStart, &
     & FieldmlInput_CoordinateSystemCreateStart, FieldmlInput_BasisCreateStart, FieldmlInput_CreateMeshComponent, &
-    & FieldmlInput_FieldCreateStart, FieldmlInput_NodesCreateStart
+    & FieldmlInput_FieldCreateStart, FieldmlInput_FieldNodalParametersUpdate, FieldmlInput_NodesCreateStart
 
 CONTAINS
 
@@ -1052,40 +1053,12 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
-  SUBROUTINE FieldmlInput_SetDofVariables( fieldmlInfo, nodeDofsName, elementDofsName, constantDofsName, err, errorString, * )
-    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    CHARACTER(LEN=*), INTENT(IN) :: nodeDofsName
-    CHARACTER(LEN=*), INTENT(IN) :: elementDofsName
-    CHARACTER(LEN=*), INTENT(IN) :: constantDofsName
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
-    
-    CALL ENTERS( "FieldmlInput_SetDofVariables", err, errorString, *999 )
-
-    !Some of these may not actually exist, but that's OK because that means they're not used.
-    fieldmlInfo%nodeDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, nodeDofsName//NUL )
-    !fieldmlInfo%elementDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, elementDofsName//NUL )
-    !fieldmlInfo%constantDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, constantDofsName//NUL )
-    
-    CALL EXITS( "FieldmlInput_SetDofVariables" )
-    RETURN
-999 CALL ERRORS( "FieldmlInput_SetDofVariables", err, errorString )
-    CALL EXITS( "FieldmlInput_SetDofVariables" )
-    RETURN 1
   
-  END SUBROUTINE
-
-  !
-  !================================================================================================================================
-  !
-  
-  SUBROUTINE FieldmlInput_FieldCreateStart( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, evaluatorName, &
+  SUBROUTINE FieldmlInput_FieldCreateStart( fieldmlInfo, region, decomposition, fieldNumber, field, evaluatorName, &
     & err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
     TYPE(REGION_TYPE), POINTER, INTENT(IN) :: region
-    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh
     TYPE(DECOMPOSITION_TYPE), POINTER, INTENT(IN) :: decomposition
     INTEGER(INTG), INTENT(IN) :: fieldNumber
     TYPE(FIELD_TYPE), POINTER, INTENT(INOUT) :: field
@@ -1094,12 +1067,8 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString
     
     !Locals
-    INTEGER(C_INT) :: fieldHandle, templateHandle, nodalDofsHandle, typeHandle, count, dataSource
-    INTEGER(INTG) :: versionNumber,componentNumber, templateComponentNumber, nodeNumber, fieldDimensions, meshNodeCount, gNode
-    INTEGER(INTG) :: meshComponent
-    LOGICAL :: nodeExists
-    REAL(C_DOUBLE), ALLOCATABLE, TARGET :: buffer(:)
-    INTEGER(C_INT) :: reader
+    INTEGER(C_INT) :: fieldHandle, templateHandle, typeHandle
+    INTEGER(INTG) :: componentNumber, templateComponentNumber, fieldDimensions
 
     CALL ENTERS( "FieldmlInput_FieldCreateStart", err, errorString, *999 )
 
@@ -1132,18 +1101,54 @@ CONTAINS
         & err, errorString, *999 )
     ENDDO
 
-    CALL FIELD_CREATE_FINISH( field, err, errorString, *999 )
+    CALL EXITS( "FieldmlInput_FieldCreateStart" )
+    RETURN
+999 CALL ERRORS( "FieldmlInput_FieldCreateStart", err, errorString )
+    CALL EXITS( "FieldmlInput_FieldCreateStart" )
+    RETURN 1
+  
+  END SUBROUTINE FieldmlInput_FieldCreateStart
 
-    nodalDofsHandle = Fieldml_GetBindByArgument( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%nodeDofsHandle )
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FieldmlInput_FieldNodalParametersUpdate( fieldmlInfo, evaluatorName, mesh, field, err, errorString, * )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh
+    TYPE(FIELD_TYPE), POINTER, INTENT(INOUT) :: field
+    INTEGER(INTG), INTENT(OUT) :: err
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    
+    !Locals
+    TYPE(NODES_TYPE), POINTER :: nodes
+    INTEGER(C_INT) :: nodalDofsHandle, count, dataSource
+    INTEGER(INTG) :: versionNumber,componentNumber, nodeNumber, fieldDimensions, meshNodeCount, gNode
+    INTEGER(INTG) :: meshComponent
+    LOGICAL :: nodeExists
+    REAL(C_DOUBLE), ALLOCATABLE, TARGET :: buffer(:)
+    INTEGER(C_INT) :: reader
+
+    nodalDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
     CALL FieldmlUtil_CheckError( "Cannot get nodal field dofs", fieldmlInfo, errorString, *999 )
   
     dataSource = Fieldml_GetDataSource( fieldmlInfo%fmlHandle, nodalDofsHandle )
+    CALL FieldmlUtil_CheckError( "Cannot get nodal data source", fieldmlInfo, errorString, *999 )
+
     reader = Fieldml_OpenReader( fieldmlInfo%fmlHandle, dataSource )
     CALL FieldmlUtil_CheckError( "Cannot open nodal dofs reader", fieldmlInfo, errorString, *999 )
+    
+    CALL FIELD_NUMBER_OF_COMPONENTS_GET( field, FIELD_U_VARIABLE_TYPE, fieldDimensions, err, errorString, *999 )
+    
     IF( reader /= FML_INVALID_HANDLE ) THEN
       ALLOCATE( buffer( fieldDimensions ) )
       
-      meshNodeCount = Fieldml_GetMemberCount( fieldmlInfo%fmlHandle, fieldmlInfo%nodesHandle )
+      !TODO Code assumes that the data is dense in both node and component indexes.
+      NULLIFY( nodes )
+      CALL REGION_NODES_GET( mesh%REGION, nodes, err, errorString, *999 )
+      CALL NODES_NUMBER_OF_NODES_GET( nodes, meshNodeCount, err, errorString, *999 )
       CALL FieldmlUtil_CheckError( "Cannot get mesh nodes count", fieldmlInfo, errorString, *999 )
       DO nodeNumber = 1, meshNodeCount
         count = Fieldml_ReadDoubleValues( fieldmlInfo%fmlHandle, reader, C_LOC(buffer), fieldDimensions )
@@ -1178,13 +1183,13 @@ CONTAINS
 
     !TODO Set element and constant parameters
     
-    CALL EXITS( "FieldmlInput_FieldCreateStart" )
+    CALL EXITS( "FieldmlInput_FieldNodalParametersUpdate" )
     RETURN
-999 CALL ERRORS( "FieldmlInput_FieldCreateStart", err, errorString )
-    CALL EXITS( "FieldmlInput_FieldCreateStart" )
+999 CALL ERRORS( "FieldmlInput_FieldNodalParametersUpdate", err, errorString )
+    CALL EXITS( "FieldmlInput_FieldNodalParametersUpdate" )
     RETURN 1
   
-  END SUBROUTINE FieldmlInput_FieldCreateStart
+  END SUBROUTINE FieldmlInput_FieldNodalParametersUpdate
 
   !
   !================================================================================================================================

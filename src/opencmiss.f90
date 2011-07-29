@@ -5715,6 +5715,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldmlInput_FieldCreateNumber
   END INTERFACE CMISSFieldmlInput_FieldCreate
 
+  INTERFACE CMISSFieldmlInput_FieldNodalParametersUpdate
+    MODULE PROCEDURE CMISSFieldmlInput_FieldNodalParametersUpdateObj
+    MODULE PROCEDURE CMISSFieldmlInput_FieldNodalParametersUpdateNumber
+  END INTERFACE CMISSFieldmlInput_FieldNodalParametersUpdate
+
   INTERFACE CMISSFieldmlInput_BasisCreateStart
     MODULE PROCEDURE CMISSFieldmlInput_BasisCreateStartObj
     MODULE PROCEDURE CMISSFieldmlInput_BasisCreateStartNumber
@@ -5735,9 +5740,10 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldmlInput_MeshCreateStartNumber
   END INTERFACE CMISSFieldmlInput_MeshCreateStart
 
-  PUBLIC :: CMISSFieldmlInput_InitialiseFromFile, CMISSFieldmlInput_SetDofVariables, CMISSFieldmlInput_MeshCreateStart, &
+  PUBLIC :: CMISSFieldmlInput_InitialiseFromFile, CMISSFieldmlInput_MeshCreateStart, &
     & CMISSFieldmlInput_CoordinateSystemCreateStart, CMISSFieldmlInput_CreateMeshComponent, &
-    & CMISSFieldmlInput_FieldCreate, CMISSFieldmlInput_BasisCreateStart, CMISSFieldmlInput_NodesCreateStart
+    & CMISSFieldmlInput_FieldCreate, CMISSFieldmlInput_BasisCreateStart, CMISSFieldmlInput_NodesCreateStart, &
+    & CMISSFieldmlInput_FieldNodalParametersUpdate
 
   PUBLIC :: CMISSFieldmlUtil_FinaliseInfo, CMISSFieldmlUtil_Import
 
@@ -46824,31 +46830,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISSFieldmlInput_SetDofVariables( fieldmlInfo, nodeDofsName, elementDofsName, constantDofsName, err )
-    !Arguments
-    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    CHARACTER(LEN=*), INTENT(IN) :: nodeDofsName
-    CHARACTER(LEN=*), INTENT(IN) :: elementDofsName
-    CHARACTER(LEN=*), INTENT(IN) :: constantDofsName
-    INTEGER(INTG), INTENT(OUT) :: err
-    
-    CALL ENTERS("CMISSFieldmlInput_SetDofVariables",Err,ERROR,*999)
-
-    CALL FieldmlInput_SetDofVariables( fieldmlInfo, nodeDofsName, elementDofsName, constantDofsName, err, error,*999)
-
-    CALL EXITS("CMISSFieldmlInput_SetDofVariables")
-    RETURN
-999 CALL ERRORS("CMISSFieldmlInput_SetDofVariables",Err,ERROR)
-    CALL EXITS("CMISSFieldmlInput_SetDofVariables")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldmlInput_SetDofVariables
-  
-  !  
-  !================================================================================================================================
-  !
-
   SUBROUTINE CMISSFieldmlInput_MeshCreateStartObj( fieldmlInfo, meshArgumentName, mesh, meshNumber, region, err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
@@ -47127,12 +47108,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISSFieldmlInput_FieldCreateObj( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, evaluatorName, &
+  SUBROUTINE CMISSFieldmlInput_FieldCreateObj( fieldmlInfo, region, decomposition, fieldNumber, field, evaluatorName, &
     & err )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
     TYPE(CMISSRegionType), INTENT(IN) :: region
-    TYPE(CMISSMeshType), INTENT(IN) :: mesh
     TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition
     INTEGER(INTG), INTENT(IN) :: fieldNumber
     TYPE(CMISSFieldType), INTENT(INOUT) :: field
@@ -47141,7 +47121,7 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlInput_FieldCreateObj",Err,ERROR,*999)
 
-    CALL FieldmlInput_FieldCreateStart( fieldmlInfo, region%REGION, mesh%MESH, decomposition%DECOMPOSITION, fieldNumber, &
+    CALL FieldmlInput_FieldCreateStart( fieldmlInfo, region%REGION, decomposition%DECOMPOSITION, fieldNumber, &
       & field%FIELD, evaluatorName, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInput_FieldCreateObj")
@@ -47181,7 +47161,7 @@ CONTAINS
     CALL UserNumberToDecomposition( decompositionNumber, mesh, decomposition, err, error, *999 )
 
     NULLIFY( field )
-    CALL FieldmlInput_FieldCreateStart( fieldmlInfo, region, mesh, decomposition, fieldNumber, field, &
+    CALL FieldmlInput_FieldCreateStart( fieldmlInfo, region, decomposition, fieldNumber, field, &
       & evaluatorName, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInput_FieldCreateNumber")
@@ -47192,6 +47172,68 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldmlInput_FieldCreateNumber
+
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_FieldNodalParametersUpdateObj( fieldmlInfo, mesh, field, evaluatorName, &
+    & err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    TYPE(CMISSMeshType), INTENT(IN) :: mesh
+    TYPE(CMISSFieldType), INTENT(INOUT) :: field
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    CALL ENTERS("CMISSFieldmlInput_FieldNodalParametersUpdateObj",Err,ERROR,*999)
+
+    CALL FieldmlInput_FieldNodalParametersUpdate( fieldmlInfo, evaluatorName, mesh%MESH, field%FIELD, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_FieldNodalParametersUpdateObj")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_FieldNodalParametersUpdateObj",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_FieldNodalParametersUpdateObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_FieldNodalParametersUpdateObj
+
+  !  
+  !================================================================================================================================
+  !
+
+  SUBROUTINE CMISSFieldmlInput_FieldNodalParametersUpdateNumber( fieldmlInfo, regionNumber, meshNumber, fieldNumber, &
+    & evaluatorName, err )
+    !Arguments
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
+    INTEGER(INTG), INTENT(IN) :: regionNumber
+    INTEGER(INTG), INTENT(IN) :: meshNumber
+    INTEGER(INTG), INTENT(IN) :: fieldNumber
+    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName
+    INTEGER(INTG), INTENT(OUT) :: err
+
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(MESH_TYPE), POINTER :: mesh
+    TYPE(FIELD_TYPE), POINTER :: field
+
+    CALL ENTERS("CMISSFieldmlInput_FieldNodalParametersUpdateNumber",Err,ERROR,*999)
+
+    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+
+    CALL FieldmlInput_FieldNodalParametersUpdate( fieldmlInfo, evaluatorName, mesh, field, err, error, *999 )
+
+    CALL EXITS("CMISSFieldmlInput_FieldNodalParametersUpdateNumber")
+    RETURN
+999 CALL ERRORS("CMISSFieldmlInput_FieldNodalParametersUpdateNumber",Err,ERROR)
+    CALL EXITS("CMISSFieldmlInput_FieldNodalParametersUpdateNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSFieldmlInput_FieldNodalParametersUpdateNumber
 
   !  
   !================================================================================================================================
