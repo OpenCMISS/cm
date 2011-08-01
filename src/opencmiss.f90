@@ -2344,6 +2344,7 @@ MODULE OPENCMISS
   !> \brief The analytic function types for a Navier-Stokes equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{  
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDimPoiseuille=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
@@ -2549,6 +2550,7 @@ MODULE OPENCMISS
   PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
   PUBLIC CMISSEquationsSetStokesThreeDim4,CMISSEquationsSetStokesThreeDim5
 
+  PUBLIC CMISSEquationsSetNavierStokesTwoDimPoiseuille
   PUBLIC CMISSEquationsSetNavierStokesTwoDim1,CMISSEquationsSetNavierStokesTwoDim2,CMISSEquationsSetNavierStokesTwoDim3
   PUBLIC CMISSEquationsSetNavierStokesTwoDim4,CMISSEquationsSetNavierStokesTwoDim5
   PUBLIC CMISSEquationsSetNavierStokesThreeDim1,CMISSEquationsSetNavierStokesThreeDim2,CMISSEquationsSetNavierStokesThreeDim3
