@@ -2289,6 +2289,12 @@ debug64 opt64: ABI=64
 all: debug opt
 all64: debug64 opt64
 
+test: test_nightly
+
+test_nightly:
+	COMPILER=$(COMPILER) CONFIGURE=nightlytest.prop ABI=$(ABI) nosetests ${OPENCMISSEXAMPLES_ROOT}/noseMain.py:test_example
+
+
 #-----------------------------------------------------------------------------
 
 help:
