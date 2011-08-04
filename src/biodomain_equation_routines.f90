@@ -111,7 +111,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: equations_set_idx
-    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP,TIME_LOOP_2
+    TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP,TIME_LOOP_PARENT
     TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
@@ -158,11 +158,11 @@ CONTAINS
                       PARENT_LOOP=>CONTROL_LOOP%PARENT_LOOP
                       IF(ASSOCIATED(PARENT_LOOP)) THEN
                         !add the iteration number of the parent loop to the filename
-                        NULLIFY(TIME_LOOP_2)
-                        TIME_LOOP_2=>PARENT_LOOP%TIME_LOOP
-                        IF(ASSOCIATED(TIME_LOOP_2)) THEN
+                        NULLIFY(TIME_LOOP_PARENT)
+                        TIME_LOOP_PARENT=>PARENT_LOOP%TIME_LOOP
+                        IF(ASSOCIATED(TIME_LOOP_PARENT)) THEN
                           FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
-                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP_2%ITERATION_NUMBER,"*",ERR,ERROR))// &
+                            & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP_PARENT%ITERATION_NUMBER,"*",ERR,ERROR))// &
                             & "_"//TRIM(NUMBER_TO_VSTRING(TIME_LOOP%ITERATION_NUMBER,"*",ERR,ERROR))
                         ELSE
                           FILENAME="Time_"//TRIM(NUMBER_TO_VSTRING(DEPENDENT_REGION%USER_NUMBER,"*",ERR,ERROR))// &
