@@ -1842,7 +1842,15 @@ CONTAINS
                             SUM=SUM+CONDUCTIVITY(ni,nj)*DPHIDX(ni,mhs)*DPHIDX(nj,nhs)
                           ENDDO !nj
                         ENDDO !ni
-                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+                        IF((EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)<ZERO_TOLERANCE)&
+                          & .OR. (EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1) &
+                          & <ZERO_TOLERANCE)) THEN
+                          LOCAL_ERROR="The value of the surface area to volume ratio or the capacitance is below zero tolerance"
+                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        ENDIF
+                        STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG/ &
+                          & EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,1)/ &
+                          & EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,1)
                       ENDIF
                       IF(DAMPING_MATRIX%UPDATE_MATRIX) THEN
                         DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
