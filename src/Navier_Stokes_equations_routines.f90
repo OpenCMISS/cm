@@ -530,7 +530,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME
+    REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,NU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME,K_PARAM
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_COMPONENTS,component_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -662,6 +662,75 @@ CONTAINS
 !          LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
 !          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
 !        ENDIF
+
+
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
+       !Exact solution to 2D laminar, dynamic, nonlinear Taylor-Green vortex decay  
+         MU_PARAM = MATERIALS_PARAMETERS(1)
+         RHO_PARAM = MATERIALS_PARAMETERS(2)
+         NU_PARAM = MU_PARAM/RHO_PARAM ! kinematic viscosity
+!         PI = 3.141592654_DP
+         component_idx=COMPONENT_NUMBER
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           U_PARAM = ANALYTIC_PARAMETERS(1) ! characteristic velocity (initial amplitude)
+           L_PARAM = ANALYTIC_PARAMETERS(2) ! length scale for square
+           K_PARAM = 2.0_DP*PI/L_PARAM   ! scale factor for equations
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF(component_idx==1) THEN
+               !calculate u
+!               VALUE=-1.0_DP*U_PARAM*COS(2.0_DP*PI*(X(1)/L_PARAM))*SIN(2.0_DP*PI*(X(2)/L_PARAM))* &
+!                 & EXP(-2.0_DP*(PI**2.0_DP)*NU_PARAM*CURRENT_TIME)
+!               VALUE=-1.0_DP*U_PARAM*COS(K_PARAM*X(1))*SIN(K_PARAM*X(2))*EXP(-2.0_DP*(PI**2)*NU_PARAM*CURRENT_TIME)
+               VALUE=-1.0_DP*U_PARAM*COS(K_PARAM*X(1))*SIN(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
+             ELSE IF(component_idx==2) THEN
+               !calculate v
+!               VALUE=U_PARAM*SIN(2.0_DP*PI*(X(1)/L_PARAM))*COS(2.0_DP*PI*(X(2)/L_PARAM))*EXP(-2.0_DP*(PI**2)*NU_PARAM*CURRENT_TIME)
+               VALUE=U_PARAM*SIN(K_PARAM*X(1))*COS(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
+             ELSE IF(component_idx==3) THEN
+               !calculate p
+!               VALUE = (U_PARAM**2)*(RHO_PARAM/4.0_DP)*(COS(2.0_DP*K_PARAM*X(1))+ &
+!                 & SIN(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(PI**2)*NU_PARAM*CURRENT_TIME))
+               VALUE =-1.0_DP*(U_PARAM**2)*(RHO_PARAM/4.0_DP)*(COS(2.0_DP*K_PARAM*X(1))+ &
+                 & SIN(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME))
+             ELSE
+               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+             ENDIF
+           CASE(GLOBAL_DERIV_S1)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S1_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+               & " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE( NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE(GLOBAL_DERIV_S1)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE(GLOBAL_DERIV_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+           CASE(GLOBAL_DERIV_S1_S2)
+             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+               & " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT      
+
 
        CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
@@ -1756,6 +1825,26 @@ CONTAINS
                             !Set analytic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
                             NUMBER_OF_ANALYTIC_COMPONENTS=4
+                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
+                            !Set analtyic function type
+                            EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN
+                            !Check that domain is 2D
+                            IF(NUMBER_OF_DIMENSIONS/=2) THEN
+                              LOCAL_ERROR="The number of geometric dimensions of "// &
+                                & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+                                & " is invalid. The analytic function type of "// &
+                                & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                                & " requires that there be 2 geometric dimensions."
+                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            ENDIF
+                            !Check the materials values are constant
+                            CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              & 1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                            CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              & 2,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                            !Set analytic function type
+                            EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
+                            NUMBER_OF_ANALYTIC_COMPONENTS=2
                           CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
                             !Set analtyic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1
@@ -1902,9 +1991,23 @@ CONTAINS
                       CASE DEFAULT
                         LOCAL_ERROR="The analytic function type of "// &
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
-                          & " is invalid for an analytical Navier-Stokes equation."
+                          & " is invalid for an analytical static Navier-Stokes equation."
                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
+
+                    CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+                      SELECT CASE(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
+                        !Default the analytic parameter values to 0.0
+                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+                      CASE DEFAULT
+                        LOCAL_ERROR="The analytic function type of "// &
+                          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+                          & " is invalid for an analytical transient Navier-Stokes equation."
+                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      END SELECT
+
                     CASE DEFAULT
                       LOCAL_ERROR="The equation set subtype of "// &
                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
@@ -2370,6 +2473,10 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: solver_matrix_idx
 
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
+    TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: EQUATIONS_ANALYTIC
+
     CALL ENTERS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
  
@@ -2378,10 +2485,32 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-              ! Update any analytic values for static NSE problem
-              CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+
+!               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+!               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+!                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+!                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+!                   ! TODO: Set up for multiple equations sets
+!                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+!                   IF(ASSOCIATED(EQUATIONS_SET)) THEN
+!                     EQUATIONS_ANALYTIC=>EQUATIONS_SET%ANALYTIC
+!                     IF(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE) THEN
+! !                    IF(ASSOCIATED(EQUATIONS_ANALYTIC)) THEN
+! !                      ANALYTIC_FUNCTION_TYPE=>EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE
+! !                      IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE) THEN
+!                         ! Update any analytic values for static NSE problem
+                        CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+! !                      ENDIF
+!                     ENDIF
+!                   ENDIF
+!                 ENDIF 
+!               ENDIF
+
             CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+                !Update transient boundary conditions
                 CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                !Update analytic solutions (and analytic boundary conditions if used)
+!                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
                 !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
                 SOLVER_NUMBER_NAVIER_STOKES=1
@@ -5215,18 +5344,20 @@ CONTAINS
                 IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                   IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 .OR. &
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 .OR. &
+                    & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN.OR. &
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 .OR. &
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5 .OR. &
                     & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
-!                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-!                      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
+                    IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                      IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                         IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
                           GEOMETRIC_FIELD=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD
                           IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN            
-
-                            ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                             ANALYTIC_FIELD=>EQUATIONS_SET%ANALYTIC%ANALYTIC_FIELD
+
+!                            ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
+
                             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS,ERR, & 
                               & ERROR,*999)
                             NULLIFY(GEOMETRIC_VARIABLE)
@@ -5234,6 +5365,9 @@ CONTAINS
                             CALL FIELD_VARIABLE_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,GEOMETRIC_VARIABLE,ERR,ERROR,*999)
                             CALL FIELD_PARAMETER_SET_DATA_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+  
+                            EQUATIONS_SET%ANALYTIC%ANALYTIC_USER_PARAMS(1)=CURRENT_TIME 
+
                             NULLIFY(ANALYTIC_VARIABLE)
                             NULLIFY(ANALYTIC_PARAMETERS)
                             IF(ASSOCIATED(ANALYTIC_FIELD)) THEN
@@ -5250,7 +5384,6 @@ CONTAINS
                               CALL FIELD_PARAMETER_SET_DATA_GET(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                 & MATERIALS_PARAMETERS,ERR,ERROR,*999)           
                             ENDIF
-                            TIME=EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME
 
 !                             CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
 !                               & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
@@ -5269,6 +5402,11 @@ CONTAINS
                               variable_type=DEPENDENT_FIELD%VARIABLES(variable_idx)%VARIABLE_TYPE
                               FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLE_TYPE_MAP(variable_type)%PTR
                               IF(ASSOCIATED(FIELD_VARIABLE)) THEN
+ 
+                                IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_ANALYTIC_VALUES_SET_TYPE)%PTR)) &
+                                  & CALL FIELD_PARAMETER_SET_CREATE(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
+                                  & ERR,ERROR,*999)
+
                                 DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
                                   IF(FIELD_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE== & 
                                     & FIELD_NODE_BASED_INTERPOLATION) THEN
@@ -5417,6 +5555,7 @@ CONTAINS
 
                                             !Loop over the derivatives
                                             DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
+                                              ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                               GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                                 & GLOBAL_DERIVATIVE_INDEX
 
@@ -5438,7 +5577,7 @@ CONTAINS
 !                                                  & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,component_idx,ERR,ERROR,*999)
 
                                               CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, & 
-                                                & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,TIME,variable_type, &
+                                                & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
                                                 & GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
                                                 & VALUE,ERR,ERROR,*999)
 
@@ -5470,22 +5609,32 @@ CONTAINS
 
                                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,variable_type, &
                                                   & FIELD_ANALYTIC_VALUES_SET_TYPE,local_ny,VALUE,ERR,ERROR,*999)
-                                                CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,DEPENDENT_FIELD% &
-                                                  & VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR,BOUNDARY_CONDITIONS_VARIABLE, &
-                                                  & ERR,ERROR,*999)
-                                                IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
-                                                  BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
-                                                    & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
-                                                  IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED) THEN
-                                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
-                                                     & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &
-                                                     & VALUE,ERR,ERROR,*999)
-                                                  ENDIF
-                                                ELSE
-                                                  CALL FLAG_ERROR("Boundary conditions U variable is not associated.", &
-                                                    & ERR,ERROR,*999)
-                                                ENDIF
+                                                CALL BOUNDARY_CONDITIONS_VARIABLE_GET(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS, &
+                                                  & DEPENDENT_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR, &
+                                                  & BOUNDARY_CONDITIONS_VARIABLE,ERR,ERROR,*999)
 
+                                                IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== &
+                                                  & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN) THEN
+                                                  !Taylor-Green field initialization
+                                                  IF(CURRENT_TIME==0.0_DP) THEN
+                                                    CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+                                                      & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &
+                                                      & VALUE,ERR,ERROR,*999)
+                                                  ENDIF
+                                                  IF(ASSOCIATED(BOUNDARY_CONDITIONS_VARIABLE)) THEN
+                                                    BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
+                                                      & GLOBAL_BOUNDARY_CONDITIONS(local_ny)
+                                                    IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED .AND. &
+                                                      & component_idx<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN
+                                                      CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD, &
+                                                       & variable_type,FIELD_VALUES_SET_TYPE,local_ny, &
+                                                       & VALUE,ERR,ERROR,*999)
+                                                    ENDIF
+                                                  ELSE
+                                                    CALL FLAG_ERROR("Boundary conditions U variable is not associated.", &
+                                                      & ERR,ERROR,*999)
+                                                  ENDIF
+                                                ENDIF ! Taylor-Green
                                               ENDDO !version_idx
 
                                             ENDDO !deriv_idx
@@ -5523,14 +5672,15 @@ CONTAINS
                         ELSE
                           CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
                         ENDIF
-!                       ELSE
-!                         CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
-!                       ENDIF
-!                     ELSE
-!                       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-!                     ENDIF
+                      ELSE
+                        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                    ELSE
+                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    ENDIF
                   ENDIF
                 ENDIF
+!TODO implement non-analytic time-varying boundary conditions (i.e. from file)
               ELSE
                 CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
               END IF
