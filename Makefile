@@ -2317,9 +2317,8 @@ ifndef DIR
   DIR=.
 endif
 
-test: 
+test: main
 	@echo "================================================================================================"
-	@echo "Please make sure the library is built before test."
 	@echo "By default, this will test small set of examples. (All tests in the nightly build)"
 	@echo "To test large set of examples (All tests in the nightly build), please set SIZE=large"
 	@echo "To test examples inside a given directory, please set DIR=<DIR>, e.g. DIR=ClassicalField/Laplace"
