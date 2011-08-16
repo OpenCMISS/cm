@@ -1483,11 +1483,10 @@ CONTAINS
                     DO xi_idx=1,REGULAR_MESH%MESH_DIMENSION
                       DO WHILE(coordinate_idx<=REGULAR_MESH%COORDINATE_DIMENSION)
                         IF(ABS(REGULAR_MESH%MAXIMUM_EXTENT(coordinate_idx))>ZERO_TOLERANCE) THEN
-                          REGULAR_MESH%BASE_VECTORS(coordinate_idx,xi_idx)=REGULAR_MESH%MAXIMUM_EXTENT(xi_idx)
+                          REGULAR_MESH%BASE_VECTORS(coordinate_idx,xi_idx)=REGULAR_MESH%MAXIMUM_EXTENT(coordinate_idx)
                           COUNT=COUNT+1
-                        ELSE
-                          coordinate_idx=coordinate_idx+1
                         ENDIF
+                        coordinate_idx=coordinate_idx+1
                       ENDDO
                     ENDDO !xi_idx
                     IF(COUNT/=REGULAR_MESH%MESH_DIMENSION)  &
