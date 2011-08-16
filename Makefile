@@ -2309,11 +2309,25 @@ debug64 opt64: ABI=64
 all: debug opt
 all64: debug64 opt64
 
-test: test_nightly
+ifndef SIZE
+  SIZE=small
+endif
 
-test_nightly:
-	COMPILER=$(COMPILER) CONFIGURE=nightlytest.prop ABI=$(ABI) nosetests ${OPENCMISSEXAMPLES_ROOT}/noseMain.py:test_example
+ifndef DIR
+  DIR=.
+endif
 
+test: 
+	@echo "================================================================================================"
+	@echo "Please make sure the library is built before test."
+	@echo "By default, this will test small set of examples. (All tests in the nightly build)"
+	@echo "To test large set of examples (All tests in the nightly build), please set SIZE=large"
+	@echo "To test examples inside a given directory, please set DIR=<DIR>, e.g. DIR=ClassicalField/Laplace"
+	@echo "You need to install nosetests in order to run the tests."
+	@echo "Please go to http://readthedocs.org/docs/nose/ for details."
+	@echo "For detailed logfiles, go to <OPENCMISS_ROOT>/build/logs directory."
+	@echo "================================================================================================"
+	COMPILER=$(COMPILER) SIZE=${SIZE} DIR=$(DIR) ABI=${ABI} nosetests ${OPENCMISSEXAMPLES_ROOT}/noseMain.py:test_example
 
 #-----------------------------------------------------------------------------
 
@@ -2366,6 +2380,6 @@ help:
 	@echo "		Compile the external libraries."
 	@echo
 	@echo "	test"
-	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
+	@echo "		Build, execute and check for test."
 	@echo
 
