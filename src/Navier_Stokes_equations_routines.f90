@@ -693,7 +693,7 @@ CONTAINS
 !               VALUE = (U_PARAM**2)*(RHO_PARAM/4.0_DP)*(COS(2.0_DP*K_PARAM*X(1))+ &
 !                 & SIN(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(PI**2)*NU_PARAM*CURRENT_TIME))
                VALUE =-1.0_DP*(U_PARAM**2)*(RHO_PARAM/4.0_DP)*(COS(2.0_DP*K_PARAM*X(1))+ &
-                 & SIN(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME))
+                 & COS(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME))
              ELSE
                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
              ENDIF

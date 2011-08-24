@@ -2,18 +2,24 @@
 
 \subsubsection{Governing equations:}
 
-The Navier-Stokes equations arise from applying Newton's second law to fluid motion, i.e. the temporal and spatial fluid inertia is in equilibrium with internal (volume/body)  and external (surface) forces. The reaction of surface forces can be described in terms of the fluid stress as the sum of a diffusing viscous term, plus a pressure term. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time.  In the common case of an incompressible Newtonian fluid, the nonlinear Navier-Stokes equations (three-dimensional, quasi-static) can be written as:
+The Navier-Stokes equations arise from applying Newton's second law to fluid motion, i.e. the temporal and spatial fluid inertia is in equilibrium with internal (volume/body)  and external (surface) forces. The reaction of surface forces can be described in terms of the fluid stress as the sum of a diffusing viscous term, plus a pressure term. A solution of the Navier-Stokes equations is called a flow field, i.e. velocity and pressure field, which is a description of the fluid at a given point in space and time.  In the common case of an incompressible Newtonian fluid, the nonlinear Navier-Stokes equations (three-dimensional, transient) can be written as:
 \begin{equation}
-    \rho(\vect{u}\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
+    \rho\delby{\vect{u}}{t}+\rho(\vect{u}\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
   \label{eqn:NavierStokesequation1}
 \end{equation}
 
-accompanied by the conservation of mass
+accompanied by the conservation of mass (incompressibility)
 \begin{equation}
   \diverg{\vect{u}}=0
   \label{eqn:NavierStokesmasequation}
 \end{equation}
-where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively. Whereas \eqnref{eqn:NavierStokesequation1} has been formulated in Eulerian form, moving domain approaches often require the ALE modification taking an additional term into account, depending on the fluid density $\rho$ and a correction velocity $\vect{u}^*$ which yields to:
+where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively.The first term represents unsteady accelerative inertial contributions, the second represents the nonlinear convective acceleration terms, the $\grad{p}$ term the pressure contributions, and the last term represents viscous stresses in the system. 
+% incompressibility and the LBB condition
+As with Stokes flow, the order of derivatives for the velocity is higher than that of pressure ($\grad{p}$ vs. $\mu\laplacian{\vect{u}}$). In order to define a pressure function that is consistent with the velocity space, we use a mixed method, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure) to enforce $\diverg{\vect{u}}=0$. This is known as enforcing the LBB consistency condition and other methods, particularly penalty methods, are also well established but currently not implemented in OpenCMISS. We refer the interested reader to (Zienkewicz, Chung)
+% talk about the meaning of pressure in NSE.
+
+
+Whereas \eqnref{eqn:NavierStokesequation1} has been formulated in Eulerian form, moving domain approaches often require the ALE modification taking an additional term into account, depending on the fluid density $\rho$ and a correction velocity $\vect{u}^*$ which yields to:
 \begin{equation}
     \rho((\vect{u}-\vect{u}^*)\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
   \label{eqn:NavierStokesequationALE}
@@ -32,6 +38,18 @@ The following section, however, describes the reordered quasi-static formulation
 \end{equation}
 
 \subsubsection{Weak formulation:}
+
+
+
+The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written in the general dynamic form (see section 2.3.2)
+\begin{equation}
+  \matr{M}\fnof{\ddot{\vect{u}}}{t}+\matr{C}\fnof{\dot{\vect{u}}}{t}+\matr{K}\fnof{\vect{u}}{t}+
+  \fnof{\vect{g}}{\fnof{\vect{u}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
+  \label{eqn:generaldynamicnonlinear}
+\end{equation}
+where u(t) is the dependent variables vector $\vect{u}(\vect{x},t)$ and $p$ for the degrees of freedom. $\matr{M}$ is the mass matrix, which provides the shape function based weights, $\matr{C}$ is the transient damping matrix (which we will discuss further below). $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator, including the viscous terms, the conservation of mass terms, and pressure terms. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function for the convective terms and $\fnof{\vect{f}}{t}$ the forcing vector. 
+
+
 
 
 The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written as:
@@ -257,3 +275,8 @@ and $\fnof{\vect{\psi}}{\vect{\hat{u}}}=\matr{K}\vect{\hat{u}}+\fnof{\vect{\hat{
 %   \right)(x_i)g_i
 %   }
 % \end{equation}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "../../OpenCMISSNotes"
+%%% End: 
