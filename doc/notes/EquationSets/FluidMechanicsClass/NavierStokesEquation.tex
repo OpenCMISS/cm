@@ -15,10 +15,12 @@ accompanied by the conservation of mass (incompressibility)
 \end{equation}
 where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on spatial coordinates $\vect{x}=(x_1,x_2,x_3)^T$ and the time $t$, $p$ is the scalar pressure, $\vect{f}$ an applied body force, and the material parameters $\mu$ and $\rho$ are the fluid viscosity and density, respectively.The first term represents unsteady accelerative inertial contributions, the second represents the nonlinear convective acceleration terms, the $\grad{p}$ term the pressure contributions, and the last term represents viscous stresses in the system. 
 % incompressibility and the LBB condition
-As with Stokes flow, the order of derivatives for the velocity is higher than that of pressure ($\grad{p}$ vs. $\mu\laplacian{\vect{u}}$). In order to define a pressure function that is consistent with the velocity space, we use a mixed method, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure) to enforce $\diverg{\vect{u}}=0$. This is known as enforcing the LBB consistency condition and other methods, particularly penalty methods, are also well established but currently not implemented in OpenCMISS. We refer the interested reader to (Zienkewicz, Chung)
+As with Stokes flow, the order of derivatives for the velocity is higher than that of pressure ($\grad{p}$ vs. $\mu\laplacian{\vect{u}}$). In order to define a pressure function that is consistent with the velocity space for the classic Galerkin formulation, we use a mixed method, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure) to enforce $\diverg{\vect{u}}=0$. This stipulation is known as the Babuska-Brezzi or inf-sup consistency condition and other methods, particularly penalty methods, are also well established but currently not implemented in OpenCMISS. Other non-standard Galerkin formulations, including the modified variational form described by (Hughes,Franca) are able to circumvent the inf-sup requirement in a way that allows for computing velocity and pressure on the same order elements. We refer the interested reader to (Zienkewicz, Chung). 
 % talk about the meaning of pressure in NSE.
 
+% 
 
+%ALE form
 Whereas \eqnref{eqn:NavierStokesequation1} has been formulated in Eulerian form, moving domain approaches often require the ALE modification taking an additional term into account, depending on the fluid density $\rho$ and a correction velocity $\vect{u}^*$ which yields to:
 \begin{equation}
     \rho((\vect{u}-\vect{u}^*)\cdot\grad)\vect{u}=\vect{f}-\grad{p}+\mu\laplacian{\vect{u}}
