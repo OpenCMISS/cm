@@ -1,6 +1,6 @@
 /*!
 \page concepts OpenCMISS concepts
-openCMISS has the following top level objects.
+OpenCMISS has the following top level objects.
 - \subpage basis 
 - \subpage coordinate_systems
 - \subpage regions

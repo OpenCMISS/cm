@@ -214,7 +214,7 @@ LIBRARY := $(LIB_DIR)/$(LIB_NAME)
 EXE_NAME := $(BASE_EXE_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
 EXECUTABLE := $(EXE_DIR)/$(EXE_NAME)
 
-C_INCLUDE_DIRS := $(MAIN_SOURCE_DIR) \
+C_INCLUDE_DIRS := $(INC_DIR) \
   $(EXAMPLE_SOURCE_DIR) 
 F_INCLUDE_DIRS := $(MODULE_DIR)
 
@@ -937,9 +937,6 @@ $(OPENCMISS_LIBRARY) :
 # Place the list of dependencies for the objects here.
 #
 # ----------------------------------------------------------------------------
-
-
-$(OBJECT_DIR)/$(BASE_EXAMPLE_NAME).o	:	$(EXAMPLE_SOURCE_DIR)/$(BASE_EXAMPLE_NAME).f90
 
 run : main
 	$(EXECUTABLE)
