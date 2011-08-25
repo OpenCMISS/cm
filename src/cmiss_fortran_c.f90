@@ -61,7 +61,9 @@ MODULE CMISS_FORTRAN_C
   PUBLIC CMISSC2FString
 
   PUBLIC CMISSF2CString
-  
+
+  PUBLIC CMISSC2FStrings
+
 CONTAINS
 
   !
@@ -124,5 +126,39 @@ CONTAINS
   !
   !================================================================================================================================
   !
- 
+
+  !>Copys/converts a list of C strings (2D array of characters) to an array of Fortran Strings
+  SUBROUTINE CMISSC2FStrings(Cstrings,Fstrings)
+    !Argument variables
+    CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: Cstrings(:,:)
+    CHARACTER(LEN=*), INTENT(INOUT) :: Fstrings(:)
+    !Local variables
+    INTEGER(C_INT) :: string_idx,i
+    INTEGER(C_INT) :: LENGTH=0
+
+    !Cstrings array index order is opposite to C
+    IF(LEN(Fstrings(1))>=SIZE(Cstrings,1)-1) THEN
+      LENGTH=SIZE(Cstrings,1)-1
+    ELSE
+      LENGTH=LEN(Fstrings(1))
+    ENDIF
+    DO string_idx=1,SIZE(Fstrings,1)
+      Fstrings(string_idx)=""
+      DO i=1,LENGTH
+        IF(Cstrings(i,string_idx)==C_NULL_CHAR) THEN
+          EXIT
+        ELSE
+          Fstrings(string_idx)(i:i)=Cstrings(i,string_idx)
+        ENDIF
+      ENDDO !i
+    ENDDO
+
+    RETURN
+
+  END SUBROUTINE CMISSC2FStrings
+
+  !
+  !=================================================================================================================================
+  !
+
 END MODULE CMISS_FORTRAN_C

@@ -82,7 +82,7 @@ MODULE OPENCMISS
   USE INTERFACE_CONDITIONS_CONSTANTS
   USE INTERFACE_CONDITIONS_ROUTINES
   USE INTERFACE_EQUATIONS_ROUTINES
-  !USE ISO_C_BINDING
+  USE ISO_C_BINDING
   USE ISO_VARYING_STRING
   USE KINDS
   USE MESH_ROUTINES
@@ -297,7 +297,7 @@ MODULE OPENCMISS
   !PUBLIC CMISS_Finalise,CMISS_Initialise
   PUBLIC CMISSFinalise,CMISSInitialise
 
-  PUBLIC CMISSBasisType,CMISSBasisTypeFinalise,CMISSBasisTypeInitialise
+  PUBLIC CMISSBasisType,CMISSBasisTypesCopy,CMISSBasisTypeFinalise,CMISSBasisTypeInitialise
 
   PUBLIC CMISSBoundaryConditionsType,CMISSBoundaryConditionsTypeFinalise,CMISSBoundaryConditionsTypeInitialise
 
@@ -1969,10 +1969,6 @@ MODULE OPENCMISS
 
   PUBLIC CMISSEquationsTimeDependenceTypeGet
 
-  PUBLIC CMISS_POST_PROCESS_DATA,CMISS_NUMBER_OF_INPUT_NODES,CMISS_PRE_PROCESS_INFORMATION
-  PUBLIC CMISS_SOLVE_PROBLEM_FMM_CONNECTIVITY,CMISS_SOLVE_PROBLEM_GEODESIC,CMISS_SOLVE_PROBLEM_GEODESIC_CONNECTIVITY
-  PUBLIC CMISS_SOLVE_PROBLEM_FMM,CMISS_FIND_MINIMAX
-
 !!==================================================================================================================================
 !!
 !! EQUATIONS_SET_CONSTANTS
@@ -2234,6 +2230,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = &
     & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardMonodomainElasticitySubtype =  &
+    & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE !<Standard Monodomain Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetSolutionMethods OPENCMISS::EquationsSet::SolutionMethods
@@ -2507,7 +2505,7 @@ MODULE OPENCMISS
     & CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype, &
     & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype, &
     & CMISSEquationsSetBurgersSubtype,CMISSEquationsSetGeneralisedBurgersSubtype,CMISSEquationsSetStaticBurgersSubtype, &
-    & CMISSEquationsSetInviscidBurgersSubtype
+    & CMISSEquationsSetInviscidBurgersSubtype,CMISSEquationsSetStandardMonodomainElasticitySubtype
 
 
   PUBLIC CMISSEquationsSetReactionDiffusionCellMLReacSplitSubtype, CMISSEquationsSetReactionDiffusionCellMLReacNoSplitSubtype, &
@@ -4468,6 +4466,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionAdvectionDiffusionType = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemMultiCompartmentTransportType = PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE !<Multi-compartment transport problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityFluidPressureType = PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE !<Finite elasticity fluid pressure problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
+  INTEGER(INTG), PARAMETER :: CMISSProblemBioelectricFiniteElasticityType = PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE !<Monodomain finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS 
  
   INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplittingEquationType = &
     & PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
@@ -4571,6 +4570,8 @@ MODULE OPENCMISS
     & PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE !<Standard multi-compartment transport problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityFluidPressureSubtype = & 
     & PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE !<Standard elasticity fluid pressure problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSProblemGudunovMonodomainSimpleElasticitySubtype = & 
+    & PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
   INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityCellMLSubtype = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -4628,7 +4629,8 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemFiniteElasticityDarcyType, &
     & CMISSProblemFiniteElasticityStokesType, CMISSProblemFiniteElasticityNavierStokesType, &
     & CMISSProblemDiffusionDiffusionType, CMISSProblemDiffusionAdvectionDiffusionType, &
-    & CMISSProblemMultiCompartmentTransportType,CMISSProblemFiniteElasticityFluidPressureType 
+    & CMISSProblemMultiCompartmentTransportType,CMISSProblemFiniteElasticityFluidPressureType, &
+    & CMISSProblemBioelectricFiniteElasticityType 
 
   PUBLIC CMISSProblemNoSubtype
 
@@ -4690,7 +4692,8 @@ MODULE OPENCMISS
   PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
    & CMISSProblemQuasistaticElasticityTransientDarcySubtype,CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype, &
    & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
-   & CMISSProblemStandardMultiCompartmentTransportSubtype,CMISSProblemStandardElasticityFluidPressureSubtype
+   & CMISSProblemStandardMultiCompartmentTransportSubtype,CMISSProblemStandardElasticityFluidPressureSubtype, &
+   & CMISSProblemGudunovMonodomainSimpleElasticitySubtype
 
   PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype,CMISSProblemFiniteElasticityCellMLSubtype
 !!==================================================================================================================================
@@ -5981,6 +5984,52 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSInitialiseObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Copy an array of CMISSBasisTypes from C to an allocated Fortran array, for use by the C bindings
+  SUBROUTINE CMISSBasisTypesCopy(Bases,BasesSize,BasesPtr,Err)
+
+    !Argument variables
+    TYPE(CMISSBasisType), INTENT(INOUT) :: Bases(:) !<On return, the array of CMISSBasisTypes
+    INTEGER(C_INT), INTENT(IN) :: BasesSize !<The length of the C array of pointers to CMISSBasisTypes
+    TYPE(C_PTR), INTENT(IN) :: BasesPtr !<The pointer to the first CMISSBasisType pointer
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    INTEGER(INTG) :: basis_idx
+    TYPE(C_PTR), POINTER :: BasesCPtrs(:)
+    TYPE(CMISSBasisType), POINTER :: Basis
+
+    CALL ENTERS("CMISSBasisTypesCopy",Err,ERROR,*999)
+
+    IF(C_ASSOCIATED(BasesPtr)) THEN
+      CALL C_F_POINTER(BasesPtr,BasesCPtrs,[BasesSize])
+      IF(ASSOCIATED(BasesCPtrs)) THEN
+        DO basis_idx=1,BasesSize
+          CALL C_F_POINTER(BasesCPtrs(basis_idx),Basis)
+          IF(ASSOCIATED(BasesCPtrs)) THEN
+            Bases(basis_idx)%BASIS => Basis%BASIS
+          ELSE
+            CALL FLAG_ERROR("Error converting C pointer.",ERR,ERROR,*999)
+          ENDIF
+        ENDDO
+      ELSE
+        CALL FLAG_ERROR("Error converting C pointer.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Bases C pointer is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSBasisTypesCopy")
+    RETURN
+999 CALL ERRORS("CMISSBasisTypesCopy",Err,ERROR)
+    CALL EXITS("CMISSBasisTypesCopy")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSBasisTypesCopy
 
   !
   !================================================================================================================================
@@ -7442,7 +7491,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the field for analytic error analysis.
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to calculate the analytic error analysis for.
-    CHARACTER(LEN=*) :: FileName !<If not empty, the filename to output the analytic analysis to. If empty, the analysis will be output to the standard output.
+    CHARACTER(LEN=*), INTENT(IN) :: FileName !<If not empty, the filename to output the analytic analysis to. If empty, the analysis will be output to the standard output.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -7486,7 +7535,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The dependent field to calculate the analytic error analysis for.
-    CHARACTER(LEN=*) :: FileName !<If not empty, the filename to output the analytic analysis to. If empty, the analysis will be output to the standard output.
+    CHARACTER(LEN=*), INTENT(IN) :: FileName !<If not empty, the filename to output the analytic analysis to. If empty, the analysis will be output to the standard output.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -9478,7 +9527,7 @@ CONTAINS
     
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
-    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -9513,7 +9562,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to get the interpolation xi for.
-    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+    INTEGER(INTG), INTENT(OUT) :: InterpolationXi(:) !<On return, the interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -9539,7 +9588,7 @@ CONTAINS
   
     !Argument variables
      INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
-     INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+     INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -9574,7 +9623,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to get the interpolation xi for.
-    INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_InterpolationSpecifications.
+    INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -12291,7 +12340,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CellMLUserNumber !<The user number of the CellML enviroment to start creating.
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The Region containing the field to start the CellML enviroment creation on.
-    TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<On return, the created CellML environment.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<On return, the created CellML environment.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -12509,7 +12558,7 @@ CONTAINS
   SUBROUTINE CMISSCellMLFieldMapsCreateStartObj(CellML,Err)
   
     !Argument variables
-    TYPE(CMISSCellMLType), INTENT(OUT) :: CellML !<The CellML environment object to start the creation of maps for.
+    TYPE(CMISSCellMLType), INTENT(INOUT) :: CellML !<The CellML environment object to start the creation of maps for.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -13916,7 +13965,7 @@ CONTAINS
   !>Set the working group tree in order to performe mesh decomposition
   SUBROUTINE CMISSDecompositionWorldWorkGroupSet(Decomposition, WorldWorkGroup, Err)  
     !Argument Variables
-    TYPE(cmissdecompositiontype), INTENT(INOUT) :: Decomposition
+    TYPE(CMISSDecompositionType), INTENT(INOUT) :: Decomposition
     TYPE(CMISSComputationalWorkGroupType),INTENT(IN) :: WorldWorkGroup
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code
 
@@ -14155,7 +14204,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifier !<The root control loop identifier.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14195,7 +14244,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifiers(:) !<The root control loop identifiers.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14235,7 +14284,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifier !<The root control loop identifier.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14275,7 +14324,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem to get the control loop for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopRootIdentifiers(:) !<The root control loop identifiers.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: ROOT_CONTROL_LOOP
@@ -14314,7 +14363,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoopRoot !<The root control loop.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -14341,7 +14390,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSControlLoopType), INTENT(IN) :: ControlLoopRoot !<The root control loop.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<The control loop identifiers.
-    TYPE(CMISSControlLoopType), INTENT(OUT) :: ControlLoop !<On return, the specified control loop.
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: ControlLoop !<On return, the specified control loop.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -16053,7 +16102,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to start creating.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: CoordinateSystem !<On return, the coordinate system that has been created.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the coordinate system that has been created.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
  
@@ -19275,7 +19324,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The region user number of the data projection to get starting xi for.
-    REAL(DP), ALLOCATABLE, INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
+    REAL(DP), INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables   
     TYPE(REGION_TYPE), POINTER :: REGION
@@ -19317,7 +19366,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSDataProjectionType), INTENT(INOUT) :: DataProjection !<The data projection to get starting xi for.
-    REAL(DP), ALLOCATABLE, INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
+    REAL(DP), INTENT(OUT) :: StartingXi(:) !<On exit, the absolute starting xi of the specified data projection
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -20811,8 +20860,8 @@ CONTAINS
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to create the equations set on.
     TYPE(CMISSFieldType), INTENT(IN) :: GeomFibreField !<The Geometric/Fibre field for the creation of the equations set.
     INTEGER(INTG), INTENT(IN) :: EquationsSetFieldUserNumber !<The user number of the equations set field
-    TYPE(CMISSFieldType), INTENT(OUT) :: EquationsSetFieldField !<On return, a pointer to the equations set field
-    TYPE(CMISSEquationsSetType), INTENT(OUT) :: EquationsSet !<On return, the created equations set.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: EquationsSetFieldField !<On return, a pointer to the equations set field
+    TYPE(CMISSEquationsSetType), INTENT(INOUT) :: EquationsSet !<On return, the created equations set.
     INTEGER(INTG), INTENT(IN) :: EquationsSetClass !<The equations set class to set. \see OPENCMISS_EquationsSetClasses
     INTEGER(INTG), INTENT(IN) :: EquationsSetType !<The equations set type to set. \see OPENCMISS_EquationsSetTypes
     INTEGER(INTG), INTENT(IN) :: EquationsSetSubtype !<The equations set subtype to set. \see OPENCMISS_EquationsSetSubtypes
@@ -24069,7 +24118,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the geometric field for.
-    TYPE(CMISSFieldType), INTENT(OUT) :: GeometricField !<On return, the geometric field for the field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: GeometricField !<On return, the geometric field for the field.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -24590,7 +24639,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the mesh decomposition for.
-    TYPE(CMISSDecompositionType), INTENT(OUT) :: MeshDecomposition !<On return, the mesh decomposition for the field.
+    TYPE(CMISSDecompositionType), INTENT(INOUT) :: MeshDecomposition !<On return, the mesh decomposition for the field.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26127,7 +26176,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    INTEGER(INTG), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26173,7 +26222,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    INTEGER(INTG), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26202,7 +26251,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(SP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26248,7 +26297,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(SP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26277,7 +26326,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(DP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26323,7 +26372,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    REAL(DP), INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26352,7 +26401,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to get the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    LOGICAL, INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26398,7 +26447,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to get the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to get the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to get. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
+    LOGICAL, INTENT(OUT), POINTER :: Parameters(:) !<On return, a pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26427,7 +26476,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    INTEGER(INTG), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26473,7 +26522,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    INTEGER(INTG), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    INTEGER(INTG), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26502,7 +26551,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    REAL(SP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26548,7 +26597,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(SP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(SP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26577,7 +26626,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    REAL(DP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26623,7 +26672,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    REAL(DP), INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    REAL(DP), INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -26652,7 +26701,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: FieldUserNumber !<The user number of the field to restore the parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data.
+    LOGICAL, INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(FIELD_TYPE), POINTER :: FIELD
@@ -26698,7 +26747,7 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(IN) :: Field !<The field to restore the field parameter set data for.
     INTEGER(INTG), INTENT(IN) :: VariableType !<The variable type of the field to restore the parameter set data for. \see OPENCMISS_FieldVariableTypes
     INTEGER(INTG), INTENT(IN) :: FieldSetType !<The parameter set type of the parameter set data to restore. \see OPENCMISS_FieldParameterSetTypes
-    LOGICAL, INTENT(INOUT), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
+    LOGICAL, INTENT(IN), POINTER :: Parameters(:) !<A pointer to the parameter set data to restore.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -30002,7 +30051,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the generated mesh to get the basis for.
     INTEGER(INTG), INTENT(IN) :: GeneratedMeshUserNumber !<The user number of the generated mesh to get the basis for.
-    INTEGER(INTG), INTENT(OUT) :: BasisUserNumbers(:) !<On return, the user numbers of the bases.
+    INTEGER(INTG), INTENT(INOUT) :: BasisUserNumbers(:) !<On return, the user numbers of the bases.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_PTR_TYPE), POINTER :: BASES(:)
@@ -30075,7 +30124,7 @@ CONTAINS
 
     !Argument variables
     TYPE(CMISSGeneratedMeshType), INTENT(IN) :: GeneratedMesh !<The generated mesh to get the basis for.
-    TYPE(CMISSBasisType), INTENT(OUT) :: Bases(:) !<On return, the array of bases.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: Bases(:) !<On return, the array of bases.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_PTR_TYPE), POINTER :: BASIS_PTRS(:)
@@ -32360,7 +32409,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to start the creation of the meshes connectivity for
     TYPE(CMISSMeshType), INTENT(IN) :: INTERFACE_MESH
-    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(OUT) :: InterfaceMeshConnectivity !<On return, the created meshes connectivity
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(INOUT) :: InterfaceMeshConnectivity !<On return, the created meshes connectivity
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -32556,7 +32605,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: InterfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
-    TYPE(CMISSBasisType) :: InterfaceMappingBasis !<The interface mesh connectivity basis
+    TYPE(CMISSBasisType), INTENT(INOUT) :: InterfaceMappingBasis !<The interface mesh connectivity basis
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -34344,7 +34393,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<The user number of the decomposition to create.
     TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to create the decomposition for.
-    TYPE(CMISSDecompositionType), INTENT(OUT) :: Decomposition !<On return, the created decomposition.
+    TYPE(CMISSDecompositionType), INTENT(INOUT) :: Decomposition !<On return, the created decomposition.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -35576,7 +35625,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of.
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region containing the mesh to start the creation of.
     INTEGER(INTG), INTENT(IN) :: NumberOfDimensions !<The number of dimensions for the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: Mesh !<On return, the created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<On return, the created mesh.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -35608,7 +35657,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to start the creation of.
     TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface containing the mesh to start the creation of.
     INTEGER(INTG), INTENT(IN) :: NumberOfDimensions !<The number of dimensions for the mesh.
-    TYPE(CMISSMeshType), INTENT(OUT) :: Mesh !<On return, the created mesh.
+    TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<On return, the created mesh.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -36202,7 +36251,7 @@ CONTAINS
     TYPE(CMISSMeshType), INTENT(INOUT) :: Mesh !<The mesh to start the creation of elements for.
     INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number of the mesh to start creating the elements for.
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The default basis to use for the elements. 
-    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<On return, the created mesh elements.
+    TYPE(CMISSMeshElementsType), INTENT(INOUT) :: MeshElements !<On return, the created mesh elements.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -36231,7 +36280,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the mesh to get the elements for.
     INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<The user number of the mesh to get the elements for.
     INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to get the elements for.
-    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<The mesh elements.
+    TYPE(CMISSMeshElementsType), INTENT(INOUT) :: MeshElements !<The mesh elements.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
     !Local variables
@@ -36280,7 +36329,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<The mesh to get the elements for.
     INTEGER(INTG), INTENT(IN) :: MeshComponentNumber !<The mesh component number to get the elements for.
-    TYPE(CMISSMeshElementsType), INTENT(OUT) :: MeshElements !<The mesh elements.
+    TYPE(CMISSMeshElementsType), INTENT(INOUT) :: MeshElements !<The mesh elements.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
     !Local variables
@@ -36372,7 +36421,7 @@ CONTAINS
     !Argument variables
     TYPE(CMISSMeshElementsType), INTENT(IN) :: MeshElements !<The mesh elements to get the basis for.
     INTEGER(INTG), INTENT(IN) :: GlobalElementNumber !<The global element number to get the basis for.
-    TYPE(CMISSBasisType), INTENT(OUT) :: Basis !<On return, the basis for the element.
+    TYPE(CMISSBasisType), INTENT(INOUT) :: Basis !<On return, the basis for the element.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -39699,7 +39748,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the coordinate system for.
-    TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: CoordinateSystem !<On return, the regions coordinate system.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the regions coordinate system.
    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -39906,7 +39955,7 @@ CONTAINS
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region to start the creation of.
     TYPE(CMISSRegionType), INTENT(IN) :: ParentRegion !<The parent region to  to start the creation of the region in.
-    TYPE(CMISSRegionType), INTENT(OUT) :: Region !<On return, the created region.
+    TYPE(CMISSRegionType), INTENT(INOUT) :: Region !<On return, the created region.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -40240,7 +40289,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the nodes for.
-    TYPE(CMISSNodesType), INTENT(OUT) :: Nodes !<On return, the regions nodes.
+    TYPE(CMISSNodesType), INTENT(INOUT) :: Nodes !<On return, the regions nodes.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
@@ -46191,6 +46240,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of the boundary conditions for the solver equations identified by the user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateFinishNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Err)
 
     !Argument variables
@@ -46236,6 +46286,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of the boundary conditions for the solver equations identified by the user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateFinishNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Err)
 
     !Argument variables
@@ -46281,6 +46332,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Finish the creation of the boundary conditions for the solver equations
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateFinishObj(SolverEquations,Err)
 
     !Argument variables
@@ -46305,6 +46357,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Start the creation of boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateStartNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Err)
 
     !Argument variables
@@ -46350,6 +46403,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Start the creation of boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateStartNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex,Err)
 
     !Argument variables
@@ -46395,6 +46449,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Start the creation of boundary conditions for solver equations
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsCreateStartObj(SolverEquations,BoundaryConditions,Err)
 
     !Argument variables
@@ -46421,6 +46476,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
     & BoundaryConditions,Err)
 
@@ -46428,7 +46484,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations to get the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier to get the solver equations boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -46466,6 +46522,7 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the boundary conditions for solver equations identified by user numbers
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
     & BoundaryConditions,Err)
 
@@ -46473,7 +46530,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem containing the solver equations to start the boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to get the solver equations boundary conditions for.
     INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to get the solver equations boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
@@ -46511,11 +46568,12 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Get the boundary conditions for solver equations
   SUBROUTINE CMISSSolverEquationsBoundaryConditionsGetObj(SolverEquations,BoundaryConditions,Err)
 
     !Argument variables
     TYPE(CMISSSolverEquationsType), INTENT(IN) :: SolverEquations !<The solver equations to get the boundary conditions for.
-    TYPE(CMISSBoundaryConditionsType), INTENT(OUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
+    TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: BoundaryConditions !<On return, The boundary conditions for the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
     CALL ENTERS("CMISSSolverEquationsBoundaryConditionsGetObj",Err,ERROR,*999)
@@ -46583,206 +46641,10 @@ CONTAINS
 
   END SUBROUTINE CMISSUserNumberGetBasis
 
-  !  
+  !
   !================================================================================================================================
   !
 
-  SUBROUTINE CMISS_NUMBER_OF_INPUT_NODES(INPUT_FILE_NAME,INPUT_FILE_FORMAT,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,&
-  &TOTAL_NUMBER_OF_CONNECTIVITY,Err)
-    !subroutine parameters
-    INTEGER(CMISSIntg), INTENT(OUT) :: TOTAL_NUMBER_OF_NODES
-    INTEGER(CMISSIntg), INTENT(OUT) :: TOTAL_NUMBER_OF_ELEMENTS,TOTAL_NUMBER_OF_CONNECTIVITY
-    CHARACTER (LEN=300) :: INPUT_FILE_NAME
-    CHARACTER (LEN=10) :: INPUT_FILE_FORMAT
-    INTEGER(CMISSIntg), INTENT(IN) :: Err
-    
-    CALL NUMBER_OF_INPUT_NODES(INPUT_FILE_NAME,INPUT_FILE_FORMAT,TOTAL_NUMBER_OF_NODES,TOTAL_NUMBER_OF_ELEMENTS,&
-    &TOTAL_NUMBER_OF_CONNECTIVITY,Err)
-  END SUBROUTINE CMISS_NUMBER_OF_INPUT_NODES
-
-  !  
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISS_PRE_PROCESS_INFORMATION(MATERIAL_BEHAVIOUR,INPUT_FILE_NAME,INPUT_FILE_FORMAT,TOTAL_NUMBER_OF_NODES,&
-&INPUT_TYPE_FOR_SEED_VALUE,INPUT_TYPE_FOR_SPEED_FUNCTION,SPEED_FUNCTION_ALONG_EIGEN_VECTOR,INPUT_TYPE_FOR_CONDUCTIVITY,&
-&STATUS_MASK,NODE_LIST,CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,SEED_VALUE,CONNECTIVITY_NUMBER,&
-&SPEED_FUNCTION_TABLE_ON_CONNECTIVITY,CONDUCTIVITY_TENSOR_ON_CONNECTIVITY,RAW_INDEX,COLUMN_INDEX,TOTAL_NUMBER_OF_CONNECTIVITY,&
-&CONNECTIVITY_LIST,ELEMENT_LIST,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_NODES_PER_ELEMENT,Err)
-    !subroutine parameters
-    REAL(DP), ALLOCATABLE :: NODE_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SPEED_FUNCTION_TABLE(:,:)
-    REAL(DP), ALLOCATABLE :: CONDUCTIVITY_TENSOR(:,:)
-    REAL(DP), ALLOCATABLE :: SPEED_FUNCTION_TABLE_ON_CONNECTIVITY(:,:)
-    REAL(DP), ALLOCATABLE :: CONDUCTIVITY_TENSOR_ON_CONNECTIVITY(:,:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_LIST(:,:)
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_LIST(:,:)
-
-    INTEGER(INTG), ALLOCATABLE, DIMENSION(:)  :: COLUMN_INDEX
-    INTEGER(INTG), ALLOCATABLE, DIMENSION(:)  :: RAW_INDEX
-    
-    REAL(DP), ALLOCATABLE :: SEED_VALUE(:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_NUMBER(:)
-    CHARACTER (LEN=10), ALLOCATABLE :: STATUS_MASK(:)
-    REAL(DP) :: SPEED_FUNCTION_ALONG_EIGEN_VECTOR(3)
-    INTEGER(INTG), INTENT(OUT) :: TOTAL_NUMBER_OF_ELEMENTS,TOTAL_NUMBER_OF_CONNECTIVITY
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES_PER_ELEMENT
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_NODES
-    CHARACTER (LEN=10)  :: INPUT_TYPE_FOR_SEED_VALUE
-    CHARACTER (LEN=10)  :: INPUT_TYPE_FOR_SPEED_FUNCTION
-    CHARACTER (LEN=10)  :: INPUT_TYPE_FOR_CONDUCTIVITY
-    CHARACTER (LEN=300) :: INPUT_FILE_NAME
-    CHARACTER (LEN=10)  :: INPUT_FILE_FORMAT
-    CHARACTER (LEN=12)  :: MATERIAL_BEHAVIOUR
-    INTEGER(INTG) :: Err
-    
-    CALL PRE_PROCESS_INFORMATION(MATERIAL_BEHAVIOUR,INPUT_FILE_NAME,INPUT_FILE_FORMAT,TOTAL_NUMBER_OF_NODES,&
-&INPUT_TYPE_FOR_SEED_VALUE,INPUT_TYPE_FOR_SPEED_FUNCTION,SPEED_FUNCTION_ALONG_EIGEN_VECTOR,INPUT_TYPE_FOR_CONDUCTIVITY,&
-&STATUS_MASK,NODE_LIST,CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,SEED_VALUE,CONNECTIVITY_NUMBER,&
-&SPEED_FUNCTION_TABLE_ON_CONNECTIVITY,CONDUCTIVITY_TENSOR_ON_CONNECTIVITY,RAW_INDEX,COLUMN_INDEX,TOTAL_NUMBER_OF_CONNECTIVITY,&
-&CONNECTIVITY_LIST,ELEMENT_LIST,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_NODES_PER_ELEMENT,Err)
-  END SUBROUTINE CMISS_PRE_PROCESS_INFORMATION
-
-  !  
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISS_SOLVE_PROBLEM_GEODESIC(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,&
-  &SEED_VALUE,CONNECTIVITY_NUMBER,CONNECTIVITY_LIST,STATUS_MASK,TRACE_NODE)
-    !subroutine parameters
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_NODES
-    REAL(DP), ALLOCATABLE :: NODE_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SPEED_FUNCTION_TABLE(:,:)
-    REAL(DP), ALLOCATABLE :: CONDUCTIVITY_TENSOR(:,:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SEED_VALUE(:)
-    INTEGER(INTG), ALLOCATABLE :: TRACE_NODE(:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_NUMBER(:)
-    CHARACTER (LEN=10), ALLOCATABLE :: STATUS_MASK(:)
-    
-    
-    CALL SOLVE_PROBLEM_GEODESIC(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,&
-  &SEED_VALUE,CONNECTIVITY_NUMBER,CONNECTIVITY_LIST,STATUS_MASK,TRACE_NODE)
-  END SUBROUTINE CMISS_SOLVE_PROBLEM_GEODESIC
-
-  !  
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISS_SOLVE_PROBLEM_GEODESIC_CONNECTIVITY(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR_ON_CONNECTIVITY,&
-  &SPEED_FUNCTION_TABLE_ON_CONNECTIVITY,RAW_INDEX,COLUMN_INDEX,TOTAL_NUMBER_OF_CONNECTIVITY,&
-  &SEED_VALUE,STATUS_MASK,TRACE_NODE)
-    !subroutine parameters
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_NODES
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_CONNECTIVITY
-    REAL(DP), ALLOCATABLE :: NODE_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SPEED_FUNCTION_TABLE_ON_CONNECTIVITY(:,:)
-    REAL(DP), ALLOCATABLE :: CONDUCTIVITY_TENSOR_ON_CONNECTIVITY(:,:)
-    INTEGER(INTG), ALLOCATABLE :: COLUMN_INDEX(:)  
-    INTEGER(INTG), ALLOCATABLE :: RAW_INDEX(:)    
-    REAL(DP), ALLOCATABLE :: SEED_VALUE(:)
-    INTEGER(INTG), ALLOCATABLE :: TRACE_NODE(:)
-    CHARACTER (LEN=10), ALLOCATABLE :: STATUS_MASK(:)
-    
-    
-    CALL SOLVE_PROBLEM_GEODESIC_CONNECTIVITY(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR_ON_CONNECTIVITY,&
-    &SPEED_FUNCTION_TABLE_ON_CONNECTIVITY,RAW_INDEX,COLUMN_INDEX,TOTAL_NUMBER_OF_CONNECTIVITY,&
-    &SEED_VALUE,STATUS_MASK,TRACE_NODE)
-  END SUBROUTINE CMISS_SOLVE_PROBLEM_GEODESIC_CONNECTIVITY
-
-  !  
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISS_SOLVE_PROBLEM_FMM_CONNECTIVITY(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR_ON_CONNECTIVITY,&
-                       &SPEED_FUNCTION_TABLE_ON_CONNECTIVITY,RAW_INDEX,COLUMN_INDEX,TOTAL_NUMBER_OF_CONNECTIVITY,&
-                       &SEED_VALUE,STATUS_MASK)
-    !subroutine parameters
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_NODES
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_CONNECTIVITY
-    REAL(DP), ALLOCATABLE :: NODE_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SPEED_FUNCTION_TABLE_ON_CONNECTIVITY(:,:)
-    REAL(DP), ALLOCATABLE :: CONDUCTIVITY_TENSOR_ON_CONNECTIVITY(:,:)
-    INTEGER(INTG), ALLOCATABLE :: COLUMN_INDEX(:)  
-    INTEGER(INTG), ALLOCATABLE :: RAW_INDEX(:)    
-    REAL(DP), ALLOCATABLE :: SEED_VALUE(:)
-    CHARACTER (LEN=10), ALLOCATABLE :: STATUS_MASK(:)
-    
-    
-  CALL SOLVE_PROBLEM_FMM_CONNECTIVITY(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR_ON_CONNECTIVITY,&
-                       &SPEED_FUNCTION_TABLE_ON_CONNECTIVITY,RAW_INDEX,COLUMN_INDEX,TOTAL_NUMBER_OF_CONNECTIVITY,&
-                       &SEED_VALUE,STATUS_MASK)
-  END SUBROUTINE CMISS_SOLVE_PROBLEM_FMM_CONNECTIVITY
-
-  !  
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISS_SOLVE_PROBLEM_FMM(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,&
-  &SEED_VALUE,CONNECTIVITY_NUMBER,CONNECTIVITY_LIST,STATUS_MASK)
-    !subroutine parameters
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_NODES
-    REAL(DP), ALLOCATABLE :: NODE_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SPEED_FUNCTION_TABLE(:,:)
-    REAL(DP), ALLOCATABLE :: CONDUCTIVITY_TENSOR(:,:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SEED_VALUE(:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_NUMBER(:)
-    CHARACTER (LEN=10), ALLOCATABLE :: STATUS_MASK(:)
-    
-    
-    CALL SOLVE_PROBLEM_FMM(TOTAL_NUMBER_OF_NODES,NODE_LIST,CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,&
-  &SEED_VALUE,CONNECTIVITY_NUMBER,CONNECTIVITY_LIST,STATUS_MASK)
-  END SUBROUTINE CMISS_SOLVE_PROBLEM_FMM
-
-  !  
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISS_FIND_MINIMAX(A,N,MIN_VALUE,MAX_VALUE,Err)
-    !subroutine parameters
-    REAL(DP), ALLOCATABLE :: A(:)
-    REAL(DP), INTENT(OUT) :: MIN_VALUE
-    REAL(DP), INTENT(OUT) :: MAX_VALUE
-    INTEGER(INTG), INTENT(IN)  :: N
-    INTEGER(INTG) :: ERR !<The error code
-    
-    CALL FIND_MINIMAX(A,N,MIN_VALUE,MAX_VALUE,Err)
-  END SUBROUTINE CMISS_FIND_MINIMAX
-
-  !  
-  !================================================================================================================================
-  !
-
-  SUBROUTINE CMISS_POST_PROCESS_DATA(MATERIAL_BEHAVIOUR,OUTPUT_FILE_NAME,OUTPUT_FILE_FORMAT,TOTAL_NUMBER_OF_NODES,NODE_LIST,&
-&CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,SEED_VALUE,CONNECTIVITY_NUMBER,OUTPUT_FILE_FIELD_TITLE,&
-&CONNECTIVITY_LIST,ELEMENT_LIST,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_NODES_PER_ELEMENT,Err)
-    !subroutine parameters
-    REAL(DP), ALLOCATABLE :: NODE_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SPEED_FUNCTION_TABLE(:,:)
-    REAL(DP), ALLOCATABLE :: CONDUCTIVITY_TENSOR(:,:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_LIST(:,:)
-    INTEGER(INTG), ALLOCATABLE :: ELEMENT_LIST(:,:)
-    REAL(DP), ALLOCATABLE :: SEED_VALUE(:)
-    INTEGER(INTG), ALLOCATABLE :: CONNECTIVITY_NUMBER(:)
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_ELEMENTS
-    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_NODES_PER_ELEMENT
-    INTEGER(INTG), INTENT(IN) :: TOTAL_NUMBER_OF_NODES
-    CHARACTER (LEN=300) :: OUTPUT_FILE_NAME
-    CHARACTER (LEN=300) :: OUTPUT_FILE_FIELD_TITLE
-    CHARACTER (LEN=10)  :: OUTPUT_FILE_FORMAT
-    CHARACTER (LEN=12)  :: MATERIAL_BEHAVIOUR
-    INTEGER(INTG) :: Err
-   
-    CALL POST_PROCESS_DATA(MATERIAL_BEHAVIOUR,OUTPUT_FILE_NAME,OUTPUT_FILE_FORMAT,TOTAL_NUMBER_OF_NODES,NODE_LIST,&
-&CONDUCTIVITY_TENSOR,SPEED_FUNCTION_TABLE,SEED_VALUE,CONNECTIVITY_NUMBER,OUTPUT_FILE_FIELD_TITLE,&
-&CONNECTIVITY_LIST,ELEMENT_LIST,TOTAL_NUMBER_OF_ELEMENTS,NUMBER_OF_NODES_PER_ELEMENT,Err)
-  END SUBROUTINE CMISS_POST_PROCESS_DATA
-
-
-  !  
-  !================================================================================================================================
-  !
 #ifdef USEFIELDML
   SUBROUTINE CMISSFieldmlInput_InitialiseFromFile( fieldmlInfo, filename, err )
     !Arguments
