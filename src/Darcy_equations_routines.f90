@@ -4193,14 +4193,11 @@ CONTAINS
     END SELECT
 
     !If this is the first time step then store reference data
-    IF(CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER==1) THEN
+    IF(CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER==0) THEN
       IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,'== Storing reference data',ERR,ERROR,*999)
       ENDIF
       CALL DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
-! 
-!       write(*,*)'Sollte nur ein einziges Mal geschehen ... !!!'
-! 
     ENDIF
 
     !Store data of previous time step (mesh position); executed once per time step before subiteration
