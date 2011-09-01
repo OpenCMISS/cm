@@ -647,12 +647,26 @@ CONTAINS
         ELSE !default to FIELD_CONSTANT_INTERPOLATION
           NodeDIFFXValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
-          NodeDIFFYValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
-          NodeDIFFZValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
-          NodeSTORAGEValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(4)
+          IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
+            NodeDIFFYValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr% &
+              & materials%materials_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
+          ENDIF
+          IF(NumberOfDimensions==3)THEN
+            NodeDIFFZValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr% &
+              & materials%materials_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
+          ENDIF
+          IF(NumberOfDimensions==1)THEN
+            NodeSTORAGEValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr% &
+              & materials%materials_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
+          ELSEIF(NumberOfDimensions==2)THEN
+            NodeSTORAGEValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr% &
+              & materials%materials_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
+          ELSE
+            NodeSTORAGEValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr% &
+              & materials%materials_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(4)
+          ENDIF
+
+
 
 
         END IF
