@@ -522,7 +522,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_NEWTON_TYPE_SET
 
-  PUBLIC SOLVER_NONLINEAR_MONITOR
+  PUBLIC SOLVER_NONLINEAR_DIVERGENCE_EXIT,SOLVER_NONLINEAR_MONITOR
 
   PUBLIC SOLVER_NONLINEAR_TYPE_SET
   
@@ -14419,7 +14419,82 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_NONLINEAR_CREATE_FINISH
-        
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Instead of warning on nonlinear divergence, exit with error
+  SUBROUTINE SOLVER_NONLINEAR_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*)
+    TYPE(SOLVER_TYPE), INTENT(IN) :: SOLVER
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    TYPE(NONLINEAR_SOLVER_TYPE),POINTER :: NONLINEAR_SOLVER
+    TYPE(NEWTON_SOLVER_TYPE),POINTER :: NEWTON_SOLVER
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE),POINTER :: LINESEARCH_SOLVER
+    INTEGER(INTG) :: CONVERGED_REASON
+
+    CALL ENTERS("SOLVER_NONLINEAR_DIVERGENCE_EXIT",ERR,ERROR,*999)
+
+    NULLIFY(NONLINEAR_SOLVER,NEWTON_SOLVER,LINESEARCH_SOLVER)
+
+    NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+      CASE(SOLVER_NONLINEAR_NEWTON)
+        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+          SELECT CASE (NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
+          CASE(SOLVER_NEWTON_LINESEARCH)
+            LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+            IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+              CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
+                SELECT CASE(CONVERGED_REASON)
+                CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_MAX_IT)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search fail.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
+                    & ERR,ERROR,*999)
+                END SELECT
+            ELSE
+              CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_NEWTON_TRUSTREGION)
+            !Not yet implemented. Don't kick up a fuss, just exit
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+        !Not yet implemented. Don't kick up a fuss, just exit
+      CASE(SOLVER_NONLINEAR_SQP)
+        !Not yet implemented. Don't kick up a fuss, just exit
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_NONLINEAR_DIVERGENCE_EXIT")
+    RETURN
+999 CALL ERRORS("SOLVER_NONLINEAR_DIVERGENCE_EXIT",ERR,ERROR)
+    CALL EXITS("SOLVER_NONLINEAR_DIVERGENCE_EXIT")
+    RETURN 1
+  END SUBROUTINE SOLVER_NONLINEAR_DIVERGENCE_EXIT
+
   !
   !================================================================================================================================
   !
