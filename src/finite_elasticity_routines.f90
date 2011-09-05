@@ -5800,10 +5800,6 @@ CONTAINS
                                           & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
                                           & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-!---tob
-                                        write(*,*)'Should not enter here for the INRIA test case !!!'
-                                        !Check this using a conditional !!!
-!---toe
                                           !--- To obtain absolute positions, add nodal coordinates on top of mesh displacement
                                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, &
                                             & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,dof_number, &
