@@ -45,18 +45,20 @@
 
 MODULE FIELDML_OUTPUT_ROUTINES
 
-  USE KINDS
-  USE FIELDML_API
-  USE FIELDML_UTIL_ROUTINES
-  USE FIELDML_TYPES
-  USE ISO_VARYING_STRING
-  USE STRINGS
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
+  USE CONSTANTS
   USE FIELD_ROUTINES
-  USE REGION_ROUTINES
+  USE FIELDML_API
+  USE FIELDML_TYPES
+  USE FIELDML_UTIL_ROUTINES
+  USE ISO_VARYING_STRING
+  USE KINDS
+  USE LISTS
   USE MESH_ROUTINES
   USE NODE_ROUTINES
+  USE REGION_ROUTINES
+  USE STRINGS
   USE TYPES
 
   IMPLICIT NONE
@@ -64,20 +66,19 @@ MODULE FIELDML_OUTPUT_ROUTINES
   PRIVATE
 
   !Module parameters
-  INTEGER(INTG), PARAMETER :: BUFFER_SIZE = 1024
   CHARACTER(C_CHAR), PARAMETER :: NUL=C_NULL_CHAR
 
   !Interfaces
   TYPE ConnectivityInfoType
-    INTEGER(C_INT) :: connectivityHandle
-    INTEGER(C_INT) :: layoutHandle
+    INTEGER(C_INT) :: connectivityHandle !<The basis connectivity evaluator handle.
+    INTEGER(C_INT) :: layoutHandle !<The local node layout.
   END TYPE ConnectivityInfoType
 
   TYPE BasisInfoType
     TYPE(BASIS_TYPE), POINTER :: basis
-    INTEGER(C_INT) :: connectivityHandle
-    INTEGER(C_INT) :: referenceHandle
-    INTEGER(C_INT) :: layoutHandle
+    INTEGER(C_INT) :: connectivityHandle !<The basis connectivity evaluator handle.
+    INTEGER(C_INT) :: referenceHandle !<The reference evaluator representing the basis.
+    INTEGER(C_INT) :: layoutHandle !<The local node layout.
   END TYPE BasisInfoType
 
   INTERFACE FieldmlOutput_AddField
@@ -94,16 +95,17 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Get an evaluator from the built-in library that corresponds to the given OpenCMISS tensor-product basis.
   SUBROUTINE FieldmlOutput_GetTPBasisEvaluator( fmlHandle, xiInterpolations, collapseInfo, evaluatorHandle, parametersHandle, &
     & err, errorString, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: fmlHandle
-    INTEGER(C_INT), INTENT(IN) :: xiInterpolations(:)
-    INTEGER(C_INT), INTENT(IN) :: collapseInfo(:)
-    INTEGER(C_INT), INTENT(OUT) :: evaluatorHandle
-    INTEGER(C_INT), INTENT(OUT) :: parametersHandle
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    INTEGER(C_INT), INTENT(IN) :: fmlHandle !<The FieldML session handle
+    INTEGER(C_INT), INTENT(IN) :: xiInterpolations(:) !<The per-xi interpolations used by the basis.
+    INTEGER(C_INT), INTENT(IN) :: collapseInfo(:) !<The basis collapse info.
+    INTEGER(C_INT), INTENT(OUT) :: evaluatorHandle !<The evaluator handle for the basis.
+    INTEGER(C_INT), INTENT(OUT) :: parametersHandle !<The basis parameters argument evaluator.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
     INTEGER(C_INT) :: xiCount, firstInterpolation, i, importIndex
@@ -118,11 +120,10 @@ CONTAINS
         firstInterpolation = xiInterpolations(i)
       ELSE IF( xiInterpolations(i) /= firstInterpolation ) THEN
         !Do not yet support inhomogeneous TP bases
-        err = FML_ERR_INVALID_OBJECT
+        CALL FLAG_ERROR( "Cannot yet handle inhomogeneous tensor-product basis", err, errorString, *999 )
       ENDIF
     ENDDO
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot yet handle inhomogeneous tensor-product basis", err, errorString, *999 )
-    
+   
     CALL FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err, errorString )
 
     evaluatorHandle = FML_INVALID_HANDLE
@@ -140,8 +141,7 @@ CONTAINS
         parameterName = "parameters.3d.unit.triquadraticLagrange"//char(suffix)//NUL
       ELSE
         !Do not yet support dimensions higher than 3.
-        err = FML_ERR_INVALID_OBJECT
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot find an evaluator for the given basis", err, errorString, *999 )
+        CALL FLAG_ERROR( "Cannot find an evaluator for the given basis", err, errorString, *999 )
       ENDIF
     ELSE IF( firstInterpolation == BASIS_LINEAR_LAGRANGE_INTERPOLATION ) THEN
       IF( xiCount == 1 ) THEN
@@ -155,26 +155,22 @@ CONTAINS
         parameterName = "parameters.3d.unit.trilinearLagrange"//char(suffix)//NUL
       ELSE
         !Do not yet support dimensions higher than 3.
-        err = FML_ERR_INVALID_OBJECT
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot find an evaluator for the given basis", err, errorString, *999 )
+        CALL FLAG_ERROR( "Cannot find an evaluator for the given basis", err, errorString, *999 )
       ENDIF
     ELSE
-      err = FML_ERR_INVALID_OBJECT
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot find an evaluator for the given basis", err, errorString, *999 )
+      CALL FLAG_ERROR( "Cannot find an evaluator for the given basis", err, errorString, *999 )
     ENDIF
 
     importIndex = Fieldml_AddImportSource( fmlHandle, &
       & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//NUL, "library"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot access library", fmlHandle, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot access library", fmlHandle, err, errorString, *999 )
 
     evaluatorHandle = Fieldml_AddImport( fmlHandle, importIndex, char(interpolatorName), char(interpolatorName) )
     parametersHandle = Fieldml_AddImport( fmlHandle, importIndex, char(parameterName), char(parameterName) )
     
     IF( ( evaluatorHandle == FML_INVALID_HANDLE ) .OR. ( parametersHandle == FML_INVALID_HANDLE ) ) THEN
-      err = FML_ERR_UNKNOWN_OBJECT
+      CALL FLAG_ERROR( "Cannot find an evaluator for the given basis", err, errorString, *999 )
     ENDIF
-
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot find an evaluator for the given basis", err, errorString, *999 )
     
     CALL EXITS( "FieldmlOutput_GetTPBasisEvaluator" )
     RETURN
@@ -188,10 +184,11 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Returns the index of the layout handle used by the given connectivity info array, or -1 if none can be found.
   FUNCTION FieldmlOutput_FindLayout( connectivityInfo, layoutHandle )
     !Argument variables
-    TYPE(ConnectivityInfoType), INTENT(IN) :: connectivityInfo(:)
-    INTEGER(C_INT), INTENT(IN) :: layoutHandle
+    TYPE(ConnectivityInfoType), INTENT(IN) :: connectivityInfo(:) !<The connectivity info array to search.
+    INTEGER(C_INT), INTENT(IN) :: layoutHandle !<The local node layout handle to search for.
     
     !Function
     INTEGER(INTG) :: FieldmlOutput_FindLayout
@@ -212,10 +209,11 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Returns the index of the basis handle used by the given basis info array, or -1 if none can be found.
   FUNCTION FieldmlOutput_FindBasis( basisInfo, basis )
     !Argument variables
-    TYPE(BasisInfoType), INTENT(IN) :: basisInfo(:)
-    TYPE(BASIS_TYPE), POINTER, INTENT(IN) :: basis
+    TYPE(BasisInfoType), INTENT(IN) :: basisInfo(:) !<The basis info array to search.
+    TYPE(BASIS_TYPE), POINTER, INTENT(IN) :: basis !<The basis handle to search for. 
     
     !Function
     INTEGER(INTG) :: FieldmlOutput_FindBasis
@@ -236,22 +234,23 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !<Returns the simplified name of the given layout. This is used for naming associated connectivity evaluators.
   SUBROUTINE FieldmlOutput_GetSimpleLayoutName( fmlHandle, layoutHandle, name, length, err, errorString, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: fmlHandle
-    INTEGER(C_INT), INTENT(IN) :: layoutHandle
-    CHARACTER(KIND=C_CHAR,LEN=*) :: name
-    INTEGER(C_INT) :: length
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    INTEGER(C_INT), INTENT(IN) :: fmlHandle !<The FieldML session handle
+    INTEGER(C_INT), INTENT(IN) :: layoutHandle !<The local node layout.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: name !<The simplified name.
+    INTEGER(C_INT) :: length !<The length of the simplified name.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
     
     !Locals
-    CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: fullName
+    CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: fullName
 
     CALL ENTERS( "FieldmlOutput_GetSimpleLayoutName", err, errorString, *999 )
     
-    length = Fieldml_CopyObjectDeclaredName( fmlHandle, layoutHandle, fullName, BUFFER_SIZE )
-    CALL FieldmlUtil_CheckError("Cannot get name of layout ensemble",fmlHandle,errorString,*999 )
+    length = Fieldml_CopyObjectDeclaredName( fmlHandle, layoutHandle, fullName, MAXSTRLEN )
+    CALL FieldmlUtil_CheckError("Cannot get name of layout ensemble", fmlHandle, err, errorString, *999 )
     
     IF( INDEX( fullName, 'localNodes.') /= 1 ) THEN
       name(1:length) = fullName(1:length)
@@ -272,22 +271,23 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !<Returns the simplified name of the given basis. This is used for naming associated reference evaluators.
   SUBROUTINE FieldmlOutput_GetSimpleBasisName( fmlHandle, basisHandle, name, length, err, errorString, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: fmlHandle
-    INTEGER(C_INT), INTENT(IN) :: basisHandle
-    CHARACTER(KIND=C_CHAR,LEN=*) :: name
-    INTEGER(C_INT) :: length
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    INTEGER(C_INT), INTENT(IN) :: fmlHandle !<The FieldML session handle
+    INTEGER(C_INT), INTENT(IN) :: basisHandle !<The basis handle.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: name !<The simplified name.
+    INTEGER(C_INT) :: length !<The length of the simplified name.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
     
     !Locals
-    CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: fullName
+    CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: fullName
     
     CALL ENTERS( "FieldmlOutput_GetSimpleBasisName", err, errorString, *999 )
 
-    length = Fieldml_CopyObjectDeclaredName( fmlHandle, basisHandle, fullName, BUFFER_SIZE )
-    CALL FieldmlUtil_CheckError("Cannot get name of basis evaluator",fmlHandle,errorString,*999 )
+    length = Fieldml_CopyObjectDeclaredName( fmlHandle, basisHandle, fullName, MAXSTRLEN )
+    CALL FieldmlUtil_CheckError("Cannot get name of basis evaluator", fmlHandle, err, errorString, *999 )
     
     IF( INDEX( fullName, 'interpolator.1d.unit.') == 1 ) THEN
       name(1:length - 21) = fullName(22:length)
@@ -314,19 +314,20 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Create a basis evaluator from the given basis info.
   SUBROUTINE FieldmlOutput_CreateBasisReference( fieldmlInfo, baseName, basisInfo, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    TYPE(BasisInfoType), INTENT(INOUT) :: basisInfo
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName !<The root name of the basis evaluator.
+    TYPE(BasisInfoType), INTENT(INOUT) :: basisInfo !<The basis info describing the basis to create.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
     INTEGER(C_INT) :: basisType, xiCount, interpolationParametersHandle, handle, evaluatorHandle
-    INTEGER(C_INT) :: variableHandle, aggregateHandle, indexEvaluatorHandle
+    INTEGER(C_INT) :: variableHandle, aggregateHandle, indexEvaluatorHandle, fmlErr
     INTEGER(C_INT), ALLOCATABLE :: xiInterpolations(:), collapseInfo(:)
-    CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: name
+    CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: name
     INTEGER(INTG) :: length
     TYPE(VARYING_STRING) :: referenceName
 
@@ -336,8 +337,9 @@ CONTAINS
     CALL BASIS_NUMBER_OF_XI_GET( basisInfo%basis, xiCount, err, errorString, *999 )
     
     IF( basisType == BASIS_LAGRANGE_HERMITE_TP_TYPE ) THEN
-      ALLOCATE( xiInterpolations( xiCount ) )
-      ALLOCATE( collapseInfo( xiCount ) )
+      ALLOCATE( xiInterpolations( xiCount ), STAT = err )
+      IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate xi interpolation array.", err, errorString, *999 )
+      ALLOCATE( collapseInfo( xiCount ), STAT = err )
       CALL BASIS_INTERPOLATION_XI_GET( basisInfo%basis, xiInterpolations, err, errorString, *999 )
       CALL BASIS_COLLAPSED_XI_GET( basisInfo%basis, collapseInfo, err, errorString, *999 )
       
@@ -351,20 +353,22 @@ CONTAINS
       referenceName = baseName//name(1:length)//"_"//TRIM(NUMBER_TO_VSTRING(basisInfo%basis%USER_NUMBER,"*",err,errorString))// &
         & ".parameters"
       
-      CALL FieldmlUtil_CheckError("Cannot get value type for basis connectivity",fieldmlInfo,errorString,*999 )
       aggregateHandle = Fieldml_CreateAggregateEvaluator( fieldmlInfo%fmlHandle, char(referenceName//NUL), &
         & interpolationParametersHandle )
-      CALL FieldmlUtil_CheckError( "Cannot create dofs for basis connectivity", fieldmlInfo, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Cannot create dofs for basis connectivity", fieldmlInfo, err, errorString, *999 )
 
       indexEvaluatorHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, basisInfo%layoutHandle, .TRUE. )
 
-      err = Fieldml_SetIndexEvaluator( fieldmlInfo%fmlHandle, aggregateHandle, 1, indexEvaluatorHandle )
-      err = Fieldml_SetDefaultEvaluator( fieldmlInfo%fmlHandle, aggregateHandle, fieldmlInfo%nodeDofsHandle )
+      fmlErr = Fieldml_SetIndexEvaluator( fieldmlInfo%fmlHandle, aggregateHandle, 1, indexEvaluatorHandle )
+      CALL FieldmlUtil_CheckError( "Cannot set field component index evaluator.", fieldmlInfo, err, errorString, *999 )
+      
+      fmlErr = Fieldml_SetDefaultEvaluator( fieldmlInfo%fmlHandle, aggregateHandle, fieldmlInfo%nodeDofsHandle )
+      CALL FieldmlUtil_CheckError( "Cannot set nodal field dofs.", fieldmlInfo, err, errorString, *999 )
 
       handle = Fieldml_GetValueType( fieldmlInfo%fmlHandle, basisInfo%connectivityHandle )
       variableHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, handle, .FALSE. )
-      err = Fieldml_SetBind( fieldmlInfo%fmlHandle, aggregateHandle, variableHandle, basisInfo%connectivityHandle )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot set bind for basis dofs", err, errorString, *999 )
+      fmlErr = Fieldml_SetBind( fieldmlInfo%fmlHandle, aggregateHandle, variableHandle, basisInfo%connectivityHandle )
+      CALL FieldmlUtil_CheckError( "Cannot set bind for basis dofs", fieldmlInfo, err, errorString, *999 )
       
       referenceName = baseName//name(1:length)//"_"//TRIM(NUMBER_TO_VSTRING(basisInfo%basis%USER_NUMBER,"*",err,errorString))// &
         & ".evaluator"
@@ -374,20 +378,18 @@ CONTAINS
 
       CALL FieldmlUtil_GetXiType( fieldmlInfo%fmlHandle, xiCount, .TRUE., handle, err, errorString, *999 )
       variableHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, handle, .TRUE. )
-      err = Fieldml_SetBind( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, variableHandle, fieldmlInfo%xiArgumentHandle )
+      fmlErr = Fieldml_SetBind( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, variableHandle, fieldmlInfo%xiArgumentHandle )
+      CALL FieldmlUtil_CheckError( "Cannot bind xi to basis evaluator.", fieldmlInfo, err, errorString, *999 )
 
       variableHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, interpolationParametersHandle, .TRUE. )
-      err = Fieldml_SetBind( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, variableHandle, &
+      fmlErr = Fieldml_SetBind( fieldmlInfo%fmlHandle, basisInfo%referenceHandle, variableHandle, &
         & aggregateHandle )
+      CALL FieldmlUtil_CheckError( "Cannot bind parameters to basis evaluator.", fieldmlInfo, err, errorString, *999 )
     ELSE
       basisInfo%referenceHandle = FML_INVALID_HANDLE
-      err = FML_ERR_INVALID_OBJECT
+      CALL FLAG_ERROR( "FieldML export code can currently only handle tensor-product bases.", err, errorString, *999 )
     ENDIF
     
-    IF( evaluatorHandle == FML_INVALID_HANDLE ) THEN
-      err = FML_ERR_UNKNOWN_OBJECT
-    ENDIF
-
     CALL EXITS( "FieldmlOutput_CreateBasisReference" )
     RETURN
 999 CALL ERRORS( "FieldmlOutput_CreateBasisReference", err, errorString )
@@ -400,20 +402,21 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Create a parameter evaluator for the given local node layout.
   SUBROUTINE FieldmlOutput_CreateLayoutParameters( fieldmlInfo, layoutHandle, componentName, &
     & connectivityInfo, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    INTEGER(C_INT), INTENT(IN) :: layoutHandle
-    CHARACTER(KIND=C_CHAR,LEN=*) :: componentName
-    TYPE(ConnectivityInfoType), INTENT(INOUT) :: connectivityInfo
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
+    INTEGER(C_INT), INTENT(IN) :: layoutHandle !<The local node layout.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: componentName !<The component name.
+    TYPE(ConnectivityInfoType), INTENT(INOUT) :: connectivityInfo !<The connectivity info for the local node layout.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
-    CHARACTER(KIND=C_CHAR,LEN=BUFFER_SIZE) :: name
+    CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: name
     INTEGER(INTG) :: length
-    INTEGER(C_INT) :: indexHandle
+    INTEGER(C_INT) :: indexHandle, fmlErr
     TYPE(VARYING_STRING) :: connectivityName
 
     CALL ENTERS( "FieldmlOutput_CreateLayoutParameters", err, errorString, *999 )
@@ -424,20 +427,20 @@ CONTAINS
     connectivityInfo%layoutHandle = layoutHandle
     connectivityInfo%connectivityHandle = Fieldml_CreateParameterEvaluator( fieldmlInfo%fmlHandle, &
       & char(connectivityName//NUL), fieldmlInfo%nodesHandle )
-    CALL FieldmlUtil_CheckError("Cannot create nodal parameters",fieldmlInfo%fmlHandle,errorString,*999 )
+    CALL FieldmlUtil_CheckError("Cannot create nodal parameters", fieldmlInfo, err, errorString, *999 )
 
-    err = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, connectivityInfo%connectivityHandle, &
+    fmlErr = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, connectivityInfo%connectivityHandle, &
       & DESCRIPTION_SEMIDENSE )
-    CALL FieldmlUtil_CheckErrorNumber("Cannot set nodal parameters description",err,errorString,*999 )
+    CALL FieldmlUtil_CheckError("Cannot set nodal parameters description",fieldmlInfo, err, errorString, *999 )
 
     indexHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, layoutHandle, .TRUE. )
-    err = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, connectivityInfo%connectivityHandle, indexHandle, &
+    fmlErr = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, connectivityInfo%connectivityHandle, indexHandle, &
       & FML_INVALID_HANDLE )
-    CALL FieldmlUtil_CheckErrorNumber("Cannot add layout index to nodal parameters",err,errorString,*999 )
+    CALL FieldmlUtil_CheckError("Cannot add layout index to nodal parameters", fieldmlInfo, err, errorString, *999 )
 
-    err = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, connectivityInfo%connectivityHandle, &
+    fmlErr = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, connectivityInfo%connectivityHandle, &
       & fieldmlInfo%elementsArgumentHandle, FML_INVALID_HANDLE )
-    CALL FieldmlUtil_CheckErrorNumber("Cannot add element index to nodal parameters",err,errorString,*999 )
+    CALL FieldmlUtil_CheckError("Cannot add element index to nodal parameters", fieldmlInfo, err, errorString, *999 )
 
     CALL EXITS( "FieldmlOutput_CreateLayoutParameters" )
     RETURN
@@ -451,49 +454,47 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !<Add an evaluator corresponding to the given component of the given OpenCMISS mesh.
   SUBROUTINE FieldmlOutput_AddMeshComponent( fieldmlInfo, baseName, componentNumber, meshElements, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    INTEGER(INTG), INTENT(IN) :: componentNumber
-    TYPE(MESH_ELEMENTS_TYPE), POINTER, INTENT(IN) :: meshElements
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !<The root name of the basis evaluator.
+    INTEGER(INTG), INTENT(IN) :: componentNumber !<The mesh component number for which an evaluator should be constructed.
+    TYPE(MESH_ELEMENTS_TYPE), POINTER, INTENT(IN) :: meshElements !<The mesh element from which to obtain topology info.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
     INTEGER(C_INT) :: layoutHandle, connectivityHandle, elementCount, defaultHandle, templateHandle, typeHandle, resourceHandle
     INTEGER(INTG) :: connectivityCount, basisCount, i, j, layoutNodeCount, idx
     INTEGER(C_INT), ALLOCATABLE, TARGET :: iBuffer(:)
     TYPE(BASIS_TYPE), POINTER :: basis
-    INTEGER(C_INT) :: writer, sourceHandle
+    INTEGER(C_INT) :: writer, sourceHandle, writeCount, fmlErr
     TYPE(ConnectivityInfoType), ALLOCATABLE :: connectivityInfo(:), tempConnectivityInfo(:)
     TYPE(BasisInfoType), ALLOCATABLE :: basisInfo(:), tempBasisInfo(:)
-    TYPE(VARYING_STRING) :: componentName
+    TYPE(VARYING_STRING) :: componentName !<The component name.
     
     CALL ENTERS( "FieldmlOutput_AddMeshComponent", err, errorString, *999 )
 
     elementCount = Fieldml_GetMemberCount( fieldmlInfo%fmlHandle, fieldmlInfo%elementsHandle )
-    CALL FieldmlUtil_CheckError( "Cannot handle inhomogeneous tensor-product basis", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot handle inhomogeneous tensor-product basis", fieldmlInfo, err, errorString, *999 )
     
     connectivityCount = 0
     basisCount = 0
     
-    err = FML_ERR_NO_ERROR
-    
     componentName = baseName//".component"//TRIM(NUMBER_TO_VSTRING(componentNumber,"*",err,errorString))
     
     typeHandle = Fieldml_GetValueType( fieldmlInfo%fmlHandle, fieldmlInfo%nodeDofsHandle )
-    CALL FieldmlUtil_CheckError( "Cannot get node dofs type", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot get node dofs type", fieldmlInfo, err, errorString, *999 )
 
     templateHandle = Fieldml_CreatePiecewiseEvaluator( fieldmlInfo%fmlHandle, char(componentName//".template"//NUL), &
       &  typeHandle )
-    err = Fieldml_SetIndexEvaluator( fieldmlInfo%fmlHandle, templateHandle, 1, fieldmlInfo%elementsArgumentHandle )
-      
-    CALL FieldmlUtil_CheckError( "Cannot create mesh component template", fieldmlInfo, errorString, *999 )
+    fmlErr = Fieldml_SetIndexEvaluator( fieldmlInfo%fmlHandle, templateHandle, 1, fieldmlInfo%elementsArgumentHandle )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh component template", fieldmlInfo, err, errorString, *999 )
     
     resourceHandle = Fieldml_CreateTextFileDataResource( fieldmlInfo%fmlHandle, &
       & char(componentName//".connectivity.resource"//NUL), char(componentName//".connectivity"//NUL) )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh component connectivity resource", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh component connectivity resource", fieldmlInfo, err, errorString, *999 )
 
     DO i = 1, elementCount
       CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET( i, meshElements, basis, err, errorString, *999 )
@@ -507,12 +508,15 @@ CONTAINS
 
       IF( idx == -1 ) THEN
         IF( connectivityCount == 0 ) THEN
-          ALLOCATE( connectivityInfo( connectivityCount + 1 ) )
+          ALLOCATE( connectivityInfo( connectivityCount + 1 ), STAT = err )
+          IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate connectivity info array.", err, errorString, *999 )
         ELSE
-          ALLOCATE( tempConnectivityInfo( connectivityCount ) )
+          ALLOCATE( tempConnectivityInfo( connectivityCount ), STAT = err )
+          IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate temporary connectivity array.", err, errorString, *999 )
           tempConnectivityInfo(:) = connectivityInfo(:)
           DEALLOCATE( connectivityInfo )
-          ALLOCATE( connectivityInfo( connectivityCount + 1 ) )
+          ALLOCATE( connectivityInfo( connectivityCount + 1 ), STAT = err )
+          IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate new connectivity info array.", err, errorString, *999 )
           connectivityInfo( 1:connectivityCount ) = tempConnectivityInfo( 1:connectivityCount )
         ENDIF
         
@@ -522,11 +526,11 @@ CONTAINS
         layoutNodeCount = Fieldml_GetMemberCount( fieldmlInfo%fmlHandle, connectivityInfo(connectivityCount+1)%layoutHandle )
         sourceHandle = Fieldml_CreateTextDataSource( fieldmlInfo%fmlHandle, char(componentName//".connectivity"//NUL), &
           & resourceHandle, ( connectivityCount * elementCount ) + 1, elementCount, layoutNodeCount, 0, 0 )
-        CALL FieldmlUtil_CheckError( "Cannot create connectivity data source", fieldmlInfo, errorString, *999 )
+        CALL FieldmlUtil_CheckError( "Cannot create connectivity data source", fieldmlInfo, err, errorString, *999 )
 
-        err = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, connectivityInfo(connectivityCount+1)%connectivityHandle, &
+        fmlErr = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, connectivityInfo(connectivityCount+1)%connectivityHandle, &
           & sourceHandle )
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot set connectivity data source", err, errorString, *999 )
+        CALL FieldmlUtil_CheckError( "Cannot set connectivity data source", fieldmlInfo, err, errorString, *999 )
   
         connectivityCount = connectivityCount + 1
         
@@ -541,12 +545,15 @@ CONTAINS
       ENDIF
       IF( idx == -1 ) THEN
         IF( basisCount == 0 ) THEN
-          ALLOCATE( basisInfo( basisCount + 1 ) )
+          ALLOCATE( basisInfo( basisCount + 1 ), STAT = err )
+          IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate basis info array.", err, errorString, *999 )
         ELSE
-          ALLOCATE( tempBasisInfo( basisCount ) )
+          ALLOCATE( tempBasisInfo( basisCount ), STAT = err )
+          IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate temporary basis info array.", err, errorString, *999 )
           tempBasisInfo(:) = basisInfo(:)
           DEALLOCATE( basisInfo )
-          ALLOCATE( basisInfo( basisCount + 1 ) )
+          ALLOCATE( basisInfo( basisCount + 1 ), STAT = err )
+          IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate new basis info array.", err, errorString, *999 )
           basisInfo( 1:basisCount ) = tempBasisInfo( 1:basisCount )
         ENDIF
 
@@ -560,17 +567,17 @@ CONTAINS
 
       IF( i == 1 ) THEN
         defaultHandle = basisInfo( idx )%referenceHandle
-        err = Fieldml_SetDefaultEvaluator( fieldmlInfo%fmlHandle, templateHandle, defaultHandle )
+        fmlErr = Fieldml_SetDefaultEvaluator( fieldmlInfo%fmlHandle, templateHandle, defaultHandle )
       ELSEIF( basisInfo( idx )%referenceHandle /= defaultHandle ) THEN
-        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, templateHandle, i, basisInfo( idx )%referenceHandle )
+        fmlErr = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, templateHandle, i, basisInfo( idx )%referenceHandle )
       ENDIF
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot set mesh connectivity evaluator", err, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Cannot set mesh connectivity evaluator", fieldmlInfo, err, errorString, *999 )
       
     ENDDO
 
     DO i = 1, connectivityCount
       layoutNodeCount = Fieldml_GetMemberCount( fieldmlInfo%fmlHandle, connectivityInfo(i)%layoutHandle )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot get layout node count", err, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Cannot get layout node count", fieldmlInfo, err, errorString, *999 )
       
       sourceHandle = Fieldml_GetDataSource( fieldmlInfo%fmlHandle, connectivityInfo(i)%connectivityHandle )
       IF( i == 1 ) THEN
@@ -578,9 +585,10 @@ CONTAINS
       ELSE
         writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, sourceHandle, 1 )
       ENDIF
-      CALL FieldmlUtil_CheckError( "Cannot open connectivity data writer", fieldmlInfo, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Cannot open connectivity data writer", fieldmlInfo, err, errorString, *999 )
       
-      ALLOCATE( iBuffer( layoutNodeCount ) )
+      ALLOCATE( iBuffer( layoutNodeCount ), STAT = err )
+      IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate layout buffer.", err, errorString, *999 )
       DO j = 1, elementCount
         CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET( j, meshElements, basis, err, errorString, *999 )
   
@@ -590,14 +598,14 @@ CONTAINS
         ELSE
           iBuffer = 0
         ENDIF
-        err = Fieldml_WriteIntValues( fieldmlInfo%fmlHandle, writer, C_LOC(iBuffer), layoutNodeCount )
-        IF( err /= layoutNodeCount ) THEN
-            CALL FieldmlUtil_CheckErrorNumber( "Cannot write connectivity data", err, errorString, *999 )
+        writeCount = Fieldml_WriteIntValues( fieldmlInfo%fmlHandle, writer, C_LOC(iBuffer), layoutNodeCount )
+        IF( writeCount /= layoutNodeCount ) THEN
+          CALL FLAG_ERROR( "Cannot write connectivity data", err, errorString, *999 )
         ENDIF
       ENDDO
       DEALLOCATE( iBuffer )
-      err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot close connectivity data writer", err, errorString, *999 )
+      fmlErr = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
+      CALL FieldmlUtil_CheckError( "Cannot close connectivity data writer", fieldmlInfo, err, errorString, *999 )
     ENDDO
     
     IF( ALLOCATED( basisInfo ) ) THEN
@@ -607,7 +615,7 @@ CONTAINS
       DEALLOCATE( connectivityInfo )
     ENDIF
     
-    fieldmlInfo%componentHandles( componentNumber ) = templateHandle
+    CALL LIST_ITEM_SET_C_INT( fieldmlInfo%componentHandles, componentNumber, templateHandle, err, errorString, *999 )
 
     CALL EXITS( "FieldmlOutput_AddMeshComponent" )
     RETURN
@@ -621,25 +629,26 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, typeHandle, mesh, field, fieldComponentNumbers, &
+  !<Create a parameter evaluator and associated data source containing the nodal dofs for the given field components.
+  SUBROUTINE FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, typeHandle, field, fieldComponentNumbers, &
     & variableType, nodeDofsHandle, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    INTEGER(C_INT), INTENT(IN) :: typeHandle
-    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh
-    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field
-    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
-    INTEGER(INTG), INTENT(IN) :: variableType
-    INTEGER(C_INT), INTENT(INOUT) :: nodeDofsHandle
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !<The root name of the basis evaluator.
+    INTEGER(C_INT), INTENT(IN) :: typeHandle !<The FieldML type handle for the field.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The field for which dof evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:) !<The field component numbers for which dof evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(C_INT), INTENT(INOUT) :: nodeDofsHandle !<The handle of the nodal dofs parameter evaluator.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
+    TYPE(MESH_TYPE), POINTER :: mesh
     INTEGER(C_INT) :: typeComponentHandle, real1DHandle, nodeCount, indexHandle, resourceHandle, sourceHandle
     INTEGER(INTG) :: versionNumber,componentCount, i, j, interpolationType, globalNodeNumber
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
-    INTEGER(C_INT) :: writer
+    INTEGER(C_INT) :: writer, writeCount, fmlErr
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: dBuffer(:)
     REAL(C_DOUBLE) :: dValue
     LOGICAL :: nodeExists
@@ -647,14 +656,18 @@ CONTAINS
 
     CALL ENTERS( "FieldmlOutput_AddFieldNodeDofs", err, errorString, *999 )
     
+    mesh => field%DECOMPOSITION%MESH
+    
     CALL FieldmlUtil_GetGenericType( fieldmlInfo%fmlHandle, 1, real1DHandle, .TRUE., err, errorString, *999 )
 
     componentCount = Fieldml_GetTypeComponentCount( fieldmlInfo%fmlHandle, typeHandle )
     typeComponentHandle = Fieldml_GetTypeComponentEnsemble( fieldmlInfo%fmlHandle, typeHandle )
     nodeCount = Fieldml_GetMemberCount( fieldmlInfo%fmlHandle, fieldmlInfo%nodesHandle )
     
-    ALLOCATE( meshComponentNumbers( componentCount ) )
-    ALLOCATE( isNodeBased( componentCount ) )
+    ALLOCATE( meshComponentNumbers( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate mesh component array.", err, errorString, *999 )
+    ALLOCATE( isNodeBased( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate nodal component array.", err, errorString, *999 )
 
     DO i = 1, componentCount
       CALL FIELD_COMPONENT_MESH_COMPONENT_GET( field, variableType, fieldComponentNumbers(i), &
@@ -667,37 +680,38 @@ CONTAINS
 
     resourceHandle = Fieldml_CreateTextFileDataResource( fieldmlInfo%fmlHandle, baseName//".dofs.node.resource"//NUL, &
       & baseName//".dofs.node"//NUL )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot create nodal dofs data resource", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create nodal dofs data resource", fieldmlInfo, err, errorString, *999 )
     
     nodeDofsHandle = Fieldml_CreateParameterEvaluator( fieldmlInfo%fmlHandle, baseName//".dofs.node"//NUL, real1DHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create nodal dofs parameter set", fieldmlInfo, errorString, *999 )
-    err = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, nodeDofsHandle, DESCRIPTION_SEMIDENSE )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot set nodal dofs parameter description", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create nodal dofs parameter set", fieldmlInfo, err, errorString, *999 )
+    fmlErr = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, nodeDofsHandle, DESCRIPTION_SEMIDENSE )
+    CALL FieldmlUtil_CheckError( "Cannot set nodal dofs parameter description", fieldmlInfo, err, errorString, *999 )
     
     sourceHandle = Fieldml_CreateTextDataSource( fieldmlInfo%fmlHandle, baseName//".dofs.node.data"//NUL, resourceHandle, &
       & 1, nodeCount, componentCount, 0, 0 )
-    CALL FieldmlUtil_CheckError( "Cannot create nodal dofs data source", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create nodal dofs data source", fieldmlInfo, err, errorString, *999 )
     
-    err = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, nodeDofsHandle, sourceHandle )
-    CALL FieldmlUtil_CheckError( "Cannot set nodal dofs data source", fieldmlInfo, errorString, *999 )
+    fmlErr = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, nodeDofsHandle, sourceHandle )
+    CALL FieldmlUtil_CheckError( "Cannot set nodal dofs data source", fieldmlInfo, err, errorString, *999 )
 
     IF( typeComponentHandle /= FML_INVALID_HANDLE ) THEN
       typeComponentHandle = FieldmlUtil_ImportHandle( fieldmlInfo%fmlHandle, typeComponentHandle )
       indexHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, typeComponentHandle, .TRUE. )
-      err = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, nodeDofsHandle, indexHandle, FML_INVALID_HANDLE )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot add component index for nodal dofs parameter set", err, errorString, *999 )
+      fmlErr = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, nodeDofsHandle, indexHandle, FML_INVALID_HANDLE )
+      CALL FieldmlUtil_CheckError( "Cannot add component index for nodal dofs parameter set", fieldmlInfo, &
+        & err, errorString, *999 )
     ENDIF
-    err = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, nodeDofsHandle, fieldmlInfo%nodesArgumentHandle, &
+    fmlErr = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, nodeDofsHandle, fieldmlInfo%nodesArgumentHandle, &
       & FML_INVALID_HANDLE )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot add layout index for nodal dofs parameter set", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot add layout index for nodal dofs parameter set", fieldmlInfo, err, errorString, *999 )
 
-    ALLOCATE( dBuffer( componentCount ) )
+    ALLOCATE( dBuffer( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate nodal dofs array.", err, errorString, *999 )
     writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, sourceHandle, 0 )
-    CALL FieldmlUtil_CheckError( "Cannot open nodal parameter writer", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot open nodal parameter writer", fieldmlInfo, err, errorString, *999 )
     DO i = 1, nodeCount
       DO j = 1, componentCount
         dValue = 0
-        err = 0
         IF( isNodeBased(j) ) THEN
           CALL MESH_TOPOLOGY_NODE_CHECK_EXISTS( mesh, meshComponentNumbers(j), i, nodeExists, globalNodeNumber, &
             & err, errorString, *999 )
@@ -710,13 +724,13 @@ CONTAINS
         ENDIF
         dBuffer( j ) = dValue
       ENDDO
-      err = Fieldml_WriteDoubleValues( fieldmlInfo%fmlHandle, writer, C_LOC(dBuffer), componentCount )
-      IF( err /= componentCount ) THEN
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot write nodal parameter values", err, errorString, *999 )
+      writeCount = Fieldml_WriteDoubleValues( fieldmlInfo%fmlHandle, writer, C_LOC(dBuffer), componentCount )
+      IF( writeCount /= componentCount ) THEN
+        CALL FLAG_ERROR( "Cannot write nodal parameter values", err, errorString, *999 )
       ENDIF
     ENDDO
-    err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot close nodal parameter writer", err, errorString, *999 )
+    fmlErr = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
+    CALL FieldmlUtil_CheckError( "Cannot close nodal parameter writer", fieldmlInfo, err, errorString, *999 )
     DEALLOCATE( dBuffer )
     
     DEALLOCATE( meshComponentNumbers )
@@ -737,21 +751,21 @@ CONTAINS
   SUBROUTINE FieldmlOutput_AddFieldElementDofs( fieldmlInfo, baseName, typeHandle, field, fieldComponentNumbers, &
     & variableType, elementDofsHandle, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    INTEGER(C_INT), INTENT(IN) :: typeHandle
-    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field
-    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
-    INTEGER(INTG), INTENT(IN) :: variableType
-    INTEGER(C_INT), INTENT(INOUT) :: elementDofsHandle
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName !<The root name of the basis evaluator.
+    INTEGER(C_INT), INTENT(IN) :: typeHandle !<The FieldML type handle for the field.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The field for which dof evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:) !<The field component numbers for which dof evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(C_INT), INTENT(INOUT) :: elementDofsHandle !<The handle of the element dofs parameter evaluator.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
     INTEGER(C_INT) :: typeComponentHandle, real1DHandle, elementCount, indexHandle, resourceHandle, sourceHandle
     INTEGER(INTG) :: componentCount, i, j, interpolationType
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
-    INTEGER(C_INT) :: writer
+    INTEGER(C_INT) :: writer, writeCount, fmlErr
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: dBuffer(:)
     REAL(C_DOUBLE) :: dValue
     LOGICAL, ALLOCATABLE :: isElementBased(:)
@@ -765,8 +779,10 @@ CONTAINS
     
     elementCount = Fieldml_GetMemberCount( fieldmlInfo%fmlHandle, fieldmlInfo%elementsHandle )
     
-    ALLOCATE( meshComponentNumbers( componentCount ) )
-    ALLOCATE( isElementBased( componentCount ) )
+    ALLOCATE( meshComponentNumbers( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate mesh component number array.", err, errorString, *999 )
+    ALLOCATE( isElementBased( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate element component array.", err, errorString, *999 )
 
     DO i = 1, componentCount
       CALL FIELD_COMPONENT_MESH_COMPONENT_GET( field, variableType, fieldComponentNumbers(i), &
@@ -779,33 +795,36 @@ CONTAINS
 
     resourceHandle = Fieldml_CreateTextFileDataResource( fieldmlInfo%fmlHandle, baseName//".dofs.element.resource"//NUL, &
       & baseName//".dofs.element"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot create element dofs data resource", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create element dofs data resource", fieldmlInfo, err, errorString, *999 )
     
     elementDofsHandle = Fieldml_CreateParameterEvaluator( fieldmlInfo%fmlHandle, baseName//".dofs.element"//NUL, real1DHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create element dofs parameter set", fieldmlInfo, errorString, *999 )
-    err = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, elementDofsHandle, DESCRIPTION_SEMIDENSE )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot set element dofs parameter description", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create element dofs parameter set", fieldmlInfo, err, errorString, *999 )
+    fmlErr = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, elementDofsHandle, DESCRIPTION_SEMIDENSE )
+    CALL FieldmlUtil_CheckError( "Cannot set element dofs parameter description", fieldmlInfo, err, errorString, *999 )
 
     sourceHandle = Fieldml_CreateTextDataSource( fieldmlInfo%fmlHandle, baseName//".dofs.element.data"//NUL, resourceHandle, &
       & 1, elementCount, componentCount, 0, 0 )
-    CALL FieldmlUtil_CheckError( "Cannot create element dofs data source", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create element dofs data source", fieldmlInfo, err, errorString, *999 )
     
-    err = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, elementDofsHandle, sourceHandle )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot set nodal dofs data source", err, errorString, *999 )
+    fmlErr = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, elementDofsHandle, sourceHandle )
+    CALL FieldmlUtil_CheckError( "Cannot set nodal dofs data source", fieldmlInfo, err, errorString, *999 )
 
     IF( typeComponentHandle /= FML_INVALID_HANDLE ) THEN
       typeComponentHandle = FieldmlUtil_ImportHandle( fieldmlInfo%fmlHandle, typeComponentHandle )
       indexHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, typeComponentHandle, .TRUE. )
-      err = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, elementDofsHandle, typeComponentHandle, FML_INVALID_HANDLE )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot add component index for element dofs parameter set", err, errorString, *999 )
+      fmlErr = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, elementDofsHandle, typeComponentHandle, FML_INVALID_HANDLE )
+      CALL FieldmlUtil_CheckError( "Cannot add component index for element dofs parameter set", fieldmlInfo, &
+        & err, errorString, *999 )
     ENDIF
-    err = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, elementDofsHandle, fieldmlInfo%elementsArgumentHandle, &
+    fmlErr = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, elementDofsHandle, fieldmlInfo%elementsArgumentHandle, &
       & FML_INVALID_HANDLE )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot add element index for element dofs parameter set", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot add element index for element dofs parameter set", fieldmlInfo, &
+      & err, errorString, *999 )
 
-    ALLOCATE( dBuffer( componentCount ) )
+    ALLOCATE( dBuffer( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate element dofs buffer.", err, errorString, *999 )
     writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, sourceHandle, 0 )
-    CALL FieldmlUtil_CheckError( "Cannot open element parameter writer", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot open element parameter writer", fieldmlInfo, err, errorString, *999 )
     DO i = 1, elementCount
       DO j = 1, componentCount
         dValue = 0
@@ -815,13 +834,13 @@ CONTAINS
         ENDIF
         dBuffer( j ) = dValue
       ENDDO
-      err = Fieldml_WriteDoubleValues( fieldmlInfo%fmlHandle, writer, C_LOC(dBuffer), componentCount )
-      IF( err /= componentCount ) THEN
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot write element parameter values", err, errorString, *999 )
+      writeCount = Fieldml_WriteDoubleValues( fieldmlInfo%fmlHandle, writer, C_LOC(dBuffer), componentCount )
+      IF( writeCount /= componentCount ) THEN
+        CALL FLAG_ERROR( "Cannot write element parameter values", err, errorString, *999 )
       ENDIF
     ENDDO
-    err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot close element parameter writer", err, errorString, *999 )
+    fmlErr = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
+    CALL FieldmlUtil_CheckError( "Cannot close element parameter writer", fieldmlInfo, err, errorString, *999 )
     DEALLOCATE( dBuffer )
     
     DEALLOCATE( meshComponentNumbers )
@@ -842,21 +861,21 @@ CONTAINS
   SUBROUTINE FieldmlOutput_AddFieldConstantDofs( fieldmlInfo, baseName, typeHandle, field, fieldComponentNumbers, &
     & variableType, constantDofsHandle, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    INTEGER(C_INT), INTENT(IN) :: typeHandle
-    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field
-    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
-    INTEGER(INTG), INTENT(IN) :: variableType
-    INTEGER(C_INT), INTENT(INOUT) :: constantDofsHandle
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName !<The root name of the basis evaluator.
+    INTEGER(C_INT), INTENT(IN) :: typeHandle !<The FieldML type handle for the field.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The field for which dof evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:) !<The field component numbers for which dof evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(C_INT), INTENT(INOUT) :: constantDofsHandle !<The handle of the constant dofs parameter evaluator.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
     INTEGER(C_INT) :: doftypeHandle, typeType, componentType, dataType, indexHandle, resourceHandle, sourceHandle
     INTEGER(INTG) :: componentCount, i, j, interpolationType
     INTEGER(INTG), ALLOCATABLE :: meshComponentNumbers(:)
-    INTEGER(C_INT) :: writer
+    INTEGER(C_INT) :: writer, writeCount, fmlErr
     REAL(C_DOUBLE), ALLOCATABLE, TARGET :: dBuffer(:)
     INTEGER(C_INT), ALLOCATABLE, TARGET :: iBuffer(:)
     REAL(C_DOUBLE) :: dValue
@@ -880,8 +899,10 @@ CONTAINS
       isReal = .TRUE.
     ENDIF
     
-    ALLOCATE( meshComponentNumbers( componentCount ) )
-    ALLOCATE( isConstant( componentCount ) )
+    ALLOCATE( meshComponentNumbers( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate mesh component array.", err, errorString, *999 )
+    ALLOCATE( isConstant( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate constant component array.", err, errorString, *999 )
 
     DO i = 1, componentCount
       CALL FIELD_COMPONENT_MESH_COMPONENT_GET( field, variableType, fieldComponentNumbers(i), &
@@ -894,30 +915,31 @@ CONTAINS
 
     resourceHandle = Fieldml_CreateTextFileDataResource( fieldmlInfo%fmlHandle, baseName//".dofs.constant.resource"//NUL, &
       & baseName//".dofs.constant"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot create constant dofs data resource", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create constant dofs data resource", fieldmlInfo, err, errorString, *999 )
     
     constantDofsHandle = Fieldml_CreateParameterEvaluator( fieldmlInfo%fmlHandle, baseName//".dofs.constant"//NUL, &
       & doftypeHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create constant dofs parameter set", fieldmlInfo, errorString, *999 )
-    err = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, constantDofsHandle, DESCRIPTION_SEMIDENSE )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot set constant dofs parameter description", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create constant dofs parameter set", fieldmlInfo, err, errorString, *999 )
+    fmlErr = Fieldml_SetParameterDataDescription( fieldmlInfo%fmlHandle, constantDofsHandle, DESCRIPTION_SEMIDENSE )
+    CALL FieldmlUtil_CheckError( "Cannot set constant dofs parameter description", fieldmlInfo, err, errorString, *999 )
 
     sourceHandle = Fieldml_CreateTextDataSource( fieldmlInfo%fmlHandle, baseName//".dofs.constant.data"//NUL, resourceHandle, &
       & 1, 1, componentCount, 0, 0 )
-    CALL FieldmlUtil_CheckError( "Cannot create constant dofs data source", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create constant dofs data source", fieldmlInfo, err, errorString, *999 )
     
-    err = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, constantDofsHandle, sourceHandle )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot set nodal dofs data source", err, errorString, *999 )
+    fmlErr = Fieldml_SetDataSource( fieldmlInfo%fmlHandle, constantDofsHandle, sourceHandle )
+    CALL FieldmlUtil_CheckError( "Cannot set nodal dofs data source", fieldmlInfo, err, errorString, *999 )
 
     IF( componentType /= FML_INVALID_HANDLE ) THEN
       componentType = FieldmlUtil_ImportHandle( fieldmlInfo%fmlHandle, componentType )
       indexHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, componentType, .TRUE. )
-      err = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, constantDofsHandle, indexHandle, FML_INVALID_HANDLE )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot add component index for constant dofs parameter set", err, errorString, *999 )
+      fmlErr = Fieldml_AddDenseIndexEvaluator( fieldmlInfo%fmlHandle, constantDofsHandle, indexHandle, FML_INVALID_HANDLE )
+      CALL FieldmlUtil_CheckError( "Cannot add component index for constant dofs parameter set", fieldmlInfo, &
+        & err, errorString, *999 )
     ENDIF
 
     writer = Fieldml_OpenWriter( fieldmlInfo%fmlHandle, sourceHandle, 0 )
-    CALL FieldmlUtil_CheckError( "Cannot open constant parameter writer", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot open constant parameter writer", fieldmlInfo, err, errorString, *999 )
 
     CALL FIELD_DATA_TYPE_GET( field, variableType, dataType, err, errorString, *999 )
     IF( dataType == FIELD_INTG_TYPE ) THEN
@@ -927,7 +949,8 @@ CONTAINS
     ENDIF
     
     IF( isReal ) THEN
-      ALLOCATE( dBuffer( componentCount ) )
+      ALLOCATE( dBuffer( componentCount ), STAT = err )
+      IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate constant dofs buffer.", err, errorString, *999 )
       DO j = 1, componentCount
         dValue = 0
         IF( isConstant(j) ) THEN
@@ -936,15 +959,16 @@ CONTAINS
         ENDIF
         dBuffer( j ) = dValue
       ENDDO
-      err = Fieldml_WriteDoubleValues( fieldmlInfo%fmlHandle, writer, C_LOC(dBuffer), componentCount )
-      IF( err /= componentCount ) THEN
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot write constant parameter values", err, errorString, *999 )
+      writeCount = Fieldml_WriteDoubleValues( fieldmlInfo%fmlHandle, writer, C_LOC(dBuffer), componentCount )
+      IF( writeCount /= componentCount ) THEN
+        CALL FLAG_ERROR( "Cannot write constant parameter values", err, errorString, *999 )
       ENDIF
-      err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot close constant parameter writer", err, errorString, *999 )
+      fmlErr = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
+      CALL FieldmlUtil_CheckError( "Cannot close constant parameter writer", fieldmlInfo, err, errorString, *999 )
       DEALLOCATE( dBuffer )
     ELSE
-      ALLOCATE( iBuffer( componentCount ) )
+      ALLOCATE( iBuffer( componentCount ), STAT = err )
+      IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate constant dofs buffer.", err, errorString, *999 )
       DO j = 1, componentCount
         iValue = 0
         IF( isConstant(j) ) THEN
@@ -953,12 +977,12 @@ CONTAINS
         ENDIF
         iBuffer( j ) = iValue
       ENDDO
-      err = Fieldml_WriteIntValues( fieldmlInfo%fmlHandle, writer, C_LOC(iBuffer), componentCount )
-      IF( err /= componentCount ) THEN
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot write constant parameter values", err, errorString, *999 )
+      writeCount = Fieldml_WriteIntValues( fieldmlInfo%fmlHandle, writer, C_LOC(iBuffer), componentCount )
+      IF( writeCount /= componentCount ) THEN
+        CALL FLAG_ERROR( "Cannot write constant parameter values", err, errorString, *999 )
       ENDIF
-      err = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot close constant parameter writer", err, errorString, *999 )
+      fmlErr = Fieldml_CloseWriter( fieldmlInfo%fmlHandle, writer )
+      CALL FieldmlUtil_CheckError( "Cannot close constant parameter writer", fieldmlInfo, err, errorString, *999 )
       DEALLOCATE( iBuffer )
     ENDIF
     
@@ -977,92 +1001,99 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlOutput_InitialiseInfo( region, mesh, dimensions, location, baseName, fieldmlInfo, err, errorString, * )
+  !<Initialize the given FieldML parsing state for use with the given mesh
+  SUBROUTINE FieldmlOutput_InitialiseInfo( mesh, location, baseName, fieldmlInfo, err, errorString, * )
     !Argument variables
-    TYPE(REGION_TYPE), POINTER, INTENT(IN) :: region
-    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh
-    INTEGER(INTG), INTENT(IN) :: dimensions
-    CHARACTER(KIND=C_CHAR,LEN=*) :: location
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh !<The mesh with which the FieldML document is associated.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: location !<The location of the FieldML file. Data resources will be created here.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName !<The root name of the basis evaluator.
+    TYPE(FieldmlInfoType), INTENT(OUT) :: fieldmlInfo !<The FieldML parsing state.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
-    INTEGER(INTG) :: componentCount, i, nodeCount, elementCount
-    INTEGER(C_INT) :: real1DHandle, xiComponentHandle
+    TYPE(REGION_TYPE), POINTER :: region
+    INTEGER(INTG) :: componentCount, i, nodeCount, elementCount, dimensions
+    INTEGER(C_INT) :: real1DHandle, xiComponentHandle, fmlErr
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: meshElements
     TYPE(NODES_TYPE), POINTER :: nodes
 
     CALL ENTERS( "FieldmlOutput_InitialiseInfo", err, errorString, *999 )
+    
+    region => mesh%REGION
+    
+    dimensions = mesh%NUMBER_OF_DIMENSIONS
+    
+    CALL FieldmlUtil_InitialiseInfo( fieldmlInfo, err, errorString, *999 )
+    
     fieldmlInfo%fmlHandle = Fieldml_Create( location//NUL, baseName//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot create fieldml handle", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create fieldml handle", fieldmlInfo, err, errorString, *999 )
 
     NULLIFY( nodes )
     CALL REGION_NODES_GET( region, nodes, err, errorString, *999 )
     CALL NODES_NUMBER_OF_NODES_GET( nodes, nodeCount, err, errorString, *999 )
 
     fieldmlInfo%nodesHandle = Fieldml_CreateEnsembleType( fieldmlInfo%fmlHandle, baseName//".nodes"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh nodes ensemble", fieldmlInfo, errorString, *999 )
-    err = Fieldml_SetEnsembleMembersRange( fieldmlInfo%fmlHandle, fieldmlInfo%nodesHandle, 1, nodeCount, 1 )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot set mesh nodes ensemble bounds", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh nodes ensemble", fieldmlInfo, err, errorString, *999 )
+    fmlErr = Fieldml_SetEnsembleMembersRange( fieldmlInfo%fmlHandle, fieldmlInfo%nodesHandle, 1, nodeCount, 1 )
+    CALL FieldmlUtil_CheckError( "Cannot set mesh nodes ensemble bounds", fieldmlInfo, err, errorString, *999 )
     
     fieldmlInfo%nodesArgumentHandle = Fieldml_CreateArgumentEvaluator( fieldmlInfo%fmlHandle, baseName//".nodes.argument"//NUL, &
       & fieldmlInfo%nodesHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh nodes variable", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh nodes variable", fieldmlInfo, err, errorString, *999 )
     
     CALL MESH_NUMBER_OF_ELEMENTS_GET( mesh, elementCount, err, errorString, *999 )
 
     fieldmlInfo%meshHandle = Fieldml_CreateMeshType( fieldmlInfo%fmlHandle, baseName//".mesh"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh type", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh type", fieldmlInfo, err, errorString, *999 )
 
     fieldmlInfo%elementsHandle = Fieldml_CreateMeshElementsType( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "element"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh elements type", fieldmlInfo, errorString, *999 )
-    err = Fieldml_SetEnsembleMembersRange( fieldmlInfo%fmlHandle, fieldmlInfo%elementsHandle, 1, elementCount, 1 )
-    CALL FieldmlUtil_CheckErrorNumber( "Cannot set mesh type element count", err, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh elements type", fieldmlInfo, err, errorString, *999 )
+    fmlErr = Fieldml_SetEnsembleMembersRange( fieldmlInfo%fmlHandle, fieldmlInfo%elementsHandle, 1, elementCount, 1 )
+    CALL FieldmlUtil_CheckError( "Cannot set mesh type element count", fieldmlInfo, err, errorString, *999 )
 
     fieldmlInfo%xiHandle = Fieldml_CreateMeshChartType( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "xi"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh chart type", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh chart type", fieldmlInfo, err, errorString, *999 )
     xiComponentHandle = Fieldml_CreateContinuousTypeComponents( fieldmlInfo%fmlHandle, fieldmlInfo%xiHandle, &
       & baseName//".mesh.xi.component"//NUL, dimensions )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh chart type", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh chart type", fieldmlInfo, err, errorString, *999 )
     
-    err = Fieldml_CreateArgumentEvaluator( fieldmlInfo%fmlHandle, baseName//".mesh.argument"//NUL, fieldmlInfo%meshHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create mesh variable", fieldmlInfo, errorString, *999 )
+    fmlErr = Fieldml_CreateArgumentEvaluator( fieldmlInfo%fmlHandle, baseName//".mesh.argument"//NUL, fieldmlInfo%meshHandle )
+    CALL FieldmlUtil_CheckError( "Cannot create mesh variable", fieldmlInfo, err, errorString, *999 )
 
     fieldmlInfo%xiArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, baseName//".mesh.argument.xi"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot get mesh xi variable", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot get mesh xi variable", fieldmlInfo, err, errorString, *999 )
     fieldmlInfo%elementsArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle,baseName//".mesh.argument.element"//NUL )
-    CALL FieldmlUtil_CheckError( "Cannot get mesh element variable", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot get mesh element variable", fieldmlInfo, err, errorString, *999 )
     
     CALL FieldmlUtil_GetGenericType( fieldmlInfo%fmlHandle, 1, real1DHandle, .TRUE., err, errorString, *999 )
     
     !TODO Some of these may end up being unused. Should use deferred assignment.
     fieldmlInfo%nodeDofsHandle = Fieldml_CreateArgumentEvaluator( fieldmlInfo%fmlHandle, baseName//".dofs.node"//NUL, &
       & real1DHandle )
-    CALL FieldmlUtil_CheckError( "Cannot create nodal dofs variable", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Cannot create nodal dofs variable", fieldmlInfo, err, errorString, *999 )
 !    fieldmlInfo%elementDofsHandle = Fieldml_CreateArgumentEvaluator( fieldmlInfo%fmlHandle, baseName//".dofs.element"//NUL, & 
 !      & real1DHandle )
-!    CALL FieldmlUtil_CheckError( "Cannot create element dofs variable", fieldmlInfo, errorString, *999 )
+!    CALL FieldmlUtil_CheckError( "Cannot create element dofs variable", fieldmlInfo, err, errorString, *999 )
 !    fieldmlInfo%constantDofsHandle = Fieldml_CreateArgumentEvaluator( fieldmlInfo%fmlHandle, baseName//".dofs.constant"//NUL, & 
 !      & real1DHandle )
-!    CALL FieldmlUtil_CheckError( "Cannot create constant dofs variable", fieldmlInfo, errorString, *999 )
+!    CALL FieldmlUtil_CheckError( "Cannot create constant dofs variable", fieldmlInfo, err, errorString, *999 )
 
     CALL MESH_NUMBER_OF_COMPONENTS_GET( mesh, componentCount, err, errorString, *999 )
-    ALLOCATE( fieldmlInfo%componentHandles( componentCount ) )
     DO i = 1, componentCount
       NULLIFY( meshElements )
+      CALL LIST_ITEM_ADD_C_INT( fieldmlInfo%componentHandles, FML_INVALID_HANDLE, err, errorString, *999 )
       CALL MESH_TOPOLOGY_ELEMENTS_GET( mesh, i, meshElements, err, errorString, *999 )
       CALL FieldmlOutput_AddMeshComponent( fieldmlInfo, baseName, i, meshElements, err, errorString, *999 )
     ENDDO
     
     !TODO Proper shape assignment.
     IF( dimensions == 2 ) THEN
-      err = Fieldml_SetMeshDefaultShape( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "shape.square"//NUL )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot set 2D mesh type element shape", err, errorString, *999 )
+      fmlErr = Fieldml_SetMeshDefaultShape( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "shape.square"//NUL )
+      CALL FieldmlUtil_CheckError( "Cannot set 2D mesh type element shape", fieldmlInfo, err, errorString, *999 )
     ELSE
-      err = Fieldml_SetMeshDefaultShape( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "shape.cube"//NUL )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot set 3D mesh type element shape", err, errorString, *999 )
+      fmlErr = Fieldml_SetMeshDefaultShape( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle, "shape.cube"//NUL )
+      CALL FieldmlUtil_CheckError( "Cannot set 3D mesh type element shape", fieldmlInfo, err, errorString, *999 )
     ENDIF
 
     CALL EXITS( "FieldmlOutput_InitialiseInfo" )
@@ -1080,31 +1111,32 @@ CONTAINS
   SUBROUTINE FieldmlOutput_AddFieldComponents( fieldmlInfo, typeHandle, baseName, mesh, field, fieldComponentNumbers, &
     & variableType, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    INTEGER(C_INT), INTENT(IN) :: typeHandle
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh
-    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field
-    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
-    INTEGER(INTG), INTENT(IN) :: variableType
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    INTEGER(C_INT), INTENT(IN) :: typeHandle !<The FieldML type handle for the field.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName !<The root name of the basis evaluator.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The field for which dof components are to be created.
+    INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:) !<The field component numbers for which evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
-    INTEGER(C_INT) :: fieldHandle, componentHandle, nodalDofsHandle, elementDofsHandle, constantDofsHandle, indexHandle
+    TYPE(MESH_TYPE), POINTER :: mesh
+    INTEGER(C_INT) :: fieldHandle, componentHandle, nodalDofsHandle, elementDofsHandle, constantDofsHandle, indexHandle, fmlErr
     INTEGER(INTG) :: componentCount, i, meshComponentNumber, interpolationType
     INTEGER(C_INT), ALLOCATABLE, TARGET :: componentEvaluators(:)
   
     CALL ENTERS( "FieldmlOutput_AddFieldComponents", err, errorString, *999 )
+    
+    mesh => field%DECOMPOSITION%MESH
 
     componentHandle = Fieldml_GetTypeComponentEnsemble( fieldmlInfo%fmlHandle, typeHandle )
     componentCount = Fieldml_GetTypeComponentCount( fieldmlInfo%fmlHandle, typeHandle )
-    ALLOCATE( componentEvaluators( componentCount ) )
+    ALLOCATE( componentEvaluators( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate component evaluators array.", err, errorString, *999 )
 
     IF( SIZE( fieldComponentNumbers ) /= componentCount ) THEN
-      err = FML_ERR_INVALID_OBJECT
-      CALL FieldmlUtil_CheckError( "Fieldml Component count must match value type component count", &
-        & fieldmlInfo, errorString, *999 )
+      CALL FLAG_ERROR( "Fieldml Component count must match value type component count", err, errorString, *999 )
     ENDIF
 
     nodalDofsHandle = FML_INVALID_HANDLE
@@ -1117,12 +1149,13 @@ CONTAINS
         
       IF( interpolationType == FIELD_NODE_BASED_INTERPOLATION ) THEN
         IF( nodalDofsHandle == FML_INVALID_HANDLE ) THEN
-          CALL FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, typeHandle, mesh, field, fieldComponentNumbers, &
+          CALL FieldmlOutput_AddFieldNodeDofs( fieldmlInfo, baseName, typeHandle, field, fieldComponentNumbers, &
           & variableType, nodalDofsHandle, err, errorString, *999 )
         ENDIF
         CALL FIELD_COMPONENT_MESH_COMPONENT_GET( field, variableType, fieldComponentNumbers(i), &
           & meshComponentNumber, err, errorString, *999 )
-        componentEvaluators( i ) = fieldmlInfo%componentHandles(meshComponentNumber)
+        CALL LIST_ITEM_GET_C_INT( fieldmlInfo%componentHandles, meshComponentNumber, componentEvaluators( i ), &
+          & err, errorString, *999 )
       ELSEIF( interpolationType == FIELD_ELEMENT_BASED_INTERPOLATION ) THEN
         IF( elementDofsHandle == FML_INVALID_HANDLE ) THEN
           CALL FieldmlOutput_AddFieldElementDofs( fieldmlInfo, baseName, typeHandle, field, fieldComponentNumbers, &
@@ -1141,32 +1174,35 @@ CONTAINS
 
     IF( componentHandle /= FML_INVALID_HANDLE ) THEN
       fieldHandle = Fieldml_CreateAggregateEvaluator( fieldmlInfo%fmlHandle, baseName//NUL, typeHandle )
-      CALL FieldmlUtil_CheckError( "Cannot create aggregate evaluator for field", fieldmlInfo, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Cannot create aggregate evaluator for field", fieldmlInfo, err, errorString, *999 )
       indexHandle = FieldmlUtil_GetTypeArgumentHandle( fieldmlInfo, componentHandle, .TRUE. )
-      err = Fieldml_SetIndexEvaluator( fieldmlInfo%fmlHandle, fieldHandle, 1, indexHandle )
+      fmlErr = Fieldml_SetIndexEvaluator( fieldmlInfo%fmlHandle, fieldHandle, 1, indexHandle )
+      CALL FieldmlUtil_CheckError( "Cannot set index evaluator for aggregate field component", fieldmlInfo, &
+        & err, errorString, *999 )
 
       DO i = 1, componentCount
-        err = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, fieldHandle, i, componentEvaluators( i ) )
-        CALL FieldmlUtil_CheckErrorNumber( "Cannot set nodal evaluator for aggregate field component", err, errorString, *999 )
+        fmlErr = Fieldml_SetEvaluator( fieldmlInfo%fmlHandle, fieldHandle, i, componentEvaluators( i ) )
+        CALL FieldmlUtil_CheckError( "Cannot set nodal evaluator for aggregate field component", fieldmlInfo, &
+          & err, errorString, *999 )
       ENDDO
     ELSE
       fieldHandle = Fieldml_CreateReferenceEvaluator( fieldmlInfo%fmlHandle, baseName//NUL, componentEvaluators( 1 ) )
-      CALL FieldmlUtil_CheckError( "Cannot create aggregate evaluator for field", fieldmlInfo, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Cannot create aggregate evaluator for field", fieldmlInfo, err, errorString, *999 )
     ENDIF
 
     IF( nodalDofsHandle /= FML_INVALID_HANDLE ) THEN
-      err = Fieldml_SetBind( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%nodeDofsHandle, nodalDofsHandle )
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot set nodal dofs bind for field with interpolated elements", err, &
+      fmlErr = Fieldml_SetBind( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%nodeDofsHandle, nodalDofsHandle )
+      CALL FieldmlUtil_CheckError( "Cannot set nodal dofs bind for field with interpolated elements", fieldmlInfo, err, &
         & errorString, *999 )
     ENDIF
 !    IF( elementDofsHandle /= FML_INVALID_HANDLE ) THEN
-!      err = Fieldml_SetBind( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%elementDofsHandle, elementDofsHandle )
-!      CALL FieldmlUtil_CheckErrorNumber( "Cannot set element dofs bind for field with interpolated elements", &
+!      fmlErr = Fieldml_SetBind( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%elementDofsHandle, elementDofsHandle )
+!      CALL FieldmlUtil_CheckError( "Cannot set element dofs bind for field with interpolated elements", fieldmlInfo, &
 !  &err, errorString, *999 )
 !    ENDIF
 !    IF( constantDofsHandle /= FML_INVALID_HANDLE ) THEN
-!      err = Fieldml_SetBind( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%constantDofsHandle, constantDofsHandle )
-!      CALL FieldmlUtil_CheckErrorNumber( "Cannot set constant dofs bind for field with interpolated elements", &
+!      fmlErr = Fieldml_SetBind( fieldmlInfo%fmlHandle, fieldHandle, fieldmlInfo%constantDofsHandle, constantDofsHandle )
+!      CALL FieldmlUtil_CheckError( "Cannot set constant dofs bind for field with interpolated elements", fieldmlInfo, &
 !  &err, errorString, *999 )
 !    ENDIF
 
@@ -1185,25 +1221,24 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlOutput_AddField_NoType( fieldmlInfo, baseName, region, mesh, field, variableType, err, errorString, * )
+  !<Add the given field to the given FieldML document. The field's type will be determined by FieldmlUtil_GetValueType. \see Fieldml_Util_Routines::FieldmlUtil_GetValueType
+  SUBROUTINE FieldmlOutput_AddField_NoType( fieldmlInfo, baseName, field, variableType, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    TYPE(REGION_TYPE), POINTER, INTENT(IN) :: region
-    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh
-    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field
-    INTEGER(INTG), INTENT(IN) :: variableType
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName !<The root name of the basis evaluator.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The field for which evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
     INTEGER(C_INT) :: typeHandle
     
     CALL ENTERS( "FieldmlOutput_AddField", err, errorString, *999 )
 
-    CALL FieldmlUtil_GetValueType( fieldmlInfo%fmlHandle, region, field, typeHandle, .TRUE., err, errorString, *999 )
+    CALL FieldmlUtil_GetValueType( fieldmlInfo%fmlHandle, field, typeHandle, .TRUE., err, errorString, *999 )
 
-    CALL FieldmlOutput_AddField_WithType( fieldmlInfo, baseName, mesh, field, variableType, typeHandle, err, errorString, *999 )
+    CALL FieldmlOutput_AddField_WithType( fieldmlInfo, baseName, field, variableType, typeHandle, err, errorString, *999 )
 
     CALL EXITS( "FieldmlOutput_AddField_NoType" )
     RETURN
@@ -1217,29 +1252,32 @@ CONTAINS
   !================================================================================================================================
   !
 
-  SUBROUTINE FieldmlOutput_AddField_WithType( fieldmlInfo, baseName, mesh, field, variableType, typeHandle, err, errorString, * )
+  !<Add the given field to the given FieldML document using the given FieldML type.
+  SUBROUTINE FieldmlOutput_AddField_WithType( fieldmlInfo, baseName, field, variableType, typeHandle, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName
-    TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh
-    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field
-    INTEGER(INTG), INTENT(IN) :: variableType
-    INTEGER(INTG), INTENT(IN) :: typeHandle
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: baseName !<The root name of the basis evaluator.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The field for which evaluators are to be created.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(IN) :: typeHandle !<The FieldML type handle for the field.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Locals
     INTEGER(INTG) :: i, componentCount
     INTEGER(INTG), ALLOCATABLE :: fieldComponentNumbers(:)
+    TYPE(MESH_TYPE), POINTER :: mesh
+    
+    mesh => field%DECOMPOSITION%MESH
 
     IF( typeHandle == FML_INVALID_HANDLE ) THEN
-      err = FML_ERR_UNSUPPORTED
-      CALL FieldmlUtil_CheckErrorNumber( "Cannot get value type for field", err, errorString, *999 )
+      CALL FLAG_ERROR( "Cannot get value type for field.", err, errorString, *999 )
     ENDIF
     
     CALL FIELD_NUMBER_OF_COMPONENTS_GET( field, FIELD_U_VARIABLE_TYPE, componentCount, err, errorString, *999 )
     
-    ALLOCATE( fieldComponentNumbers( componentCount ) )
+    ALLOCATE( fieldComponentNumbers( componentCount ), STAT = err )
+    IF( err /= 0 ) CALL FLAG_ERROR( "Could not allocate component numbers array.", err, errorString, *999 )
     DO i = 1, componentCount
       fieldComponentNumbers(i) = i
     ENDDO
@@ -1261,22 +1299,26 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !<Create a FieldML ensemble with the given name and number of members.
   SUBROUTINE FieldmlOutput_CreateEnsembleType( fieldmlInfo, typeName, elementCount, typeHandle, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: typeName
-    INTEGER(INTG), INTENT(IN) :: elementCount
-    INTEGER(INTG), INTENT(OUT) :: typeHandle
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: typeName !<The name of the ensemble type.
+    INTEGER(INTG), INTENT(IN) :: elementCount !<The number of members in the ensemble.
+    INTEGER(INTG), INTENT(OUT) :: typeHandle !<The FieldML type handle for the ensemble.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
+    
+    !Locals
+    INTEGER(C_INT) :: fmlErr
 
     CALL ENTERS( "FieldmlOutput_CreateEnsembleType", err, errorString, *999 )
 
     typeHandle = Fieldml_CreateEnsembleType( fieldmlInfo%fmlHandle, typeName//NUL )
-    CALL FieldmlUtil_CheckError( "Error creating ensemble type", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Error creating ensemble type", fieldmlInfo, err, errorString, *999 )
     
-    err = Fieldml_SetEnsembleMembersRange( fieldmlInfo%fmlHandle, typeHandle, 1, elementCount, 1 )
-    CALL FieldmlUtil_CheckError( "Error setting ensemble type bounds", err, errorString, *999 )
+    fmlErr = Fieldml_SetEnsembleMembersRange( fieldmlInfo%fmlHandle, typeHandle, 1, elementCount, 1 )
+    CALL FieldmlUtil_CheckError( "Error setting ensemble type bounds", fieldmlInfo, err, errorString, *999 )
 
     CALL EXITS( "FieldmlOutput_CreateEnsembleType" )
     RETURN
@@ -1290,14 +1332,15 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !<Create a FieldML continuous type with the given name and number of components.
   SUBROUTINE FieldmlOutput_CreateContinuousType( fieldmlInfo, typeName, componentCount, typeHandle, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: typeName
-    INTEGER(INTG), INTENT(IN) :: componentCount
-    INTEGER(INTG), INTENT(OUT) :: typeHandle
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: typeName !<The name of the continuous type.
+    INTEGER(INTG), INTENT(IN) :: componentCount !<The number of components in the continuous type.
+    INTEGER(INTG), INTENT(OUT) :: typeHandle !<The FieldML type handle for the continuous type.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
 
     !Local variables
     INTEGER(INTG) :: componentHandle
@@ -1307,12 +1350,12 @@ CONTAINS
     componentHandle = FML_INVALID_HANDLE
 
     typeHandle = Fieldml_CreateContinuousType( fieldmlInfo%fmlHandle, typeName//NUL )
-    CALL FieldmlUtil_CheckError( "Error creating continuous type", fieldmlInfo, errorString, *999 )
+    CALL FieldmlUtil_CheckError( "Error creating continuous type", fieldmlInfo, err, errorString, *999 )
 
     IF( componentCount > 1 ) THEN
       componentHandle = Fieldml_CreateContinuousTypeComponents( fieldmlInfo%fmlHandle, typeHandle, typeName//".component"//NUL, &
         & componentCount )
-      CALL FieldmlUtil_CheckError( "Error creating component type", fieldmlInfo, errorString, *999 )
+      CALL FieldmlUtil_CheckError( "Error creating component type", fieldmlInfo, err, errorString, *999 )
     ENDIF
 
     CALL EXITS( "FieldmlOutput_CreateContinuousType" )
@@ -1327,17 +1370,21 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !<Write the given FieldML document to the given file.
   SUBROUTINE FieldmlOutput_Write( fieldmlInfo, filename, err, errorString, * )
     !Argument variables
-    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo
-    CHARACTER(KIND=C_CHAR,LEN=*) :: filename
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: errorString
+    TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
+    CHARACTER(KIND=C_CHAR,LEN=*) :: filename !<The file to write the FieldML document to.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
+    
+    !Locals
+    INTEGER(C_INT) :: fmlErr
 
     CALL ENTERS( "FieldmlOutput_Write", err, errorString, *999 )
 
-    err = Fieldml_WriteFile( fieldmlInfo%fmlHandle, filename//NUL )
-    CALL FieldmlUtil_CheckErrorNumber( "Error writing fieldml file", err, errorString, *999 )
+    fmlErr = Fieldml_WriteFile( fieldmlInfo%fmlHandle, filename//NUL )
+    CALL FieldmlUtil_CheckError( "Error writing fieldml file", fieldmlInfo, err, errorString, *999 )
 
     CALL EXITS( "FieldmlOutput_Write" )
     RETURN
