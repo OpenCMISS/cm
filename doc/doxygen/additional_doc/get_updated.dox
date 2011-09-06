@@ -1,11 +1,11 @@
 /*!
 \page get_updated Get Updated
 \section essential_subscription Required Subscriptions
-To be involved and get updated with the OpenCMISS project, developers are required to subscribed the following mailing-list and/or rss feeds.
-- This mailing list is for general queries, requests for assistance on the OpenCMISS code, and announcements.  
+To be involved and get updated with the OpenCMISS project, developers are required to subscribe the following mailing-lists and/or rss feeds.
+- For general queries, requests for assistance on the OpenCMISS code, and announcements, use:
    - <a href="https://lists.sourceforge.net/lists/listinfo/opencmiss-developers">Developers' general list</a>
-- Information committed changes to the main GitHub source repository or daily automatic build and non-scheduled build failure. People could either subscribe to the automated notification mailing list or rss feeds for this information. 
-   - <a href="https://lists.sourceforge.net/lists/listinfo/opencmiss-automated1">Automated notifications</a>
+- For information about committed changes to the main GitHub source repository or daily automatic build and non-scheduled build failure, use either 
+   - <a href="https://lists.sourceforge.net/lists/listinfo/opencmiss-automated1">Automated notifications</a> or
    - <a href="http://pipes.yahoo.com/opencmiss/essential?_render=rss">Essential RSS Render</a>. This is a combined rss feed for:
       - <a href="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/rss">Latest testing results from automated build/test system (Buildbot) RSS feed</a>
       - <a href="https://github.com/OpenCMISS/cm/commits/master.atom">Main Github source code cm repository atom feed</a>
