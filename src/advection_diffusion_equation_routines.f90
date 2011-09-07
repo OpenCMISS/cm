@@ -3713,10 +3713,6 @@ CONTAINS
 !                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
 !                 ENDIF
 
-              ELSE  
-                ! do nothing ???
-!                 CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT may only be carried out for SOLVER%GLOBAL_NUMBER = 2", &
-!                   & ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
@@ -3862,10 +3858,6 @@ CONTAINS
 !                     & FIELD_VALUES_SET_TYPE,DUMMY_VALUES2,ERR,ERROR,*999)
 !                 ENDIF
 
-              ELSE  
-                ! do nothing ???
-!                 CALL FLAG_ERROR("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT may only be carried out for SOLVER%GLOBAL_NUMBER = 2", &
-!                   & ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
