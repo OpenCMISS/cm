@@ -748,6 +748,7 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Create a parameter evaluator and associated data source containing the element dofs for the given field components.
   SUBROUTINE FieldmlOutput_AddFieldElementDofs( fieldmlInfo, baseName, typeHandle, field, fieldComponentNumbers, &
     & variableType, elementDofsHandle, err, errorString, * )
     !Argument variables
@@ -858,6 +859,7 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Create a parameter evaluator and associated data source containing the globally constant dofs for the given field components.
   SUBROUTINE FieldmlOutput_AddFieldConstantDofs( fieldmlInfo, baseName, typeHandle, field, fieldComponentNumbers, &
     & variableType, constantDofsHandle, err, errorString, * )
     !Argument variables
@@ -1108,7 +1110,8 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FieldmlOutput_AddFieldComponents( fieldmlInfo, typeHandle, baseName, mesh, field, fieldComponentNumbers, &
+  !< Add the components of the given field to the given FieldML evaluator, creating component templates as needed.
+  SUBROUTINE FieldmlOutput_AddFieldComponents( fieldmlInfo, typeHandle, baseName, field, fieldComponentNumbers, &
     & variableType, err, errorString, * )
     !Argument variables
     TYPE(FieldmlInfoType), INTENT(IN) :: fieldmlInfo !<The FieldML parsing state.
@@ -1282,7 +1285,7 @@ CONTAINS
       fieldComponentNumbers(i) = i
     ENDDO
 
-    CALL FieldmlOutput_AddFieldComponents( fieldmlInfo, typeHandle, baseName, mesh, field, fieldComponentNumbers, &
+    CALL FieldmlOutput_AddFieldComponents( fieldmlInfo, typeHandle, baseName, field, fieldComponentNumbers, &
       & variableType, err, errorString, *999 )
     
     DEALLOCATE( fieldComponentNumbers )
