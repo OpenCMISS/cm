@@ -4587,7 +4587,7 @@ CONTAINS
             CASE(PART_DERIV_S4_S4_S4)
               FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds4ds4ds4"
             CASE DEFAULT
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET="unknown field variable type, add more details later, #Components="!&
+              FIELD_IO_LABEL_DERIVATIVE_INFO_GET="real, add more details later, #Components="!&
               !&//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
          END SELECT
        ENDDO ! dev_idx
@@ -4688,7 +4688,7 @@ CONTAINS
           CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_derivative,  field,  second time derivative of variable"
           CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_geometry,  field,  unknown field variable type"
+            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_geometry,  field,  real"
         END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
       CASE(FIELD_FIBRE_TYPE)
         SELECT CASE(VARIABLE%VARIABLE_TYPE)
@@ -4704,7 +4704,7 @@ CONTAINS
           CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_fiber,  second time derivative of variable"
           CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_fiber,  unknown field variable type"
+            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_fiber,  real"
         END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
       CASE(FIELD_GENERAL_TYPE)
         SELECT CASE(VARIABLE%VARIABLE_TYPE)
@@ -4720,7 +4720,7 @@ CONTAINS
           CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_variable,  field,  second time derivative of variable"
           CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_general,  field,  unknown field variable type"
+            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_general,  field,  real"
         END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
       CASE(FIELD_MATERIAL_TYPE)
         SELECT CASE(VARIABLE%VARIABLE_TYPE)
@@ -4736,7 +4736,7 @@ CONTAINS
           CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_material,  field,  second time derivative of variable"
           CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown material,  field,  unknown field variable type"
+            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown material,  field,  real"
         END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
       CASE DEFAULT
         SELECT CASE(VARIABLE%VARIABLE_TYPE)
@@ -4749,7 +4749,7 @@ CONTAINS
           CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
             FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown, field,  unknown second time derivative of variable"
           CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown field variable type"
+            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  real"
         END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
     END SELECT
 
