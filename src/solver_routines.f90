@@ -7315,7 +7315,7 @@ CONTAINS
             IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
               !Matrices have already been set up by linking solver
               SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
-              CASE(SOLVER_CMISS_LIBRARY)
+              CASE(SOLVER_CMISS_LIBRARY) !All non-PETSc libraries
                 CALL FLAG_ERROR("Non-PETSc linear solver cannot be linked to PETSc nonlinear solver.",ERR,ERROR,*999)
               END SELECT
               SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
@@ -7338,11 +7338,11 @@ CONTAINS
                 SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
                 CASE(SOLVER_CMISS_LIBRARY)
                   CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
-                CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY)
+                CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY,SOLVER_LAPACK_LIBRARY)
                   !Call solver through PETSc
                   CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
                 CASE(SOLVER_SPOOLES_LIBRARY,SOLVER_UMFPACK_LIBRARY, &
-                    & SOLVER_LUSOL_LIBRARY,SOLVER_ESSL_LIBRARY,SOLVER_LAPACK_LIBRARY)
+                    & SOLVER_LUSOL_LIBRARY,SOLVER_ESSL_LIBRARY)
                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The solver library type of "// &
@@ -7373,7 +7373,7 @@ CONTAINS
             SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
             CASE(SOLVER_CMISS_LIBRARY)
               !Nothing else to do
-            CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY)
+            CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY,SOLVER_LAPACK_LIBRARY)
               !Set up solver through PETSc
               CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
 
@@ -7387,12 +7387,19 @@ CONTAINS
                     CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                       & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
                     !Check that the solver supports the matrix sparsity type
-                    SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
-                    CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY)
-                      IF(SOLVER_EQUATIONS%SPARSITY_TYPE==SOLVER_FULL_MATRICES) THEN
-                        CALL FLAG_ERROR("Solver library does not support full matrices. "// &
-                          & "Please use sparse matrices.",ERR,ERROR,*999)
-                      ENDIF
+                    SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                    CASE(SOLVER_FULL_MATRICES)
+                      SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                      CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY)
+                          CALL FLAG_ERROR("Solver library does not support full matrices. Please use sparse matrices "// &
+                            & "or select the LAPACK library type for the linear direct solver.",ERR,ERROR,*999)
+                      END SELECT
+                    CASE(SOLVER_SPARSE_MATRICES)
+                      SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                      CASE(SOLVER_LAPACK_LIBRARY)
+                          CALL FLAG_ERROR("Solver library does not support sparse matrices. Please use full matrices "// &
+                            & "or select another solver library type for the linear direct solver.",ERR,ERROR,*999)
+                      END SELECT
                     END SELECT
 #if ( PETSC_VERSION_MAJOR == 3 )
                     !Set the KSP type to preonly
@@ -7409,6 +7416,12 @@ CONTAINS
                       !Set the PC factorisation package to SuperLU_DIST
                       CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
                         & ERR,ERROR,*999)
+                    CASE(SOLVER_LAPACK_LIBRARY)
+                      !PETSc will default to LAPACK for seqdense matrix, for mpidense, set to parallel LAPACK
+                      IF(COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)>1) THEN
+                        CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PLAPACK, &
+                          & ERR,ERROR,*999)
+                      ENDIF
                     CASE(SOLVER_PASTIX_LIBRARY)
 #if ( PETSC_VERSION_MINOR >= 1 )
                       !Set the PC factorisation package to PaStiX
@@ -7426,6 +7439,8 @@ CONTAINS
                       CALL FLAG_ERROR("SuperLU not available in this version of PETSc.",ERR,ERROR,*999)
                     CASE(SOLVER_PASTIX_LIBRARY)
                       CALL FLAG_ERROR("PaStiX not available in this version of PETSc.",ERR,ERROR,*999)
+                    CASE(SOLVER_LAPACK_LIBRARY)
+                      !Use PETSc default
                     END SELECT
 #endif
                   ELSE
@@ -7447,8 +7462,6 @@ CONTAINS
             CASE(SOLVER_LUSOL_LIBRARY)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(SOLVER_ESSL_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(SOLVER_LAPACK_LIBRARY)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The solver library type of "// &
@@ -7636,7 +7649,8 @@ CONTAINS
         CASE(SOLVER_ESSL_LIBRARY)
           CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
         CASE(SOLVER_LAPACK_LIBRARY)
-          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+          DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_LAPACK_LIBRARY
+          DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE(SOLVER_PASTIX_LIBRARY)
           DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PASTIX_LIBRARY
           DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
