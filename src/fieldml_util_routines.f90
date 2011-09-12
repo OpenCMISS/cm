@@ -97,11 +97,11 @@ CONTAINS
     !Local variables
     INTEGER(C_INT) :: importIndex
     
-    FieldmlUtil_Import = Fieldml_GetObjectByName( fmlHandle, char(remoteName ) )
+    FieldmlUtil_Import = Fieldml_GetObjectByName( fmlHandle, char(remoteName)//NUL )
     IF( FieldmlUtil_Import == FML_INVALID_HANDLE ) THEN
       importIndex = Fieldml_AddImportSource( fmlHandle, &
         & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//NUL, "library"//NUL )
-      FieldmlUtil_Import = Fieldml_AddImport( fmlHandle, importIndex, char(remoteName), char(remoteName) )
+      FieldmlUtil_Import = Fieldml_AddImport( fmlHandle, importIndex, char(remoteName)//NUL, char(remoteName)//NUL )
     ENDIF
 
   END FUNCTION FieldmlUtil_Import
@@ -128,11 +128,11 @@ CONTAINS
     
     IF( Fieldml_IsObjectLocal( fmlHandle, handle ) /= 1 ) THEN
       IF( length > 0 ) THEN
-        localHandle = Fieldml_GetObjectByName( fmlHandle, name(1:length) )
+        localHandle = Fieldml_GetObjectByName( fmlHandle, name(1:length)//NUL )
         IF( localHandle == FML_INVALID_HANDLE ) THEN
           importIndex = Fieldml_AddImportSource( fmlHandle, &
             & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//NUL, "library"//NUL )
-          FieldmlUtil_ImportHandle = Fieldml_AddImport( fmlHandle, importIndex, name(1:length), name(1:length) )
+          FieldmlUtil_ImportHandle = Fieldml_AddImport( fmlHandle, importIndex, name(1:length)//NUL, name(1:length)//NUL )
         ELSE IF( localHandle == handle ) THEN
           FieldmlUtil_ImportHandle = handle
         ENDIF
@@ -168,7 +168,7 @@ CONTAINS
     ENDIF
 
     IF( doImport ) THEN
-      fullName = name(1:length)//".argument"//NUL
+      fullName = name(1:length)//".argument"
       !Note: Don't need to check the result here, as Fieldml_GetObjectByName will fail if the import didn't work.
       fmlErr = FieldmlUtil_Import( fieldmlInfo%fmlHandle, fullName )
     ENDIF
@@ -288,11 +288,11 @@ CONTAINS
     
     IF( coordsType == COORDINATE_RECTANGULAR_CARTESIAN_TYPE ) THEN
       IF( dimensions == 1 ) THEN
-        typeName = "coordinates.rc.1d"//NUL
+        typeName = "coordinates.rc.1d"
       ELSE IF( dimensions == 2 ) THEN
-        typeName = "coordinates.rc.2d"//NUL
+        typeName = "coordinates.rc.2d"
       ELSE IF( dimensions == 3 ) THEN
-        typeName = "coordinates.rc.3d"//NUL
+        typeName = "coordinates.rc.3d"
       ELSE
         typeHandle = FML_INVALID_HANDLE
         CALL FLAG_ERROR( "Cannot get RC coordinates type", err, errorString, *999 )
@@ -305,7 +305,7 @@ CONTAINS
     IF( doImport ) THEN
       temp = FieldmlUtil_Import( fieldmlHandle, typeName )
     ENDIF
-    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(typeName) )
+    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(typeName)//NUL )
     CALL FieldmlUtil_CheckError( "Cannot get coordinates type", fieldmlHandle, err, errorString, *999 )
 
     CALL EXITS( "FieldmlUtil_GetCoordinatesType" )
@@ -337,11 +337,11 @@ CONTAINS
     CALL ENTERS( "FieldmlUtil_GetGenericType", err, errorString, *999 )
 
     IF( dimensions == 1 ) THEN
-      typeName = "real.1d"//NUL
+      typeName = "real.1d"
     ELSE IF( dimensions == 2 ) THEN
-      typeName = "real.2d"//NUL
+      typeName = "real.2d"
     ELSE IF( dimensions == 3 ) THEN
-      typeName = "real.3d"//NUL
+      typeName = "real.3d"
     ELSE
       typeHandle = FML_INVALID_HANDLE
       CALL FLAG_ERROR( "Cannot get generic type", err, errorString, *999 )
@@ -350,7 +350,7 @@ CONTAINS
     IF( doImport ) THEN
       temp = FieldmlUtil_Import( fieldmlHandle, typeName )
     ENDIF
-    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(typeName) )
+    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(typeName)//NUL )
     CALL FieldmlUtil_CheckError( "Cannot get generic type", fieldmlHandle, err, errorString, *999 )
     
     CALL EXITS( "FieldmlUtil_GetGenericType" )
@@ -382,11 +382,11 @@ CONTAINS
     CALL ENTERS( "FieldmlUtil_GetXiType", err, errorString, *999 )
     
     IF( dimensions == 1 ) THEN
-      typeName = "chart.1d"//NUL
+      typeName = "chart.1d"
     ELSE IF( dimensions == 2 ) THEN
-      typeName = "chart.2d"//NUL
+      typeName = "chart.2d"
     ELSE IF( dimensions == 3 ) THEN
-      typeName = "chart.3d"//NUL
+      typeName = "chart.3d"
     ELSE
       typeHandle = FML_INVALID_HANDLE
       CALL FLAG_ERROR( "Invalid chart dimensions", err, errorString, *999 )
@@ -395,7 +395,7 @@ CONTAINS
     IF( doImport ) THEN
       temp = FieldmlUtil_Import( fieldmlHandle, typeName )
     ENDIF
-    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(typeName) )
+    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(typeName)//NUL )
     CALL FieldmlUtil_CheckError( "Cannot get xi type", fieldmlHandle, err, errorString, *999 )
     
     CALL EXITS( "FieldmlUtil_GetXiType" )
@@ -474,11 +474,11 @@ CONTAINS
       
     IF( firstInterpolation == BASIS_QUADRATIC_LAGRANGE_INTERPOLATION ) THEN
       IF( xiCount == 1 ) THEN
-        layoutName = "localNodes.1d.line3"//NUL
+        layoutName = "localNodes.1d.line3"
       ELSE IF( xiCount == 2 ) THEN
-        layoutName = "localNodes.2d.square3x3"//char(suffix)//NUL
+        layoutName = "localNodes.2d.square3x3"//char(suffix)
       ELSE IF( xiCount == 3 ) THEN
-        layoutName = "localNodes.3d.cube3x3x3"//char(suffix)//NUL
+        layoutName = "localNodes.3d.cube3x3x3"//char(suffix)
       ELSE
         !Do not yet support dimensions higher than 3.
         CALL FLAG_ERROR( "Quadratic interpolation not support for more than 3 dimensions", &
@@ -486,11 +486,11 @@ CONTAINS
       ENDIF
     ELSE IF( firstInterpolation == BASIS_LINEAR_LAGRANGE_INTERPOLATION ) THEN
       IF( xiCount == 1 ) THEN
-        layoutName = "localNodes.1d.line2"//NUL
+        layoutName = "localNodes.1d.line2"
       ELSE IF( xiCount == 2 ) THEN
-        layoutName = "localNodes.2d.square2x2"//char(suffix)//NUL
+        layoutName = "localNodes.2d.square2x2"//char(suffix)
       ELSE IF( xiCount == 3 ) THEN
-        layoutName = "localNodes.3d.cube2x2x2"//char(suffix)//NUL
+        layoutName = "localNodes.3d.cube2x2x2"//char(suffix)
       ELSE
         !Do not yet support dimensions higher than 3.
         CALL FLAG_ERROR( "Linear interpolation not support for more than 3 dimensions", &
@@ -503,7 +503,7 @@ CONTAINS
     IF( doImport ) THEN
       temp = FieldmlUtil_Import( fieldmlHandle, layoutName )
     ENDIF
-    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(layoutName) )
+    typeHandle = Fieldml_GetObjectByName( fieldmlHandle, char(layoutName)//NUL )
     CALL FieldmlUtil_CheckError( "Cannot get local nodes type", fieldmlHandle, err, errorString, *999 )
     
     CALL EXITS( "FieldmlUtil_GetTPConnectivityEnsemble" )

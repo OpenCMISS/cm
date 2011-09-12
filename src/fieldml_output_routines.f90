@@ -131,28 +131,28 @@ CONTAINS
       
     IF( firstInterpolation == BASIS_QUADRATIC_LAGRANGE_INTERPOLATION ) THEN
       IF( xiCount == 1 ) THEN
-        interpolatorName = "interpolator.1d.unit.quadraticLagrange"//NUL
-        parameterName = "parameters.1d.unit.quadraticLagrange"//NUL
+        interpolatorName = "interpolator.1d.unit.quadraticLagrange"
+        parameterName = "parameters.1d.unit.quadraticLagrange"
       ELSE IF( xiCount == 2 ) THEN
-        interpolatorName = "interpolator.2d.unit.biquadraticLagrange"//char(suffix)//NUL
-        parameterName = "parameters.2d.unit.biquadraticLagrange"//char(suffix)//NUL
+        interpolatorName = "interpolator.2d.unit.biquadraticLagrange"//char(suffix)
+        parameterName = "parameters.2d.unit.biquadraticLagrange"//char(suffix)
       ELSE IF( xiCount == 3 ) THEN
-        interpolatorName = "interpolator.3d.unit.triquadraticLagrange"//char(suffix)//NUL
-        parameterName = "parameters.3d.unit.triquadraticLagrange"//char(suffix)//NUL
+        interpolatorName = "interpolator.3d.unit.triquadraticLagrange"//char(suffix)
+        parameterName = "parameters.3d.unit.triquadraticLagrange"//char(suffix)
       ELSE
         !Do not yet support dimensions higher than 3.
         CALL FLAG_ERROR( "Cannot find an evaluator for the given basis", err, errorString, *999 )
       ENDIF
     ELSE IF( firstInterpolation == BASIS_LINEAR_LAGRANGE_INTERPOLATION ) THEN
       IF( xiCount == 1 ) THEN
-        interpolatorName = "interpolator.1d.unit.linearLagrange"//NUL
-        parameterName = "parameters.1d.unit.linearLagrange"//NUL
+        interpolatorName = "interpolator.1d.unit.linearLagrange"
+        parameterName = "parameters.1d.unit.linearLagrange"
       ELSE IF( xiCount == 2 ) THEN
-        interpolatorName = "interpolator.2d.unit.bilinearLagrange"//char(suffix)//NUL
-        parameterName = "parameters.2d.unit.bilinearLagrange"//char(suffix)//NUL
+        interpolatorName = "interpolator.2d.unit.bilinearLagrange"//char(suffix)
+        parameterName = "parameters.2d.unit.bilinearLagrange"//char(suffix)
       ELSE IF( xiCount == 3 ) THEN
-        interpolatorName = "interpolator.3d.unit.trilinearLagrange"//char(suffix)//NUL
-        parameterName = "parameters.3d.unit.trilinearLagrange"//char(suffix)//NUL
+        interpolatorName = "interpolator.3d.unit.trilinearLagrange"//char(suffix)
+        parameterName = "parameters.3d.unit.trilinearLagrange"//char(suffix)
       ELSE
         !Do not yet support dimensions higher than 3.
         CALL FLAG_ERROR( "Cannot find an evaluator for the given basis", err, errorString, *999 )
@@ -165,8 +165,8 @@ CONTAINS
       & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//NUL, "library"//NUL )
     CALL FieldmlUtil_CheckError( "Cannot access library", fmlHandle, err, errorString, *999 )
 
-    evaluatorHandle = Fieldml_AddImport( fmlHandle, importIndex, char(interpolatorName), char(interpolatorName) )
-    parametersHandle = Fieldml_AddImport( fmlHandle, importIndex, char(parameterName), char(parameterName) )
+    evaluatorHandle = Fieldml_AddImport( fmlHandle, importIndex, char(interpolatorName)//NUL, char(interpolatorName)//NUL )
+    parametersHandle = Fieldml_AddImport( fmlHandle, importIndex, char(parameterName)//NUL, char(parameterName)//NUL )
     
     IF( ( evaluatorHandle == FML_INVALID_HANDLE ) .OR. ( parametersHandle == FML_INVALID_HANDLE ) ) THEN
       CALL FLAG_ERROR( "Cannot find an evaluator for the given basis", err, errorString, *999 )
@@ -353,7 +353,7 @@ CONTAINS
       referenceName = baseName//name(1:length)//"_"//TRIM(NUMBER_TO_VSTRING(basisInfo%basis%USER_NUMBER,"*",err,errorString))// &
         & ".parameters"
       
-      aggregateHandle = Fieldml_CreateAggregateEvaluator( fieldmlInfo%fmlHandle, char(referenceName//NUL), &
+      aggregateHandle = Fieldml_CreateAggregateEvaluator( fieldmlInfo%fmlHandle, char(referenceName)//NUL, &
         & interpolationParametersHandle )
       CALL FieldmlUtil_CheckError( "Cannot create dofs for basis connectivity", fieldmlInfo, err, errorString, *999 )
 
