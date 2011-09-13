@@ -414,7 +414,7 @@ CONTAINS
   SUBROUTINE FieldmlUtil_GetCollapseSuffix( collapseInfo, suffix, err, errorString )
     !Argument variables
     INTEGER(C_INT), INTENT(IN) :: collapseInfo(:) !<The collapse into from which to generate the suffix.
-    TYPE(VARYING_STRING), INTENT(OUT) :: suffix !<The suffix string encoding the collapse info.
+    TYPE(VARYING_STRING), INTENT(INOUT) :: suffix !<The suffix string encoding the collapse info.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string
     

@@ -159,7 +159,7 @@ CONTAINS
   !<Determine the basis collapse parameters from the given evaluator's name.
   SUBROUTINE FieldmlInput_GetBasisCollapse( name, collapse )
     !Argument variables
-    CHARACTER(LEN=*), INTENT(IN) :: name !<The basis evaluator name.
+    TYPE(VARYING_STRING), INTENT(IN) :: name !<The basis evaluator name.
     INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: collapse(:) !<The array of OpenCMISS basis collapse constants.
 
     collapse = BASIS_NOT_COLLAPSED
@@ -217,6 +217,7 @@ CONTAINS
     !Locals
     INTEGER(C_INT) :: length, libraryBasisHandle, paramArgHandle
     CHARACTER(LEN=MAXSTRLEN) :: name
+    TYPE(VARYING_STRING) :: collapseName
     
     CALL ENTERS( "FieldmlInput_GetBasisInfo", err, errorString, *999 )
 
@@ -252,7 +253,8 @@ CONTAINS
     ENDIF
     
     IF( basisType == BASIS_LAGRANGE_HERMITE_TP_TYPE ) THEN
-      CALL FieldmlInput_GetBasisCollapse( name(1:length), collapse )
+      collapseName = name(1:length)
+      CALL FieldmlInput_GetBasisCollapse( collapseName, collapse )
     ENDIF
     
     CALL FieldmlInput_GetBasisConnectivityInfo( fieldmlInfo, basisHandle, paramArgHandle, connectivityHandle, layoutHandle, &
@@ -432,7 +434,7 @@ CONTAINS
     & err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
-    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !<The name of the coordinate system evaluator.
+    TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !<The name of the coordinate system evaluator.
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER, INTENT(IN) :: coordinateSystem !<The OpenCMISS coordinate system to initialize.
     INTEGER(INTG), INTENT(IN) :: userNumber !<The user number to assign to the coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -449,7 +451,7 @@ CONTAINS
 
     coordinateType = 0 !There doesn't seem to be a COORDINATE_UNKNOWN_TYPE
 
-    evaluatorHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
+    evaluatorHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
     CALL FieldmlUtil_CheckError( "Cannot get coordinate evaluator for geometric field", fieldmlInfo%fmlHandle, &
       & err, errorString, *999 )
 
@@ -491,7 +493,7 @@ CONTAINS
   SUBROUTINE FieldmlInput_NodesCreateStart( fieldmlInfo, nodesArgumentName, region, nodes, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
-    CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName !<The argument evaluator used as the node index in relevant evaluators.
+    TYPE(VARYING_STRING), INTENT(IN) :: nodesArgumentName !<The argument evaluator used as the node index in relevant evaluators.
     TYPE(REGION_TYPE), POINTER, INTENT(IN) :: region !<The region in which to create the nodes.
     TYPE(NODES_TYPE), POINTER, INTENT(INOUT) :: nodes !<The OpenCMISS nodes object to create.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -500,7 +502,7 @@ CONTAINS
     !Locals
     INTEGER(C_INT) :: nodesArgumentHandle, nodesHandle, nodeCount
     
-    nodesArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, nodesArgumentName//NUL )
+    nodesArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(nodesArgumentName//NUL) )
     IF( nodesArgumentHandle == FML_INVALID_HANDLE ) THEN
       CALL FLAG_ERROR( "Nodes argument name is invalid", err, errorString, *999 )
     END IF
@@ -534,7 +536,7 @@ CONTAINS
   SUBROUTINE FieldmlInput_MeshCreateStart( fieldmlInfo, meshArgumentName, mesh, meshNumber, region, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
-    CHARACTER(LEN=*), INTENT(IN) :: meshArgumentName !<The argument evaluator used as the mesh location in relevant evaluators.
+    TYPE(VARYING_STRING), INTENT(IN) :: meshArgumentName !<The argument evaluator used as the mesh location in relevant evaluators.
     TYPE(MESH_TYPE), POINTER, INTENT(INOUT) :: mesh !<The OpenCMISS mesh object to create.
     INTEGER(INTG), INTENT(IN) :: meshNumber !<The user number to assign to the mesh.
     TYPE(REGION_TYPE), POINTER, INTENT(IN) :: region !<The region in which to create the mesh.
@@ -547,7 +549,7 @@ CONTAINS
 
     CALL ENTERS( "FieldmlInput_MeshCreateStart", err, errorString, *999 )
     
-    meshArgument = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, meshArgumentName//NUL )
+    meshArgument = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(meshArgumentName//NUL) )
     IF( meshArgument == FML_INVALID_HANDLE ) THEN
       CALL FieldmlUtil_CheckError( "Named mesh argument not found", fieldmlInfo, err, errorString, *999 )
     ENDIF
@@ -558,10 +560,10 @@ CONTAINS
     ENDIF
     
     fieldmlInfo%elementsHandle = Fieldml_GetMeshElementsType( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle )
-    fieldmlInfo%elementsArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, meshArgumentName//".element"//NUL )
+    fieldmlInfo%elementsArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(meshArgumentName//".element"//NUL))
 
     fieldmlInfo%xiHandle = Fieldml_GetMeshChartType( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle )
-    fieldmlInfo%xiArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, meshArgumentName//".xi"//NUL )
+    fieldmlInfo%xiArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(meshArgumentName//".xi"//NUL) )
 
     count = Fieldml_GetTypeComponentCount( fieldmlInfo%fmlHandle, fieldmlInfo%xiHandle )
     IF( ( count < 1 ) .OR. ( count > 3 ) ) THEN
@@ -590,7 +592,7 @@ CONTAINS
   SUBROUTINE FieldmlInput_BasisCreateStart( fieldmlInfo, evaluatorName, userNumber, basis, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
-    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !<The name of the basis evaluator.
+    TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !<The name of the basis evaluator.
     INTEGER(INTG), INTENT(IN) :: userNumber !<The user number to assign to the basis.
     TYPE(BASIS_TYPE), POINTER, INTENT(INOUT) :: basis !<The OpenCMISS basis object to create.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
@@ -605,7 +607,7 @@ CONTAINS
     
     CALL ENTERS( "FieldmlInput_BasisCreateStart", err, errorString, *999 )
 
-    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
+    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
     CALL FieldmlUtil_CheckError( "Named basis not found", fieldmlInfo, err, errorString, *999 )
     CALL LIST_ITEM_IN_LIST_C_INT( fieldmlInfo%basisHandles, handle, listIndex, err, errorString, *999 )
     IF( listIndex /= 0 ) THEN
@@ -651,7 +653,7 @@ CONTAINS
   SUBROUTINE FieldmlInput_InitialiseFromFile( fieldmlInfo, filename, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
-    CHARACTER(LEN=*), INTENT(IN) :: filename !<The name of the FieldML file to parse.
+    TYPE(VARYING_STRING), INTENT(IN) :: filename !<The name of the FieldML file to parse.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
     
@@ -663,7 +665,7 @@ CONTAINS
 
     CALL FieldmlUtil_InitialiseInfo( fieldmlInfo, err, errorString, *999 )
 
-    fieldmlInfo%fmlHandle = Fieldml_CreateFromFile( filename//NUL )
+    fieldmlInfo%fmlHandle = Fieldml_CreateFromFile( char(filename//NUL) )
     
     fmlErr = Fieldml_GetLastError( fieldmlInfo%fmlHandle )
     IF( fmlErr /= FML_ERR_NO_ERROR ) THEN
@@ -776,7 +778,7 @@ CONTAINS
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
     TYPE(MESH_TYPE), POINTER, INTENT(IN) :: mesh !<The OpenCMISS mesh in which to create the component.
     INTEGER(INTG), INTENT(IN) :: componentNumber !<The component number to create.
-    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !<The name of the mesh component evaluator.
+    TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !<The name of the mesh component evaluator.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
     
@@ -796,7 +798,7 @@ CONTAINS
     NULLIFY( basis )
     NULLIFY( meshElements )    
 
-    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
+    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
     IF( .NOT. FieldmlInput_IsTemplateCompatible( fieldmlInfo, handle, fieldmlInfo%elementsHandle ) ) THEN
       CALL FLAG_ERROR( "Mesh component cannot be created from this evaluator", err, errorString, *999 )
     ENDIF
@@ -952,7 +954,7 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER, INTENT(IN) :: decomposition !<The decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !<The user number to assign to the created field.
     TYPE(FIELD_TYPE), POINTER, INTENT(INOUT) :: field !<The OpenCMISS field object to create.
-    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !<The name of the field evaluator.
+    TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !<The name of the field evaluator.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
     
@@ -962,7 +964,7 @@ CONTAINS
 
     CALL ENTERS( "FieldmlInput_FieldCreateStart", err, errorString, *999 )
 
-    fieldHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
+    fieldHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
     CALL FieldmlUtil_CheckError( "Cannot get named field evaluator", fieldmlInfo, err, errorString, *999 )
     typeHandle = Fieldml_GetValueType( fieldmlInfo%fmlHandle, fieldHandle )
     CALL FieldmlUtil_CheckError( "Cannot get named field evaluator's value type", fieldmlInfo, err, errorString, *999 )
@@ -1004,7 +1006,7 @@ CONTAINS
   SUBROUTINE FieldmlInput_FieldNodalParametersUpdate( fieldmlInfo, evaluatorName, field, err, errorString, * )
     !Arguments
     TYPE(FieldmlInfoType), INTENT(INOUT) :: fieldmlInfo !<The FieldML parsing state.
-    CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !<The name of the nodal dofs evaluator.
+    TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !<The name of the nodal dofs evaluator.
     TYPE(FIELD_TYPE), POINTER, INTENT(INOUT) :: field !<The field whose parameters are to be updated.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: errorString !<The error string.
@@ -1021,7 +1023,7 @@ CONTAINS
     
     mesh => field%DECOMPOSITION%MESH
 
-    nodalDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, evaluatorName//NUL )
+    nodalDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
     CALL FieldmlUtil_CheckError( "Cannot get nodal field dofs", fieldmlInfo, err, errorString, *999 )
   
     dataSource = Fieldml_GetDataSource( fieldmlInfo%fmlHandle, nodalDofsHandle )
