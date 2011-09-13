@@ -121,8 +121,7 @@ giving:
   \fnof{p}{\vect{x},t}=\phi_{n}({\vect{x}})\fnof{\nodept{p}{n}}{t}
 \end{gather}
 
-In standard interpolation notation within an element, this will
-become:
+In standard interpolation notation within an element, we transform from $\vect{x}$ to $\vect{\xi}$:
 
 \begin{gather}
   \fnof{u_{i}}{\vect{\xi},t}=\idxgbfn{i}{n}{\beta}{\vect{\xi}}
@@ -139,14 +138,303 @@ and $\idxgsf{i}{n}{\beta}$ are the scale factors. The scalar pressure
 DOFs, $\fnof{\idxnodedof{p}{}{n}{\beta}}{t}$ are interpolated
 similarly.
 
-For the neumann boundary, we will again separate $q_i$ into its
+For the natural boundary, we can separate $q_i$ into its
 component velocity and pressure terms as noted in
-\eqnref{eqn:NSENeumannBC}. Interpolating based on the velocity and
-pressure basis functions above, 
+\eqref{NSENeumannBC} and shown in \eqref{FEMNSE2}. For our current treatment, we will assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
 
 \begin{equation}
-  \fnof{q_{i}}{\vect{\xi},t} &= \idxgbfn{i}{o}{\gamma}{\vect{\xi}}
+  \begin{split}
+    \fnof{q_{i}}{\vect{\xi},t} &= \idxgbfn{i}{o}{\gamma}{\vect{\xi}}
+      \fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{o}{\gamma} \\
+    \fnof{\mu}{\vect{\xi}} &=\gbfn{r}{\delta}{\vect{\xi}}
+    \nodedof{\mu}{r}{\delta}\gsf{r}{\delta} \\
+    \fnof{\rho}{\vect{\xi}} &=\gbfn{r}{\delta}{\vect{\xi}}\nodedof{\rho}{r}{\delta}
+    \gsf{r}{\delta} \\
+  \end{split}
 \end{equation}
+
+ Using the same basis functions for the respective velocity and pressure spaces for a Galerkin finite element formulation, our spatial weights become for the velocity space:
+\begin{equation}
+  \fnof{w_{i}}{\vect{\xi}}=\idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+\end{equation}
+and pressure:
+\begin{equation}
+  \fnof{w_{i}}{\vect{\xi}}=\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}
+\end{equation}
+
+
+\subsubsection{Spatial Integration}
+
+Using standard integration notation, we can rewrite our Galerkin FEM formulation from \eqref{NSEFEM2}:
+
+
+\begin{multline}
+ \label{NSEFEM3}
+%time dependence
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}}{t}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}\\
+%convective term
+  - \dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}}G^{jk}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+  \fnof{\idxnodedof{u}{j}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\\
+  \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}
+      \idxgsf{i}{n}{\beta}}{x^{k}}-\christoffel{i}{k}{h}\idxgbfn{h}{m}{\alpha}{\vect{\xi}}
+    \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}\idxgsf{h}{m}{\alpha}}
+  \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%pressure
+  +\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}G^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+  \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\\
+  \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}-
+  \christoffel{i}{k}{h}\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{h}{m}{\alpha}
+    }\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%viscous stress
+  -\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\mu}{\vect{\xi}}}G^{jk}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+     \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}}{x^{j}}-
+      \christoffel{i}{j}{h}\idxgbfn{h}{n}{\beta}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}\idxgsf{h}{n}{\beta}} \\
+    \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}}{x^{k}}-
+      \christoffel{i}{k}{l}\idxgbfn{l}{m}{\alpha}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}
+      \idxgsf{l}{m}{\alpha}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%boundary terms
+  =\dsum_{f=1}^{F}\gint{\vect{0}}{\vect{1}}{\idxgbfn{i}{o}{\gamma}{\vect{\xi}}
+    \fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{o}{\gamma}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+% note: alternate symbol for normal vector needed if want to expand boundary terms
+%=\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}
+%      \idxgsf{i}{n}{\beta}}{x^{k}}-\christoffel{i}{k}{h}\idxgbfn{h}{m}{\alpha}{\vect{\xi}}
+%    \fnof{\idxnodedof{u}{h}{n}{\beta}}{t}\idxgsf{h}{m}{\alpha}}\\
+%  \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+%  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+\end{multline}
+
+Where $\fnof{\matr{J}}{\vect{\xi}}$ represents the jacobian matrix. If we assume a rectangular cartesian coordinate system, this simplifies significantly, as the contravariant $G^{jk}$ will become $\delta^{jk}$ and the Christoffel symbols $\christoffel{i}{j}{k}$ will all be zero. This gives:
+
+\begin{multline}
+ \label{NSEFEM3}
+%time dependence
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}\delby{(\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+      \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta})}{t}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}\\
+%convective term
+  - \dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}}\delta^{jk}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+  \fnof{\idxnodedof{u}{j}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}
+  \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}
+   \idxgsf{i}{n}{\beta}}{x^{k}}}\\
+  \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%pressure
+  +\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+  \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}
+  \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%viscous stress
+  -\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\mu}{\vect{\xi}}}\delta^{jk}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
+     \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}}{x^{j}}}
+    \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}}{x^{k}}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+%boundary terms
+  =\dsum_{f=1}^{F}\gint{\vect{0}}{\vect{1}}{\idxgbfn{i}{o}{\gamma}{\vect{\xi}}
+    \fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{o}{\gamma}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{multline} 
+
+or, rearranged to pull constants out of the integrals:
+
+\begin{multline}
+ \label{NSEFEM4}
+%time dependence
+  \dsum_{e=1}^{E}{\idxnodedof{\dot{u}}{i}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}
+  \gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}\\
+ %convective term
+  -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+   \idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
+ %pressure
+    +\dsum_{e=1}^{E}{\fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
+    \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+    \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+ % %viscous stress
+    -\dsum_{e=1}^{E}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
+    \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
+      \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}}{x^{k}}}
+      \abs{\fnof{\matr{J}}{\vect{\xi}}}d{\vect{\xi}}\\
+% %boundary terms
+  =\dsum_{f=1}^{F}\fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{m}{\alpha}\idxgsf{i}{o}{\gamma}
+   \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{multline}
+
+
+\subsubsection{General form}
+
+We now seek to assemble this into the corresponding general form for dynamic equations, as outlined in section 2.3.2:
+
+\begin{equation}
+  \matr{M}\fnof{\ddot{\vect{d}}}{t}+\matr{C}\fnof{\dot{\vect{d}}}{t}+\matr{K}\fnof{\vect{d}}{t}+
+  \fnof{\vect{g}}{\fnof{\vect{d}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
+  \label{eqn:NSEGeneralDynamic}
+\end{equation}
+where $\dot{\vect{d}}(t)$ and $\ddot{\vect{d}}(t)$ represent the first and second derivatives (respectively) of the degrees of freedom vector $\vect{d}(t)$, which consists of the dependent variables $\vect{u}(\vect{x},t)$ and $p(\vect{x},t)$. $\matr{M}$ is the mass matrix, which provides the shape function based weights and $\matr{C}$ is the transient damping matrix. $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function that will be used to represent the convective term and $\fnof{\vect{f}}{t}$ the forcing vector.
+
+ We will assume cartesian coordinates $\vect{x}=\bbrac{x,y,z}$ and denote the corresponding velocity components $\vect{u}=\bbrac{u,v,w}$, with $N$ representing the number of velocity DOFs and $M$ the number of pressure DOFs. The DOFs vector $d$ then becomes:
+\begin{equation}
+  \vect{d}=[u_1u_2...u_Nv_1v_2...v_Nw_1w_2...w_Np_1p_2...p_M]^T=
+  \begin{bmatrix}\vect{u}\\\vect{v}\\\vect{w}\\\vect{p}\end{bmatrix}
+\end{equation}
+Where $u$ has been used instead of $u(t)$ for simplicity. For further illustration, consider a simple mesh consisting of two adjacent quadrilateral elements using 2D biquadratic velocity (9 nodes per element), bilinear pressure (4 nodes per element) interpolation. The mesh will consist of 15 DOFs for the velocity and 6 for pressure, as the adjoining nodes between elements are shared. The DOFs vector $\vect{d}$ will be assembled:
+
+\begin{equation}
+  \vect{d}_{example}=[u_{1}...u_{15}v_{1}...v_{15}p_1...p_{6}]^T=
+  \begin{bmatrix}\vect{u}\\\vect{v}\\\vect{p}\end{bmatrix}
+\end{equation}
+
+All the components of \eqref{eqn:NSEGeneralDynamic} will similarly depend on the number of dimensions,$N_{dim}$, and the size of the matrices will be: $(N{\cdot}{N_{dim}}+M)^{N_{dim}}$. For the simple example used above, the size of the $d_{example}$ vector would be 36 and the matrices that operate on it would be 36 x 36. 
+
+Returning to the general case, the mass matrix $\matr{M}$ will take the form:
+
+\begin{equation}
+[M^{\alpha\beta}_{mn}]=\gint{\vect{0}}{\vect{1}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+Without using mass-lumping, the damping matrix $\matr{C}$:
+\begin{equation}
+  [C^{\alpha\beta}_{mn}]={\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}}
+  \gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}
+\end{equation}
+
+The element stiffness matrix $\matr{K}$ will contain the linear components of the system. For the classic Galerkin formulation this includes the viscous term with the laplacian operator and the pressure gradient term. As the velocity and pressure DOFs are both included in $d$, $\matr{K}$ will be assembled with so that the corresponding operators are applied to the DOFs discontinuously. 
+
+\begin{equation}
+ [K^{\alpha\beta}_{mn}]=
+ \begin{cases}
+   [A^{\alpha\beta}_{mn}] =  {\idxgsf{i}{n}{\beta}{\idxgsf{i}{m}{\alpha}}}
+    \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
+       \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}}{x^{k}}}
+       \abs{\fnof{\matr{J}}{\vect{\xi}}}d{\vect{\xi}}\\
+     \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \text{for $n\le{N{\cdot}{N_{dim}}}$},\\
+
+   [B^{\alpha\beta}_{mn}] = \idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
+     \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+     \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+    \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \text{for $n>{N{\cdot}{N_{dim}}}$}.
+ \end{cases}
+\end{equation}
+
+To attain a square matrix of the required size, we must also apply the transpose of the gradient terms acting on the pressure DOFs. For example, in our 2D example system, $\matr{K}$ will take the form: 
+\begin{equation}
+  \matr{K}=
+   \begin{bmatrix}
+     \matr{A} & \matr{0} & \matr{B}_x\\
+     \matr{0} & \matr{A} & \matr{B}_y\\
+     -\matr{B}^T_{x}& -\matr{B}^T_{y} & \matr{0}
+   \end{bmatrix}
+\end{equation}
+
+The nonlinear vector, $\vect{g}(t)$ will provide the convective operators and for the standard Galerkin formulation:
+
+\begin{equation}
+ [g^{\alpha\beta}_{mn}]=
+ {\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+   \idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}
+\end{equation}
+
+\subsubsection{Petrov-Galerkin Formulation}
+
+For convection dominated flows, the Galerkin formulation must be modified to account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section ?? for more details. 
+
+Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \eqref{eq:NSEFEM2} can be written:
+
+\begin{multline}
+ \label{NSEPGFEM1}
+  \dsum_{e=1}^{E}\gint{\Omega}{}{\rho\dot{u}_{i}w_{i}}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{{\rho}{\delta}^{jk}{u_j}\pbrac{\partialderiv{u_{i}}{k}}({w_{i}+\Psi_{i}})}{\Omega}
+ +\dsum_{e=1}^{E}\gint{\Omega}{}{{\delta}^{jk}{p_{i}}{\partialderiv{w_{i}}{k}}}{\Omega}\\
+ -\dsum_{e=1}^{E}\gint{\Omega}{}{{\mu}{\delta}^{jk}\pbrac{\partialderiv{u_{i}}{j}}\pbrac{\partialderiv{w_{i}}{k}}}{\Omega}=
+ \dsum_{f=1}^{F}\gint{\Gamma_N}{}{{\mu}{\delta}^{jk}\pbrac{\partialderiv{u_{i}}{k}}{n_{i}}{w_{i}}}{\Gamma_N}
+-\dsum_{f=1}^{F}\gint{\Gamma_N}{}{{\delta}^{jk}{p}{n_i}{w_i}}{\Gamma_N}
+\end{multline}
+
+where $w_i$ will be the classic Galerkin weight and $\Psi_i$ will be the Petrov-Galerkin for the Navier-Stokes equations:
+
+\begin{equation}
+ \label{PGTest}
+  \Psi_i = \pbrac{\frac{({\coth{\gamma} - \frac{1}{\gamma}}){L}}{2}{\frac{u_j}{\abs{u_j}}}}{\partialderiv{w_{i}}{k}}
+\end{equation}
+
+Here we see that we retain the same value for $\alpha={\coth{\gamma} - \frac{1}{\gamma}}$ as found for the linearized advection-diffusion equation. We must also define $\gamma$ for the Navier-Stokes equations to describe the ratio of the convective:diffusive operators. Here, the effective Peclet number will be based on the cell Reynolds number:
+
+\begin{equation}
+ Re = \frac{\rho\bar{U}L}{\mu}  =\frac{\bar{U}L}{\nu}
+\end{equation}
+where $\bar{U}$ is the characteristic velocity and $\nu=\frac{\mu}{\rho}$ is the kinematic viscosity. The effective Peclet number $\gamma$ will be:
+
+\begin{equation}
+  \gamma= Re\abs{u_j}L = \frac{u_j^2L^2}{\nu}
+\end{equation}
+
+Equation \eqref{NSEPGFEM1} then becomes:
+
+
+\begin{multline}
+ \label{NSEFEM4}
+%time dependence
+  \dsum_{e=1}^{E}{\idxnodedof{\dot{u}}{i}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}{\idxgsf{i}{m}{\alpha}}
+  \gint{\vect{0}}{\vect{1}}{\fnof{\rho}{\vect{\xi}}{\idxgbfn{i}{n}{\beta}{\vect{\xi}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}\\
+ %convective term
+  -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}
+    \idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
+ %P-G term
+  -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
+   \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}\\
+    \pbrac{\frac{({\coth{\gamma(\vect{\xi})} - \frac{1}{\gamma(\vect{\xi})}}){L(\vect{\xi})}}{2}{\frac{u_j}{\abs{u_j}}}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+     \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
+ %pressure
+    +\dsum_{e=1}^{E}{\fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
+    \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
+    \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+ % %viscous stress
+    -\dsum_{e=1}^{E}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
+    \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
+      \pbrac{\delby{\idxgbfn{i}{m}{\alpha}{\vect{\xi}}}{x^{k}}}
+      \abs{\fnof{\matr{J}}{\vect{\xi}}}d{\vect{\xi}}\\
+% %boundary terms
+  =\dsum_{f=1}^{F}\fnof{\idxnodedof{q}{i}{o}{\gamma}}{t}\idxgsf{i}{m}{\alpha}\idxgsf{i}{o}{\gamma}
+   \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{multline}
+
+The use of the Petrov-Galerkin formulation in this way allows for the stabilization of moderately convective problems. However, it also results in nonsymmetric mass matrices with the additional term, making classical mass-lumping much more difficult. As a result, the use of explicit methods also becomes more difficult for time-dependent problems. 
+
+%ALE
+
+
+
+
+
+
+
+
+
+
+
+
 
 Here $N_{u}$ represents the total $u$ velocity nodes for a given dimension and $N_p$ the
 total number of $p$ pressure nodes. Our finite element formulation for
@@ -199,6 +487,8 @@ The corresponding weak form of the equation system consisting of \eqnref{eqn:Nav
   \label{eqn:generaldynamicnonlinear}
 \end{equation}
 where u(t) is the dependent variables vector $\vect{u}(\vect{x},t)$ and $p$ for the degrees of freedom. $\matr{M}$ is the mass matrix, which provides the shape function based weights, $\matr{C}$ is the transient damping matrix (which we will discuss further below). $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator, including the viscous terms, the conservation of mass terms, and pressure terms. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function for the convective terms and $\fnof{\vect{f}}{t}$ the forcing vector. 
+
+%ALE
 
 The corresponding weak form of the equation system consisting of \eqnref{eqn:NavierStokesequation1} and \eqnref{eqn:NavierStokesmasequation} can be written as:
 \begin{equation}

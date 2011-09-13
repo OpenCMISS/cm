@@ -17,7 +17,7 @@ Where the first term represents diffusion of $\phi$ and the second advection. Th
 \end{equation}
 Large values for $\gamma$ indicate that the length scale for the element, L, and the velocity, u, become much larger than the diffusion length scale, D. Numerically, large $\gamma$ values produce oscillations in the classic Galerkin formulation, as the advective terms preclude the 2nd order diffusive terms, causing problems in regions like boundary layers. It should also be noted that, while it is not as obvious in the 1D case, the directionality of the velocity vector is important in the determination of the effective Peclet number and it's effect on numerical stability.
 
-A fairly obvious remedy for this issue is to ensure that the mesh is sufficiently refined so that values of L counteract the effect of either low diffusivity or high convection. However, for many cases of interest, it is not computationally tractable to resolve meshes so that the length scale is on the order of the diffusivity scale, or, for highly convective flows, much lower to counteract the velocity term. Therefore, a number of stabilized finite element methods have been developed, many of which deal with convective flows by adding numerical diffusion to the system.
+A fairly obvious remedy for this issue is to ensure that the mesh is sufficiently refined so that values of L counteract the effect of either low diffusivity or high convection. However, for many cases of interest, it is not computationally tractable to resolve meshes so that the length scale is on the order of the diffusivity scale, or, for highly convective flows, much lower to counteract the velocity term. Therefore, a number of stabilized finite element methods have been developed, many of which deal with convective flows by adding a numerical 'balancing diffusion' to the system.
 
 One method of adjusting the problem to reduce the element Peclet number without large mesh refinement is to introduce an artificial diffusion term $\alpha$ to the advection-diffusion equation:
 
@@ -28,7 +28,11 @@ One method of adjusting the problem to reduce the element Peclet number without 
   \label{eqn:directupwind}
 \end{equation}
 
-Where $\alpha$ represents an adjustable factor for the artificial diffusion. It should also be noted that when $\alpha=0$, we recover the classic advection-diffusion equation (which we have described as problematic for convective flows), and larger values of $\alpha$ provide an $\emph{upwind}$ solution that adds additional diffusion dependent on the velocity and length scale.
+Where $\alpha$ represents an adjustable factor for the artificial diffusion. It should also be noted that when $\alpha=0$, we recover the classic advection-diffusion equation (which we have described as problematic for convective flows), and larger values of $\alpha$ provide an $\emph{upwind}$ solution that adds additional diffusion dependent on the velocity and length scale. It should be noted that this is similar to backward finite difference schemes, which are also often called upwind schemes. As the artificial diffusion is also added in the direction (or along the streamline) of the velocity term, the term $\emph{streamline upwind}$ is also used to describe the scheme. The value of the $\alpha$ term may be calculated using linear elements so that the truncation error of the Taylor series is minimized, resulting in (see Heinrich, Zienkiewicz):
+
+\begin{equation}
+  \alpha= {\coth{\gamma} - \frac{1}{\gamma}}
+\end{equation}
 
 If instead of directly modifying the diffusion term in the physical system of equations, we add a consistent numerical diffusion to the weighting terms (test functions) for the Galerkin weak form of the system, we obtain a Petrov-Galerkin formulation. For the advection-diffusion example described above, the weak form after integration by parts is (Heinrich):
 
@@ -45,7 +49,7 @@ where $\Phi_i$ represents the standard Galerkin test function and $\Psi_i$ will 
 % \gint{0}{L}{\pbrac{D\frac{d\Phi}{dx}\frac{{d}\phi}{dx}+{u}\pbrac{\Phi+\frac{{\alpha}L}{2}\frac{d\Phi}{dx}}\frac{{d}\phi}{dx}}}x=0
  \gint{0}{L}{\pbrac{D\frac{d\Phi}{dx}\frac{{d}\phi}{dx}+{u}\pbrac{\Phi+{\alpha}L\frac{d\Phi}{dx}}\frac{{d}\phi}{dx}}}x=0
 \end{equation}
-This new formulation becomes critical with the introduction of source terms, as it consistently weights the system with numerical diffusion, rather than simply adding to the diffusion term on the LHS (in fact we are adding a diffusive weight to the convective term in this case). Examples illustrating this can be found in (Leonard, Heinrich). For additional techniques designed to accomodate higher order shape functions, we refer to (Hughes)
+The Petrov-Galerkin formualtion is also more useful with the introduction of source terms, as it consistently weights the system with numerical diffusion, rather than simply adding to the diffusion term on the LHS (in fact we are adding a diffusive weight to the convective term in this case). Examples illustrating this can be found in (Leonard, Heinrich). For additional techniques designed to accomodate higher order shape functions, we refer to (Hughes). Also, it should be mentioned that given very high velocity gradients, as in cases of shocks, numerical oscillations still persist and the addition of discontinuity capturing schemes may be neccesary (Chung). However, this is currently not implementated in OpenCMISS.
 
 \subsubsection{Dynamic Convective Transport}
 
@@ -55,7 +59,7 @@ With the introduction of unsteady terms to the system, we must also modify our P
  c=\frac{u\Delta{t}}{L}
 \end{equation}
 
-As a solution proceeds from $t$ to $t+\Delta{t}$, sharp velocity gradients will more often fall between nodes of the mesh for increasing values of $c$. When the highest $u$ values fall between nodes, the solver must compensate for this by redistributing the mass in the system so that conservation holds. For steady-state solutions solved dynamically, this can be useful as features like shocks may be quickly damped out of the system. However, if the evolution of the solution as it progresses and these convective processes are of interest, care must be taken to refine the appropriate time-step to meet a specified value for $c$. Generally, $c\le{1}$ is often neccessary in these cases to capture flow features, even when combined with transient schemes that are unconditionally stable.
+As a solution proceeds from $t$ to $t+\Delta{t}$, sharp velocity gradients will more often fall between nodes of the mesh for increasing values of $c$. When the highest $u$ values fall between nodes, the solver must compensate for this by redistributing the mass in the system so that conservation holds. For steady-state solutions solved dynamically, this can be useful as features like shocks may be quickly damped out of the system. However, if the evolution of the solution as it progresses and these convective processes are of interest, care must be taken to refine the appropriate time-step to meet a specified value for $c$. Generally, $c\le{1}$ is often neccessary in these cases to capture flow features, even when combined with transient schemes that are unconditionally stable (e.g. Crank-Nicolson ($\theta=\frac{1}{2}$), backward implicit ($\theta=1$).) This increases the likeliehood of the mesh being able to capture complex velocity patterns during the solution but does not guaranteee it- therefore time refinement studies are often required for solutions, as spatial mesh refinement studies are for steady state solutions. 
 
 %As $\alpha$ was used to introduce numerical diffusion to the Galerkin method above, another factor, $\beta$, will be used to add a term to the system to counteract the damping effect of the time solution. To continue this explaination, use a continuous space-time method to describe transient behavior, using a time-element with linear space, quadratic time weights. $\eqref{directupwind}$ will become:
 
