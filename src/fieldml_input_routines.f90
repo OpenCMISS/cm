@@ -451,7 +451,7 @@ CONTAINS
 
     coordinateType = 0 !There doesn't seem to be a COORDINATE_UNKNOWN_TYPE
 
-    evaluatorHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
+    evaluatorHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(evaluatorName) )
     CALL FieldmlUtil_CheckError( "Cannot get coordinate evaluator for geometric field", fieldmlInfo%fmlHandle, &
       & err, errorString, *999 )
 
@@ -502,7 +502,7 @@ CONTAINS
     !Locals
     INTEGER(C_INT) :: nodesArgumentHandle, nodesHandle, nodeCount
     
-    nodesArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(nodesArgumentName//NUL) )
+    nodesArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(nodesArgumentName) )
     IF( nodesArgumentHandle == FML_INVALID_HANDLE ) THEN
       CALL FLAG_ERROR( "Nodes argument name is invalid", err, errorString, *999 )
     END IF
@@ -549,7 +549,7 @@ CONTAINS
 
     CALL ENTERS( "FieldmlInput_MeshCreateStart", err, errorString, *999 )
     
-    meshArgument = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(meshArgumentName//NUL) )
+    meshArgument = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(meshArgumentName) )
     IF( meshArgument == FML_INVALID_HANDLE ) THEN
       CALL FieldmlUtil_CheckError( "Named mesh argument not found", fieldmlInfo, err, errorString, *999 )
     ENDIF
@@ -560,10 +560,10 @@ CONTAINS
     ENDIF
     
     fieldmlInfo%elementsHandle = Fieldml_GetMeshElementsType( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle )
-    fieldmlInfo%elementsArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(meshArgumentName//".element"//NUL))
+    fieldmlInfo%elementsArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(meshArgumentName//".element"))
 
     fieldmlInfo%xiHandle = Fieldml_GetMeshChartType( fieldmlInfo%fmlHandle, fieldmlInfo%meshHandle )
-    fieldmlInfo%xiArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(meshArgumentName//".xi"//NUL) )
+    fieldmlInfo%xiArgumentHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(meshArgumentName//".xi") )
 
     count = Fieldml_GetTypeComponentCount( fieldmlInfo%fmlHandle, fieldmlInfo%xiHandle )
     IF( ( count < 1 ) .OR. ( count > 3 ) ) THEN
@@ -607,7 +607,7 @@ CONTAINS
     
     CALL ENTERS( "FieldmlInput_BasisCreateStart", err, errorString, *999 )
 
-    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
+    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(evaluatorName) )
     CALL FieldmlUtil_CheckError( "Named basis not found", fieldmlInfo, err, errorString, *999 )
     CALL LIST_ITEM_IN_LIST_C_INT( fieldmlInfo%basisHandles, handle, listIndex, err, errorString, *999 )
     IF( listIndex /= 0 ) THEN
@@ -665,7 +665,7 @@ CONTAINS
 
     CALL FieldmlUtil_InitialiseInfo( fieldmlInfo, err, errorString, *999 )
 
-    fieldmlInfo%fmlHandle = Fieldml_CreateFromFile( char(filename//NUL) )
+    fieldmlInfo%fmlHandle = Fieldml_CreateFromFile( cchar(filename) )
     
     fmlErr = Fieldml_GetLastError( fieldmlInfo%fmlHandle )
     IF( fmlErr /= FML_ERR_NO_ERROR ) THEN
@@ -798,7 +798,7 @@ CONTAINS
     NULLIFY( basis )
     NULLIFY( meshElements )    
 
-    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
+    handle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(evaluatorName) )
     IF( .NOT. FieldmlInput_IsTemplateCompatible( fieldmlInfo, handle, fieldmlInfo%elementsHandle ) ) THEN
       CALL FLAG_ERROR( "Mesh component cannot be created from this evaluator", err, errorString, *999 )
     ENDIF
@@ -964,7 +964,7 @@ CONTAINS
 
     CALL ENTERS( "FieldmlInput_FieldCreateStart", err, errorString, *999 )
 
-    fieldHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
+    fieldHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(evaluatorName) )
     CALL FieldmlUtil_CheckError( "Cannot get named field evaluator", fieldmlInfo, err, errorString, *999 )
     typeHandle = Fieldml_GetValueType( fieldmlInfo%fmlHandle, fieldHandle )
     CALL FieldmlUtil_CheckError( "Cannot get named field evaluator's value type", fieldmlInfo, err, errorString, *999 )
@@ -1023,7 +1023,7 @@ CONTAINS
     
     mesh => field%DECOMPOSITION%MESH
 
-    nodalDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, char(evaluatorName//NUL) )
+    nodalDofsHandle = Fieldml_GetObjectByName( fieldmlInfo%fmlHandle, cchar(evaluatorName) )
     CALL FieldmlUtil_CheckError( "Cannot get nodal field dofs", fieldmlInfo, err, errorString, *999 )
   
     dataSource = Fieldml_GetDataSource( fieldmlInfo%fmlHandle, nodalDofsHandle )

@@ -40,9 +40,27 @@
 ! Thanks    : Lawrie Schonfelder (bugfixes and design pointers), Walt Brainerd
 !             (conversion to F).
 
+!JL 20/10/10  seems *very* strange that there is no deallocate statement in this entire file... given that varying string is 
+!             an allocatable character array. Adding one to prevent memory leak - has to be called manually like normal 
+!             deallocate statement
+
+!CPL 13/09/11
+!   It's not accurate to think of allocatables as just a kind of pointer (in particular, allocate should not be thought
+!   of as just a Fortran-style malloc). They are more like managed resources, and there is quite a bit of hidden
+!   machinery involved when using them.
+!
+!   Note that the Fortran95 spec states the following:
+!   Allocatable arrays (including type components) are automatically deallocated when they leave scope.
+!   Assigning to an allocatable array will cause it to be automatically deallocated, then reallocated with the right size.
+!
+!   In the context of varying_string, this means that all copies are deep copies, and temporaries (such as those generated
+!   by compound concatenations and function calls) are cleaned up automatically at runtime.
+
+
 !>This module provides an iso_varying_string module, conformant to the API specified in
 !>ISO/IEC 1539-2:2000 (varying-length strings for Fortran 95). 
 MODULE ISO_VARYING_STRING
+  USE ISO_C_BINDING
 
 ! No implicit typing
 
@@ -120,6 +138,11 @@ MODULE ISO_VARYING_STRING
      module procedure char_auto
      module procedure char_fixed
   end interface !char
+
+  interface cchar
+     module procedure c_char_auto
+     module procedure c_char_fixed
+  end interface !cchar
 
   interface iachar
      module procedure iachar_
@@ -272,6 +295,7 @@ MODULE ISO_VARYING_STRING
   public :: adjustl
   public :: adjustr
   public :: char
+  public :: c_char
   public :: iachar
   public :: ichar
   public :: index
@@ -323,6 +347,8 @@ MODULE ISO_VARYING_STRING
   private :: adjustr_
   private :: char_auto
   private :: char_fixed
+  private :: c_char_auto
+  private :: c_char_fixed
   private :: iachar_
   private :: ichar_
   private :: index_VS_VS
@@ -932,6 +958,53 @@ contains
     return
 
   end function char_fixed
+
+!****
+
+  pure function c_char_auto (string) result (c_char_string)
+
+    type(varying_string), intent(in) :: string
+    character(LEN=1,KIND=C_CHAR)     :: c_char_string(len(string)+1)
+
+    integer                          :: i_char
+    
+! Convert a varying string into a character string
+! (automatic length)
+    
+    forall(i_char = 1:len(string))
+       c_char_string(i_char) = string%chars(i_char)
+    end forall
+    c_char_string(len(string)+1) = C_NULL_CHAR
+
+! Finish
+
+    return
+
+  end function c_char_auto
+
+!****
+
+  pure function c_char_fixed (string, length) result (c_char_string)
+
+    type(varying_string), intent(in) :: string
+    integer, intent(in)              :: length
+    character(LEN=1,KIND=C_CHAR)     :: c_char_string(length+1)
+
+    integer                          :: i_char
+
+! Convert a varying string into a character string
+! (fixed length)
+
+    forall(i_char = 1:length)
+       c_char_string(i_char) = string%chars(i_char)
+    end forall
+    c_char_string(length+1) = C_NULL_CHAR
+
+! Finish
+
+    return
+
+  end function c_char_fixed
 
 !****
 
@@ -2565,9 +2638,6 @@ contains
 
 !****
 
-!JL 20/10/10 seems *very* strange that there is no deallocate statement in this entire file... given that varying string is 
-!            an allocatable character array. Adding one to prevent memory leak - has to be called manually like normal 
-!            deallocate statement
   elemental subroutine erase_ (string)
 
     type(varying_string), intent(inout) :: string
