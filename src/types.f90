@@ -92,6 +92,10 @@ MODULE TYPES
   TYPE INTEGER_INTG_PTR_TYPE
     INTEGER(INTG), POINTER :: PTR(:)
   END TYPE INTEGER_INTG_PTR_TYPE
+
+  TYPE INTEGER_CINT_ALLOC_TYPE
+    INTEGER(C_INT), ALLOCATABLE :: ARRAY(:)
+  END TYPE INTEGER_CINT_ALLOC_TYPE
   
   !
   !================================================================================================================================

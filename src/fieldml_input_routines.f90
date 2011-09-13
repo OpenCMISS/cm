@@ -66,11 +66,6 @@ MODULE FIELDML_INPUT_ROUTINES
   !Module parameters
   CHARACTER(KIND=C_CHAR), PARAMETER :: NUL = C_NULL_CHAR
 
-  !Shim type because Fortran can't handle arrays of arrays
-  TYPE ArrayShimType
-    INTEGER(C_INT), ALLOCATABLE :: array(:)
-  END TYPE ArrayShimType
-
   !Interfaces
 
   INTERFACE
@@ -788,7 +783,7 @@ CONTAINS
     INTEGER(INTG) :: componentCount, elementCount, knownBasisCount, maxBasisNodesCount, basisNodesCount
     INTEGER(INTG) :: elementNumber, knownBasisNumber, count
     INTEGER(C_INT), ALLOCATABLE :: connectivityReaders(:), connectivityCounts(:)
-    TYPE(ArrayShimType), ALLOCATABLE :: connectivityOrders(:)
+    TYPE(INTEGER_CINT_ALLOC_TYPE), ALLOCATABLE :: connectivityOrders(:)
     INTEGER(C_INT) :: tPtr, dataSource, orderHandle, tmpBasisHandle, fmlErr
     TYPE(BASIS_TYPE), POINTER :: basis
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: meshElements
@@ -834,7 +829,7 @@ CONTAINS
       ENDIF
       
       orderHandle = Fieldml_GetSemidenseIndexOrder( fieldmlInfo%fmlHandle, connectivityHandle, 1 )
-      CALL FieldmlInput_ReadOrder( fieldmlInfo, orderHandle, connectivityOrders( knownBasisNumber )%array, &
+      CALL FieldmlInput_ReadOrder( fieldmlInfo, orderHandle, connectivityOrders( knownBasisNumber )%ARRAY, &
         & basisNodesCount, err, errorString, *999 )
     
       dataSource = Fieldml_GetDataSource( fieldmlInfo%fmlHandle, connectivityHandle )
@@ -884,7 +879,7 @@ CONTAINS
         ENDIF
         CALL LIST_ITEM_GET_C_INT( fieldmlInfo%basisHandles, knownBasisNumber, tmpBasisHandle, err, errorString, *999 )
         IF( tmpBasisHandle == basisReferenceHandle ) THEN
-          CALL FieldInput_Reorder( rawBuffer, connectivityOrders(knownBasisNumber)%array, basisNodesCount, &
+          CALL FieldInput_Reorder( rawBuffer, connectivityOrders(knownBasisNumber)%ARRAY, basisNodesCount, &
             & nodesBuffer, err, errorString, *999 )
           CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET( elementNumber, meshElements, nodesBuffer(1:basisNodesCount), &
             & err, errorString, *999 )
@@ -900,8 +895,8 @@ CONTAINS
       IF( fmlErr /= FML_ERR_NO_ERROR ) THEN
         CALL FLAG_ERROR( "Error closing connectivity reader", err, errorString, *999 )
       ENDIF
-      IF( ALLOCATED( connectivityOrders( knownBasisNumber )%array ) ) THEN
-        DEALLOCATE( connectivityOrders( knownBasisNumber )%array )
+      IF( ALLOCATED( connectivityOrders( knownBasisNumber )%ARRAY ) ) THEN
+        DEALLOCATE( connectivityOrders( knownBasisNumber )%ARRAY )
       ENDIF
     ENDDO
     
@@ -928,8 +923,8 @@ CONTAINS
     ENDIF
     IF( ALLOCATED( connectivityOrders ) ) THEN
       DO knownBasisNumber = 1, knownBasisCount
-        IF( ALLOCATED( connectivityOrders( knownBasisNumber )%array ) ) THEN
-          DEALLOCATE( connectivityOrders( knownBasisNumber )%array )
+        IF( ALLOCATED( connectivityOrders( knownBasisNumber )%ARRAY ) ) THEN
+          DEALLOCATE( connectivityOrders( knownBasisNumber )%ARRAY )
         ENDIF
       ENDDO
     
