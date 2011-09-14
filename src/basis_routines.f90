@@ -5568,7 +5568,7 @@ CONTAINS
     
     CALL ENTERS("GAUSS_LEGENDRE",ERR,ERROR,*999)
 
-    IF(N>1.AND.N<=4) THEN
+    IF(N>=1.AND.N<=4) THEN
       DO i=1,N
         X(i)=XIG(GAUSS_START(N)+i)
         W(i)=WIG(GAUSS_START(N)+i)
