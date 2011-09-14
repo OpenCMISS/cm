@@ -390,23 +390,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
   SUBROUTINE REALLOCATE_INT( array, newSize, errorMessage, ERR, ERROR, * )
     INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_INT",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     array(:) = 0
 
     CALL EXITS("REALLOCATE_INT")
@@ -419,23 +419,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
   SUBROUTINE REALLOCATE_REAL( array, newSize, errorMessage, ERR, ERROR, * )
     REAL(DP), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_REAL",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     array(:) = 0
 
     CALL EXITS("REALLOCATE_REAL")
@@ -448,77 +448,77 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
   SUBROUTINE REALLOCATE_STRING( array, newSize, errorMessage, ERR, ERROR, * )
     TYPE(VARYING_STRING), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_STRING",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     CALL EXITS("REALLOCATE_STRING")
     RETURN
 999 CALL ERRORS("REALLOCATE_STRING",ERR,ERROR)
     CALL EXITS("REALLOCATE_STRING")
     RETURN 1
   END SUBROUTINE REALLOCATE_STRING
-  
+
   !
   !================================================================================================================================
   !
-  
+
   SUBROUTINE REALLOCATE_COMPONENTS( array, newSize, errorMessage, ERR, ERROR, * )
     TYPE(FIELD_VARIABLE_COMPONENT_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_COMPONENTS",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     CALL EXITS("REALLOCATE_COMPONENTS")
     RETURN
 999 CALL ERRORS("REALLOCATE_COMPONENTS",ERR,ERROR)
     CALL EXITS("REALLOCATE_COMPONENTS")
     RETURN 1
   END SUBROUTINE REALLOCATE_COMPONENTS
-  
+
   !
   !================================================================================================================================
   !
-  
+
   SUBROUTINE REALLOCATE_BASIS( array, newSize, errorMessage, ERR, ERROR, * )
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_BASIS",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     CALL EXITS("REALLOCATE_BASIS")
     RETURN
 999 CALL ERRORS("REALLOCATE_BASIS",ERR,ERROR)
@@ -529,23 +529,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
   SUBROUTINE REALLOCATE_FIELD( array, newSize, errorMessage, ERR, ERROR, * )
     TYPE(FIELD_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_FIELD",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     CALL EXITS("REALLOCATE_FIELD")
     RETURN
 999 CALL ERRORS("REALLOCATE_FIELD",ERR,ERROR)
@@ -556,23 +556,23 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
   SUBROUTINE REALLOCATE_ELEMENTS( array, newSize, errorMessage, ERR, ERROR, * )
     TYPE(MESH_ELEMENTS_TYPE_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_ELEMENTS",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     CALL EXITS("REALLOCATE_ELEMENTS")
     RETURN
 999 CALL ERRORS("REALLOCATE_ELEMENTS",ERR,ERROR)
@@ -591,16 +591,16 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     CALL ENTERS("REALLOCATE_2D",ERR,ERROR,*999)
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
-    
+
     ALLOCATE( array( newSize1, newSize2 ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
-    
+
     array(:,:) = 0
 
     CALL EXITS("REALLOCATE_2D")
@@ -620,25 +620,25 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     INTEGER(INTG), ALLOCATABLE :: tempArray(:)
     INTEGER(INTG) :: oldSize
-    
+
     CALL ENTERS("GROW_ARRAY_INT",ERR,ERROR,*999)
 
     IF( .NOT.ALLOCATED( array ) ) THEN
       CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
       RETURN
     ENDIF
-    
+
     oldSize = SIZE( array )
-    
+
     CALL REALLOCATE( tempArray, oldSize, errorMessage, ERR, ERROR, *999 )
-    
+
     tempArray(:) = array(:)
-    
+
     CALL REALLOCATE( array, oldSize + delta, errorMessage, ERR, ERROR, *999 )
-    
+
     array(1:oldSize) = tempArray(:)
 
     DEALLOCATE( tempArray )
@@ -649,7 +649,7 @@ CONTAINS
     CALL EXITS("GROW_ARRAY_INT")
     RETURN 1
   END SUBROUTINE GROW_ARRAY_INT
-  
+
   !
   !================================================================================================================================
   !
@@ -660,25 +660,25 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     REAL(C_DOUBLE), ALLOCATABLE :: tempArray(:)
     INTEGER(INTG) :: oldSize
-    
+
     CALL ENTERS("GROW_ARRAY_REAL",ERR,ERROR,*999)
 
     IF( .NOT.ALLOCATED( array ) ) THEN
       CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
       RETURN
     ENDIF
-    
+
     oldSize = SIZE( array )
-    
+
     CALL REALLOCATE( tempArray, oldSize, errorMessage, ERR, ERROR, *999 )
-    
+
     tempArray(:) = array(:)
-    
+
     CALL REALLOCATE( array, oldSize + delta, errorMessage, ERR, ERROR, *999 )
-    
+
     array(1:oldSize) = tempArray(:)
 
     DEALLOCATE( tempArray )
@@ -689,7 +689,7 @@ CONTAINS
     CALL EXITS("GROW_ARRAY_REAL")
     RETURN 1
   END SUBROUTINE GROW_ARRAY_REAL
-  
+
   !
   !================================================================================================================================
   !
@@ -700,25 +700,25 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: errorMessage
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     TYPE(FIELD_VARIABLE_COMPONENT_PTR_TYPE), ALLOCATABLE :: tempArray(:)
     INTEGER(INTG) :: oldSize
-    
+
     CALL ENTERS("GROW_ARRAY_COMPONENTS",ERR,ERROR,*999)
 
     IF( .NOT.ALLOCATED( array ) ) THEN
       CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
       RETURN
     ENDIF
-    
+
     oldSize = SIZE( array )
-    
+
     CALL REALLOCATE( tempArray, oldSize, errorMessage, ERR, ERROR, *999 )
-    
+
     tempArray(:) = array(:)
-    
+
     CALL REALLOCATE( array, oldSize + delta, errorMessage, ERR, ERROR, *999 )
-    
+
     array(1:oldSize) = tempArray(:)
 
     DEALLOCATE( tempArray )
@@ -729,110 +729,110 @@ CONTAINS
     CALL EXITS("GROW_ARRAY_COMPONENTS")
     RETURN 1
   END SUBROUTINE GROW_ARRAY_COMPONENTS
-  
+
   !
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_INT( array )
     INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: array(:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_INT
-  
+
   !
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_REAL( array )
     REAL(DP), ALLOCATABLE, INTENT(INOUT) :: array(:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_REAL
-  
+
   !
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_2D_INT( array )
     INTEGER(INTG), ALLOCATABLE, INTENT(INOUT) :: array(:,:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_2D_INT
-  
+
   !
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_COMPONENTS( array )
     TYPE(FIELD_VARIABLE_COMPONENT_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_COMPONENTS
-  
+
   !
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_STR( array )
     TYPE(VARYING_STRING), ALLOCATABLE, INTENT(INOUT) :: array(:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_STR
-  
+
   !
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_ELEMENTS( array )
     TYPE(MESH_ELEMENTS_TYPE_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_ELEMENTS
-  
+
   !
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_BASIS( array )
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_BASIS
-  
+
   !================================================================================================================================
   !
 
   SUBROUTINE CHECKED_DEALLOCATE_FIELD( array )
     TYPE(FIELD_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
- 
+
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
     ENDIF
 
   END SUBROUTINE CHECKED_DEALLOCATE_FIELD
-  
+
   !
   !================================================================================================================================
   !
@@ -864,12 +864,12 @@ CONTAINS
         KEYWORD=ADJUSTL(KEYWORD)
         KEYWORD=TRIM(KEYWORD)
         IF(KEYWORD=="coordinate") THEN
-           FIELD_TYPE=FIELD_GEOMETRIC_TYPE
+          FIELD_TYPE=FIELD_GEOMETRIC_TYPE
         ELSE IF (KEYWORD=="anatomical") THEN
-           FIELD_TYPE=FIELD_FIBRE_TYPE
+          FIELD_TYPE=FIELD_FIBRE_TYPE
         ELSE
-           FIELD_TYPE=-1
-           CALL FLAG_ERROR("Cannot find corresponding field type from input string",ERR,ERROR,*999)
+          FIELD_TYPE=-1
+          CALL FLAG_ERROR("Cannot find corresponding field type from input string",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         CALL FLAG_ERROR("Cannot find any information from input string",ERR,ERROR,*999)
@@ -898,43 +898,42 @@ CONTAINS
 
     CALL ENTERS("FIELD_IO_DERIVATIVE_INFO",ERR,ERROR,*999)
 
-
     IF("d/ds1"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1
     ELSE IF("d2/ds1ds1"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S1
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S1
     ELSE IF("d/ds2"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2
     ELSE IF("d2/ds2ds2"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S2
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S2
     ELSE IF("d/ds3"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2
     ELSE IF("d2/ds3ds3"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3
     ELSE IF("d2/ds3ds3"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S3
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S3
     ELSE IF("d2/ds1ds3"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3
     ELSE IF("d2/ds2ds3"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3
     ELSE IF("d3/ds1ds2ds3"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S3
     ELSE IF("d/ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4
     ELSE IF("d2/ds4ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4
     ELSE IF("d2/ds1ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S4
     ELSE IF("d2/ds2ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S4
     ELSE IF("d2/ds3ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S3_S4
     ELSE IF("d3/ds1ds2ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S2_S4
     ELSE IF("d3/ds1ds3ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S3_S4
     ELSE IF("d3/ds2ds3ds4"==LINE) THEN
-       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3_S4
+      FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S2_S3_S4
     ELSE IF("d3/ds1ds4ds4"==LINE) THEN
       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S1_S4_S4
     ELSE IF("d3/ds2ds4ds4"==LINE) THEN
@@ -944,8 +943,8 @@ CONTAINS
     ELSE IF("d3/ds4ds4ds4"==LINE) THEN
       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4_S4
     ELSE
-       FIELD_IO_DERIVATIVE_INFO=-1
-       CALL FLAG_ERROR("Could not recognize derivatives from input string",ERR,ERROR,*999)
+      FIELD_IO_DERIVATIVE_INFO=-1
+      CALL FLAG_ERROR("Could not recognize derivatives from input string",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_IO_DERIVATIVE_INFO")
@@ -1031,89 +1030,89 @@ CONTAINS
 
       DO WHILE(idx_exnode<NUMBER_OF_EXNODE_FILES)
 
-         FILE_ID=1030+idx_exnode
-         !checking the next file
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
-         !INQUIRE(FILE=CHAR(FILE_NAME), OPENED=FILE_OPEN)
-         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-         SECTION_START=.FALSE.
-         FILE_END=.FALSE.
+        FILE_ID=1030+idx_exnode
+        !checking the next file
+        FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
+        !INQUIRE(FILE=CHAR(FILE_NAME), OPENED=FILE_OPEN)
+        CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+        SECTION_START=.FALSE.
+        FILE_END=.FALSE.
 
-         DO WHILE(.NOT.FILE_END)
-            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+        DO WHILE(.NOT.FILE_END)
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
 
-            !check the beginning of field section in exnode files
-            IF((.NOT.SECTION_START).AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
-               SECTION_START=.TRUE.
-            ENDIF
+          !check the beginning of field section in exnode files
+          IF((.NOT.SECTION_START).AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+            SECTION_START=.TRUE.
+          ENDIF
 
-            !check whether it is a new header for another group of elements
-            IF(SECTION_START.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+          !check whether it is a new header for another group of elements
+          IF(SECTION_START.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
 
-               !collect header information
-               pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
-               idx_field=STRING_TO_INTEGER(LINE, ERR,ERROR)
-               IF(idx_field/=NUMBER_OF_FIELDS) CALL FLAG_ERROR("find different field number in exnode files",ERR,ERROR,*999)
-               idx_comp=0
-               DO idx_field=1,NUMBER_OF_FIELDS
-                  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                  IF(idx_exnode==0) THEN
-                     LIST_STR(idx_field)=LINE
-                     pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
-                     LINE=REMOVE(LINE, 1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                     number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                     total_number_of_comps=total_number_of_comps+number_of_comps
-                  ELSE
-                IF(LIST_STR(idx_field)/=LINE) CALL FLAG_ERROR("find different field information in exnode files", &
-                  & ERR,ERROR,*999)
-                  ENDIF
-                  pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
-                  LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                  number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                  DO idx_comp=1,number_of_comps
-                     CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                  ENDDO !idx_comp1
-               ENDDO !idx_field
-            ENDIF !START_OF_FIELD_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELD,LINE)==0)
-         ENDDO !(FILE_END==.FALSE.)
-         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-         idx_exnode=idx_exnode+1
+            !collect header information
+            pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+            idx_field=STRING_TO_INTEGER(LINE, ERR,ERROR)
+            IF(idx_field/=NUMBER_OF_FIELDS) CALL FLAG_ERROR("find different field number in exnode files",ERR,ERROR,*999)
+            idx_comp=0
+            DO idx_field=1,NUMBER_OF_FIELDS
+              CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+              IF(idx_exnode==0) THEN
+                LIST_STR(idx_field)=LINE
+                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+                LINE=REMOVE(LINE, 1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+                number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)
+                total_number_of_comps=total_number_of_comps+number_of_comps
+              ELSE
+             IF(LIST_STR(idx_field)/=LINE) CALL FLAG_ERROR("find different field information in exnode files", &
+              & ERR,ERROR,*999)
+              ENDIF
+              pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+              number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)
+              DO idx_comp=1,number_of_comps
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+              ENDDO !idx_comp1
+            ENDDO !idx_field
+          ENDIF !START_OF_FIELD_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_FIELD,LINE)==0)
+        ENDDO !(FILE_END==.FALSE.)
+        CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+        idx_exnode=idx_exnode+1
       ENDDO !idx_exnode<NUMBER_OF_EXNODE_FILES
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number
 
     idx_comp1=0
     DO idx_field=1,NUMBER_OF_FIELDS
-       IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
-       !Start to create a default (geometric) field on the region
-       CALL FIELD_CREATE_START(idx_field,REGION,FIELD,ERR,ERROR,*999)
-       !always has one field variable in one field during reading
-       CALL FIELD_NUMBER_OF_VARIABLES_SET(FIELD,1,ERR,ERROR,*999)
-       !Set the decomposition to use
-       CALL FIELD_MESH_DECOMPOSITION_SET(FIELD,DECOMPOSITION,ERR,ERROR,*999)
-       !Set the number of components for this field
-       CALL FIELD_NUMBER_OF_COMPONENTS_SET(FIELD,FIELD_U_VARIABLE_TYPE,COMPONENTS_IN_FIELDS(idx_field),ERR,ERROR,*999)
-       DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
-          idx_comp1=idx_comp1+1
-          !Set the domain to be used by the field components
-          CALL FIELD_COMPONENT_MESH_COMPONENT_SET(FIELD,1,idx_comp,MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp1),ERR,ERROR,*999)
-       ENDDO
-       !Set the scaling factor
-       CALL FIELD_SCALING_TYPE_SET(FIELD, FIELD_SCALING_TYPE, ERR, ERROR, *999)
+      IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
+      !Start to create a default (geometric) field on the region
+      CALL FIELD_CREATE_START(idx_field,REGION,FIELD,ERR,ERROR,*999)
+      !always has one field variable in one field during reading
+      CALL FIELD_NUMBER_OF_VARIABLES_SET(FIELD,1,ERR,ERROR,*999)
+      !Set the decomposition to use
+      CALL FIELD_MESH_DECOMPOSITION_SET(FIELD,DECOMPOSITION,ERR,ERROR,*999)
+      !Set the number of components for this field
+      CALL FIELD_NUMBER_OF_COMPONENTS_SET(FIELD,FIELD_U_VARIABLE_TYPE,COMPONENTS_IN_FIELDS(idx_field),ERR,ERROR,*999)
+      DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
+        idx_comp1=idx_comp1+1
+        !Set the domain to be used by the field components
+        CALL FIELD_COMPONENT_MESH_COMPONENT_SET(FIELD,1,idx_comp,MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp1),ERR,ERROR,*999)
+      ENDDO
+      !Set the scaling factor
+      CALL FIELD_SCALING_TYPE_SET(FIELD, FIELD_SCALING_TYPE, ERR, ERROR, *999)
 
-       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-          CALL FIELD_IO_FIELD_INFO(LIST_STR(idx_field), FIELD_IO_FIELD_LABEL, FIELDTYPE, ERR, ERROR, *999)
-       ENDIF
-       CALL MPI_BCAST(FIELDTYPE,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       !Set FIELD TYPE
-       CALL FIELD_TYPE_SET(FIELD, FIELDTYPE, ERR, ERROR, *999)
-       !Finish creating the field
-       CALL FIELD_CREATE_FINISH(FIELD,ERR,ERROR,*999)
+      IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+        CALL FIELD_IO_FIELD_INFO(LIST_STR(idx_field), FIELD_IO_FIELD_LABEL, FIELDTYPE, ERR, ERROR, *999)
+      ENDIF
+      CALL MPI_BCAST(FIELDTYPE,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      !Set FIELD TYPE
+      CALL FIELD_TYPE_SET(FIELD, FIELDTYPE, ERR, ERROR, *999)
+      !Finish creating the field
+      CALL FIELD_CREATE_FINISH(FIELD,ERR,ERROR,*999)
     ENDDO
 
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-       CALL CHECKED_DEALLOCATE( LIST_STR )
+      CALL CHECKED_DEALLOCATE( LIST_STR )
     ENDIF
 
     FILE_END=.TRUE.
@@ -1124,254 +1123,254 @@ CONTAINS
     !broadcasting total_number_of_comps
     CALL MPI_BCAST(total_number_of_comps,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-    
+
     CALL REALLOCATE( LIST_DEV_POS, total_number_of_comps, &
       & "Could not allocate memory for nodal derivative position in field components", ERR, ERROR, *999 )
 
     DO WHILE(idx_exnode<NUMBER_OF_EXNODE_FILES)
 
-       CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
 
-       IF(FILE_END) THEN
-          idx_exnode=idx_exnode+1
-          INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN)
-          IF(FILE_OPEN) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-          IF(idx_exnode>=NUMBER_OF_EXNODE_FILES) EXIT
-       ENDIF
+      IF(FILE_END) THEN
+        idx_exnode=idx_exnode+1
+        INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN)
+        IF(FILE_OPEN) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+        IF(idx_exnode>=NUMBER_OF_EXNODE_FILES) EXIT
+      ENDIF
 
-       !IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) PRINT * , idx_exnode
+      !IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) PRINT * , idx_exnode
 
-       !goto the start of mesh part
-       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+      !goto the start of mesh part
+      IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
 
-          IF(FILE_END) THEN
-             FILE_ID=1030+idx_exnode
-             !checking the next file
-             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
-             CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-             FILE_END=.FALSE.
-             SECTION_START=.FALSE.
-             NODE_SECTION=.FALSE.
-             !idx_exnode=idx_exnode+1
-          ENDIF
+        IF(FILE_END) THEN
+          FILE_ID=1030+idx_exnode
+          !checking the next file
+          FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
+          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+          FILE_END=.FALSE.
+          SECTION_START=.FALSE.
+          NODE_SECTION=.FALSE.
+          !idx_exnode=idx_exnode+1
+        ENDIF
 
-          IF((.NOT.FILE_END).AND.(.NOT.SECTION_START))  THEN
-             !find a new header
-             DO WHILE(VERIFY(CMISS_KEYWORD_FIELDS,LINE)/=0)
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             ENDDO
-             SECTION_START=.TRUE.
-          ENDIF
+        IF((.NOT.FILE_END).AND.(.NOT.SECTION_START))  THEN
+          !find a new header
+          DO WHILE(VERIFY(CMISS_KEYWORD_FIELDS,LINE)/=0)
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          ENDDO
+          SECTION_START=.TRUE.
+        ENDIF
 
-          !have not touched the end
-          IF((.NOT.FILE_END).AND.SECTION_START.AND.(.NOT.NODE_SECTION)) THEN
-             pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
-             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
-             !number_of_fields=STRING_TO_INTEGER(LINE, ERR, ERROR)
-             total_number_of_devs=0
-             idx_comp1=0
-             idx_dev1=0
-             DO idx_field=1, NUMBER_OF_FIELDS
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
-                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                number_of_comps=STRING_TO_INTEGER(LINE, ERR, ERROR)
-                !total_number_of_comps=total_number_of_comps+number_of_comps
+        !have not touched the end
+        IF((.NOT.FILE_END).AND.SECTION_START.AND.(.NOT.NODE_SECTION)) THEN
+          pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
+          LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+          !number_of_fields=STRING_TO_INTEGER(LINE, ERR, ERROR)
+          total_number_of_devs=0
+          idx_comp1=0
+          idx_dev1=0
+          DO idx_field=1, NUMBER_OF_FIELDS
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+            pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+            number_of_comps=STRING_TO_INTEGER(LINE, ERR, ERROR)
+            !total_number_of_comps=total_number_of_comps+number_of_comps
 
-                DO idx_comp=1, number_of_comps
-                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                   pos=INDEX(LINE,".")
-                   LINE=REMOVE(LINE,1, pos+1)
-                   pos=INDEX(LINE,CMISS_KEYWORD_VALUE_INDEX)
-                   LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_VALUE_INDEX)-1)
-                   pos=INDEX(LINE,",")
-                   LINE1=EXTRACT(LINE,1,pos-1)
-                   idx_comp1=idx_comp1+1
-                   LIST_DEV_POS(idx_comp1)=STRING_TO_INTEGER(LINE1, ERR, ERROR)
+            DO idx_comp=1, number_of_comps
+              CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+              pos=INDEX(LINE,".")
+              LINE=REMOVE(LINE,1, pos+1)
+              pos=INDEX(LINE,CMISS_KEYWORD_VALUE_INDEX)
+              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_VALUE_INDEX)-1)
+              pos=INDEX(LINE,",")
+              LINE1=EXTRACT(LINE,1,pos-1)
+              idx_comp1=idx_comp1+1
+              LIST_DEV_POS(idx_comp1)=STRING_TO_INTEGER(LINE1, ERR, ERROR)
 
-                   pos=INDEX(LINE,CMISS_KEYWORD_DERIVATIVE)
-                   LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_DERIVATIVE)-1)
-                   pos=INDEX(LINE,"(")
-                   LINE1=EXTRACT(LINE,1,pos-1)
-                   number_of_devs=STRING_TO_INTEGER(LINE, ERR, ERROR)+1
-                   total_number_of_devs=total_number_of_devs+number_of_devs
+              pos=INDEX(LINE,CMISS_KEYWORD_DERIVATIVE)
+              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_DERIVATIVE)-1)
+              pos=INDEX(LINE,"(")
+              LINE1=EXTRACT(LINE,1,pos-1)
+              number_of_devs=STRING_TO_INTEGER(LINE, ERR, ERROR)+1
+              total_number_of_devs=total_number_of_devs+number_of_devs
 
-                   IF(ALLOCATED(LIST_DEV)) THEN
-                      CALL REALLOCATE( tmp_pointer, total_number_of_devs-number_of_devs, &
-                        & "Could not allocate temporary memory for nodal derivative index in master node", ERR,ERROR,*999)
-                      tmp_pointer(:)=LIST_DEV(:)
-                      
-                      CALL REALLOCATE( LIST_DEV, total_number_of_devs, &
-                        & "Could not allocate temporary memory for nodal derivative index in master node", ERR,ERROR,*999)
-                      LIST_DEV(1:total_number_of_devs-number_of_devs)=tmp_pointer(:)
+              IF(ALLOCATED(LIST_DEV)) THEN
+                CALL REALLOCATE( tmp_pointer, total_number_of_devs-number_of_devs, &
+                  & "Could not allocate temporary memory for nodal derivative index in master node", ERR,ERROR,*999)
+                tmp_pointer(:)=LIST_DEV(:)
 
-                      DEALLOCATE(tmp_pointer)
-                   ELSE
-                      CALL REALLOCATE( LIST_DEV, total_number_of_devs, &
-                        & "Could not allocate memory for nodal derivative index", ERR, ERROR, *999)
-                   ENDIF
+                CALL REALLOCATE( LIST_DEV, total_number_of_devs, &
+                  & "Could not allocate temporary memory for nodal derivative index in master node", ERR,ERROR,*999)
+                LIST_DEV(1:total_number_of_devs-number_of_devs)=tmp_pointer(:)
 
-                   !print *, idx_dev1, NO_PART_DERIV, LIST_DEV
+                DEALLOCATE(tmp_pointer)
+              ELSE
+                CALL REALLOCATE( LIST_DEV, total_number_of_devs, &
+                  & "Could not allocate memory for nodal derivative index", ERR, ERROR, *999)
+              ENDIF
 
-                   IF(number_of_devs<=1) THEN
-                      idx_dev1=idx_dev1+1
-                      LIST_DEV(idx_dev1)=NO_PART_DERIV
-                      !print *, idx_dev1, NO_PART_DERIV, LIST_DEV
-                   ELSE
-                      pos=INDEX(LINE,"(")
-                      LINE=REMOVE(LINE,1, pos)
-                      pos=INDEX(LINE,")")
-                      LINE=REMOVE(LINE,pos, LEN(LINE))
-                      idx_dev1=idx_dev1+1
-                      LIST_DEV(idx_dev1)=NO_PART_DERIV
-                      DO idx_dev=2, number_of_devs-1
-                         idx_dev1=idx_dev1+1
-                         pos=INDEX(LINE,",")
-                         LINE1=EXTRACT(LINE, 1, pos-1)
-                         LINE=REMOVE(LINE, 1, pos)
-                         LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE1, ERR,ERROR)
-                      ENDDO
-                      idx_dev1=idx_dev1+1
-                      LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE, ERR,ERROR)
-                   ENDIF
-                ENDDO !idx_comp
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                NODE_SECTION=.TRUE.
-             ENDDO !idx_field
-          ENDIF  !FILE_END==.FALSE..AND.SECTION_START=.TRUE..AND.NODE_SECTION=.FALSE.
-       ENDIF !MASTER_COMPUTATIONAL_NUMBER
+              !print *, idx_dev1, NO_PART_DERIV, LIST_DEV
 
-       !broadcasting total_number_of_devs
-       CALL MPI_BCAST(total_number_of_devs,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-
-       IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
-          CALL REALLOCATE( LIST_DEV, total_number_of_devs, &
-            & "Could not allocate memory for nodal derivative index in non-master node", ERR, ERROR, *999 )
-       ENDIF
-       
-       CALL REALLOCATE( LIST_DEV_VALUE, total_number_of_devs, &
-         & "Could not allocate memory for nodal derivative index in non-master node", ERR, ERROR, *999 )
-
-       !broadcasting total_number_of_comps
-       CALL MPI_BCAST(LIST_DEV_POS,total_number_of_comps,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       !broadcasting total_number_of_devs
-       CALL MPI_BCAST(LIST_DEV,total_number_of_devs,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-
-       !goto the start of mesh part
-       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
-
-          !have not touched the end
-          IF((.NOT.FILE_END).AND.SECTION_START.AND.NODE_SECTION) THEN
-
-             IF(VERIFY(CMISS_KEYWORD_NODE, LINE)==0) THEN
-                pos=INDEX(LINE,CMISS_KEYWORD_NODE)
-                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODE)-1)
-                NODAL_USER_NUMBER=STRING_TO_INTEGER(LINE, ERR, ERROR)
-                idx_comp1=1
-                DO idx_comp=1, number_of_comps-1
-                   IF(LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp)<=NUMBER_NODAL_VALUE_LINES) THEN
-                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                      CALL STRING_TO_MUTI_REALS_VS(LINE, LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp), LIST_DEV_VALUE, &
-                        & LIST_DEV_POS(idx_comp), ERR,ERROR, *999)
-                   ELSE
-                      NUMBER_OF_LINES=(LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))/NUMBER_NODAL_VALUE_LINES
-                      DO idx_nodal_line=1, NUMBER_OF_LINES
-                         CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                         CALL STRING_TO_MUTI_REALS_VS(LINE, NUMBER_NODAL_VALUE_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+ &
-                           & (idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
-                      ENDDO
-                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                      CALL STRING_TO_MUTI_REALS_VS(LINE, (LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))- &
-                        & NUMBER_NODAL_VALUE_LINES*NUMBER_OF_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+ &
-                        & (idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
-                   ENDIF
+              IF(number_of_devs<=1) THEN
+                idx_dev1=idx_dev1+1
+                LIST_DEV(idx_dev1)=NO_PART_DERIV
+                !print *, idx_dev1, NO_PART_DERIV, LIST_DEV
+              ELSE
+                pos=INDEX(LINE,"(")
+                LINE=REMOVE(LINE,1, pos)
+                pos=INDEX(LINE,")")
+                LINE=REMOVE(LINE,pos, LEN(LINE))
+                idx_dev1=idx_dev1+1
+                LIST_DEV(idx_dev1)=NO_PART_DERIV
+                DO idx_dev=2, number_of_devs-1
+                  idx_dev1=idx_dev1+1
+                  pos=INDEX(LINE,",")
+                  LINE1=EXTRACT(LINE, 1, pos-1)
+                  LINE=REMOVE(LINE, 1, pos)
+                  LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE1, ERR,ERROR)
                 ENDDO
-                !IF((total_number_of_devs-LIST_DEV_POS(idx_comp)+1)<=NUMBER_NODAL_VALUE_LINES) THEN
-                !   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                !   CALL STRING_TO_MUTI_REALS_VS(LINE, total_number_of_devs-LIST_DEV_POS(idx_comp)+1, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp), ERR,ERROR, *999)
-                !ELSE
-                !   NUMBER_OF_LINES=(total_number_of_devs-LIST_DEV_POS(idx_comp)+1)/NUMBER_NODAL_VALUE_LINES
-                !   DO idx_nodal_line=1, NUMBER_OF_LINES
-                !      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                !      CALL STRING_TO_MUTI_REALS_VS(LINE, NUMBER_NODAL_VALUE_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+(idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
-                !   ENDDO
-                !   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                !   CALL STRING_TO_MUTI_REALS_VS(LINE, (LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))-NUMBER_NODAL_VALUE_LINES*NUMBER_OF_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+(idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
-                !ENDIF
+                idx_dev1=idx_dev1+1
+                LIST_DEV(idx_dev1)=FIELD_IO_DERIVATIVE_INFO(LINE, ERR,ERROR)
+              ENDIF
+            ENDDO !idx_comp
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+            NODE_SECTION=.TRUE.
+          ENDDO !idx_field
+        ENDIF  !FILE_END==.FALSE..AND.SECTION_START=.TRUE..AND.NODE_SECTION=.FALSE.
+      ENDIF !MASTER_COMPUTATIONAL_NUMBER
+
+      !broadcasting total_number_of_devs
+      CALL MPI_BCAST(total_number_of_devs,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+
+      IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
+        CALL REALLOCATE( LIST_DEV, total_number_of_devs, &
+          & "Could not allocate memory for nodal derivative index in non-master node", ERR, ERROR, *999 )
+      ENDIF
+
+      CALL REALLOCATE( LIST_DEV_VALUE, total_number_of_devs, &
+        & "Could not allocate memory for nodal derivative index in non-master node", ERR, ERROR, *999 )
+
+      !broadcasting total_number_of_comps
+      CALL MPI_BCAST(LIST_DEV_POS,total_number_of_comps,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      !broadcasting total_number_of_devs
+      CALL MPI_BCAST(LIST_DEV,total_number_of_devs,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+
+      !goto the start of mesh part
+      IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+
+        !have not touched the end
+        IF((.NOT.FILE_END).AND.SECTION_START.AND.NODE_SECTION) THEN
+
+          IF(VERIFY(CMISS_KEYWORD_NODE, LINE)==0) THEN
+            pos=INDEX(LINE,CMISS_KEYWORD_NODE)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODE)-1)
+            NODAL_USER_NUMBER=STRING_TO_INTEGER(LINE, ERR, ERROR)
+            idx_comp1=1
+            DO idx_comp=1, number_of_comps-1
+              IF(LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp)<=NUMBER_NODAL_VALUE_LINES) THEN
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                CALL STRING_TO_MUTI_REALS_VS(LINE, total_number_of_devs-LIST_DEV_POS(idx_comp)+1, LIST_DEV_VALUE, &
+                CALL STRING_TO_MUTI_REALS_VS(LINE, LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp), LIST_DEV_VALUE, &
                   & LIST_DEV_POS(idx_comp), ERR,ERROR, *999)
-             ELSE
-                CALL FLAG_ERROR("The position of nodal information in exenode files is not correct",ERR, ERROR,*999)
-                NODE_SECTION=.FALSE.
-             ENDIF !(VERIFY(CMISS_KEYWORD_NODE , LINE)==0)
-             IF(.NOT.FILE_END) THEN
+              ELSE
+                NUMBER_OF_LINES=(LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))/NUMBER_NODAL_VALUE_LINES
+                DO idx_nodal_line=1, NUMBER_OF_LINES
+                  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+                  CALL STRING_TO_MUTI_REALS_VS(LINE, NUMBER_NODAL_VALUE_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+ &
+                    & (idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
+                ENDDO
                 CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
-                IF(VERIFY(CMISS_KEYWORD_NODE, LINE)/=0) NODE_SECTION=.FALSE.
-             ENDIF
-          ENDIF !FILE_END==.FALSE..AND.SECTION_START=.TRUE..AND.NODE_SECTION=.TRUE.
-       ENDIF  !(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number)
+                CALL STRING_TO_MUTI_REALS_VS(LINE, (LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))- &
+                  & NUMBER_NODAL_VALUE_LINES*NUMBER_OF_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+ &
+                  & (idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
+              ENDIF
+            ENDDO
+            !IF((total_number_of_devs-LIST_DEV_POS(idx_comp)+1)<=NUMBER_NODAL_VALUE_LINES) THEN
+            !  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+            !  CALL STRING_TO_MUTI_REALS_VS(LINE, total_number_of_devs-LIST_DEV_POS(idx_comp)+1, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp), ERR,ERROR, *999)
+            !ELSE
+            !  NUMBER_OF_LINES=(total_number_of_devs-LIST_DEV_POS(idx_comp)+1)/NUMBER_NODAL_VALUE_LINES
+            !  DO idx_nodal_line=1, NUMBER_OF_LINES
+            !    CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+            !    CALL STRING_TO_MUTI_REALS_VS(LINE, NUMBER_NODAL_VALUE_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+(idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
+            !  ENDDO
+            !  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+            !  CALL STRING_TO_MUTI_REALS_VS(LINE, (LIST_DEV_POS(idx_comp+1)-LIST_DEV_POS(idx_comp))-NUMBER_NODAL_VALUE_LINES*NUMBER_OF_LINES, LIST_DEV_VALUE, LIST_DEV_POS(idx_comp)+(idx_nodal_line-1)*NUMBER_NODAL_VALUE_LINES, ERR,ERROR, *999)
+            !ENDIF
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+            CALL STRING_TO_MUTI_REALS_VS(LINE, total_number_of_devs-LIST_DEV_POS(idx_comp)+1, LIST_DEV_VALUE, &
+              & LIST_DEV_POS(idx_comp), ERR,ERROR, *999)
+          ELSE
+            CALL FLAG_ERROR("The position of nodal information in exenode files is not correct",ERR, ERROR,*999)
+            NODE_SECTION=.FALSE.
+          ENDIF !(VERIFY(CMISS_KEYWORD_NODE , LINE)==0)
+          IF(.NOT.FILE_END) THEN
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR, ERROR,*999)
+            IF(VERIFY(CMISS_KEYWORD_NODE, LINE)/=0) NODE_SECTION=.FALSE.
+          ENDIF
+        ENDIF !FILE_END==.FALSE..AND.SECTION_START=.TRUE..AND.NODE_SECTION=.TRUE.
+      ENDIF  !(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number)
 
-       !broadcasting total_number_of_devs
-       CALL MPI_BCAST(LIST_DEV_VALUE,total_number_of_devs,MPI_REAL8,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       CALL MPI_BCAST(NODAL_USER_NUMBER,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      !broadcasting total_number_of_devs
+      CALL MPI_BCAST(LIST_DEV_VALUE,total_number_of_devs,MPI_REAL8,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(NODAL_USER_NUMBER,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
 
-       !IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
-       print *, "user number:"
-       print *, NODAL_USER_NUMBER
-       print *, LIST_DEV_VALUE
-       !ENDIF
+      !IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
+      print *, "user number:"
+      print *, NODAL_USER_NUMBER
+      print *, LIST_DEV_VALUE
+      !ENDIF
 
 
-       idx_comp1=0
-       idx_dev1=0
-       idx_variable=1
-       DO idx_field=1,NUMBER_OF_FIELDS
-          IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
-          FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
-          DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
-             idx_comp1=idx_comp1+1
-             DOMAIN_NODES=>FIELD%VARIABLES(idx_variable)%COMPONENTS(idx_comp)%DOMAIN%TOPOLOGY%NODES
-             NODE_IN_DOMAIN=.FALSE.
-             DO idx_node=1,DOMAIN_NODES%NUMBER_OF_NODES
-                !IF(DOMAIN_NODES%NODES(idx_node)%GLOBAL_NUMBER==USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER)) THEN
-                IF(DOMAIN_NODES%NODES(idx_node)%USER_NUMBER==NODAL_USER_NUMBER) THEN
-                   NODE_IN_DOMAIN=.TRUE.
-                   NODAL_LOCAL_NUMBER=idx_node
-                ENDIF
-             ENDDO
+      idx_comp1=0
+      idx_dev1=0
+      idx_variable=1
+      DO idx_field=1,NUMBER_OF_FIELDS
+        IF(ASSOCIATED(FIELD)) NULLIFY(FIELD)
+        FIELD=>REGION%FIELDS%FIELDS(idx_field)%PTR
+        DO idx_comp=1, COMPONENTS_IN_FIELDS(idx_field)
+          idx_comp1=idx_comp1+1
+          DOMAIN_NODES=>FIELD%VARIABLES(idx_variable)%COMPONENTS(idx_comp)%DOMAIN%TOPOLOGY%NODES
+          NODE_IN_DOMAIN=.FALSE.
+          DO idx_node=1,DOMAIN_NODES%NUMBER_OF_NODES
+            !IF(DOMAIN_NODES%NODES(idx_node)%GLOBAL_NUMBER==USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NODAL_USER_NUMBER)) THEN
+            IF(DOMAIN_NODES%NODES(idx_node)%USER_NUMBER==NODAL_USER_NUMBER) THEN
+              NODE_IN_DOMAIN=.TRUE.
+              NODAL_LOCAL_NUMBER=idx_node
+            ENDIF
+          ENDDO
 
-             IF(NODE_IN_DOMAIN) THEN
-                IF(idx_comp1>=NUMBER_OF_COMPONENTS) THEN
-                   DO idx_dev=1, total_number_of_devs-LIST_DEV_POS(idx_comp1)+1
-                      idx_dev1=idx_dev1+1
-                      !Set the domain to be used by the field components
-                      !Default to version 1 of each node derivative
-                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE,1, LIST_DEV(idx_dev1), &
-                           &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
-                           &ERR, ERROR, *999)
-                      !print *, "n--n"
-                   ENDDO !idx_dev
-                ELSE
-                   DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
-                      idx_dev1=idx_dev1+1
-                      !Set the domain to be used by the field components
-                      !Default to version 1 of each node derivative
-                      CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE,1, LIST_DEV(idx_dev1), &
-                           &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
-                           &ERR, ERROR, *999)
-                      !print *, "n--n"
-                   ENDDO !idx_dev
-                ENDIF  !idx_comp1
-             ENDIF !NODE_IN_DOMAIN
-          ENDDO !idx_comp
-       ENDDO !idx_field
+          IF(NODE_IN_DOMAIN) THEN
+            IF(idx_comp1>=NUMBER_OF_COMPONENTS) THEN
+              DO idx_dev=1, total_number_of_devs-LIST_DEV_POS(idx_comp1)+1
+                idx_dev1=idx_dev1+1
+                !Set the domain to be used by the field components
+                !Default to version 1 of each node derivative
+                CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE,1, LIST_DEV(idx_dev1), &
+                    &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
+                    &ERR, ERROR, *999)
+                !print *, "n--n"
+              ENDDO !idx_dev
+            ELSE
+              DO idx_dev=1, LIST_DEV_POS(idx_comp1+1)-LIST_DEV_POS(idx_comp1)
+                idx_dev1=idx_dev1+1
+                !Set the domain to be used by the field components
+                !Default to version 1 of each node derivative
+                CALL FIELD_PARAMETER_SET_UPDATE_NODE(FIELD,FIELD_VALUES_SET_TYPE,1, LIST_DEV(idx_dev1), &
+                    &NODAL_LOCAL_NUMBER, idx_comp, idx_variable, LIST_DEV_VALUE(idx_dev1),&
+                    &ERR, ERROR, *999)
+                !print *, "n--n"
+              ENDDO !idx_dev
+            ENDIF  !idx_comp1
+          ENDIF !NODE_IN_DOMAIN
+        ENDDO !idx_comp
+      ENDDO !idx_field
     ENDDO !idx_exnode<NUMBER_OF_EXELEM_FILES
 
     !print *, "out of loop"
@@ -1481,23 +1480,23 @@ CONTAINS
     MASTER_COMPUTATIONAL_NUMBER=0
 
     IF(METHOD=="FORTRAN") THEN
-       CALL FIELD_IO_IMPORT_GLOBAL_MESH(NAME, REGION, MESH, MESH_USER_NUMBER, MASTER_COMPUTATIONAL_NUMBER, &
-            & my_computational_node_number, &!USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER,
-            &MESH_COMPONENTS_OF_FIELD_COMPONENTS, &
-            & COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, NUMBER_OF_EXNODE_FILES, ERR, ERROR, *999)
+      CALL FIELD_IO_IMPORT_GLOBAL_MESH(NAME, REGION, MESH, MESH_USER_NUMBER, MASTER_COMPUTATIONAL_NUMBER, &
+          & my_computational_node_number, &!USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER,
+          &MESH_COMPONENTS_OF_FIELD_COMPONENTS, &
+          & COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, NUMBER_OF_EXNODE_FILES, ERR, ERROR, *999)
 
-       CALL FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, &
-            &computational_node_numbers, ERR, ERROR, *999)
+      CALL FIELD_IO_CREATE_DECOMPISTION(DECOMPOSITION, DECOMPOSITION_USER_NUMBER, DECOMPOSITION_METHOD, MESH, &
+          &computational_node_numbers, ERR, ERROR, *999)
 
-       CALL FIELD_IO_CREATE_FIELDS(NAME, REGION, DECOMPOSITION, FIELD_VALUES_SET_TYPE, NUMBER_OF_FIELDS, &
-            !&USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER,
-            &MESH_COMPONENTS_OF_FIELD_COMPONENTS, COMPONENTS_IN_FIELDS, &
-         & NUMBER_OF_EXNODE_FILES, MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, FIELD_SCALING_TYPE, &
-         & ERR, ERROR, *999)
+      CALL FIELD_IO_CREATE_FIELDS(NAME, REGION, DECOMPOSITION, FIELD_VALUES_SET_TYPE, NUMBER_OF_FIELDS, &
+          !&USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER,
+          &MESH_COMPONENTS_OF_FIELD_COMPONENTS, COMPONENTS_IN_FIELDS, &
+          & NUMBER_OF_EXNODE_FILES, MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, FIELD_SCALING_TYPE, &
+          & ERR, ERROR, *999)
     ELSE IF(METHOD=="MPIIO") THEN
-       CALL FLAG_ERROR("MPI IO has not been implemented",ERR,ERROR,*999)
+      CALL FLAG_ERROR("MPI IO has not been implemented",ERR,ERROR,*999)
     ELSE
-       CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
     ENDIF
 
     !IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
@@ -1532,21 +1531,21 @@ CONTAINS
     CALL ENTERS("FIELD_IO_FILL_BASIS_INFO",ERR,ERROR,*999)
 
     DO idx_comp=1,NUMBER_OF_COMPONENTS
-       num_interp=0
-       LINE=LIST_STR(idx_comp)
-       DO WHILE(VERIFY("*",LINE)==0)
-          num_interp=num_interp+1
-          pos=INDEX(LINE,"*")
-          LINE1=EXTRACT(LINE, 1, pos)
-          LINE=REMOVE(LINE,1,pos)
-          CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
-          INTERPOLATION_XI(idx_comp, num_interp)=INTERPOLATION_TYPE
-       ENDDO
-       num_interp=num_interp+1
-       LINE1=EXTRACT(LINE, 1, pos)
-       LINE=REMOVE(LINE,1,pos)
-       CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
-       INTERPOLATION_XI(idx_comp, num_interp)=INTERPOLATION_TYPE
+      num_interp=0
+      LINE=LIST_STR(idx_comp)
+      DO WHILE(VERIFY("*",LINE)==0)
+        num_interp=num_interp+1
+        pos=INDEX(LINE,"*")
+        LINE1=EXTRACT(LINE, 1, pos)
+        LINE=REMOVE(LINE,1,pos)
+        CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
+        INTERPOLATION_XI(idx_comp, num_interp)=INTERPOLATION_TYPE
+      ENDDO
+      num_interp=num_interp+1
+      LINE1=EXTRACT(LINE, 1, pos)
+      LINE=REMOVE(LINE,1,pos)
+      CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
+      INTERPOLATION_XI(idx_comp, num_interp)=INTERPOLATION_TYPE
     ENDDO
 
     CALL EXITS("FIELD_IO_FILL_BASIS_INFO")
@@ -1606,19 +1605,19 @@ CONTAINS
 
     !checking region pointer
     IF(.NOT.ASSOCIATED(REGION)) THEN
-       CALL FLAG_ERROR("region is not associated",ERR,ERROR,*999)
-       GOTO 999
+      CALL FLAG_ERROR("region is not associated",ERR,ERROR,*999)
+      GOTO 999
     ENDIF
 
     !checking mesh pointer
     IF(ASSOCIATED(MESH)) THEN
-       CALL FLAG_ERROR("mesh is associated, pls release the memory first",ERR,ERROR,*999)
-       GOTO 999
+      CALL FLAG_ERROR("mesh is associated, pls release the memory first",ERR,ERROR,*999)
+      GOTO 999
     ENDIF
 
     IF(.NOT.REGION%REGION_FINISHED) THEN
-       CALL FLAG_ERROR("region is not finished",ERR,ERROR,*999)
-       GOTO 999
+      CALL FLAG_ERROR("region is not finished",ERR,ERROR,*999)
+      GOTO 999
     ENDIF
 
     !IF(ASSOCIATED(BASES%BASES)) THEN
@@ -1649,85 +1648,85 @@ CONTAINS
       FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(.NOT.FILE_EXIST) THEN
-         CALL FLAG_ERROR("exelem files can be found, pls check again",ERR,ERROR,*999)
-         !GOTO 999
+        CALL FLAG_ERROR("exelem files can be found, pls check again",ERR,ERROR,*999)
+        !GOTO 999
       ENDIF
       DO WHILE(FILE_EXIST)
 
-         FILE_ID=1030+idx_exelem
-         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-         START_OF_ELEMENT_SECTION=.FALSE.
-         FIELD_SECTION=.FALSE.
+        FILE_ID=1030+idx_exelem
+        CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+        START_OF_ELEMENT_SECTION=.FALSE.
+        FIELD_SECTION=.FALSE.
 
-         CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR,*999)
-         DO WHILE(.NOT.FILE_END)
+        CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR,*999)
+        DO WHILE(.NOT.FILE_END)
 
-            !check the beginning of element section
-            IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
-               START_OF_ELEMENT_SECTION=.TRUE.
+          !check the beginning of element section
+          IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
+            START_OF_ELEMENT_SECTION=.TRUE.
+          ENDIF
+
+          !count how many elements
+          IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) idx_elem=idx_elem+1
+
+          !check whether they have same numbers of fields
+          IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+            idx_field=0
+            idx_comp=0
+            FIELD_SECTION=.TRUE.
+            pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+            IF(idx_exelem==0) THEN
+              NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
+            ELSE
+              IF(NUMBER_OF_FIELDS/=STRING_TO_INTEGER(LINE, ERR,ERROR)) THEN
+                CALL FLAG_ERROR("find different number of fields in the exelem files",ERR,ERROR,*999)
+                !GOTO 999
+              ENDIF
             ENDIF
 
-            !count how many elements
-            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) idx_elem=idx_elem+1
+            IF(.NOT.ALLOCATED(COMPONENTS_IN_FIELDS)) THEN
+              CALL REALLOCATE( COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, &
+                & "can not allocate the memory for outputing components in field", ERR, ERROR, *999 )
+            ENDIF
+          ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0
 
-            !check whether they have same numbers of fields
-            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
-               idx_field=0
-               idx_comp=0
-               FIELD_SECTION=.TRUE.
-               pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
-               IF(idx_exelem==0) THEN
-                  NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
-               ELSE
-                  IF(NUMBER_OF_FIELDS/=STRING_TO_INTEGER(LINE, ERR,ERROR)) THEN
-                     CALL FLAG_ERROR("find different number of fields in the exelem files",ERR,ERROR,*999)
-                     !GOTO 999
-                  ENDIF
-               ENDIF
+          !check whether they have same numbers of field components
+          IF(FIELD_SECTION.AND.START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN
+            idx_field=idx_field+1
+            pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+            idx_comp1=STRING_TO_INTEGER(LINE, ERR,ERROR)
+            idx_comp=idx_comp+idx_comp1
+            IF(idx_field>=NUMBER_OF_FIELDS) THEN
+              IF(idx_exelem==0) THEN
+                NUMBER_OF_COMPONENTS=idx_comp
+                COMPONENTS_IN_FIELDS(idx_field)=idx_comp
+              ELSE
+                IF(NUMBER_OF_COMPONENTS/=idx_comp) THEN
+                  CALL FLAG_ERROR("find different total number of components in the exelem files",ERR,ERROR,*999)
+                  !GOTO 999
+                ENDIF
+              ENDIF
+              FIELD_SECTION=.FALSE.
+            ENDIF
+            IF(idx_exelem==0) THEN
+              COMPONENTS_IN_FIELDS(idx_field)=idx_comp1
+            ELSE
+              IF(COMPONENTS_IN_FIELDS(idx_field)/=idx_comp1) THEN
+                CALL FLAG_ERROR("find different number of components in one field in the exelem files",ERR,ERROR,*999)
+                !GOTO 999
+              ENDIF
+            ENDIF
+          ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENTS,LINE
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR,*999)
+        ENDDO !(FILE_END==.FALSE.)
 
-               IF(.NOT.ALLOCATED(COMPONENTS_IN_FIELDS)) THEN
-                  CALL REALLOCATE( COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, &
-                    & "can not allocate the memory for outputing components in field", ERR, ERROR, *999 )
-               ENDIF
-            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0
-
-            !check whether they have same numbers of field components
-            IF(FIELD_SECTION.AND.START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN
-               idx_field=idx_field+1
-               pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-               idx_comp1=STRING_TO_INTEGER(LINE, ERR,ERROR)
-               idx_comp=idx_comp+idx_comp1
-               IF(idx_field>=NUMBER_OF_FIELDS) THEN
-                  IF(idx_exelem==0) THEN
-                     NUMBER_OF_COMPONENTS=idx_comp
-                     COMPONENTS_IN_FIELDS(idx_field)=idx_comp
-                  ELSE
-                     IF(NUMBER_OF_COMPONENTS/=idx_comp) THEN
-                        CALL FLAG_ERROR("find different total number of components in the exelem files",ERR,ERROR,*999)
-                        !GOTO 999
-                     ENDIF
-                  ENDIF
-                  FIELD_SECTION=.FALSE.
-               ENDIF
-               IF(idx_exelem==0) THEN
-                 COMPONENTS_IN_FIELDS(idx_field)=idx_comp1
-               ELSE
-                 IF(COMPONENTS_IN_FIELDS(idx_field)/=idx_comp1) THEN
-                    CALL FLAG_ERROR("find different number of components in one field in the exelem files",ERR,ERROR,*999)
-                    !GOTO 999
-                 ENDIF
-               ENDIF
-            ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENTS,LINE
-            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR,*999)
-         ENDDO !(FILE_END==.FALSE.)
-
-         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-         !checking the next file
-         idx_exelem=idx_exelem+1
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
-         INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
+        CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+        !checking the next file
+        idx_exelem=idx_exelem+1
+        FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
+        INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       ENDDO !FILE_EXIST==.TRUE.
       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exelment files = ",idx_exelem, ERR,ERROR,*999)
       NUMBER_OF_ELEMENTS=idx_elem
@@ -1738,12 +1737,12 @@ CONTAINS
     CALL MPI_BCAST(NUMBER_OF_FIELDS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
     IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
-       CALL REALLOCATE( COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, &
-         & "can not allocate the memory for outputing components in field", ERR, ERROR, *999 )
-       !IF(ALLOCATED(LIST_FIELD_TYPE)) DEALLOCATE(LIST_FIELD_TYPE)
-       !ALLOCATE(LIST_FIELD_TYPE(NUMBER_OF_FIELDS), STAT=ERR)
-       !IF(ERR/=0) CALL FLAG_ERROR("can not allocate the memory for list of field types",ERR,ERROR,*999)
-       !LIST_FIELD_TYPE(:)=0
+      CALL REALLOCATE( COMPONENTS_IN_FIELDS, NUMBER_OF_FIELDS, &
+          & "can not allocate the memory for outputing components in field", ERR, ERROR, *999 )
+      !IF(ALLOCATED(LIST_FIELD_TYPE)) DEALLOCATE(LIST_FIELD_TYPE)
+      !ALLOCATE(LIST_FIELD_TYPE(NUMBER_OF_FIELDS), STAT=ERR)
+      !IF(ERR/=0) CALL FLAG_ERROR("can not allocate the memory for list of field types",ERR,ERROR,*999)
+      !LIST_FIELD_TYPE(:)=0
     ENDIF
     CALL MPI_BCAST(COMPONENTS_IN_FIELDS,NUMBER_OF_FIELDS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
@@ -1762,24 +1761,24 @@ CONTAINS
       FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(.NOT.FILE_EXIST) THEN
-         CALL FLAG_ERROR("exnode files can be found, pls check again",ERR,ERROR,*999)
-         !GOTO 999
+        CALL FLAG_ERROR("exnode files can be found, pls check again",ERR,ERROR,*999)
+        !GOTO 999
       ENDIF
       DO WHILE(FILE_EXIST)
-         FILE_ID=1030+idx_exnode
-         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-         FILE_END=.FALSE.
+        FILE_ID=1030+idx_exnode
+        CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+        FILE_END=.FALSE.
 
-         DO WHILE(.NOT.FILE_END)
-            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-            IF((.NOT.FILE_END).AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) idx_node=idx_node+1
-         ENDDO !(FILE_END==.FALSE.)
+        DO WHILE(.NOT.FILE_END)
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          IF((.NOT.FILE_END).AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) idx_node=idx_node+1
+        ENDDO !(FILE_END==.FALSE.)
 
-         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-         !checking the next file
-         idx_exnode=idx_exnode+1
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
-         INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
+        CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+        !checking the next file
+        idx_exnode=idx_exnode+1
+        FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
+        INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       ENDDO !FILE_EXIST==.TRUE.
       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Total number of exnode files = ",idx_exnode, ERR,ERROR,*999)
       NUMBER_OF_NODES=idx_node
@@ -1801,31 +1800,31 @@ CONTAINS
       !the file name has to start from zero in a ascended order without break
       idx_node=1
       DO idx_exnode=0, NUMBER_OF_EXNODE_FILES-1
-         FILE_ID=1030+idx_exnode
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
-         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-         FILE_END=.FALSE.
-         DO WHILE(.NOT.FILE_END)
-            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-            IF((.NOT.FILE_END).AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) THEN
-               pos=INDEX(LINE,CMISS_KEYWORD_NODE)
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODE)-1)
-               USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node)=STRING_TO_INTEGER(LINE, ERR, ERROR)
-               idx_node=idx_node+1
-            ENDIF !VERIFY(CMISS_KEYWORD,LINE)==0
-         ENDDO !(FILE_END==.FALSE.)
-         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+        FILE_ID=1030+idx_exnode
+        FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
+        CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+        FILE_END=.FALSE.
+        DO WHILE(.NOT.FILE_END)
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          IF((.NOT.FILE_END).AND.VERIFY(CMISS_KEYWORD_NODE,LINE)==0) THEN
+            pos=INDEX(LINE,CMISS_KEYWORD_NODE)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODE)-1)
+            USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node)=STRING_TO_INTEGER(LINE, ERR, ERROR)
+            idx_node=idx_node+1
+          ENDIF !VERIFY(CMISS_KEYWORD,LINE)==0
+        ENDDO !(FILE_END==.FALSE.)
+        CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
       ENDDO !FILE_EXIST==.TRUE.
       CALL LIST_SORT(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER, ERR, ERROR, *999)
     ENDIF !MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number
 
     !broadcast the nodal numberings (nodal labels)
     CALL MPI_BCAST(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER,NUMBER_OF_NODES,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER, &
-      & MPI_COMM_WORLD,MPI_IERROR)
+        & MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
     DO idx_node=1, NUMBER_OF_NODES
-       IF(idx_node/=USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node)) CALL NODES_USER_NUMBER_SET(NODES,idx_node, &
-         & USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node),ERR,ERROR,*999)
+      IF(idx_node/=USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node)) CALL NODES_USER_NUMBER_SET(NODES,idx_node, &
+          & USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(idx_node),ERR,ERROR,*999)
     ENDDO
     CALL NODES_CREATE_FINISH(NODES,ERR,ERROR,*999)
     CALL CHECKED_DEALLOCATE( USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER )
@@ -1848,112 +1847,112 @@ CONTAINS
       !initialize MESH_COMPONENT_LOOKUP and assume each field component has the same mesh component
 
       DO idx_comp=1,NUMBER_OF_COMPONENTS
-         MESH_COMPONENT_LOOKUP(idx_comp,idx_comp)=1
+        MESH_COMPONENT_LOOKUP(idx_comp,idx_comp)=1
       ENDDO
       idx_exelem=0
 
       !checking field component's mesh component by checking the basis
       DO WHILE(idx_exelem<NUMBER_OF_EXELEM_FILES)
 
-         FILE_ID=1030+idx_exelem
-         !checking the next file
-         FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
-         CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-         FIELD_SECTION=.FALSE.
-         FILE_END=.FALSE.
+        FILE_ID=1030+idx_exelem
+        !checking the next file
+        FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
+        CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+        FIELD_SECTION=.FALSE.
+        FILE_END=.FALSE.
 
-         DO WHILE(.NOT.FILE_END)
-            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+        DO WHILE(.NOT.FILE_END)
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
 
-            !check the beginning of element section
-            IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
-               START_OF_ELEMENT_SECTION=.TRUE.
-            ENDIF
+          !check the beginning of element section
+          IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
+            START_OF_ELEMENT_SECTION=.TRUE.
+          ENDIF
 
-            !check whether it is a new header for another group of elements
-            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
+          !check whether it is a new header for another group of elements
+          IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0)) THEN
 
-               !collect header information
-               pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
-               NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
-               idx_comp=0
-               DO idx_field=1,NUMBER_OF_FIELDS
+            !collect header information
+            pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+            NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
+            idx_comp=0
+            DO idx_field=1,NUMBER_OF_FIELDS
+              CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+              pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+              number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)
+              DO idx_comp1=1,number_of_comp
+                idx_comp=idx_comp+1
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+                pos=INDEX(LINE,".")
+                LINE=REMOVE(LINE,1, pos)
+                LINE=TRIM(ADJUSTL(LINE))
+                pos=INDEX(LINE,",")
+                LINE=REMOVE(LINE,pos, LEN(LINE))
+                LIST_STR(idx_comp)= LINE
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+                pos=INDEX(LINE, CMISS_KEYWORD_NODES)
+                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODES)-1)
+                number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
+                DO idx_node1=1, number_of_node*NUMBER_NODAL_LINES
                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                  pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
-                  LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                  number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                  DO idx_comp1=1,number_of_comp
-                     idx_comp=idx_comp+1
-                     CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                     pos=INDEX(LINE,".")
-                     LINE=REMOVE(LINE,1, pos)
-                     LINE=TRIM(ADJUSTL(LINE))
-                     pos=INDEX(LINE,",")
-                     LINE=REMOVE(LINE,pos, LEN(LINE))
-                     LIST_STR(idx_comp)= LINE
-                     CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                     pos=INDEX(LINE, CMISS_KEYWORD_NODES)
-                     LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODES)-1)
-                     number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                     DO idx_node1=1, number_of_node*NUMBER_NODAL_LINES
-                        CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                     ENDDO !idx_node1
-                  ENDDO !idx_comp1
-               ENDDO !idx_field
+                ENDDO !idx_node1
+              ENDDO !idx_comp1
+            ENDDO !idx_field
 
-               !compare the bases. Since the geometrical topology is same, if the bases are the same in the same topology,
-               !they should be in the same mesh component
-               IF(SUM(MESH_COMPONENT_LOOKUP)<NUMBER_OF_COMPONENTS*NUMBER_OF_COMPONENTS) THEN
-                  DO idx_comp=1, NUMBER_OF_COMPONENTS
-                     DO idx_comp1=idx_comp+1, NUMBER_OF_COMPONENTS
-                        IF(MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)==0) THEN
-                           IF(LIST_STR(idx_comp1)/=LIST_STR(idx_comp)) THEN
-                              MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)=1
-                              MESH_COMPONENT_LOOKUP(idx_comp,idx_comp1)=1
-                           ENDIF
-                        ENDIF
-                     ENDDO !idx_comp1
-                  ENDDO !idx_comp
-               ELSE
-                  idx_exelem=NUMBER_OF_EXELEM_FILES !jump out of the loop
-               ENDIF
-            ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0
+            !compare the bases. Since the geometrical topology is same, if the bases are the same in the same topology,
+            !they should be in the same mesh component
+            IF(SUM(MESH_COMPONENT_LOOKUP)<NUMBER_OF_COMPONENTS*NUMBER_OF_COMPONENTS) THEN
+              DO idx_comp=1, NUMBER_OF_COMPONENTS
+                DO idx_comp1=idx_comp+1, NUMBER_OF_COMPONENTS
+                  IF(MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)==0) THEN
+                    IF(LIST_STR(idx_comp1)/=LIST_STR(idx_comp)) THEN
+                      MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)=1
+                      MESH_COMPONENT_LOOKUP(idx_comp,idx_comp1)=1
+                    ENDIF
+                  ENDIF
+                ENDDO !idx_comp1
+              ENDDO !idx_comp
+            ELSE
+              idx_exelem=NUMBER_OF_EXELEM_FILES !jump out of the loop
+            ENDIF
+          ENDIF !START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_FIELDS,LINE)==0
 
-            !!check whether they have same numbers of field components
-            !IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN
-            !   IF(idx_field>=NUMBER_OF_FIELDS) THEN
-            !      FIELD_SECTION=.FALSE.
-            !   ENDIF
-            !ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENTS,LINE
-         ENDDO !(FILE_END==.FALSE.)
-         CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-         idx_exelem=idx_exelem+1
+          !!check whether they have same numbers of field components
+          !IF(FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.(VERIFY(CMISS_KEYWORD_COMPONENTS,LINE)==0)) THEN
+          !  IF(idx_field>=NUMBER_OF_FIELDS) THEN
+          !    FIELD_SECTION=.FALSE.
+          !  ENDIF
+          !ENDIF !FIELD_SECTION==.TRUE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.VERIFY(CMISS_KEYWORD_COMPONENTS,LINE
+        ENDDO !(FILE_END==.FALSE.)
+        CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+        idx_exelem=idx_exelem+1
       ENDDO !idx_exelem=0, NUMBER_OF_EXELEM_FILES-1
 
       !calculate the number of mesh components
       CALL REALLOCATE( MESH_COMPONENTS_OF_FIELD_COMPONENTS, NUMBER_OF_COMPONENTS, &
-        & "can not allocate list of field components", ERR, ERROR, *999 )
-        
+          & "can not allocate list of field components", ERR, ERROR, *999 )
+
       DO idx_comp=1, NUMBER_OF_COMPONENTS
-         MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)=idx_comp
+        MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)=idx_comp
       ENDDO
       DO idx_comp=1, NUMBER_OF_COMPONENTS
-         DO idx_comp1=idx_comp+1, NUMBER_OF_COMPONENTS
-            IF(MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
-               IF(MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)==0) MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp1)=idx_comp
-            ENDIF
-         ENDDO !idx_comp1
+        DO idx_comp1=idx_comp+1, NUMBER_OF_COMPONENTS
+          IF(MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
+            IF(MESH_COMPONENT_LOOKUP(idx_comp1,idx_comp)==0) MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp1)=idx_comp
+          ENDIF
+        ENDDO !idx_comp1
       ENDDO !idx_comp
       CALL CHECKED_DEALLOCATE( MESH_COMPONENT_LOOKUP )
       NUMBER_OF_MESH_COMPONENTS=0
       idx_comp1=0
       DO idx_comp=1,NUMBER_OF_COMPONENTS
-         IF(MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
-            idx_comp1=idx_comp1+1
-            MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)=idx_comp1
-            NUMBER_OF_MESH_COMPONENTS=NUMBER_OF_MESH_COMPONENTS+1
-         ENDIF
+        IF(MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
+          idx_comp1=idx_comp1+1
+          MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)=idx_comp1
+          NUMBER_OF_MESH_COMPONENTS=NUMBER_OF_MESH_COMPONENTS+1
+        ENDIF
       ENDDO
       !IF(ALLOCATED(MESH_COMPONENTS_OF_FIELD_COMPONENTS)) DEALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS)
       !ALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS(NUMBER_OF_COMPONENTS),STAT=ERR)
@@ -1976,25 +1975,25 @@ CONTAINS
     CALL MPI_BCAST(NUMBER_OF_MESH_COMPONENTS,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
     CALL MESH_NUMBER_OF_COMPONENTS_SET(MESH,NUMBER_OF_MESH_COMPONENTS,ERR,ERROR,*999)
-    
+
     CALL REALLOCATE( ELEMENTS_PTR, NUMBER_OF_MESH_COMPONENTS, &
       & "can not allocate list of mesh element pointers", ERR, ERROR, *999 )
 
     IF(BASIS_FUNCTIONS%NUMBER_BASIS_FUNCTIONS<=0)  THEN
-       CALL BASIS_CREATE_START(1,BASIS,ERR,ERROR,*999)
-       CALL BASIS_NUMBER_OF_XI_SET(BASIS,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-       CALL BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*999)
+      CALL BASIS_CREATE_START(1,BASIS,ERR,ERROR,*999)
+      CALL BASIS_NUMBER_OF_XI_SET(BASIS,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+      CALL BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*999)
     ENDIF
 
     DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
-       CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(MESH,idx_comp,BASIS_FUNCTIONS%BASES(1)%PTR,ELEMENTS_PTR(idx_comp)%PTR, &
-         & ERR,ERROR,*999)
+      CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(MESH,idx_comp,BASIS_FUNCTIONS%BASES(1)%PTR,ELEMENTS_PTR(idx_comp)%PTR, &
+          & ERR,ERROR,*999)
     ENDDO
 
     !Collect the elemental numberings (elemental labels)
     CALL REALLOCATE( LIST_ELEMENT_NUMBER, NUMBER_OF_ELEMENTS, &
-      & "can not allocate list of elemental number", ERR, ERROR, *999 )
-      
+        & "can not allocate list of elemental number", ERR, ERROR, *999 )
+
     IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
       !the file name has to start from zero in a ascended order without break
       idx_elem=1
@@ -2008,28 +2007,28 @@ CONTAINS
 
 
          DO WHILE(.NOT.FILE_END)
-            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+           CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
 
-            IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
-               START_OF_ELEMENT_SECTION=.TRUE.
-            ENDIF
+           IF((.NOT.START_OF_ELEMENT_SECTION).AND.(VERIFY(CMISS_KEYWORD_SHAPE,LINE)==0)) THEN
+             START_OF_ELEMENT_SECTION=.TRUE.
+           ENDIF
 
-            IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) THEN
-               pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
-               LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_ELEMENT)-1)
-               SHAPE_INDEX(:)=0
-               CALL STRING_TO_MUTI_INTEGERS_VS(LINE, SHAPE_SIZE, SHAPE_INDEX(:), ERR,ERROR, *999)
-               IF(NUMBER_OF_DIMENSIONS==3) THEN
-                  LIST_ELEMENT_NUMBER(idx_elem)=SHAPE_INDEX(1)
-               ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
-                  LIST_ELEMENT_NUMBER(idx_elem)=SHAPE_INDEX(2)
-               ELSE IF(NUMBER_OF_DIMENSIONS==1) THEN
-                  LIST_ELEMENT_NUMBER(idx_elem)=SHAPE_INDEX(3)
-               ELSE
-                  CALL FLAG_ERROR("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
-               ENDIF
-               idx_elem=idx_elem+1
-            ENDIF
+           IF(START_OF_ELEMENT_SECTION.AND.(VERIFY(CMISS_KEYWORD_ELEMENT,LINE)==0)) THEN
+             pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
+             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_ELEMENT)-1)
+             SHAPE_INDEX(:)=0
+             CALL STRING_TO_MUTI_INTEGERS_VS(LINE, SHAPE_SIZE, SHAPE_INDEX(:), ERR,ERROR, *999)
+             IF(NUMBER_OF_DIMENSIONS==3) THEN
+               LIST_ELEMENT_NUMBER(idx_elem)=SHAPE_INDEX(1)
+             ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
+               LIST_ELEMENT_NUMBER(idx_elem)=SHAPE_INDEX(2)
+             ELSE IF(NUMBER_OF_DIMENSIONS==1) THEN
+               LIST_ELEMENT_NUMBER(idx_elem)=SHAPE_INDEX(3)
+             ELSE
+               CALL FLAG_ERROR("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
+             ENDIF
+             idx_elem=idx_elem+1
+           ENDIF
          ENDDO !(FILE_END==.FALSE.)
 
          CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
@@ -2043,11 +2042,11 @@ CONTAINS
     !change the mapping between global elemental numbering and user elemental numbering
 
     DO idx_elem=1,NUMBER_OF_ELEMENTS
-       DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
-          IF(idx_elem/=LIST_ELEMENT_NUMBER(idx_elem)) &
+      DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
+        IF(idx_elem/=LIST_ELEMENT_NUMBER(idx_elem)) &
             & CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET(idx_elem,LIST_ELEMENT_NUMBER(idx_elem), &
             & ELEMENTS_PTR(idx_comp)%PTR,ERR,ERROR,*999)
-       ENDDO
+      ENDDO
     ENDDO
 
     !creating topological information for each mesh component
@@ -2057,7 +2056,7 @@ CONTAINS
     !IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of bases",ERR,ERROR,*999)
 
     CALL REALLOCATE( LIST_COMP_NODES, NUMBER_OF_COMPONENTS, &
-      & "Could not allocate list of component nodal index ", ERR, ERROR, *999 )
+        & "Could not allocate list of component nodal index ", ERR, ERROR, *999 )
 
     FILE_END=.TRUE.
     idx_exelem=-1
@@ -2065,243 +2064,243 @@ CONTAINS
 
     DO WHILE(idx_exelem<NUMBER_OF_EXELEM_FILES)
 
-       CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(FILE_END,1,MPI_LOGICAL,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
 
-       IF(FILE_END) THEN
-          idx_exelem=idx_exelem+1
-          INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN)
-          IF(FILE_OPEN) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
-          IF(idx_exelem>=NUMBER_OF_EXELEM_FILES) EXIT
-       ENDIF
+      IF(FILE_END) THEN
+        idx_exelem=idx_exelem+1
+        INQUIRE(UNIT=FILE_ID, OPENED=FILE_OPEN)
+        IF(FILE_OPEN) CALL FIELD_IO_FORTRAN_FILE_CLOSE(FILE_ID, ERR,ERROR,*999)
+        IF(idx_exelem>=NUMBER_OF_EXELEM_FILES) EXIT
+      ENDIF
 
-       !goto the start of mesh part
-       IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
+      !goto the start of mesh part
+      IF(MASTER_COMPUTATIONAL_NUMBER==my_computational_node_number) THEN
 
-          !IF(FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.FALSE.) THEN
-          !   !check the beginning of element section
-          !   DO WHILE(VERIFY(CMISS_KEYWORD_SHAPE,LINE)/=0)
-          !      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-          !   ENDDO
-          !   START_OF_ELEMENT_SECTION=.TRUE.
-          !ENDIF
+        !IF(FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.FALSE.) THEN
+        !  !check the beginning of element section
+        !  DO WHILE(VERIFY(CMISS_KEYWORD_SHAPE,LINE)/=0)
+        !    CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+        !  ENDDO
+        !  START_OF_ELEMENT_SECTION=.TRUE.
+        !ENDIF
 
-          IF(FILE_END) THEN
-             FILE_ID=1030+idx_exelem
-             !checking the next file
-             FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
-             CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
-             FILE_END=.FALSE.
-             SECTION_START=.FALSE.
-             START_OF_ELEMENT_SECTION=.FALSE.
-          ENDIF
-
-
-          IF((.NOT.FILE_END).AND.(.NOT.START_OF_ELEMENT_SECTION)) THEN !..AND.SECTION_START==.FALSE.) THEN
-             !find a new header
-             DO WHILE(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)/=0)
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             ENDDO
-             START_OF_ELEMENT_SECTION=.TRUE.
-          ENDIF
-
-          !have not touched the end
-          IF((.NOT.FILE_END).AND.START_OF_ELEMENT_SECTION.AND.(.NOT.SECTION_START)) THEN
-             SECTION_START=.TRUE.
-             !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,LINE,ERR,ERROR,*999)
-             !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,FILE_NAME,ERR,ERROR,*999)
-
-             pos=INDEX(LINE,CMISS_KEYWORD_SCALE_FACTOR_SETS)
-             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_SCALE_FACTOR_SETS)-1)
-             number_of_scalesets=STRING_TO_INTEGER(LINE, ERR,ERROR)
-             idx_mesh_comp=1
-             !skip factors
-             NUMBER_SCALING_FACTOR_LINES=0
-             DO idx_scl=1,number_of_scalesets
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                pos=INDEX(LINE,CMISS_KEYWORD_SCALE_FACTORS)
-                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_SCALE_FACTORS)-1)
-                num_scl=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                num_scl_line=num_scl/NUMBER_SCALING_FACTORS_IN_LINE
-                IF(num_scl_line*NUMBER_SCALING_FACTORS_IN_LINE/=num_scl) num_scl_line=num_scl_line+1
-                NUMBER_SCALING_FACTOR_LINES=NUMBER_SCALING_FACTOR_LINES+num_scl_line
-             ENDDO
-             !skip nodes line
-             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             pos=INDEX(LINE,CMISS_KEYWORD_NODES)
-             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODES)-1)
-             number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
-
-             CALL REALLOCATE( LIST_ELEMENTAL_NODES, number_of_node, &
-               & "Could not allocate list of elemental nodes", ERR, ERROR, *999 )
-             !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"number_of_node:",number_of_node,ERR,ERROR,*999)
-             
-             CALL REALLOCATE_2D( LIST_COMP_NODAL_INDEX, NUMBER_OF_COMPONENTS,number_of_node, &
-               & "Could not allocate list of component nodal index ", ERR, ERROR, *999 )
-
-             !read the header
-             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
-             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
-             NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
-             idx_comp=0
-             DO idx_field=1,NUMBER_OF_FIELDS
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
-                LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
-                number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                DO idx_comp1=1,number_of_comp
-                   idx_comp=idx_comp+1
-                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                   pos=INDEX(LINE,".")
-                   LINE=REMOVE(LINE,1, pos)
-                   LINE=TRIM(ADJUSTL(LINE))
-                   pos=INDEX(LINE,",")
-                   LINE=REMOVE(LINE,pos, LEN(LINE))
-                   LIST_STR(idx_comp)= LINE
-                   CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                   pos=INDEX(LINE, CMISS_KEYWORD_NODES)
-                   LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODES)-1)
-                   number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                   LIST_COMP_NODES(idx_comp)=number_of_node
-                   DO idx_node1=1, number_of_node
-                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                      pos=INDEX(LINE, ".")
-                      LINE=REMOVE(LINE,pos, LEN(LINE))
-                      LIST_COMP_NODAL_INDEX(idx_comp,idx_node1)=STRING_TO_INTEGER(LINE, ERR,ERROR)
-                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                      CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                   ENDDO !idx_node1
-                ENDDO !idx_comp1
-             ENDDO !idx_field
-
-             CALL REALLOCATE_2D( INTERPOLATION_XI, NUMBER_OF_COMPONENTS,NUMBER_OF_DIMENSIONS, &
-               & "Could not allocate list of interpolation types", ERR, ERROR, *999 )
-
-             CALL FIELD_IO_FILL_BASIS_INFO(INTERPOLATION_XI, LIST_STR, NUMBER_OF_COMPONENTS, ERR,ERROR,*999)
-             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,LINE,ERR,ERROR,*999)
-          ENDIF  !FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.SECTION_START==.TRUE.
-
-          IF((.NOT.FILE_END).AND.START_OF_ELEMENT_SECTION.AND.SECTION_START) THEN
-
-             pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
-             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_ELEMENT)-1)
-             CALL STRING_TO_MUTI_INTEGERS_VS(LINE, SHAPE_SIZE, SHAPE_INDEX(:), ERR,ERROR, *999)
+        IF(FILE_END) THEN
+          FILE_ID=1030+idx_exelem
+          !checking the next file
+          FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
+          CALL FIELD_IO_FORTRAN_FILE_OPEN(FILE_ID, FILE_NAME, FILE_STATUS, ERR,ERROR,*999)
+          FILE_END=.FALSE.
+          SECTION_START=.FALSE.
+          START_OF_ELEMENT_SECTION=.FALSE.
+        ENDIF
 
 
-             DO WHILE(VERIFY(CMISS_KEYWORD_NODE,LINE)/=0)
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             ENDDO
+        IF((.NOT.FILE_END).AND.(.NOT.START_OF_ELEMENT_SECTION)) THEN !..AND.SECTION_START==.FALSE.) THEN
+          !find a new header
+          DO WHILE(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)/=0)
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          ENDDO
+          START_OF_ELEMENT_SECTION=.TRUE.
+        ENDIF
 
-             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             CALL STRING_TO_MUTI_INTEGERS_VS(LINE, number_of_node, LIST_ELEMENTAL_NODES, ERR, ERROR, *999)
+        !have not touched the end
+        IF((.NOT.FILE_END).AND.START_OF_ELEMENT_SECTION.AND.(.NOT.SECTION_START)) THEN
+          SECTION_START=.TRUE.
+          !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,LINE,ERR,ERROR,*999)
+          !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,FILE_NAME,ERR,ERROR,*999)
 
-             !skip scaling factors
-             CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             DO idx_scl=1, NUMBER_SCALING_FACTOR_LINES
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-             ENDDO
+          pos=INDEX(LINE,CMISS_KEYWORD_SCALE_FACTOR_SETS)
+          LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_SCALE_FACTOR_SETS)-1)
+          number_of_scalesets=STRING_TO_INTEGER(LINE, ERR,ERROR)
+          idx_mesh_comp=1
+          !skip factors
+          NUMBER_SCALING_FACTOR_LINES=0
+          DO idx_scl=1,number_of_scalesets
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+            pos=INDEX(LINE,CMISS_KEYWORD_SCALE_FACTORS)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_SCALE_FACTORS)-1)
+            num_scl=STRING_TO_INTEGER(LINE, ERR,ERROR)
+            num_scl_line=num_scl/NUMBER_SCALING_FACTORS_IN_LINE
+            IF(num_scl_line*NUMBER_SCALING_FACTORS_IN_LINE/=num_scl) num_scl_line=num_scl_line+1
+            NUMBER_SCALING_FACTOR_LINES=NUMBER_SCALING_FACTOR_LINES+num_scl_line
+          ENDDO
+          !skip nodes line
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          pos=INDEX(LINE,CMISS_KEYWORD_NODES)
+          LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODES)-1)
+          number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
 
-             IF(.NOT.FILE_END) THEN
-                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
-                IF(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)==0) SECTION_START=.TRUE.
-             ENDIF
-             !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FILE_END:",FILE_END,ERR,ERROR,*999)
-          ENDIF
-       ENDIF !MASTER_COMPUTATIONAL_NUMBER
-
-       CALL MPI_BCAST(number_of_node,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"SIZE LIST_ELEMENTAL_NODES:",SIZE(LIST_ELEMENTAL_NODES),ERR,ERROR,*999)
-
-       IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
           CALL REALLOCATE( LIST_ELEMENTAL_NODES, number_of_node, &
             & "Could not allocate list of elemental nodes", ERR, ERROR, *999 )
-          CALL REALLOCATE_2D( LIST_COMP_NODAL_INDEX, NUMBER_OF_COMPONENTS, number_of_node, &
+          !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"number_of_node:",number_of_node,ERR,ERROR,*999)
+
+          CALL REALLOCATE_2D( LIST_COMP_NODAL_INDEX, NUMBER_OF_COMPONENTS,number_of_node, &
             & "Could not allocate list of component nodal index ", ERR, ERROR, *999 )
+
+          !read the header
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
+          LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
+          NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
+          idx_comp=0
+          DO idx_field=1,NUMBER_OF_FIELDS
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+            pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
+            LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_COMPONENTS)-1)
+            number_of_comp=STRING_TO_INTEGER(LINE, ERR,ERROR)
+            DO idx_comp1=1,number_of_comp
+              idx_comp=idx_comp+1
+              CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+              pos=INDEX(LINE,".")
+              LINE=REMOVE(LINE,1, pos)
+              LINE=TRIM(ADJUSTL(LINE))
+              pos=INDEX(LINE,",")
+              LINE=REMOVE(LINE,pos, LEN(LINE))
+              LIST_STR(idx_comp)= LINE
+              CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+              pos=INDEX(LINE, CMISS_KEYWORD_NODES)
+              LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_NODES)-1)
+              number_of_node=STRING_TO_INTEGER(LINE, ERR,ERROR)
+              LIST_COMP_NODES(idx_comp)=number_of_node
+              DO idx_node1=1, number_of_node
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+                pos=INDEX(LINE, ".")
+                LINE=REMOVE(LINE,pos, LEN(LINE))
+                LIST_COMP_NODAL_INDEX(idx_comp,idx_node1)=STRING_TO_INTEGER(LINE, ERR,ERROR)
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+                CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+              ENDDO !idx_node1
+            ENDDO !idx_comp1
+          ENDDO !idx_field
+
           CALL REALLOCATE_2D( INTERPOLATION_XI, NUMBER_OF_COMPONENTS,NUMBER_OF_DIMENSIONS, &
             & "Could not allocate list of interpolation types", ERR, ERROR, *999 )
-          CALL REALLOCATE( MESH_COMPONENTS_OF_FIELD_COMPONENTS, NUMBER_OF_COMPONENTS, &
-            & "Could not allocate list of mesh components of field", ERR, ERROR, *999 )
-          !DO idx_comp=1,NUMBER_OF_COMPONENTS
-          !   DO idx_dim=1,NUMBER_OF_DIMENSIONS
-          !      IF(idx_dim==NUMBER_OF_DIMENSIONS) THEN
-          !         LINE=LIST_STR(idx_comp)
-          !      ELSE
-          !         pos=INDEX(LINE,"*")
-          !         LINE=EXTRACT(LIST_STR(idx_comp),1, pos-1)
-          !         LIST_STR(idx_comp)=REMOVE(LIST_STR(idx_comp),1,pos)
-          !      ENDIF
-          !      CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_XI(idx_comp, idx_dim), LINE, ERR, ERROR, *999)
-          !   ENDDO
-          !ENDDO
-       ENDIF !MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number
 
-       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
-       CALL MPI_BCAST(LIST_ELEMENTAL_NODES,number_of_node,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       CALL MPI_BCAST(LIST_COMP_NODAL_INDEX,number_of_node*NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER, &
-         & MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       CALL MPI_BCAST(SHAPE_INDEX,SHAPE_SIZE,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       CALL MPI_BCAST(LIST_COMP_NODES,NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       CALL MPI_BCAST(MESH_COMPONENTS_OF_FIELD_COMPONENTS,NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER, &
-         & MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       CALL MPI_BCAST(INTERPOLATION_XI,NUMBER_OF_COMPONENTS*NUMBER_OF_DIMENSIONS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,&
-            &MPI_COMM_WORLD,MPI_IERROR)
-       CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
-       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
-       current_mesh_comp=1
-       DO idx_comp=1, NUMBER_OF_COMPONENTS
+          CALL FIELD_IO_FILL_BASIS_INFO(INTERPOLATION_XI, LIST_STR, NUMBER_OF_COMPONENTS, ERR,ERROR,*999)
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          !CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,LINE,ERR,ERROR,*999)
+        ENDIF  !FILE_END==.FALSE..AND.START_OF_ELEMENT_SECTION==.TRUE..AND.SECTION_START==.TRUE.
+
+        IF((.NOT.FILE_END).AND.START_OF_ELEMENT_SECTION.AND.SECTION_START) THEN
+
+          pos=INDEX(LINE,CMISS_KEYWORD_ELEMENT)
+          LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_ELEMENT)-1)
+          CALL STRING_TO_MUTI_INTEGERS_VS(LINE, SHAPE_SIZE, SHAPE_INDEX(:), ERR,ERROR, *999)
+
+
+          DO WHILE(VERIFY(CMISS_KEYWORD_NODE,LINE)/=0)
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          ENDDO
+
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          CALL STRING_TO_MUTI_INTEGERS_VS(LINE, number_of_node, LIST_ELEMENTAL_NODES, ERR, ERROR, *999)
+
+          !skip scaling factors
+          CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          DO idx_scl=1, NUMBER_SCALING_FACTOR_LINES
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+          ENDDO
+
+          IF(.NOT.FILE_END) THEN
+            CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
+            IF(VERIFY(CMISS_KEYWORD_SCALE_FACTOR_SETS,LINE)==0) SECTION_START=.TRUE.
+          ENDIF
+          !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FILE_END:",FILE_END,ERR,ERROR,*999)
+        ENDIF
+      ENDIF !MASTER_COMPUTATIONAL_NUMBER
+
+      CALL MPI_BCAST(number_of_node,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"SIZE LIST_ELEMENTAL_NODES:",SIZE(LIST_ELEMENTAL_NODES),ERR,ERROR,*999)
+
+      IF(MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number) THEN
+        CALL REALLOCATE( LIST_ELEMENTAL_NODES, number_of_node, &
+          & "Could not allocate list of elemental nodes", ERR, ERROR, *999 )
+        CALL REALLOCATE_2D( LIST_COMP_NODAL_INDEX, NUMBER_OF_COMPONENTS, number_of_node, &
+          & "Could not allocate list of component nodal index ", ERR, ERROR, *999 )
+        CALL REALLOCATE_2D( INTERPOLATION_XI, NUMBER_OF_COMPONENTS,NUMBER_OF_DIMENSIONS, &
+          & "Could not allocate list of interpolation types", ERR, ERROR, *999 )
+        CALL REALLOCATE( MESH_COMPONENTS_OF_FIELD_COMPONENTS, NUMBER_OF_COMPONENTS, &
+          & "Could not allocate list of mesh components of field", ERR, ERROR, *999 )
+        !DO idx_comp=1,NUMBER_OF_COMPONENTS
+        !  DO idx_dim=1,NUMBER_OF_DIMENSIONS
+        !    IF(idx_dim==NUMBER_OF_DIMENSIONS) THEN
+        !      LINE=LIST_STR(idx_comp)
+        !    ELSE
+        !      pos=INDEX(LINE,"*")
+        !      LINE=EXTRACT(LIST_STR(idx_comp),1, pos-1)
+        !      LIST_STR(idx_comp)=REMOVE(LIST_STR(idx_comp),1,pos)
+        !    ENDIF
+        !    CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_XI(idx_comp, idx_dim), LINE, ERR, ERROR, *999)
+        !  ENDDO
+        !ENDDO
+      ENDIF !MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number
+
+      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
+      CALL MPI_BCAST(LIST_ELEMENTAL_NODES,number_of_node,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(LIST_COMP_NODAL_INDEX,number_of_node*NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER, &
+          & MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(SHAPE_INDEX,SHAPE_SIZE,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(LIST_COMP_NODES,NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(MESH_COMPONENTS_OF_FIELD_COMPONENTS,NUMBER_OF_COMPONENTS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER, &
+          & MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      CALL MPI_BCAST(INTERPOLATION_XI,NUMBER_OF_COMPONENTS*NUMBER_OF_DIMENSIONS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,&
+          & MPI_COMM_WORLD,MPI_IERROR)
+      CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
+      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
+      current_mesh_comp=1
+      DO idx_comp=1, NUMBER_OF_COMPONENTS
+        !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
+        IF(NUMBER_OF_DIMENSIONS==3) THEN
+          CALL LIST_SEARCH(LIST_ELEMENT_NUMBER, SHAPE_INDEX(1),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
+        ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
+          CALL LIST_SEARCH(LIST_ELEMENT_NUMBER, SHAPE_INDEX(2),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
+        ELSE IF(NUMBER_OF_DIMENSIONS==1) THEN
+          CALL LIST_SEARCH(LIST_ELEMENT_NUMBER, SHAPE_INDEX(3),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
+        ELSE
+          CALL FLAG_ERROR("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
+        ENDIF
+
+        IF(MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)==current_mesh_comp) THEN
+          !find out whether the basis has been created
+          pos=0
+          DO idx_basis=1, BASIS_FUNCTIONS%NUMBER_BASIS_FUNCTIONS
+            IF(SUM(BASIS_FUNCTIONS%BASES(idx_basis)%PTR%INTERPOLATION_XI(:)-INTERPOLATION_XI(idx_comp,:))==0) THEN
+              pos=idx_basis
+              EXIT
+            ENDIF
+          ENDDO
+
+          IF(pos==0) THEN
+            IF(ASSOCIATED(BASIS)) NULLIFY(BASIS)
+            CALL BASIS_CREATE_START(BASIS_FUNCTIONS%NUMBER_BASIS_FUNCTIONS+1,BASIS,ERR,ERROR,*999)
+            CALL BASIS_NUMBER_OF_XI_SET(BASIS,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            CALL BASIS_INTERPOLATION_XI_SET(BASIS,INTERPOLATION_XI(idx_comp,:),ERR,ERROR,*999)
+            CALL BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*999)
+          ENDIF
+
+          CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(GLOBAL_ELEMENT_NUMBER,ELEMENTS_PTR( &
+            & MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp))%PTR,BASIS,ERR,ERROR,*999)
           !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
-          IF(NUMBER_OF_DIMENSIONS==3) THEN
-             CALL LIST_SEARCH(LIST_ELEMENT_NUMBER, SHAPE_INDEX(1),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
-          ELSE IF(NUMBER_OF_DIMENSIONS==2) THEN
-             CALL LIST_SEARCH(LIST_ELEMENT_NUMBER, SHAPE_INDEX(2),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
-          ELSE IF(NUMBER_OF_DIMENSIONS==1) THEN
-             CALL LIST_SEARCH(LIST_ELEMENT_NUMBER, SHAPE_INDEX(3),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
-          ELSE
-             CALL FLAG_ERROR("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
-          ENDIF
-
-          IF(MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)==current_mesh_comp) THEN
-             !find out whether the basis has been created
-             pos=0
-             DO idx_basis=1, BASIS_FUNCTIONS%NUMBER_BASIS_FUNCTIONS
-                IF(SUM(BASIS_FUNCTIONS%BASES(idx_basis)%PTR%INTERPOLATION_XI(:)-INTERPOLATION_XI(idx_comp,:))==0) THEN
-                   pos=idx_basis
-                   EXIT
-                ENDIF
-             ENDDO
-
-             IF(pos==0) THEN
-                IF(ASSOCIATED(BASIS)) NULLIFY(BASIS)
-                CALL BASIS_CREATE_START(BASIS_FUNCTIONS%NUMBER_BASIS_FUNCTIONS+1,BASIS,ERR,ERROR,*999)
-                CALL BASIS_NUMBER_OF_XI_SET(BASIS,NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                CALL BASIS_INTERPOLATION_XI_SET(BASIS,INTERPOLATION_XI(idx_comp,:),ERR,ERROR,*999)
-                CALL BASIS_CREATE_FINISH(BASIS,ERR,ERROR,*999)
-             ENDIF
-
-             CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(GLOBAL_ELEMENT_NUMBER,ELEMENTS_PTR( &
-               & MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp))%PTR,BASIS,ERR,ERROR,*999)
-             !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
-             CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(GLOBAL_ELEMENT_NUMBER,ELEMENTS_PTR( &
-               & MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp))%PTR,LIST_ELEMENTAL_NODES(LIST_COMP_NODAL_INDEX(idx_comp,:)), &
-               & ERR,ERROR,*999)
-             !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
-             current_mesh_comp=current_mesh_comp+1
-          ENDIF
-       ENDDO !idx_comp
-       !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FILE_END:",FILE_END,ERR,ERROR,*999)
+          CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(GLOBAL_ELEMENT_NUMBER,ELEMENTS_PTR( &
+            & MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp))%PTR,LIST_ELEMENTAL_NODES(LIST_COMP_NODAL_INDEX(idx_comp,:)), &
+            & ERR,ERROR,*999)
+          !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"LIST_ELEMENTAL_NODES:",LIST_ELEMENTAL_NODES(1),ERR,ERROR,*999)
+          current_mesh_comp=current_mesh_comp+1
+        ENDIF
+      ENDDO !idx_comp
+      !CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"FILE_END:",FILE_END,ERR,ERROR,*999)
 
     ENDDO !idx_exelem<NUMBER_OF_EXELEM_FILES
 
     DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
-       CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(ELEMENTS_PTR(idx_comp)%PTR, ERR,ERROR,*999)
+      CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(ELEMENTS_PTR(idx_comp)%PTR, ERR,ERROR,*999)
     ENDDO
     CALL MESH_CREATE_FINISH(MESH,ERR,ERROR,*999)
 
@@ -2341,20 +2340,20 @@ CONTAINS
     CALL ENTERS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE",ERR,ERROR,*999)
 
     SELECT CASE(CHAR(LABEL_TYPE))
-         CASE("l.Lagrange")
-             INTERPOLATION=BASIS_LINEAR_LAGRANGE_INTERPOLATION
-         CASE("q.Lagrange")
-             INTERPOLATION=BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
-         CASE("c.Lagrange")
-             INTERPOLATION=BASIS_CUBIC_LAGRANGE_INTERPOLATION
-         CASE("c.Hermite")
-             INTERPOLATION=BASIS_CUBIC_HERMITE_INTERPOLATION
-         CASE("q1.Hermite")
-             INTERPOLATION=BASIS_QUADRATIC1_HERMITE_INTERPOLATION
-         CASE("q2.Hermite")
-             INTERPOLATION=BASIS_QUADRATIC2_HERMITE_INTERPOLATION
-         CASE DEFAULT
-             CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
+    CASE("l.Lagrange")
+      INTERPOLATION=BASIS_LINEAR_LAGRANGE_INTERPOLATION
+    CASE("q.Lagrange")
+      INTERPOLATION=BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
+    CASE("c.Lagrange")
+      INTERPOLATION=BASIS_CUBIC_LAGRANGE_INTERPOLATION
+    CASE("c.Hermite")
+      INTERPOLATION=BASIS_CUBIC_HERMITE_INTERPOLATION
+    CASE("q1.Hermite")
+      INTERPOLATION=BASIS_QUADRATIC1_HERMITE_INTERPOLATION
+    CASE("q2.Hermite")
+      INTERPOLATION=BASIS_QUADRATIC2_HERMITE_INTERPOLATION
+    CASE DEFAULT
+      CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
     END SELECT
 
     CALL EXITS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE")
@@ -2376,14 +2375,14 @@ CONTAINS
     INTEGER(INTG), INTENT(INOUT) :: num_node
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    
+
     !Local variables
     INTEGER(INTG) :: n
 
     CALL ENTERS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
 
     IF(BASIS%NUMBER_OF_XI==0) CALL FLAG_ERROR("number of xi in the basis is zero",ERR,ERROR,*999)
-    
+
     n = BASIS%NUMBER_OF_XI
 
     !Simplex-type interpolations must be the same in all xi.
@@ -2397,7 +2396,7 @@ CONTAINS
       CASE DEFAULT
         CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
     END SELECT
-    
+
     num_scl = num_node
 
     CALL EXITS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS")
@@ -2428,93 +2427,36 @@ CONTAINS
     num_scl=1;
     num_node=1
     DO ni=1,BASIS%NUMBER_OF_XI
-       SELECT CASE(BASIS%INTERPOLATION_XI(ni))
-         CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
-             num_scl=num_scl*2
-             num_node=num_node*2
-          CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
-             num_scl=num_scl*3
-             num_node=num_node*3
-          CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
-             num_scl=num_scl*4
-             num_node=num_node*4
-          CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
-             num_scl=num_scl*2*2
-             num_node=num_node*2
-          CASE(BASIS_QUADRATIC1_HERMITE_INTERPOLATION)
-             num_scl=num_scl*2*2
-             num_node=num_node*2
-          CASE(BASIS_QUADRATIC2_HERMITE_INTERPOLATION)
-             num_scl=num_scl*2*2
-             num_node=num_node*2
-          CASE DEFAULT
-             CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
-       END SELECT
+      SELECT CASE(BASIS%INTERPOLATION_XI(ni))
+      CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
+        num_scl=num_scl*2
+        num_node=num_node*2
+      CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
+        num_scl=num_scl*3
+        num_node=num_node*3
+      CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
+        num_scl=num_scl*4
+        num_node=num_node*4
+      CASE(BASIS_CUBIC_HERMITE_INTERPOLATION)
+        num_scl=num_scl*2*2
+        num_node=num_node*2
+      CASE(BASIS_QUADRATIC1_HERMITE_INTERPOLATION)
+        num_scl=num_scl*2*2
+        num_node=num_node*2
+      CASE(BASIS_QUADRATIC2_HERMITE_INTERPOLATION)
+        num_scl=num_scl*2*2
+        num_node=num_node*2
+      CASE DEFAULT
+        CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
+      END SELECT
     ENDDO !ni
-    
-!!$    DO ni=1,BASIS%NUMBER_OF_XI
-!!$       DO na=1,BASIS%NUMBER_OF_XI
-!!$          IF(BASIS%COLLAPSED_XI(ni)==BASIS_XI_COLLAPSED) THEN
-!!$             IF(BASIS%COLLAPSED_XI(na)==BASIS_COLLAPSED_AT_XI0.OR.BASIS%COLLAPSED_XI(na)==BASIS_COLLAPSED_AT_XI1) THEN
-!!$                SELECT CASE(BASIS%INTERPOLATION_XI(ni))
-!!$                CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
-!!$                   SELECT CASE(BASIS%INTERPOLATION_XI(na))
-!!$                   CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-2
-!!$                      num_node=num_node-2
-!!$                   CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-3
-!!$                      num_node=num_node-3
-!!$                   CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-4
-!!$                      num_node=num_node-4
-!!$                   CASE DEFAULT
-!!$                      CALL FLAG_ERROR &
-!!$                           & ( "Hermite interpolation is not working for output routine for collapsed nodes", ERR, ERROR, *999 )
-!!$                   END SELECT
-!!$                CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
-!!$                   SELECT CASE(BASIS%INTERPOLATION_XI(na))
-!!$                   CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-3
-!!$                      num_node=num_node-3
-!!$                   CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-6
-!!$                      num_node=num_node-6
-!!$                   CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-9
-!!$                      num_node=num_node-9
-!!$                   CASE DEFAULT
-!!$                      CALL FLAG_ERROR &
-!!$                           & ( "Hermite interpolation is not working for output routine for collapsed nodes", ERR, ERROR, *999 )
-!!$                   END SELECT
-!!$                CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
-!!$                   SELECT CASE(BASIS%INTERPOLATION_XI(na))
-!!$                   CASE(BASIS_LINEAR_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-4
-!!$                      num_node=num_node-4
-!!$                   CASE(BASIS_QUADRATIC_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-8
-!!$                      num_node=num_node-8
-!!$                   CASE(BASIS_CUBIC_LAGRANGE_INTERPOLATION)
-!!$                      num_scl=num_scl-12
-!!$                      num_node=num_node-12
-!!$                   CASE DEFAULT
-!!$                      CALL FLAG_ERROR &
-!!$                           & ( "Hermite interpolation is not working for output routine for collapsed nodes", ERR, ERROR, *999 )
-!!$                   END SELECT
-!!$                END SELECT
-!!$             ENDIF
-!!$          ENDIF
-!!$       ENDDO
-!!$    ENDDO
-    
+
     CALL EXITS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS")
     RETURN
 999 CALL ERRORS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS",ERR,ERROR)
     CALL EXITS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS")
     RETURN 1
   END SUBROUTINE FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS
-
 
   !
   !================================================================================================================================
@@ -2575,7 +2517,7 @@ CONTAINS
     INTEGER(INTG), DIMENSION(4,4,4,1) :: NODE_POSITION_INDEX
     INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
     INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES,dim !NUM_OF_NODES
-    INTEGER(INTG) :: local_number, isNodal, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES 
+    INTEGER(INTG) :: local_number, isNodal, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SAME_SCALING_SET
 
@@ -2589,139 +2531,139 @@ CONTAINS
     MAX_NUM_NODES=0
     MAX_NODE_COMP_INDEX=0
     NULLIFY(variable_ptr)
-    
+
     CALL REALLOCATE( GROUP_LOCAL_NUMBER, elementalInfoSet%NUMBER_OF_COMPONENTS, &
-      & "Could not allocate GROUP_LOCAL_NUMBER in exelem header", ERR, ERROR, *999 )
+        & "Could not allocate GROUP_LOCAL_NUMBER in exelem header", ERR, ERROR, *999 )
     CALL REALLOCATE( listScaleBases, elementalInfoSet%NUMBER_OF_COMPONENTS, &
-      & "Could not allocate listScaleBases in exelem header", ERR, ERROR, *999 )
+        & "Could not allocate listScaleBases in exelem header", ERR, ERROR, *999 )
     CALL REALLOCATE( listScaleFields, elementalInfoSet%NUMBER_OF_COMPONENTS, &
-      & "Could not allocate listScaleFields in exelem header", ERR, ERROR, *999 )
+        & "Could not allocate listScaleFields in exelem header", ERR, ERROR, *999 )
 
     !collect scale factor information
     DO comp_idx=1,elementalInfoSet%NUMBER_OF_COMPONENTS
-       !calculate the number of variables
-       IF (.NOT.ASSOCIATED(variable_ptr, TARGET=elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN
-          NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
-          variable_ptr=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
-       ENDIF
+      !calculate the number of variables
+      IF (.NOT.ASSOCIATED(variable_ptr, TARGET=elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN
+        NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
+        variable_ptr=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
+      ENDIF
 
-       !finding the local numbering through the global to local mapping
-       componentDomain=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%DOMAIN
-       !get the domain index for this variable component according to my own computional node number
-       local_number = FindMyLocalDomainNumber( componentDomain%MAPPINGS%ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number ),&
-            & my_computational_node_number )
-       GROUP_LOCAL_NUMBER(comp_idx)=local_number
-       !use local domain information find the out the maximum number of derivatives
-       DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
-       DOMAIN_NODES=>componentDomain%TOPOLOGY%NODES
-       BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS
-       IF(BASIS%NUMBER_OF_NODES>MAX_NUM_NODES) THEN
-          MAX_NODE_COMP_INDEX=comp_idx
-          MAX_NODE_ELEMENT => DOMAIN_ELEMENTS%ELEMENTS(local_number)
-          MAX_NUM_NODES=BASIS%NUMBER_OF_NODES
-       ENDIF
-       !IF(.NOT.BASIS%DEGENERATE)  THEN
-       IF(comp_idx == 1) THEN
-          NUM_OF_SCALING_FACTOR_SETS = NUM_OF_SCALING_FACTOR_SETS + 1
+      !finding the local numbering through the global to local mapping
+      componentDomain=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%DOMAIN
+      !get the domain index for this variable component according to my own computional node number
+      local_number = FindMyLocalDomainNumber( componentDomain%MAPPINGS%ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number ),&
+          & my_computational_node_number )
+      GROUP_LOCAL_NUMBER(comp_idx)=local_number
+      !use local domain information find the out the maximum number of derivatives
+      DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
+      DOMAIN_NODES=>componentDomain%TOPOLOGY%NODES
+      BASIS=>DOMAIN_ELEMENTS%ELEMENTS(local_number)%BASIS
+      IF(BASIS%NUMBER_OF_NODES>MAX_NUM_NODES) THEN
+        MAX_NODE_COMP_INDEX=comp_idx
+        MAX_NODE_ELEMENT => DOMAIN_ELEMENTS%ELEMENTS(local_number)
+        MAX_NUM_NODES=BASIS%NUMBER_OF_NODES
+      ENDIF
+      !IF(.NOT.BASIS%DEGENERATE)  THEN
+      IF(comp_idx == 1) THEN
+        NUM_OF_SCALING_FACTOR_SETS = NUM_OF_SCALING_FACTOR_SETS + 1
+        listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
+        listScaleFields( NUM_OF_SCALING_FACTOR_SETS )%PTR => variable_ptr%FIELD
+        LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
+      ELSE
+        SAME_SCALING_SET=.FALSE.
+        DO scaleIndex1=1, NUM_OF_SCALING_FACTOR_SETS
+          IF( BASIS%GLOBAL_NUMBER == listScaleBases( scaleIndex1 )%PTR%GLOBAL_NUMBER ) THEN
+            IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == listScaleFields (scaleIndex1 )%PTR%SCALINGS%SCALING_TYPE ) THEN
+              SAME_SCALING_SET=.TRUE.
+              LIST_COMP_SCALE(comp_idx)=scaleIndex1
+              EXIT
+            ENDIF
+          ENDIF
+        ENDDO !scaleIndex1
+        IF(.NOT.SAME_SCALING_SET) THEN
+          NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
           listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
           listScaleFields( NUM_OF_SCALING_FACTOR_SETS )%PTR => variable_ptr%FIELD
           LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
-       ELSE
-          SAME_SCALING_SET=.FALSE.
-          DO scaleIndex1=1, NUM_OF_SCALING_FACTOR_SETS
-             IF( BASIS%GLOBAL_NUMBER == listScaleBases( scaleIndex1 )%PTR%GLOBAL_NUMBER ) THEN
-               IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == listScaleFields (scaleIndex1 )%PTR%SCALINGS%SCALING_TYPE ) THEN
-                 SAME_SCALING_SET=.TRUE.
-                 LIST_COMP_SCALE(comp_idx)=scaleIndex1
-                 EXIT
-               ENDIF
-             ENDIF
-          ENDDO !scaleIndex1
-          IF(.NOT.SAME_SCALING_SET) THEN
-             NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
-             listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
-             listScaleFields( NUM_OF_SCALING_FACTOR_SETS )%PTR => variable_ptr%FIELD
-             LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
-          ENDIF
-       ENDIF
-       !ENDIF !BASIS%DEGENERATE=.FALSE.
+        ENDIF
+      ENDIF
+      !ENDIF !BASIS%DEGENERATE=.FALSE.
     ENDDO !comp_idx
     !!Allocate the memory for group of field components
     CALL REALLOCATE( GROUP_VARIABLES, NUM_OF_VARIABLES, &
-         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
+        & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     !!Allocate the memory for group of maximum number of derivatives
     CALL REALLOCATE( GROUP_SCALE_FACTORS, NUM_OF_SCALING_FACTOR_SETS, &
-         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
+        & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     CALL REALLOCATE( GROUP_NODE, NUM_OF_SCALING_FACTOR_SETS, &
-         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
+        & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
     !fill information into the group of fields and variables
     NULLIFY(variable_ptr)
     NUM_OF_VARIABLES=0
     DO comp_idx=1,elementalInfoSet%NUMBER_OF_COMPONENTS
-       !calculate the number of variables
-       IF (.NOT.ASSOCIATED(variable_ptr, TARGET=elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN
-          NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
-          variable_ptr=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
-       ENDIF
-       GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1
+      !calculate the number of variables
+      IF (.NOT.ASSOCIATED(variable_ptr, TARGET=elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN
+        NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
+        variable_ptr=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
+      ENDIF
+      GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1
     ENDDO  !comp_idx
 
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
-       BASIS => listScaleBases( scaleIndex )%PTR
-       IF(.NOT.ASSOCIATED(BASIS)) THEN
-          CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
-       ENDIF
+      BASIS => listScaleBases( scaleIndex )%PTR
+      IF(.NOT.ASSOCIATED(BASIS)) THEN
+        CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+      ENDIF
 
-       SELECT CASE( BASIS%TYPE )
-       CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
-          CALL FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
-       CASE( BASIS_SIMPLEX_TYPE )
-          CALL FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
-       CASE DEFAULT
-          CALL FLAG_ERROR("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
-               &ERR,ERROR,*999)
-       END SELECT
+      SELECT CASE( BASIS%TYPE )
+      CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
+        CALL FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+      CASE( BASIS_SIMPLEX_TYPE )
+        CALL FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+      CASE DEFAULT
+        CALL FLAG_ERROR("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
+            &ERR,ERROR,*999)
+      END SELECT
 
-       GROUP_SCALE_FACTORS(scaleIndex)=num_scl !numer of scale factors in scale factor set
-       GROUP_NODE(scaleIndex)=num_node !numer of nodes in scale factor set
+      GROUP_SCALE_FACTORS(scaleIndex)=num_scl !numer of scale factors in scale factor set
+      GROUP_NODE(scaleIndex)=num_node !numer of nodes in scale factor set
     ENDDO !scaleIndex
 
     !write out the scale factor set information
     ERR = FieldExport_ScalingFactorCount( sessionHandle, NUM_OF_SCALING_FACTOR_SETS )
     IF(ERR/=0) THEN
-       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
-       basis => listScaleBases( scaleIndex )%PTR
-       SELECT CASE( basis%TYPE )
-       CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE, BASIS_SIMPLEX_TYPE )
-          !!TEMP
-          !ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(basis%INTERPOLATION_XI) );
-          !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
-          ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI) );
-          IF( ERR /= 0 ) THEN
-             CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
-          ENDIF
-       CASE DEFAULT
-          CALL FLAG_ERROR( "Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE, "*" , ERR, ERROR ))//" is not implemented",&
-               &ERR,ERROR, *999)
-       END SELECT
+      basis => listScaleBases( scaleIndex )%PTR
+      SELECT CASE( basis%TYPE )
+      CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE, BASIS_SIMPLEX_TYPE )
+        !!TEMP
+        !ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(basis%INTERPOLATION_XI) );
+        !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+        !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
+        ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI) );
+        IF( ERR /= 0 ) THEN
+          CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
+        ENDIF
+      CASE DEFAULT
+        CALL FLAG_ERROR( "Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE, "*" , ERR, ERROR ))//" is not implemented",&
+            &ERR,ERROR, *999)
+      END SELECT
     ENDDO !scaleIndex
 
     ERR = FieldExport_NodeCount( sessionHandle, MAX_NUM_NODES )
     IF(ERR/=0) THEN
-       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     ERR = FieldExport_FieldCount( sessionHandle, NUM_OF_VARIABLES )
     IF(ERR/=0) THEN
-       CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     !write out the nodal header
@@ -2729,470 +2671,470 @@ CONTAINS
     NULLIFY(variable_ptr)
     DO comp_idx=1,elementalInfoSet%NUMBER_OF_COMPONENTS
 
-       component => elementalInfoSet%COMPONENTS(comp_idx)%PTR
+      component => elementalInfoSet%COMPONENTS(comp_idx)%PTR
 
-       !grouping field variables and components together
-       IF(.NOT.ASSOCIATED(variable_ptr,TARGET=component%FIELD_VARIABLE)) THEN !different variables
-          var_idx=var_idx+1
-          variable_ptr=>component%FIELD_VARIABLE
-          !write out the field information
+      !grouping field variables and components together
+      IF(.NOT.ASSOCIATED(variable_ptr,TARGET=component%FIELD_VARIABLE)) THEN !different variables
+        var_idx=var_idx+1
+        variable_ptr=>component%FIELD_VARIABLE
+        !write out the field information
 
-          fvar_name = CHAR(variable_ptr%variable_label)
-          LENGTH=LEN_TRIM(fvar_name)
-          DO i=1,LENGTH
-            cvar_name(I)=fvar_name(i:i)
-          ENDDO !i
-          cvar_name(LENGTH+1)=C_NULL_CHAR
-          
-          IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
-               & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-             NULLIFY(COORDINATE_SYSTEM)
-             CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-             ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, var_idx, COORDINATE_SYSTEM%TYPE, &
-                  & GROUP_VARIABLES(var_idx) )
-          ELSE
-             ERR = FieldExport_Variable( sessionHandle, cvar_name, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
-                  & GROUP_VARIABLES(var_idx) )
-          ENDIF
+        fvar_name = CHAR(variable_ptr%variable_label)
+        LENGTH=LEN_TRIM(fvar_name)
+        DO i=1,LENGTH
+          cvar_name(I)=fvar_name(i:i)
+        ENDDO !i
+        cvar_name(LENGTH+1)=C_NULL_CHAR
 
-          IF( ERR /= 0 ) THEN
-             CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
-          ENDIF
-       ENDIF
-
-       componentDomain=>component%DOMAIN
-       DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
-       BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
-
-       IF( component%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
-          isNodal = 1
-       ELSE
-          isNodal = 0
-       ENDIF
-
-       IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+        IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
             & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-          !!TEMP
-          !ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
-          !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
-          !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
           NULLIFY(COORDINATE_SYSTEM)
           CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-          ERR = FieldExport_CoordinateComponent( sessionHandle, COORDINATE_SYSTEM%TYPE, &
-               & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
-       ELSE
-          !!TEMP
-          !ERR = FieldExport_Component( sessionHandle, &
-          !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
-          !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-          INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
-          ERR = FieldExport_Component( sessionHandle, &
-               & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
-       ENDIF
-       IF(ERR/=0) THEN
+          ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, var_idx, COORDINATE_SYSTEM%TYPE, &
+              & GROUP_VARIABLES(var_idx) )
+        ELSE
+          ERR = FieldExport_Variable( sessionHandle, cvar_name, var_idx, variable_ptr%FIELD%TYPE, variable_ptr%VARIABLE_TYPE, &
+              & GROUP_VARIABLES(var_idx) )
+        ENDIF
+
+        IF( ERR /= 0 ) THEN
           CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
-       ENDIF
+        ENDIF
+      ENDIF
 
-       IF( isNodal == 0 ) THEN
-          ERR = FieldExport_ElementGridSize( sessionHandle, basis%NUMBER_OF_XI )
-       ELSE
-          ! IF(.NOT.BASIS%DEGENERATE) THEN
-          IF(LIST_COMP_SCALE(comp_idx)==1) THEN
-             scaleIndex=0
-          ELSE
-             scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
+      componentDomain=>component%DOMAIN
+      DOMAIN_ELEMENTS=>componentDomain%TOPOLOGY%ELEMENTS
+      BASIS=>DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%BASIS
+
+      IF( component%INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
+        isNodal = 1
+      ELSE
+        isNodal = 0
+      ENDIF
+
+      IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+          & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+        !!TEMP
+        !ERR = FieldExport_CoordinateComponent( sessionHandle, variable_ptr%FIELD%REGION%COORDINATE_SYSTEM, &
+        !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+        !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+        !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        ERR = FieldExport_CoordinateComponent( sessionHandle, COORDINATE_SYSTEM%TYPE, &
+            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ))
+      ELSE
+        !!TEMP
+        !ERR = FieldExport_Component( sessionHandle, &
+        !  & component%COMPONENT_NUMBER, basis%NUMBER_OF_XI, C_LOC( basis%INTERPOLATION_XI ) )
+        !!Copy interpolation xi to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+        !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+        INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)=BASIS%INTERPOLATION_XI(1:BASIS%NUMBER_OF_XI)
+        ERR = FieldExport_Component( sessionHandle, &
+            & component%COMPONENT_NUMBER,isNodal,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
+      ENDIF
+      IF(ERR/=0) THEN
+        CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      ENDIF
+
+      IF( isNodal == 0 ) THEN
+        ERR = FieldExport_ElementGridSize( sessionHandle, basis%NUMBER_OF_XI )
+      ELSE
+        ! IF(.NOT.BASIS%DEGENERATE) THEN
+        IF(LIST_COMP_SCALE(comp_idx)==1) THEN
+          scaleIndex=0
+        ELSE
+          scaleIndex= SUM(GROUP_SCALE_FACTORS(1:LIST_COMP_SCALE(comp_idx)-1))
+        ENDIF
+
+        !!TEMP
+        ! ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
+        ! & C_LOC( DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES ), scaleIndex )
+        !!Copy element derivatives etc. to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
+        !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
+        !!In order to correctly index the supplied array, the API needs to know in advance the dimensions of the array.
+        !!To avoid having to pass in an extra 'size' parameter, we unroll the 2d derivative index array into a vector.
+        derivativeIndex = 1
+        nn=0
+        NODE_NUMBER=0
+
+        ! For elements with collapsed nodes, the node indexes need to be changed
+        IF (BASIS%NUMBER_OF_COLLAPSED_XI>0) THEN
+    !!$         IF((.NOT.BASIS%COLLAPSED_XI(1).OR.BASIS%COLLAPSED_XI(2).OR.BASIS%COLLAPSED_XI(3)==BASIS_NOT_COLLAPSED)) THEN
+    !!$           CALL FLAG_ERROR("Pyramide elements output is not implemented",&
+    !!$              &ERR,ERROR,*999)
+
+          NODE_NUMBER_COUNTER=0
+          NodesX=BASIS%INTERPOLATION_XI(1)+1
+          NodesY=BASIS%INTERPOLATION_XI(2)+1
+          NodesZ=BASIS%INTERPOLATION_XI(3)+1
+
+
+          !The following if-sentences goes through all possible wedge formed elements and renumber the nodes in order to
+          !attach the node_index and the number of derivatives to the numbering corresponding to not collapsed elements
+          IF(BASIS%COLLAPSED_XI(1)==BASIS_XI_COLLAPSED) THEN
+            IF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI0) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (ny==1) THEN
+                      NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+nz
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                        & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                        & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI1) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (ny==NodesY) THEN
+                      NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+NodesX*(NodesY-1)+nz
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI0) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (nz==1) THEN
+                      NODE_NUMBER_COLLAPSED=ny
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI1) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (nz==NodesZ) THEN
+                      NODE_NUMBER_COLLAPSED=(NodesZ-1)*(NodesY*NodesX)+ny
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDIF
+          ELSE IF(BASIS%COLLAPSED_XI(2)==BASIS_XI_COLLAPSED) THEN
+            IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI0) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (ny==1) THEN
+                      NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+nz
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI1) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (ny==NodesY) THEN
+                      NODE_NUMBER=(nz-1)*NodesX*(NodesY-1)+nz+NodesX-1
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI0) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (nz==1) THEN
+                      NODE_NUMBER_COLLAPSED=nx
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI1) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (nz==NodesZ) THEN
+                      NODE_NUMBER_COLLAPSED=(NodesZ-1)*NodesY*NodesX+nx
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDIF
+          ELSE IF(BASIS%COLLAPSED_XI(3)==BASIS_XI_COLLAPSED) THEN
+            IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI0) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (nx==1) THEN
+                      NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI1) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (nx==NodesX) THEN
+                      NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny+NodesX-1
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI0) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (ny==1) THEN
+                      NODE_NUMBER_COLLAPSED=nx
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ELSE IF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI1) THEN
+              DO nz=1,NodesZ
+                DO ny=1,NodesY
+                  DO nx=1,NodesX
+                    nn=nn+1
+                    IF (ny==NodesY) THEN
+                      NODE_NUMBER_COLLAPSED=NodesX*(NodesY-1)+nx
+                      NODE_NUMBER=NODE_NUMBER_COLLAPSED
+                    ELSE
+                      IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
+                      ELSE
+                        NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
+                      ENDIF
+                      NODE_NUMBER=NODE_NUMBER_COUNTER
+                    ENDIF
+                    NODE_INDEXES(nn)=NODE_NUMBER
+                    NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                    DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
+                      ELEMENT_DERIVATIVES(nn)= &
+                          & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
+                          & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
+                    ENDDO
+                  ENDDO
+                ENDDO
+              ENDDO
+            ENDIF
           ENDIF
+          !NODE_NUMBER_COUNTER has counted up to the highest number of nodes in the element
+          NUMBER_OF_ELEMENT_NODES=nn
+          !  ENDIF
+        ELSE !Not collapsed nodes
+          DO nn=1,BASIS%NUMBER_OF_NODES
+            NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
+            DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+              ELEMENT_DERIVATIVES(derivativeIndex) = &
+                & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(1,mm,nn)
+              derivativeIndex = derivativeIndex + 1
+            ENDDO !mm
+          ENDDO !nn
 
-          !!TEMP
-          ! ERR = FieldExport_NodeScaleIndexes( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( BASIS%NUMBER_OF_DERIVATIVES ), &
-          ! & C_LOC( DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES ), scaleIndex )
-          !!Copy element derivatives etc. to a temporary array that has the target attribute. gcc bug 38813 prevents using C_LOC with
-          !!the array directly. nb using a fixed length array here which is dangerous but should suffice for now.
-          !!In order to correctly index the supplied array, the API needs to know in advance the dimensions of the array.
-          !!To avoid having to pass in an extra 'size' parameter, we unroll the 2d derivative index array into a vector.
-          derivativeIndex = 1
-          nn=0
-          NODE_NUMBER=0
-          
-          ! For elements with collapsed nodes, the node indexes need to be changed
-          IF (BASIS%NUMBER_OF_COLLAPSED_XI>0) THEN
-!!$             IF((.NOT.BASIS%COLLAPSED_XI(1).OR.BASIS%COLLAPSED_XI(2).OR.BASIS%COLLAPSED_XI(3)==BASIS_NOT_COLLAPSED)) THEN
-!!$                CALL FLAG_ERROR("Pyramide elements output is not implemented",&
-!!$                     &ERR,ERROR,*999) 
-             
-             NODE_NUMBER_COUNTER=0
-             NodesX=BASIS%INTERPOLATION_XI(1)+1
-             NodesY=BASIS%INTERPOLATION_XI(2)+1
-             NodesZ=BASIS%INTERPOLATION_XI(3)+1
+          !Find the local-node index in the element's total node list.
+          !TODO This assumes nested subsets of nodes, and will therefore break on, e.g., mixed quad and cubic interpolation
+          DO nn = 1, BASIS%NUMBER_OF_NODES
+            DO mm = 1, MAX_NODE_ELEMENT%BASIS%NUMBER_OF_NODES
+              IF( DOMAIN_ELEMENTS%ELEMENTS( local_number )%ELEMENT_NODES( nn ) == &
+                  & MAX_NODE_ELEMENT%ELEMENT_NODES( mm ) ) THEN
+                NODE_INDEXES( nn ) = mm
+                EXIT
+              ENDIF
+            ENDDO !mm
+          ENDDO !nn
+          NUMBER_OF_ELEMENT_NODES= BASIS%NUMBER_OF_NODES
+        ENDIF
 
+        IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == FIELD_NO_SCALING ) THEN
+          !Overloading the scaleIndex parameter is something of a hack.
+          ERR = FieldExport_NodeScaleIndexes( sessionHandle,  NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), -1 )
+        ELSE
+          ERR = FieldExport_NodeScaleIndexes( sessionHandle, NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
+              & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), scaleIndex )
+        ENDIF
+        ! ELSE
+        !  CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
+        ! ENDIF
+      ENDIF
 
-             !The following if-sentences goes through all possible wedge formed elements and renumber the nodes in order to 
-             !attach the node_index and the number of derivatives to the numbering corresponding to not collapsed elements  
-             IF(BASIS%COLLAPSED_XI(1)==BASIS_XI_COLLAPSED) THEN
-                IF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI0) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (ny==1) THEN
-                               NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+nz
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                 & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                 & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI1) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                             IF (ny==NodesY) THEN
-                               NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+NodesX*(NodesY-1)+nz
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER) 
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI0) THEN
-                    DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (nz==1) THEN
-                               NODE_NUMBER_COLLAPSED=ny
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI1) THEN
-                    DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (nz==NodesZ) THEN
-                               NODE_NUMBER_COLLAPSED=(NodesZ-1)*(NodesY*NodesX)+ny
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ENDIF
-             ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_XI_COLLAPSED) THEN
-                IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI0) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (ny==1) THEN
-                               NODE_NUMBER_COLLAPSED=(nz-1)*NodesX*(NodesY-1)+nz
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ELSEIF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI1) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (ny==NodesY) THEN
-                               NODE_NUMBER=(nz-1)*NodesX*(NodesY-1)+nz+NodesX-1
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO                 
-                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI0) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (nz==1) THEN
-                               NODE_NUMBER_COLLAPSED=nx
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO          
-                ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_COLLAPSED_AT_XI1) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (nz==NodesZ) THEN
-                               NODE_NUMBER_COLLAPSED=(NodesZ-1)*NodesY*NodesX+nx
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ENDIF
-             ELSEIF(BASIS%COLLAPSED_XI(3)==BASIS_XI_COLLAPSED) THEN
-                IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI0) THEN
-                    DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (nx==1) THEN
-                               NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ELSEIF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI1) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (nx==NodesX) THEN
-                                NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny+NodesX-1
-                                NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                               IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI0) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (ny==1) THEN
-                               NODE_NUMBER_COLLAPSED=nx
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER 
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ELSEIF(BASIS%COLLAPSED_XI(2)==BASIS_COLLAPSED_AT_XI1) THEN
-                   DO nz=1,NodesZ
-                      DO ny=1,NodesY
-                         DO nx=1,NodesX
-                            nn=nn+1
-                            IF (ny==NodesY) THEN
-                               NODE_NUMBER_COLLAPSED=NodesX*(NodesY-1)+nx
-                               NODE_NUMBER=NODE_NUMBER_COLLAPSED
-                            ELSE
-                              IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COLLAPSED+1
-                               ELSE
-                                  NODE_NUMBER_COUNTER=NODE_NUMBER_COUNTER+1
-                               ENDIF 
-                               NODE_NUMBER=NODE_NUMBER_COUNTER
-                            ENDIF
-                            NODE_INDEXES(nn)=NODE_NUMBER
-                            NUMBER_OF_DERIVATIVES(nn)=BASIS%NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                            DO mm = 1, NUMBER_OF_DERIVATIVES(NODE_NUMBER)
-                               ELEMENT_DERIVATIVES(nn)= &
-                                    & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))% &
-                                    & ELEMENT_DERIVATIVES(1,mm,NODE_NUMBER)  
-                            ENDDO
-                         ENDDO
-                      ENDDO
-                   ENDDO
-                ENDIF
-             ENDIF
-             !NODE_NUMBER_COUNTER has counted up to the highest number of nodes in the element
-             NUMBER_OF_ELEMENT_NODES=nn
-             !   ENDIF
-          ELSE !Not collapsed nodes
-             DO nn=1,BASIS%NUMBER_OF_NODES
-                NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
-                DO mm=1,NUMBER_OF_DERIVATIVES(nn)
-                   ELEMENT_DERIVATIVES(derivativeIndex) = &
-                     & DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%ELEMENT_DERIVATIVES(1,mm,nn)
-                   derivativeIndex = derivativeIndex + 1
-                ENDDO !mm
-             ENDDO !nn
-
-             !Find the local-node index in the element's total node list.
-             !TODO This assumes nested subsets of nodes, and will therefore break on, e.g., mixed quad and cubic interpolation
-             DO nn = 1, BASIS%NUMBER_OF_NODES
-                DO mm = 1, MAX_NODE_ELEMENT%BASIS%NUMBER_OF_NODES
-                   IF( DOMAIN_ELEMENTS%ELEMENTS( local_number )%ELEMENT_NODES( nn ) == &
-                        & MAX_NODE_ELEMENT%ELEMENT_NODES( mm ) ) THEN
-                      NODE_INDEXES( nn ) = mm
-                      EXIT
-                   ENDIF
-                ENDDO !mm
-             ENDDO !nn
-             NUMBER_OF_ELEMENT_NODES= BASIS%NUMBER_OF_NODES
-          ENDIF
-          
-          IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == FIELD_NO_SCALING ) THEN
-             !Overloading the scaleIndex parameter is something of a hack.
-             ERR = FieldExport_NodeScaleIndexes( sessionHandle,  NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-                  & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), -1 )
-          ELSE
-             ERR = FieldExport_NodeScaleIndexes( sessionHandle, NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-                  & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), scaleIndex )
-          ENDIF
-          ! ELSE
-          !   CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
-          ! ENDIF
-       ENDIF
-
-       IF(ERR/=0) THEN
-          CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
-       ENDIF
+      IF(ERR/=0) THEN
+        CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      ENDIF
 
     ENDDO !comp_idx
 
@@ -3239,13 +3181,13 @@ CONTAINS
 
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS",ERR,ERROR,*999)
- 
+
     scaleIndex = 1
     firstScaleSet = 1
     DO componentIndex = 1, components%NUMBER_OF_COMPONENTS
       component => components%COMPONENTS( componentIndex )%PTR
       !finding the local numbering through the global to local mapping
-      
+
       domainElementMapping=>component%DOMAIN%MAPPINGS%ELEMENTS
       !get the domain index for this variable component according to my own computional node number
 
@@ -3287,35 +3229,35 @@ CONTAINS
             ENDDO !derivativeIndex
           ENDDO !nodeIndex
         ELSE
-           !This is just a hack, forcing to write out the correct number of scale factors equal to one!!!!
-           NodesX=BASIS%INTERPOLATION_XI(1)+1
-           NodesY=BASIS%INTERPOLATION_XI(2)+1
-           NodesZ=BASIS%INTERPOLATION_XI(3)+1
-           CALL REALLOCATE( scaleBuffer, (NodesX*NodesY*NodesZ), &
-                & "Could not allocate scale buffer in IO", ERR, ERROR, *999 )
-           DO nz=1,NodesZ
-              DO ny=1,NodesY
-                 DO nx=1,NodesX
-                    scaleFactorCount=scaleFactorCOUNT+1
-                    scaleBuffer( scaleFactorCount ) = 1
-                 ENDDO
+          !This is just a hack, forcing to write out the correct number of scale factors equal to one!!!!
+          NodesX=BASIS%INTERPOLATION_XI(1)+1
+          NodesY=BASIS%INTERPOLATION_XI(2)+1
+          NodesZ=BASIS%INTERPOLATION_XI(3)+1
+          CALL REALLOCATE( scaleBuffer, (NodesX*NodesY*NodesZ), &
+               & "Could not allocate scale buffer in IO", ERR, ERROR, *999 )
+          DO nz=1,NodesZ
+            DO ny=1,NodesY
+              DO nx=1,NodesX
+                scaleFactorCount=scaleFactorCOUNT+1
+                scaleBuffer( scaleFactorCount ) = 1
               ENDDO
-           ENDDO
+            ENDDO
+          ENDDO
         ENDIF
-        
+
         NULLIFY( SCALE_FACTORS )
 
         ERR = FieldExport_ElementNodeScales( sessionHandle, firstScaleSet, scaleFactorCount, C_LOC( scaleBuffer ) )
-        
+
         firstScaleSet = 0
-          
+
         IF( ERR /= 0 ) THEN
           CALL FLAG_ERROR( "Cannot write node scales to file", ERR, ERROR,*999 )
         ENDIF
 
       ENDIF ! componentScales(componentIndex) == scaleIndex
     ENDDO ! componentIndex
-      
+
     CALL CHECKED_DEALLOCATE( scaleBuffer )
 
     CALL EXITS("FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS")
@@ -3331,7 +3273,7 @@ CONTAINS
 
   !>Write all the elemental information from LOCAL_PROCESS_NODAL_INFO_SET to exelem files
   SUBROUTINE FIELD_IO_EXPORT_ELEMENTS_INTO_LOCAL_FILE(ELEMENTAL_INFO_SET, NAME, my_computational_node_number, &
-  &ERR, ERROR, *)
+      & ERR, ERROR, *)
     !the reason that my_computational_node_number is used in the argument is for future extension
     !Argument variables
     TYPE(FIELD_IO_INFO_SET), INTENT(INOUT) :: ELEMENTAL_INFO_SET !<nodal information in this process
@@ -3368,19 +3310,19 @@ CONTAINS
     NUM_OF_SCALING_FACTOR_SETS=0
 
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-       CALL FLAG_ERROR("the elemental information set in input is invalid",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the elemental information set in input is invalid",ERR,ERROR,*999)
     ENDIF
 
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
-       CALL FLAG_ERROR("the elemental information set is not associated with any numbering list",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the elemental information set is not associated with any numbering list",ERR,ERROR,*999)
     ENDIF
 
     IF(ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES==0) THEN
-       CALL FLAG_ERROR("the elemental information set does not contain any nodes",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the elemental information set does not contain any nodes",ERR,ERROR,*999)
     ENDIF
 
     IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%SAME_HEADER) THEN
-       CALL FLAG_ERROR("the first header flag of elemental information set should be false",ERR,ERROR,*999)
+      CALL FLAG_ERROR("the first header flag of elemental information set should be false",ERR,ERROR,*999)
     ENDIF
 
     !NULLIFY(SCALE_FACTORS)
@@ -3389,12 +3331,12 @@ CONTAINS
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL FIELD_COORDINATE_SYSTEM_GET(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%COMPONENTS(1)%PTR% &
-      & FIELD_VARIABLE%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        & FIELD_VARIABLE%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
     NUM_DIM=COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-    
+
     ERR = FieldExport_OpenSession( EXPORT_TYPE_FILE, char(FILE_NAME)//C_NULL_CHAR, sessionHandle )
     IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
     ENDIF
 
     IF(ASSOCIATED(ELEMENTAL_INFO_SET%FIELDS%REGION)) THEN
@@ -3409,7 +3351,7 @@ CONTAINS
     IF(ERR/=0) THEN
       CALL FLAG_ERROR( "Cannot write group name to elements file", ERR, ERROR,*999 )
     ENDIF
-      
+
     components => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR
     component => components%COMPONENTS(1)%PTR
     DOMAIN_MAPPING_ELEMENTS=>component%DOMAIN%MAPPINGS%ELEMENTS
@@ -3418,11 +3360,11 @@ CONTAINS
 
     ERR = FieldExport_MeshDimensions( sessionHandle, BASIS%NUMBER_OF_XI, BASIS%TYPE  )
     IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot write mesh dimensions to file", ERR, ERROR,*999 )
+      CALL FLAG_ERROR( "Cannot write mesh dimensions to file", ERR, ERROR,*999 )
     ENDIF
 
     DO elem_idx=1, ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
-    
+
       components => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(elem_idx)%PTR
       global_number = ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(elem_idx)
 
@@ -3470,28 +3412,18 @@ CONTAINS
 
           NULLIFY(GEOMETRIC_PARAMETERS)
           CALL FIELD_PARAMETER_SET_DATA_GET(component%FIELD_VARIABLE%FIELD,&
-            & component%FIELD_VARIABLE%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-  
+              & component%FIELD_VARIABLE%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+
           ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
-            & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)) )
+              & GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)))
           isFirstValueSet = 0
-        ELSEIF( component%INTERPOLATION_TYPE == FIELD_CONSTANT_INTERPOLATION ) THEN
-          !SELECT CASE(COMPONENT%FIELD_VARIABLE%DATA_TYPE)
-          !CASE(FIELD_INTG_TYPE)
-          !  NULLIFY(GEOMETRIC_PARAMETERS_INTG)
-          ! CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,FIELD_U_VARIABLE_TYPE, &
-          !   & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
-          !   ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI, &
-          !     & GEOMETRIC_PARAMETERS_INTG(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP) )
-          !   isFirstValueSet = 0
-          !CASE(FIELD_DP_TYPE)
-            NULLIFY(GEOMETRIC_PARAMETERS)
-            CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
-              & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
-            VALUE=GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
-            ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI,VALUE)
-            isFirstValueSet = 0
-          !END SELECT
+        ELSE IF( component%INTERPOLATION_TYPE == FIELD_CONSTANT_INTERPOLATION ) THEN
+          NULLIFY(GEOMETRIC_PARAMETERS)
+          CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
+            & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
+          VALUE=GEOMETRIC_PARAMETERS(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP)
+          ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%NUMBER_OF_XI,VALUE)
+          isFirstValueSet = 0
         ENDIF
 
         IF(ERR/=0) THEN
@@ -3590,7 +3522,7 @@ CONTAINS
 
       CALL FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS( sessionHandle, components, &
         & LIST_COMP_SCALE, global_number, my_computational_node_number, ERR, ERROR, *999 )
-        
+
     ENDDO !elem_idx
 
     ERR = FieldExport_CloseSession( sessionHandle )
@@ -3634,10 +3566,10 @@ CONTAINS
     CALL ENTERS("FIELD_IO_ELEMENTAL_INFO_SET_SORT",ERR,ERROR,*999)
 
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
-       CALL FLAG_ERROR("list of global numbering in the input data is invalid",ERR,ERROR,*999)
+      CALL FLAG_ERROR("list of global numbering in the input data is invalid",ERR,ERROR,*999)
     ENDIF
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-       CALL FLAG_ERROR("nodal information set in the input data is invalid",ERR,ERROR,*999)
+      CALL FLAG_ERROR("nodal information set in the input data is invalid",ERR,ERROR,*999)
     ENDIF
 
 
@@ -3651,108 +3583,108 @@ CONTAINS
     !and change the global number in the LIST_OF_GLOBAL_NUMBER
     nn1=1
     DO WHILE(nn1<ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES)
-       !global number of this node
-       global_number1=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1)
-       DO nn2=nn1+1,ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
-          global_number2=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
-          IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS==&
-           &ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%NUMBER_OF_COMPONENTS) THEN
-             SWITCH=.TRUE.
-             !we will check the component (type of component, partial derivative).
-             DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
-                !not safe, but it is fast
-                !=============================================================================================!
-                !           checking according to local memory adddress                                       !
-                !=============================================================================================!
-                !are they in the same memory address?
-                IF(.NOT.ASSOCIATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR, &
-                   &TARGET=ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR))  THEN
-                   SWITCH=.FALSE.
-                   EXIT
-                ENDIF !ASSCOCIATED
+      !global number of this node
+      global_number1=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1)
+      DO nn2=nn1+1,ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
+        global_number2=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
+        IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS==&
+         &ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%NUMBER_OF_COMPONENTS) THEN
+          SWITCH=.TRUE.
+          !we will check the component (type of component, partial derivative).
+          DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
+            !not safe, but it is fast
+            !=============================================================================================!
+            !        checking according to local memory adddress                          !
+            !=============================================================================================!
+            !are they in the same memory address?
+            IF(.NOT.ASSOCIATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR, &
+              &TARGET=ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR))  THEN
+              SWITCH=.FALSE.
+              EXIT
+            ENDIF !ASSCOCIATED
 
-                !! better use this one because it is safe method, but slow
-                !!=============================================================================================!
-                !!           checking according to the types defined in the openCMISS                          !
-                !!=============================================================================================!
-                !!are they in the same field?
-                !IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER/= &
-                !&ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER) THEN
-                !   SWITCH=.FALSE.
-                !   EXIT
-                !ELSE  !GLOBAL_NUBMER
-                !   !are they the same variable?
-                !   IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER/= &
-                !   & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER) THEN
-                !       SWITCH=.FALSE.
-                !       EXIT
-                !    ELSE !VARIABLE_NUBMER
-                !      !are they the same component?
-                !      IF(LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER/=&
-                !        &LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER) THEN
-                !          SWITCH=.FALSE.
-                !          EXIT
-                !       ENDIF !COMPONENT_NUMBER
-                !   ENDIF ! VARIABLE_NUBMER
-                !ENDIF !GLOBAL_NUBMER
-             ENDDO !component_idx
+            !! better use this one because it is safe method, but slow
+            !!=============================================================================================!
+            !!        checking according to the types defined in the openCMISS                  !
+            !!=============================================================================================!
+            !!are they in the same field?
+            !IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER/= &
+            !&ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD%GLOBAL_NUMBER) THEN
+            !  SWITCH=.FALSE.
+            !  EXIT
+            !ELSE  !GLOBAL_NUBMER
+            !  !are they the same variable?
+            !  IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER/= &
+            !  & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%VARIABLE_NUMBER) THEN
+            !     SWITCH=.FALSE.
+            !     EXIT
+            !   ELSE !VARIABLE_NUBMER
+            !    !are they the same component?
+            !    IF(LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER/=&
+            !      &LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR%COMPONENT_NUMBER) THEN
+            !       SWITCH=.FALSE.
+            !       EXIT
+            !     ENDIF !COMPONENT_NUMBER
+            !  ENDIF ! VARIABLE_NUBMER
+            !ENDIF !GLOBAL_NUBMER
+          ENDDO !component_idx
 
-             !check whether correspoding two components have the same partial derivatives
-             IF(SWITCH) THEN
-                DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
-                   !finding the local numbering for the NODAL_INFO_SET(nn1)
-                   DOMAIN_MAPPING_ELEMENTS=>&
-                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%DOMAIN% &
-                      & MAPPINGS%ELEMENTS
-                   !get the domain index for this variable component according to my own computional node number
-                   !local number of nn1'th node in the damain assoicated with component(component_idx)
-                   local_number1 = FindMyLocalDomainNumber( DOMAIN_MAPPING_ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number1 ), &
-                     & my_computational_node_number )
-                   DOMAIN_ELEMENTS1=>&
-                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR% &
-                      & DOMAIN%TOPOLOGY%ELEMENTS
-
-                   !finding the local numbering for the NODAL_INFO_SET(nn2)
-                   DOMAIN_MAPPING_ELEMENTS=>&
-                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR% &
-                      & DOMAIN%MAPPINGS%ELEMENTS
-                   !get the domain index for this variable component according to my own computional node number
-                   !local number of nn2'th node in the damain assoicated with component(component_idx)
-                   local_number2 = FindMyLocalDomainNumber( DOMAIN_MAPPING_ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number2 ), &
-                     & my_computational_node_number )
-                   DOMAIN_ELEMENTS2=>&
-                      & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR% &
-                      & DOMAIN%TOPOLOGY%ELEMENTS
-
-                   !checking whether they have the same basis
-                   IF(DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%GLOBAL_NUMBER/=&
-                      &DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%BASIS%GLOBAL_NUMBER) THEN
-                      SWITCH=.FALSE.
-                      EXIT
-                   ENDIF   !DOMAIN_ELEMENTS1
-                ENDDO !component_idx
-             ENDIF !SWITCH==.TRUE.
-          ENDIF !LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS==LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn+1)%PTR%NUMBER_OF_COMPONENTS
-
-          !find two elements which have the same output, and then they should put together
+          !check whether correspoding two components have the same partial derivatives
           IF(SWITCH) THEN
-             tmpInfoSet => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
-             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
-             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
+            DO component_idx=1,ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%NUMBER_OF_COMPONENTS
+              !finding the local numbering for the NODAL_INFO_SET(nn1)
+              DOMAIN_MAPPING_ELEMENTS=>&
+                & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR%DOMAIN% &
+                & MAPPINGS%ELEMENTS
+              !get the domain index for this variable component according to my own computional node number
+              !local number of nn1'th node in the damain assoicated with component(component_idx)
+              local_number1 = FindMyLocalDomainNumber( DOMAIN_MAPPING_ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number1 ), &
+                & my_computational_node_number )
+              DOMAIN_ELEMENTS1=>&
+                & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR%COMPONENTS(component_idx)%PTR% &
+                & DOMAIN%TOPOLOGY%ELEMENTS
 
-             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%SAME_HEADER=.FALSE.
-             ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR%SAME_HEADER=.TRUE.
+              !finding the local numbering for the NODAL_INFO_SET(nn2)
+              DOMAIN_MAPPING_ELEMENTS=>&
+                & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR% &
+                & DOMAIN%MAPPINGS%ELEMENTS
+              !get the domain index for this variable component according to my own computional node number
+              !local number of nn2'th node in the damain assoicated with component(component_idx)
+              local_number2 = FindMyLocalDomainNumber( DOMAIN_MAPPING_ELEMENTS%GLOBAL_TO_LOCAL_MAP( global_number2 ), &
+                & my_computational_node_number )
+              DOMAIN_ELEMENTS2=>&
+                & ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%COMPONENTS(component_idx)%PTR% &
+                & DOMAIN%TOPOLOGY%ELEMENTS
 
-             !exchange the global number
-             ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)
-             ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)=global_number2
+              !checking whether they have the same basis
+              IF(DOMAIN_ELEMENTS1%ELEMENTS(local_number1)%BASIS%GLOBAL_NUMBER/=&
+                &DOMAIN_ELEMENTS2%ELEMENTS(local_number2)%BASIS%GLOBAL_NUMBER) THEN
+                SWITCH=.FALSE.
+                EXIT
+              ENDIF  !DOMAIN_ELEMENTS1
+            ENDDO !component_idx
+          ENDIF !SWITCH==.TRUE.
+        ENDIF !LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS==LOCAL_PROCESS_NODAL_INFO_SET%COMPONENT_INFO_SET(nn+1)%PTR%NUMBER_OF_COMPONENTS
 
-             !increase nn1 to skip the nodes which have the same output
-             nn1=nn1+1
-          ENDIF !(SWITCH=.TRUE.)
-       ENDDO !nn2
-       !increase the nn1 to check next node
-       nn1=nn1+1
+        !find two elements which have the same output, and then they should put together
+        IF(SWITCH) THEN
+          tmpInfoSet => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
+          ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
+          ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
+
+          ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%SAME_HEADER=.FALSE.
+          ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR%SAME_HEADER=.TRUE.
+
+          !exchange the global number
+          ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)=ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)
+          ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)=global_number2
+
+          !increase nn1 to skip the nodes which have the same output
+          nn1=nn1+1
+        ENDIF !(SWITCH=.TRUE.)
+      ENDDO !nn2
+      !increase the nn1 to check next node
+      nn1=nn1+1
     ENDDO !nn1<LOCAL_PROCESS_NODAL_INFO_SET%NUMBER_OF_ENTRIES
 
     !order the variable components and group them: X1(1),X1(2),X1(3),X2(2),X2(3),X3(2)....
@@ -3841,7 +3773,7 @@ CONTAINS
         CALL FLAG_ERROR("Fields is not associated with a region or interface.",ERR,ERROR,*999)
       ENDIF
     ENDIF
-    
+
     IF(INREGION) THEN
       !checking whether the list of fields in the same region
       DO num_field =1, FIELDS%NUMBER_OF_FIELDS
@@ -3850,11 +3782,11 @@ CONTAINS
             & " field handle in fields list is invalid"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
-        
+
         IF( num_field == 1 ) THEN
           CYCLE
         ENDIF
-        
+
         IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
             & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
@@ -3869,11 +3801,11 @@ CONTAINS
             & " field handle in fields list is invalid"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
-        
+
         IF( num_field == 1 ) THEN
           CYCLE
         ENDIF
-        
+
         IF(FIELDS%FIELDS(num_field-1)%PTR%INTERFACE%USER_NUMBER/= &
           & FIELDS%FIELDS(num_field)%PTR%INTERFACE%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
@@ -3893,7 +3825,7 @@ CONTAINS
       CALL FLAG_ERROR("nodal information set is not initialized properly, and call start method first", &
         & ERR,ERROR,*999)
     ENDIF
-    
+
     DO num_field=1,ELEMENTAL_INFO_SET%FIELDS%NUMBER_OF_FIELDS
       FIELD=>ELEMENTAL_INFO_SET%FIELDS%FIELDS(num_field)%PTR
       IF(.NOT.ALLOCATED(FIELD%VARIABLES)) THEN
@@ -4038,12 +3970,12 @@ CONTAINS
     TYPE(FIELD_IO_COMPONENT_INFO_SET) :: SET1
     TYPE(FIELD_IO_COMPONENT_INFO_SET) :: SET2
     LOGICAL :: FIELD_IO_COMPARE_INFO_SET_COMPONENTS
-    
+
     !local variables
     INTEGER(INTG) :: component_idx
 
     FIELD_IO_COMPARE_INFO_SET_COMPONENTS = .FALSE.
-    
+
     IF( SET1%NUMBER_OF_COMPONENTS /= SET2%NUMBER_OF_COMPONENTS ) THEN
       RETURN
     ENDIF
@@ -4060,7 +3992,7 @@ CONTAINS
       !   FIELD_IO_COMPARE_INFO_SETS=.FALSE. !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
       !   EXIT
       !ENDIF                      NUMBER_OF_NODES
- 
+
       ! better use this one because it is safe method, but slow
       !=============================================================================================!
       !           checking according to the types defined in the openCMISS                          !
@@ -4070,7 +4002,7 @@ CONTAINS
         & SET2%COMPONENTS(component_idx)%PTR%FIELD_VARIABLE%FIELD%GLOBAL_NUMBER ) THEN
         RETURN
       ENDIF
-      
+
         !are they the same variable?
       IF( SET1%COMPONENTS( component_idx )%PTR%FIELD_VARIABLE% &
         & VARIABLE_NUMBER /= SET2%COMPONENTS( component_idx )%PTR% &
@@ -4084,7 +4016,7 @@ CONTAINS
         RETURN
       ENDIF
     ENDDO !component_idx
-    
+
     FIELD_IO_COMPARE_INFO_SET_COMPONENTS = .TRUE.
 
   END FUNCTION FIELD_IO_COMPARE_INFO_SET_COMPONENTS
@@ -4113,13 +4045,13 @@ CONTAINS
     LOGICAL :: FOUND
 
     CALL ENTERS("FIELD_IO_COMPARE_INFO_SET_DERIVATIVES",ERR,ERROR,*999)
-    
+
     doesMatch = .TRUE.
 
     !We have a potential match. Do a deeper inspection
     DO component_idx=1, SET1%NUMBER_OF_COMPONENTS
-      
-      DOMAIN_NODES1=>SET1%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES        
+
+      DOMAIN_NODES1=>SET1%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES
       FOUND=.FALSE.
       DO local_number1=1,DOMAIN_NODES1%NUMBER_OF_NODES
         IF( DOMAIN_NODES1%NODES(local_number1)%GLOBAL_NUMBER == global_number1 ) THEN
@@ -4127,13 +4059,13 @@ CONTAINS
           EXIT
         ENDIF
       ENDDO !local_number
-      
+
       IF( .NOT. FOUND ) THEN
         doesMatch = .FALSE.
         EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
       ENDIF
 
-      DOMAIN_NODES2=>SET2%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES        
+      DOMAIN_NODES2=>SET2%COMPONENTS(component_idx)%PTR%DOMAIN%TOPOLOGY%NODES
       FOUND=.FALSE.
       DO local_number2=1,DOMAIN_NODES2%NUMBER_OF_NODES
         IF( DOMAIN_NODES2%NODES(local_number2)%GLOBAL_NUMBER == global_number2 ) THEN
@@ -4141,7 +4073,7 @@ CONTAINS
           EXIT
         ENDIF
       ENDDO !local_number
-      
+
       IF( .NOT. FOUND ) THEN
         doesMatch = .FALSE.
         EXIT !out of loop-component_idx=1,SET1%NUMBER_OF_COMPONENTS
@@ -4151,10 +4083,10 @@ CONTAINS
         &==DOMAIN_NODES2%NODES(local_number2)%NUMBER_OF_DERIVATIVES) THEN
         ALLOCATE(array1(DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
-      
+
         ALLOCATE(array2(DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
-      
+
         array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=0
         array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=0
 
@@ -4176,7 +4108,7 @@ CONTAINS
         ENDIF
       ENDIF
     ENDDO !component_idx
-      
+
     CALL EXITS("FIELD_IO_COMPARE_INFO_SET_DERIVATIVES")
     RETURN
 999 CALL ERRORS("FIELD_IO_COMPARE_INFO_SET_DERIVATIVES",ERR,ERROR)
@@ -4216,41 +4148,41 @@ CONTAINS
     !and change the global number in the LIST_OF_GLOBAL_NUMBER
     nn1=1
     DO WHILE(nn1<NODAL_INFO_SET%NUMBER_OF_ENTRIES)
-       !global number of this node
-       global_number1=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1)
-       DO nn2=nn1+1,NODAL_INFO_SET%NUMBER_OF_ENTRIES
-          global_number2=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
+      !global number of this node
+      global_number1=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1)
+      DO nn2=nn1+1,NODAL_INFO_SET%NUMBER_OF_ENTRIES
+        global_number2=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)
 
-          SWITCH = FIELD_IO_COMPARE_INFO_SET_COMPONENTS( NODAL_INFO_SET%COMPONENT_INFO_SET( nn1 )%PTR, &
-            & NODAL_INFO_SET%COMPONENT_INFO_SET( nn2 )%PTR )
+        SWITCH = FIELD_IO_COMPARE_INFO_SET_COMPONENTS( NODAL_INFO_SET%COMPONENT_INFO_SET( nn1 )%PTR, &
+          & NODAL_INFO_SET%COMPONENT_INFO_SET( nn2 )%PTR )
 
-          !check whether correspoding two components have the same partial derivatives
-          IF( SWITCH ) THEN
-            CALL FIELD_IO_COMPARE_INFO_SET_DERIVATIVES( NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR, &
+        !check whether correspoding two components have the same partial derivatives
+        IF( SWITCH ) THEN
+          CALL FIELD_IO_COMPARE_INFO_SET_DERIVATIVES( NODAL_INFO_SET%COMPONENT_INFO_SET(nn1)%PTR, &
               & NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR, my_computational_node_number, global_number1, global_number2, &
               & SWITCH, ERR, ERROR, *999 )
-          ENDIF !SWITCH==.TRUE.
-  
-          !find two nodes which have the same output, and then they should put together
-          IF(SWITCH) THEN
-             tmpInfoSet => NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
-             NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
-             NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
+        ENDIF !SWITCH==.TRUE.
 
-             NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%SAME_HEADER=.FALSE.
-             NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR%SAME_HEADER=.TRUE.
+        !find two nodes which have the same output, and then they should put together
+        IF(SWITCH) THEN
+          tmpInfoSet => NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR
+          NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR => NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR
+          NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR => tmpInfoSet
 
-             !exchange the global number
-             NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)
-             NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)=global_number2
+          NODAL_INFO_SET%COMPONENT_INFO_SET(nn2)%PTR%SAME_HEADER=.FALSE.
+          NODAL_INFO_SET%COMPONENT_INFO_SET(nn1+1)%PTR%SAME_HEADER=.TRUE.
 
-             !increase nn1 to skip the nodes which have the same output
-             nn1=nn1+1
-          ENDIF !(SWITCH=.TRUE.)
+          !exchange the global number
+          NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn2)=NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)
+          NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER(nn1+1)=global_number2
 
-       ENDDO !nn2
-       !increase the nn1 to check next node
-       nn1=nn1+1
+          !increase nn1 to skip the nodes which have the same output
+          nn1=nn1+1
+        ENDIF !(SWITCH=.TRUE.)
+
+      ENDDO !nn2
+      !increase the nn1 to check next node
+      nn1=nn1+1
     ENDDO !nn1<NODAL_INFO_SET%NUMBER_OF_ENTRIES
 
     !order the variable components and group them: X1(1),X1(2),X1(3),X2(2),X2(3),X3(2)....
@@ -4331,62 +4263,62 @@ CONTAINS
     ENDIF
 
     IF((NUMBER_DERIVATIVES==1).AND.GROUP_DERIVATIVES(1)==NO_PART_DERIV) THEN
-       FIELD_IO_LABEL_DERIVATIVE_INFO_GET=""
+      FIELD_IO_LABEL_DERIVATIVE_INFO_GET=" "
     ELSE
-       FIELD_IO_LABEL_DERIVATIVE_INFO_GET="("
-       DO dev_idx=1,NUMBER_DERIVATIVES
-          SELECT CASE(GROUP_DERIVATIVES(dev_idx))
-            CASE(NO_PART_DERIV)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET
-            CASE(PART_DERIV_S1)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds1"
-            CASE(PART_DERIV_S1_S1)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds1"
-            CASE(PART_DERIV_S2)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds2"
-            CASE(PART_DERIV_S2_S2)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds2"
-            CASE(PART_DERIV_S1_S2)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds3"
-            CASE(PART_DERIV_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds3"
-            CASE(PART_DERIV_S3_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds3"
-            CASE(PART_DERIV_S1_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds3"
-            CASE(PART_DERIV_S2_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds3"
-            CASE(PART_DERIV_S1_S2_S3)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds2ds3"
-            CASE(PART_DERIV_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds4"
-            CASE(PART_DERIV_S4_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds4ds4"
-            CASE(PART_DERIV_S1_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds4"
-            CASE(PART_DERIV_S2_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds4"
-            CASE(PART_DERIV_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds4"
-            CASE(PART_DERIV_S1_S2_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds2ds4"
-            CASE(PART_DERIV_S1_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds3ds4"
-            CASE(PART_DERIV_S2_S3_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds2ds3ds4"
-            CASE(PART_DERIV_S1_S4_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds4ds4"
-            CASE(PART_DERIV_S2_S4_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds2ds4ds4"
-            CASE(PART_DERIV_S3_S4_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds3ds4ds4"
-            CASE(PART_DERIV_S4_S4_S4)
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds4ds4ds4"
-            CASE DEFAULT
-              FIELD_IO_LABEL_DERIVATIVE_INFO_GET="real, add more details later, #Components="!&
-              !&//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
-         END SELECT
-       ENDDO ! dev_idx
+      FIELD_IO_LABEL_DERIVATIVE_INFO_GET="("
+      DO dev_idx=1,NUMBER_DERIVATIVES
+        SELECT CASE(GROUP_DERIVATIVES(dev_idx))
+        CASE(NO_PART_DERIV)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET
+        CASE(PART_DERIV_S1)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds1"
+        CASE(PART_DERIV_S1_S1)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds1"
+        CASE(PART_DERIV_S2)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds2"
+        CASE(PART_DERIV_S2_S2)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds2"
+        CASE(PART_DERIV_S1_S2)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds3"
+        CASE(PART_DERIV_S3)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds3"
+        CASE(PART_DERIV_S3_S3)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds3"
+        CASE(PART_DERIV_S1_S3)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds3"
+        CASE(PART_DERIV_S2_S3)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds3"
+        CASE(PART_DERIV_S1_S2_S3)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds2ds3"
+        CASE(PART_DERIV_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d/ds4"
+        CASE(PART_DERIV_S4_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds4ds4"
+        CASE(PART_DERIV_S1_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds1ds4"
+        CASE(PART_DERIV_S2_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds2ds4"
+        CASE(PART_DERIV_S3_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d2/ds3ds4"
+        CASE(PART_DERIV_S1_S2_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds2ds4"
+        CASE(PART_DERIV_S1_S3_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds3ds4"
+        CASE(PART_DERIV_S2_S3_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds2ds3ds4"
+        CASE(PART_DERIV_S1_S4_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds1ds4ds4"
+        CASE(PART_DERIV_S2_S4_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds2ds4ds4"
+        CASE(PART_DERIV_S3_S4_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds3ds4ds4"
+        CASE(PART_DERIV_S4_S4_S4)
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET=FIELD_IO_LABEL_DERIVATIVE_INFO_GET//", d3/ds4ds4ds4"
+        CASE DEFAULT
+          FIELD_IO_LABEL_DERIVATIVE_INFO_GET="real, add more details later, #Components="!&
+          !&//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_COMPONENTS,"*",ERR,ERROR))
+        END SELECT
+      ENDDO ! dev_idx
     ENDIF !NUMBER_DERIVATIVES==1.AND.GROUP_DERIVATIVES(1)==NO_PART_DERIV
 
     CALL EXITS("FIELD_IO_LABEL_DERIVATIVE_INFO_GET")
@@ -4453,100 +4385,100 @@ CONTAINS
     CALL ENTERS("FIELD_IO_GET_VARIABLE_INFO_LABEL",ERR,ERROR,*999)
 
     IF(.NOT.ASSOCIATED(COMPONENT)) THEN
-       CALL FLAG_ERROR("component pointer in the input data is invalid",ERR,ERROR,*999)
-       GOTO 999
+      CALL FLAG_ERROR("component pointer in the input data is invalid",ERR,ERROR,*999)
+      GOTO 999
     ENDIF
 
     FIELD=>COMPONENT%FIELD_VARIABLE%FIELD
     VARIABLE=>COMPONENT%FIELD_VARIABLE
 
     SELECT CASE(FIELD%TYPE)
-      CASE(FIELD_GEOMETRIC_TYPE) !FIELD_GEOMETRIC_TYPE
-        SELECT CASE(VARIABLE%VARIABLE_TYPE)
-          CASE(FIELD_U_VARIABLE_TYPE)
-            !coordinate system
-            NULLIFY(COORDINATE_SYSTEM)
-            CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-            SELECT CASE(COORDINATE_SYSTEM%TYPE)
-              CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
-                FIELD_IO_GET_VARIABLE_INFO_LABEL="coordinates,  coordinate, rectangular cartesian"
-              !CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
-              !CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
-              !CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
-              !CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-              CASE DEFAULT
-                FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown" !coordinates, coordinate, rectangular cartesian,
-            END SELECT
-          CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="Normal_derivative,  field,  normal derivative of variable"
-          CASE(FIELD_DELUDELT_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_derivative,  field,  first time derivative of variable"
-          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_derivative,  field,  second time derivative of variable"
+    CASE(FIELD_GEOMETRIC_TYPE) !FIELD_GEOMETRIC_TYPE
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+        !coordinate system
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        SELECT CASE(COORDINATE_SYSTEM%TYPE)
+          CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
+            FIELD_IO_GET_VARIABLE_INFO_LABEL="coordinates,  coordinate, rectangular cartesian"
+          !CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
+          !CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
+          !CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
+          !CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
           CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_geometry,  field,  real"
-        END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
-      CASE(FIELD_FIBRE_TYPE)
-        SELECT CASE(VARIABLE%VARIABLE_TYPE)
-          CASE(FIELD_U_VARIABLE_TYPE)
-!kmith - 17.10.08: Fixing fibre field label
-            !FIELD_IO_GET_VARIABLE_INFO_LABEL="fiber,  standand variable type"
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="fibres, anatomical, fibre"
-!kmith - 17.10.08:
-          CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_der_fiber,  normal derivative of variable"
-          CASE(FIELD_DELUDELT_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_fiber,  first time derivative of variable"
-          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_fiber,  second time derivative of variable"
-          CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_fiber,  real"
-        END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
-      CASE(FIELD_GENERAL_TYPE)
-        SELECT CASE(VARIABLE%VARIABLE_TYPE)
-          CASE(FIELD_U_VARIABLE_TYPE)
-!kmith - 17.10.08: Fixing general field label
-            !FIELD_IO_GET_VARIABLE_INFO_LABEL="general_variabe,  field,  string"
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="general,  field,  rectangular cartesian"
-!kmith - 17.10.08:
-          CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_dev_variable,  field,  string"
-          CASE(FIELD_DELUDELT_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_variable,  field,  first time derivative of variable"
-          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_variable,  field,  second time derivative of variable"
-          CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_general,  field,  real"
-        END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
-      CASE(FIELD_MATERIAL_TYPE)
-        SELECT CASE(VARIABLE%VARIABLE_TYPE)
-          CASE(FIELD_U_VARIABLE_TYPE)
-!kmith - 17.10.08: Fixing material field label
-            !FIELD_IO_GET_VARIABLE_INFO_LABEL="material,  field,  standand variable type"
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="material,  field,  rectangular cartesian"
-!kmith - 17.10.08:
-          CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="normal_material,  field,  normal derivative of variable"
-          CASE(FIELD_DELUDELT_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="fist_time_material,  field,  first time derivative of variable"
-          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_material,  field,  second time derivative of variable"
-          CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown material,  field,  real"
-        END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown" !coordinates, coordinate, rectangular cartesian,
+        END SELECT
+      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="Normal_derivative,  field,  normal derivative of variable"
+      CASE(FIELD_DELUDELT_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_derivative,  field,  first time derivative of variable"
+      CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_derivative,  field,  second time derivative of variable"
       CASE DEFAULT
-        SELECT CASE(VARIABLE%VARIABLE_TYPE)
-          CASE(FIELD_U_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown standand variable type"
-          CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown normal derivative of variable"
-          CASE(FIELD_DELUDELT_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown first time derivative of variable"
-          CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown, field,  unknown second time derivative of variable"
-          CASE DEFAULT
-            FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  real"
-        END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_geometry,  field,  real"
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+    CASE(FIELD_FIBRE_TYPE)
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+!kmith - 17.10.08: Fixing fibre field label
+        !FIELD_IO_GET_VARIABLE_INFO_LABEL="fiber,  standand variable type"
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="fibres, anatomical, fibre"
+!kmith - 17.10.08:
+      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_der_fiber,  normal derivative of variable"
+      CASE(FIELD_DELUDELT_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_fiber,  first time derivative of variable"
+      CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_fiber,  second time derivative of variable"
+      CASE DEFAULT
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_fiber,  real"
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+    CASE(FIELD_GENERAL_TYPE)
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+!kmith - 17.10.08: Fixing general field label
+        !FIELD_IO_GET_VARIABLE_INFO_LABEL="general_variabe,  field,  string"
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="general,  field,  rectangular cartesian"
+!kmith - 17.10.08:
+      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="norm_dev_variable,  field,  string"
+      CASE(FIELD_DELUDELT_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="first_time_variable,  field,  first time derivative of variable"
+      CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_variable,  field,  second time derivative of variable"
+      CASE DEFAULT
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown_general,  field,  real"
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+    CASE(FIELD_MATERIAL_TYPE)
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+!kmith - 17.10.08: Fixing material field label
+        !FIELD_IO_GET_VARIABLE_INFO_LABEL="material,  field,  standand variable type"
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="material,  field,  rectangular cartesian"
+!kmith - 17.10.08:
+      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="normal_material,  field,  normal derivative of variable"
+      CASE(FIELD_DELUDELT_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="fist_time_material,  field,  first time derivative of variable"
+      CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="second_time_material,  field,  second time derivative of variable"
+      CASE DEFAULT
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown material,  field,  real"
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+    CASE DEFAULT
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown standand variable type"
+      CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown normal derivative of variable"
+      CASE(FIELD_DELUDELT_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  unknown first time derivative of variable"
+      CASE(FIELD_DEL2UDELT2_VARIABLE_TYPE)
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown, field,  unknown second time derivative of variable"
+      CASE DEFAULT
+        FIELD_IO_GET_VARIABLE_INFO_LABEL="unknown,  field,  real"
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
     END SELECT
 
     CALL EXITS("FIELD_IO_GET_VARIABLE_INFO_LABEL")
@@ -4581,31 +4513,31 @@ CONTAINS
     VARIABLE=>COMPONENT%FIELD_VARIABLE
 
     SELECT CASE(FIELD%TYPE)
-      CASE(FIELD_GEOMETRIC_TYPE) !FIELD_GEOMETRIC_TYPE
-        SELECT CASE(VARIABLE%VARIABLE_TYPE)
-          CASE(FIELD_U_VARIABLE_TYPE)
-            !coordinate system
-            NULLIFY(COORDINATE_SYSTEM)
-            CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-            SELECT CASE(COORDINATE_SYSTEM%TYPE)
-              CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
-                IF(COMPONENT%COMPONENT_NUMBER==1) THEN
-                  FIELD_IO_GET_COMPONENT_INFO_LABEL="x"
-                ELSE IF(COMPONENT%COMPONENT_NUMBER==2) THEN
-                  FIELD_IO_GET_COMPONENT_INFO_LABEL="y"
-                ELSE IF(COMPONENT%COMPONENT_NUMBER==3) THEN
-                  FIELD_IO_GET_COMPONENT_INFO_LABEL="z"
-                ENDIF
-              !CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
-              !CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
-              !CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
-              !CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
-              CASE DEFAULT
-                FIELD_IO_GET_COMPONENT_INFO_LABEL=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
-            END SELECT
-          CASE DEFAULT
-            FIELD_IO_GET_COMPONENT_INFO_LABEL=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
-        END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
+    CASE(FIELD_GEOMETRIC_TYPE) !FIELD_GEOMETRIC_TYPE
+      SELECT CASE(VARIABLE%VARIABLE_TYPE)
+      CASE(FIELD_U_VARIABLE_TYPE)
+        !coordinate system
+        NULLIFY(COORDINATE_SYSTEM)
+        CALL FIELD_COORDINATE_SYSTEM_GET(FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+        SELECT CASE(COORDINATE_SYSTEM%TYPE)
+        CASE(COORDINATE_RECTANGULAR_CARTESIAN_TYPE)
+          IF(COMPONENT%COMPONENT_NUMBER==1) THEN
+            FIELD_IO_GET_COMPONENT_INFO_LABEL="x"
+          ELSE IF(COMPONENT%COMPONENT_NUMBER==2) THEN
+            FIELD_IO_GET_COMPONENT_INFO_LABEL="y"
+          ELSE IF(COMPONENT%COMPONENT_NUMBER==3) THEN
+            FIELD_IO_GET_COMPONENT_INFO_LABEL="z"
+          ENDIF
+        !CASE(COORDINATE_CYCLINDRICAL_POLAR_TYPE)
+        !CASE(COORDINATE_SPHERICAL_POLAR_TYPE)
+        !CASE(COORDINATE_PROLATE_SPHEROIDAL_TYPE)
+        !CASE(COORDINATE_OBLATE_SPHEROIDAL_TYPE)
+        CASE DEFAULT
+          FIELD_IO_GET_COMPONENT_INFO_LABEL=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
+        END SELECT
+      CASE DEFAULT
+        FIELD_IO_GET_COMPONENT_INFO_LABEL=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
+      END SELECT !CASE(VARIABLE%VARIABLE_TYPE)
       CASE DEFAULT
         FIELD_IO_GET_COMPONENT_INFO_LABEL=TRIM(NUMBER_TO_VSTRING(COMPONENT%COMPONENT_NUMBER,"*",ERR,ERROR))
     END SELECT
@@ -4871,36 +4803,36 @@ CONTAINS
     NULLIFY(field_ptr)
     NULLIFY(variable_ptr)
     DO comp_idx=1,fieldInfoSet%NUMBER_OF_COMPONENTS
-       !calculate the number of fields
-       IF (.NOT.ASSOCIATED(field_ptr, TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE%FIELD)) THEN
-          NUM_OF_FIELDS=NUM_OF_FIELDS+1
-          field_ptr=>fieldInfoSet%COMPONENTS (comp_idx)%PTR%FIELD_VARIABLE%FIELD
-       ENDIF
+      !calculate the number of fields
+      IF (.NOT.ASSOCIATED(field_ptr, TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE%FIELD)) THEN
+        NUM_OF_FIELDS=NUM_OF_FIELDS+1
+        field_ptr=>fieldInfoSet%COMPONENTS (comp_idx)%PTR%FIELD_VARIABLE%FIELD
+      ENDIF
 
-       !calculate the number of variables
-       IF (.NOT.ASSOCIATED(variable_ptr, TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN
-          NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
-          variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
-       ENDIF
+      !calculate the number of variables
+      IF (.NOT.ASSOCIATED(variable_ptr, TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN
+        NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
+        variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
+      ENDIF
 
-       !find the local numbering
-       DOMAIN_NODES=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
-       FOUND=.FALSE.
-       DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
-         IF( DOMAIN_NODES%NODES(local_number)%GLOBAL_NUMBER == global_number ) THEN
-           FOUND = .TRUE.
-           EXIT
-         ENDIF
-       ENDDO !local_number
+      !find the local numbering
+      DOMAIN_NODES=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%DOMAIN%TOPOLOGY%NODES
+      FOUND=.FALSE.
+      DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
+        IF( DOMAIN_NODES%NODES(local_number)%GLOBAL_NUMBER == global_number ) THEN
+         FOUND = .TRUE.
+         EXIT
+        ENDIF
+      ENDDO !local_number
 
-       IF( .NOT. FOUND ) THEN
-         !Something's gone horribly wrong
-         CYCLE
-       ENDIF
+      IF( .NOT. FOUND ) THEN
+        !Something's gone horribly wrong
+        CYCLE
+      ENDIF
 
-       MAX_NUM_OF_NODAL_DERIVATIVES=MAX(DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES,MAX_NUM_OF_NODAL_DERIVATIVES)
+      MAX_NUM_OF_NODAL_DERIVATIVES=MAX(DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES,MAX_NUM_OF_NODAL_DERIVATIVES)
     ENDDO !comp_idx
-    
+
     !Allocate the memory for group of field variables
     ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
     IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary field buffer in IO",ERR,ERROR,*999)
@@ -4919,22 +4851,22 @@ CONTAINS
     GROUP_FIELDS(:)=0 !the item in this arrary is the number of variables in the same field
     GROUP_VARIABLES(:)=0 !the item in this arrary is the number of components in the same variable
     DO comp_idx=1,fieldInfoSet%NUMBER_OF_COMPONENTS
-       !grouping field variables and components together
-       IF((.NOT.ASSOCIATED(field_ptr,TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE%FIELD)).AND. &
-        & (.NOT.ASSOCIATED(variable_ptr,TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE))) THEN !different field and variables
-          NUM_OF_FIELDS=NUM_OF_FIELDS+1
-          field_ptr=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE%FIELD
-       ENDIF
+      !grouping field variables and components together
+      IF((.NOT.ASSOCIATED(field_ptr,TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE%FIELD)).AND. &
+          & (.NOT.ASSOCIATED(variable_ptr,TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE))) THEN !different field and variables
+        NUM_OF_FIELDS=NUM_OF_FIELDS+1
+        field_ptr=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE%FIELD
+      ENDIF
 
-       IF(.NOT.ASSOCIATED(variable_ptr,TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN !the same field and  different variables
-          !add one new variable
-          GROUP_FIELDS(NUM_OF_FIELDS)=GROUP_FIELDS(NUM_OF_FIELDS)+1
-          !add one new component
-          NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
-          variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
-       ENDIF
+      IF(.NOT.ASSOCIATED(variable_ptr,TARGET=fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE)) THEN !the same field and  different variables
+        !add one new variable
+        GROUP_FIELDS(NUM_OF_FIELDS)=GROUP_FIELDS(NUM_OF_FIELDS)+1
+        !add one new component
+        NUM_OF_VARIABLES=NUM_OF_VARIABLES+1
+        variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
+      ENDIF
 
-       GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1
+      GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1
 
     ENDDO  !comp_idx
 
@@ -4954,107 +4886,107 @@ CONTAINS
     ENDIF
 
     DO field_idx=1, NUM_OF_FIELDS
-       DO var_idx=1, GROUP_FIELDS(field_idx)
-          global_var_idx=global_var_idx+1
+      DO var_idx=1, GROUP_FIELDS(field_idx)
+        global_var_idx=global_var_idx+1
 
-          variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx1)%PTR%FIELD_VARIABLE
-          !write out the field information
+        variable_ptr=>fieldInfoSet%COMPONENTS(comp_idx1)%PTR%FIELD_VARIABLE
+        !write out the field information
 
-          fvar_name = CHAR(variable_ptr%variable_label)
-          LENGTH=LEN_TRIM(fvar_name)
-          DO i=1,LENGTH
-            cvar_name(I)=fvar_name(i:i)
-          ENDDO !i
-          cvar_name(LENGTH+1)=C_NULL_CHAR
-          
-          IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
-            & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+        fvar_name = CHAR(variable_ptr%variable_label)
+        LENGTH=LEN_TRIM(fvar_name)
+        DO i=1,LENGTH
+          cvar_name(I)=fvar_name(i:i)
+        ENDDO !i
+        cvar_name(LENGTH+1)=C_NULL_CHAR
+
+        IF( variable_ptr%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+          & variable_ptr%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+          NULLIFY(COORDINATE_SYSTEM)
+          CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+          ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, global_var_idx, &
+           & COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
+        ELSE
+          ERR = FieldExport_Variable( sessionHandle, cvar_name, global_var_idx, variable_ptr%FIELD%TYPE,  &
+           & variable_ptr%VARIABLE_TYPE, &
+           & variable_ptr%NUMBER_OF_COMPONENTS )
+        ENDIF
+        IF( ERR /= 0 ) THEN
+          CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+        ENDIF
+
+        DO comp_idx=1, variable_ptr%NUMBER_OF_COMPONENTS
+          !write out the component information
+
+          fieldComponent => variable_ptr%COMPONENTS(comp_idx)
+
+          IF( comp_idx1 <= fieldInfoSet%NUMBER_OF_COMPONENTS ) THEN
+            !It's possible to run out of node-local components before we've examined all field components.
+            component => fieldInfoSet%COMPONENTS(comp_idx1)%PTR
+          ENDIF
+
+          !The field component is not present at this node. Add a dummy value.
+          IF(.NOT.ASSOCIATED(component,TARGET=fieldComponent)) THEN
+            paddingInfo(comp_idx1) = paddingInfo(comp_idx1) + 1
+            GROUP_DERIVATIVES(1:1) = NO_PART_DERIV
+            IF( fieldComponent%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+               & fieldComponent%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
+             NULLIFY(COORDINATE_SYSTEM)
+             CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
+             ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
+                 & COORDINATE_SYSTEM%TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
+            ELSE
+              ERR = FieldExport_DerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
+                  & variable_ptr%FIELD%TYPE, &
+                  & variable_ptr%VARIABLE_TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
+            ENDIF
+
+            value_idx = value_idx + 1
+
+            CYCLE
+          ENDIF
+
+          !use local domain information find the out the maximum number of derivatives
+          DOMAIN_NODES=>component%DOMAIN%TOPOLOGY%NODES
+
+          FOUND=.FALSE.
+          DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
+            IF( DOMAIN_NODES%NODES(local_number)%GLOBAL_NUMBER == global_number ) THEN
+              FOUND = .TRUE.
+              EXIT
+            ENDIF
+          ENDDO !local_number
+
+          IF( .NOT. FOUND ) THEN
+            CYCLE
+          ENDIF
+
+          !get the nodal partial derivatives
+          NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
+          DO derivative_idx=1,NUM_OF_NODAL_DEV
+            GROUP_DERIVATIVES(derivative_idx)=DOMAIN_NODES%NODES(local_number)%DERIVATIVES(derivative_idx)% &
+                & PARTIAL_DERIVATIVE_INDEX
+          ENDDO
+          !sort  the partial derivatives
+          CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
+
+          IF( component%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
+            & component%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
             NULLIFY(COORDINATE_SYSTEM)
             CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-            ERR = FieldExport_CoordinateVariable( sessionHandle, cvar_name, global_var_idx, &
-              & COORDINATE_SYSTEM%TYPE, variable_ptr%NUMBER_OF_COMPONENTS )
+            ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
+                & COORDINATE_SYSTEM%TYPE, NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
           ELSE
-            ERR = FieldExport_Variable( sessionHandle, cvar_name, global_var_idx, variable_ptr%FIELD%TYPE,  &
-              & variable_ptr%VARIABLE_TYPE, &
-              & variable_ptr%NUMBER_OF_COMPONENTS )
-          ENDIF
-          IF( ERR /= 0 ) THEN
-            CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+            ERR = FieldExport_DerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
+                & variable_ptr%FIELD%TYPE, &
+                & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
           ENDIF
 
-          DO comp_idx=1, variable_ptr%NUMBER_OF_COMPONENTS
-             !write out the component information
-             
-             fieldComponent => variable_ptr%COMPONENTS(comp_idx)
-
-             IF( comp_idx1 <= fieldInfoSet%NUMBER_OF_COMPONENTS ) THEN
-               !It's possible to run out of node-local components before we've examined all field components.
-               component => fieldInfoSet%COMPONENTS(comp_idx1)%PTR
-             ENDIF
-             
-             !The field component is not present at this node. Add a dummy value.
-             IF(.NOT.ASSOCIATED(component,TARGET=fieldComponent)) THEN
-               paddingInfo(comp_idx1) = paddingInfo(comp_idx1) + 1
-               GROUP_DERIVATIVES(1:1) = NO_PART_DERIV
-               IF( fieldComponent%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
-                 & fieldComponent%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-                 NULLIFY(COORDINATE_SYSTEM)
-                 CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-                 ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
-                   & COORDINATE_SYSTEM%TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
-               ELSE
-                 ERR = FieldExport_DerivativeIndices( sessionHandle, fieldComponent%COMPONENT_NUMBER, &
-                   & variable_ptr%FIELD%TYPE, &
-                   & variable_ptr%VARIABLE_TYPE, 1, C_LOC(GROUP_DERIVATIVES), value_idx )
-               ENDIF
-               
-               value_idx = value_idx + 1
-
-               CYCLE
-             ENDIF
-             
-             !use local domain information find the out the maximum number of derivatives
-             DOMAIN_NODES=>component%DOMAIN%TOPOLOGY%NODES
-
-             FOUND=.FALSE.
-             DO local_number=1,DOMAIN_NODES%NUMBER_OF_NODES
-               IF( DOMAIN_NODES%NODES(local_number)%GLOBAL_NUMBER == global_number ) THEN
-                 FOUND = .TRUE.
-                 EXIT
-               ENDIF
-             ENDDO !local_number
-             
-             IF( .NOT. FOUND ) THEN
-               CYCLE
-             ENDIF
-
-             !get the nodal partial derivatives
-             NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
-             DO derivative_idx=1,NUM_OF_NODAL_DEV
-               GROUP_DERIVATIVES(derivative_idx)=DOMAIN_NODES%NODES(local_number)%DERIVATIVES(derivative_idx)% &
-                 & PARTIAL_DERIVATIVE_INDEX
-             ENDDO
-             !sort  the partial derivatives
-             CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
-             
-             IF( component%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
-               & component%FIELD_VARIABLE%VARIABLE_TYPE == FIELD_U_VARIABLE_TYPE ) THEN
-               NULLIFY(COORDINATE_SYSTEM)
-               CALL FIELD_COORDINATE_SYSTEM_GET(variable_ptr%FIELD,COORDINATE_SYSTEM,ERR,ERROR,*999)
-               ERR = FieldExport_CoordinateDerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
-                 & COORDINATE_SYSTEM%TYPE, NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
-             ELSE
-               ERR = FieldExport_DerivativeIndices( sessionHandle, component%COMPONENT_NUMBER, &
-                 & variable_ptr%FIELD%TYPE, &
-                 & variable_ptr%VARIABLE_TYPE,NUM_OF_NODAL_DEV, C_LOC(GROUP_DERIVATIVES), value_idx )
-             ENDIF
-
-             !increase the component index
-             comp_idx1=comp_idx1+1
-             !increase the value index
-             value_idx=value_idx+NUM_OF_NODAL_DEV
-          ENDDO !comp_idx
-       ENDDO !var_idx
+          !increase the component index
+          comp_idx1=comp_idx1+1
+          !increase the value index
+          value_idx=value_idx+NUM_OF_NODAL_DEV
+        ENDDO !comp_idx
+      ENDDO !var_idx
     ENDDO !field_idx
 
     !release temporary memory
@@ -5095,10 +5027,10 @@ CONTAINS
     REAL(DP), POINTER :: GEOMETRIC_PARAMETERS_DP(:)
     !INTEGER(INTG), POINTER :: GEOMETRIC_PARAMETERS_INTG(:)
     REAL(DP) :: padding(1),VALUE
-    
+
     padding(1) = 1.23456789
-    
-    
+
+
     CALL ENTERS("FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE",ERR,ERROR,*999)
 
     !get my own computianal node number--be careful the rank of process in the MPI pool
@@ -5135,7 +5067,7 @@ CONTAINS
        ERR = FieldExport_Group( sessionHandle, CHAR(NODAL_INFO_SET%FIELDS%INTERFACE%LABEL)//C_NULL_CHAR )
      ELSE
         CALL FLAG_ERROR("Fields region or interface is not associated.",ERR,ERROR,*999)
-      ENDIF      
+      ENDIF
     ENDIF
     IF(ERR/=0) THEN
       CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
@@ -5166,7 +5098,7 @@ CONTAINS
       !write out the components' values of this node in this domain
       total_nodal_values = 0
       CALL CHECKED_DEALLOCATE( TOTAL_NODAL_BUFFER )
-      DO comp_idx=1,NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS         
+      DO comp_idx=1,NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS
         COMPONENT => NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(comp_idx)%PTR
         DOMAIN_NODES=>COMPONENT%DOMAIN%TOPOLOGY%NODES
         FOUND=.FALSE.
@@ -5212,13 +5144,13 @@ CONTAINS
         !get the nodal partial derivatives
         NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
 
-        !Record the dof-index of each derivative (if it is present)      
+        !Record the dof-index of each derivative (if it is present)
         DERIVATIVE_INDEXES = -1
         DO dev_idx=1, NUM_OF_NODAL_DEV
           DERIVATIVE_INDEXES( DOMAIN_NODES%NODES(local_number)%DERIVATIVES(dev_idx)%PARTIAL_DERIVATIVE_INDEX ) = dev_idx
         ENDDO
 
-        !Output the dofs, sorted according to derivative index    
+        !Output the dofs, sorted according to derivative index
         NUM_OF_NODAL_DEV = 0
         DO dev_idx=1, SIZE(DERIVATIVE_INDEXES)
           IF( DERIVATIVE_INDEXES( dev_idx ) == -1 ) THEN
@@ -5321,16 +5253,16 @@ CONTAINS
     READ(FILE_ID, "(A)", IOSTAT=IOS) TEMP_STR
 
     IF(IOS>=0)  THEN
-       FILE_END=.FALSE.
+      FILE_END=.FALSE.
     ELSE
-       FILE_END=.TRUE.
+      FILE_END=.TRUE.
     ENDIF
 
     STRING_DATA=TRIM(TEMP_STR)
     LEN_OF_DATA=LEN(STRING_DATA)
 
     IF(LEN_OF_DATA==0) THEN
-       CALL FLAG_ERROR("leng of string is zero",ERR,ERROR,*999)
+      CALL FLAG_ERROR("leng of string is zero",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_STRING")
@@ -5366,9 +5298,9 @@ CONTAINS
     READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA)
 
     IF(IOS>=0)  THEN
-       FILE_END=.FALSE.
+      FILE_END=.FALSE.
     ELSE
-       FILE_END=.TRUE.
+      FILE_END=.TRUE.
     ENDIF
 
     CALL EXITS("FIELD_IO_FORTRAN_FILE_READ_DP")
@@ -5541,12 +5473,12 @@ CONTAINS
     LOCAL_STRING=STRING
 
     DO idx=1,NUMBER_OF_INTEGERS-1
-       LOCAL_STRING=ADJUSTL(LOCAL_STRING)
-       LOCAL_STRING=TRIM(LOCAL_STRING)
-       pos=INDEX(LOCAL_STRING, " ")
-       LOCAL_STRING1=EXTRACT(LOCAL_STRING, 1, pos-1)
-       INTG_DATA(idx)=STRING_TO_INTEGER(LOCAL_STRING1, ERR, ERROR)
-       LOCAL_STRING=REMOVE(LOCAL_STRING,1,pos)
+      LOCAL_STRING=ADJUSTL(LOCAL_STRING)
+      LOCAL_STRING=TRIM(LOCAL_STRING)
+      pos=INDEX(LOCAL_STRING, " ")
+      LOCAL_STRING1=EXTRACT(LOCAL_STRING, 1, pos-1)
+      INTG_DATA(idx)=STRING_TO_INTEGER(LOCAL_STRING1, ERR, ERROR)
+      LOCAL_STRING=REMOVE(LOCAL_STRING,1,pos)
     ENDDO
     LOCAL_STRING=ADJUSTL(LOCAL_STRING)
     LOCAL_STRING=TRIM(LOCAL_STRING)
@@ -5586,14 +5518,14 @@ CONTAINS
     LOCAL_STRING=STRING
 
     DO idx=1,NUMBER_OF_REALS-1
-       LOCAL_STRING=ADJUSTL(LOCAL_STRING)
-       LOCAL_STRING=TRIM(LOCAL_STRING)
-       pos=INDEX(LOCAL_STRING, " ")
-       LOCAL_STRING1=EXTRACT(LOCAL_STRING, 1, pos-1)
-       !CHAR_BUFF=CHAR(LOCAL_STRING1)
-       !READ(CHAR_BUFF,"(ES)",IOSTAT=ERR,ERR=999) REAL_DATA(idx+POSITION-1)
-       REAL_DATA(idx+POSITION-1)=STRING_TO_DOUBLE(LOCAL_STRING, ERR, ERROR)
-       LOCAL_STRING=REMOVE(LOCAL_STRING,1,pos)
+      LOCAL_STRING=ADJUSTL(LOCAL_STRING)
+      LOCAL_STRING=TRIM(LOCAL_STRING)
+      pos=INDEX(LOCAL_STRING, " ")
+      LOCAL_STRING1=EXTRACT(LOCAL_STRING, 1, pos-1)
+      !CHAR_BUFF=CHAR(LOCAL_STRING1)
+      !READ(CHAR_BUFF,"(ES)",IOSTAT=ERR,ERR=999) REAL_DATA(idx+POSITION-1)
+      REAL_DATA(idx+POSITION-1)=STRING_TO_DOUBLE(LOCAL_STRING, ERR, ERROR)
+      LOCAL_STRING=REMOVE(LOCAL_STRING,1,pos)
     ENDDO
     LOCAL_STRING=ADJUSTL(LOCAL_STRING)
     LOCAL_STRING=TRIM(LOCAL_STRING)
@@ -5647,7 +5579,7 @@ CONTAINS
       ENDIF
     ENDIF
 
-     IF(INREGION) THEN
+    IF(INREGION) THEN
       !checking whether the list of fields in the same region
       DO num_field =1, FIELDS%NUMBER_OF_FIELDS
         IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
@@ -5655,11 +5587,11 @@ CONTAINS
             & " field handle in fields list is invalid"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
-        
+
         IF( num_field == 1 ) THEN
           CYCLE
         ENDIF
-        
+
         IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
             & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
@@ -5674,11 +5606,11 @@ CONTAINS
             & " field handle in fields list is invalid"
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
-        
+
         IF( num_field == 1 ) THEN
           CYCLE
         ENDIF
-        
+
         IF(FIELDS%FIELDS(num_field-1)%PTR%INTERFACE%USER_NUMBER/= &
           & FIELDS%FIELDS(num_field)%PTR%INTERFACE%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
@@ -5710,16 +5642,16 @@ CONTAINS
       & ALLOCATED( NODAL_INFO_SET%COMPONENT_INFO_SET ) ) THEN
       CALL FLAG_ERROR("nodal information set is not initialized properly, call start method first",ERR,ERROR,*999)
     ENDIF
-    
+
     DO field_idx = 1, NODAL_INFO_SET%FIELDS%NUMBER_OF_FIELDS
       FIELD => NODAL_INFO_SET%FIELDS%FIELDS(field_idx)%PTR
       IF( .NOT.ALLOCATED( FIELD%VARIABLES ) ) THEN
         CYCLE
       ENDIF
-      
+
       DO var_idx = 1, FIELD%NUMBER_OF_VARIABLES
         FIELD_VARIABLE => FIELD%VARIABLES( var_idx )
-        
+
         DO component_idx = 1, FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           IF( .NOT.ASSOCIATED( FIELD_VARIABLE%COMPONENTS( component_idx )%DOMAIN%TOPOLOGY%NODES ) ) THEN
             CYCLE
@@ -5728,7 +5660,7 @@ CONTAINS
           DOMAIN_NODES => FIELD_VARIABLE%COMPONENTS( component_idx )%DOMAIN%TOPOLOGY%NODES
           !TODO This is an order n-squared algorithm. It would be faster to build a list of
           !non-unique nodes, sort it, then remove duplicates.
-          
+
           !Add this domain's node indexes to LIST_OF_GLOBAL_NUMBER if it's not present.
           DO np = 1, DOMAIN_NODES%NUMBER_OF_NODES
             foundNewNode = .TRUE.
@@ -5738,7 +5670,7 @@ CONTAINS
                 EXIT
               ENDIF
             ENDDO !nn=1
-            
+
             IF( foundNewNode ) THEN
               !TODO This code re-allocates new memory once per node. Reduce memory-thrashing by adding memory in chunks.
               CALL GROW_ARRAY( NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER, 1, "Could not allocate buffer in IO", ERR, ERROR, *999 )
@@ -5767,14 +5699,14 @@ CONTAINS
       IF( .NOT.ALLOCATED(FIELD%VARIABLES) ) THEN
         CYCLE
       ENDIF
-      
+
       DO var_idx=1, FIELD%NUMBER_OF_VARIABLES
         FIELD_VARIABLE => FIELD%VARIABLES( var_idx )
         DO component_idx = 1, FIELD_VARIABLE%NUMBER_OF_COMPONENTS
           IF( FIELD_VARIABLE%COMPONENTS( component_idx )%INTERPOLATION_TYPE /= FIELD_NODE_BASED_INTERPOLATION ) THEN
             CYCLE
           ENDIF
-          
+
           IF( .NOT.ASSOCIATED( FIELD_VARIABLE%COMPONENTS( component_idx )%DOMAIN%TOPOLOGY%NODES ) ) THEN
             CYCLE
           ENDIF
@@ -5790,7 +5722,7 @@ CONTAINS
                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%COMPONENTS(NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR &
                   & %NUMBER_OF_COMPONENTS+1)%PTR=>FIELD_VARIABLE%COMPONENTS( component_idx )
                 NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS = &
-                  & NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1                  
+                  & NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR%NUMBER_OF_COMPONENTS+1
                 EXIT
               ENDIF
             ENDDO
@@ -5805,7 +5737,7 @@ CONTAINS
     CALL EXITS("FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS")
     RETURN 1
   END SUBROUTINE FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS
-  
+
   !!
   !!================================================================================================================================
   !!
@@ -5873,16 +5805,16 @@ CONTAINS
     my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
     IF(ERR/=0) GOTO 999
     IF(METHOD=="FORTRAN") THEN
-       CALL FIELD_IO_INFO_SET_INITIALISE(NODAL_INFO_SET, ERR,ERROR,*999)
-       CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*999)
-       CALL FIELD_IO_NODAL_INFO_SET_SORT(NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
-       CALL FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE(NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
-            & ERR, ERROR, *999)
-       CALL FIELD_IO_INFO_SET_INITIALISE(NODAL_INFO_SET, ERR,ERROR,*999)
+      CALL FIELD_IO_INFO_SET_INITIALISE(NODAL_INFO_SET, ERR,ERROR,*999)
+      CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*999)
+      CALL FIELD_IO_NODAL_INFO_SET_SORT(NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
+      CALL FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE(NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
+          & ERR, ERROR, *999)
+      CALL FIELD_IO_INFO_SET_INITIALISE(NODAL_INFO_SET, ERR,ERROR,*999)
     ELSE IF(METHOD=="MPIIO") THEN
-       CALL FLAG_ERROR("MPI IO has not been implemented yet!",ERR,ERROR,*999)
+      CALL FLAG_ERROR("MPI IO has not been implemented yet!",ERR,ERROR,*999)
     ELSE
-       CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_IO_NODES_EXPORT")
@@ -5914,7 +5846,7 @@ CONTAINS
     TYPE(FIELD_IO_INFO_SET) :: LOCAL_PROCESS_ELEMENTAL_INFO_SET !<elemental information in this process
     INTEGER(INTG):: my_computational_node_number !<local process number
     INTEGER(INTG):: computational_node_numbers   !<total process numbers
-      
+
     CALL ENTERS("FIELD_IO_ELEMENTS_EXPORT", ERR,ERROR,*999)
 
     !Get the number of computational nodes
@@ -5924,16 +5856,16 @@ CONTAINS
     my_computational_node_number=COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
     IF(ERR/=0) GOTO 999
     IF(METHOD=="FORTRAN") THEN
-       CALL FIELD_IO_INFO_SET_INITIALISE( LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR, ERROR, *999 )
-       CALL FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS( LOCAL_PROCESS_ELEMENTAL_INFO_SET, FIELDS, ERR, ERROR, *999 )
-       CALL FIELD_IO_ELEMENTAL_INFO_SET_SORT(LOCAL_PROCESS_ELEMENTAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
-       CALL FIELD_IO_EXPORT_ELEMENTS_INTO_LOCAL_FILE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, FILE_NAME, my_computational_node_number, &
-         & ERR, ERROR, *999)
-       CALL FIELD_IO_INFO_SET_INITIALISE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR,ERROR,*999)
+      CALL FIELD_IO_INFO_SET_INITIALISE( LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR, ERROR, *999 )
+      CALL FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS( LOCAL_PROCESS_ELEMENTAL_INFO_SET, FIELDS, ERR, ERROR, *999 )
+      CALL FIELD_IO_ELEMENTAL_INFO_SET_SORT(LOCAL_PROCESS_ELEMENTAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
+      CALL FIELD_IO_EXPORT_ELEMENTS_INTO_LOCAL_FILE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, FILE_NAME, my_computational_node_number, &
+          & ERR, ERROR, *999)
+      CALL FIELD_IO_INFO_SET_INITIALISE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR,ERROR,*999)
     ELSE IF(METHOD=="MPIIO") THEN
-       CALL FLAG_ERROR("MPI IO has not been implemented yet",ERR,ERROR,*999)
+      CALL FLAG_ERROR("MPI IO has not been implemented yet",ERR,ERROR,*999)
     ELSE
-       CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
     ENDIF
 
     CALL EXITS("FIELD_IO_ELEMENTS_EXPORT")
