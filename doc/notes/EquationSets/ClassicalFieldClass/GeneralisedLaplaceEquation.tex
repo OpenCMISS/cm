@@ -1,56 +1,62 @@
 \subsection{Generalised Laplace Equation}
 
-Using the example of the generalised Laplace equation,
-we illustrate here the general workflow from the governing equations
-to the ``algorithmic'' form of the equations that is amenable
-for implementation into OpenCMISS.
-We thus start with the governing equations and subsequently introduce
-the weak (variational) form of these equations.
-We then shall switch to tensor notation which will be more amenable
-to code implementation.
-After breaking up the domain integrals arising in the formulation
-into a sum of element integrals and introducing numerical integration,
-we finally arrive at the ``algorithmic'' form of the equations
-that is ready for implementation in the code.
-
+% Using the example of the generalised Laplace equation,
+% we illustrate here the general workflow from the governing equations
+% to the ``algorithmic'' form of the equations that is amenable
+% for implementation into \OpenCMISS.
+% We thus start with the governing equations and subsequently introduce
+% the weak (variational) form of these equations.
+% We then shall switch to tensor notation which will be more amenable
+% to code implementation.
+% After breaking up the domain integrals arising in the formulation
+% into a sum of element integrals and introducing numerical integration,
+% we finally arrive at the ``algorithmic'' form of the equations
+% that is ready for implementation in the code.
 
 \subsubsection{Governing equations:}
+
 The generalised Laplace's equation on a domain $\Omega$ with boundary $\Gamma$
-can be stated as
+in \OpenCMISS can be stated as
 \begin{equation}
-  \diverg{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}\gradient{\fnof{\phi}{\vect{x}}}}}=0  \quad \mathrm{on} \, \Omega \,,
-  \label{eqn:Laplacesequation}
+  \boxed{
+    \diverg{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}\gradient{\fnof{u}{\vect{x}}}}}=0
+  }
+  \label{eqn:generalisedLaplaceequation}
 \end{equation}
-where $\fnof{\phi}{\vect{x}}$ is the potential and $\fnof{\tensor{\sigma}}{\vect{x}}$ is
-the (positive definite) conductivity tensor throughout the domain. Note that 
-$\tensor{\sigma}=\tensor{I}$ gives the standard form of Laplace's equation \ie $\laplacian{\phi}=0$.
+where $\vect{x}\in\Omega$, $\fnof{u}{\vect{x}}$ is the potential and 
+$\fnof{\tensor{\sigma}}{\vect{x}}$ is the (positive definite) conductivity
+tensor throughout the domain. Note that $\tensor{\sigma}=\tensor{I}$ gives 
+the standard form of Laplace's equation \ie $\laplacian{u}=0$.
 
 To complete the description of the boundary value problem,
-the governing equation~(\ref{eqn:Laplacesequation}) is supplemented
+the governing \eqnref{eqn:generalisedLaplaceequation} is supplemented
 by suitable boundary conditions on the domain boundary~$\Gamma$.
-These boundary conditions can either be of Dirichlet type and specify a solution value~$\phi_D$
-on the Dirichlet portion of the boundary~$\Gamma_D$
+These boundary conditions can either be of Dirichlet type and specify a
+solution value, $d$ \ie
 \begin{equation}
-  \phi = \phi_D \quad \mathrm{on} \, \Gamma_D \,,
-  \label{eqn:Laplace Dirichlet BC} 
+  \fnof{u}{\vect{x}} = \fnof{d}{\vect{x}} \quad \vect{x}\in\Gamma_{D},
+  \label{eqn:LaplaceDirichletBC} 
 \end{equation}
-or of Neumann type and specify the solution gradient in normal direction, $g$,
-on the Neumann portion of the boundary~$\Gamma_N$
+and/or of Neumann type and specify the solution gradient in normal direction,
+$e$ \ie
 \begin{equation}
-  \nabla \phi \cdot {\bf{n}} = g \quad \mathrm{on} \, \Gamma_N
-  \label{eqn:Laplace Dirichlet BC} 
+  \fnof{q}{\vect{x},t} = \dotprod{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}
+      \gradient{\fnof{u}{\vect{x},t}}}}{\normal} =
+  \fnof{e}{\vect{x},t} \quad \vect{x}\in\Gamma_{N},  
+  \label{eqn:LaplaceNeumannBC} 
 \end{equation}
-with $\Gamma = \Gamma_D \cup \Gamma_N$.
+where $\fnof{q}{\vect{x},t}$ is the flux in the normal direction, $\normal$ is the normal
+vector to the boudary and $\Gamma = \Gamma_D \cup \Gamma_N$.
 
 \subsubsection{Weak formulation:}
-The corresponding weak form of \eqnref{eqn:Laplacesequation} is
+
+The corresponding weak form of \eqnref{eqn:generalisedLaplaceequation} is
 \begin{equation}
-  \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}w}{\Omega}=0 \,,
+  \gint{\Omega}{}{\diverg{\pbrac{\tensor{\sigma}\gradient{\phi}}}w}{\Omega}=0 
   \label{eqn:Laplaceweakform}
 \end{equation}
-where $w$ is a suitable test function 
-(For a definition of what constitutes a ``suitable'' test and trial function,
-see Section~\ref{} - still has to be written).
+where $w$ is a suitable test function (For a definition of what constitutes a
+``suitable'' test and trial function, see Section~\ref{} - still has to be written).
 
 Applying Green's theorem to \eqnref{eqn:Laplaceweakform} gives
 \begin{equation}
@@ -65,106 +71,136 @@ or
   = \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma} \,,
   \label{eqn:Laplaceweightedresidualform}
 \end{equation}
-where $\vect{n}$ is the unit outward normal vector to the boundary~$\Gamma$.
 
 \subsubsection{Tensor notation:}
+
 If we now consider the integrand of the left hand side of
 \eqnref{eqn:Laplaceweightedresidualform} in tensorial form with covariant
 derivatives indicated by a semi-colon in the index
 (see \secref{subsec:function derivatives} for details) then
 \begin{equation}
-  \tensor{\sigma}\gradient{\phi} = \sigma^{i}_{j}\covarderiv{\phi}{i}
-  \label{eqn:Laplace weak form factor1}
+  \tensor{\sigma}\gradient{u} = \sigma^{i}_{.j}\covarderiv{u}{i}
+  \label{eqn:Laplaceweakformfactor1}
 \end{equation}
 and
 \begin{equation}
-  \gradient{w} = \covarderiv{w}{i}
-  \label{eqn:Laplace weak form factor2}
+  \gradient{w} = \covarderiv{w}{k}
+  \label{eqn:Laplaceweakformfactor2}
 \end{equation}
 
-Now, Equations (\ref{eqn:Laplace weak form factor1}) and (\ref{eqn:Laplace weak form factor2})
-represent vectors that are covariant and
-therefore we must convert Equation (\ref{eqn:Laplace weak form factor1})
-to a contravariant vector by 
+Now, Equations (\ref{eqn:Laplaceweakformfactor1}) and (\ref{eqn:Laplaceweakformfactor2})
+represent vectors that are covariant and therefore we must convert Equation
+(\ref{eqn:Laplaceweakformfactor1}) to a contravariant vector by 
 multiplying by the contravariant metric tensor (from $\vect{i}$ to $\vect{x}$ 
 coordinates; see Sections~\ref{sec:metric tensors} and \ref{sec:coordinate systems})
-so that we can take the dot product. The final tensorial form is
+so that we can take the dot product. The final tensorial form for the left
+hand integral is
 \begin{equation}
-  \dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\gradient{w}} = G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}
+  \dotprod{\pbrac{\tensor{\sigma}\gradient{u}}}{\gradient{w}} = 
+  G^{jk}\sigma^{i}_{.j}\covarderiv{\phi}{i}\covarderiv{w}{k}
 \end{equation}
 and thus \eqnref{eqn:Laplaceweightedresidualform} becomes
 \begin{equation}
-  \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
-  = \gint{\Gamma}{}{\dotprod{\pbrac{\tensor{\sigma}\gradient{\phi}}}{\vect{n}w}}{\Gamma}
-  \label{eqn:Laplaceweightedresidualtensorform}
+  \gint{\Omega}{}{G^{jk}\sigma^{i}_{.j}\covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}
+  = \gint{\Gamma}{}{G^{jk}\sigma^{i}_{.j}\covarderiv{u}{i}n_{k}w}{\Gamma}
+  \label{eqn:Laplaceweightedresidualtensorform1}
+\end{equation}
+or
+\begin{equation}
+  \gint{\Omega}{}{G^{jk}\sigma^{i}_{.j}\covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}
+  = \gint{\Gamma}{}{qw}{\Gamma}
+  \label{eqn:Laplaceweightedresidualtensorform2}
 \end{equation}
 
 \subsubsection{Finite element formulation:}
+
 We can now discretise the domain into finite elements \ie $\Omega=
-\displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$, the left hand side of
-\eqnref{eqn:Laplaceweightedresidualtensorform} becomes
+\displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$ with
+$\Gamma=\displaystyle{\bigcup_{f=1}^{F}}\Gamma_{f}$, 
+\eqnref{eqn:Laplaceweightedresidualtensorform2} becomes
 \begin{equation}
-  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\sigma^{i}_{j}\covarderiv{\phi}{i}\covarderiv{w}{k}}{\Omega}
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\sigma^{i}_{j}\covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}
+  =\dsum_{f=1}^{F}\gint{\Gamma_{f}}{}{qw}{\Omega}
 \end{equation}
 
-The next step is to approximate the dependent variable, $\phi$, using basis
+The next step is to approximate the dependent variable, $u$, using basis
 functions. To simplify this for different types of basis functions an
-\emph{interpolation notation} is adopted. This
-interpolation is such that $\gbfn{\alpha}{u}{\vect{\xi}}$ are the appropriate
-basis functions for the type of element (\eg \bicubicherm, Hermite-sector,
-\etc) and dimension of the problem (one, two or \threedal). For example if
-$\vect{\xi}=\bbrac{\xi}$ and the element is a cubic Hermite element 
-(\secref{sec:Hermitianbasisfunctions}) then
-$\gbfn{\alpha}{u}{\vect{\xi}}$ are the cubic Hermite basis functions where
-the local node number $\alpha$ ranges from $1$ to $2$ and $u$ ranges from $0$ to $1$. 
-If, however, $\vect{\xi}=\bbrac{\xione,\xitwo}$ and the element is a \bicubicherm element
-then $\alpha$ ranges from $1$ to $4$, $u$ ranges from $0$ to $3$ and
-$\gbfn{\alpha}{u}{\vect{\xi}}$ is the appropriate basis function for the nodal
-variable $\nodedof{\phi}{\alpha}{u}$. The nodal variables are defined as
-follows: $\nodedof{\phi}{\alpha}{0}=\nodept{\phi}{\alpha}$,
-$\nodedof{\phi}{\alpha}{1}=\delby{\nodept{\phi}{\alpha}}{s_{1}}$,
-$\nodedof{\phi}{\alpha}{2}=\delby{\nodept{\phi}{\alpha}}{s_{2}}$,
-$\nodedof{\phi}{\alpha}{3}=\deltwoby{\nodept{\phi}{\alpha}}{s_{1}}{s_{2}}$,
+\emph{interpolation notation} is adopted. This interpolation is such that
+$\gbfn{n}{\beta}{\vect{\xi}}$ are the appropriate basis functions for the
+type of element (\eg \bicubicherm, Hermite-sector, \etc) and dimension of 
+the problem (one, two or \threedal). For example if $\vect{\xi}=\bbrac{\xi}$ 
+and the element is a cubic Hermite element
+(\secref{sec:Hermitianbasisfunctions}) then $\gbfn{n}{\beta}{\vect{\xi}}$ 
+are the cubic Hermite basis functions where the local node number $n$ ranges 
+from $1$ to $2$ and the derivative $\beta$ ranges from $0$ to $1$. If,
+however, $\vect{\xi}=\bbrac{\xione,\xitwo}$ and the element is a \bicubicherm 
+element then $n$ ranges from $1$ to $4$, $\beta$ ranges from $0$ to $3$ and
+$\gbfn{n}{\beta}{\vect{\xi}}$ is the appropriate basis function for the nodal
+variable $\nodedof{u}{n}{\beta}$. The nodal variables are defined as
+follows: $\nodedof{u}{n}{0}=\nodept{u}{n}$,
+$\nodedof{u}{n}{1}=\delby{\nodept{u}{n}}{s_{1}}$,
+$\nodedof{u}{n}{2}=\delby{\nodept{u}{n}}{s_{2}}$,
+$\nodedof{u}{n}{3}=\deltwoby{\nodept{u}{n}}{s_{1}}{s_{2}}$,
 \etc Hence for the \bicubicherm element the interpolation function
 $\gbfn{2}{3}{\vect{\xi}}$ multiplies the nodal variable
-$\phi^{2}_{,3}=\deltwoby{\phi^{2}}{s_{1}}{s_{2}}$ and thus the
+$\nodedof{u}{2}{3}=\deltwoby{u^{2}}{s_{1}}{s_{2}}$ and thus the
 interpolation function is $\chbfn{2}{1}{\xione}\chbfn{1}{1}{\xitwo}$.  The
 scale factors for the Hermite interpolation are handled by the introduction of
-an interpolation scale factor $\gsf{\alpha}{u}$ defined as follows:
-$\gsf{\alpha}{0}=1$, $\gsf{\alpha}{1}=\nsftwo{\alpha}{1}$, $\gsf{\alpha}{2}=
-\nsftwo{\alpha}{2}$, $\gsf{\alpha}{3}=\nsftwo{\alpha}{1}\nsftwo{\alpha}{2}$,
+an interpolation scale factor $\gsf{n}{\beta}$ defined as follows:
+$\gsf{n}{0}=1$, $\gsf{n}{1}=\nsftwo{n}{1}$, $\gsf{n}{2}=
+\nsftwo{n}{2}$, $\gsf{n}{3}=\nsftwo{n}{1}\nsftwo{n}{2}$,
 \etc For Lagrangian basis functions the interpolation scale factors are all
-one. The general form of the interpolation notation for $\phi$ is then
+one. The general form of the interpolation notation for $u$ is then
 \begin{equation}
-  \fnof{\phi}{\vect{\xi}}=\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}
-  {\alpha}{u}\gsf{(\alpha)}{(u)}
-  \label{eqn:phiinterpolation}
+  \fnof{u}{\vect{\xi}}=\gbfn{n}{\beta}{\vect{\xi}}\nodedof{u}{n}{\beta}\gsf{n}{\beta}
+  \label{eqn:uinterpolation}
+\end{equation}
+
+We can also interpolate the other variables in a similar manner \ie
+\begin{equation}
+  \begin{split}
+    \fnof{q}{\vect{\xi}} &= \gbfn{o}{\gamma}{\vect{\xi}\nodedof{q}{o}{\gamma}}
+    \gsf{o}{\gamma} \\
+    \fnof{\tensor{\sigma}}{\vect{\xi}}
+    &=\gbfn{p}{\delta}{\vect{\xi}}\nodedof{\tensor{\sigma}}{p}{\delta}\gsf{p}{\delta} \\
+  \end{split}
+\end{equation}
+where $\nodedof{q}{o}{\gamma}$ and $\nodedof{\tensor{\sigma}}{p}{\delta}$ are the
+nodal degrees-of-freedom for the flux variable and conductivity tensor.
+
+Using a Galerkin finite element approach (where the weighting functions are
+chosento be the interpolating basis functions) we have 
+\begin{equation}
+  \fnof{w}{\vect{\xi}}=\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}
 \end{equation}
 
 \subsubsection{Spatial integration:}
+
 When dealing with integrals a similar interpolation notation is adopted in
 that $d\vect{\xi}$ is the appropriate infinitesimal for the dimension of the
 problem. The limits of the integral are also written in bold font and indicate
 the appropriate number of integrals for the dimension of the problem.  For
 example if $\vect{\xi}=\bbrac{\xione,\xitwo}$ then
 $\gint{\vect{0}}{\vect{1}}{x}
-{\vect{\xi}}=\giint{0}{1}{0}{1}{x}{\xione}{\xitwo}$, but if $\vect{\xi}=
-\bbrac{\xione,\xitwo,\xithree}$ then $\gint{\vect{0}}{\vect{1}}{x}
-{\vect{\xi}}=\dintl{0}{1}\!\dintl{0}{1}\!\dintl{0}{1}\,x\,d\xione d\xitwo
-d\xithree$.
+{\vect{\xi}}=\giint{0}{1}{0}{1}{x}{\xione}{\xitwo}$,
+but if $\vect{\xi}=\bbrac{\xione,\xitwo,\xithree}$ then 
+$\gint{\vect{0}}{\vect{1}}{x}{\vect{\xi}}=
+\dintl{0}{1}\!\dintl{0}{1}\!\dintl{0}{1}\,x\,d\xione d\xitwo d\xithree$.
 
 In order to integrate in $\vect{\xi}$ coordinates we must convert the spatial
 derivatives to derivatives with respect to $\vect{\xi}$. Using the tensor
 transformation equations for a covariant vector we have
 \begin{equation}  
-  \covarderiv{\phi}{i}=\delby{\xi^{r}}{x^{i}}\covarderiv{\phi}{r}=\delby{\xi^{r}}{x^{i}}\delby{\phi}{\xi^{r}}
+  \covarderiv{u}{i}=\delby{\xi^{s}}{x^{i}}\covarderiv{u}{s}=
+  \delby{\xi^{s}}{x^{i}}\delby{u}{\xi^{s}}
 \end{equation}
 and 
 \begin{equation}
-  \covarderiv{w}{k}=\delby{\xi^{s}}{x^{k}}\covarderiv{w}{s}=\delby{\xi^{s}}{x^{k}}\delby{w}{\xi^{s}}
+  \covarderiv{w}{k}=\delby{\xi^{r}}{x^{k}}\covarderiv{w}{r}=
+  \delby{\xi^{r}}{x^{k}}\delby{w}{\xi^{r}}
 \end{equation}
 
-As we only know $\tensor{\tilde{\sigma}}$, the conductivity in the
+As we only know $\tilde{\tensor{\sigma}}$, the conductivity in the 
 $\vect{\nu}$ (fibre) coordinate system rather than $\tensor{\sigma}$, the
 conductivity in the $\vect{x}$ (geometric) coordinate system, we must transform the mixed
 tensor ${\tilde{\sigma}}^{a}_{.b}$ from $\vect{\nu}$ to $\vect{x}$ coordinates. However, as the
@@ -172,179 +208,210 @@ fibre coordinate system is defined in terms of $\vect{\xi}$ coordinates we
 first transform the conductivity tensor from $\vect{\nu}$ to $\vect{\xi}$
 coordinates \ie
 \begin{equation}
-  \sigma^{p}_{.q}=\delby{\xi^{p}}{\nu^{a}}\delby{\nu^{b}}{\xi^{q}}{\tilde{\sigma}}^{a}_{.b}
+  \fnof{\sigma^{d}_{.e}}{\vect{\xi}}=\delby{\xi^{d}}{\nu^{a}}\delby{\nu^{b}}{\xi^{e}}
+  \fnof{{\tilde{\sigma}}^{a}_{.b}}{\vect{\xi}}
 \end{equation}
 with $.b$ indicating that $b$ is the ``second'' index (\secref{subsec:summation notation}),
 and then transform the conductivity from $\vect{\xi}$ coordinates to
 $\vect{x}$ coordinates \ie
 \begin{equation}
   \begin{split}
-    \sigma^{i}_{.j} &= \delby{x^{i}}{\xi^{p}}\delby{\xi^{q}}{x^{j}}{\sigma}^{p}_{.q} \\
-    &= \delby{x^{i}}{\xi^{p}}\delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} 
-    {\nu^{a}}\delby{\nu^{b}}{\xi^{q}}{\tilde{\sigma}}^{a}_{.b}
+    \fnof{\sigma^{i}_{.j}}{\vect{\xi}} &=
+    \delby{x^{i}}{\xi^{d}}\delby{\xi^{e}}{x^{j}}
+    \fnof{{\sigma}^{d}_{.e}}{\vect{\xi}} \\
+    &= \delby{x^{i}}{\xi^{d}}\delby{\xi^{e}}{x^{j}}\delby{\xi^{d}} 
+    {\nu^{a}}\delby{\nu^{b}}{\xi^{e}}\fnof{{\tilde{\sigma}}^{a}_{.b}}{\vect{\xi}}
   \end{split}
 \end{equation}
-
-Using an interpolated dependent variable and a Galerkin finite element
-approach (where the weighting functions are chosen to be the interpolating
-basis functions \ie $w=\gbfn{\beta}{v}{\vect{\xi}}\gsf{(\beta)}{(v)}$) yields
+where $\tilde{\tensor{\sigma}}$ is interpolated in the normal way \ie
 \begin{equation}
-  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{G^{jk}\delby{x^{i}}{\xi^{p}}
-    \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
-    \delby{\nu^{b}}{\xi^{q}}{\tilde{\sigma}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}
-    \delby{\pbrac{\gbfn{\alpha}{u}{\vect{\xi}}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}}}{\xi^{r}}
-    \delby{\xi^{s}}{x^{k}}\delby{\pbrac{\gbfn{\beta}{v}{\vect{\xi}}\gsf{(\beta)}{(v)}}}{\xi^{s}}
-    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+  \fnof{\tilde{\tensor{\sigma}}}{\vect{\xi}}
+  =\gbfn{p}{\delta}{\vect{\xi}}\nodedof{\tilde{\tensor{\sigma}}}{p}{\delta}
+  \gsf{p}{\delta}
 \end{equation}
+
+Using an interpolated variables yields
+\begin{multline}
+  \dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}G^{jk}\delby{x^{i}}{\xi^{d}}
+    \delby{\xi^{e}}{x^{j}}\delby{\xi^{d}}{\nu^{a}}
+    \delby{\nu^{b}}{\xi^{e}}\fnof{{\tilde{\sigma}}^{a}_{.b}}{\vect{\xi}}\delby{\xi^{s}}{x^{i}} \\
+    \delby{\pbrac{\gbfn{n}{\beta}{\vect{\xi}}\nodedof{u}{n}{\beta}\gsf{n}{\beta}}}{\xi^{s}}
+    \delby{\xi^{r}}{x^{k}}\delby{\pbrac{\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}}}{\xi^{r}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi} \\ 
+  = \dsum_{f=1}^{F}\gint{\Gamma_{f}}{}{\gbfn{o}{\gamma}{\vect{\xi}}\nodedof{q}{o}{\gamma}
+    \gsf{o}{\gamma}\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}}{\Gamma}
+\end{multline}
 where $\fnof{\matr{J}}{\vect{\xi}}$ is the \emph{Jacobian} of the
 transformation from the integration $\vect{x}$ to $\vect{\xi}$ coordinates.
 
 Taking the fixed nodal degrees-of-freedom and scale factors outside the integral we have
-\begin{equation}
-  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}\gsf{(\beta)}{(v)}
-  \gint{\vect{0}}{\vect{1}}{G^{jk}\delby{x^{i}}{\xi^{p}}
-    \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
-    \delby{\nu^{b}}{\xi^{q}}{\tilde{\sigma}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}
-    \delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
-    \delby{\xi^{s}}{x^{k}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}
-    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\begin{multline}
+  \dsum_{e=1}^{E}\nodedof{u}{n}{\beta}\gsf{m}{\alpha}\gsf{n}{\beta}
+  \dintl{\vect{0}}{\vect{1}}G^{jk}\delby{x^{i}}{\xi^{d}}
+  \delby{\xi^{e}}{x^{j}}\delby{\xi^{d}}{\nu^{a}}
+  \delby{\nu^{b}}{\xi^{e}}\fnof{{\tilde{\sigma}}^{a}_{.b}}{\vect{\xi}} \\
+  \delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
+  \delby{\gbfn{m}{\alpha}{\vect{\xi}}}{\xi^{s}}
+  \delby{\gbfn{n}{\beta}{\vect{\xi}}}{\xi^{r}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi} \\
+  = \dsum_{f=1}^{F}\nodedof{q}{o}{\gamma}\gsf{m}{\alpha}\gsf{o}{\gamma}
+  \gint{\Gamma_{f}}{}{\gbfn{o}{\gamma}{\vect{\xi}}\gbfn{m}{\alpha}{\vect{\xi}}}{\Gamma}
   \label{eqn:elementalfemlhs1}
-\end{equation}
-or
+\end{multline}
+
+This is an equation of the form of
 \begin{equation}
-  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)}\gsf{(\beta)}{(v)}
-  \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}\delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}
+  \matr{K}\vect{u}=\vect{f}
+\end{equation}
+where
+\begin{equation}
+  \vect{f}=\matr{N}\vect{q}
+\end{equation}
+
+The elemental stiffness matrix, $K^{\alpha\beta}_{mn}$, is given by
+\begin{equation}
+  K^{\alpha\beta}_{mn}=\gsf{m}{\alpha}\gsf{m}{\beta}
+  \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{m}{\alpha}{\vect{\xi}}}{\xi^{r}}
+    \delby{\gbfn{n}{\beta}{\vect{\xi}}}{\xi^{s}}\fnof{\gamma^{rs}}{\vect{\xi}}
     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
   \label{eqn:elementalfemlhs2}
 \end{equation}
 where
 \begin{equation}
-  \gamma^{rs}=G^{jk}\delby{x^{i}}{\xi^{p}}
-    \delby{\xi^{q}}{x^{j}}\delby{\xi^{p}} {\nu^{a}}
-    \delby{\nu^{b}}{\xi^{q}}{\tilde{\sigma}}^{a}_{.b}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
+  \fnof{\gamma^{rs}}{\vect{\xi}}=G^{jk}\delby{x^{i}}{\xi^{d}}
+  \delby{\xi^{e}}{x^{j}}\delby{\xi^{d}}{\nu^{a}}\delby{\nu^{b}}{\xi^{e}}
+  \fnof{{\tilde{\sigma}}^{a}_{.b}}{\vect{\xi}}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
+  \label{eqn:diffusiongammadefinition1}
 \end{equation}
 
 Note that for Laplace's equation with no conductivity or fibre fields we have
 \begin{equation}
-  \gamma^{rs}=G^{ik}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
+  \fnof{\gamma^{rs}}{\vect{\xi}}=G^{ik}\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{k}}
+  \label{eqn:diffusiongammadefinition2}
 \end{equation}
 and that for rectangular-Cartesian coordinates systems
 $G^{ik}=\contrakronecker{i}{k}$ and thus $i=k$. This now gives
 \begin{equation}
-  \gamma^{rs}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{i}}=g^{rs}
-  \label{eqn:contrametrictensor}
+  \fnof{\gamma^{rs}}{\vect{\xi}}=\delby{\xi^{r}}{x^{i}}\delby{\xi^{s}}{x^{i}}=g^{rs}
+  \label{eqn:diffusiongammadefinition3}
 \end{equation}
 where $g^{rs}$ is the \emph{contravariant metric tensor} from $\vect{x}$ to
 $\vect{\xi}$ coordinates. It may thus be helpful to think about $\gamma^{rs}$
 as a scaled/transformed contravariant metric tensor.
 
-\subsubsection{Coded OpenCMISS formulation:}
-Finally, we use the Gaussian quadrature rule (see Section~??? - still to be written), 
-usually stated as a weighted sum of function values at specified Gauss points within the domain of integration. An $n$-point Gaussian quadrature rule yields an exact result for polynomials of degree $2n-1$ or less by a suitable choice of the points $x_i$ and weights $g_i$ for $i = 1,...,n$. Consequently, the formulation implemented can be derived from Equation (\ref{eqn:elementalfemlhs2}) as: 
+The right hand side flux matrix, $N^{\alpha\gamma}_{mo}$, is given by
 \begin{equation}
-  \boxed{
-  \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)} \gsf{(\beta)}{(v)}
-  \dsum_{i=1}^{n}
-  \left(\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
-  \delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}\abs{\fnof{\matr{J}}{\vect{\xi}}}
-  \right)(x_i)g_i
-  }
-  \label{eqn:Laplaceweightedresidualtensorform in OpenCMISS}
+  N^{\alpha\gamma}_{mo} = \gsf{m}{\alpha}\gsf{o}{\gamma}
+  \gint{\Gamma_{f}}{}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}}{\Gamma}
 \end{equation}
 
-
-\newpage
-\subsubsection{OpenCMISS implementation}
-
-For exemplification, we briefly discuss here a code snippet
-that evaluates the expression~(\ref{eqn:Laplaceweightedresidualtensorform in OpenCMISS}):
-
-\lstset{ %
-language=Fortran,               % choose the language of the code
-basicstyle=\footnotesize,       % the size of the fonts that are used for the code
-numbers=left,                   % where to put the line-numbers
-numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
-stepnumber=1,                   % the step between two line-numbers. If it's 1 each line 
-                                % will be numbered
-numbersep=5pt,                  % how far the line-numbers are from the code
-backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
-showspaces=false,               % show spaces adding particular underscores
-showstringspaces=false,         % underline spaces within strings
-showtabs=false,                 % show tabs within strings adding particular underscores
-frame=single,	                % adds a frame around the code
-tabsize=2,	                % sets default tabsize to 2 spaces
-captionpos=b,                   % sets the caption-position to bottom
-breaklines=true,                % sets automatic line breaking
-breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
-title=\lstname,                 % show the filename of files included with \lstinputlisting;
-                                % also try caption instead of title
-escapeinside={\%*}{*)},         % if you want to add a comment within your code
-morekeywords={*,...}            % if you want to add more keywords to the set
-}
+% \subsubsection{Coded OpenCMISS formulation:}
+% Finally, we use the Gaussian quadrature rule (see Section~??? - still to be written), 
+% usually stated as a weighted sum of function values at specified Gauss points within the domain of integration. An $n$-point Gaussian quadrature rule yields an exact result for polynomials of degree $2n-1$ or less by a suitable choice of the points $x_i$ and weights $g_i$ for $i = 1,...,n$. Consequently, the formulation implemented can be derived from Equation (\ref{eqn:elementalfemlhs2}) as: 
+% \begin{equation}
+%   \boxed{
+%   \dsum_{e=1}^{E}\nodedof{\phi}{\alpha}{u}\gsf{(\alpha)}{(u)} \gsf{(\beta)}{(v)}
+%   \dsum_{i=1}^{n}
+%   \left(\delby{\gbfn{\alpha}{u}{\vect{\xi}}}{\xi^{r}}
+%   \delby{\gbfn{\beta}{v}{\vect{\xi}}}{\xi^{s}}\gamma^{rs}\abs{\fnof{\matr{J}}{\vect{\xi}}}
+%   \right)(x_i)g_i
+%   }
+%   \label{eqn:Laplaceweightedresidualtensorform in OpenCMISS}
+% \end{equation}
 
 
+% \newpage
+% \subsubsection{OpenCMISS implementation}
+
+% For exemplification, we briefly discuss here a code snippet
+% that evaluates the expression~(\ref{eqn:Laplaceweightedresidualtensorform in OpenCMISS}):
+
+% \lstset{ %
+% language=Fortran,               % choose the language of the code
+% basicstyle=\footnotesize,       % the size of the fonts that are used for the code
+% numbers=left,                   % where to put the line-numbers
+% numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+% stepnumber=1,                   % the step between two line-numbers. If it's 1 each line 
+%                                 % will be numbered
+% numbersep=5pt,                  % how far the line-numbers are from the code
+% backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+% showspaces=false,               % show spaces adding particular underscores
+% showstringspaces=false,         % underline spaces within strings
+% showtabs=false,                 % show tabs within strings adding particular underscores
+% frame=single,	                % adds a frame around the code
+% tabsize=2,	                % sets default tabsize to 2 spaces
+% captionpos=b,                   % sets the caption-position to bottom
+% breaklines=true,                % sets automatic line breaking
+% breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+% title=\lstname,                 % show the filename of files included with \lstinputlisting;
+%                                 % also try caption instead of title
+% escapeinside={\%*}{*)},         % if you want to add a comment within your code
+% morekeywords={*,...}            % if you want to add more keywords to the set
+% }
 
 
-{\footnotesize\tt
-\begin{lstlisting}
-SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER, ERR,ERROR,*)
-  DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-    RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
-    mhs=0          
-    !Loop over element rows
-    DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-      DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-        mhs=mhs+1
-        nhs=0
-        IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
-          !Loop over element columns
-          DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-            DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-              nhs=nhs+1
-              DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-              ENDDO !ni
-              SUM=0.0_DP
-              DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
-                  SUM=SUM+PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION% &
-                    & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)
-                ENDDO !ni
-              ENDDO !mi
-              EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
-            ENDDO !ns
-          ENDDO !nh
-        ENDIF
-      ENDDO !ms
-    ENDDO !mh
-  ENDDO !ng
-\end{lstlisting}
-}
 
 
-% * Still explain that we loop over the rows of the element matrix,
-%   and the loop is composed of a loop over number of components and element parameters.
+% {\footnotesize\tt
+% \begin{lstlisting}
+% SUBROUTINE LAPLACE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER, ERR,ERROR,*)
+%   DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+%     RWG=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN*QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)
+%     mhs=0          
+%     !Loop over element rows
+%     DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+%       DO ms=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+%         mhs=mhs+1
+%         nhs=0
+%         IF(EQUATIONS_MATRIX%UPDATE_MATRIX) THEN
+%           !Loop over element columns
+%           DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
+%             DO ns=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
+%               nhs=nhs+1
+%               DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
+%                 PGMSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+%                 PGNSI(ni)=QUADRATURE_SCHEME%GAUSS_BASIS_FNS(ns,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+%               ENDDO !ni
+%               SUM=0.0_DP
+%               DO mi=1,DEPENDENT_BASIS%NUMBER_OF_XI
+%                 DO ni=1,DEPENDENT_BASIS%NUMBER_OF_XI
+%                   SUM=SUM+PGMSI(mi)*PGNSI(ni)*EQUATIONS%INTERPOLATION% &
+%                     & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%GU(mi,ni)
+%                 ENDDO !ni
+%               ENDDO !mi
+%               EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=EQUATIONS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*RWG
+%             ENDDO !ns
+%           ENDDO !nh
+%         ENDIF
+%       ENDDO !ms
+%     ENDDO !mh
+%   ENDDO !ng
+% \end{lstlisting}
+% }
 
-\begin{tabular}{|rp{0.9\textwidth}|}
-  \hline
-  Line & Explanation \\
-  & \\
-  2 & Loop over the number of Gauss points\\
-  3 & Weight factor = Jacobian of the mapping * quadrature weight\\
-  6 & Loop ({\bf rows}) over the number of variable components 
-      (For the scalar case of Laplace, this number is 1 (scalar potential),
-      whereas for a system like 3D incompressible Navier-Stokes, 
-      this number is 4 (3 velocity components and pressure))\\
-  7 & Loop ({\bf rows}) over the number of element parameters (= the number of interpolation functions 
-      associated with this element) \\
-  12 & Loop ({\bf columns}) over the number of variable components\\ 
-  13 & Loop ({\bf columns}) over the number of element parameters\\
-  15 & Loop over the element $\xi$-directions\\
-  20 & Loop over the element $\xi$-directions\\
-  21 & Loop over the element $\xi$-directions\\
-  26 & Add contribution to element matrix entry {\tt (mhs,nhs)}\\
-  \hline
-\end{tabular}
+
+% % * Still explain that we loop over the rows of the element matrix,
+% %   and the loop is composed of a loop over number of components and element parameters.
+
+% \begin{tabular}{|rp{0.9\textwidth}|}
+%   \hline
+%   Line & Explanation \\
+%   & \\
+%   2 & Loop over the number of Gauss points\\
+%   3 & Weight factor = Jacobian of the mapping * quadrature weight\\
+%   6 & Loop ({\bf rows}) over the number of variable components 
+%       (For the scalar case of Laplace, this number is 1 (scalar potential),
+%       whereas for a system like 3D incompressible Navier-Stokes, 
+%       this number is 4 (3 velocity components and pressure))\\
+%   7 & Loop ({\bf rows}) over the number of element parameters (= the number of interpolation functions 
+%       associated with this element) \\
+%   12 & Loop ({\bf columns}) over the number of variable components\\ 
+%   13 & Loop ({\bf columns}) over the number of element parameters\\
+%   15 & Loop over the element $\xi$-directions\\
+%   20 & Loop over the element $\xi$-directions\\
+%   21 & Loop over the element $\xi$-directions\\
+%   26 & Add contribution to element matrix entry {\tt (mhs,nhs)}\\
+%   \hline
+% \end{tabular}
 
 
