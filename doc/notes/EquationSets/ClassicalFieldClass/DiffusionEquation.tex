@@ -1,1 +1,228 @@
-\subsection{Diffusion Equation} 
+\subsection{Diffusion Equations} 
+
+\subsection{General Diffusion Equation} 
+
+\subsubsubsection{Governing equations:}
+
+The general form of the diffusion equation with source on a domain $\Omega$ with boundary
+$\Gamma$ in \OpenCMISS can be stated as
+\begin{equation}
+  \boxed{
+    \fnof{a}{\vect{x}}\delby{\fnof{u}{\vect{x},t}}{t}+
+    \diverg{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}\gradient{\fnof{u}{\vect{x},t}}}}+
+    \fnof{b}{\vect{x},t}=0  
+  }
+  \label{eqn:diffusionequation}
+\end{equation}
+where $\vect{x}\in\Omega$, $\fnof{u}{\vect{x},t}$ is the quatity that diffuses,
+$\fnof{a}{\vect{x}}$ is a temporal weighting, $\fnof{\tensor{\sigma}}{\vect{x}}$ is
+the conductivity tensor throughout the domain and $\fnof{b}{\vect{x},t}$ is a
+source term.
+
+Appropriate boundary conditions conditions for the diffusion
+equation are specification of Dirichlet boundary conditions on the solution,
+$d$ \ie
+\begin{equation}
+  \fnof{u}{\vect{x},t} = \fnof{d}{\vect{x},t} \quad \vect{x}\in\Gamma_{D},
+  \label{eqn:diffusionDirichletBC} 
+\end{equation}
+and/or Neumann conditions in terms of the solution flux in the normal
+direction, $e$ \ie
+\begin{equation}
+  \fnof{q}{\vect{x}} = \dotprod{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}
+      \gradient{\fnof{u}{\vect{x}}}}}{\normal} =
+  \fnof{e}{\vect{x}} \quad \vect{x}\in\Gamma_{N},
+  \label{eqn:diffusionNeumannBC} 
+\end{equation}
+where $\fnof{q}{\vect{x},t}$ is the flux in the normal direction, $\normal$ is the normal
+vector to the boudary and $\Gamma=\union{\Gamma_{D}}{\Gamma_{N}}$.
+
+Appropriate initial conditions for the diffusion equation are the
+specification of an initial value of the solution, $f$ \ie
+\begin{equation}
+  \fnof{u}{\vect{x},0} = \fnof{f}{\vect{x}} \quad \vect{x}\in\Omega.
+  \label{eqn:diffusionInitialC} 
+\end{equation}
+
+\subsubsubsection{Weak formulation:}
+
+The corresponding weak form of \eqnref{eqn:diffusionequation} can be found by
+integrating over the spatial domain with a test function \ie
+\begin{equation}
+  \gint{\Omega}{}{a\delby{u}{t}+\pbrac{\diverg{\pbrac{\tensor{\sigma}
+          \gradient{u}}}+a}w}{\Omega}=0
+  \label{eqn:diffusionweakform1}
+\end{equation}
+where $w$ is a suitable spatial test function.
+
+Applying the divergence theorem in \eqnref{eqn:DivergenceTheormScalarVector}
+to \eqnref{eqn:diffusionweakform1} gives
+\begin{equation}
+  \gint{\Omega}{}{\pbrac{a\delby{u}{t}}w}{\Omega}-
+      \gint{\Omega}{}{\dotprod{\tensor{\sigma}\gradient{u}}{\gradient{w}}}{\Omega}
+      +\gint{\Gamma}{}{\pbrac{\dotprod{\tensor{\sigma}\gradient{u}}{\normal}}w}{\Gamma}+
+      \gint{\Omega}{}{bw}{\Omega}=0
+  \label{eqn:diffusionweakform2}
+\end{equation}
+where $\normal$ is the unit outward normal vector to the boundary $\Gamma$.
+
+\subsubsubsection{Tensor notation:}
+
+\Eqnref{eqn:diffusionweakform2} can be written in tensor notation as
+\begin{equation}
+  \gint{\Omega}{}{a\dot{u}w}{\Omega}-
+  \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}+
+  \gint{\Gamma}{}{G^{jk}\sigma^{i}_{j}\covarderiv{u}{i}n_{k}w}{\Gamma} +
+  \gint{\Omega}{}{bw}{\Omega}=0
+  \label{eqn:diffusiontensorform1}
+\end{equation}
+or
+\begin{equation}
+  \gint{\Omega}{}{a\dot{u}w}{\Omega}-
+  \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}+
+  \gint{\Gamma}{}{qw}{\Gamma} +
+  \gint{\Omega}{}{bw}{\Omega}=0
+  \label{eqn:diffusiontensorform2}
+\end{equation}
+where $G^{jk}$ is the contravariant metric tensor for the spatial coordinate system.
+
+\subsubsubsection{Finite element formulation:}
+
+We can now discretise the spatial domain into finite elements \ie $\Omega=
+\displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$ with
+$\Gamma=\displaystyle{\bigcup_{f=1}^{F}}\Gamma_{f}$. 
+\Eqnref{eqn:diffusiontensorform2} becomes
+\begin{equation}
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{a\dot{u}w}{\Omega}-
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\sigma^{i}_{j}
+    \covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}+
+  \dsum_{f=1}^{F}\gint{\Gamma_{f}}{}{qw}{\Gamma} +
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{bw}{\Omega}=0
+  \label{eqn:diffusionfemform}
+\end{equation}
+
+If we now assume that the dependent variable $u$ can be interpolated
+separately in space and in time we can write
+\begin{equation}
+  \fnof{u}{\vect{x},t}=\gbfn{n}{}{\vect{x}}\fnof{\nodept{u}{n}}{t}
+\end{equation}
+or, in standard interpolation notation within an element,
+\begin{equation}
+  \fnof{u}{\vect{\xi},t}=\gbfn{n}{\beta}{\vect{\xi}}
+  \fnof{\nodedof{u}{n}{\beta}}{t}\gsf{n}{\beta}
+\end{equation}
+where $\fnof{\nodedof{u}{n}{\beta}}{t}$ are the time varying nodal
+degrees-of-freedom for node $n$, global derivative $\beta$,
+$\gbfn{n}{\beta}{\vect{\xi}}$ are the corresponding basis functions 
+and $\gsf{n}{\beta}$ are the scale factors. 
+
+We can also interpolate the other variables in a similar manner \ie
+\begin{equation}
+  \begin{split}
+    \fnof{q}{\vect{\xi},t} &= \gbfn{o}{\gamma}{\vect{\xi}}
+    \fnof{\nodedof{q}{o}{\gamma}}{t}\gsf{o}{\gamma} \\
+    \fnof{a}{\vect{\xi}} &=\gbfn{p}{\delta}{\vect{\xi}}
+    \nodedof{a}{p}{\delta}\gsf{p}{\delta} \\
+    \fnof{\tilde{\tensor{\sigma}}}{\vect{\xi}}
+    &=\gbfn{p}{\delta}{\vect{\xi}}\nodedof{\tilde{\tensor{\sigma}}}{p}{\delta}
+    \gsf{p}{\delta} \\
+    \fnof{b}{\vect{\xi},t} &=
+    \gbfn{p}{\delta}{\vect{\xi}}\fnof{\nodedof{b}{p}{\delta}}{t}\gsf{p}{\delta}
+  \end{split}
+\end{equation}
+where $\fnof{\nodedof{q}{o}{\gamma}}{t}$, $\nodedof{a}{p}{\delta}$,
+$\nodedof{\tilde{\tensor{\sigma}}}{p}{\delta}$ and 
+$\fnof{\nodedof{b}{p}{\delta}}{t}$ are the
+nodal degrees-of-freedom for the variables.
+
+For a Galerkin finite element formulation we also choose the spatial weighting
+function $w$ to be equal to the basis fucntions \ie
+\begin{equation}
+  \fnof{w}{\vect{\xi}}=\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}
+\end{equation}
+
+\subsubsubsection{Spatial integration:}
+
+Adopting the standard integration notation we can write the spatial
+integration term in \eqnref{eqn:diffusionfemform} as
+\begin{multline}
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\fnof{a}{\vect{\xi}}
+    \delby{\pbrac{\gbfn{n}{\beta}{\vect{\xi}}\fnof{\nodedof{u}{\beta}{n}}{t}
+        \gsf{n}{\beta}}}{t}\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} - \\
+  \dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}G^{jk}\delby{x^{i}}{\xi^{d}}\delby{\xi^{e}}{x^{j}}
+  \delby{\xi^{d}}{\nu^{a}}\delby{\nu^{b}}{\xi^{e}}\fnof{{\tilde{\sigma}}^{a}_{.b}}{\vect{\xi}}
+  \delby{\xi^{s}}{x^{i}}
+  \quad\quad\quad\quad\quad\quad\quad\quad\quad\quad \\ \quad\quad\quad\quad\quad\quad\quad\quad\quad\quad
+  \delby{\pbrac{\gbfn{\beta}{n}{\vect{\xi}}\fnof{\nodedof{u}{\beta}{n}}{t}
+      \gsf{\beta}{n}}}{\xi^{s}}\delby{\xi^{r}}{x^{k}}\delby{
+    \pbrac{\gbfn{\alpha}{m}{\vect{\xi}}\gsf{\alpha}{m}}}{\xi^{r}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi} + \\
+  \dsum_{f=1}^{F}\gint{\vect{0}}{\vect{1}}{\gbfn{o}{\gamma}{\vect{\xi}}
+    \fnof{\nodedof{q}{o}{\gamma}}{t}\gsf{o}{\gamma}\gbfn{m}{\alpha}{\vect{\xi}}
+    \gsf{m}{\alpha}\abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} + \\
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\fnof{b}{\vect{\xi},t}\gbfn{m}{\alpha}{\vect{\xi}}
+    \gsf{m}{\alpha}\abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} = 0
+  \label{eqn:diffusionspatialintegration1}
+\end{multline}
+where $\fnof{\matr{J}}{\vect{\xi}}$ is the \emph{Jacobian} of the
+transformation from the integration $\vect{x}$ to $\vect{\xi}$ coordinates.
+
+Taking values that are constant over the integration interval outside the
+integration gives
+\begin{multline}
+  \dsum_{e=1}^{E}\fnof{\nodedof{\dot{u}}{\beta}{n}}{t}\gsf{m}{\alpha}\gsf{n}{\beta}
+  \gint{\vect{0}}{\vect{1}}{\fnof{a}{\vect{\xi}}
+    \gbfn{m}{\alpha}{\vect{\xi}}\gbfn{n}{\beta}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} - \\
+  \dsum_{e=1}^{E}\fnof{\nodedof{u}{\beta}{n}}{t}\gsf{\alpha}{m}\gsf{\beta}{n}
+  \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{\alpha}{m}{\vect{\xi}}}{\xi^{r}}
+  \delby{\gbfn{\beta}{n}{\vect{\xi}}}{\xi^{s}}\fnof{\gamma^{rs}}{\vect{\xi}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} + \\
+  \dsum_{f=1}^{F}\fnof{\nodedof{q}{o}{\gamma}}{t}\gsf{m}{\alpha}\gsf{o}{\gamma}
+  \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} + \\
+  \dsum_{e=1}^{E}\fnof{\nodedof{b}{p}{\delta}}{t}\gsf{m}{\alpha}\gsf{p}{\delta}
+  \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{p}{\delta}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} = 0
+  \label{eqn:diffusionspatialintegration1}
+\end{multline}
+where $\fnof{\gamma^{rs}}{\vect{\xi}}$ is defined in 
+\eqnthrurefs{eqn:diffusiongammadefinition1}{eqn:diffusiongammadefinition3}.
+
+This is an equation of the form
+\begin{equation}
+  \matr{C}\fnof{\dot{\vect{u}}}{t}+\matr{K}\fnof{\vect{u}}{t}+\fnof{\vect{f}}{t}=\vect{0}
+\end{equation}
+where
+\begin{equation}
+  \fnof{\vect{f}}{t}=\matr{N}\fnof{\vect{q}}{t}+\matr{R}\fnof{\vect{b}}{t}
+\end{equation}
+
+The elemental damping matrix, $C^{\alpha\beta}_{mn}$, is given by
+\begin{equation}
+  C^{\alpha\beta}_{mn} =
+  \gsf{m}{\alpha}\gsf{n}{\beta}\gint{\vect{0}}{\vect{1}}{\fnof{a}{\vect{\xi}}
+    \gbfn{m}{\alpha}{\vect{\xi}}\gbfn{n}{\beta}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+
+The elemental stiffness matrix, $K^{\alpha\beta}_{mn}$, is given by
+\begin{equation}
+  K^{\alpha\beta}_{mn} = -\gsf{m}{\alpha}\gsf{n}{\beta}\gint{\vect{0}}{\vect{1}}{
+    \delby{\gbfn{\alpha}{m}{\vect{\xi}}}{\xi^{r}}\delby{\gbfn{\beta}{m}{\vect{\xi}}}{\xi^{s}}
+    \fnof{\gamma^{rs}}{\vect{\xi}}\abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+
+The elemental flux matrix, $N^{\alpha\gamma}_{mo}$, is given by
+\begin{equation}
+  N^{\alpha\gamma}_{mo} =\gsf{m}{\alpha}\gsf{o}{\gamma}
+  \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+and the elemental source matrix, $R^{\alpha\delta}_{mp}$, 
+\begin{equation}
+  R^{\alpha\delta}_{mp}=\gsf{m}{\alpha}\gsf{p}{\delta}
+  \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{p}{\delta}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
