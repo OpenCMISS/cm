@@ -2577,7 +2577,7 @@ CONTAINS
     INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES,dim !NUM_OF_NODES
     INTEGER(INTG) :: local_number, isNodal, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES 
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
-    LOGICAL :: SWITCH
+    LOGICAL :: SAME_SCALING_SET
 
     CALL ENTERS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN",ERR,ERROR,*999)
 
@@ -2627,17 +2627,17 @@ CONTAINS
           listScaleFields( NUM_OF_SCALING_FACTOR_SETS )%PTR => variable_ptr%FIELD
           LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
        ELSE
-          SWITCH=.FALSE.
+          SAME_SCALING_SET=.FALSE.
           DO scaleIndex1=1, NUM_OF_SCALING_FACTOR_SETS
              IF( BASIS%GLOBAL_NUMBER == listScaleBases( scaleIndex1 )%PTR%GLOBAL_NUMBER ) THEN
                IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == listScaleFields (scaleIndex1 )%PTR%SCALINGS%SCALING_TYPE ) THEN
-                 SWITCH=.TRUE.
+                 SAME_SCALING_SET=.TRUE.
                  LIST_COMP_SCALE(comp_idx)=scaleIndex1
                  EXIT
                ENDIF
              ENDIF
           ENDDO !scaleIndex1
-          IF(.NOT.SWITCH) THEN
+          IF(.NOT.SAME_SCALING_SET) THEN
              NUM_OF_SCALING_FACTOR_SETS=NUM_OF_SCALING_FACTOR_SETS+1
              listScaleBases( NUM_OF_SCALING_FACTOR_SETS )%PTR => BASIS
              listScaleFields( NUM_OF_SCALING_FACTOR_SETS )%PTR => variable_ptr%FIELD
