@@ -2571,8 +2571,14 @@ CONTAINS
       ELSE
         SAME_SCALING_SET=.FALSE.
         DO scaleIndex1=1, NUM_OF_SCALING_FACTOR_SETS
-          IF( BASIS%GLOBAL_NUMBER == listScaleBases( scaleIndex1 )%PTR%GLOBAL_NUMBER ) THEN
-            IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == listScaleFields (scaleIndex1 )%PTR%SCALINGS%SCALING_TYPE ) THEN
+          IF(BASIS%GLOBAL_NUMBER == listScaleBases(scaleIndex1)%PTR%GLOBAL_NUMBER) THEN
+            IF(variable_ptr%FIELD%SCALINGS%SCALING_TYPE /= listScaleFields(scaleIndex1)%PTR%SCALINGS%SCALING_TYPE) THEN
+              CALL FLAG_WARNING("Fields "//TRIM(NUMBER_TO_VSTRING(listScaleFields(scaleIndex1)%PTR%USER_NUMBER,"*",ERR,ERROR))// &
+                  & " and "//TRIM(NUMBER_TO_VSTRING(variable_ptr%FIELD%USER_NUMBER,"*",ERR,ERROR))// &
+                  & " have components that use basis number "//TRIM(NUMBER_TO_VSTRING(BASIS%GLOBAL_NUMBER,"*",ERR,ERROR))// &
+                  & " but have different scaling types. ",ERR,ERROR,*999)
+            ENDIF
+            IF(variable_ptr%FIELD%SCALINGS%SCALING_TYPE == listScaleFields(scaleIndex1)%PTR%SCALINGS%SCALING_TYPE) THEN
               SAME_SCALING_SET=.TRUE.
               LIST_COMP_SCALE(comp_idx)=scaleIndex1
               EXIT
