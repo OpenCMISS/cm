@@ -522,7 +522,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_NEWTON_TYPE_SET
 
-  PUBLIC SOLVER_NONLINEAR_MONITOR
+  PUBLIC SOLVER_NONLINEAR_DIVERGENCE_EXIT,SOLVER_NONLINEAR_MONITOR
 
   PUBLIC SOLVER_NONLINEAR_TYPE_SET
   
@@ -7304,94 +7304,79 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("SOLVER_LINEAR_DIRECT_CREATE_FINISH",ERR,ERROR,*999)
-    
+
     IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
       LINEAR_SOLVER=>LINEAR_DIRECT_SOLVER%LINEAR_SOLVER
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
         SOLVER=>LINEAR_SOLVER%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
-!
-! TODO -> FIX THIS: PETSC only with PETSC !!! sebk
-!
-!           IF(.NOT.LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER) &
-!             & CALL FLAG_ERROR("Only not use a direct solver with a linked PETSC nonlinear Newton solver.",ERR,ERROR,*999)
           SELECT CASE(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
           CASE(SOLVER_DIRECT_LU)
+            IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
+              !Matrices have already been set up by linking solver
+              SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+              CASE(SOLVER_CMISS_LIBRARY) !All non-PETSc libraries
+                CALL FLAG_ERROR("Non-PETSc linear solver cannot be linked to PETSc nonlinear solver.",ERR,ERROR,*999)
+              END SELECT
+              SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
+                IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
+                  & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ELSE
+              !Set up solver matrices
+              SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+              IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                !Create the solver matrices
+                NULLIFY(SOLVER_MATRICES)
+                CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
+
+                !Set up solver matrices for solver library
+                SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                CASE(SOLVER_CMISS_LIBRARY)
+                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
+                CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY,SOLVER_LAPACK_LIBRARY)
+                  !Call solver through PETSc
+                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
+                CASE(SOLVER_SPOOLES_LIBRARY,SOLVER_UMFPACK_LIBRARY, &
+                    & SOLVER_LUSOL_LIBRARY,SOLVER_ESSL_LIBRARY)
+                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The solver library type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+
+                SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                CASE(SOLVER_SPARSE_MATRICES)
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
+                    & ERR,ERROR,*999)
+                CASE(SOLVER_FULL_MATRICES)
+                  CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
+                    & ERR,ERROR,*999)
+                CASE DEFAULT
+                  LOCAL_ERROR="The specified solver equations sparsity type of "// &
+                    & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                    & " is invalid."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                END SELECT
+                CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
+              ELSE
+                CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              ENDIF
+            ENDIF
+
+            !Set up direct solver
             SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
             CASE(SOLVER_CMISS_LIBRARY)
-              !?????
-              IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-                SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                  IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                    & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  !Create the solver matrices
-                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
-                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                  CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-            CASE(SOLVER_MUMPS_LIBRARY)
-              !Call MUMPS through PETSc
-              IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-                SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                  IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                    & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  !Create the solver matrices and vectors
-                  NULLIFY(SOLVER_MATRICES)
-                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
-                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                  CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-
+              !Nothing else to do
+            CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY,SOLVER_LAPACK_LIBRARY)
+              !Set up solver through PETSc
               CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
-              
+
               !Set any further KSP options from the command line options
               CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
               !Set the solver matrix to be the KSP matrix
@@ -7401,6 +7386,21 @@ CONTAINS
                   IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
                     CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                       & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+                    !Check that the solver supports the matrix sparsity type
+                    SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
+                    CASE(SOLVER_FULL_MATRICES)
+                      SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                      CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY)
+                          CALL FLAG_ERROR("Solver library does not support full matrices. Please use sparse matrices "// &
+                            & "or select the LAPACK library type for the linear direct solver.",ERR,ERROR,*999)
+                      END SELECT
+                    CASE(SOLVER_SPARSE_MATRICES)
+                      SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                      CASE(SOLVER_LAPACK_LIBRARY)
+                          CALL FLAG_ERROR("Solver library does not support sparse matrices. Please use full matrices "// &
+                            & "or select another solver library type for the linear direct solver.",ERR,ERROR,*999)
+                      END SELECT
+                    END SELECT
 #if ( PETSC_VERSION_MAJOR == 3 )
                     !Set the KSP type to preonly
                     CALL PETSC_KSPSETTYPE(LINEAR_DIRECT_SOLVER%KSP,PETSC_KSPPREONLY,ERR,ERROR,*999)
@@ -7408,82 +7408,40 @@ CONTAINS
                     CALL PETSC_KSPGETPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
                     !Set the PC type to LU
                     CALL PETSC_PCSETTYPE(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
-                    !Set the PC factorisation package to MUMPS
-                    CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_MUMPS,ERR,ERROR,*999)
-#else                    
-                    !Set the matrix type to MUMPS    
-                    CALL PETSC_MATSETTYPE(SOLVER_MATRIX%PETSC%MATRIX,PETSC_AIJMUMPS,ERR,ERROR,*999)
+                    SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                    CASE(SOLVER_MUMPS_LIBRARY)
+                      !Set the PC factorisation package to MUMPS
+                      CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_MUMPS,ERR,ERROR,*999)
+                    CASE(SOLVER_SUPERLU_LIBRARY)
+                      !Set the PC factorisation package to SuperLU_DIST
+                      CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
+                        & ERR,ERROR,*999)
+                    CASE(SOLVER_LAPACK_LIBRARY)
+                      !PETSc will default to LAPACK for seqdense matrix, for mpidense, set to parallel LAPACK
+                      IF(COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)>1) THEN
+                        CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PLAPACK, &
+                          & ERR,ERROR,*999)
+                      ENDIF
+                    CASE(SOLVER_PASTIX_LIBRARY)
+#if ( PETSC_VERSION_MINOR >= 1 )
+                      !Set the PC factorisation package to PaStiX
+                      CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PASTIX,ERR,ERROR,*999)
+#else
+                      CALL FLAG_ERROR("PaStiX not available in this version of PETSc.",ERR,ERROR,*999)
 #endif
-                  ELSE
-                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                LOCAL_ERROR="The given number of solver matrices of "// &
-                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
-                  & " is invalid. There should only be one solver matrix for a linear direct solver."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
-            CASE(SOLVER_SUPERLU_LIBRARY)
-              !Call SuperLU_DIST through PETSc
-              IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-                SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                  IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                    & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  !Create the solver matrices and vectors
-                  NULLIFY(SOLVER_MATRICES)
-                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
-                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                  CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-
-              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
-              
-              !Set any further KSP options from the command line options
-              CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
-              !Set the solver matrix to be the KSP matrix
-              IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
-                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
-                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                  IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                      & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR == 3 )
-                    !Set the KSP type to preonly
-                    CALL PETSC_KSPSETTYPE(LINEAR_DIRECT_SOLVER%KSP,PETSC_KSPPREONLY,ERR,ERROR,*999)
-                    !Get the pre-conditioner
-                    CALL PETSC_KSPGETPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
-                    !Set the PC type to LU
-                    CALL PETSC_PCSETTYPE(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
-                    !Set the PC factorisation package to SuperLU_DIST
-                    CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
-                      & ERR,ERROR,*999)
+                    END SELECT
+#else
+                    SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
+                    CASE(SOLVER_MUMPS_LIBRARY)
+                      !Set the matrix type to MUMPS
+                      CALL PETSC_MATSETTYPE(SOLVER_MATRIX%PETSC%MATRIX,PETSC_AIJMUMPS,ERR,ERROR,*999)
+                    CASE(SOLVER_SUPERLU_LIBRARY)
+                      CALL FLAG_ERROR("SuperLU not available in this version of PETSc.",ERR,ERROR,*999)
+                    CASE(SOLVER_PASTIX_LIBRARY)
+                      CALL FLAG_ERROR("PaStiX not available in this version of PETSc.",ERR,ERROR,*999)
+                    CASE(SOLVER_LAPACK_LIBRARY)
+                      !Use PETSc default
+                    END SELECT
 #endif
                   ELSE
                     CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
@@ -7505,82 +7463,6 @@ CONTAINS
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(SOLVER_ESSL_LIBRARY)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(SOLVER_LAPACK_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-            CASE(SOLVER_PASTIX_LIBRARY)
-              !Call PaStiX through PETSc
-              IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-                SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
-                  IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                    & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-                IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-                  !Create the solver matrices and vectors
-                  NULLIFY(SOLVER_MATRICES)
-                  CALL SOLVER_MATRICES_CREATE_START(SOLVER_EQUATIONS,SOLVER_MATRICES,ERR,ERROR,*999)
-                  CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
-                  SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
-                  CASE(SOLVER_SPARSE_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE(SOLVER_FULL_MATRICES)
-                    CALL SOLVER_MATRICES_STORAGE_TYPE_SET(SOLVER_MATRICES,[DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE], &
-                      & ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  END SELECT
-                  CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
-                ELSE
-                  CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ENDIF
-
-              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
-              
-              !Set any further KSP options from the command line options
-              CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
-              !Set the solver matrix to be the KSP matrix
-              IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
-                SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
-                IF(ASSOCIATED(SOLVER_MATRIX)) THEN
-                  IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                      & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR == 3 )
-                    !Set the KSP type to preonly
-                    CALL PETSC_KSPSETTYPE(LINEAR_DIRECT_SOLVER%KSP,PETSC_KSPPREONLY,ERR,ERROR,*999)
-                    !Get the pre-conditioner
-                    CALL PETSC_KSPGETPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
-                    !Set the PC type to LU
-                    CALL PETSC_PCSETTYPE(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
-#if ( PETSC_VERSION_MINOR >= 1 )                    
-                    !Set the PC factorisation package to PaStiX
-                    CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PASTIX,ERR,ERROR,*999)
-#else
-                    CALL FLAG_ERROR("PaStiX not available in this version of PETSc.",ERR,ERROR,*999)
-#endif
-#endif
-                  ELSE
-                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                LOCAL_ERROR="The given number of solver matrices of "// &
-                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
-                  & " is invalid. There should only be one solver matrix for a linear direct solver."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-              ENDIF
             CASE DEFAULT
               LOCAL_ERROR="The solver library type of "// &
                 & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
@@ -7767,7 +7649,8 @@ CONTAINS
         CASE(SOLVER_ESSL_LIBRARY)
           CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
         CASE(SOLVER_LAPACK_LIBRARY)
-          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+          DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_LAPACK_LIBRARY
+          DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE(SOLVER_PASTIX_LIBRARY)
           DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_PASTIX_LIBRARY
           DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -14419,7 +14302,82 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_NONLINEAR_CREATE_FINISH
-        
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Instead of warning on nonlinear divergence, exit with error
+  SUBROUTINE SOLVER_NONLINEAR_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*)
+    TYPE(SOLVER_TYPE), INTENT(IN) :: SOLVER
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    !Local variables
+    TYPE(NONLINEAR_SOLVER_TYPE),POINTER :: NONLINEAR_SOLVER
+    TYPE(NEWTON_SOLVER_TYPE),POINTER :: NEWTON_SOLVER
+    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE),POINTER :: LINESEARCH_SOLVER
+    INTEGER(INTG) :: CONVERGED_REASON
+
+    CALL ENTERS("SOLVER_NONLINEAR_DIVERGENCE_EXIT",ERR,ERROR,*999)
+
+    NULLIFY(NONLINEAR_SOLVER,NEWTON_SOLVER,LINESEARCH_SOLVER)
+
+    NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
+    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
+      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
+      CASE(SOLVER_NONLINEAR_NEWTON)
+        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
+        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
+          SELECT CASE (NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
+          CASE(SOLVER_NEWTON_LINESEARCH)
+            LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
+            IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
+              CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
+                SELECT CASE(CONVERGED_REASON)
+                CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_MAX_IT)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search fail.", &
+                    & ERR,ERROR,*999)
+                CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
+                    & ERR,ERROR,*999)
+                END SELECT
+            ELSE
+              CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
+            ENDIF
+          CASE(SOLVER_NEWTON_TRUSTREGION)
+            !Not yet implemented. Don't kick up a fuss, just exit
+          END SELECT
+        ELSE
+          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
+        !Not yet implemented. Don't kick up a fuss, just exit
+      CASE(SOLVER_NONLINEAR_SQP)
+        !Not yet implemented. Don't kick up a fuss, just exit
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_NONLINEAR_DIVERGENCE_EXIT")
+    RETURN
+999 CALL ERRORS("SOLVER_NONLINEAR_DIVERGENCE_EXIT",ERR,ERROR)
+    CALL EXITS("SOLVER_NONLINEAR_DIVERGENCE_EXIT")
+    RETURN 1
+  END SUBROUTINE SOLVER_NONLINEAR_DIVERGENCE_EXIT
+
   !
   !================================================================================================================================
   !
