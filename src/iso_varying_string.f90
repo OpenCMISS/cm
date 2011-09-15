@@ -88,6 +88,7 @@ MODULE ISO_VARYING_STRING
      module procedure op_concat_VS_VS
      module procedure op_concat_CH_VS
      module procedure op_concat_VS_CH
+     module procedure op_concat_VS_INT
   end interface !operator(//)
 
   interface operator(==)
@@ -213,7 +214,7 @@ MODULE ISO_VARYING_STRING
   interface var_str
      module procedure var_str_
   end interface !var_str
-
+  
   interface get
      module procedure get_
      module procedure get_unit
@@ -325,6 +326,7 @@ MODULE ISO_VARYING_STRING
   private :: op_concat_VS_VS
   private :: op_concat_CH_VS
   private :: op_concat_VS_CH
+  private :: op_concat_VS_INT
   private :: op_eq_VS_VS
   private :: op_eq_CH_VS
   private :: op_eq_VS_CH
@@ -547,6 +549,27 @@ contains
     return
 
   end function op_concat_VS_CH
+
+!****
+
+  elemental function op_concat_VS_INT (string, value) result (concat_string)
+
+    type(varying_string), intent(in) :: string
+    integer, intent(in)              :: value
+    type(varying_string)             :: concat_string
+
+! Concatenate a varying string and an integer
+    character(LEN=20) :: local_string
+    
+    WRITE(local_string,"(I12)") value
+
+    concat_string=string//TRIM(ADJUSTL(local_string))
+
+! Finish
+
+    return
+
+  end function op_concat_VS_INT
 
 !****
 
