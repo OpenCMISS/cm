@@ -1638,7 +1638,7 @@ $(PYTHON_WRAPPER) : $(SWIG_INTERFACE) $(HEADER_INCLUDE)
 
 $(PYTHON_MODULE) : main $(PYTHON_WRAPPER) $(OBJECTS)
 	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss_wrap.o )
-	( cd $(BINDINGS_DIR)/python ; $(DSO_LINK) opencmiss_wrap.o $(DLFLAGS) $(OBJECTS) -o $(PYTHON_MODULE) )
+	( cd $(BINDINGS_DIR)/python ; $(CC) opencmiss_wrap.o $(DLFLAGS) $(OBJECTS) -o $(PYTHON_MODULE) )
 
 # ----------------------------------------------------------------------------
 #
