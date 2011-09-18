@@ -148,6 +148,7 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/Darcy_pressure_equations_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o \
+	$(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o \
 	$(OBJECT_DIR)/data_point_routines.o \
 	$(OBJECT_DIR)/data_projection_routines.o \
 	$(OBJECT_DIR)/diffusion_advection_diffusion_routines.o \
@@ -432,6 +433,7 @@ $(OBJECT_DIR)/cmiss_c.o	:	$(SOURCE_DIR)/cmiss_c.c
 $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -606,6 +608,24 @@ $(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o	:	$(SOURCE_DIR)/finite
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o	:	$(SOURCE_DIR)/bioelectric_finite_elasticity_routines.f90 \
+                                                                                                           $(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/basis_routines.o \
+	$(OBJECT_DIR)/constants.o \
+	$(OBJECT_DIR)/control_loop_routines.o \
+	$(OBJECT_DIR)/equations_routines.o \
+	$(OBJECT_DIR)/equations_mapping_routines.o \
+	$(OBJECT_DIR)/equations_matrices_routines.o \
+	$(OBJECT_DIR)/equations_set_constants.o \
+	$(OBJECT_DIR)/finite_elasticity_routines.o \
+	$(OBJECT_DIR)/bioelectric_routines.o \
+	$(OBJECT_DIR)/input_output.o \
+	$(OBJECT_DIR)/iso_varying_string.o \
+	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/problem_constants.o \
+	$(OBJECT_DIR)/strings.o \
+	$(OBJECT_DIR)/solver_routines.o \
+	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/data_point_routines.o	:	$(SOURCE_DIR)/data_point_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1273,6 +1293,7 @@ $(OBJECT_DIR)/multi_physics_routines.o	:	$(SOURCE_DIR)/multi_physics_routines.f9
 	$(OBJECT_DIR)/diffusion_diffusion_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_Darcy_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_fluid_pressure_routines.o \
+	$(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1312,6 +1333,8 @@ $(OBJECT_DIR)/node_routines.o	:	$(SOURCE_DIR)/node_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/opencmiss.mod : $(OBJECT_DIR)/opencmiss.o
 
 $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
@@ -1650,6 +1673,25 @@ debug64 opt64: ABI=64
 all: debug opt
 all64: debug64 opt64
 
+ifndef SIZE
+  SIZE=small
+endif
+
+ifndef DIR
+  DIR=.
+endif
+
+test: main
+	@echo "================================================================================================"
+	@echo "By default, this will test small set of examples. (All tests in the nightly build)"
+	@echo "To test large set of examples (All tests in the nightly build), please set SIZE=large"
+	@echo "To test examples inside a given directory, please set DIR=<DIR>, e.g. DIR=ClassicalField/Laplace"
+	@echo "You need to install nosetests in order to run the tests."
+	@echo "Please go to http://readthedocs.org/docs/nose/ for details."
+	@echo "For detailed logfiles, go to <OPENCMISS_ROOT>/build/logs directory."
+	@echo "================================================================================================"
+	COMPILER=$(COMPILER) SIZE=${SIZE} DIR=$(DIR) ABI=${ABI} nosetests ${OPENCMISSEXAMPLES_ROOT}/noseMain.py:test_example
+
 #-----------------------------------------------------------------------------
 
 help:
@@ -1701,6 +1743,6 @@ help:
 	@echo "		Compile the external libraries."
 	@echo
 	@echo "	test"
-	@echo "		Run the executables for test. Linux 64 bit and AnalyticLaplaceExample only for now."
+	@echo "		Build, execute and check for test."
 	@echo
 

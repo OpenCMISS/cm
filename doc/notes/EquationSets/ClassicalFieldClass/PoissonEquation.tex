@@ -1,1 +1,181 @@
-\subsection{Poisson Equation} 
+\subsection{Poisson Equations} 
+
+\subsubsection{Generalised Poisson Equation} 
+
+\subsubsubsection{Governing equations:}
+
+The general form of Poisson's equation with source on a domain $\Omega$ with boundary
+$\Gamma$ in \OpenCMISS can be stated as
+\begin{equation}
+  \boxed{
+    \diverg{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}\gradient{\fnof{u}{\vect{x}}}}}+
+    \fnof{a}{\vect{x}}=0
+  }
+  \label{eqn:Poissonequation}
+\end{equation}
+where $\vect{x}\in\Omega$, $\fnof{u}{\vect{x}}$ is the dependent variable, 
+$\fnof{\tensor{\sigma}}{\vect{x}}$ is the conductivity tensor throughout 
+the domain and $\fnof{a}{\vect{x}}$ is a source term.
+
+Appropriate boundary conditions conditions for the diffusion
+equation are specification of Dirichlet boundary conditions on the solution,
+$d$ \ie
+\begin{equation}
+  \fnof{u}{\vect{x},t} = \fnof{d}{\vect{x},t} \quad \vect{x}\in\Gamma_{D},
+  \label{eqn:PoissonDirichletBC} 
+\end{equation}
+and/or Neumann conditions in terms of the solution flux in the normal
+direction, $e$ \ie
+\begin{equation}
+  \fnof{q}{\vect{x}} = \dotprod{\pbrac{\fnof{\tensor{\sigma}}{\vect{x}}
+      \gradient{\fnof{u}{\vect{x}}}}}{\normal} =
+  \fnof{e}{\vect{x}} \quad \vect{x}\in\Gamma_{N},
+  \label{eqn:PoissonNeumannBC} 
+\end{equation}
+where $\fnof{q}{\vect{x},t}$ is the flux in the normal direction, $\normal$ is the normal
+vector to the boudary and $\Gamma=\union{\Gamma_{D}}{\Gamma_{N}}$.
+
+\subsubsection{Weak formulation:}
+
+The corresponding weak form of \eqnref{eqn:Poissonequation} can be found by
+integrating over the spatial domain with a test function \ie
+\begin{equation}
+  \gint{\Omega}{}{\pbrac{\diverg{\pbrac{\tensor{\sigma}\gradient{u}}}+a}w}{\Omega}=0
+  \label{eqn:Poissonweakform1}
+\end{equation}
+where $w$ is a suitable spatial test function.
+
+Applying the divergence theorem in \eqnref{eqn:DivergenceTheormScalarVector}
+to \eqnref{eqn:Poissonweakform1} gives
+\begin{equation}
+  -\gint{\Omega}{}{\dotprod{\tensor{\sigma}
+      \gradient{u}}{\gradient{w}}}{\Omega}
+  +\gint{\Gamma}{}{\pbrac{\dotprod{\tensor{\sigma}\gradient{u}}{\normal}}w}{\Gamma}+
+  \gint{\Omega}{}{aw}{\Omega}=0
+  \label{eqn:Poissonweakform2}
+\end{equation}
+where $\normal$ is the unit outward normal vector to the boundary $\Gamma$.
+
+\subsubsection{Tensor notation:}
+
+\Eqnref{eqn:Poissonweakform2} can be written in tensor notation as
+\begin{equation}
+  -\gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}+
+  \gint{\Gamma}{}{G^{jk}\sigma^{i}_{j}\covarderiv{u}{i}n_{k}w}{\Gamma} +
+  \gint{\Omega}{}{aw}{\Omega}=0
+  \label{eqn:Poissontensorform1}
+\end{equation}
+or
+\begin{equation}
+  \gint{\Omega}{}{G^{jk}\sigma^{i}_{j}\covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}
+  =\gint{\Gamma}{}{qw}{\Gamma} +
+  \gint{\Omega}{}{aw}{\Omega}=0
+  \label{eqn:Poissontensorform2}
+\end{equation}
+where $G^{jk}$ is the contravariant metric tensor for the spatial coordinate system.
+
+\subsubsection{Finite element formulation:}
+
+
+We can now discretise the spatial domain into finite elements \ie $\Omega=
+\displaystyle{\bigcup_{e=1}^{E}}\Omega_{e}$ with
+$\Gamma=\displaystyle{\bigcup_{f=1}^{F}}\Gamma_{f}$. 
+\Eqnref{eqn:Poissontensorform2} becomes
+\begin{equation}
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{G^{jk}\sigma^{i}_{j}
+    \covarderiv{u}{i}\covarderiv{w}{k}}{\Omega}=
+  \dsum_{f=1}^{F}\gint{\Gamma_{f}}{}{qw}{\Gamma} +
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{aw}{\Omega}
+  \label{eqn:Poissonfemform}
+\end{equation}
+
+We can now interpolate the variables with basis functions \ie
+\begin{equation}
+  \begin{split}
+    \fnof{u}{\vect{\xi}} &=
+    \gbfn{n}{\beta}{\vect{\xi}}\nodedof{u}{n}{\beta}\gsf{n}{\beta} \\
+    \fnof{q}{\vect{\xi}} &= 
+    \gbfn{o}{\gamma}{\vect{\xi}}\nodedof{q}{o}{\gamma}\gsf{o}{\gamma} \\
+    \fnof{\tilde{\tensor{\sigma}}}{\vect{\xi}} &=
+    \gbfn{p}{\delta}{\vect{\xi}}\nodedof{\tilde{\tensor{\sigma}}}{p}{\delta}\gsf{p}{\delta} \\
+    \fnof{a}{\vect{\xi}} &=
+    \gbfn{p}{\delta}{\vect{\xi}}\nodedof{a}{p}{\delta}\gsf{p}{\delta}
+  \end{split}
+\end{equation}
+where $\nodedof{u}{n}{\beta}$, $\nodedof{q}{o}{\gamma}$, 
+$\nodedof{\tilde{\tensor{\sigma}}}{p}{\delta}$ and $\nodedof{a}{p}{\delta}$ are the
+nodal degrees-of-freedom for the variables.
+
+For a Galerkin finite element formulation we also choose the spatial weighting
+function $w$ to be equal to the basis fucntions \ie
+\begin{equation}
+  \fnof{w}{\vect{\xi}}=\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}
+\end{equation}
+
+\subsubsection{Spatial integration:}
+
+Adopting the standard integration notation we can write the spatial
+integration term in \eqnref{eqn:Poissonfemform} as
+\begin{multline}
+  \dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}G^{jk}\delby{x^{i}}{\xi^{d}}
+    \delby{\xi^{e}}{x^{j}}\delby{\xi^{d}}{\nu^{a}}
+    \delby{\nu^{b}}{\xi^{e}}\fnof{{\tilde{\sigma}}^{a}_{.b}}{\vect{\xi}}\delby{\xi^{s}}{x^{i}} \\
+    \delby{\pbrac{\gbfn{n}{\beta}{\vect{\xi}}\nodedof{u}{n}{\beta}\gsf{n}{\beta}}}{\xi^{s}}
+    \delby{\xi^{r}}{x^{k}}\delby{\pbrac{\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}}}{\xi^{r}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi} \\ 
+  = \dsum_{f=1}^{F}\gint{\Gamma_{f}}{}{\gbfn{o}{\gamma}{\vect{\xi}}\nodedof{q}{o}{\gamma}
+    \gsf{o}{\gamma}\gbfn{m}{\alpha}{\vect{\xi}}\gsf{m}{\alpha}}{\Gamma} + \\
+  \dsum_{e=1}^{E}\gint{\vect{0}}{\vect{1}}{\fnof{a}{\vect{\xi}}\gbfn{m}{\alpha}{\vect{\xi}}
+    \gsf{m}{\alpha}\abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{multline}
+where $\fnof{\matr{J}}{\vect{\xi}}$ is the \emph{Jacobian} of the
+transformation from the integration $\vect{x}$ to $\vect{\xi}$ coordinates.
+
+Taking values that are constant over the integration interval outside the
+integration gives
+\begin{multline}
+  \dsum_{e=1}^{E}\nodedof{u}{n}{\beta}\gsf{m}{\alpha}\gsf{n}{\beta}
+  \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{m}{\alpha}{\vect{\xi}}}{\xi^{r}}
+  \delby{\gbfn{n}{\beta}{\vect{\xi}}}{\xi^{s}}\fnof{\gamma^{rs}}{\vect{\xi}}
+  \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}} \\ 
+  =\dsum_{f=1}^{F}\nodedof{q}{o}{\gamma}\gsf{m}{\alpha}\gsf{o}{\gamma}
+  \gint{\Gamma_{f}}{}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+  }{\Gamma} + \\
+  \dsum_{e=1}^{E}\nodedof{a}{p}{\delta}\gsf{m}{\alpha}\gsf{p}{\delta}
+  \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}
+    \gbfn{p}{\delta}{\vect{\xi}}\abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{multline}
+where $\fnof{\gamma^{rs}}{\vect{\xi}}$ is defined in 
+\eqnthrurefs{eqn:diffusiongammadefinition1}{eqn:diffusiongammadefinition3}.
+
+This is an equation of the form
+\begin{equation}
+  \matr{K}\vect{u}=\vect{f}
+\end{equation}
+where
+\begin{equation}
+  \vect{f}=\matr{N}\vect{q}+\matr{R}\vect{a}
+\end{equation}
+
+The elemental stiffness matrix, $K^{\alpha\beta}_{mn}$, is given by
+\begin{equation}
+  K^{\alpha\beta}_{mn}=\gsf{m}{\alpha}\gsf{m}{\beta}
+  \gint{\vect{0}}{\vect{1}}{\delby{\gbfn{m}{\alpha}{\vect{\xi}}}{\xi^{r}}
+    \delby{\gbfn{n}{\beta}{\vect{\xi}}}{\xi^{s}}\fnof{\gamma^{rs}}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+  \label{eqn:elementalfemlhs2}
+\end{equation}
+
+The elemental flux matrix, $N^{\alpha\gamma}_{mo}$, is given by
+\begin{equation}
+  N^{\alpha\gamma}_{mo} =\gsf{m}{\alpha}\gsf{o}{\gamma}
+  \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+and the elemental source matrix, $R^{\alpha\delta}_{mp}$, 
+\begin{equation}
+  R^{\alpha\delta}_{mp}=\gsf{m}{\alpha}\gsf{p}{\delta}
+  \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{p}{\delta}{\vect{\xi}}
+    \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
+\end{equation}
+

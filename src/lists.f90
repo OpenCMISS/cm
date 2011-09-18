@@ -549,7 +549,7 @@ CONTAINS
   !>Adds an item to the end of an integer list of data dimension 1. 
   SUBROUTINE LIST_ITEM_ADD_INTG1(LIST,ITEM,ERR,ERROR,*)
    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: ITEM !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -607,7 +607,7 @@ CONTAINS
   !>Adds an item to the end of an integer list of data dimension > 1. 
   SUBROUTINE LIST_ITEM_ADD_INTG2(LIST,ITEM,ERR,ERROR,*)
    !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
     INTEGER(INTG), INTENT(IN) :: ITEM(:) !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -668,7 +668,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_SP1(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
     REAL(SP), INTENT(IN) :: ITEM !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -725,7 +725,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_SP2(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
     REAL(SP), INTENT(IN) :: ITEM(:) !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -784,7 +784,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_DP1(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
     REAL(DP), INTENT(IN) :: ITEM !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -842,7 +842,7 @@ CONTAINS
   SUBROUTINE LIST_ITEM_ADD_DP2(LIST,ITEM,ERR,ERROR,*)
 
     !Argument Variables
-    TYPE(LIST_TYPE), POINTER, INTENT(IN) :: LIST !<A pointer to the list
+    TYPE(LIST_TYPE), POINTER, INTENT(INOUT) :: LIST !<A pointer to the list
     REAL(DP), INTENT(IN) :: ITEM(:) !<The item to add
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
