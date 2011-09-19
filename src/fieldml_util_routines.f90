@@ -88,13 +88,13 @@ CONTAINS
   !<Import the named object from the built-in library into the current FieldML document. The local name will be the same as the remote name.
   FUNCTION FIELDML_UTIL_IMPORT( FML_HANDLE, REMOTE_NAME )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
     TYPE(VARYING_STRING), INTENT(IN) :: REMOTE_NAME !<The name of the object to import.
 
-    INTEGER(C_INT) :: FIELDML_UTIL_IMPORT
+    INTEGER(INTG) :: FIELDML_UTIL_IMPORT
     
     !Local variables
-    INTEGER(C_INT) :: IMPORT_INDEX
+    INTEGER(INTG) :: IMPORT_INDEX
     
     FIELDML_UTIL_IMPORT = Fieldml_GetObjectByName( FML_HANDLE, cchar(REMOTE_NAME) )
     IF( FIELDML_UTIL_IMPORT == FML_INVALID_HANDLE ) THEN
@@ -112,13 +112,13 @@ CONTAINS
   !<Import the given FieldML object if it is not already imported or local.
   FUNCTION FIELDML_UTIL_IMPORT_HANDLE( FML_HANDLE, HANDLE )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
-    INTEGER(C_INT), INTENT(IN) :: HANDLE !<The FieldML object to import.
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: HANDLE !<The FieldML object to import.
 
-    INTEGER(C_INT) :: FIELDML_UTIL_IMPORT_HANDLE
+    INTEGER(INTG) :: FIELDML_UTIL_IMPORT_HANDLE
     
     !Local variables
-    INTEGER(C_INT) :: IMPORT_INDEX, LOCAL_HANDLE
+    INTEGER(INTG) :: IMPORT_INDEX, LOCAL_HANDLE
     CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: NAME
     INTEGER(INTG) :: LENGTH
     
@@ -150,14 +150,14 @@ CONTAINS
     !Argument variables
     TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the argument.
-    INTEGER(C_INT), INTENT(IN) :: TYPE_HANDLE !<The type out of whose name the argument name is built.
+    INTEGER(INTG), INTENT(IN) :: TYPE_HANDLE !<The type out of whose name the argument name is built.
     
-    INTEGER(C_INT) :: FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE
+    INTEGER(INTG) :: FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE
 
     !Local variables
     CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: NAME
     INTEGER(INTG) :: LENGTH
-    INTEGER(C_INT) :: HANDLE, FML_ERR
+    INTEGER(INTG) :: HANDLE, FML_ERR
     TYPE(VARYING_STRING) :: FULL_NAME
     
     LENGTH = Fieldml_CopyObjectName( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE, NAME, MAXSTRLEN )
@@ -220,7 +220,7 @@ CONTAINS
   
   SUBROUTINE FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORVS( ERROR_DESCRIPTION, FML_HANDLE, ERR, ERROR, * )
     TYPE(VARYING_STRING), INTENT(IN) :: ERROR_DESCRIPTION
-    INTEGER(C_INT), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
@@ -279,7 +279,7 @@ CONTAINS
   
   SUBROUTINE FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORC( ERROR_DESCRIPTION, FML_HANDLE, ERR, ERROR, * )
     CHARACTER(LEN=*), INTENT(IN) :: ERROR_DESCRIPTION
-    INTEGER(C_INT), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
@@ -334,17 +334,17 @@ CONTAINS
   !<Get the FieldML built-in library type corresponding to the given OpenCMISS coordinate system type.
   SUBROUTINE FieldmlUtilGetCoordinatesType( FIELDML_HANDLE, COORDS_TYPE, DIMENSIONS, DO_IMPORT, TYPE_HANDLE, ERR, ERROR, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
     INTEGER(INTG), INTENT(IN) :: COORDS_TYPE !<The OpenCMISS coordinates type.
     INTEGER(INTG), INTENT(IN) :: DIMENSIONS !<The coordinate system's number of dimensions.
     LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the FieldML type.
-    INTEGER(C_INT), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type corresponding to the given OpenCMISS coordinate system type.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type corresponding to the given OpenCMISS coordinate system type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
     !Locals
     TYPE(VARYING_STRING) :: TYPE_NAME
-    INTEGER(C_INT) :: TEMP
+    INTEGER(INTG) :: TEMP
 
     CALL ENTERS( "FieldmlUtilGetCoordinatesType", ERR, ERROR, *999 )
     
@@ -386,16 +386,16 @@ CONTAINS
   !<Returns a generic n-dimensional real type from the built-in library.
   SUBROUTINE FIELDML_UTIL_GET_GENERIC_TYPE( FIELDML_HANDLE, DIMENSIONS, TYPE_HANDLE, DO_IMPORT, ERR, ERROR, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
-    INTEGER(C_INT), INTENT(IN) :: DIMENSIONS !<The number of dimensions of the type.
-    INTEGER(C_INT), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type.
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: DIMENSIONS !<The number of dimensions of the type.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type.
     LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
     !Locals
     TYPE(VARYING_STRING) :: TYPE_NAME
-    INTEGER(C_INT) :: TEMP
+    INTEGER(INTG) :: TEMP
 
     CALL ENTERS( "FIELDML_UTIL_GET_GENERIC_TYPE", ERR, ERROR, *999 )
 
@@ -431,15 +431,15 @@ CONTAINS
   !<Returns a type in the built-in library corresponding to a chart of the given dimensionality.
   SUBROUTINE FIELDML_UTIL_GET_XI_TYPE( FIELDML_HANDLE, DIMENSIONS, DO_IMPORT, TYPE_HANDLE, ERR, ERROR, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
-    INTEGER(C_INT), INTENT(IN) :: DIMENSIONS !<The number of dimensions of the chart.
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: DIMENSIONS !<The number of dimensions of the chart.
     LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the type.
-    INTEGER(C_INT), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
     !Locals
-    INTEGER(C_INT) :: TEMP
+    INTEGER(INTG) :: TEMP
     TYPE(VARYING_STRING) :: TYPE_NAME
 
     CALL ENTERS( "FIELDML_UTIL_GET_XI_TYPE", ERR, ERROR, *999 )
@@ -476,7 +476,7 @@ CONTAINS
   !<Get the text suffix corresponding to the given array of collapse constants.
   SUBROUTINE FIELDML_UTIL_GET_COLLAPSE_SUFFIX( COLLAPSE_INFO, SUFFIX, ERR, ERROR )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: COLLAPSE_INFO(:) !<The collapse into from which to generate the suffix.
+    INTEGER(INTG), INTENT(IN) :: COLLAPSE_INFO(:) !<The collapse into from which to generate the suffix.
     TYPE(VARYING_STRING), INTENT(INOUT) :: SUFFIX !<The suffix string encoding the collapse info.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -505,16 +505,16 @@ CONTAINS
   SUBROUTINE FieldmlUtilGetTPConnectivityEnsemble( FIELDML_HANDLE, XI_INTERPOLATIONS, COLLAPSE_INFO, DO_IMPORT, TYPE_HANDLE, &
     & ERR, ERROR, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
-    INTEGER(C_INT), INTENT(IN) :: XI_INTERPOLATIONS(:) !<The per-xi interpolation of the given TP basis.
-    INTEGER(C_INT), INTENT(IN) :: COLLAPSE_INFO(:) !<The collapse-constant for the given basis.
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: XI_INTERPOLATIONS(:) !<The per-xi interpolation of the given TP basis.
+    INTEGER(INTG), INTENT(IN) :: COLLAPSE_INFO(:) !<The collapse-constant for the given basis.
     LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the connectivity ensemble.
-    INTEGER(C_INT), INTENT(OUT) :: TYPE_HANDLE !<The FieldML ensemble handle.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML ensemble handle.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Locals
-    INTEGER(C_INT) :: XI_COUNT, FIRST_INTERPOLATION, I, IMPORT_INDEX, TEMP
+    INTEGER(INTG) :: XI_COUNT, FIRST_INTERPOLATION, I, IMPORT_INDEX, TEMP
     TYPE(VARYING_STRING) :: SUFFIX, LAYOUT_NAME
     
     CALL ENTERS( "FieldmlUtilGetTPConnectivityEnsemble", ERR, ERROR, *999 )
@@ -586,15 +586,15 @@ CONTAINS
   !<Get the connectivity ensemble for the given basis. Currently, only tensor-product bases are supported.
   SUBROUTINE FIELDML_UTIL_GET_CONNECTIVITY_ENSEMBLE( FIELDML_HANDLE, BASIS, TYPE_HANDLE, ERR, ERROR, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
     TYPE(BASIS_TYPE), POINTER :: BASIS !<The basis for which to return the connectivity.
-    INTEGER(C_INT), INTENT(OUT) :: TYPE_HANDLE !<The FieldML connectivity ensemble.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML connectivity ensemble.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
     !Locals
-    INTEGER(C_INT) :: BASISTYPE, XI_COUNT
-    INTEGER(C_INT), ALLOCATABLE :: XI_INTERPOLATIONS(:), COLLAPSE_INFO(:)
+    INTEGER(INTG) :: BASISTYPE, XI_COUNT
+    INTEGER(INTG), ALLOCATABLE :: XI_INTERPOLATIONS(:), COLLAPSE_INFO(:)
     
     CALL ENTERS( "FIELDML_UTIL_GET_CONNECTIVITY_ENSEMBLE", ERR, ERROR, *999 )
 
@@ -635,9 +635,9 @@ CONTAINS
   !<Returns a FieldML type appropriate for the given OpenCMISS field.
   SUBROUTINE FIELDML_UTIL_GET_VALUE_TYPE( FML_HANDLE, FIELD, TYPE_HANDLE, DO_IMPORT, ERR, ERROR, * )
     !Argument variables
-    INTEGER(C_INT), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field whose type is to be obtained.
-    INTEGER(C_INT), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type handle.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type handle.
     LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -703,23 +703,23 @@ CONTAINS
     
     NULLIFY( FIELDML_INFO%COMPONENT_HANDLES )
     CALL LIST_CREATE_START( FIELDML_INFO%COMPONENT_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%COMPONENT_HANDLES, LIST_C_INT_TYPE, ERR, ERROR, *999 )
+    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%COMPONENT_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
     CALL LIST_MUTABLE_SET( FIELDML_INFO%COMPONENT_HANDLES, .TRUE., ERR, ERROR, *999 )
     CALL LIST_CREATE_FINISH( FIELDML_INFO%COMPONENT_HANDLES, ERR, ERROR, *999 )
     
     NULLIFY( FIELDML_INFO%BASIS_HANDLES )
     CALL LIST_CREATE_START( FIELDML_INFO%BASIS_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_HANDLES, LIST_C_INT_TYPE, ERR, ERROR, *999 )
+    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
     CALL LIST_CREATE_FINISH( FIELDML_INFO%BASIS_HANDLES, ERR, ERROR, *999 )
     
     NULLIFY( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES )
     CALL LIST_CREATE_START( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, LIST_C_INT_TYPE, ERR, ERROR, *999 )
+    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
     CALL LIST_CREATE_FINISH( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, ERR, ERROR, *999 )
     
     NULLIFY( FIELDML_INFO%BASIS_LAYOUT_HANDLES )
     CALL LIST_CREATE_START( FIELDML_INFO%BASIS_LAYOUT_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_LAYOUT_HANDLES, LIST_C_INT_TYPE, ERR, ERROR, *999 )
+    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_LAYOUT_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
     CALL LIST_CREATE_FINISH( FIELDML_INFO%BASIS_LAYOUT_HANDLES, ERR, ERROR, *999 )
 
     CALL EXITS( "FIELDML_UTIL_INITIALISE_INFO" )
@@ -742,7 +742,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     
     !Locals
-    INTEGER(C_INT) :: FML_ERR
+    INTEGER(INTG) :: FML_ERR
 
     CALL ENTERS( "FIELDML_UTIL_FINALISE_INFO", ERR, ERROR, *999 )
 
