@@ -1627,18 +1627,19 @@ $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 
 SWIG_INTERFACE = $(BINDINGS_DIR)/interface/opencmiss.i
 
-PYTHON_MODULE = $(BINDINGS_DIR)/python/_opencmiss.so
-PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss_wrap.c
+PYTHON_MODULE = $(BINDINGS_DIR)/python/opencmiss/opencmiss_swig.py
+PYTHON_MODULE_SO = $(BINDINGS_DIR)/python/opencmiss/_opencmiss_swig.so
+PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/opencmiss_wrap.c
 PYTHON_INCLUDES = $(shell python-config --includes)
 
-python: $(PYTHON_MODULE)
+python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO)
 
-$(PYTHON_WRAPPER) : $(SWIG_INTERFACE) $(HEADER_INCLUDE)
-	( cd $(BINDINGS_DIR)/python ; swig -python -o $(PYTHON_WRAPPER) -outdir . -I$(INC_DIR) $(SWIG_INTERFACE) )
+$(PYTHON_WRAPPER) $(PYTHON_MODULE) : $(SWIG_INTERFACE) $(HEADER_INCLUDE)
+	( cd $(BINDINGS_DIR)/python/opencmiss ; swig -python -o $(PYTHON_WRAPPER) -module opencmiss_swig -outdir . -I$(INC_DIR) $(SWIG_INTERFACE) )
 
-$(PYTHON_MODULE) : main $(PYTHON_WRAPPER) $(OBJECTS)
-	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss_wrap.o )
-	( cd $(BINDINGS_DIR)/python ; $(CC) opencmiss_wrap.o $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE) )
+$(PYTHON_MODULE_SO) : main $(PYTHON_WRAPPER) $(OBJECTS)
+	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss/opencmiss_wrap.o )
+	( cd $(BINDINGS_DIR)/python ; $(CC) opencmiss/opencmiss_wrap.o $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )
 
 # ----------------------------------------------------------------------------
 #
