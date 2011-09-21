@@ -359,9 +359,9 @@ class Constant(object):
 
         if self.resolved:
             if self.doxygen_comment != '':
-                return 'static int %s = %d; /*<%s */\n' % (self.name,self.value,self.doxygen_comment)
+                return 'const int %s = %d; /*<%s */\n' % (self.name,self.value,self.doxygen_comment)
             else:
-                return 'static int %s = %d;\n' % (self.name,self.value)
+                return 'const int %s = %d;\n' % (self.name,self.value)
         else:
             return ''
 
