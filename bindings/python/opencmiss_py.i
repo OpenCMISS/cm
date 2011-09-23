@@ -20,7 +20,7 @@
   PyObject *previous_result;
   PyObject *output_pointer;
 
-  output_pointer = SWIG_NewPointerObj(*$1, $*1_descriptor, 1);
+  output_pointer = SWIG_NewPointerObj(*$1, $*1_descriptor, 0);
 
   if ((!$result) || ($result == Py_None)) {
     /* If there isn't already a result, just return this */
