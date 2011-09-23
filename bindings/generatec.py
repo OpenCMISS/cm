@@ -539,9 +539,12 @@ class Subroutine(object):
     def to_c_header(self):
         """Returns the function declaration in C"""
 
+        (swig_start,swig_end) = self.swig_lines()
+        output = '\n'+swig_start
+
         if self.parameters is None:
             self.get_parameters()
-        output = '\n/*>'
+        output += '/*>'
         output += '\n *>'.join(self.comment_lines)
         output += ' */\n'
         output += 'CMISSError %s(' % self.c_name
@@ -551,7 +554,20 @@ class Subroutine(object):
         output += ',\n    '.join(['%s /*<%s */' % (p,c) for (p,c) in zip(c_parameters,comments)])
         output += ');\n'
 
+        output += swig_end
+
         return output
+
+    def swig_lines(self):
+        """Return lines used before and after subroutine for SWIG interfaces
+        """
+        if self.name.endswith('TypeInitialise'):
+            type = self.name[0:-len('Initialise')]
+            name = type[0:-len('Type')]
+            start_lines = '#ifdef SWIG\n  %%apply CMISSDummyInitialiseType *CMISSDummy{%s *%s};\n#endif\n' % (type,name)
+            end_lines = '#ifdef SWIG\n  %%clear %s *%s;\n#endif\n' % (type,name)
+            return (start_lines, end_lines)
+        return ('','')
 
     def local_c_f90_vars(self):
         """Returns a list of extra local variables required for this subroutine, for use in converting

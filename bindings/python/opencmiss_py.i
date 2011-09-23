@@ -8,14 +8,14 @@
 /* Typemaps for passing CMISS types to CMISS...Type initialise routines
    We don't need to pass an input value, we can create a NULL
    pointer within the C wrapper */
-%typemap(in,numinputs=0) CMISSBasisType *CMISSBasis($*1_ltype temp) {
+%typemap(in,numinputs=0) CMISSDummyInitialiseType *CMISSDummy($*1_ltype temp) {
   temp = ($*1_ltype)NULL;
   $1 = &temp;
 }
 
 /* Typemap to convert the output pointer to a SWIG pointer we can then
    pass it into other routines from Python */
-%typemap(argout) CMISSBasisType *CMISSBasis {
+%typemap(argout) CMISSDummyInitialiseType *CMISSDummy {
   PyObject *new_output_tuple;
   PyObject *previous_result;
   PyObject *output_pointer;
