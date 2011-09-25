@@ -1,55 +1,7 @@
-#!/usr/bin/env python
-"""
-OpenCMISS C Interface Generation
---------------------------------
-
-This python script generates the C interface for the OpenCMISS library from opencmiss.f90.
-
-It finds integer constants from the source code and includes them in opencmiss.h
-
-It generates C functions in opencmiss_c.f90 from subroutines in opencmiss.f90 and puts
-the function declaration in opencmiss.h.
-
-For interfaces where one routine takes parameters as scalars and another takes them as arrays,
-only the routine that takes arrays is included. This is done by checking the routine names for
-"Number0", "Number1", "Number01" etc. so relies on this naming convention to work correctly.
-
-Limitations
------------
-
-- Doesn't support multi-dimensional arrays of CMISS types or Logicals, but this can be added
-  if required.
-
-- Doesn't account for the difference in storage order of multi-dimensional arrays between C
-  and Fortran, except in CMISSC2FStrings.
-
-"""
-
 from __future__ import with_statement
-import sys
+import sys, os
 import re
 from operator import attrgetter
-
-def main():
-    import os
-    if len(sys.argv) == 4:
-        (cm_path,opencmiss_h_path,opencmiss_c_f90_path) = sys.argv[1:]
-    else:
-        sys.stderr.write('Usage: %s cm_path opencmiss_h_path opencmiss_c_f90_path\n' % sys.argv[0])
-        exit(1)
-
-    cm_source_path=cm_path+os.sep+'src'
-    sources = [cm_source_path+os.sep+file_name \
-            for file_name in os.listdir(cm_source_path) \
-            if file_name.endswith('.f90') and file_name != 'opencmiss.f90']
-
-    library = LibrarySource(cm_source_path+os.sep+'opencmiss.f90',sources)
-
-    with open(opencmiss_h_path,'w') as opencmissh:
-        library.write_c_header(opencmissh)
-    with open(opencmiss_c_f90_path,'w') as opencmisscf90:
-        library.write_c_f90(opencmisscf90)
-
 
 class LibrarySource(object):
     """Holds info on all the library source code"""
@@ -200,15 +152,18 @@ class LibrarySource(object):
                             current_section = section
                             break
 
-    def __init__(self,lib_source,source_files):
+    def __init__(self,cm_path):
         """Load library information from source files
 
         Arguments:
-        lib_source -- Path to library source file
-        source_files -- List of other source files used by the library
+        cm_path -- Path to OpenCMISS cm directory
         """
 
-        self.lib_source = self.SourceFile(lib_source)
+        self.lib_source = self.SourceFile(os.sep.join((cm_path,'src','opencmiss.f90')))
+        cm_source_path = cm_path+os.sep+'src'
+        source_files = [cm_source_path+os.sep+file_name \
+                for file_name in os.listdir(cm_source_path) \
+                if file_name.endswith('.f90') and file_name != 'opencmiss.f90']
         self.sources = [self.SourceFile(source,params_only=True) for source in source_files]
 
         self.resolve_constants()
@@ -1127,5 +1082,3 @@ def _logical_type():
     return "unsigned int"
 
 
-if __name__ == '__main__':
-    main()

@@ -76,7 +76,7 @@ HEADER_INC_NAME := opencmiss.h
 HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
 C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
 BINDINGS_DIR = $(GLOBAL_CM_ROOT)/bindings
-C_GENERATE_SCRIPT := $(BINDINGS_DIR)/generatec.py
+C_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
 
@@ -264,7 +264,7 @@ MOD_FIELDML: $(FIELDML_OBJECT)
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
 $(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(C_GENERATE_SCRIPT)
-	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) $(HEADER_INCLUDE) $(C_F90_SOURCE)
+	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
 #
