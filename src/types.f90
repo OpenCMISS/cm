@@ -1636,7 +1636,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: VARIABLE_TYPE !<The type of variable for this variable boundary conditions
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this boundary condition variable
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_BOUNDARY_CONDITIONS(:) !<GLOBAL_BOUNDARY_CONDITIONS(dof_idx). The global boundary condition for the dof_idx'th dof of the dependent field variable. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
-    !TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: BOUNDARY_CONDITIONS_VALUES !<A pointer to the distributed vector containing the boundary conditions for the domain for this process.
     TYPE(BOUNDARY_CONDITIONS_DIRICHLET_TYPE), POINTER :: DIRICHLET_BOUNDARY_CONDITIONS  !<A pointer to the dirichlet boundary condition type for this boundary condition variable
     INTEGER(INTG) :: NUMBER_OF_DIRICHLET_CONDITIONS !<Stores the number of dirichlet conditions associated with this variable
     TYPE(BOUNDARY_CONDITIONS_NEUMANN_TYPE), POINTER :: NEUMANN_BOUNDARY_CONDITIONS
