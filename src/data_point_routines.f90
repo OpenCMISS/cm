@@ -196,7 +196,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ndp
+    INTEGER(INTG) :: data_point_idx
     
     CALL ENTERS("DATA_POINTS_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -212,15 +212,15 @@ CONTAINS
     
     IF(DIAGNOSTICS1) THEN !<TODO Still Diagnostics 1??
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"Number of data points = ",DATA_POINTS%NUMBER_OF_DATA_POINTS,ERR,ERROR,*999)
-      DO ndp=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Data Points = ",ndp,ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number    = ",DATA_POINTS%DATA_POINTS(ndp)%GLOBAL_NUMBER, &
+      DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  Data Points = ",data_point_idx,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Global number    = ",DATA_POINTS%DATA_POINTS(data_point_idx)% &
+          & GLOBAL_NUMBER,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number      = ",DATA_POINTS%DATA_POINTS(data_point_idx)% &
+          & USER_NUMBER,ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Label            = ",DATA_POINTS%DATA_POINTS(data_point_idx)%LABEL, &
           & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    User number      = ",DATA_POINTS%DATA_POINTS(ndp)%USER_NUMBER, &
-          & ERR,ERROR,*999)
-        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Label            = ",DATA_POINTS%DATA_POINTS(ndp)%LABEL, &
-          & ERR,ERROR,*999)
-      ENDDO !ndp
+      ENDDO !data_point_idx
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"User->Global number tree",ERR,ERROR,*999)
       CALL TREE_OUTPUT(DIAGNOSTIC_OUTPUT_TYPE,DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
     ENDIF
@@ -247,7 +247,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: INSERT_STATUS,ndp,coord_idx
+    INTEGER(INTG) :: INSERT_STATUS,data_point_idx,coord_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("DATA_POINTS_CREATE_START_GENERIC",ERR,ERROR,*999)
@@ -261,23 +261,23 @@ CONTAINS
         CALL TREE_INSERT_TYPE_SET(DATA_POINTS%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
         CALL TREE_CREATE_FINISH(DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
         !Set default data point numbers
-        DO ndp=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
-          DATA_POINTS%DATA_POINTS(ndp)%GLOBAL_NUMBER=ndp
-          DATA_POINTS%DATA_POINTS(ndp)%USER_NUMBER=ndp
-          DATA_POINTS%DATA_POINTS(ndp)%LABEL=""
+        DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
+          DATA_POINTS%DATA_POINTS(data_point_idx)%GLOBAL_NUMBER=data_point_idx
+          DATA_POINTS%DATA_POINTS(data_point_idx)%USER_NUMBER=data_point_idx
+          DATA_POINTS%DATA_POINTS(data_point_idx)%LABEL=""
           ! initialise data points values to 0.0 and weights to 1.0
-          ALLOCATE(DATA_POINTS%DATA_POINTS(ndp)%VALUES(NUMBER_OF_DIMENSIONS),STAT=ERR)
+          ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES(NUMBER_OF_DIMENSIONS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points values("//TRIM(NUMBER_TO_VSTRING &
-            & (ndp,"*",ERR,ERROR))//").",ERR,ERROR,*999)
-          ALLOCATE(DATA_POINTS%DATA_POINTS(ndp)%WEIGHTS(NUMBER_OF_DIMENSIONS),STAT=ERR)
+            & (data_point_idx,"*",ERR,ERROR))//").",ERR,ERROR,*999)
+          ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%WEIGHTS(NUMBER_OF_DIMENSIONS),STAT=ERR)
           IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points weights("//TRIM(NUMBER_TO_VSTRING &
-            & (ndp,"*",ERR,ERROR))//").",ERR,ERROR,*999)              
+            & (data_point_idx,"*",ERR,ERROR))//").",ERR,ERROR,*999)              
           DO coord_idx=1,NUMBER_OF_DIMENSIONS
-            DATA_POINTS%DATA_POINTS(ndp)%VALUES(coord_idx)=0.0_DP
-            DATA_POINTS%DATA_POINTS(ndp)%WEIGHTS(coord_idx)=1.0_DP
+            DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES(coord_idx)=0.0_DP
+            DATA_POINTS%DATA_POINTS(data_point_idx)%WEIGHTS(coord_idx)=1.0_DP
           ENDDO
-          CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_POINTS_TREE,ndp,ndp,INSERT_STATUS,ERR,ERROR,*999)
-        ENDDO !ndp
+          CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_POINTS_TREE,data_point_idx,data_point_idx,INSERT_STATUS,ERR,ERROR,*999)
+        ENDDO !data_point_idx
         NULLIFY(DATA_POINTS%DATA_PROJECTION)
         DATA_POINTS%DATA_POINTS_PROJECTED=.FALSE.    
       ELSE
@@ -484,15 +484,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ndp
+    INTEGER(INTG) :: data_point_idx
 
     CALL ENTERS("DATA_POINTS_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(ALLOCATED(DATA_POINTS%DATA_POINTS)) THEN
-        DO ndp=1,SIZE(DATA_POINTS%DATA_POINTS,1)
-          CALL DATA_POINT_FINALISE(DATA_POINTS%DATA_POINTS(ndp),ERR,ERROR,*999)
-        ENDDO !ndp
+        DO data_point_idx=1,SIZE(DATA_POINTS%DATA_POINTS,1)
+          CALL DATA_POINT_FINALISE(DATA_POINTS%DATA_POINTS(data_point_idx),ERR,ERROR,*999)
+        ENDDO !data_point_idx
         DEALLOCATE(DATA_POINTS%DATA_POINTS)
       ENDIF
       IF(ASSOCIATED(DATA_POINTS%DATA_POINTS_TREE)) CALL TREE_DESTROY(DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
