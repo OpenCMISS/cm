@@ -1,5 +1,5 @@
 import opencmiss_swig
-
+from _docstrings import docstrings
 
 class CMISSError(Exception):
     def __init__(self, value):
@@ -18,7 +18,7 @@ class CMWrapper(object):
         self.WorldRegion = self.RegionTypeInitialise()
         self.Initialise(self.WorldCoordinateSystem, self.WorldRegion)
 
-    def __getattr__(self,attr):
+    def __getattr__(self,attr_name):
         """Get an OpenCMISS constant or routine, removing the need to
         prefix it with a CMISS namespace as this is done already in Python.
 
@@ -29,9 +29,14 @@ class CMWrapper(object):
         #if we converted to camel-case this would screw up things like
         #CMISSSolverPETScLibrary, so just use camel-case
         try:
-            attr = getattr(opencmiss_swig,'CMISS'+attr)
+            attr = getattr(opencmiss_swig,'CMISS'+attr_name)
             if hasattr(attr,'__call__'):
-                return lambda *args: self._wrap_routine(attr, args)
+                return_func = lambda *args: self._wrap_routine(attr, args)
+                try:
+                    return_func.__doc__ = docstrings['CMISS'+attr_name]
+                except KeyError:
+                    return_func.__doc__ = ''
+                return return_func
             else:
                 return attr
         except AttributeError:

@@ -2,3 +2,5 @@
 opencmiss_swig.py
 _opencmiss_swig.so
 opencmiss_wrap*
+_types.py
+_docstrings.py
