@@ -1377,8 +1377,6 @@ CONTAINS
     ENDDO
     WRITE(OP_STRING,'(A)') INDENT_STRING(1:INDENT)//CHAR(ERROR)
     CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
-    ERR=0
-    ERROR=""
 
     RETURN
     !Don't return an error code here otherwise we will get into a circular loop

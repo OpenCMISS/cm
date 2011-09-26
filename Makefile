@@ -1091,6 +1091,7 @@ $(OBJECT_DIR)/cmiss_c.o	:	$(SOURCE_DIR)/cmiss_c.c
 $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1990,6 +1991,8 @@ $(OBJECT_DIR)/node_routines.o	:	$(SOURCE_DIR)/node_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/opencmiss.mod : $(OBJECT_DIR)/opencmiss.o
 
 $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \

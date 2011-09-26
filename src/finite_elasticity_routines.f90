@@ -4055,7 +4055,7 @@ CONTAINS
               & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE,&
               & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE, &
               & EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE, &
-              & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE)
+              & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE,EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE)
              IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                !Create the auto created dependent field
                CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION,EQUATIONS_SET%INDEPENDENT% &
@@ -4263,7 +4263,7 @@ CONTAINS
                END SELECT
              ENDIF !INDEPENDENT_FIELD_AUTO_CREATED
            CASE DEFAULT
-             LOCAL_ERROR="The equations set suptype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+             LOCAL_ERROR="The equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                & " is invalid for an independent field of a finite elasticity equation."
              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT
@@ -5049,7 +5049,7 @@ CONTAINS
             & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
             !Call divergence test only if finite element loop: THIS IS NOT A PROPER FIX
             IF(CONTROL_LOOP%SUB_LOOP_INDEX==1) THEN
-              CALL FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*999)
+              CALL SOLVER_NONLINEAR_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*999)
             ENDIF
             IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE.AND.SOLVER%GLOBAL_NUMBER==1) THEN
               CALL FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -5233,81 +5233,6 @@ CONTAINS
     CALL EXITS("FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA")
     RETURN 1
   END SUBROUTINE FINITE_ELASTICITY_POST_SOLVE_OUTPUT_DATA
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Instead of warning on nonlinear divergence, exit with error
-  SUBROUTINE FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT(SOLVER,ERR,ERROR,*)
-    TYPE(SOLVER_TYPE), INTENT(IN) :: SOLVER
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
-    !Local variables
-    TYPE(NONLINEAR_SOLVER_TYPE),POINTER :: NONLINEAR_SOLVER
-    TYPE(NEWTON_SOLVER_TYPE),POINTER :: NEWTON_SOLVER
-    TYPE(NEWTON_LINESEARCH_SOLVER_TYPE),POINTER :: LINESEARCH_SOLVER
-    INTEGER(INTG) :: CONVERGED_REASON
-    
-    CALL ENTERS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT",ERR,ERROR,*999)
-
-    NULLIFY(NONLINEAR_SOLVER,NEWTON_SOLVER,LINESEARCH_SOLVER)
-
-    NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
-    IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-      SELECT CASE(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE)
-      CASE(SOLVER_NONLINEAR_NEWTON)
-        NEWTON_SOLVER=>NONLINEAR_SOLVER%NEWTON_SOLVER
-        IF(ASSOCIATED(NEWTON_SOLVER)) THEN
-          SELECT CASE (NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
-          CASE(SOLVER_NEWTON_LINESEARCH)
-            LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
-            IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-              CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
-                SELECT CASE(CONVERGED_REASON)
-                CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
-                    & ERR,ERROR,*999)
-                CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
-                    & ERR,ERROR,*999)
-                CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
-                    & ERR,ERROR,*999)
-                CASE(PETSC_SNES_DIVERGED_MAX_IT)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
-                    & ERR,ERROR,*999)
-                CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search fail.", &
-                    & ERR,ERROR,*999)
-                CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
-                    & ERR,ERROR,*999)
-                END SELECT
-            ELSE
-              CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
-            ENDIF
-          CASE(SOLVER_NEWTON_TRUSTREGION)
-            !Not yet implemented. Don't kick up a fuss, just exit
-          END SELECT
-        ELSE
-          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
-        ENDIF
-      CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        !Not yet implemented. Don't kick up a fuss, just exit
-      CASE(SOLVER_NONLINEAR_SQP)
-        !Not yet implemented. Don't kick up a fuss, just exit
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    CALL EXITS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT")
-    RETURN
-999 CALL ERRORS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT",ERR,ERROR)
-    CALL EXITS("FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT")
-    RETURN 1
-  END SUBROUTINE FINITE_ELASTICITY_POST_SOLVE_DIVERGENCE_EXIT
 
   !
   !================================================================================================================================
@@ -5875,10 +5800,6 @@ CONTAINS
                                           & GLOBAL_BOUNDARY_CONDITIONS(dof_number)
                                         IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL .OR. &
                                           & BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED) THEN
-!---tob
-                                        write(*,*)'Should not enter here for the INRIA test case !!!'
-                                        !Check this using a conditional !!!
-!---toe
                                           !--- To obtain absolute positions, add nodal coordinates on top of mesh displacement
                                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(GEOMETRIC_FIELD, &
                                             & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,dof_number, &
