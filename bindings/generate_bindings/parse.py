@@ -494,11 +494,12 @@ class Subroutine(object):
     def to_c_header(self):
         """Returns the function declaration in C"""
 
+        if self.parameters is None:
+            self.get_parameters()
+
         (swig_start,swig_end) = self.swig_lines()
         output = '\n'+swig_start
 
-        if self.parameters is None:
-            self.get_parameters()
         output += '/*>'
         output += '\n *>'.join(self.comment_lines)
         output += ' */\n'
@@ -516,13 +517,29 @@ class Subroutine(object):
     def swig_lines(self):
         """Return lines used before and after subroutine for SWIG interfaces
         """
+        start_lines = []
+        end_lines = []
+
         if self.name.endswith('TypeInitialise'):
             type = self.name[0:-len('Initialise')]
             name = type[0:-len('Type')]
-            start_lines = '#ifdef SWIG\n  %%apply CMISSDummyInitialiseType *CMISSDummy{%s *%s};\n#endif\n' % (type,name)
-            end_lines = '#ifdef SWIG\n  %%clear %s *%s;\n#endif\n' % (type,name)
-            return (start_lines, end_lines)
-        return ('','')
+            start_lines.append('%%apply CMISSDummyInitialiseType *CMISSDummy{%s *%s};' % (type,name))
+            end_lines.append('%%clear %s *%s;' % (type,name))
+
+        for param in self.parameters:
+            (p_start,p_end) = param.swig_lines()
+            if p_start:
+                start_lines.append(p_start)
+            if p_end:
+                end_lines.append(p_end)
+
+        start_lines = '\n  '.join(start_lines)
+        end_lines = '\n  '.join(end_lines)
+        if start_lines:
+            start_lines = '#ifdef SWIG\n  '+start_lines+'\n#endif\n'
+        if end_lines:
+            end_lines = '#ifdef SWIG\n  '+end_lines+'\n#endif\n'
+        return (start_lines, end_lines)
 
     def local_c_f90_vars(self):
         """Returns a list of extra local variables required for this subroutine, for use in converting
@@ -950,6 +967,36 @@ class Parameter(object):
         """
 
         return self.size_doxygen+[self.doxygen]
+
+    def swig_lines(self):
+        typemap = apply_to = ''
+        if self.intent == 'OUT':
+            if self.var_type == Parameter.INTEGER:
+                typemap = 'int *DummyOutputInt'
+                apply_to = 'int *%s' % self.name
+            elif self.var_type == Parameter.DOUBLE:
+                typemap = 'double *DummyOutputDouble'
+                apply_to = 'double *%s' % self.name
+            elif self.var_type == Parameter.FLOAT:
+                typemap = 'float *DummyOutputFloat'
+                apply_to = 'float *%s' % self.name
+            elif self.var_type == Parameter.LOGICAL:
+                typemap = 'int *DummyOutputBool'
+                apply_to = 'int *%s' % self.name
+            elif self.var_type == Parameter.CHARACTER:
+                typemap = 'const int Size, char *DummyOutputString'
+                apply_to = 'const int %sSize, char *%s' % (self.name,self.name)
+        else:
+            if self.var_type == Parameter.CHARACTER:
+                typemap = 'const int Size, const char *DummyInputString'
+                apply_to = 'const int %sSize, const char *%s' % (self.name,self.name)
+            elif self.var_type == Parameter.LOGICAL:
+                typemap = 'const int DummyInputBool'
+                apply_to = 'const int *%s' % self.name
+        if typemap:
+            return '%%apply (%s){(%s)};' % (typemap,apply_to), '%%clear (%s);' % apply_to
+        else:
+            return '', ''
 
 
 class Type(object):
