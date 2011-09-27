@@ -69,9 +69,17 @@ class CMWrapper(object):
         def init_func(self,*args):
             self.__dict__['type_name'] = type_name #Avoid recursive call to __getattr__
             self.cmiss_type = getattr(cm,'%sTypeInitialise' % type_name)()
-            args += (self.cmiss_type,)
-            getattr(cm,'%sCreateStart' % type_name)(*args)
-        init_func.__doc__ = "Initialise a CMISS%sType, and start its creation." % type_name
+            try:
+                args += (self.cmiss_type,)
+                getattr(cm,'%sCreateStart' % type_name)(*args)
+            except AttributeError:
+                #No create start routine, return the initialised type with a null pointer
+                if len(args) > 1:
+                    raise ValueError, "%s initialise routine does not take any arguments." % self.type_name
+        if hasattr(cm,'%sCreateStart' % type_name):
+            init_func.__doc__ = "Initialise a CMISS%sType, and start its creation." % type_name
+        else:
+            init_func.__doc__ = "Initialise a CMISS%sType." % type_name
         #TODO: Add list of parameters to docstring from doxygen comments on the create start routine
 
         docstring = "CMISS %s" % type_name
