@@ -100,7 +100,7 @@ class CMWrapper(object):
                     return attr
             except AttributeError:
                 try:
-                    attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Get')
+                    attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name[0].upper()+attr_name[1:]+'Get')
                     return _wrap_routine(attr, (self,))
                 except AttributeError:
                     raise AttributeError("OpenCMISS has no constant or routine CMISS%s%s, and no routine CMISS%s%sGet" % \
@@ -109,7 +109,7 @@ class CMWrapper(object):
 
         def set_attribute(self,attr_name,value):
             try:
-                set_routine = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Set')
+                set_routine = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name[0].upper()+attr_name[1:]+'Set')
                 _wrap_routine(set_routine, (self,value))
             except AttributeError:
                 self.__dict__[attr_name] = value
