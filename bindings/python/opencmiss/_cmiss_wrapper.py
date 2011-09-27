@@ -67,8 +67,8 @@ class CMWrapper(object):
         cm = self
 
         def init_func(self,*args):
+            self.__dict__['type_name'] = type_name #Avoid recursive call to __getattr__
             self.cmiss_type = getattr(cm,'%sTypeInitialise' % type_name)()
-            self.type_name = type_name
             args += (self.cmiss_type,)
             getattr(cm,'%sCreateStart' % type_name)(*args)
         init_func.__doc__ = "Initialise a CMISS%sType, and start its creation." % type_name
@@ -83,31 +83,43 @@ class CMWrapper(object):
 
         def get_attribute(self,attr_name):
             try:
-                attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name)
-                if hasattr(attr,'__call__'):
-                    #Call method with first parameter as the cmiss type:
-                    return_func = lambda *args: _wrap_routine(attr, args)
-                    return_func.__name__ = attr_name
-                    try:
-                        #Todo: remove first parameter from docstring
-                        return_func.__doc__ = _docstrings['CMISS'+self.type_name+attr_name]
-                    except KeyError:
-                        return_func.__doc__ = ''
-                    #Return this function bound to the object, so that the first 'self'
-                    #argument is added automatically as it appears as a method
-                    return return_func.__get__(self,cmiss_class)
-                else:
-                    return attr
-            except AttributeError:
+                return self.__dict__[attr_name]
+            except KeyError:
                 try:
-                    attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Get')
-                    return _wrap_routine(attr, (self,))
+                    attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name)
+                    if hasattr(attr,'__call__'):
+                        #Call method with first parameter as the cmiss type:
+                        return_func = lambda *args: _wrap_routine(attr, args)
+                        return_func.__name__ = attr_name
+                        try:
+                            #Todo: remove first parameter from docstring
+                            return_func.__doc__ = _docstrings['CMISS'+self.type_name+attr_name]
+                        except KeyError:
+                            return_func.__doc__ = ''
+                        #Return this function bound to the object, so that the first 'self'
+                        #argument is added automatically as it appears as a method
+                        return return_func.__get__(self,cmiss_class)
+                    else:
+                        return attr
                 except AttributeError:
-                    raise AttributeError("OpenCMISS has no constant or routine CMISS%s%s, and no routine CMISS%s%sGet" % \
-                            (self.type_name, attr_name, self.type_name, attr_name))
+                    try:
+                        attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Get')
+                        return _wrap_routine(attr, (self,))
+                    except AttributeError:
+                        raise AttributeError("OpenCMISS has no constant or routine CMISS%s%s, and no routine CMISS%s%sGet" % \
+                                (self.type_name, attr_name, self.type_name, attr_name))
         get_attribute.__doc__ = "Get a method or attribute of a CMISS%sType." % type_name
 
+        def set_attribute(self,attr_name,value):
+            try:
+                set_routine = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Set')
+                _wrap_routine(set_routine, (self,value))
+            except AttributeError:
+                self.__dict__[attr_name] = value
+        set_attribute.__doc__ = "Set an attribute of a CMISS%sType, calling the underlying CMISS%s..Set routine if it exists." % (type_name, type_name)
+
         cmiss_class.__getattr__ = get_attribute
+        cmiss_class.__setattr__ = set_attribute
         return cmiss_class
 
 
