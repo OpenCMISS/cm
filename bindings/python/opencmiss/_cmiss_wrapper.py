@@ -48,7 +48,7 @@ class CMWrapper(object):
         try:
             attr = getattr(opencmiss_swig,'CMISS'+attr_name)
             if hasattr(attr,'__call__'):
-                return_func = lambda *args: self._wrap_routine(attr, args)
+                return_func = lambda *args: _wrap_routine(attr, args)
                 return_func.__name__ = attr_name
                 try:
                     return_func.__doc__ = _docstrings['CMISS'+attr_name]
@@ -59,38 +59,6 @@ class CMWrapper(object):
                 return attr
         except AttributeError:
             raise AttributeError("OpenCMISS has no constant or routine CMISS%s" % (attr_name))
-
-    def _wrap_routine(self, routine, args=None):
-        """Call a routine and check the return value, raise an
-        exception if it is non-zero and return any other return values
-        """
-
-        if args is None:
-            r = routine()
-        else:
-            #Replace wrapped cmiss types with the underlying type
-            new_args = []
-            for arg in args:
-                if hasattr(arg,'cmiss_type'):
-                    new_args.append(arg.cmiss_type)
-                else:
-                    new_args.append(arg)
-            r = routine(*new_args)
-        if isinstance(r,tuple):
-            status = r[0]
-            if len(r) == 1:
-                return_val = None
-            elif len(r) == 2:
-                return_val = r[1]
-            else:
-                return_val = r[1:]
-        else:
-            status = r
-            return_val = None
-        if status != 0:
-            #TODO: get error strings from OpenCMISS
-            raise CMISSError, 'Non-zero return value'
-        return return_val
 
     def _make_class(self,type_name):
         """Create a class to wrap a CMISS type
@@ -110,6 +78,68 @@ class CMWrapper(object):
         #TODO: Get a list of method routines, maybe generate a _methods file so that initialising
         #all the types doesn't take forever
 
-        kwattrs = {'__init__':init_func,'__doc__':docstring}
-        return type(type_name, (object,), dict(**kwattrs))
+        kwattrs = {'__doc__':docstring, '__init__':init_func}
+        cmiss_class = type(type_name, (object,), dict(**kwattrs))
+
+        def get_attribute(self,attr_name):
+            try:
+                attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name)
+                if hasattr(attr,'__call__'):
+                    #Call method with first parameter as the cmiss type:
+                    return_func = lambda *args: _wrap_routine(attr, args)
+                    return_func.__name__ = attr_name
+                    try:
+                        #Todo: remove first parameter from docstring
+                        return_func.__doc__ = _docstrings['CMISS'+self.type_name+attr_name]
+                    except KeyError:
+                        return_func.__doc__ = ''
+                    #Return this function bound to the object, so that the first 'self'
+                    #argument is added automatically as it appears as a method
+                    return return_func.__get__(self,cmiss_class)
+                else:
+                    return attr
+            except AttributeError:
+                try:
+                    attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Get')
+                    return _wrap_routine(attr, (self,))
+                except AttributeError:
+                    raise AttributeError("OpenCMISS has no constant or routine CMISS%s%s, and no routine CMISS%s%sGet" % \
+                            (self.type_name, attr_name, self.type_name, attr_name))
+        get_attribute.__doc__ = "Get a method or attribute of a CMISS%sType." % type_name
+
+        cmiss_class.__getattr__ = get_attribute
+        return cmiss_class
+
+
+def _wrap_routine(routine, args=None):
+    """Call a routine and check the return value, raise an
+    exception if it is non-zero and return any other return values
+    """
+
+    if args is None:
+        r = routine()
+    else:
+        #Replace wrapped cmiss types with the underlying type
+        new_args = []
+        for arg in args:
+            if hasattr(arg,'cmiss_type'):
+                new_args.append(arg.cmiss_type)
+            else:
+                new_args.append(arg)
+        r = routine(*new_args)
+    if isinstance(r,tuple):
+        status = r[0]
+        if len(r) == 1:
+            return_val = None
+        elif len(r) == 2:
+            return_val = r[1]
+        else:
+            return_val = r[1:]
+    else:
+        status = r
+        return_val = None
+    if status != 0:
+        #TODO: get error strings from OpenCMISS
+        raise CMISSError, 'Non-zero return value'
+    return return_val
 
