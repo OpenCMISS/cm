@@ -153,13 +153,9 @@ component velocity and pressure terms as noted in
   \end{split}
 \end{equation}
 
- Using the same basis functions for the respective velocity and pressure spaces for a Galerkin finite element formulation, our spatial weights become for the velocity space:
+ Using the spatial weighting functions for a Galerkin finite element formulation:
 \begin{equation}
   \fnof{w_{i}}{\vect{\xi}}=\idxgbfn{i}{m}{\alpha}{\vect{\xi}}\idxgsf{i}{m}{\alpha}
-\end{equation}
-and pressure:
-\begin{equation}
-  \fnof{w_{i}}{\vect{\xi}}=\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}
 \end{equation}
 
 
@@ -186,8 +182,8 @@ Using standard integration notation, we can rewrite our Galerkin FEM formulation
 %pressure
   +\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}G^{jk}\phi_{in}^{\beta}({\vect{\xi}})
   \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\\
-  \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}-
-  \christoffel{i}{k}{h}\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{h}{m}{\alpha}
+  \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}-
+  \christoffel{i}{k}{h}\psi_{im}^{\alpha}({\vect{\xi}})\idxgsf{h}{m}{\alpha}
     }\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
 %viscous stress
   -\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\mu}{\vect{\xi}}}G^{jk}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
@@ -230,7 +226,7 @@ Where $\fnof{\matr{J}}{\vect{\xi}}$ represents the jacobian matrix. If we assume
 %pressure
   +\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
   \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}
-  \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+  \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})\idxgsf{i}{m}{\alpha}}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
 %viscous stress
   -\dsum_{e=1}^{E}\dintl{\vect{0}}{\vect{1}}{\fnof{\mu}{\vect{\xi}}}\delta^{jk}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}
      \fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}}{x^{j}}}
@@ -260,7 +256,7 @@ or, rearranged to pull constants out of the integrals:
  %pressure
     +\dsum_{e=1}^{E}{\fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
     \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
-    \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+    \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
  % %viscous stress
     -\dsum_{e=1}^{E}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
     \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
@@ -324,7 +320,7 @@ The element stiffness matrix $\matr{K}$ will contain the linear components of th
 
    [B^{\alpha\beta}_{mn}] = \idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
      \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
-     \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+     \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
     \qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad\qquad \text{for $n>{N{\cdot}{N_{dim}}}$}.
  \end{cases}
 \end{equation}
@@ -350,11 +346,13 @@ The nonlinear vector, $\vect{g}(t)$ will provide the convective operators and fo
   \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}
 \end{equation}
 
-\subsubsection{Petrov-Galerkin Formulation}
+\subsubsection{Streamline Upwind/Petrov-Galerkin (SUPG) Modification}
 
 For convection dominated flows, the Galerkin formulation must be modified to account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section ?? for more details. 
 
-Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \eqref{eq:NSEFEM2} can be written:
+For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes much more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces (Heinrich). These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative, though perhaps somewhat less rigorous, route is to apply SUPG weights only to the convective operator in elements with higher cell Reynolds numbers. This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
+
+ Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \eqref{eq:NSEFEM2} can be written:
 
 \begin{multline}
  \label{NSEPGFEM1}
@@ -371,20 +369,23 @@ where $w_i$ will be the classic Galerkin weight and $\Psi_i$ will be the Petrov-
 \begin{equation}
  \label{PGTest}
   \Psi_i = \pbrac{\frac{({\coth{\gamma} - \frac{1}{\gamma}}){L}}{2}{\frac{u_j}{\abs{u_j}}}}{\partialderiv{w_{i}}{k}}
-\end{equation}
+\end{equation},
+ for which it is practical to approximate the coth function:
+
+
 
 Here we see that we retain the same value for $\alpha={\coth{\gamma} - \frac{1}{\gamma}}$ as found for the linearized advection-diffusion equation. We must also define $\gamma$ for the Navier-Stokes equations to describe the ratio of the convective:diffusive operators. Here, the effective Peclet number will be based on the cell Reynolds number:
 
 \begin{equation}
  Re = \frac{\rho\bar{U}L}{\mu}  =\frac{\bar{U}L}{\nu}
 \end{equation}
-where $\bar{U}$ is the characteristic velocity and $\nu=\frac{\mu}{\rho}$ is the kinematic viscosity. The effective Peclet number $\gamma$ will be:
+where $\bar{U}$ is the characteristic velocity and $\nu=\frac{\mu}{\rho}$ is the kinematic viscosity. The length scale $L$ for a given element will be the largest distance between two nodes in the given element. The effective Peclet number $\gamma$ will be:
 
 \begin{equation}
-  \gamma= Re\abs{u_j}L = \frac{u_j^2L^2}{\nu}
+  \gamma= \frac{Re}{2}  = \frac{\bar{u}L}{2\nu}
 \end{equation}
 
-Equation \eqref{NSEPGFEM1} then becomes:
+Equation \eqref{NSEPGFEM1} then becomes after integration and simplification:
 
 
 \begin{multline}
@@ -408,7 +409,7 @@ Equation \eqref{NSEPGFEM1} then becomes:
  %pressure
     +\dsum_{e=1}^{E}{\fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}}
     \dintl{\vect{0}}{\vect{1}}\delta^{jk}\phi_{in}^{\beta}({\vect{\xi}})
-    \pbrac{\delby{\phi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
+    \pbrac{\delby{\psi_{im}^{\alpha}({\vect{\xi}})}{x^{k}}}\abs{\fnof{\matr{J}}{\vect{\xi}}}d\vect{\xi}\\
  % %viscous stress
     -\dsum_{e=1}^{E}\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}\idxgsf{i}{m}{\alpha}
     \dintl{\vect{0}}{\vect{1}}{\delta^{jk}\fnof{\mu}{\vect{\xi}}}\pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{j}}}
@@ -419,6 +420,8 @@ Equation \eqref{NSEPGFEM1} then becomes:
    \gint{\vect{0}}{\vect{1}}{\gbfn{m}{\alpha}{\vect{\xi}}\gbfn{o}{\gamma}{\vect{\xi}}
     \abs{\fnof{\matr{J}}{\vect{\xi}}}}{\vect{\xi}}
 \end{multline}
+
+Notice the integration by parts is done only to the standard Galerkin weights- this is because the artificial diffusion added by the Petrov-Galerkin terms should only contribute within the elements
 
 The use of the Petrov-Galerkin formulation in this way allows for the stabilization of moderately convective problems. However, it also results in nonsymmetric mass matrices with the additional term, making classical mass-lumping much more difficult. As a result, the use of explicit methods also becomes more difficult for time-dependent problems. 
 

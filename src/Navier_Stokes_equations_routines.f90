@@ -26,7 +26,7 @@
 !> Auckland, the University of Oxford and King's College, London.
 !> All Rights Reserved.
 !>
-!> Contributor(s):
+!> Contributor(s): David Ladd
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -2279,7 +2279,7 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, & 
-            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE &
+            & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -2492,32 +2492,37 @@ CONTAINS
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
           SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
             CASE(PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE)
-
-!               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-!               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-!                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
-!                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-!                   ! TODO: Set up for multiple equations sets
-!                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
-!                   IF(ASSOCIATED(EQUATIONS_SET)) THEN
-!                     EQUATIONS_ANALYTIC=>EQUATIONS_SET%ANALYTIC
-!                     IF(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE) THEN
-! !                    IF(ASSOCIATED(EQUATIONS_ANALYTIC)) THEN
-! !                      ANALYTIC_FUNCTION_TYPE=>EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE
-! !                      IF(ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE) THEN
-!                         ! Update any analytic values for static NSE problem
-                        CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-! !                      ENDIF
-!                     ENDIF
-!                   ENDIF
-!                 ENDIF 
-!               ENDIF
-
-            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE .OR. EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
+               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
+                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
+                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
+                   ! TODO: Set up for multiple equations sets
+                   EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(1)%PTR
+                   IF(ASSOCIATED(EQUATIONS_SET)) THEN
+                     EQUATIONS_ANALYTIC=>EQUATIONS_SET%ANALYTIC
+                     IF(ASSOCIATED(EQUATIONS_ANALYTIC)) THEN
+                       ! Update any analytic values for static NSE problem
+                       CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                     ENDIF
+                   ELSE
+                     CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                   ENDIF
+                 ELSE
+                   CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                 ENDIF 
+               ELSE
+                 CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+               ENDIF
+            CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
                 !Update transient boundary conditions
                 CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 !Update analytic solutions (and analytic boundary conditions if used)
 !                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+            CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+                !Update transient boundary conditions
+                CALL NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                !Update SUPG velocity parameters
+                !CALL NAVIER_STOKES_SUPG_CALCULATE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
                 !--- Set 'SOLVER_NUMBER' depending on CONTROL_LOOP%PROBLEM%SUBTYPE
                 SOLVER_NUMBER_NAVIER_STOKES=1
@@ -3091,7 +3096,8 @@ CONTAINS
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !Transient cases and moving mesh
-        CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_PGM_NAVIER_STOKES_SUBTYPE,PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE)
+        CASE(PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE,PROBLEM_PGM_NAVIER_STOKES_SUBTYPE, &
+          & PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
           SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
             CASE(PROBLEM_SETUP_INITIAL_TYPE)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -4108,6 +4114,8 @@ CONTAINS
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM, &
               & DPHIMS_DXI(3),DPHINS_DXI(3),X(3)
+    REAL(DP) :: ALPHA_SUPG,UMAX_SUPG,H_SUPG,RE_SUPG,PE_SUPG,SUPG_TOLERANCE,TAU_SUPG,LINE_LENGTH
+    INTEGER(INTG) :: NODES_PER_ELEMENT,component_idx,nl,node_idx,element_node_idx,NUM_COMPONENTS,NODES_PER_COMPONENT
     REAL(DP), POINTER :: BIF_VALUES(:)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -4145,6 +4153,7 @@ CONTAINS
     REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
     REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
     REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
+    REAL(DP) :: U_SUPG(3),X1(3),X2(3) 
     REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
     
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
@@ -4260,6 +4269,63 @@ CONTAINS
               IF(ASSOCIATED(DAMPING_MATRIX)) UPDATE_DAMPING_MATRIX=DAMPING_MATRIX%UPDATE_MATRIX
               IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
               IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
+              IF(UPDATE_NONLINEAR_RESIDUAL) THEN
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+                  & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
+                UMAX_SUPG=0.0_DP
+                U_VALUE(1:3)=0.0_DP
+                U_SUPG(1:3)=0.0_DP
+                !Calculate element-based velocity metrics
+                DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                    & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                  CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                    & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                  U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                  U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                  IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                    U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                  ELSE
+                    U_VALUE(3)=0.0_DP
+                  END IF
+                  U_SUPG(1:3)=U_SUPG(1:3)+U_VALUE(1:3)
+                END DO !ng
+                UMAX_SUPG=(U_SUPG(1)**2+U_SUPG(2)**2+U_SUPG(3)**2)**(0.5)
+                !Calculate element length scale H
+                H_SUPG=0.0_DP
+                X1(1:3)=0.0_DP
+                X2(1:3)=0.0_DP
+                !First element node that lengths will be calculated relative to
+                node_idx=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
+                NUM_COMPONENTS= FIELD_VARIABLE%NUMBER_OF_COMPONENTS - 1
+                NODES_PER_COMPONENT=EQUATIONS_SET%REGION%meshes%meshes(1)%ptr%topology(1)%ptr%nodes%number_of_nodes
+                X1(1)=geometric_field%variables(1)%parameter_sets%parameter_sets(1)% &
+                 & ptr%parameters%cmiss%data_dp(node_idx)
+                X1(2)=geometric_field%variables(1)%parameter_sets%parameter_sets(1)% &
+                 & ptr%parameters%cmiss%data_dp(node_idx+NODES_PER_COMPONENT)
+                IF(NUM_COMPONENTS==3) THEN
+                  X1(3)=geometric_field%variables(1)%parameter_sets%parameter_sets(1)% &
+                   & ptr%parameters%cmiss%data_dp(node_idx+NODES_PER_COMPONENT*2)
+                ENDIF
+                !subsequent element nodes
+                DO element_node_idx=2,GEOMETRIC_BASIS%NUMBER_OF_NODES
+                  node_idx=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(element_node_idx)
+                  X2(1)=geometric_field%variables(1)%parameter_sets%parameter_sets(1)% &
+                   & ptr%parameters%cmiss%data_dp(node_idx)
+                  X2(2)=geometric_field%variables(1)%parameter_sets%parameter_sets(1)% &
+                   & ptr%parameters%cmiss%data_dp(node_idx+NODES_PER_COMPONENT)
+                  IF(NUM_COMPONENTS==3) THEN
+                    X2(3)=geometric_field%variables(1)%parameter_sets%parameter_sets(1)% &
+                     & ptr%parameters%cmiss%data_dp(node_idx+NODES_PER_COMPONENT*2)
+                  ENDIF
+                  LINE_LENGTH = ((X1(1)-X2(1))**2+(X1(2)-X2(2))**2+(X1(3)-X2(3))**2)**(0.5)
+                  H_SUPG = MAX(H_SUPG,LINE_LENGTH)
+                END DO
+              END IF
             CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
               INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
               INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
@@ -4639,27 +4705,55 @@ CONTAINS
                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                     !note mh value derivative 
                     SUM=0.0_DP
-                    !Calculate SUM 
-                    DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                     SUM=SUM+RHO_PARAM*PHIMS*( & 
-                       & (U_VALUE(1)-W_VALUE(1))*(U_DERIV(mh,ni)*DXI_DX(ni,1))+ &
-                       & (U_VALUE(2)-W_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
-                       & (U_VALUE(3)-W_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
-                    ENDDO !ni
-                    NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
-                      
+                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                      !Apply streamline upwind petrov galerkin weights to convective term
+                      SUM=0.0_DP
 
+                      !H_SUPG=0.2_DP !TEST on regular mesh- need to make general!
 
-
+                      RE_SUPG=UMAX_SUPG*H_SUPG*RHO_PARAM/MU_PARAM
+                      PE_SUPG=RE_SUPG*UMAX_SUPG*H_SUPG
+                      SUPG_TOLERANCE=1.0E-8_DP
+                      ! SUPG tolerance
+                      IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
+                        !Approximate alpha = coth(Pe)-1/Pe
+                        IF(PE_SUPG>100.0_DP) THEN
+                          ALPHA_SUPG=1.0_DP - (1.0_DP/PE_SUPG)
+                        ELSE
+                          ALPHA_SUPG= (EXP(PE_SUPG)+EXP(-1.0_DP*PE_SUPG))/(EXP(PE_SUPG)-EXP(-1.0_DP*PE_SUPG)) - (1.0_DP/PE_SUPG)
+                        ENDIF
+                        TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
+                      ELSE
+                        TAU_SUPG=0.0_DP
+                      ENDIF
+                      DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                        DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                        IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) THEN
+                          DPHIMS_DXI(3)=0.0_DP
+                        ENDIF
+                        !Standard Galerkin weight (PHIMS)
+                        SUM=SUM+RHO_PARAM*(PHIMS + &
+                        !SUPG weighting terms
+                         & TAU_SUPG* &
+                         & (U_SUPG(1)*DPHIMS_DXI(ni)*DXI_DX(ni,1)+ &
+                         &  U_SUPG(2)*DPHIMS_DXI(ni)*DXI_DX(ni,2)+ &
+                         &  U_SUPG(3)*DPHIMS_DXI(ni)*DXI_DX(ni,3)))*( &
+                         ! u*divu
+                         & (U_VALUE(1))*(U_DERIV(mh,ni)*DXI_DX(ni,1))+ &
+                         & (U_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
+                         & (U_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
+                      ENDDO !ni
+                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+                    ELSE 
+                      !Normal (non-SUPG) Galerkin nonlinear vector
                       DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                        SUM=SUM+RHO_PARAM*PHIMS*( & 
-                         & (U_VALUE(1)-W_VALUE(1))*(U_DERIV(mh,ni)*DXI_DX(ni,1))+ &
-                         & (U_VALUE(2)-W_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
-                         & (U_VALUE(3)-W_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
+                         & (U_VALUE(1))*(U_DERIV(mh,ni)*DXI_DX(ni,1))+ &
+                         & (U_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
+                         & (U_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
                       ENDDO !ni
-                      STREAMLINE_DIFFUSION_VECTOR(mhs)=STREAMLINE_DIFFUSION_VECTOR(mhs)+SUM*JGW
-                    ENDIF !SUPG
+                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+                    ENDIF !SUPG check
                   ENDDO !ms
                 ENDDO !mh
               ENDIF
@@ -6739,7 +6833,6 @@ CONTAINS
     CALL EXITS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA")
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA
-
 
 
   !
