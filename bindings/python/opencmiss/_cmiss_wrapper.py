@@ -83,31 +83,28 @@ class CMWrapper(object):
 
         def get_attribute(self,attr_name):
             try:
-                return self.__dict__[attr_name]
-            except KeyError:
-                try:
-                    attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name)
-                    if hasattr(attr,'__call__'):
-                        #Call method with first parameter as the cmiss type:
-                        return_func = lambda *args: _wrap_routine(attr, args)
-                        return_func.__name__ = attr_name
-                        try:
-                            #Todo: remove first parameter from docstring
-                            return_func.__doc__ = _docstrings['CMISS'+self.type_name+attr_name]
-                        except KeyError:
-                            return_func.__doc__ = ''
-                        #Return this function bound to the object, so that the first 'self'
-                        #argument is added automatically as it appears as a method
-                        return return_func.__get__(self,cmiss_class)
-                    else:
-                        return attr
-                except AttributeError:
+                attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name)
+                if hasattr(attr,'__call__'):
+                    #Call method with first parameter as the cmiss type:
+                    return_func = lambda *args: _wrap_routine(attr, args)
+                    return_func.__name__ = attr_name
                     try:
-                        attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Get')
-                        return _wrap_routine(attr, (self,))
-                    except AttributeError:
-                        raise AttributeError("OpenCMISS has no constant or routine CMISS%s%s, and no routine CMISS%s%sGet" % \
-                                (self.type_name, attr_name, self.type_name, attr_name))
+                        #Todo: remove first parameter from docstring
+                        return_func.__doc__ = _docstrings['CMISS'+self.type_name+attr_name]
+                    except KeyError:
+                        return_func.__doc__ = ''
+                    #Return this function bound to the object, so that the first 'self'
+                    #argument is added automatically as it appears as a method
+                    return return_func.__get__(self,cmiss_class)
+                else:
+                    return attr
+            except AttributeError:
+                try:
+                    attr = getattr(opencmiss_swig, 'CMISS'+self.type_name+attr_name+'Get')
+                    return _wrap_routine(attr, (self,))
+                except AttributeError:
+                    raise AttributeError("OpenCMISS has no constant or routine CMISS%s%s, and no routine CMISS%s%sGet" % \
+                            (self.type_name, attr_name, self.type_name, attr_name))
         get_attribute.__doc__ = "Get a method or attribute of a CMISS%sType." % type_name
 
         def set_attribute(self,attr_name,value):
