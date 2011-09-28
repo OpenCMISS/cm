@@ -914,6 +914,12 @@ MODULE OPENCMISS
   
   !Interfaces
 
+  !>Extracts the OpenCMISS error message.
+  INTERFACE CMISSExtractErrorMessage
+    MODULE PROCEDURE CMISSExtractErrorMessageC
+    MODULE PROCEDURE CMISSExtractErrorMessageVS
+  END INTERFACE !CMISSExtractErrorMessage
+
   !>Gets the random seeds for OpenCMISS.
   INTERFACE CMISSRandomSeedsGet
     MODULE PROCEDURE CMISSRandomSeedsGet0
@@ -929,6 +935,8 @@ MODULE OPENCMISS
   PUBLIC CMISSReturnErrorCode,CMISSOutputError,CMISSTrapError
 
   PUBLIC CMISSErrorHandlingModeGet,CMISSErrorHandlingModeSet
+
+  PUBLIC CMISSExtractErrorMessage
 
   PUBLIC CMISSRandomSeedsGet,CMISSRandomSeedsSizeGet,CMISSRandomSeedsSet
   
@@ -11393,10 +11401,48 @@ CONTAINS
     
   END SUBROUTINE CMISSErrorHandlingModeSet
 
-  !  
+  !
   !================================================================================================================================
   !
-  
+
+  !>Extracts the most recent error string for OpenCMISS
+  SUBROUTINE CMISSExtractErrorMessageC(ErrorMessage,Err)
+
+    !Argument variables
+    CHARACTER(LEN=*), INTENT(OUT) :: ErrorMessage !<On return, the extracted error message.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL EXTRACT_ERROR_MESSAGE(ErrorMessage,Err,ERROR,*999)
+
+    RETURN
+999 RETURN 1
+
+  END SUBROUTINE CMISSExtractErrorMessageC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Extracts the most recent error string for OpenCMISS
+  SUBROUTINE CMISSExtractErrorMessageVS(ErrorMessage,Err)
+
+    !Argument variables
+    TYPE(VARYING_STRING), INTENT(OUT) :: ErrorMessage !<On return, the extracted error message.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL EXTRACT_ERROR_MESSAGE(ErrorMessage,Err,ERROR,*999)
+
+    RETURN
+999 RETURN 1
+
+  END SUBROUTINE CMISSExtractErrorMessageVS
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns the random seeds for OpenCMISS
   SUBROUTINE CMISSRandomSeedsGet0(RandomSeed,Err)
   

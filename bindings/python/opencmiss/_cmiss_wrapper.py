@@ -156,7 +156,6 @@ def _wrap_routine(routine, args=None):
         status = r
         return_val = None
     if status != 0:
-        #TODO: get error strings from OpenCMISS
-        raise CMISSError, 'Non-zero return value'
+        raise CMISSError, opencmiss_swig.CMISSExtractErrorMessage()[1]
     return return_val
 
