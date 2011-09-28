@@ -13,7 +13,7 @@ class CMISSError(Exception):
         return repr(self.value)
 
 
-class CMWrapper(object):
+class CMISSWrapper(object):
     """OpenCMISS python interface
 
     All OpenCMISS routines and constants can be accessed through this object
