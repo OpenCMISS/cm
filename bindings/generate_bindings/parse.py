@@ -988,8 +988,22 @@ class Parameter(object):
                 apply_to = 'const int %sSize, char *%s' % (self.name,self.name)
         else:
             if self.var_type == Parameter.CHARACTER:
-                typemap = 'const int Size, const char *DummyInputString'
-                apply_to = 'const int %sSize, const char *%s' % (self.name,self.name)
+                if self.array_dims == 1:
+                    typemap = 'const int Size, const char *DummyInputString'
+                    apply_to = 'const int %sSize, const char *%s' % (self.name,self.name)
+                else:
+                    typemap = 'const int NumStrings, const int StringLength, const char *DummyStringList'
+                    apply_to = 'const int %sNumStrings, const int %sStringLength, const char *%s' % (self.name,self.name,self.name)
+            elif self.array_dims == 1:
+                if self.var_type == Parameter.INTEGER:
+                    typemap = 'const int ArraySize, const int *DummyInputArray'
+                    apply_to = 'const int %sSize, const int *%s' % (self.name,self.name)
+                elif self.var_type == Parameter.DOUBLE:
+                    typemap = 'const int ArraySize, const double *DummyInputArray'
+                    apply_to = 'const int %sSize, const double *%s' % (self.name,self.name)
+                elif self.var_type == Parameter.FLOAT:
+                    typemap = 'const int ArraySize, const float *DummyInputArray'
+                    apply_to = 'const int %sSize, const float *%s' % (self.name,self.name)
             elif self.var_type == Parameter.LOGICAL:
                 typemap = 'const int DummyInputBool'
                 apply_to = 'const int *%s' % self.name

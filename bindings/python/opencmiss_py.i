@@ -1,4 +1,4 @@
-/* opencmiss_wrapper.i */
+/* OpenCMISS SWIG interface for Python */
 %module opencmiss
 %{
 #include "stdlib.h"
@@ -32,6 +32,34 @@
     Py_DECREF(previous_result);
     Py_DECREF(new_output_tuple);
   }
+%enddef
+
+/* Macro for array input */
+%define ARRAY_INPUT(sequence_type, check_routine, convert_routine, readable_sequence_type)
+  PyObject *o;
+  if (!PySequence_Check($input)) {
+    PyErr_SetString(PyExc_TypeError,"Expected a sequence");
+    return NULL;
+  }
+  len = PyObject_Length($input);
+  $2 = (sequence_type *) malloc(len * sizeof(sequence_type));
+  if ($2 == NULL) {
+    PyErr_SetString(PyExc_MemoryError,"Could not allocate memory for array");
+    return NULL;
+  } else {
+    for (i=0; i < len; i++) {
+      o = PySequence_GetItem($input,i);
+      if (!check_routine(o)) {
+        Py_XDECREF(o);
+        PyErr_SetString(PyExc_ValueError,"Expected a sequence of readable_sequence_type");
+        free($2);
+        return NULL;
+      }
+      *($2 + i) = (sequence_type) convert_routine(o);
+      Py_DECREF(o);
+    }
+  }
+  $1 = len;
 %enddef
 
 /* Typemaps for passing CMISS types to CMISS...Type initialise routines
@@ -126,6 +154,68 @@
 
   output_bool = PyBool_FromLong((long) *$1);
   APPEND_TO_RESULT(output_bool)
+}
+
+/* Array input */
+%typemap(in,numinputs=1) (const int ArraySize, const int *DummyInputArray)(int len, int i) {
+  ARRAY_INPUT(int, PyInt_Check, PyInt_AsLong, integers)
+}
+%typemap(freearg) (const int ArraySize, const int *DummyInputArray) {
+    free($2);
+}
+
+%typemap(in,numinputs=1) (const int ArraySize, const double *DummyInputArray)(int len, int i) {
+  ARRAY_INPUT(double, PyFloat_Check, PyFloat_AsDouble, floats)
+}
+%typemap(freearg) (const int ArraySize, const double *DummyInputArray) {
+    free($2);
+}
+
+%typemap(in,numinputs=1) (const int ArraySize, const float *DummyInputArray)(int len, int i) {
+  ARRAY_INPUT(float, PyFloat_Check, PyFloat_AsDouble, floats)
+}
+%typemap(freearg) (const int ArraySize, const float *DummyInputArray) {
+    free($2);
+}
+
+/* Input array of strings */
+%typemap(in,numinputs=1) (const int NumStrings, const int StringLength, const char *DummyStringList)(int len, int i, Py_ssize_t max_strlen) {
+  PyObject *o;
+  max_strlen = 0;
+  if (!PySequence_Check($input)) {
+    PyErr_SetString(PyExc_TypeError,"Expected a sequence");
+    return NULL;
+  }
+  len = PyObject_Length($input);
+  for (i =0; i < len; i++) {
+    o = PySequence_GetItem($input,i);
+    if (!PyString_Check(o)) {
+      Py_XDECREF(o);
+      PyErr_SetString(PyExc_ValueError,"Expected a sequence of strings");
+      return NULL;
+    }
+    if (PyString_Size(o) > max_strlen) {
+      max_strlen = PyString_Size(o);
+    }
+    Py_DECREF(o);
+  }
+  max_strlen = max_strlen + 1; /* Null terminator */
+  $3 = (char *) malloc(len * max_strlen * sizeof(char));
+  if ($3 == NULL) {
+    PyErr_SetString(PyExc_MemoryError,"Could not allocate memory for array");
+    return NULL;
+  } else {
+    for (i=0; i < len; i++) {
+      o = PySequence_GetItem($input,i);
+      strncpy($3+i*max_strlen, PyString_AsString(o), PyString_Size(o)+1);
+      Py_DECREF(o);
+    }
+  }
+  $1 = len;
+  $2 = (int) max_strlen;
+}
+%typemap(freearg) (const int NumStrings, const int StringLength, const char *DummyStringList) {
+    free($3);
 }
 
 %include "opencmiss.h"
