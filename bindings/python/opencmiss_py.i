@@ -36,6 +36,7 @@
 
 /* Macro for array input */
 %define ARRAY_INPUT(sequence_type, check_routine, convert_routine, readable_sequence_type)
+%typemap(in,numinputs=1) (const int ArraySize, const sequence_type *DummyInputArray)(int len, int i) {
   PyObject *o;
   if (!PySequence_Check($input)) {
     PyErr_SetString(PyExc_TypeError,"Expected a sequence");
@@ -60,6 +61,10 @@
     }
   }
   $1 = len;
+}
+%typemap(freearg) (const int ArraySize, const sequence_type *DummyInputArray) {
+    free($2);
+}
 %enddef
 
 /* Typemaps for passing CMISS types to CMISS...Type initialise routines
@@ -157,26 +162,11 @@
 }
 
 /* Array input */
-%typemap(in,numinputs=1) (const int ArraySize, const int *DummyInputArray)(int len, int i) {
-  ARRAY_INPUT(int, PyInt_Check, PyInt_AsLong, integers)
-}
-%typemap(freearg) (const int ArraySize, const int *DummyInputArray) {
-    free($2);
-}
+ARRAY_INPUT(int, PyInt_Check, PyInt_AsLong, integers)
 
-%typemap(in,numinputs=1) (const int ArraySize, const double *DummyInputArray)(int len, int i) {
-  ARRAY_INPUT(double, PyFloat_Check, PyFloat_AsDouble, floats)
-}
-%typemap(freearg) (const int ArraySize, const double *DummyInputArray) {
-    free($2);
-}
+ARRAY_INPUT(double, PyFloat_Check, PyFloat_AsDouble, floats)
 
-%typemap(in,numinputs=1) (const int ArraySize, const float *DummyInputArray)(int len, int i) {
-  ARRAY_INPUT(float, PyFloat_Check, PyFloat_AsDouble, floats)
-}
-%typemap(freearg) (const int ArraySize, const float *DummyInputArray) {
-    free($2);
-}
+ARRAY_INPUT(float, PyFloat_Check, PyFloat_AsDouble, floats)
 
 /* Input array of strings */
 %typemap(in,numinputs=1) (const int NumStrings, const int StringLength, const char *DummyStringList)(int len, int i, Py_ssize_t max_strlen) {
