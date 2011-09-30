@@ -787,11 +787,18 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE PetscInitialize
 
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+    SUBROUTINE PetscLogView(viewer,ierr)
+      PetscViewer viewer
+      PetscInt ierr
+    END SUBROUTINE PetscLogView
+#else
     SUBROUTINE PetscLogPrintSummary(comm,file,ierr)
       MPI_Comm comm
       PetscChar(*) file
       PetscInt ierr
     END SUBROUTINE PetscLogPrintSummary
+#endif
 
     SUBROUTINE SNESCreate(comm,snes,ierr)
       MPI_Comm comm
@@ -1365,13 +1372,21 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_SUNDIALS_ADAMS,PETSC_SUNDIALS_BDF,PETSC_SUNDIALS_MODIFIED_GS,PETSC_SUNDIALS_CLASSICAL_GS
 
   PUBLIC PETSC_TSCREATE,PETSC_TSDESTROY,PETSC_TSFINALISE,PETSC_TSINITIALISE,PETSC_TSMONITORSET, &
-    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS,PETSC_TSSETINITIALTIMESTEP,PETSC_TSSETMATRICES, &
+    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS,PETSC_TSSETINITIALTIMESTEP, &
     & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE,PETSC_TSSOLVE,PETSC_TSSTEP
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
+  PUBLIC PETSC_TSSETMATRICES
+#endif
   
   PUBLIC PETSC_ERRORHANDLING_SET_OFF,PETSC_ERRORHANDLING_SET_ON
   
-  PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE,PETSC_LOGPRINTSUMMARY
-
+  PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+  PUBLIC PETSC_LOGVIEW
+#else
+  PUBLIC PETSC_LOGPRINTSUMMARY
+#endif
+  
   PUBLIC PETSC_SNESLS,PETSC_SNESTR,PETSC_SNESTEST
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
   PUBLIC PETSC_SNESPYTHON
@@ -2353,6 +2368,40 @@ CONTAINS
     RETURN 1
   END SUBROUTINE PETSC_KSPSOLVE
     
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc PetscLogView routine.
+  SUBROUTINE PETSC_LOGVIEW(VIEWER,ERR,ERROR,*)
+
+    !Argument Variables
+    PetscViewer, INTENT(IN) :: VIEWER !<The viewer to print the log to
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_LOGVIEW",ERR,ERROR,*999)
+
+    CALL PetscLogView(VIEWER,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in PetscLogView.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_LOGVIEW")
+    RETURN
+999 CALL ERRORS("PETSC_LOGVIEW",ERR,ERROR)
+    CALL EXITS("PETSC_LOGVIEW")
+    RETURN 1
+  END SUBROUTINE PETSC_LOGVIEW
+  
+#else
+  
   !
   !================================================================================================================================
   !
@@ -2387,7 +2436,9 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
+  
+#endif
+  
   !>Buffer routine to the PETSc MatAssemblyBegin routine.
   SUBROUTINE PETSC_MATASSEMBLYBEGIN(A,ASSEMBLY_TYPE,ERR,ERROR,*)
 
@@ -4763,6 +4814,7 @@ CONTAINS
   !================================================================================================================================
   !
     
+#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
   !>Buffer routine to the PETSc TSSetMatrices routine.
   SUBROUTINE PETSC_TSSETMATRICES(TS_,ARHS,RHSFUNCTION,ALHS,LHSFUNCTION,FLAG,CTX,ERR,ERROR,*)
 
@@ -4797,7 +4849,8 @@ CONTAINS
   !
   !================================================================================================================================
   !
-    
+#endif
+  
   !>Buffer routine to the PETSc TSSetProblemType routine.
   SUBROUTINE PETSC_TSSETPROBLEMTYPE(TS_,PROB_TYPE,ERR,ERROR,*)
 
