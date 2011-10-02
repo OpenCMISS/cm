@@ -168,6 +168,35 @@ ARRAY_INPUT(double, PyFloat_Check, PyFloat_AsDouble, floats)
 
 ARRAY_INPUT(float, PyFloat_Check, PyFloat_AsDouble, floats)
 
+/* Array of CMISS types */
+%typemap(in,numinputs=1) (const int ArraySize, const CMISSDummyType *DummyTypes)(int len, int i) {
+  PyObject *o;
+  if (!PySequence_Check($input)) {
+    PyErr_SetString(PyExc_TypeError,"Expected a sequence");
+    return NULL;
+  }
+  len = PyObject_Length($input);
+  $2 = ($2_ltype) malloc(len * sizeof($*2_ltype));
+  if ($2 == NULL) {
+    PyErr_SetString(PyExc_MemoryError,"Could not allocate memory for array");
+    return NULL;
+  } else {
+    for (i=0; i < len; i++) {
+      o = PySequence_GetItem($input,i);
+      if (SWIG_ConvertPtr(o, (void **) ($2+i), $*2_descriptor, SWIG_POINTER_EXCEPTION) == -1) {
+        PyErr_SetString(PyExc_TypeError,"Expected a sequence of CMISS types.");
+        free($2);
+        return NULL;
+      }
+      Py_DECREF(o);
+    }
+  }
+  $1 = len;
+}
+%typemap(freearg) (const int ArraySize, const CMISSDummyType *DummyTypes) {
+    free($2);
+}
+
 /* Input array of strings */
 %typemap(in,numinputs=1) (const int NumStrings, const int StringLength, const char *DummyStringList)(int len, int i, Py_ssize_t max_strlen) {
   PyObject *o;

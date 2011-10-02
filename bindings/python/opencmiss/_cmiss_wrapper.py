@@ -143,7 +143,10 @@ def _wrap_routine(routine, args=None):
             if hasattr(arg,'cmiss_type'):
                 new_args.append(arg.cmiss_type)
             else:
-                new_args.append(arg)
+                try:
+                    new_args.append([a.cmiss_type for a in arg])
+                except (TypeError, AttributeError):
+                    new_args.append(arg)
         r = routine(*new_args)
     if isinstance(r,tuple):
         status = r[0]

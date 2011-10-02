@@ -1004,6 +1004,9 @@ class Parameter(object):
                 elif self.var_type == Parameter.FLOAT:
                     typemap = 'const int ArraySize, const float *DummyInputArray'
                     apply_to = 'const int %sSize, const float *%s' % (self.name,self.name)
+                elif self.var_type == Parameter.CUSTOM_TYPE:
+                    typemap = 'const int ArraySize, const CMISSDummyType *DummyTypes'
+                    apply_to = 'const int %sSize, const %s *%s' % (self.name,self.type_name,self.name)
             elif self.var_type == Parameter.LOGICAL:
                 typemap = 'const int DummyInputBool'
                 apply_to = 'const int *%s' % self.name
