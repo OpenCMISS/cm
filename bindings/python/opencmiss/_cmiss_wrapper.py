@@ -69,13 +69,14 @@ class CMISSWrapper(object):
         def init_func(self,*args):
             self.__dict__['type_name'] = type_name #Avoid recursive call to __getattr__
             self.cmiss_type = getattr(cm,'%sTypeInitialise' % type_name)()
-            try:
-                args += (self.cmiss_type,)
-                getattr(cm,'%sCreateStart' % type_name)(*args)
-            except AttributeError:
-                #No create start routine, return the initialised type with a null pointer
-                if len(args) > 1:
-                    raise ValueError, "%s initialise routine does not take any arguments." % self.type_name
+            if len(args) > 0:
+                #Only call create start if we get passed some arguments, otherwise initialise a null type
+                try:
+                    args += (self.cmiss_type,)
+                    getattr(cm,'%sCreateStart' % type_name)(*args)
+                except AttributeError:
+                    #No create start routine
+                    raise ValueError, "%s has no CreateStart routine so does not take any arguments." % self.type_name
         if hasattr(cm,'%sCreateStart' % type_name):
             init_func.__doc__ = "Initialise a CMISS%sType, and start its creation." % type_name
         else:
