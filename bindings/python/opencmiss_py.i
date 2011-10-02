@@ -92,7 +92,7 @@
     PyErr_SetString(PyExc_ValueError,"Expected a string");
     return NULL;
   }
-  $1 = PyString_Size($input);
+  $1 = PyString_Size($input)+1;
   $2 = PyString_AsString($input);
 }
 
