@@ -466,17 +466,17 @@ class Subroutine(object):
         """
 
         #Note that some interfaces have a 'C' variant with C in the name already:
-        if re.search(r'Obj[0-9]*C?$',self.name):
+        if re.search(r'Obj[0-9]*C*$',self.name):
             #For routines with a Region and Interface variant, the Region one is default
             #and Region is removed from the name
-            self.c_name = re.sub(r'(Region)?C?(Obj)[0-9]*C?$','',self.name)
-            self.c_f90_name = re.sub(r'(Region)?C?Obj[0-9]*C?$','C',self.name)
-        elif re.search(r'Number[0-9]*C?$',self.name):
-            self.c_name = re.sub(r'C?Number[0-9]*C?$',r'Num',self.name)
-            self.c_f90_name = re.sub(r'C?Number[0-9]*C?$',r'CNum',self.name)
+            self.c_name = re.sub(r'(Region)?C*(Obj)[0-9]*C*$','',self.name)
+            self.c_f90_name = re.sub(r'(Region)?C*Obj[0-9]*C*$','C',self.name)
+        elif re.search(r'Number[0-9]*C*$',self.name):
+            self.c_name = re.sub(r'C*Number[0-9]*C?$',r'Num',self.name)
+            self.c_f90_name = re.sub(r'C*Number[0-9]*C*$',r'CNum',self.name)
         else:
-            self.c_name = re.sub(r'C?[0-9]*$','',self.name)
-            self.c_f90_name = re.sub(r'C?[0-9]*$',r'C',self.name)
+            self.c_name = re.sub(r'C*[0-9]*$','',self.name)
+            self.c_f90_name = re.sub(r'C*[0-9]*$',r'C',self.name)
         #Make sure names are different, might have matched a C at the end of the subroutine name
         if self.c_f90_name == self.name:
             self.c_f90_name = self.name+'C'
