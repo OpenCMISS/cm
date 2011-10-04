@@ -99,6 +99,25 @@ FOREACH(infileName ${EXCLUDED_ROUTINES})
     LIST(REMOVE_ITEM OPENCMISS_SRCS ${infileName})
 ENDFOREACH(infileName)
 
+INCLUDE( ${CMAKE_MODULE_PATH}/PreprocessedSources.cmake )
+FOREACH(filenameSrc ${PREPROCESSED_SRCS})
+    SET(fullFilenameSrc "${SOURCE_DIR}/${filenameSrc}")
+    STRING(REGEX REPLACE "(.*)\\.([^\\.]*)" "\\1-expanded.\\2" filenameExpanded ${filenameSrc})
+    SET(fullFilenameExpanded "${OBJECT_DIR}/${filenameExpanded}")
+    LIST(APPEND OPENCMISS_SRCS ${fullFilenameExpanded})
+    LIST(REMOVE_ITEM OPENCMISS_SRCS ${fullFilenameSrc})
+    ADD_CUSTOM_COMMAND(OUTPUT      ${fullFilenameExpanded}
+                       COMMAND     mkdir
+                         ARGS      -p ${OBJECT_DIR}
+                         VERBATIM
+                       COMMAND     m4
+                         ARGS      --prefix-builtins ${fullFilenameSrc} > ${fullFilenameExpanded}
+                         VERBATIM
+                       DEPENDS     ${fullFilenameSrc}
+    )
+    MESSAGE(WARN "\nfullFilenameExpanded: ${fullFilenameExpanded}\nfullFilenameSrc: ${fullFilenameSrc}")
+ENDFOREACH(filenameSrc)
+
 IF(${OPERATING_SYSTEM} STREQUAL win32)
   FILE(GLOB OPENCMISS_FORTRAN_SRCS ${SOURCE_DIR}/*.f90)
   FILE(GLOB OPENCMISS_C_SRCS ${SOURCE_DIR}/*.c)
