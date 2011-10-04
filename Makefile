@@ -752,13 +752,24 @@ ELFLAGS += $(EXTERNAL_LIB_PATH)
 
 .SUFFIXES:	.f90	.c
 
+main: preliminaries \
+	$(LIBRARY) \
+	$(MOD_INCLUDE) \
+	$(MOD_FIELDML_TARGET) \
+	$(HEADER_INCLUDE)
+
+PREPROCESSED_OBJECTS = 
+
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
 	( cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
 
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c $(OBJECT_DIR)/.directory
 	( cd $(OBJECT_DIR) && $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
-# Target to create directories (but as the changing mTime of directories confuses make, we create hidden file in it and reference it instead of the directory)
+$(PREPROCESSED_OBJECTS) : $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
+	( m4 --prefix-builtins $< > $(subst .o,-expanded.f90,$@) ; cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $(subst .o,-expanded.f90,$@) )
+
+# Target to create directories (but as the changing mTime of directories confuses make, we create a hidden file in it and reference it instead of the directory)
 %/.directory:
 	( mkdir -p $(@D) && touch $@ )
 
@@ -880,7 +891,8 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
-	$(FIELDML_OBJECT) 
+	$(FIELDML_OBJECT) \
+	$(PREPROCESSED_OBJECTS)
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
@@ -893,12 +905,6 @@ else
 endif
 
 OBJECTS += $(MACHINE_OBJECTS)
-
-main: preliminaries \
-	$(LIBRARY) \
-	$(MOD_INCLUDE) \
-	$(MOD_FIELDML_TARGET) \
-	$(HEADER_INCLUDE)
 
 preliminaries: $(OBJECT_DIR)/.directory \
 	$(INC_DIR)/.directory \
