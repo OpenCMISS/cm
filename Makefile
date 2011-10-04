@@ -1987,7 +1987,7 @@ $(OBJECT_DIR)/node_routines.o	:	$(SOURCE_DIR)/node_routines.f90 \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/opencmiss.mod : $(OBJECT_DIR)/opencmiss.o
+$(MOD_SOURCE_INC) : $(OBJECT_DIR)/opencmiss.o
 
 $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
