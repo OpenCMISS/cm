@@ -752,11 +752,15 @@ ELFLAGS += $(EXTERNAL_LIB_PATH)
 
 .SUFFIXES:	.f90	.c
 
-$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90
+$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
 	( cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
 
-$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c
+$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c $(OBJECT_DIR)/.directory
 	( cd $(OBJECT_DIR) && $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
+
+# Target to create directories (but as the changing mTime of directories confuses make, we create hidden file in it and reference it instead of the directory)
+%/.directory:
+	( mkdir -p $(@D) && touch $@ )
 
 ifeq ($(USEFIELDML),true)
     FIELDML_OBJECT =  \
@@ -896,26 +900,17 @@ main: preliminaries \
 	$(MOD_FIELDML_TARGET) \
 	$(HEADER_INCLUDE)
 
-preliminaries: $(OBJECT_DIR) \
-	$(INC_DIR) \
-	$(LIB_DIR)
-
-$(OBJECT_DIR) :
-	mkdir -p $@
-
-$(INC_DIR) :
-	mkdir -p $@; 
-
-$(LIB_DIR) :
-	mkdir -p $@; 
+preliminaries: $(OBJECT_DIR)/.directory \
+	$(INC_DIR)/.directory \
+	$(LIB_DIR)/.directory
 
 $(LIBRARY) : $(OBJECTS) 
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
-$(MOD_INCLUDE) : $(MOD_SOURCE_INC)
+$(MOD_INCLUDE) : $(MOD_SOURCE_INC) $(INC_DIR)/.directory
 	cp $(MOD_SOURCE_INC) $@ 
 
-MOD_FIELDML: $(FIELDML_OBJECT) 
+MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod
 	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
