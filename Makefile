@@ -753,10 +753,10 @@ ELFLAGS += $(EXTERNAL_LIB_PATH)
 .SUFFIXES:	.f90	.c
 
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90
-	( cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
+	( cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
 
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c
-	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
+	( cd $(OBJECT_DIR) && $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
 ifeq ($(USEFIELDML),true)
     FIELDML_OBJECT =  \
