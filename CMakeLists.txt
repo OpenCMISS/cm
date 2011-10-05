@@ -99,13 +99,26 @@ FOREACH(infileName ${EXCLUDED_ROUTINES})
     LIST(REMOVE_ITEM OPENCMISS_SRCS ${infileName})
 ENDFOREACH(infileName)
 
+# Preprocess files mentioned in "PreprocessedSources.cmake"
 INCLUDE( ${CMAKE_MODULE_PATH}/PreprocessedSources.cmake )
 FOREACH(filenameSrc ${PREPROCESSED_SRCS})
+    
+    # Get full filename of raw, unexpanded src file
     SET(fullFilenameSrc "${SOURCE_DIR}/${filenameSrc}")
-    STRING(REGEX REPLACE "(.*)\\.([^\\.]*)" "\\1-expanded.\\2" filenameExpanded ${filenameSrc})
-    SET(fullFilenameExpanded "${OBJECT_DIR}/${filenameExpanded}")
-    LIST(APPEND OPENCMISS_SRCS ${fullFilenameExpanded})
+    
+    # Generate filename for expanded (intermediate) file
+    GET_FILENAME_COMPONENT(filenameBase ${filenameSrc} NAME_WE)
+    GET_FILENAME_COMPONENT(filenameExtension ${filenameSrc} EXT)
+    SET(fullFilenameExpanded "${OBJECT_DIR}/${filenameBase}-expanded${filenameExtension}")
+    
+    # Don't compile the raw, unexpanded source file...
+    FILE(GLOB fullFilenameSrc ${fullFilenameSrc}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
     LIST(REMOVE_ITEM OPENCMISS_SRCS ${fullFilenameSrc})
+    
+    # ...but compile the preprocessed (expanded) intermediate file instead!
+    LIST(APPEND OPENCMISS_SRCS ${fullFilenameExpanded})
+    
+    # Add rule that tells cmake how to create the intermediate file
     ADD_CUSTOM_COMMAND(OUTPUT      ${fullFilenameExpanded}
                        COMMAND     mkdir
                          ARGS      -p ${OBJECT_DIR}
@@ -115,7 +128,7 @@ FOREACH(filenameSrc ${PREPROCESSED_SRCS})
                          VERBATIM
                        DEPENDS     ${fullFilenameSrc}
     )
-    MESSAGE(WARN "\nfullFilenameExpanded: ${fullFilenameExpanded}\nfullFilenameSrc: ${fullFilenameSrc}")
+    
 ENDFOREACH(filenameSrc)
 
 IF(${OPERATING_SYSTEM} STREQUAL win32)
