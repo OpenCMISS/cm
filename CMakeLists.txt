@@ -96,7 +96,10 @@ SET(LIBRARY_INSTALL_TYPE ARCHIVE)
 FILE(GLOB OPENCMISS_SRCS ${SOURCE_DIR}/*.*)
 INCLUDE( ${CMAKE_MODULE_PATH}/Entries.cmake )
 FOREACH(infileName ${EXCLUDED_ROUTINES})
-    LIST(REMOVE_ITEM OPENCMISS_SRCS ${infileName})
+    FILE(GLOB infileName ${infileName}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
+    IF (infileName) # if file was found
+        LIST(REMOVE_ITEM OPENCMISS_SRCS ${infileName})
+    ENDIF (infileName)
 ENDFOREACH(infileName)
 
 # Preprocess files mentioned in "PreprocessedSources.cmake"
