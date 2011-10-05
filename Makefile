@@ -767,7 +767,7 @@ $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c $(OBJECT_DIR)/.directory
 	( cd $(OBJECT_DIR) && $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
 
 $(PREPROCESSED_OBJECTS) : $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
-	( m4 --prefix-builtins $< > $(subst .o,-expanded.f90,$@) ; cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $(subst .o,-expanded.f90,$@) )
+	( m4 --prefix-builtins $< > $(subst .o,-expanded.f90,$@) && cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $(subst .o,-expanded.f90,$@) )
 
 # Target to create directories (but as the changing mTime of directories confuses make, we create a hidden file in it and reference it instead of the directory)
 %/.directory:
