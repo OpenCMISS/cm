@@ -3779,27 +3779,48 @@ CONTAINS
                           SUM=0.0_DP
 
                           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                            PHIMS=PHIMS+W_SUPG(ms,ng)
-                          END IF
-
-                          IF(UPDATE_JACOBIAN_MATRIX) THEN
-                            !Calculate J1 only
-                            DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                              SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
-                            ENDDO 
-                            !Calculate MATRIX  
-                            J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-                            !Calculate J2 only
-                            IF(nh==mh) THEN 
-                              SUM=0.0_DP
-                              !Calculate SUM 
-                              DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                  SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
-                                ENDDO !mi
-                              ENDDO !x
-                              !Calculate MATRIX
-                              J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+                          !Add SUPG weighting terms
+                            IF(UPDATE_JACOBIAN_MATRIX) THEN
+                              !Calculate J1 only
+                              DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*(PHIMS+W_SUPG(ms,ng))*RHO_PARAM)
+                              ENDDO 
+                              !Calculate MATRIX  
+                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+                              !Calculate J2 only
+                              IF(nh==mh) THEN 
+                                SUM=0.0_DP
+                                !Calculate SUM 
+                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                    SUM=SUM+RHO_PARAM*(U_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS+W_SUPG(ms,ng))
+                                  ENDDO !mi
+                                ENDDO !x
+                                !Calculate MATRIX
+                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+                              END IF
+                            END IF
+                          ELSE
+                          !Normal Galerkin weighting
+                            IF(UPDATE_JACOBIAN_MATRIX) THEN
+                              !Calculate J1 only
+                              DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
+                              ENDDO 
+                              !Calculate MATRIX  
+                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+                              !Calculate J2 only
+                              IF(nh==mh) THEN 
+                                SUM=0.0_DP
+                                !Calculate SUM 
+                                DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                  DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
+                                    SUM=SUM+RHO_PARAM*(U_VALUE(x)-W_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*PHIMS
+                                  ENDDO !mi
+                                ENDDO !x
+                                !Calculate MATRIX
+                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+                              END IF
                             END IF
                           END IF
                         ENDDO !ns    
@@ -6929,8 +6950,10 @@ CONTAINS
                   PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                   U_SUPG(ng,1:3)=U_SUPG(ng,1:3)+U_VALUE(1:3)*PHIMS
                 END DO !ms
-                UMAG_SUPG=(U_SUPG(ng,1)**2+U_SUPG(ng,2)**2+U_SUPG(ng,3)**2)**(0.5)
+                 UMAG_SUPG=L2NORM(U_SUPG(ng,1:3))
+!                UMAG_SUPG=(U_SUPG(ng,1)**2+U_SUPG(ng,2)**2+U_SUPG(ng,3)**2)**(0.5)
                 UMAX_SUPG=MAX(UMAG_SUPG,UMAX_SUPG)
+!                UNORM_SUPG(ng,1:3)=NORMALISE(U_SUPG(ng,1:3))
               END DO !ng
 
               MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
@@ -6941,12 +6964,7 @@ CONTAINS
               !TODO: set SUPG tolerance relative to iterative solver tolerance
               SUPG_TOLERANCE=1.0E-8_DP
               IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
-                !Approximate alpha = coth(Pe)-1/Pe
-                IF(PE_SUPG>100.0_DP) THEN
-                  ALPHA_SUPG=1.0_DP - (1.0_DP/PE_SUPG)
-                ELSE
-                  ALPHA_SUPG= (EXP(PE_SUPG)+EXP(-1.0_DP*PE_SUPG))/(EXP(PE_SUPG)-EXP(-1.0_DP*PE_SUPG)) - (1.0_DP/PE_SUPG)
-                ENDIF
+                ALPHA_SUPG= COTH(PE) - (1.0_DP/PE_SUPG)
                 TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
               ELSE
                 TAU_SUPG=0.0_DP

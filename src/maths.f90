@@ -164,6 +164,12 @@ MODULE MATHS
     MODULE PROCEDURE SOLVE_SMALL_LINEAR_SYSTEM_DP
   END INTERFACE !SOLVE_SMALL_LINEAR_SYSTEM
 
+  !>Calculates hyperbolic cotangent function.
+  INTERFACE COTH
+    MODULE PROCEDURE COTH_SP
+    MODULE PROCEDURE COTH_DP
+  END INTERFACE !COTH
+
   PUBLIC CROSS_PRODUCT,D_CROSS_PRODUCT,DETERMINANT,EIGENVALUE,EIGENVECTOR,INVERT,L2NORM,MATRIX_PRODUCT, &
     & MATRIX_TRANSPOSE,NORMALISE,SOLVE_SMALL_LINEAR_SYSTEM
   
@@ -1901,6 +1907,64 @@ CONTAINS
     CALL EXITS("SOLVE_SMALL_LINEAR_SYSTEM_DP")
     RETURN 1
   END SUBROUTINE SOLVE_SMALL_LINEAR_SYSTEM_DP
+
+  !
+  !================================================================================================================================
+  !
+  
+  !> Calculates single precision hyperbolic cotangent function
+  FUNCTION COTH_SP(A,ERR,ERROR)
+
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A(:) !<argument to perform coth() on
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    REAL(SP) :: COTH_SP(SIZE(A,1))
+    
+    CALL ENTERS("COTH_SP",ERR,ERROR,*999)
+
+    IF(A<ZERO_TOLERANCE_SP) THEN
+        CALL FLAG_ERROR("Result of coth(0) is complex infinity!",ERR,ERROR,*999)
+    ELSE
+        COTH_SP=(EXP(A)+EXP(-1.0_SP*A))/(EXP(A)-EXP(-1.0_SP*A))
+    ENDIF
+
+    CALL EXITS("COTH_SP")
+    RETURN
+999 CALL ERRORS("COTH_SP",ERR,ERROR)
+    CALL EXITS("COTH_SP")
+    RETURN    
+  END FUNCTION COTH_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Calculates double precision hyperbolic cotangent function
+  FUNCTION COTH_DP(A,ERR,ERROR)
+
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A(:) !<argument to perform coth() on
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    REAL(DP) :: COTH_DP(SIZE(A,1))
+    
+    CALL ENTERS("COTH_DP",ERR,ERROR,*999)
+
+    IF(A<ZERO_TOLERANCE_DP) THEN
+        CALL FLAG_ERROR("Result of coth(0) is complex infinity!",ERR,ERROR,*999)
+    ELSE
+        COTH_DP=(EXP(A)+EXP(-1.0_DP*A))/(EXP(A)-EXP(-1.0_DP*A))
+    ENDIF
+
+    CALL EXITS("COTH_DP")
+    RETURN
+999 CALL ERRORS("COTH_DP",ERR,ERROR)
+    CALL EXITS("COTH_DP")
+    RETURN    
+  END FUNCTION COTH_DP
 
   !
   !================================================================================================================================
