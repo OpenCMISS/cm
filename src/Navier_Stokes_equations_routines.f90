@@ -68,6 +68,7 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   USE SOLVER_ROUTINES
   USE TIMER
   USE TYPES
+  USE MATHS
 
   IMPLICIT NONE
 
@@ -6950,8 +6951,7 @@ CONTAINS
                   PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                   U_SUPG(ng,1:3)=U_SUPG(ng,1:3)+U_VALUE(1:3)*PHIMS
                 END DO !ms
-                 UMAG_SUPG=L2NORM(U_SUPG(ng,1:3))
-!                UMAG_SUPG=(U_SUPG(ng,1)**2+U_SUPG(ng,2)**2+U_SUPG(ng,3)**2)**(0.5)
+                UMAG_SUPG=(U_SUPG(ng,1)**2+U_SUPG(ng,2)**2+U_SUPG(ng,3)**2)**(0.5_SP)
                 UMAX_SUPG=MAX(UMAG_SUPG,UMAX_SUPG)
 !                UNORM_SUPG(ng,1:3)=NORMALISE(U_SUPG(ng,1:3))
               END DO !ng
@@ -6964,7 +6964,7 @@ CONTAINS
               !TODO: set SUPG tolerance relative to iterative solver tolerance
               SUPG_TOLERANCE=1.0E-8_DP
               IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
-                ALPHA_SUPG= COTH(PE) - (1.0_DP/PE_SUPG)
+                ALPHA_SUPG = COTH(PE_SUPG) - (1.0_DP/PE_SUPG)
                 TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
               ELSE
                 TAU_SUPG=0.0_DP
