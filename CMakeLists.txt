@@ -96,8 +96,43 @@ SET(LIBRARY_INSTALL_TYPE ARCHIVE)
 FILE(GLOB OPENCMISS_SRCS ${SOURCE_DIR}/*.*)
 INCLUDE( ${CMAKE_MODULE_PATH}/Entries.cmake )
 FOREACH(infileName ${EXCLUDED_ROUTINES})
-    LIST(REMOVE_ITEM OPENCMISS_SRCS ${infileName})
+    FILE(GLOB infileName ${infileName}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
+    IF (infileName) # if file was found
+        LIST(REMOVE_ITEM OPENCMISS_SRCS ${infileName})
+    ENDIF (infileName)
 ENDFOREACH(infileName)
+
+# Preprocess files mentioned in "PreprocessedSources.cmake"
+INCLUDE( ${CMAKE_MODULE_PATH}/PreprocessedSources.cmake )
+FOREACH(filenameSrc ${PREPROCESSED_SRCS})
+    
+    # Get full filename of raw, unexpanded src file
+    SET(fullFilenameSrc "${SOURCE_DIR}/${filenameSrc}")
+    
+    # Generate filename for expanded (intermediate) file
+    GET_FILENAME_COMPONENT(filenameBase ${filenameSrc} NAME_WE)
+    GET_FILENAME_COMPONENT(filenameExtension ${filenameSrc} EXT)
+    SET(fullFilenameExpanded "${OBJECT_DIR}/${filenameBase}-expanded${filenameExtension}")
+    
+    # Don't compile the raw, unexpanded source file...
+    FILE(GLOB fullFilenameSrc ${fullFilenameSrc}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
+    LIST(REMOVE_ITEM OPENCMISS_SRCS ${fullFilenameSrc})
+    
+    # ...but compile the preprocessed (expanded) intermediate file instead!
+    LIST(APPEND OPENCMISS_SRCS ${fullFilenameExpanded})
+    
+    # Add rule that tells cmake how to create the intermediate file
+    ADD_CUSTOM_COMMAND(OUTPUT      ${fullFilenameExpanded}
+                       COMMAND     mkdir
+                         ARGS      -p ${OBJECT_DIR}
+                         VERBATIM
+                       COMMAND     m4
+                         ARGS      --prefix-builtins ${fullFilenameSrc} > ${fullFilenameExpanded}
+                         VERBATIM
+                       DEPENDS     ${fullFilenameSrc}
+    )
+    
+ENDFOREACH(filenameSrc)
 
 IF(${OPERATING_SYSTEM} STREQUAL win32)
   FILE(GLOB OPENCMISS_FORTRAN_SRCS ${SOURCE_DIR}/*.f90)
