@@ -140,7 +140,7 @@ similarly.
 
 For the natural boundary, we can separate $q_i$ into its
 component velocity and pressure terms as noted in
-\eqref{NSENeumannBC} and shown in \eqref{FEMNSE2}. For our current treatment, we will assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
+\eqref{NSENeumannBC} and shown in \eqref{FEMNSE2}. For our current treatment, we will also assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
 
 \begin{equation}
   \begin{split}
@@ -307,7 +307,7 @@ Without using mass-lumping, the damping matrix $\matr{C}$:
     \abs{\fnof{\matr{J}}{\vect{\xi}}}}}{\vect{\xi}}
 \end{equation}
 
-The element stiffness matrix $\matr{K}$ will contain the linear components of the system. For the classic Galerkin formulation this includes the viscous term with the laplacian operator and the pressure gradient term. As the velocity and pressure DOFs are both included in $d$, $\matr{K}$ will be assembled with so that the corresponding operators are applied to the DOFs discontinuously. 
+The element stiffness matrix $\matr{K}$ will contain the linear components of the system. For the classic Galerkin formulation this includes the viscous term with the laplacian operator and the pressure gradient term. As the velocity and pressure DOFs are both included in $d$, $\matr{K}$ will be assembled so that the corresponding operators are applied to the DOFs discontinuously. 
 
 \begin{equation}
  [K^{\alpha\beta}_{mn}]=
@@ -348,9 +348,9 @@ The nonlinear vector, $\vect{g}(t)$ will provide the convective operators and fo
 
 \subsubsection{Streamline Upwind/Petrov-Galerkin (SUPG) Modification}
 
-For convection dominated flows, the Galerkin formulation must be modified to account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section ?? for more details. 
+For convection dominated flows, it is often useful to modify the Galerkin formulation account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section ?? for more details. 
 
-For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes much more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces (Heinrich). These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative, though perhaps somewhat less rigorous, route is to apply SUPG weights only to the convective operator in elements with higher cell Reynolds numbers. This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
+For the Navier-Stokes equations (and most nonlinear problems), the use of a Petrov-Galerkin formulation becomes much more difficult than for linear cases like advection-diffusion, as consistent weighting can cause instabilities when used with additional terms like body forces (Heinrich). These issues can be overcome with more complex Petrov-Galerkin formulations, as those derived by Hughes and colleagues in the 1980s. A useful alternative, though perhaps somewhat less rigorous, route is to apply SUPG weights to the convective operator in elements as a function of each element's Reynolds number (referred to subsequently as the cell Reynolds number). This can provide the desired stabilizing effect in the direction of large velocity gradients but can be easily implemented and is practically useful.    
 
  Assuming cartesian coordinates and applying Petrov-Galerkin weights to the convective term, the finite element formulation described in equation \eqref{eq:NSEFEM2} can be written:
 
