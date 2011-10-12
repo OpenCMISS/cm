@@ -324,9 +324,14 @@
 \newcommand{\christoffelsecond}[3]{\ensuremath{ %
     \Gamma^{#1}_{#2#3}
     }} % Christoffel symbol of the second kind e.g. \christoffelsecond{i}{j}{k} => Gamma^{i}_{jk}
-\newcommand{\partialderiv}[2]{\ensuremath{ %
+\newcommand{\covarpartialderiv}[2]{\ensuremath{ %
     {#1}_{,#2}
-    }} % partial derivative e.g. \partialderiv{i}{j} => i_{,j}
+    }} % covariant partial derivative e.g. \convarpartialderiv{i}{j} => i_{,j}
+\newcommand{\contrapartialderiv}[2]{\ensuremath{ %
+    {#1}^{,#2}
+    }} % contravariant partial derivative e.g. \contrapartialderiv{i}{j} => i^{,j}
+\newcommand{\partialderiv}[2]{\covarpartialderiv{#1}{#2}
+    } % partial derivative. Default to covariant
 \newcommand{\covarderiv}[2]{\ensuremath{ %
     {#1}_{;#2}
     }} % covariant derivative e.g. \covarderiv{i}{j} => i_{;j}
@@ -424,7 +429,7 @@
 \newcommand{\mixedkronecker}[2]{\ensuremath{\delta_{#1}^{#2}}} %
        % mixed kronecker delta tensor e.g., \mixedkronecker{i}{j} => delta_{i}^{j}
 \newcommand{\kronecker}[2]{\covarkronecker{#1}{#2}} % kronecker delta
-                                % tensor. Defaul to covariant.
+       % tensor. Default to covariant.
 \newcommand{\laplacian}[1]{\ensuremath{\gradsq {#1}}} % laplacian
 \newcommand{\legendre}[3]{\ensuremath{\fnof{P_{#1}^{#2}}{#3}}} % Legendre polynomial
 \newcommand{\limit}[3]{\ensuremath{ %
