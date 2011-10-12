@@ -554,23 +554,17 @@ endif
 TAO_INCLUDE_PATH =#
 TAO_LIBRARIES =#
 TAO_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-  TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/finclude )
-  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
-  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-    TAO_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/finclude )
-    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  else# windows
-    TAO_INCLUDE_PATH = $(addprefix -I, /home/users/local/ )
-    TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
-endif
+# Disable temporarily until TAO compatible with PETSc 3.2
+#ifeq ($(OPERATING_SYSTEM),linux)# Linux
+#  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
+#  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+#else
+#  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+#    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+#  else# windows
+#    TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+#  endif
+#endif
 
 #PETSc
 PETSC_INCLUDE_PATH =#
@@ -686,17 +680,47 @@ else
 endif
 
 #SuperLU_DIST
+SUPERLU_DIST_LIBRARIES =#
+SUPERLU_DIST_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SUPERLU_DIST_LIBRARIES = -lsuperlu_dist
+  SUPERLU_DIST_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  SUPERLU_DIST_LIBRARIES = -lsuperlu_dist
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    SUPERLU_DIST_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    SUPERLU_DIST_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#SuperLU
 SUPERLU_LIBRARIES =#
 SUPERLU_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SUPERLU_LIBRARIES = -lsuperlu_dist
+  SUPERLU_LIBRARIES = -lsuperlu
   SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
-  SUPERLU_LIBRARIES = -lsuperlu_dist
+  SUPERLU_LIBRARIES = -lsuperlu
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
   else# windows
     SUPERLU_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#PLAPACK
+PLAPACK_LIBRARIES =#
+PLAPACK_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  PLAPACK_LIBRARIES = -lPLAPACK
+  PLAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  PLAPACK_LIBRARIES = -lPLAPACK
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    PLAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    PLAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
 endif
 
@@ -947,8 +971,8 @@ ifeq ($(USEFIELDML),true)
   CPPFLAGS += -DUSEFIELDML
 endif
 
-EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH += $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
+EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(SUPERLU_DIST_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
+EXTERNAL_LIB_PATH += $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(SUPERLU_DIST_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(PASTIX_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
 EXTERNAL_INCLUDE_PATH += $(strip $(TAO_INCLUDE_PATH) $(PETSC_INCLUDE_PATH) $(SUNDIALS_INCLUDE_PATH) $(HYPRE_INCLUDE_PATH) $(MUMPS_INCLUDE_PATH) $(SCALAPACK_INCLUDE_PATH) $(BLACS_INCLUDE_PATH) $(PARMETIS_INCLUDE_PATH) $(MPI_INCLUDE_PATH) $(BLAS_INCLUDE_PATH))
 
 # vim:filetype=make
