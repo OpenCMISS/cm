@@ -47677,17 +47677,18 @@ CONTAINS
   !
   
   !> Add the given field to the given FieldML context. The FieldML type will be inferred.
-  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeObjVS( fieldml, baseName, field, variableType, err )
+  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeObjVS( fieldml, baseName, dofFormat, field, variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldNoTypeObjVS",Err,ERROR,*999)
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, field%FIELD, variableType, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field%FIELD, variableType, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldNoTypeObjVS")
     RETURN
@@ -47703,11 +47704,12 @@ CONTAINS
   !
   
   !> Add the field with the given user number to the given FieldML context. The FieldML type will be inferred.
-  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeNumberVS( fieldml, baseName, regionNumber, fieldNumber, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeNumberVS( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region containing the field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
@@ -47722,7 +47724,7 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, field, variableType, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field, variableType, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldNoTypeNumberVS")
     RETURN
@@ -47738,10 +47740,11 @@ CONTAINS
   !
   
   !> Add the given field to the given FieldML context, using the given FieldML type.
-  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeObjVS( fieldml, baseName, field, variableType, typeHandle, err )
+  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeObjVS( fieldml, baseName, dofFormat, field, variableType, typeHandle, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field.
@@ -47749,7 +47752,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldWithTypeObjVS",Err,ERROR,*999)
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, field%FIELD, variableType, typeHandle, &
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field%FIELD, variableType, typeHandle, &
       & err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldWithTypeObjVS")
@@ -47766,11 +47769,12 @@ CONTAINS
   !
   
   !> Add the given field to the given FieldML context, using the given FieldML type.
-  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeNumberVS( fieldml, baseName, regionNumber, fieldNumber, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeNumberVS( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, typeHandle, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the field to add.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field to add.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
@@ -47786,7 +47790,7 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, field, variableType, typeHandle, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field, variableType, typeHandle, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldWithTypeNumberVS")
     RETURN
@@ -47802,17 +47806,19 @@ CONTAINS
   !
   
   !> Add the given field to the given FieldML context. The FieldML type will be inferred.
-  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeObjC( fieldml, baseName, field, variableType, err )
+  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeObjC( fieldml, baseName, dofFormat, field, variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldNoTypeObjC",Err,ERROR,*999)
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), field%FIELD, variableType, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field%FIELD, variableType, &
+      & err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldNoTypeObjC")
     RETURN
@@ -47828,11 +47834,12 @@ CONTAINS
   !
   
   !> Add the field with the given user number to the given FieldML context. The FieldML type will be inferred.
-  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeNumberC( fieldml, baseName, regionNumber, fieldNumber, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldNoTypeNumberC( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region containing the field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
@@ -47847,7 +47854,8 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), field, variableType, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field, variableType, &
+      & err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldNoTypeNumberC")
     RETURN
@@ -47863,10 +47871,11 @@ CONTAINS
   !
   
   !> Add the given field to the given FieldML context, using the given FieldML type.
-  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeObjC( fieldml, baseName, field, variableType, typeHandle, err )
+  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeObjC( fieldml, baseName, dofFormat, field, variableType, typeHandle, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field.
@@ -47874,8 +47883,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldWithTypeObjC",Err,ERROR,*999)
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), field%FIELD, variableType, typeHandle, &
-      & err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field%FIELD, variableType, &
+      & typeHandle, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldWithTypeObjC")
     RETURN
@@ -47891,11 +47900,12 @@ CONTAINS
   !
   
   !> Add the given field to the given FieldML context, using the given FieldML type.
-  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeNumberC( fieldml, baseName, regionNumber, fieldNumber, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldWithTypeNumberC( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, typeHandle, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the field to add.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field to add.
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
@@ -47911,7 +47921,8 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), field, variableType, typeHandle, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field, variableType, &
+      & typeHandle, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldWithTypeNumberC")
     RETURN
@@ -47927,18 +47938,19 @@ CONTAINS
   !
   
   !> Initialise the given FieldML context using the given mesh.
-  SUBROUTINE CMISSFieldmlOutputCreateObjVS( mesh, location, baseName, fieldml, err )
+  SUBROUTINE CMISSFieldmlOutputCreateObjVS( mesh, location, baseName, connectivityFormat, fieldml, err )
     !Argument variables
     TYPE(CMISSMeshType), INTENT(IN) :: mesh !< The mesh to use when initialising the FieldML context.
     TYPE(VARYING_STRING), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
     TYPE(CMISSFieldmlType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
   
     CALL ENTERS("CMISSFieldmlOutputCreateObjVS",Err,ERROR,*999)
 
     ALLOCATE( fieldml%fieldmlInfo, stat=err )
-    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh%MESH, location, baseName, fieldml%fieldmlInfo, &
+    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh%MESH, location, baseName, connectivityFormat, fieldml%fieldmlInfo, &
       & err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputCreateObjVS")
@@ -47955,12 +47967,13 @@ CONTAINS
   !
   
   !> Initialise the given FieldML context using the mesh with the given user number.
-  SUBROUTINE CMISSFieldmlOutputCreateNumberVS( regionNumber, meshNumber, location, baseName, fieldml, err )
+  SUBROUTINE CMISSFieldmlOutputCreateNumberVS( regionNumber, meshNumber, location, baseName, connectivityFormat, fieldml, err )
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the mesh to use when initialising the FieldML context.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh to use when initialising the FieldML context.
     TYPE(VARYING_STRING), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
     TYPE(CMISSFieldmlType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
     
@@ -47973,7 +47986,7 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, location, baseName, fieldml%fieldmlInfo, err, error, *999 )
+    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, location, baseName, connectivityFormat, fieldml%fieldmlInfo, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputCreateNumberVS")
     RETURN
@@ -47989,19 +48002,20 @@ CONTAINS
   !
   
   !> Initialise the given FieldML context using the given mesh.
-  SUBROUTINE CMISSFieldmlOutputCreateObjC( mesh, location, baseName, fieldml, err )
+  SUBROUTINE CMISSFieldmlOutputCreateObjC( mesh, location, baseName, connectivityFormat, fieldml, err )
     !Argument variables
     TYPE(CMISSMeshType), INTENT(IN) :: mesh !< The mesh to use when initialising the FieldML context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
     TYPE(CMISSFieldmlType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
   
     CALL ENTERS("CMISSFieldmlOutputCreateObjC",Err,ERROR,*999)
 
     ALLOCATE( fieldml%fieldmlInfo, stat=err )
-    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh%MESH, var_str(location), var_str(baseName), fieldml%fieldmlInfo, &
-      & err, error, *999 )
+    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh%MESH, var_str(location), var_str(baseName), var_str(connectivityFormat), &
+      & fieldml%fieldmlInfo, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputCreateObjC")
     RETURN
@@ -48017,12 +48031,13 @@ CONTAINS
   !
   
   !> Initialise the given FieldML context using the mesh with the given user number.
-  SUBROUTINE CMISSFieldmlOutputCreateNumberC( regionNumber, meshNumber, location, baseName, fieldml, err )
+  SUBROUTINE CMISSFieldmlOutputCreateNumberC( regionNumber, meshNumber, location, baseName, connectivityFormat, fieldml, err )
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the mesh to use when initialising the FieldML context.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh to use when initialising the FieldML context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
     TYPE(CMISSFieldmlType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
     
@@ -48035,7 +48050,8 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, var_str(location), var_str(baseName), fieldml%fieldmlInfo, err, error, *999 )
+    CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, var_str(location), var_str(baseName), var_str(connectivityFormat), &
+      & fieldml%fieldmlInfo, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputCreateNumberC")
     RETURN
@@ -48051,12 +48067,13 @@ CONTAINS
   !
   
   !> Add the given field to the current FieldML context, only including the given components.
-  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsObjVS( fieldml, typeHandle, baseName, field, fieldComponentNumbers, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsObjVS( fieldml, typeHandle, baseName, dofFormat, field, fieldComponentNumbers, &
     & variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field whose components are to be added.
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
@@ -48064,7 +48081,7 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldComponentsObjVS",Err,ERROR,*999)
 
-    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, baseName, field%FIELD, &
+    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, baseName, dofFormat, field%FIELD, &
       & fieldComponentNumbers, variableType, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldComponentsObjVS")
@@ -48081,12 +48098,13 @@ CONTAINS
   !
   
   !> Add the field with the given user number to the current FieldML context, only including the given components.
-  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsNumberVS( fieldml, typeHandle, baseName, regionNumber, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsNumberVS( fieldml, typeHandle, baseName, dofFormat, regionNumber, &
     & fieldNumber, fieldComponentNumbers, variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field. 
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the field to add.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field whose components are to be added.
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:) !< The component numbers to add.
@@ -48102,7 +48120,7 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, baseName, field, fieldComponentNumbers, &
+    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, baseName, dofFormat, field, fieldComponentNumbers,&
       & variableType, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldComponentsNumberVS")
@@ -48119,12 +48137,13 @@ CONTAINS
   !
   
   !> Add the given field to the current FieldML context, only including the given components.
-  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsObjC( fieldml, typeHandle, baseName, field, fieldComponentNumbers, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsObjC( fieldml, typeHandle, baseName, dofFormat, field, fieldComponentNumbers, &
     & variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field whose components are to be added.
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:)
     INTEGER(INTG), INTENT(IN) :: variableType !< The variable type of the field to add to the FieldML context.
@@ -48132,8 +48151,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldComponentsObjC",Err,ERROR,*999)
 
-    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, var_str(baseName), field%FIELD, &
-      & fieldComponentNumbers, variableType, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, var_str(baseName), var_str(dofFormat), &
+      & field%FIELD, fieldComponentNumbers, variableType, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldComponentsObjC")
     RETURN
@@ -48149,12 +48168,13 @@ CONTAINS
   !
   
   !> Add the field with the given user number to the current FieldML context, only including the given components.
-  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsNumberC( fieldml, typeHandle, baseName, regionNumber, &
+  SUBROUTINE CMISSFieldmlOutputAddFieldComponentsNumberC( fieldml, typeHandle, baseName, dofFormat, regionNumber, &
     & fieldNumber, fieldComponentNumbers, variableType, err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field. 
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
+    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the field to add.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field whose components are to be added.
     INTEGER(INTG), INTENT(IN) :: fieldComponentNumbers(:) !< The component numbers to add.
@@ -48170,8 +48190,8 @@ CONTAINS
     CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
     CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, var_str(baseName), field, fieldComponentNumbers, &
-      & variableType, err, error, *999 )
+    CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, var_str(baseName), var_str(dofFormat), &
+      & field, fieldComponentNumbers, variableType, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlOutputAddFieldComponentsNumberC")
     RETURN
