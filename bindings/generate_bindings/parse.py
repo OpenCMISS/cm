@@ -971,21 +971,32 @@ class Parameter(object):
     def swig_lines(self):
         typemap = apply_to = ''
         if self.intent == 'OUT':
-            if self.var_type == Parameter.INTEGER:
-                typemap = 'int *DummyOutputInt'
-                apply_to = 'int *%s' % self.name
-            elif self.var_type == Parameter.DOUBLE:
-                typemap = 'double *DummyOutputDouble'
-                apply_to = 'double *%s' % self.name
-            elif self.var_type == Parameter.FLOAT:
-                typemap = 'float *DummyOutputFloat'
-                apply_to = 'float *%s' % self.name
-            elif self.var_type == Parameter.LOGICAL:
-                typemap = 'int *DummyOutputBool'
-                apply_to = 'int *%s' % self.name
-            elif self.var_type == Parameter.CHARACTER:
-                typemap = 'const int Size, char *DummyOutputString'
-                apply_to = 'const int %sSize, char *%s' % (self.name,self.name)
+            if self.array_dims == 1:
+                if self.var_type == Parameter.INTEGER:
+                    typemap = 'const int ArraySize, int *DummyOutputArray'
+                    apply_to = 'const int %sSize, int *%s' % (self.name,self.name)
+                elif self.var_type == Parameter.DOUBLE:
+                    typemap = 'const int ArraySize, double *DummyOutputArray'
+                    apply_to = 'const int %sSize, double *%s' % (self.name,self.name)
+                elif self.var_type == Parameter.FLOAT:
+                    typemap = 'const int ArraySize, float *DummyOutputArray'
+                    apply_to = 'const int %sSize, float *%s' % (self.name,self.name)
+            else:
+                if self.var_type == Parameter.INTEGER:
+                    typemap = 'int *DummyOutputInt'
+                    apply_to = 'int *%s' % self.name
+                elif self.var_type == Parameter.DOUBLE:
+                    typemap = 'double *DummyOutputDouble'
+                    apply_to = 'double *%s' % self.name
+                elif self.var_type == Parameter.FLOAT:
+                    typemap = 'float *DummyOutputFloat'
+                    apply_to = 'float *%s' % self.name
+                elif self.var_type == Parameter.LOGICAL:
+                    typemap = 'int *DummyOutputBool'
+                    apply_to = 'int *%s' % self.name
+                elif self.var_type == Parameter.CHARACTER:
+                    typemap = 'const int Size, char *DummyOutputString'
+                    apply_to = 'const int %sSize, char *%s' % (self.name,self.name)
         else:
             if self.var_type == Parameter.CHARACTER:
                 if self.array_dims == 1:
