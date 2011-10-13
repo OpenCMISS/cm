@@ -1,0 +1,134 @@
+\subsection{Poiseuille Flow Equations}
+
+\subsubsection{Governing equations:}
+
+The Poiseuille equation describes the pressure drop that occurs due to viscous
+friction from laminar fluid flow over a straight pipe. Poiseuille flow can be
+derived from the Navier-Stokes equationsin cylindrical coordinates
+($\vect{u}=\pbrac{u_{r},u_{\theta},u_{x}}$) by assuming that the flow
+is: \begin{enumerate} \setlength{\itemsep}{1pt} \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+\item Steady \ie $\delby{\vect{u}}{t}=0$
+\item The radial and swirl components of fluid velocity are zero \ie
+  $u_{r}=u_{\theta}=0$ 
+\item The flow is axisymmetric \ie $\delby{\vect{u}}{\theta}=0$ and fully developed
+  \ie $\delby{\vect{u}}{x}=0$.
+\end{enumerate}
+
+The Poiseuille equation is:
+\begin{equation}
+  \boxed{
+    \Delta{p}=\dfrac{8\mu LQ}{\pi R^{4}}
+  }
+  \label{eqn:Poiseuille_equation}
+\end{equation}
+where $\Delta{p}$ is the pressure drop along the pipe, $\mu$ is the viscosity $L$
+is the length of the pipe $Q$ is volumetric flow and $R$ is the radius of the
+pipe. 
+
+Rearranging \eqnref{eqn:Poiseuille_equation} gives
+\begin{equation}
+  Q=\dfrac{\pi R^{2}R^{2}\Delta{p}}{8\mu L}
+\end{equation}
+
+Volumetric flow is average axisymmetric flow, $\bar{u}$, multipled by the area
+of the pipe $A$ \ie $Q=\bar{u}A$. \Eqnref{eqn:Poiseuille_equation} now becomes
+\begin{equation}
+  \bar{u}A=\dfrac{AR^{2}}{8\mu}\Delta{p}
+\end{equation}
+or 
+\begin{equation}
+  \dfrac{R^{2}}{8\mu}\gradient{p}-\bar{u}=0
+\end{equation}
+as
+\begin{equation}
+  \dfrac{\Delta p}{L}=\delby{p}{x}=\gradient{p}
+\end{equation}
+
+\subsubsection{Weak formulation:}
+
+The weak form of the differential form of the Poiseuille equation system
+consisting of \eqnref{eqn:Poiseuille_equation} and can be written as:
+\begin{equation}
+  \gint{\Omega}{}{\pbrac{\dfrac{R^{2}}{8\mu}\gradient{p}-\bar{u}}w}{\Omega}=0
+  \label{eqn:Poiseuilleweakform}
+\end{equation}
+
+\subsubsection{Finite element formulation:}
+We can now discretise the domain into finite elements. \Eqnref{eqn:Poiseuilleweakform} becomes
+\begin{equation}
+  \dsum_{e=1}^{E}\gint{\Omega_{e}}{}{\pbrac{\frac{R^{2}}{8\mu}\gradient{p}-\bar{u}}w}{\Omega}=0
+  \label{eqn:Poiseullefemform1}
+\end{equation}
+or
+\begin{equation}
+  \dsum_{e=1}^{E}\sqbrac{\gint{\Omega_{e}}{}{\pbrac{\frac{R^{2}}{8\mu}\gradient{p}w}{\Omega}-\gint{\Omega_{e}}{}{\bar{u}}w}{\Omega}}=0
+  \label{eqn:Poiseullefemform2}
+\end{equation}
+
+We can now interpolate the dependent variables using basis functions
+\begin{equation}
+  \begin{split}
+    \fnof{p}{\xi} &= \gbfn{n}{\beta}{\xi}\nodedof{p}{n}{\beta}\gsf{n}{\beta} \\
+    \fnof{\bar{u}}{\xi} &= \elementdof{u}{e}
+  \end{split}
+\end{equation}
+
+Using a Galerkin finite element approach (where the weighting functions are
+chosen to be the interpolating basis functions) we have 
+\begin{equation}
+  \fnof{w}{\xi}=\gbfn{m}{\alpha}{\xi}\gsf{m}{\alpha}
+\end{equation}
+
+\subsubsection{Spatial integration:}
+
+Adopting the standard integration notation we can write the spatial
+integration term for each element in \eqnref{eqn:Poiseullefemform2} as
+\begin{multline}
+  \gint{0}{1}{\frac{R^{2}}{8\mu}\delby{\gbfn{n}{\beta}{\xi}\nodedof{p}{n}{\beta}\gsf{n}{\beta}}{\xi}
+    \delby{\xi}{x}\gbfn{m}{\alpha}{\xi}\gsf{m}{\alpha}\abs{\fnof{J}{\xi}}}{\xi}- \\
+  \gint{0}{1}{\elementdof{u}{e}\gbfn{m}{\alpha}{\xi}\gsf{m}{\alpha}\abs{\fnof{J}{\xi}}}{\xi}=0
+  \label{eqn:Poiseullefemform1}
+\end{multline}
+or, taking the fixed degrees-of-freedom and scale factors outside the integrals, we have
+\begin{multline}
+  \frac{R^{2}}{8\mu}\gsf{m}{\alpha}\gsf{n}{\beta}\nodedof{p}{n}{\beta}\gint{0}{1}{\gbfn{m}{\alpha}{\xi}
+    \delby{\gbfn{n}{\beta}{\xi}}{\xi}\delby{\xi}{x}\abs{\fnof{J}{\xi}}}{\xi}- \\
+  \gsf{m}{\alpha}\elementdof{u}{e}\gint{0}{1}{\gbfn{m}{\alpha}{\xi}\abs{\fnof{J}{\xi}}}{\xi}=0
+  \label{eqn:Poiseullefemform2}
+\end{multline}
+
+This is an elemental equation of the form
+\begin{equation}
+  K^{\alpha\beta}_{mn}\nodedof{p}{n}{\beta}-f^{\alpha}_{m}\elementdof{u}{e}=\vect{0}
+\end{equation}
+or
+\begin{equation}
+  \left[ \begin{array}{cc}
+      K^{\alpha\beta}_{mn} & -f^{\alpha}_{m} \\
+      \transpose{\vect{0}} & 0
+    \end{array} \right] \left[ \begin{array}{c}
+      \nodedof{p}{n}{\beta} \\
+      \elementdof{u}{e}
+    \end{array} \right] =  \left[ \begin{array}{c}
+      \vect{0} \\
+      0
+    \end{array} \right]
+\end{equation}
+
+The elemental stiffness matrix, $K^{\alpha\beta}_{mn}$, is given by
+\begin{equation}
+  K^{\alpha\beta}_{mn}=\frac{R^{2}}{8\mu}\gsf{m}{\alpha}\gsf{n}{\beta}
+  \gint{0}{1}{\gbfn{m}{\alpha}{\xi}\delby{\gbfn{n}{\beta}{\xi}}{\xi}\delby{\xi}{x}
+    \abs{\fnof{J}{\xi}}}{\xi}
+  \label{eqn:elementalfemlhs1}
+\end{equation}
+and the elemental stiffness vector, $f^{\alpha}_{m}$, is given by
+\begin{equation}
+  f^{\alpha}_{m}=\gsf{m}{\alpha}\elementdof{u}{e}\gint{0}{1}{\gbfn{m}{\alpha}{\xi}
+    \abs{\fnof{J}{\xi}}}{\xi}
+  \label{eqn:elementalfemlhs2}
+\end{equation}
+
+Note that an additional conservation of mass equations are required to solve
+the final matrix system.
