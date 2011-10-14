@@ -525,6 +525,11 @@ class Subroutine(object):
             name = type[0:-len('Type')]
             start_lines.append('%%apply CMISSDummyInitialiseType *CMISSDummy{%s *%s};' % (type,name))
             end_lines.append('%%clear %s *%s;' % (type,name))
+        elif self.name.endswith('TypeFinalise'):
+            type = self.name[0:-len('Finalise')]
+            name = type[0:-len('Type')]
+            start_lines.append('%%apply CMISSDummyFinaliseType *CMISSDummy{%s *%s};' % (type,name))
+            end_lines.append('%%clear %s *%s;' % (type,name))
 
         for param in self.parameters:
             (p_start,p_end) = param.swig_lines()

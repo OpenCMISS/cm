@@ -134,6 +134,15 @@
   APPEND_TO_RESULT(output_pointer)
 }
 
+/* CMISS*TypeFinalise routines. Convert SWIG pointer input. Can't modify the input pointer to nullify it though */
+%typemap(in) CMISSDummyFinaliseType *CMISSDummy ($*1_ltype type_pointer) {
+  if (SWIG_ConvertPtr($input, (void **) (&type_pointer), $*1_descriptor, SWIG_POINTER_EXCEPTION) == -1) {
+    PyErr_SetString(PyExc_TypeError,"Input must be a SWIG pointer to the correct CMISS type.");
+    return NULL;
+  }
+  $1 = &type_pointer;
+}
+
 /* String input */
 %typemap(in,numinputs=1) (const int Size, const char *DummyInputString) {
   if (!PyString_Check($input)) {
