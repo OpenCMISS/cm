@@ -158,6 +158,8 @@ CONTAINS
               LOCAL_STRING="Field "//TRIM(NUMBER_TO_VSTRING(FIELD%USER_NUMBER,"*",ERR,ERROR))//" : "//FIELD%LABEL
               IF(ERR/=0) GOTO 999
               CALL WRITE_STRING(OUTPUT_ID,LOCAL_STRING,ERR,ERROR,*999)
+              NULLIFY(NUMERICAL_VALUES)
+              NULLIFY(ANALYTIC_VALUES)
               !Loop over the variables
               DO var_idx=1,FIELD%NUMBER_OF_VARIABLES
                 variable_type=FIELD%VARIABLES(var_idx)%VARIABLE_TYPE
