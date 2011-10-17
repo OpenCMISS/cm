@@ -1,32 +1,32 @@
 /*!
-\page new_code_style New Coding Style
+\page new_code_style Coding Style
 
 \section general_comments General comments
 
 - Generally, try to ensure that new code is consistent in formating, style, look and feel and convention with existing code. If in doubt about whether or not a new coding style rule is required please raise the issue rather than adopt a new style. 
 - Be professional in your coding style, comments, error messages, layout and other output.
+
+\subsection code_comments Code Comments
+
 - Do not comment out code changes with dates and initials. The code management system will record all changes and who changed what.
-- All new code should be properly commented and describe what the code does and (if appropriate) describe any limitations.
+- All new code should be properly commented and describe what the code does, why it was added and (if appropriate) describe any limitations.
+- Do not use comments as an excuse for poor code. 
+- If you implement an algorithm from a paper or book put a reference to the source in the comments.
 
 \subsection code_layout Code Layout
 
 - Free source form must be used.
 - A double space should be used for an indent. Tabs must not be used anywhere in the code.
-- Code should have no more than 132 characters in a line, use continuation &'s if need be. There should be a space before the first continuation character and a space after the second continuation character when continuing lines.
+- Code should have no more than 132 characters in a line, use continuation &'s if need be. There should be a space before the first continuation character and a space after the second continuation character when continuing lines. Continuation lines should be indented by 2 spaces with respect to the first line.
 - All arguments to a SUBROUTINE/FUNCTION must be declared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes in the basis.
 - When commenting array variables in doxygen, include in the doxygen comment information about the array indicies e.g. INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DERIVATIVES(:) !<NUMBER_OF_DERIVATIVES(local_node_idx). The number of derivatives at the local_node_idx'th local node in the basis.
 - When commenting variables that are associated with a list of parameters a reference should be map in the doxygen comment to the doxygen description of those parameters e.g. INTEGER(INTG) :: TYPE !<The type of the field. \see FIELD_ROUTINES_FieldTypes
-- Continuation lines should be indented by 2 spaces with respect to the first line.
 - In general, code routines, local variable lists etc. should be alphabetical.
+- CASE keyword in a SELECT CASE statement should have the same indentation as the SELECT statement. The contents of the CASE statement should be indented by 2 spaces.
 - Add whitespace where appropriate to improve readability.
+- Use a !================... marker between subroutines and functions.
 
 \subsubsection for_discussion1 For discussion
-
-- The use of !================... marker between subroutines and functions.
-- Should we use a marker between SUBROUTINES?
-- Pros of using a marker: Can easily indentify where SUBROUTINES/FUNCTIONS start and stop when visually inspecting the code, can be used to indicate the 132 character limit. 
-- Cons of using a marker: Extra effort and characters, verbosity.
-- If there should be then what should we use? ==== (clashes with subversion conflicts), ---- or multiple blank lines?
 
 - What case should be used? Upper, lower, CamelCase?
 - Pros:
@@ -48,6 +48,13 @@
 - Use the relational operators <, >, <=, >=, == and /= rather than .LT., .GT., .LE., .GE., .EQ. and .NE.
 - Use array syntax whenever possible e.g., A=B instead of A(:)=B(:)
 - Use assumed shape arrays whereever possible i.e., A(:) instead of A(*) for array arguments.
+- No space between the conditional statement and condition i.e. IF( rather than IF (, WHILE( rather than WHILE ( etc.
+- All multiword Fortran statements should have a space i.e., END IF, ELSE IF, END DO, END SELECT etc.
+- For read/write/print statement, avoid the comma before the data variable e.g., use READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA) instead of READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)
+- In IF/WHILE statement, do not use full logical expressions e.g., use IF(SOMEVALUE) or IF(.NOT.SOMEVALUE) instead of IF(SOMEVALUE==.TRUE.) or IF(SOMEVALUE==.FALSE.)
+- Do not use multiple statements in one line. Use separate lines for each statement.
+- An INTERFACE block must be used for all SUBROUTINES/FUNCTIONS that are not otherwise automatically available via a USE statement and MODULEs.
+- SELECT CASE statements must always have a CASE DEFAULT clause. If there is no default action include the CASE DEFAULT and put !Do nothing as a comment.
 
 \subsection fortran_avoided Fortran features to be avoided
 
@@ -73,7 +80,7 @@
 
 \subsubsection fortran03_allowed Fortran 2003
 
-- C interoperability.
+- C interoperability. Use C types for the interface only. Internal code should use Fortran types.
 - Access to the computing environment.
 - ISO TR 15581 allocatable enhancements.
 - [] array constructors.
@@ -97,30 +104,23 @@
 
 - Use fully spelt out variable names unless abbreviations are required to avoid maximum identifier length problems.
 - Use standard loop variable names e.g., local_node_idx, component_idx, when looping rather than temporary variable names.
-- No space between IF and condition i.e. IF( rather than IF (. 
+- The first arguement to routines should be the object the routine is operating on.
 - All TYPES shall have _INITIALISE and _FINALISE routines for construction and destruction. 
-- An INTERFACE block must be used for all SUBROUTINES/FUNCTIONS that are not otherwise automatically available via a USE statement and MODULEs.
 - Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.
 - Use lower case for loop variables.
 - Use dof/node hierarchy consistently in subroutine calls. i.e., version_number,derivative_number,node_number,component_number,variable_number instead of reverse order.
 - For subroutine arguments the input variables should be first, then the output variables and then the error variables. Variables should, in general, be arranged alphabetically unless another coding convention dictates otherwise (.e.g, dof/nod hierarchy).
 - If varaibles are out of range then any error messages should try to provide information on what variables are out of range and what the values are. 
 - Do not use temporary write statements for debugging or other purposes. Use diagnostics. If the values of the variables are of importance to you for working out how the routine works then they will be of importance to others at a later time and thus time should be taken to provide detailed diagnostic output. 
-- Do not use multiple statements in one line. Use separate lines for each statement.
 - For routines that return information (i.e., get routines) use SUBROUTINEs instead of FUNCTIONs. The result should be returned in memory supplied by the calling routine. The size of the supplied memory should be checked to ensure that it is large enough to hold the result. 
-- For read/write/print statement, avoid the comma before the data variable e.g., use READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA) instead of READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)
-- In IF/WHILE statement, do not use full logical expressions e.g., use IF(SOMEVALUE) or IF(.NOT.SOMEVALUE) instead of IF(SOMEVALUE==.TRUE.) or IF(SOMEVALUE==.FALSE.)
 - When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented.", ... statement for the cases that are not yet implemented.
-- SELECT CASE statements must always have a CASE DEFAULT clause.
 - As OpenCMISS needs to be used as a wrapped library all output should have the ability to be turned on or off. The default behaviour is that all output should be off. 
 - All output should be through the input/output routines. No output should be written out via WRITE or PRINT statements.
 
 \subsection for_discussion2 For discussion
 
 - The use of guard clauses e.g., rather than IF(CHECK) THEN .. ELSE Error ENDIF use IF(.NOT.CHECK) Error
-
-- END IF should be ENDIF, ELSEIF should be ELSE IF and END DO should be ENDDO.
-- Should a consistent approach be used here rather than historical convention???
+- ASSERT macros????
 
 \section good_practice Good practice
 

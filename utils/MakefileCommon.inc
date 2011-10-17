@@ -654,6 +654,7 @@ PASTIX_LIBRARIES =#
 PASTIX_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   PASTIX_LIBRARIES = -lpastix
+  PASTIX_LIBRARIES = -lpastix -lrt
   PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   PASTIX_LIBRARIES = -lpastix
@@ -914,14 +915,20 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
       endif
     else
       MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
-      ifeq ($(MPI),mvapich2)
+      ifeq ($(MPI),openmpi)
         MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-        MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
+        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil
         MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
       else
-        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
-        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-        MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+        ifeq ($(MPI),mvapich2)
+          MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+          MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
+          MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+        else
+          MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+          MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
+          MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+        endif
       endif
     endif
   endif

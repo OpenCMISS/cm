@@ -585,6 +585,9 @@
   \nodept{#1}{#3}_{#2,#4} %
 }} % Indexed nodal DOF e.g., \nodedof{\psi}{i}{n}{u} => nodal dof of ith
    % component of \psi at node n derivative u.
+\newcommand{\elementdof}[2]{\ensuremath{ %
+  #1_{#2} %
+}} % Element DOF e.g., \elementdof{\psi}{e} => element dof of \psi at element e
 \newcommand{\chbfnsymb}[2]{\ensuremath{ %
     \Psi_{#1}^{#2} %
     }} % Cubic Hermite basis function symbol
