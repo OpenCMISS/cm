@@ -1,5 +1,6 @@
 import os
 from parse import *
+from c import subroutine_c_name
 
 def generate_docstring(routine):
     docstring = '\n'.join(routine.comment_lines)
@@ -8,6 +9,7 @@ def generate_docstring(routine):
     for param in routine.parameters:
         docstring += ':param %s: %s\n' % (param.name, param.doxygen)
     return docstring.strip()
+
 
 def generate(cm_path,args):
     """
@@ -29,7 +31,7 @@ def generate(cm_path,args):
                 types_file.write("  '"+pub.name[5:-4]+"',\n")
 
     for routine in library.public_subroutines:
-        docstrings_file.write('  "%s":"""%s""",\n' % (routine.c_name, generate_docstring(routine)))
+        docstrings_file.write('  "%s":"""%s""",\n' % (subroutine_c_name(routine)[0], generate_docstring(routine)))
 
     types_file.write(']\n')
     docstrings_file.write('}\n')

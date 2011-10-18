@@ -1635,6 +1635,7 @@ PYTHON_INCLUDES = $(shell python-config --includes)
 python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO)
 
 $(PYTHON_WRAPPER) $(PYTHON_MODULE) : $(PYTHON_INTERFACE) $(HEADER_INCLUDE) $(C_GENERATE_SCRIPT)
+	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) SWIG $(BINDINGS_DIR)/python/opencmiss.i
 	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) Python
 	( cd $(BINDINGS_DIR)/python/opencmiss ; swig -python -o $(PYTHON_WRAPPER) -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) )
 

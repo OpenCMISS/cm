@@ -302,4 +302,4 @@ ARRAY_OUTPUT(float, PyFloat_FromDouble, double)
     free($3);
 }
 
-%include "opencmiss.h"
+%include "opencmiss.i"

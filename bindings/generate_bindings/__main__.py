@@ -45,8 +45,9 @@ else:
 
 from c import generate as c_generate
 from python import generate as python_generate
+from swig import generate as swig_generate
 
-languages = {'C':c_generate, 'Python':python_generate}
+languages = {'C':c_generate, 'Python':python_generate, 'SWIG':swig_generate}
 if language not in languages.keys():
     sys.stderr.write('Language must be one of:\n')
     for l in languages:
