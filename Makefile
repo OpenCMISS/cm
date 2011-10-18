@@ -708,18 +708,24 @@ endif
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(MPI),mpich2)
+    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
   else
-    ifeq ($(MPI),intel)
-      ifeq ($(MPIPROF),true)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
-      endif
-      ifeq ($(ABI),64)
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
-      else
-        MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
-      endif
-    else
+    ifeq ($(MPI),openmpi)
       MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+    else
+      ifeq ($(MPI),intel)
+        ifeq ($(MPIPROF),true)
+          MPI_INCLUDE_PATH += $(addprefix -I, $(VT_ROOT)/include/ )
+        endif
+        ifeq ($(ABI),64)
+          MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include64/ )
+        else
+          MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
+        endif
+      else
+        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+      endif
     endif
   endif
 else
