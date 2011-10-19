@@ -191,6 +191,9 @@ class LibrarySource(object):
         #Also remove CMISSGeneratedMeshSurfaceGet for now as it takes an allocatable array but will be removed soon anyways.
         self.public_subroutines = filter(lambda r: not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or r.name.endswith('TypesCopy')),self.public_subroutines)
 
+        #todo: work out which routines belong to classes
+        self.unbound_routines = self.public_subroutines
+
         for routine in self.public_subroutines:
             self.public_objects[routine.lineno] = routine
 
@@ -350,6 +353,7 @@ class Subroutine(object):
         self.source_file = source_file
         self.parameters = None
         self.interface = None
+        self.owner_type = None
         self._get_comments()
 
     def get_parameters(self):
@@ -434,6 +438,7 @@ class Parameter(object):
         self.routine = routine
         self.pointer = False
         self.doxygen = doxygen
+        self.type_name = None
         intent = None
 
         if extra_stuff != '':
