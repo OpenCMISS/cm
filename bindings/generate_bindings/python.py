@@ -73,12 +73,12 @@ def routine_to_py(routine):
             return_values.append(param)
         else:
             docstring += '    :param %s: %s\n' % (param.name, param.doxygen)
-            docstring += '    :type %s: %s\n' % (param.name, param_type(param))
+            docstring += '    :type %s: %s\n' % (param.name, param_type_comment(param))
     return_comments = [return_comment(r.doxygen) for r in return_values]
     if len(return_values) == 0:
         docstring += '    :rtype: None\n'
     elif len(return_values) == 1:
-        docstring += '    :rtype: %s, %s\n' % (param_type(return_values[0]), return_comments[0])
+        docstring += '    :rtype: %s, %s\n' % (param_type_comment(return_values[0]), return_comments[0])
     else:
         docstring += '    :rtype: tuple (%s)\n' % (', '.join(return_comments))
     docstring = docstring.strip()
@@ -110,8 +110,8 @@ PARAMETER_TYPES = {
     Parameter.CUSTOM_TYPE: None
 }
 
-def param_type(param):
-    """Python type corresponding to Fortran type"""
+def param_type_comment(param):
+    """Python type corresponding to Fortran type for use in docstrings"""
     if param.var_type == Parameter.CUSTOM_TYPE:
         type = param.type_name[len('CMISS'):-len('Type')]
     else:
