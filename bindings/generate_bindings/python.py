@@ -67,11 +67,20 @@ def routine_to_py(routine):
 
     docstring = '\n    '.join(routine.comment_lines)
     docstring += '\n\n'
+    return_values = []
     for param in routine.parameters:
         if param.intent == 'OUT':
-            docstring += '    :return %s: %s\n' % (param.name, param.doxygen)
+            return_values.append(param)
         else:
             docstring += '    :param %s: %s\n' % (param.name, param.doxygen)
+            docstring += '    :type %s: %s\n' % (param.name, param_type(param))
+    return_comments = [return_comment(r.doxygen) for r in return_values]
+    if len(return_values) == 0:
+        docstring += '    :rtype: None\n'
+    elif len(return_values) == 1:
+        docstring += '    :rtype: %s, %s\n' % (param_type(return_values[0]), return_comments[0])
+    else:
+        docstring += '    :rtype: tuple (%s)\n' % (', '.join(return_comments))
     docstring = docstring.strip()
 
     args = ', '.join([p.name for p in routine.parameters if p.intent != 'OUT'])
@@ -83,3 +92,38 @@ def routine_to_py(routine):
 
     return py_routine
 
+
+def return_comment(comment):
+    """Fix comment describing return value
+    """
+    on_return = 'on return, '
+    if comment.lower().startswith(on_return):
+        comment = comment[len(on_return):]
+    return comment
+
+PARAMETER_TYPES = {
+    Parameter.INTEGER: 'int',
+    Parameter.FLOAT: 'float',
+    Parameter.DOUBLE: 'float',
+    Parameter.CHARACTER: 'string',
+    Parameter.LOGICAL: 'bool',
+    Parameter.CUSTOM_TYPE: None
+}
+
+def param_type(param):
+    """Python type corresponding to Fortran type"""
+    if param.var_type == Parameter.CUSTOM_TYPE:
+        type = param.type_name[len('CMISS'):-len('Type')]
+    else:
+        type = PARAMETER_TYPES[param.var_type]
+    if param.array_dims == 1:
+        if param.var_type == Parameter.CUSTOM_TYPE:
+            type = "Array of %s objects" % type
+        else:
+            type = "Array of %ss" % type
+    elif param.array_dims >= 1:
+        if param.var_type == Parameter.CUSTOM_TYPE:
+            type = "%dd list of %s objects" % (param.array_dims, type)
+        else:
+            type = "%dd list of %ss" % (param.array_dims, type)
+    return type
