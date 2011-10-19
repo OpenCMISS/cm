@@ -47,6 +47,7 @@ MODULE FIELDML_OUTPUT_ROUTINES
 
   USE BASE_ROUTINES
   USE BASIS_ROUTINES
+  USE COORDINATE_ROUTINES
   USE CONSTANTS
   USE FIELD_ROUTINES
   USE FIELDML_API
@@ -83,8 +84,8 @@ MODULE FIELDML_OUTPUT_ROUTINES
     MODULE PROCEDURE FIELDML_OUTPUT_ADD_FIELD_WITH_TYPE
   END INTERFACE
  
-  PUBLIC :: FIELDML_OUTPUT_WRITE, FIELDML_OUTPUT_ADD_FIELD, FIELDML_OUTPUT_INITIALISE_INFO, &
-    & FIELDML_OUTPUT_ADD_FIELD_COMPONENTS, FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE, FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE
+  PUBLIC :: FIELDML_OUTPUT_WRITE, FIELDML_OUTPUT_ADD_FIELD, FIELDML_OUTPUT_INITIALISE_INFO, FIELDML_OUTPUT_IMPORT, &
+    & FIELDML_OUTPUT_ADD_FIELD_COMPONENTS
 
 CONTAINS
 
@@ -92,6 +93,303 @@ CONTAINS
   !================================================================================================================================
   !
   
+  !<Import the named object from the built-in library into the current FieldML document. The local name will be the same as the remote name.
+  FUNCTION FIELDML_OUTPUT_IMPORT( FML_HANDLE, REMOTE_NAME )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    TYPE(VARYING_STRING), INTENT(IN) :: REMOTE_NAME !<The name of the object to import.
+
+    INTEGER(INTG) :: FIELDML_OUTPUT_IMPORT
+    
+    !Local variables
+    INTEGER(INTG) :: IMPORT_INDEX
+    
+    FIELDML_OUTPUT_IMPORT = Fieldml_GetObjectByName( FML_HANDLE, cchar(REMOTE_NAME) )
+    IF( FIELDML_OUTPUT_IMPORT == FML_INVALID_HANDLE ) THEN
+      IMPORT_INDEX = Fieldml_AddImportSource( FML_HANDLE, &
+        & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//C_NULL_CHAR, "library"//C_NULL_CHAR )
+      FIELDML_OUTPUT_IMPORT = Fieldml_AddImport( FML_HANDLE, IMPORT_INDEX, cchar(REMOTE_NAME), cchar(REMOTE_NAME) )
+    ENDIF
+
+  END FUNCTION FIELDML_OUTPUT_IMPORT
+  
+  !
+  !================================================================================================================================
+  !
+
+  !<Import the given FieldML object if it is not already imported or local.
+  FUNCTION FIELDML_OUTPUT_IMPORT_HANDLE( FML_HANDLE, HANDLE )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: HANDLE !<The FieldML object to import.
+
+    INTEGER(INTG) :: FIELDML_OUTPUT_IMPORT_HANDLE
+    
+    !Local variables
+    INTEGER(INTG) :: IMPORT_INDEX, LOCAL_HANDLE
+    CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: NAME
+    INTEGER(INTG) :: LENGTH
+    
+    FIELDML_OUTPUT_IMPORT_HANDLE = FML_INVALID_HANDLE
+    LENGTH = Fieldml_CopyObjectDeclaredName( FML_HANDLE, HANDLE, NAME, MAXSTRLEN )
+    
+    IF( Fieldml_IsObjectLocal( FML_HANDLE, HANDLE ) /= 1 ) THEN
+      IF( LENGTH > 0 ) THEN
+        LOCAL_HANDLE = Fieldml_GetObjectByName( FML_HANDLE, NAME(1:LENGTH)//C_NULL_CHAR )
+        IF( LOCAL_HANDLE == FML_INVALID_HANDLE ) THEN
+          IMPORT_INDEX = Fieldml_AddImportSource( FML_HANDLE, &
+            & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//C_NULL_CHAR, "library"//C_NULL_CHAR )
+          FIELDML_OUTPUT_IMPORT_HANDLE = Fieldml_AddImport( FML_HANDLE, &
+            & IMPORT_INDEX, NAME(1:LENGTH)//C_NULL_CHAR, NAME(1:LENGTH)//C_NULL_CHAR )
+        ELSE IF( LOCAL_HANDLE == HANDLE ) THEN
+          FIELDML_OUTPUT_IMPORT_HANDLE = HANDLE
+        ENDIF
+      ENDIF
+    ENDIF
+
+  END FUNCTION FIELDML_OUTPUT_IMPORT_HANDLE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !<Get the argument corresponding to the given type (named *.argument), importing it if needed.
+  FUNCTION FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, TYPE_HANDLE, DO_IMPORT )
+    !Argument variables
+    TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the argument.
+    INTEGER(INTG), INTENT(IN) :: TYPE_HANDLE !<The type out of whose name the argument name is built.
+    
+    INTEGER(INTG) :: FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE
+
+    !Local variables
+    CHARACTER(KIND=C_CHAR,LEN=MAXSTRLEN) :: NAME
+    INTEGER(INTG) :: LENGTH
+    INTEGER(INTG) :: HANDLE, FML_ERR
+    TYPE(VARYING_STRING) :: FULL_NAME
+    
+    LENGTH = Fieldml_CopyObjectName( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE, NAME, MAXSTRLEN )
+    IF( LENGTH < 1 ) THEN
+      LENGTH = Fieldml_CopyObjectDeclaredName( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE, NAME, MAXSTRLEN )
+      FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE = FML_INVALID_HANDLE
+      RETURN
+    ENDIF
+
+    IF( DO_IMPORT ) THEN
+      FULL_NAME = NAME(1:LENGTH)//".argument"
+      !Note: Don't need to check the result here, as Fieldml_GetObjectByName will fail if the import didn't work.
+      FML_ERR = FIELDML_OUTPUT_IMPORT( FIELDML_INFO%FML_HANDLE, FULL_NAME )
+    ENDIF
+    
+    HANDLE = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, NAME(1:LENGTH)//".argument"//C_NULL_CHAR )
+    IF( HANDLE == FML_INVALID_HANDLE ) THEN
+      FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE = FML_INVALID_HANDLE
+      RETURN
+    ENDIF
+    
+    FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE = HANDLE
+    
+  END FUNCTION FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !<Get the FieldML built-in library type corresponding to the given OpenCMISS coordinate system type.
+  SUBROUTINE FIELDML_OUTPUT_GET_COORDINATES_TYPE( FIELDML_HANDLE, COORDS_TYPE, DIMENSIONS, DO_IMPORT, TYPE_HANDLE, &
+    & ERR, ERROR, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: COORDS_TYPE !<The OpenCMISS coordinates type.
+    INTEGER(INTG), INTENT(IN) :: DIMENSIONS !<The coordinate system's number of dimensions.
+    LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the FieldML type.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type corresponding to the given OpenCMISS coordinate system type.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    !Locals
+    TYPE(VARYING_STRING) :: TYPE_NAME
+    INTEGER(INTG) :: TEMP
+
+    CALL ENTERS( "FIELDML_OUTPUT_GET_COORDINATES_TYPE", ERR, ERROR, *999 )
+    
+    IF( COORDS_TYPE == COORDINATE_RECTANGULAR_CARTESIAN_TYPE ) THEN
+      IF( DIMENSIONS == 1 ) THEN
+        TYPE_NAME = "coordinates.rc.1d"
+      ELSE IF( DIMENSIONS == 2 ) THEN
+        TYPE_NAME = "coordinates.rc.2d"
+      ELSE IF( DIMENSIONS == 3 ) THEN
+        TYPE_NAME = "coordinates.rc.3d"
+      ELSE
+        TYPE_HANDLE = FML_INVALID_HANDLE
+        CALL FLAG_ERROR( var_str("Cannot get FieldML RC coordinates type of dimension ")//DIMENSIONS//".", ERR, ERROR, *999)
+      ENDIF
+    ELSE
+      TYPE_HANDLE = FML_INVALID_HANDLE
+      CALL FLAG_ERROR( var_str("Cannot get FieldML coordinates for OpenCMISS type ")//COORDS_TYPE//".", ERR, ERROR, *999 )
+    ENDIF
+
+    IF( DO_IMPORT ) THEN
+      TEMP = FIELDML_OUTPUT_IMPORT( FIELDML_HANDLE, TYPE_NAME )
+    ENDIF
+    TYPE_HANDLE = Fieldml_GetObjectByName( FIELDML_HANDLE, cchar(TYPE_NAME) )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get FieldML coordinates type "//char(TYPE_NAME)//".", FIELDML_HANDLE, &
+      & ERR, ERROR, *999 )
+
+    CALL EXITS( "FIELDML_OUTPUT_GET_COORDINATES_TYPE" )
+    RETURN
+999 CALL ERRORS( "FIELDML_OUTPUT_GET_COORDINATES_TYPE", ERR, ERROR )
+    CALL EXITS( "FIELDML_OUTPUT_GET_COORDINATES_TYPE" )
+    RETURN 1
+
+  END SUBROUTINE FIELDML_OUTPUT_GET_COORDINATES_TYPE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !<Returns a generic n-dimensional real type from the built-in library.
+  SUBROUTINE FIELDML_OUTPUT_GET_GENERIC_TYPE( FIELDML_HANDLE, DIMENSIONS, TYPE_HANDLE, DO_IMPORT, ERR, ERROR, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: DIMENSIONS !<The number of dimensions of the type.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type.
+    LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the type.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    !Locals
+    TYPE(VARYING_STRING) :: TYPE_NAME
+    INTEGER(INTG) :: TEMP
+
+    CALL ENTERS( "FIELDML_OUTPUT_GET_GENERIC_TYPE", ERR, ERROR, *999 )
+
+    IF( DIMENSIONS == 1 ) THEN
+      TYPE_NAME = "real.1d"
+    ELSE IF( DIMENSIONS == 2 ) THEN
+      TYPE_NAME = "real.2d"
+    ELSE IF( DIMENSIONS == 3 ) THEN
+      TYPE_NAME = "real.3d"
+    ELSE
+      TYPE_HANDLE = FML_INVALID_HANDLE
+      CALL FLAG_ERROR( var_str("Cannot get FieldML generic type of dimensionality ")//DIMENSIONS//".", ERR, ERROR, *999 )
+    ENDIF
+
+    IF( DO_IMPORT ) THEN
+      TEMP = FIELDML_OUTPUT_IMPORT( FIELDML_HANDLE, TYPE_NAME )
+    ENDIF
+    TYPE_HANDLE = Fieldml_GetObjectByName( FIELDML_HANDLE, cchar(TYPE_NAME) )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get generic type "//TYPE_NAME//".", FIELDML_HANDLE, ERR, ERROR, *999 )
+    
+    CALL EXITS( "FIELDML_OUTPUT_GET_GENERIC_TYPE" )
+    RETURN
+999 CALL ERRORS( "FIELDML_OUTPUT_GET_GENERIC_TYPE", ERR, ERROR )
+    CALL EXITS( "FIELDML_OUTPUT_GET_GENERIC_TYPE" )
+    RETURN 1
+
+  END SUBROUTINE FIELDML_OUTPUT_GET_GENERIC_TYPE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !<Returns a type in the built-in library corresponding to a chart of the given dimensionality.
+  SUBROUTINE FIELDML_OUTPUT_GET_XI_TYPE( FIELDML_HANDLE, DIMENSIONS, DO_IMPORT, TYPE_HANDLE, ERR, ERROR, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: DIMENSIONS !<The number of dimensions of the chart.
+    LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the type.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    
+    !Locals
+    INTEGER(INTG) :: TEMP
+    TYPE(VARYING_STRING) :: TYPE_NAME
+
+    CALL ENTERS( "FIELDML_OUTPUT_GET_XI_TYPE", ERR, ERROR, *999 )
+    
+    IF( DIMENSIONS == 1 ) THEN
+      TYPE_NAME = "chart.1d"
+    ELSE IF( DIMENSIONS == 2 ) THEN
+      TYPE_NAME = "chart.2d"
+    ELSE IF( DIMENSIONS == 3 ) THEN
+      TYPE_NAME = "chart.3d"
+    ELSE
+      TYPE_HANDLE = FML_INVALID_HANDLE
+      CALL FLAG_ERROR( var_str("Chart dimensionality ")//DIMENSIONS//" not supported.", ERR, ERROR, *999 )
+    ENDIF
+
+    IF( DO_IMPORT ) THEN
+      TEMP = FIELDML_OUTPUT_IMPORT( FIELDML_HANDLE, TYPE_NAME )
+    ENDIF
+    TYPE_HANDLE = Fieldml_GetObjectByName( FIELDML_HANDLE, cchar(TYPE_NAME) )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get xi type "//TYPE_NAME//".", FIELDML_HANDLE, ERR, ERROR, *999 )
+    
+    CALL EXITS( "FIELDML_OUTPUT_GET_XI_TYPE" )
+    RETURN
+999 CALL ERRORS( "FIELDML_OUTPUT_GET_XI_TYPE", ERR, ERROR )
+    CALL EXITS( "FIELDML_OUTPUT_GET_XI_TYPE" )
+    RETURN 1
+
+  END SUBROUTINE FIELDML_OUTPUT_GET_XI_TYPE
+  
+  !
+  !================================================================================================================================
+  !
+  
+  !<Returns a FieldML type appropriate for the given OpenCMISS field.
+  SUBROUTINE FIELDML_OUTPUT_GET_VALUE_TYPE( FML_HANDLE, FIELD, VARIABLE_TYPE, DO_IMPORT, TYPE_HANDLE, ERR, ERROR, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field whose type is to be obtained.
+    INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type to generate dofs for.
+    LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the type.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type handle.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    INTEGER(INTG) :: FIELDTYPE, SUB_TYPE, COUNT
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(REGION_TYPE), POINTER :: REGION
+    
+    CALL ENTERS( "FIELDML_OUTPUT_GET_VALUE_TYPE", ERR, ERROR, *999 )
+    
+    REGION => FIELD%REGION
+    
+    CALL FIELD_TYPE_GET( FIELD, FIELDTYPE, ERR, ERROR, *999 )
+    CALL FIELD_NUMBER_OF_COMPONENTS_GET( FIELD, VARIABLE_TYPE, COUNT, ERR, ERROR, *999 )
+
+    SELECT CASE( FIELDTYPE )
+    CASE( FIELD_GEOMETRIC_TYPE )
+      NULLIFY( COORDINATE_SYSTEM )
+      CALL REGION_COORDINATE_SYSTEM_GET( REGION, COORDINATE_SYSTEM, ERR, ERROR, *999 )
+      CALL COORDINATE_SYSTEM_TYPE_GET( COORDINATE_SYSTEM, SUB_TYPE, ERR, ERROR, *999 )
+      CALL FIELDML_OUTPUT_GET_COORDINATES_TYPE( FML_HANDLE, SUB_TYPE, COUNT, DO_IMPORT, TYPE_HANDLE, ERR, ERROR, *999 )
+    
+    !CASE( CMISSFieldFibreType )
+
+    !CASE( CMISSFieldGeneralType )
+
+    !CASE( CMISSFieldMaterialType )
+
+    CASE DEFAULT
+      CALL FIELDML_OUTPUT_GET_GENERIC_TYPE( FML_HANDLE, COUNT, TYPE_HANDLE, DO_IMPORT, ERR, ERROR, *999 )
+    END SELECT
+  
+    CALL EXITS( "FIELDML_OUTPUT_GET_VALUE_TYPE" )
+    RETURN
+999 CALL ERRORS( "FIELDML_OUTPUT_GET_VALUE_TYPE", ERR, ERROR )
+    CALL EXITS( "FIELDML_OUTPUT_GET_VALUE_TYPE" )
+    RETURN 1
+
+  END SUBROUTINE FIELDML_OUTPUT_GET_VALUE_TYPE
+    
+  !
+  !================================================================================================================================
+  !
+
   !<Get an evaluator from the built-in library that corresponds to the given OpenCMISS tensor-product basis.
   SUBROUTINE FIELDML_OUTPUT_GET_TP_BASIS_EVALUATOR( FML_HANDLE, XI_INTERPOLATIONS, COLLAPSE_INFO, EVALUATOR_HANDLE, &
     & PARAMETERS_HANDLE, ERR, ERROR, * )
@@ -183,6 +481,137 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE FIELDML_OUTPUT_GET_TP_BASIS_EVALUATOR
+
+  !
+  !================================================================================================================================
+  !
+  
+  !<Return the FieldML connectivity ensemble corresponding to the given tensor-product basis info.
+  SUBROUTINE FIELDML_OUTPUT_GET_TP_CONNECTIVITY_TYPE( FIELDML_HANDLE, XI_INTERPOLATIONS, COLLAPSE_INFO, DO_IMPORT, TYPE_HANDLE, &
+    & ERR, ERROR, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG), INTENT(IN) :: XI_INTERPOLATIONS(:) !<The per-xi interpolation of the given TP basis.
+    INTEGER(INTG), INTENT(IN) :: COLLAPSE_INFO(:) !<The collapse-constant for the given basis.
+    LOGICAL, INTENT(IN) :: DO_IMPORT !<If true, import the connectivity ensemble.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML ensemble handle.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    INTEGER(INTG) :: XI_COUNT, FIRST_INTERPOLATION, I, IMPORT_INDEX, TEMP
+    TYPE(VARYING_STRING) :: SUFFIX, LAYOUT_NAME
+    
+    CALL ENTERS( "FIELDML_OUTPUT_GET_TP_CONNECTIVITY_TYPE", ERR, ERROR, *999 )
+
+    XI_COUNT = SIZE( XI_INTERPOLATIONS )
+  
+    IMPORT_INDEX = Fieldml_AddImportSource( FIELDML_HANDLE, &
+      & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//C_NULL_CHAR, "library"//C_NULL_CHAR )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot access built-in FieldML library.", FIELDML_HANDLE, ERR, ERROR, *999 )
+
+    FIRST_INTERPOLATION = XI_INTERPOLATIONS(1)
+    DO I = 2, XI_COUNT
+      IF( XI_INTERPOLATIONS(I) /= FIRST_INTERPOLATION ) THEN
+        !Do not yet support inhomogeneous TP bases
+        CALL FLAG_ERROR( "FieldML translation of inhomogeneous tensor-product bases are not yet supported.", &
+          & ERR, ERROR, *999 )
+      ENDIF
+    ENDDO
+
+    CALL FIELDML_UTIL_GET_COLLAPSE_SUFFIX( COLLAPSE_INFO, SUFFIX, ERR, ERROR )
+      
+    IF( FIRST_INTERPOLATION == BASIS_QUADRATIC_LAGRANGE_INTERPOLATION ) THEN
+      IF( XI_COUNT == 1 ) THEN
+        LAYOUT_NAME = "localNodes.1d.line3"
+      ELSE IF( XI_COUNT == 2 ) THEN
+        LAYOUT_NAME = "localNodes.2d.square3x3"//SUFFIX
+      ELSE IF( XI_COUNT == 3 ) THEN
+        LAYOUT_NAME = "localNodes.3d.cube3x3x3"//SUFFIX
+      ELSE
+        !Do not yet support dimensions higher than 3.
+        CALL FLAG_ERROR( var_str("Quadratic Lagrangian interpolation not supported for ")//XI_COUNT//" dimensions.", &
+          & ERR, ERROR, *999 )
+      ENDIF
+    ELSE IF( FIRST_INTERPOLATION == BASIS_LINEAR_LAGRANGE_INTERPOLATION ) THEN
+      IF( XI_COUNT == 1 ) THEN
+        LAYOUT_NAME = "localNodes.1d.line2"
+      ELSE IF( XI_COUNT == 2 ) THEN
+        LAYOUT_NAME = "localNodes.2d.square2x2"//SUFFIX
+      ELSE IF( XI_COUNT == 3 ) THEN
+        LAYOUT_NAME = "localNodes.3d.cube2x2x2"//SUFFIX
+      ELSE
+        !Do not yet support dimensions higher than 3.
+        CALL FLAG_ERROR( var_str("Linear Lagrangian interpolation not supported for ")//XI_COUNT//" dimensions.", &
+          & ERR, ERROR, *999 )
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR( var_str("FieldML translation not yet supported for interpolation type ")//FIRST_INTERPOLATION//".", &
+        & ERR, ERROR, *999 )
+    ENDIF
+
+    IF( DO_IMPORT ) THEN
+      TEMP = FIELDML_OUTPUT_IMPORT( FIELDML_HANDLE, LAYOUT_NAME )
+    ENDIF
+    TYPE_HANDLE = Fieldml_GetObjectByName( FIELDML_HANDLE, cchar(LAYOUT_NAME) )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get local nodes type "//LAYOUT_NAME//".", FIELDML_HANDLE, ERR, ERROR, *999 )
+    
+    CALL EXITS( "FIELDML_OUTPUT_GET_TP_CONNECTIVITY_TYPE" )
+    RETURN
+999 CALL ERRORS( "FIELDML_OUTPUT_GET_TP_CONNECTIVITY_TYPE", ERR, ERROR )
+    CALL EXITS( "FIELDML_OUTPUT_GET_TP_CONNECTIVITY_TYPE" )
+    RETURN 1
+
+  END SUBROUTINE FIELDML_OUTPUT_GET_TP_CONNECTIVITY_TYPE
+
+  !
+  !================================================================================================================================
+  !
+
+  !<Get the connectivity ensemble for the given basis. Currently, only tensor-product bases are supported.
+  SUBROUTINE FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE( FIELDML_HANDLE, BASIS, TYPE_HANDLE, ERR, ERROR, * )
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: FIELDML_HANDLE !<The FieldML session handle.
+    TYPE(BASIS_TYPE), POINTER :: BASIS !<The basis for which to return the connectivity.
+    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML connectivity ensemble.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    INTEGER(INTG) :: BASISTYPE, XI_COUNT
+    INTEGER(INTG), ALLOCATABLE :: XI_INTERPOLATIONS(:), COLLAPSE_INFO(:)
+    
+    CALL ENTERS( "FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE", ERR, ERROR, *999 )
+
+    TYPE_HANDLE = FML_INVALID_HANDLE
+
+    CALL BASIS_TYPE_GET( BASIS, BASISTYPE, ERR, ERROR, *999 )
+    CALL BASIS_NUMBER_OF_XI_GET( BASIS, XI_COUNT, ERR, ERROR, *999 )
+    
+    IF( BASISTYPE == BASIS_LAGRANGE_HERMITE_TP_TYPE ) THEN
+      ALLOCATE( XI_INTERPOLATIONS( XI_COUNT ), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate xi interpolations array.", ERR, ERROR, *999 )
+      ALLOCATE( COLLAPSE_INFO( XI_COUNT ), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse info array.", ERR, ERROR, *999 )
+      CALL BASIS_INTERPOLATION_XI_GET( BASIS, XI_INTERPOLATIONS, ERR, ERROR, *999 )
+      CALL BASIS_COLLAPSED_XI_GET( BASIS, COLLAPSE_INFO, ERR, ERROR, *999 )
+      
+      CALL FIELDML_OUTPUT_GET_TP_CONNECTIVITY_TYPE( FIELDML_HANDLE, XI_INTERPOLATIONS, COLLAPSE_INFO, .TRUE., TYPE_HANDLE, &
+        & ERR, ERROR, *999 )
+      
+      DEALLOCATE( XI_INTERPOLATIONS )
+      DEALLOCATE( COLLAPSE_INFO )
+    ELSE
+      CALL FLAG_ERROR( "Only translation of tensor product bases are currently supported", ERR, ERROR, *999 )
+    ENDIF
+    
+    CALL EXITS( "FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE" )
+    RETURN
+999 CALL ERRORS( "FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE", ERR, ERROR )
+    CALL EXITS( "FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE" )
+    RETURN 1
+
+  END SUBROUTINE FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE
 
   !
   !================================================================================================================================
@@ -356,7 +785,7 @@ CONTAINS
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot create dofs for basis connectivity for "//NAME//".", &
         & FIELDML_INFO, ERR, ERROR, *999 )
 
-      INDEX_EVALUATOR_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, BASIS_INFO%LAYOUT_HANDLE, .TRUE. )
+      INDEX_EVALUATOR_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, BASIS_INFO%LAYOUT_HANDLE, .TRUE. )
 
       FML_ERR = Fieldml_SetIndexEvaluator( FIELDML_INFO%FML_HANDLE, AGGREGATE_HANDLE, 1, INDEX_EVALUATOR_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set field component index evaluator for "//REFERENCE_NAME//".", &
@@ -367,7 +796,7 @@ CONTAINS
         & FIELDML_INFO, ERR, ERROR, *999 )
 
       HANDLE = Fieldml_GetValueType( FIELDML_INFO%FML_HANDLE, BASIS_INFO%CONNECTIVITY_HANDLE )
-      VARIABLE_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, HANDLE, .FALSE. )
+      VARIABLE_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, HANDLE, .FALSE. )
       FML_ERR = Fieldml_SetBind( FIELDML_INFO%FML_HANDLE, AGGREGATE_HANDLE, VARIABLE_HANDLE, BASIS_INFO%CONNECTIVITY_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set bind for basis dofs for"//REFERENCE_NAME//".", &
         & FIELDML_INFO, ERR, ERROR, *999 )
@@ -378,14 +807,14 @@ CONTAINS
       BASIS_INFO%REFERENCE_HANDLE = Fieldml_CreateReferenceEvaluator( FIELDML_INFO%FML_HANDLE, cchar(REFERENCE_NAME), &
         & EVALUATOR_HANDLE )
 
-      CALL FIELDML_UTIL_GET_XI_TYPE( FIELDML_INFO%FML_HANDLE, XI_COUNT, .TRUE., HANDLE, ERR, ERROR, *999 )
-      VARIABLE_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, HANDLE, .TRUE. )
+      CALL FIELDML_OUTPUT_GET_XI_TYPE( FIELDML_INFO%FML_HANDLE, XI_COUNT, .TRUE., HANDLE, ERR, ERROR, *999 )
+      VARIABLE_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, HANDLE, .TRUE. )
       FML_ERR = Fieldml_SetBind( FIELDML_INFO%FML_HANDLE, BASIS_INFO%REFERENCE_HANDLE, VARIABLE_HANDLE, &
         & FIELDML_INFO%XI_ARGUMENT_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot bind xi to basis evaluator "//REFERENCE_NAME//".", &
         & FIELDML_INFO, ERR, ERROR, *999 )
 
-      VARIABLE_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, INTERPOLATION_PARAMETERS_HANDLE, .TRUE. )
+      VARIABLE_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, INTERPOLATION_PARAMETERS_HANDLE, .TRUE. )
       FML_ERR = Fieldml_SetBind( FIELDML_INFO%FML_HANDLE, BASIS_INFO%REFERENCE_HANDLE, VARIABLE_HANDLE, &
         & AGGREGATE_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot bind parameters to basis evaluator "//REFERENCE_NAME//".", &
@@ -439,7 +868,7 @@ CONTAINS
     CALL FIELDML_UTIL_CHECK_FIELDML_ERROR("Cannot set nodal parameters description for "//CONNECTIVITY_NAME//".", &
       & FIELDML_INFO, ERR, ERROR, *999 )
 
-    INDEX_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, LAYOUT_HANDLE, .TRUE. )
+    INDEX_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, LAYOUT_HANDLE, .TRUE. )
     FML_ERR = Fieldml_AddDenseIndexEvaluator( FIELDML_INFO%FML_HANDLE, CONNECTIVITY_INFO%CONNECTIVITY_HANDLE, INDEX_HANDLE, &
       & FML_INVALID_HANDLE )
     CALL FIELDML_UTIL_CHECK_FIELDML_ERROR("Cannot add layout index to nodal parameters "//CONNECTIVITY_NAME//".", &
@@ -516,7 +945,7 @@ CONTAINS
     DO I = 1, ELEMENT_COUNT
       CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET( I, MESH_ELEMENTS, BASIS, ERR, ERROR, *999 )
 
-      CALL FIELDML_UTIL_GET_CONNECTIVITY_ENSEMBLE( FIELDML_INFO%FML_HANDLE, BASIS, LAYOUT_HANDLE, ERR, ERROR, *999 )
+      CALL FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE( FIELDML_INFO%FML_HANDLE, BASIS, LAYOUT_HANDLE, ERR, ERROR, *999 )
       
       IDX = -1
       IF( CONNECTIVITY_COUNT > 0 ) THEN
@@ -626,7 +1055,7 @@ CONTAINS
       DO J = 1, ELEMENT_COUNT
         CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET( J, MESH_ELEMENTS, BASIS, ERR, ERROR, *999 )
   
-        CALL FIELDML_UTIL_GET_CONNECTIVITY_ENSEMBLE( FIELDML_INFO%FML_HANDLE, BASIS, LAYOUT_HANDLE, ERR, ERROR, *999 )
+        CALL FIELDML_OUTPUT_GET_CONNECTIVITY_ENSEMBLE( FIELDML_INFO%FML_HANDLE, BASIS, LAYOUT_HANDLE, ERR, ERROR, *999 )
         IF( LAYOUT_HANDLE == CONNECTIVITY_INFO(I)%LAYOUT_HANDLE ) THEN
           CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET( J, MESH_ELEMENTS, IBUFFER, ERR, ERROR, *999 )
         ELSE
@@ -698,7 +1127,7 @@ CONTAINS
     
     MESH => FIELD%DECOMPOSITION%MESH
     
-    CALL FIELDML_UTIL_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, REAL_1D_HANDLE, .TRUE., ERR, ERROR, *999 )
+    CALL FIELDML_OUTPUT_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, REAL_1D_HANDLE, .TRUE., ERR, ERROR, *999 )
 
     COMPONENT_COUNT = Fieldml_GetTypeComponentCount( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE )
     TYPE_COMPONENT_HANDLE = Fieldml_GetTypeComponentEnsemble( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE )
@@ -745,8 +1174,8 @@ CONTAINS
       & FIELDML_INFO, ERR, ERROR, *999 )
 
     IF( TYPE_COMPONENT_HANDLE /= FML_INVALID_HANDLE ) THEN
-      TYPE_COMPONENT_HANDLE = FIELDML_UTIL_IMPORT_HANDLE( FIELDML_INFO%FML_HANDLE, TYPE_COMPONENT_HANDLE )
-      INDEX_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, TYPE_COMPONENT_HANDLE, .TRUE. )
+      TYPE_COMPONENT_HANDLE = FIELDML_OUTPUT_IMPORT_HANDLE( FIELDML_INFO%FML_HANDLE, TYPE_COMPONENT_HANDLE )
+      INDEX_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, TYPE_COMPONENT_HANDLE, .TRUE. )
       FML_ERR = Fieldml_AddDenseIndexEvaluator( FIELDML_INFO%FML_HANDLE, NODE_DOFS_HANDLE, INDEX_HANDLE, FML_INVALID_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( &
         & "Cannot add component index for nodal dofs parameter set "//BASE_NAME//".dofs.node.", &
@@ -836,7 +1265,7 @@ CONTAINS
 
     CALL EXITS( "FIELDML_OUTPUT_ADD_FIELD_ELEMENT_DOFS" )
     
-    CALL FIELDML_UTIL_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, REAL_1D_HANDLE, .TRUE., ERR, ERROR, *999 )
+    CALL FIELDML_OUTPUT_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, REAL_1D_HANDLE, .TRUE., ERR, ERROR, *999 )
 
     COMPONENT_COUNT = Fieldml_GetTypeComponentCount( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE )
     TYPE_COMPONENT_HANDLE = Fieldml_GetTypeComponentEnsemble( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE )
@@ -885,8 +1314,8 @@ CONTAINS
       & FIELDML_INFO, ERR, ERROR, *999 )
 
     IF( TYPE_COMPONENT_HANDLE /= FML_INVALID_HANDLE ) THEN
-      TYPE_COMPONENT_HANDLE = FIELDML_UTIL_IMPORT_HANDLE( FIELDML_INFO%FML_HANDLE, TYPE_COMPONENT_HANDLE )
-      INDEX_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, TYPE_COMPONENT_HANDLE, .TRUE. )
+      TYPE_COMPONENT_HANDLE = FIELDML_OUTPUT_IMPORT_HANDLE( FIELDML_INFO%FML_HANDLE, TYPE_COMPONENT_HANDLE )
+      INDEX_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, TYPE_COMPONENT_HANDLE, .TRUE. )
       FML_ERR = Fieldml_AddDenseIndexEvaluator( FIELDML_INFO%FML_HANDLE, ELEMENT_DOFS_HANDLE, TYPE_COMPONENT_HANDLE, &
         & FML_INVALID_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot add component index for element dofs parameter set "//BASE_NAME//&
@@ -981,7 +1410,7 @@ CONTAINS
       COMPONENT_TYPE = FML_INVALID_HANDLE
       IS_REAL = .FALSE.
     ELSE
-      CALL FIELDML_UTIL_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, DOFTYPE_HANDLE, .TRUE., ERR, ERROR, *999 )
+      CALL FIELDML_OUTPUT_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, DOFTYPE_HANDLE, .TRUE., ERR, ERROR, *999 )
       COMPONENT_COUNT = Fieldml_GetTypeComponentCount( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE )
       COMPONENT_TYPE = Fieldml_GetTypeComponentEnsemble( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE )
       IS_REAL = .TRUE.
@@ -1029,8 +1458,8 @@ CONTAINS
       & FIELDML_INFO, ERR, ERROR, *999 )
 
     IF( COMPONENT_TYPE /= FML_INVALID_HANDLE ) THEN
-      COMPONENT_TYPE = FIELDML_UTIL_IMPORT_HANDLE( FIELDML_INFO%FML_HANDLE, COMPONENT_TYPE )
-      INDEX_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, COMPONENT_TYPE, .TRUE. )
+      COMPONENT_TYPE = FIELDML_OUTPUT_IMPORT_HANDLE( FIELDML_INFO%FML_HANDLE, COMPONENT_TYPE )
+      INDEX_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, COMPONENT_TYPE, .TRUE. )
       FML_ERR = Fieldml_AddDenseIndexEvaluator( FIELDML_INFO%FML_HANDLE, CONSTANT_DOFS_HANDLE, INDEX_HANDLE, FML_INVALID_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot add component index for constant dofs parameter set "//BASE_NAME//&
         & ".dofs.constant", FIELDML_INFO, ERR, ERROR, *999 )
@@ -1187,7 +1616,7 @@ CONTAINS
     CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get mesh element variable for "//BASE_NAME//".mesh", &
       & FIELDML_INFO, ERR, ERROR, *999 )
     
-    CALL FIELDML_UTIL_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, REAL_1D_HANDLE, .TRUE., ERR, ERROR, *999 )
+    CALL FIELDML_OUTPUT_GET_GENERIC_TYPE( FIELDML_INFO%FML_HANDLE, 1, REAL_1D_HANDLE, .TRUE., ERR, ERROR, *999 )
     
     !TODO Some of these may end up being unused. Should use deferred assignment.
     FIELDML_INFO%NODE_DOFS_HANDLE = Fieldml_CreateArgumentEvaluator( FIELDML_INFO%FML_HANDLE, cchar(BASE_NAME//".dofs.node"), &
@@ -1303,9 +1732,9 @@ CONTAINS
       FIELD_HANDLE = Fieldml_CreateAggregateEvaluator( FIELDML_INFO%FML_HANDLE, cchar(BASE_NAME), TYPE_HANDLE )
       CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot create field aggregate evaluator "//BASE_NAME, &
         & FIELDML_INFO, ERR, ERROR, *999 )
-      INDEX_HANDLE = FIELDML_UTIL_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, COMPONENT_HANDLE, .TRUE. )
+      INDEX_HANDLE = FIELDML_OUTPUT_GET_TYPE_ARGUMENT_HANDLE( FIELDML_INFO, COMPONENT_HANDLE, .TRUE. )
       FML_ERR = Fieldml_SetIndexEvaluator( FIELDML_INFO%FML_HANDLE, FIELD_HANDLE, 1, INDEX_HANDLE )
-      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set index evaluator for aggregate evaluator "//BASE_NAME//".", FIELDML_INFO, &
+      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set index evaluator for aggregate evaluator "//BASE_NAME//".", FIELDML_INFO,&
         & ERR, ERROR, *999 )
 
       DO I = 1, COMPONENT_COUNT
@@ -1366,7 +1795,7 @@ CONTAINS
     
     CALL ENTERS( "FIELDML_OUTPUT_ADD_FIELD_NO_TYPE", ERR, ERROR, *999 )
 
-    CALL FIELDML_UTIL_GET_VALUE_TYPE( FIELDML_INFO%FML_HANDLE, FIELD, TYPE_HANDLE, .TRUE., ERR, ERROR, *999 )
+    CALL FIELDML_OUTPUT_GET_VALUE_TYPE( FIELDML_INFO%FML_HANDLE, FIELD, VARIABLE_TYPE, .TRUE., TYPE_HANDLE, ERR, ERROR, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD_WITH_TYPE( FIELDML_INFO, BASE_NAME, DOF_FORMAT, FIELD, VARIABLE_TYPE, TYPE_HANDLE, &
       & ERR, ERROR, *999 )
@@ -1407,7 +1836,7 @@ CONTAINS
       CALL FLAG_ERROR( var_str("Cannot get value type for field ")//BASE_NAME//".", ERR, ERROR, *999 )
     ENDIF
     
-    CALL FIELD_NUMBER_OF_COMPONENTS_GET( FIELD, FIELD_U_VARIABLE_TYPE, COMPONENT_COUNT, ERR, ERROR, *999 )
+    CALL FIELD_NUMBER_OF_COMPONENTS_GET( FIELD, VARIABLE_TYPE, COMPONENT_COUNT, ERR, ERROR, *999 )
     
     ALLOCATE( FIELD_COMPONENT_NUMBERS( COMPONENT_COUNT ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate component numbers array.", ERR, ERROR, *999 )
@@ -1427,79 +1856,6 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_WITH_TYPE
-
-  !
-  !================================================================================================================================
-  !
-
-  !<Create a FieldML ensemble with the given name and number of members.
-  SUBROUTINE FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE( FIELDML_INFO, TYPE_NAME, ELEMENT_COUNT, TYPE_HANDLE, ERR, ERROR, * )
-    !Argument variables
-    TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
-    TYPE(VARYING_STRING), INTENT(IN) :: TYPE_NAME !<The name of the ensemble type.
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_COUNT !<The number of members in the ensemble.
-    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type handle for the ensemble.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    
-    !Locals
-    INTEGER(INTG) :: FML_ERR
-
-    CALL ENTERS( "FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE", ERR, ERROR, *999 )
-
-    TYPE_HANDLE = Fieldml_CreateEnsembleType( FIELDML_INFO%FML_HANDLE, cchar(TYPE_NAME) )
-    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Error creating ensemble type "//TYPE_NAME//".", FIELDML_INFO, ERR, ERROR, *999 )
-    
-    FML_ERR = Fieldml_SetEnsembleMembersRange( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE, 1, ELEMENT_COUNT, 1 )
-    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Error setting ensemble type bounds for "//TYPE_NAME//".", &
-      & FIELDML_INFO, ERR, ERROR, *999 )
-
-    CALL EXITS( "FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE" )
-    RETURN
-999 CALL ERRORS( "FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE", ERR, ERROR )
-    CALL EXITS( "FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE" )
-    RETURN 1
-
-  END SUBROUTINE FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE
-
-  !
-  !================================================================================================================================
-  !
-
-  !<Create a FieldML continuous type with the given name and number of components.
-  SUBROUTINE FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE( FIELDML_INFO, TYPE_NAME, COMPONENT_COUNT, TYPE_HANDLE, ERR, ERROR, * )
-    !Argument variables
-    TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
-    TYPE(VARYING_STRING), INTENT(IN) :: TYPE_NAME !<The name of the continuous type.
-    INTEGER(INTG), INTENT(IN) :: COMPONENT_COUNT !<The number of components in the continuous type.
-    INTEGER(INTG), INTENT(OUT) :: TYPE_HANDLE !<The FieldML type handle for the continuous type.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-
-    !Local variables
-    INTEGER(INTG) :: COMPONENT_HANDLE
-
-    CALL ENTERS( "FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE", ERR, ERROR, *999 )
-
-    COMPONENT_HANDLE = FML_INVALID_HANDLE
-
-    TYPE_HANDLE = Fieldml_CreateContinuousType( FIELDML_INFO%FML_HANDLE, cchar(TYPE_NAME) )
-    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Error creating continuous type "//TYPE_NAME//".", FIELDML_INFO, ERR, ERROR, *999 )
-
-    IF( COMPONENT_COUNT > 1 ) THEN
-      COMPONENT_HANDLE = Fieldml_CreateContinuousTypeComponents( FIELDML_INFO%FML_HANDLE, TYPE_HANDLE, &
-        & cchar(TYPE_NAME//".component"), COMPONENT_COUNT )
-      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Error creating component type for "//TYPE_NAME//".", &
-        & FIELDML_INFO, ERR, ERROR, *999 )
-    ENDIF
-
-    CALL EXITS( "FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE" )
-    RETURN
-999 CALL ERRORS( "FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE", ERR, ERROR )
-    CALL EXITS( "FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE" )
-    RETURN 1
-
-  END SUBROUTINE FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE
 
   !
   !================================================================================================================================

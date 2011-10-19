@@ -1559,7 +1559,6 @@ MODULE OPENCMISS
   INTERFACE CMISSDataPointsCreateStart
     MODULE PROCEDURE CMISSDataPointsCreateStartNumber
     MODULE PROCEDURE CMISSDataPointsCreateStartObj
-    MODULE PROCEDURE CMISSDataPointsCreateStartInterfaceObj
   END INTERFACE !CMISSDataPointsCreateFinish
 
   !>Destroys data points.
@@ -1567,12 +1566,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataPointsDestroyNumber
     MODULE PROCEDURE CMISSDataPointsDestroyObj
   END INTERFACE !CMISSDataPointsDestroy
-
-  !>Returns the number of data points
-  INTERFACE CMISSDataPointsNumberOfDataPointsGet
-    MODULE PROCEDURE CMISSDataPointsNumberOfDataPointsGetNumber
-    MODULE PROCEDURE CMISSDataPointsNumberOfDataPointsGetObj
-  END INTERFACE !CMISSDataPointsNumberOfDataPointsGet
 
   !>Returns the label for a data point identified by a given global number. \todo should this be a user number?
   INTERFACE CMISSDataPointsLabelGet
@@ -1667,10 +1660,9 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDataPointsDestroy
 
-  PUBLIC CMISSDataPointsNumberOfDataPointsGet
-
   PUBLIC CMISSDataPointsLabelGet,CMISSDataPointsLabelSet
 
+  
   PUBLIC CMISSDataPointsProjectionDistanceGet,CMISSDataPointsProjectionElementNumberGet
   
   PUBLIC CMISSDataPointsProjectionElementFaceNumberGet,CMISSDataPointsProjectionElementLineNumberGet
@@ -4924,11 +4916,6 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSRegionCreateStartNumber
     MODULE PROCEDURE CMISSRegionCreateStartObj
   END INTERFACE !CMISSRegionCreateStart
-
-  !>Returns the data points for a region.
-  INTERFACE CMISSRegionDataPointsGet
-    MODULE PROCEDURE CMISSRegionDataPointsGetObj
-  END INTERFACE !CMISSRegionDataPointsGet
     
   !>Destroys a region. 
   INTERFACE CMISSRegionDestroy
@@ -4960,8 +4947,6 @@ MODULE OPENCMISS
   PUBLIC CMISSRegionCoordinateSystemGet,CMISSRegionCoordinateSystemSet
 
   PUBLIC CMISSRegionCreateFinish,CMISSRegionCreateStart
-
-  PUBLIC CMISSRegionDataPointsGet
 
   PUBLIC CMISSRegionDestroy
 
@@ -5795,7 +5780,7 @@ MODULE OPENCMISS
     & CMISSFieldmlInputFieldCreateStart, CMISSFieldmlInputBasisCreateStart, CMISSFieldmlInputNodesCreateStart, &
     & CMISSFieldmlInputFieldNodalParametersUpdate
 
-  PUBLIC :: CMISSFieldmlTypeFinalise, CMISSFieldmlTypeInitialise, CMISSFieldmlUtilImport, &
+  PUBLIC :: CMISSFieldmlTypeFinalise, CMISSFieldmlTypeInitialise, &
     & CMISSFieldmlUtilFieldmlGetSession
 
   !> Add the given field to the current FieldML context.
@@ -5825,18 +5810,8 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldmlOutputAddFieldComponentsObjC
     MODULE PROCEDURE CMISSFieldmlOutputAddFieldComponentsNumberC
   END INTERFACE CMISSFieldmlOutputAddFieldComponents
-  
-  !> Create a continuous type with the given name and element count in the given FieldML context.
-  INTERFACE CMISSFieldmlOutputCreateContinuousType
-    MODULE PROCEDURE CMISSFieldmlOutputCreateContinuousTypeVS
-    MODULE PROCEDURE CMISSFieldmlOutputCreateContinuousTypeCH
-  END INTERFACE CMISSFieldmlOutputCreateContinuousType
-  
-  INTERFACE CMISSFieldmlOutputCreateEnsembleType
-    MODULE PROCEDURE CMISSFieldmlOutputCreateEnsembleTypeVS
-    MODULE PROCEDURE CMISSFieldmlOutputCreateEnsembleTypeCH
-  END INTERFACE CMISSFieldmlOutputCreateEnsembleType
-  
+
+  !> Write the current FieldML document to the given file.  
   INTERFACE CMISSFieldmlOutputWrite
     MODULE PROCEDURE CMISSFieldmlOutputWriteVS
     MODULE PROCEDURE CMISSFieldmlOutputWriteCH
@@ -5844,8 +5819,8 @@ MODULE OPENCMISS
 
   PUBLIC :: CMISSFieldmlType
 
-  PUBLIC :: CMISSFieldmlOutputWrite, CMISSFieldmlOutputCreateContinuousType, CMISSFieldmlOutputCreateEnsembleType, &
-    & CMISSFieldmlOutputAddField, CMISSFieldmlOutputCreate, CMISSFieldmlOutputAddFieldComponents
+  PUBLIC :: CMISSFieldmlOutputWrite, CMISSFieldmlOutputAddField, CMISSFieldmlOutputCreate, CMISSFieldmlOutputAddFieldComponents, &
+    & CMISSFieldmlOutputAddImport
 #endif
 
 !!==================================================================================================================================
@@ -5868,141 +5843,6 @@ MODULE OPENCMISS
 !!
 
 CONTAINS
-
-  !
-  !================================================================================================================================
-  !
-
-  !> Find the region with the given user number, or throw an error if it does not exist.
-  SUBROUTINE UserNumberToRegion( userNumber, region, err, error, * )
-    !Arguments
-    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the region to find
-    TYPE(REGION_TYPE), POINTER :: region !<On return, a pointer to the region with the specified user number.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-
-    !Locals
-    TYPE(VARYING_STRING) :: localError
-
-    CALL ENTERS("UserNumberToRegion", err, error, *999 )
-
-    NULLIFY( region )
-    CALL REGION_USER_NUMBER_FIND( userNumber, region, err, error, *999 )
-    IF( .NOT.ASSOCIATED( region ) ) THEN
-      localError = "A region with an user number of "//TRIM(NUMBER_TO_VSTRING(userNumber,"*", err, error ) )//" does not exist."
-      CALL FLAG_ERROR( localError, err, error, *999 )
-    ENDIF
-
-    CALL EXITS( "UserNumberToRegion" )
-    RETURN
-999 CALL ERRORS( "UserNumberToRegion", err, error )
-    CALL EXITS( "UserNumberToRegion" )
-    RETURN 1
-
-  END SUBROUTINE UserNumberToRegion
-
-  !
-  !================================================================================================================================
-  !
-
-  !> Find the mesh with the given user number, or throw an error if it does not exist.
-  SUBROUTINE UserNumberToMesh( userNumber, region, mesh, err, error, * )
-    !Arguments
-    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the mesh to find
-    TYPE(REGION_TYPE), POINTER :: region !<The region containing the mesh
-    TYPE(MESH_TYPE), POINTER :: mesh !<On exit, a pointer to the mesh with the specified user number.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-
-    !Locals
-    TYPE(VARYING_STRING) :: localError
-
-    CALL ENTERS("UserNumberToMesh", err, error, *999 )
-
-    NULLIFY( mesh )
-    CALL MESH_USER_NUMBER_FIND( userNumber, region, mesh, err, error, *999 )
-    IF( .NOT.ASSOCIATED( mesh ) ) THEN
-      localError = "A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING( userNumber, "*", err, error ))// &
-        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( region%USER_NUMBER, "*", err, error ))//"."
-      CALL FLAG_ERROR( localError, err, error, *999 )
-    ENDIF
-
-    CALL EXITS( "UserNumberToMesh" )
-    RETURN
-999 CALL ERRORS( "UserNumberToMesh", err, error )
-    CALL EXITS( "UserNumberToMesh" )
-    RETURN 1
-
-  END SUBROUTINE UserNumberToMesh
-
-  !
-  !================================================================================================================================
-  !
-
-  !> Find the field with the given user number, or throw an error if it does not exist.
-  SUBROUTINE UserNumberToField( userNumber, region, field, err, error, * )
-    !Arguments
-    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the field to find
-    TYPE(REGION_TYPE), POINTER :: region !<The region containing the field
-    TYPE(FIELD_TYPE), POINTER :: field !<On exit, a pointer to the field with the specified user number.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-
-    !Locals
-    TYPE(VARYING_STRING) :: localError
-
-    CALL ENTERS("UserNumberToField", err, error, *999 )
-
-    NULLIFY( field )
-    CALL FIELD_USER_NUMBER_FIND( userNumber, region, field, err, error, *999 )
-      CALL FIELD_USER_NUMBER_FIND( userNumber, region, field, err, error, *999 )
-    IF( .NOT.ASSOCIATED( field ) ) THEN
-      localError = "A field with an user number of "//TRIM(NUMBER_TO_VSTRING( userNumber, "*", err, error ))// &
-        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( region%USER_NUMBER, "*", err, error ))//"."
-      CALL FLAG_ERROR( localError, err, error, *999 )
-    ENDIF
-
-    CALL EXITS( "UserNumberToField" )
-    RETURN
-999 CALL ERRORS( "UserNumberToField", err, error )
-    CALL EXITS( "UserNumberToField" )
-    RETURN 1
-
-  END SUBROUTINE UserNumberToField
-
-  !
-  !================================================================================================================================
-  !
-
-  !> Find the decomposition with the given user number, or throw an error if it does not exist.
-  SUBROUTINE UserNumberToDecomposition( userNumber, mesh, decomposition, err, error, * )
-    !Arguments
-    INTEGER(INTG), INTENT(IN) :: userNumber !<The user number of the decomposition to find
-    TYPE(MESH_TYPE), POINTER :: mesh !<The mesh containing the decomposition
-    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition !<On exit, a pointer to the decomposition with the specified user number.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-
-    !Locals
-    TYPE(VARYING_STRING) :: localError
-
-    CALL ENTERS("UserNumberToDecomposition", err, error, *999 )
-
-    NULLIFY( decomposition )
-    CALL DECOMPOSITION_USER_NUMBER_FIND( userNumber, mesh, decomposition, err, error, *999 )
-    IF( .NOT.ASSOCIATED( decomposition ) ) THEN
-      localError = "A decomposition with an user number of "//TRIM(NUMBER_TO_VSTRING( userNumber, "*", err, error ))// &
-        & " does not exist on mesh number "//TRIM(NUMBER_TO_VSTRING( mesh%USER_NUMBER, "*", err, error ))//"."
-      CALL FLAG_ERROR( localError, err, error, *999 )
-    ENDIF
-
-    CALL EXITS( "UserNumberToDecomposition" )
-    RETURN
-999 CALL ERRORS( "UserNumberToDecomposition", err, error )
-    CALL EXITS( "UserNumberToDecomposition" )
-    RETURN 1
-
-  END SUBROUTINE UserNumberToDecomposition
 
   !
   !================================================================================================================================
@@ -17162,38 +17002,6 @@ CONTAINS
 
   !  
   !================================================================================================================================
-  !  
-
-  !>Starts the creation of a data points in a region for data points identified by an object.
-  SUBROUTINE CMISSDataPointsCreateStartInterfaceObj(INTERFACE,NumberOfDataPoints,DataPoints,Err)
-  
-    !Argument variables
-    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface to start the creation of data points on.
-    INTEGER(INTG), INTENT(IN) :: NumberOfDataPoints !<The number of data points to create.
-    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<On return, the created data points.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSDataPointsCreateStartInterfaceObj",Err,ERROR,*999)
-
-#ifdef TAUPROF
-    CALL TAU_STATIC_PHASE_START('DataPoints Create')
-#endif
-
-    CALL DATA_POINTS_CREATE_START(Interface%INTERFACE,NumberOfDataPoints,DataPoints%DATA_POINTS,Err,ERROR,*999)
-
-    CALL EXITS("CMISSDataPointsCreateStartInterfaceObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPointsCreateStartInterfaceObj",Err,ERROR)
-    CALL EXITS("CMISSDataPointsCreateStartInterfaceObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSDataPointsCreateStartInterfaceObj
-
-
-  !  
-  !================================================================================================================================
   !
   
   !>Destroys the data points in a region for data points identified by user number.
@@ -17254,72 +17062,6 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSDataPointsDestroyObj
-
-  !  
-  !================================================================================================================================
-  !
-
-  !>Returns the number of data points 
-  SUBROUTINE CMISSDataPointsNumberOfDataPointsGetNumber(RegionUserNumber,NumberOfDataPoints,Err)
-
-    !Argument variables
-    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to get data point count for.
-    INTEGER(INTG), INTENT(OUT) :: NumberOfDataPoints !<On return, the number of data points
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
-    TYPE(REGION_TYPE), POINTER :: REGION
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("CMISSDataPointsNumberOfDataPointsGetNumber",Err,ERROR,*999)
-
-    NULLIFY(REGION)
-    NULLIFY(DATA_POINTS)
-    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,err,ERROR,*999)
-    IF(ASSOCIATED(REGION)) THEN
-      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
-      CALL DATA_POINTS_NUMBER_OF_DATA_POINTS_GET(DATA_POINTS,NumberOfDataPoints,Err,ERROR,*999)
-    ELSE
-      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
-        & " does not exist."
-      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
-    ENDIF
- 
-    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetNumber")
-    RETURN
-999 CALL ERRORS("CMISSDataPointsNumberOfDataPointsGetNumber",Err,ERROR)
-    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetNumber")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSDataPointsNumberOfDataPointsGetNumber
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Returns the number of data points
-  SUBROUTINE CMISSDataPointsNumberOfDataPointsGetObj(DataPoints,NumberOfDataPoints,Err)
-
-    !Argument variables
-    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points get data point count for.
-    INTEGER(INTG), INTENT(OUT) :: NumberOfDataPoints !<The number of data points
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
- 
-    CALL ENTERS("CMISSDataPointsNumberOfDataPointsGetObj",err,ERROR,*999)
-
-    CALL DATA_POINTS_NUMBER_OF_DATA_POINTS_GET(DataPoints%DATA_POINTS,NumberOfDataPoints,Err,ERROR,*999)
-
-    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetObj")
-    RETURN
-999 CALL ERRORS("CMISSDataPointsNumberOfDataPointsGetObj",Err,ERROR)
-    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-
-  END SUBROUTINE CMISSDataPointsNumberOfDataPointsGetObj
-
 
   !  
   !================================================================================================================================
@@ -40216,32 +39958,6 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>Returns the data points for a region identified by an object.
-  SUBROUTINE CMISSRegionDataPointsGetObj(Region,DataPoints,Err)
-  
-    !Argument variables
-    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the data points for.
-    TYPE(CMISSDataPointsType), INTENT(INOUT) :: DataPoints !<On return, the regions data points.
-    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-    !Local variables
-  
-    CALL ENTERS("CMISSRegionDataPointsGetObj",Err,ERROR,*999)
- 
-    CALL REGION_DATA_POINTS_GET(Region%REGION,DataPoints%DATA_POINTS,Err,ERROR,*999)
-
-    CALL EXITS("CMISSRegionDataPointsGetObj")
-    RETURN
-999 CALL ERRORS("CMISSRegionDataPointsGetObj",Err,ERROR)
-    CALL EXITS("CMISSRegionDataPointsGetObj")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSRegionDataPointsGetObj
-
-  !  
-  !================================================================================================================================
-  !  
- 
   !>Destroys a region identified by an object.
   SUBROUTINE CMISSRegionDestroyObj(Region,Err)
   
@@ -46967,7 +46683,7 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlInputMeshCreateStartNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     NULLIFY( mesh )
     CALL FIELDML_INPUT_MESH_CREATE_START( fieldml%fieldmlInfo, meshArgumentName, mesh, meshNumber, region, err, error, *999 )
 
@@ -47027,7 +46743,7 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlInputMeshCreateStartNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     NULLIFY( mesh )
     CALL FIELDML_INPUT_MESH_CREATE_START( fieldml%fieldmlInfo, var_str(meshArgumentName), mesh, meshNumber, region, &
       & err, error, *999)
@@ -47283,7 +46999,7 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldmlInputNodesCreateStartNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, nodesArgumentName, region, nodes%NODES, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputNodesCreateStartNumberVS")
@@ -47339,7 +47055,7 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldmlInputNodesCreateStartNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, var_str(nodesArgumentName), region, nodes%NODES, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputNodesCreateStartNumberC")
@@ -47425,8 +47141,8 @@ CONTAINS
     
     CALL ENTERS( "CMISSFieldmlInputCreateMeshComponentNumberVS", Err, ERROR, *999 )
  
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh, componentNumber, evaluatorName, err, error, *999 )
 
@@ -47487,8 +47203,8 @@ CONTAINS
     
     CALL ENTERS( "CMISSFieldmlInputCreateMeshComponentNumberC", Err, ERROR, *999 )
  
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh, componentNumber, var_str(evaluatorName), err, error, *999 )
 
@@ -47506,13 +47222,14 @@ CONTAINS
   !
 
   !> Create a field using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldmlInputFieldCreateStartObjVS( fieldml, region, decomposition, fieldNumber, field, evaluatorName, &
-    & err )
+  SUBROUTINE CMISSFieldmlInputFieldCreateStartObjVS( fieldml, region, decomposition, fieldNumber, field, variableType, &
+    & evaluatorName, err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which the field is to be created.
     TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !< The decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field. 
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
     TYPE(CMISSFieldType), INTENT(OUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
@@ -47520,7 +47237,7 @@ CONTAINS
     CALL ENTERS("CMISSFieldmlInputFieldCreateStartObjVS",Err,ERROR,*999)
 
     CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region%REGION, decomposition%DECOMPOSITION, fieldNumber, &
-      & field%FIELD, evaluatorName, err, error, *999 )
+      & field%FIELD, variableType, evaluatorName, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldCreateStartObjVS")
     RETURN
@@ -47537,13 +47254,14 @@ CONTAINS
 
   !> Create a field with the given user number using the given FieldML evaluator.
   SUBROUTINE CMISSFieldmlInputFieldCreateStartNumberVS( fieldml, regionNumber, meshNumber, decompositionNumber, fieldNumber, &
-    & evaluatorName, err )
+    & variableType, evaluatorName, err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which to create the field.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: decompositionNumber !< The user number of the decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
@@ -47555,12 +47273,12 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlInputFieldCreateStartNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
-    CALL UserNumberToDecomposition( decompositionNumber, mesh, decomposition, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
+    CALL DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION( decompositionNumber, mesh, decomposition, err, error, *999 )
 
     NULLIFY( field )
-    CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region, decomposition, fieldNumber, field, &
+    CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region, decomposition, fieldNumber, field, variableType, &
       & evaluatorName, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldCreateStartNumberVS")
@@ -47577,13 +47295,14 @@ CONTAINS
   !
 
   !> Create a field using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldmlInputFieldCreateStartObjC( fieldml, region, decomposition, fieldNumber, field, evaluatorName, &
-    & err )
+  SUBROUTINE CMISSFieldmlInputFieldCreateStartObjC( fieldml, region, decomposition, fieldNumber, field, variableType, &
+    & evaluatorName, err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which the field is to be created.
     TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !< The decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field. 
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
     TYPE(CMISSFieldType), INTENT(OUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
@@ -47591,7 +47310,7 @@ CONTAINS
     CALL ENTERS("CMISSFieldmlInputFieldCreateStartObjC",Err,ERROR,*999)
 
     CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region%REGION, decomposition%DECOMPOSITION, fieldNumber, &
-      & field%FIELD, var_str(evaluatorName), err, error, *999 )
+      & field%FIELD, variableType, var_str(evaluatorName), err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldCreateStartObjC")
     RETURN
@@ -47608,13 +47327,14 @@ CONTAINS
 
   !> Create a field with the given user number using the given FieldML evaluator.
   SUBROUTINE CMISSFieldmlInputFieldCreateStartNumberC( fieldml, regionNumber, meshNumber, decompositionNumber, fieldNumber, &
-    & evaluatorName, err )
+    & variableType, evaluatorName, err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which to create the field.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: decompositionNumber !< The user number of the decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the field from.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
@@ -47626,12 +47346,12 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlInputFieldCreateStartNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
-    CALL UserNumberToDecomposition( decompositionNumber, mesh, decomposition, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
+    CALL DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION( decompositionNumber, mesh, decomposition, err, error, *999 )
 
     NULLIFY( field )
-    CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region, decomposition, fieldNumber, field, &
+    CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region, decomposition, fieldNumber, field, variableType, &
       & var_str(evaluatorName), err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldCreateStartNumberC")
@@ -47648,17 +47368,19 @@ CONTAINS
   !
 
   !> Update the nodal parameters of the given field, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldmlInputFieldNodalParametersUpdateObjVS( fieldml, field, evaluatorName, &
+  SUBROUTINE CMISSFieldmlInputFieldNodalParametersUpdateObjVS( fieldml, field, evaluatorName, variableType, &
     & err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the field object.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldmlInputFieldNodalParametersUpdateObjVS",Err,ERROR,*999)
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field%FIELD, err, error, *999 )
+    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field%FIELD, variableType, &
+      &  err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldNodalParametersUpdateObjVS")
     RETURN
@@ -47675,12 +47397,13 @@ CONTAINS
 
   !> Update the nodal parameters of field with the given user number, using the given FieldML evaluator.
   SUBROUTINE CMISSFieldmlInputFieldNodalParametersUpdateNumberVS( fieldml, regionNumber, fieldNumber, &
-    & evaluatorName, err )
+    & evaluatorName, variableType, err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region of the field for which parameters are to be updated.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field for which parameters are to be updated.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     !Local variables
@@ -47689,10 +47412,10 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlInputFieldNodalParametersUpdateNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field, err, error, *999 )
+    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field, variableType, err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldNodalParametersUpdateNumberVS")
     RETURN
@@ -47709,16 +47432,18 @@ CONTAINS
 
   !> Update the nodal parameters of the given field, using the given FieldML evaluator.
   SUBROUTINE CMISSFieldmlInputFieldNodalParametersUpdateObjC( fieldml, field, evaluatorName, &
-    & err )
+    & variableType, err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the field object.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     CALL ENTERS("CMISSFieldmlInputFieldNodalParametersUpdateObjC",Err,ERROR,*999)
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field%FIELD, err, error, *999 )
+    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field%FIELD, variableType, &
+      & err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldNodalParametersUpdateObjC")
     RETURN
@@ -47735,12 +47460,13 @@ CONTAINS
 
   !> Update the nodal parameters of field with the given user number, using the given FieldML evaluator.
   SUBROUTINE CMISSFieldmlInputFieldNodalParametersUpdateNumberC( fieldml, regionNumber, fieldNumber, &
-    & evaluatorName, err )
+    & evaluatorName, variableType, err )
     !Arguments
     TYPE(CMISSFieldmlType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region of the field for which parameters are to be updated.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field for which parameters are to be updated.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
+    INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
     !Local variables
@@ -47749,10 +47475,11 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlInputFieldNodalParametersUpdateNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field, err, error, *999 )
+    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field, variableType, &
+      & err, error, *999 )
 
     CALL EXITS("CMISSFieldmlInputFieldNodalParametersUpdateNumberC")
     RETURN
@@ -47860,8 +47587,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldNoTypeNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field, variableType, err, error, *999 )
 
@@ -47926,8 +47653,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldWithTypeNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field, variableType, typeHandle, err, error, *999 )
 
@@ -47990,8 +47717,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldNoTypeNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field, variableType, &
       & err, error, *999 )
@@ -48057,8 +47784,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputAddFieldWithTypeNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field, variableType, &
       & typeHandle, err, error, *999 )
@@ -48122,8 +47849,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputCreateNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, location, baseName, connectivityFormat, fieldml%fieldmlInfo, err, error, *999 )
 
@@ -48186,8 +47913,8 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldmlOutputCreateNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToMesh( meshNumber, region, mesh, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, var_str(location), var_str(baseName), var_str(connectivityFormat), &
       & fieldml%fieldmlInfo, err, error, *999 )
@@ -48256,8 +47983,8 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlOutputAddFieldComponentsNumberVS",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, baseName, dofFormat, field, fieldComponentNumbers,&
       & variableType, err, error, *999 )
@@ -48326,8 +48053,8 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldmlOutputAddFieldComponentsNumberC",Err,ERROR,*999)
 
-    CALL UserNumberToRegion( regionNumber, region, err, error, *999 )
-    CALL UserNumberToField( fieldNumber, region, field, err, error, *999 )
+    CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
+    CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, var_str(baseName), var_str(dofFormat), &
       & field, fieldComponentNumbers, variableType, err, error, *999 )
@@ -48341,117 +48068,12 @@ CONTAINS
     
   END SUBROUTINE CMISSFieldmlOutputAddFieldComponentsNumberC
 
-  !  
-  !================================================================================================================================
-  !
-  
-  !> Create an ensemble with the given name and element count in the given FieldML context.
-  SUBROUTINE CMISSFieldmlOutputCreateEnsembleTypeVS( fieldml, typeName, elementCount, typeHandle, err )
-    !Argument variables
-    TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
-    TYPE(VARYING_STRING), INTENT(IN) :: typeName !< The name of the new ensemble.
-    INTEGER(INTG), INTENT(IN) :: elementCount !< The number of elements in the new ensemble.
-    INTEGER(INTG), INTENT(OUT) :: typeHandle !< On return, a handle to the newly created ensemble.
-    INTEGER(INTG), INTENT(OUT) :: err !< The error code.
-  
-    CALL ENTERS("CMISSFieldmlOutputCreateEnsembleTypeVS",Err,ERROR,*999)
-
-    CALL FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE( fieldml%fieldmlInfo, typeName, elementCount, typeHandle, err, error, *999 )
-
-    CALL EXITS("CMISSFieldmlOutputCreateEnsembleTypeVS")
-    RETURN
-999 CALL ERRORS("CMISSFieldmlOutputCreateEnsembleTypeVS",Err,ERROR)
-    CALL EXITS("CMISSFieldmlOutputCreateEnsembleTypeVS")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldmlOutputCreateEnsembleTypeVS
-
-  !  
-  !================================================================================================================================
-  !
-  
-  !> Create an ensemble with the given name and element count in the given FieldML context.
-  SUBROUTINE CMISSFieldmlOutputCreateEnsembleTypeCH( fieldml, typeName, elementCount, typeHandle, err )
-    !Argument variables
-    TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
-    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: typeName !< The name of the new ensemble.
-    INTEGER(INTG), INTENT(IN) :: elementCount !< The number of elements in the new ensemble.
-    INTEGER(INTG), INTENT(OUT) :: typeHandle !< On return, a handle to the newly created ensemble.
-    INTEGER(INTG), INTENT(OUT) :: err !< The error code.
-    
-    CALL ENTERS("CMISSFieldmlOutputCreateEnsembleTypeCH",Err,ERROR,*999)
-
-    CALL FIELDML_OUTPUT_CREATE_ENSEMBLE_TYPE( fieldml%fieldmlInfo, var_str(typeName), elementCount, typeHandle, err, error, *999 )
-
-    CALL EXITS("CMISSFieldmlOutputCreateEnsembleTypeCH")
-    RETURN
-999 CALL ERRORS("CMISSFieldmlOutputCreateEnsembleTypeCH",Err,ERROR)
-    CALL EXITS("CMISSFieldmlOutputCreateEnsembleTypeCH")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldmlOutputCreateEnsembleTypeCH
-
-  !  
-  !================================================================================================================================
-  !
-  
-  !> Create a continuous type with the given varying string name and element count in the given FieldML context.
-  SUBROUTINE CMISSFieldmlOutputCreateContinuousTypeVS( fieldml, typeName, componentCount, typeHandle, err )
-    !Argument variables
-    TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
-    TYPE(VARYING_STRING) :: typeName !< The name of the new continuous type.
-    INTEGER(INTG), INTENT(IN) :: componentCount !< The number of components in the new continuous type.
-    INTEGER(INTG), INTENT(OUT) :: typeHandle !< On return, a handle to the newly created ensemble.
-    INTEGER(INTG), INTENT(OUT) :: err !< The error code.
-  
-    CALL ENTERS("CMISSFieldmlOutputCreateContinuousTypeVS",Err,ERROR,*999)
-
-    CALL FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE( fieldml%fieldmlInfo, typeName, componentCount, typeHandle, err, error, *999 )
-
-    CALL EXITS("CMISSFieldmlOutputCreateContinuousTypeVS")
-    RETURN
-999 CALL ERRORS("CMISSFieldmlOutputCreateContinuousTypeVS",Err,ERROR)
-    CALL EXITS("CMISSFieldmlOutputCreateContinuousTypeVS")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldmlOutputCreateContinuousTypeVS
-
-  !
-  !================================================================================================================================
-  !
-  
-  !> Create a continuous type with the given character name and element count in the given FieldML context.
-  SUBROUTINE CMISSFieldmlOutputCreateContinuousTypeCH( fieldml, typeName, componentCount, typeHandle, err )
-    !Argument variables
-    TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
-    CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: typeName !< The name of the new continuous type.
-    INTEGER(INTG), INTENT(IN) :: componentCount !< The number of components in the new continuous type.
-    INTEGER(INTG), INTENT(OUT) :: typeHandle !< On return, a handle to the newly created ensemble.
-    INTEGER(INTG), INTENT(OUT) :: err !< The error code.
-  
-    CALL ENTERS("CMISSFieldmlOutputCreateContinuousTypeCH",Err,ERROR,*999)
-
-    CALL FIELDML_OUTPUT_CREATE_CONTINUOUS_TYPE( fieldml%fieldmlInfo, var_str(typeName), componentCount, typeHandle, &
-      & err, error, *999)
-
-    CALL EXITS("CMISSFieldmlOutputCreateContinuousTypeCH")
-    RETURN
-999 CALL ERRORS("CMISSFieldmlOutputCreateContinuousTypeCH",Err,ERROR)
-    CALL EXITS("CMISSFieldmlOutputCreateContinuousTypeCH")
-    CALL CMISS_HANDLE_ERROR(Err,ERROR)
-    RETURN
-    
-  END SUBROUTINE CMISSFieldmlOutputCreateContinuousTypeCH
-
   !
   !================================================================================================================================
   !
 
   !>Import a FieldML object from the library into the current session.
-  SUBROUTINE CMISSFieldmlUtilImport( fieldml, name, handle, Err )
+  SUBROUTINE CMISSFieldmlOutputAddImport( fieldml, name, handle, Err )
     !Argument variables
     TYPE(CMISSFieldmlType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: name !< The name of the object to import.
@@ -48461,25 +48083,25 @@ CONTAINS
     !Locals
     TYPE(VARYING_STRING) :: stringName
     
-    CALL ENTERS("CMISSFieldmlUtilImport",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldmlOutputAddImport",Err,ERROR,*999)
     
     stringName = name
     
-    handle = FIELDML_UTIL_IMPORT( fieldml%fieldmlInfo%FML_HANDLE, stringName )
+    handle = FIELDML_OUTPUT_IMPORT( fieldml%fieldmlInfo%FML_HANDLE, stringName )
 
-    CALL EXITS("CMISSFieldmlUtilImport")
+    CALL EXITS("CMISSFieldmlOutputAddImport")
     RETURN
-999 CALL ERRORS("CMISSFieldmlUtilImport",Err,ERROR)
-    CALL EXITS("CMISSFieldmlUtilImport")    
+999 CALL ERRORS("CMISSFieldmlOutputAddImport",Err,ERROR)
+    CALL EXITS("CMISSFieldmlOutputAddImport")    
     CALL CMISS_HANDLE_ERROR( Err, ERROR )
     RETURN
     
-  END SUBROUTINE CMISSFieldmlUtilImport
+  END SUBROUTINE CMISSFieldmlOutputAddImport
   
-  !
+  !  
   !================================================================================================================================
   !
-
+  
   !>Get the session handle from a Fieldml context.
   SUBROUTINE CMISSFieldmlUtilFieldmlGetSession( fieldml, sessionHandle, Err )
     !Argument variables
