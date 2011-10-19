@@ -1637,7 +1637,8 @@ python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO)
 $(PYTHON_WRAPPER) $(PYTHON_MODULE) : $(PYTHON_INTERFACE) $(HEADER_INCLUDE) $(C_GENERATE_SCRIPT)
 	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) SWIG $(BINDINGS_DIR)/python/opencmiss.i
 	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) Python
-	( cd $(BINDINGS_DIR)/python/opencmiss ; swig -python -o $(PYTHON_WRAPPER) -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) )
+	# Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
+	( cd $(BINDINGS_DIR)/python/opencmiss ; swig -python -o $(PYTHON_WRAPPER) -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE); rm opencmiss_swig.py )
 
 $(PYTHON_MODULE_SO) : main $(PYTHON_WRAPPER) $(OBJECTS)
 	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss/opencmiss_wrap.o )
