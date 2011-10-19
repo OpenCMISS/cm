@@ -783,17 +783,17 @@ else
     FIELDML_OBJECT = #
 endif
 
-ifeq ($(COMPILER),intel) # TODO: temporarily disable intel build for opencmiss.f90 and etc.
-    FIELDML_OBJECT = #
-    MOD_INCLUDE := #
-    MOD_SOURCE_INC := #
-    MOD_FIELDML_TARGET := #
-    WRAPPER_OBJECTS = #   
-else
+#ifeq ($(COMPILER),intel) # TODO: temporarily disable intel build for opencmiss.f90 and etc.
+#    FIELDML_OBJECT = #
+#    MOD_INCLUDE := #
+#    MOD_SOURCE_INC := #
+#    MOD_FIELDML_TARGET := #
+#    WRAPPER_OBJECTS = #   
+#else
     WRAPPER_OBJECTS =  \
     $(OBJECT_DIR)/opencmiss.o \
     $(OBJECT_DIR)/opencmiss_c.o
-endif
+#endif
 
 OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
