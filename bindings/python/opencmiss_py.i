@@ -1,4 +1,4 @@
-/* OpenCMISS SWIG interface for Python */
+/* Python specific typemaps for SWIG */
 %module opencmiss
 %{
 #include "stdlib.h"
@@ -6,7 +6,9 @@
 #define MAX_OUTPUT_STRING_SIZE 200
 %}
 
-/* Macros for returning a python object in a tuple of return values */
+/**** Macros ****/
+
+/* Macro for returning a python object in a tuple of return values */
 %define RESULT_VARS()
   PyObject *new_output_tuple;
   PyObject *previous_result;
@@ -115,6 +117,8 @@
 }
 %enddef
 
+/**** CMISS*Type typemaps ****/
+
 /* Typemaps for passing CMISS types to CMISS...Type initialise routines
    We don't need to pass an input value, we can create a NULL
    pointer within the C wrapper */
@@ -143,6 +147,8 @@
   $1 = &type_pointer;
 }
 
+/**** Strings ****/
+
 /* String input */
 %typemap(in,numinputs=1) (const int Size, const char *DummyInputString) {
   if (!PyString_Check($input)) {
@@ -153,7 +159,7 @@
   $2 = PyString_AsString($input);
 }
 
-/* String output arguments */
+/* String output */
 %typemap(in,numinputs=0) (const int Size, char *DummyOutputString)(char temp[MAX_OUTPUT_STRING_SIZE]) {
   $1 = MAX_OUTPUT_STRING_SIZE;
   $2 = &temp[0];
@@ -166,7 +172,9 @@
   APPEND_TO_RESULT(output_string)
 }
 
-/* Integer output: */
+/**** Scalars ****/
+
+/* Integer output */
 %typemap(in,numinputs=0) (int *DummyOutputInt)(int temp) {
   $1 = &temp;
 }
@@ -178,7 +186,7 @@
   APPEND_TO_RESULT(output_int)
 }
 
-/* Float output: */
+/* Float output */
 %typemap(in,numinputs=0) (double *DummyOutputDouble)(double temp) {
   $1 = &temp;
 }
@@ -201,12 +209,12 @@
   APPEND_TO_RESULT(output_double)
 }
 
-/* Boolean input: */
+/* Boolean input */
 %typemap(in) (const int DummyInputBool) {
   $1 = PyObject_IsTrue($input);
 }
 
-/* Boolean output: */
+/* Boolean output */
 %typemap(in,numinputs=0) (int *DummyOutputBool)(int temp) {
   $1 = &temp;
 }
@@ -218,6 +226,8 @@
   APPEND_TO_RESULT(output_bool)
 }
 
+/**** Arrays ****/
+
 /* Array input */
 ARRAY_INPUT(int, PyInt_Check, PyInt_AsLong, integers)
 
@@ -225,8 +235,7 @@ ARRAY_INPUT(double, PyFloat_Check, PyFloat_AsDouble, floats)
 
 ARRAY_INPUT(float, PyFloat_Check, PyFloat_AsDouble, floats)
 
-/* Array outputs */
-
+/* Array output */
 ARRAY_OUTPUT(int, PyInt_FromLong, int)
 
 ARRAY_OUTPUT(double, PyFloat_FromDouble, double)

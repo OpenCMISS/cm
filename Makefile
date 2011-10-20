@@ -76,7 +76,7 @@ HEADER_INC_NAME := opencmiss.h
 HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
 C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
 BINDINGS_DIR = $(GLOBAL_CM_ROOT)/bindings
-C_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
+BINDINGS_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
 LIBRARY := $(LIB_DIR)/$(LIB_NAME)
 
@@ -264,8 +264,8 @@ MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
-$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(C_GENERATE_SCRIPT)
-	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
+$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py
+	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
 #
@@ -1626,21 +1626,26 @@ $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 #
 # SWIG bindings to other languages
 
+GENERATED_INTERFACE = $(BINDINGS_DIR)/python/opencmiss.i
 PYTHON_INTERFACE = $(BINDINGS_DIR)/python/opencmiss_py.i
-PYTHON_MODULE = $(BINDINGS_DIR)/python/opencmiss/opencmiss_swig.py
+PYTHON_MODULE = $(BINDINGS_DIR)/python/opencmiss/CMISS.py
 PYTHON_MODULE_SO = $(BINDINGS_DIR)/python/opencmiss/_opencmiss_swig.so
 PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/opencmiss_wrap.c
 PYTHON_INCLUDES = $(shell python-config --includes)
 
 python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO)
 
-$(PYTHON_WRAPPER) $(PYTHON_MODULE) : $(PYTHON_INTERFACE) $(HEADER_INCLUDE) $(C_GENERATE_SCRIPT)
-	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) SWIG $(BINDINGS_DIR)/python/opencmiss.i
-	python $(C_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) Python
-	# Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
-	( cd $(BINDINGS_DIR)/python/opencmiss ; swig -python -o $(PYTHON_WRAPPER) -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE); rm opencmiss_swig.py )
+$(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss.f90
+	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) SWIG $@
 
-$(PYTHON_MODULE_SO) : main $(PYTHON_WRAPPER) $(OBJECTS)
+$(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py $(SOURCE_DIR)/opencmiss.f90
+	python $(BINDINGS_GENERATE_SCRIPT) $(GLOBAL_CM_ROOT) Python
+
+$(PYTHON_WRAPPER) : $(PYTHON_INTERFACE) $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
+# Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
+	( cd $(BINDINGS_DIR)/python/opencmiss ; swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE); rm opencmiss_swig.py )
+
+$(PYTHON_MODULE_SO) : $(LIBRARY) $(PYTHON_WRAPPER) $(OBJECTS)
 	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss/opencmiss_wrap.o )
 	( cd $(BINDINGS_DIR)/python ; $(CC) opencmiss/opencmiss_wrap.o $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )
 
