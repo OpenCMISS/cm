@@ -191,11 +191,18 @@ class LibrarySource(object):
         #Also remove CMISSGeneratedMeshSurfaceGet for now as it takes an allocatable array but will be removed soon anyways.
         self.public_subroutines = filter(lambda r: not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or r.name.endswith('TypesCopy')),self.public_subroutines)
 
+        self.unbound_routines = []
         for routine in self.public_subroutines:
             routine.get_parameters()
-
-        #todo: work out which routines belong to classes
-        self.unbound_routines = self.public_subroutines
+            owner_class = routine.get_class()
+            if owner_class != None:
+                try:
+                    type = self.lib_source.types[owner_class]
+                    type.methods.append(routine)
+                except KeyError:
+                    sys.stderr.write("Warning: Couldn't find matching class for routine %s" % routine.name)
+            else:
+                self.unbound_routines.append(routine)
 
         for routine in self.public_subroutines:
             self.public_objects[routine.lineno] = routine
@@ -357,7 +364,6 @@ class Subroutine(object):
         self.source_file = source_file
         self.parameters = None
         self.interface = None
-        self.owner_type = None
         self._get_comments()
 
     def get_parameters(self):
@@ -404,6 +410,21 @@ class Subroutine(object):
                     break
             if not match:
                 raise RuntimeError, "Couldn't find parameter %s for subroutine %s" % (param,self.name)
+
+    def get_class(self):
+        """Work out if this routine is a method of a class
+        """
+        #CreateStart routines have last parameter that returns a new type
+        if self.name.endswith('CreateStart') or self.name.endswith('CreateStartObj'):
+            return self.parameters[-1].type_name
+
+        try:
+            if self.parameters[0].var_type == Parameter.CUSTOM_TYPE:
+                type_name = self.parameters[0].type_name
+                if self.name.startswith(type_name[:-len('Type')]):
+                    return type_name
+        except IndexError:
+            pass
 
     def _get_comments(self):
         """Sets the comment_lines property, a list of comments above the subroutine definition"""
@@ -535,6 +556,7 @@ class Type(object):
         self.lineno = lineno
         self.lines = lines
         self.source_file = source_file
+        self.methods = []
         self._get_comments()
 
     def _get_comments(self):

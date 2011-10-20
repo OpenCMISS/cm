@@ -12,8 +12,8 @@ This Python module wraps the underlying OpenCMISS Fortran library.
 http://www.opencmiss.org
 """
 
-INITIALISE = """WorldCoordinateSystem = CoordinateSystemTypeInitialise()
-WorldRegion = RegionTypeInitialise()
+INITIALISE = """WorldCoordinateSystem = CoordinateSystem()
+WorldRegion = Region()
 Initialise(WorldCoordinateSystem, WorldRegion)
 ErrorHandlingModeSet(ReturnErrorCode) #Don't output errors, we'll include trace in exception
 """
@@ -22,6 +22,7 @@ def generate(cm_path,args):
     """
     Generate the Python module that wraps the lower level C module created by SWIG
     """
+
     module = open(os.sep.join((cm_path,'bindings','python','opencmiss','CMISS.py')),'w')
 
     library = LibrarySource(cm_path)
@@ -50,6 +51,8 @@ def generate(cm_path,args):
 
 
 def type_to_py(type):
+    """Convert CMISS type to Python class"""
+
     cmiss_type = type.name[len('CMISS'):-len('Type')]
     docstring = '\n    '.join(type.comment_lines)
 
@@ -57,7 +60,46 @@ def type_to_py(type):
     py_class += '    """%s\n    """\n' % docstring
     py_class += '\n\n'
 
+    py_class += "    def __init__(self):\n"
+    py_class += '        """Initialise a null %s"""\n\n' % type.name
+    py_class += "        self.cmiss_type = _wrap_routine(_opencmiss_swig.%sInitialise, None)\n\n" % type.name
+
+    for method in type.methods:
+        if not method.name.endswith('TypeInitialise'):
+            py_class += py_method(type, method)
+
     return py_class
+
+
+def py_method(type, routine):
+    """Write subroutine as method of Python class"""
+
+    c_name = subroutine_c_name(routine)[0]
+    name = c_name[len(type.name)-len('Type'):]
+
+    if name.endswith('CreateStart'):
+        parameters = routine.parameters[:-1]
+    else:
+        parameters = routine.parameters[1:]
+
+    py_args = [p.name for p in parameters if p.intent != 'OUT']
+    method_args = ', '.join(['self']+py_args)
+    if name.endswith('CreateStart'):
+        py_swig_args = ', '.join(py_args + ['self'])
+    else:
+        py_swig_args = ', '.join(['self'] + py_args)
+
+    docstring = '\n        '.join(routine.comment_lines)
+    docstring += '\n\n'
+    docstring += ' '*8 + '\n        '.join(parameters_docstring(parameters).splitlines())
+    docstring = docstring.strip()
+
+    method = "    def %s(%s):\n" % (name, method_args)
+    method += '        """%s\n        """\n\n' % docstring
+    method += '        return _wrap_routine(_opencmiss_swig.%s, [%s])\n' % (c_name, py_swig_args)
+    method += '\n'
+
+    return method
 
 
 def routine_to_py(routine):
@@ -66,38 +108,51 @@ def routine_to_py(routine):
 
     docstring = '\n    '.join(routine.comment_lines)
     docstring += '\n\n'
-    return_values = []
-    for param in routine.parameters:
-        if param.intent == 'OUT':
-            return_values.append(param)
-        else:
-            docstring += '    :param %s: %s\n' % (param.name, param.doxygen)
-            docstring += '    :type %s: %s\n' % (param.name, param_type_comment(param))
-    return_comments = [return_comment(r.doxygen) for r in return_values]
-    if len(return_values) == 0:
-        docstring += '    :rtype: None\n'
-    elif len(return_values) == 1:
-        docstring += '    :rtype: %s, %s\n' % (param_type_comment(return_values[0]), return_comments[0])
-    else:
-        docstring += '    :rtype: tuple (%s)\n' % (', '.join(return_comments))
+    docstring += ' '*4 +'\n    '.join(parameters_docstring(routine.parameters).splitlines())
     docstring = docstring.strip()
 
     args = ', '.join([p.name for p in routine.parameters if p.intent != 'OUT'])
 
     py_routine = "def %s(%s):\n" % (name, args)
     py_routine += '    """%s\n    """\n\n' % docstring
-    py_routine += '    return _wrap_routine(_opencmiss_swig.%s, (%s))\n' % (c_name, args)
+    py_routine += '    return _wrap_routine(_opencmiss_swig.%s, [%s])\n' % (c_name, args)
     py_routine += '\n\n'
 
     return py_routine
 
 
+def parameters_docstring(parameters):
+    """Create docstring section for parameters and return values"""
+
+    return_values = []
+    docstring = ""
+    for param in parameters:
+        if param.intent == 'OUT':
+            return_values.append(param)
+        else:
+            docstring += ':param %s: %s\n' % (param.name, param.doxygen)
+            docstring += ':type %s: %s\n' % (param.name, param_type_comment(param))
+    return_comments = [return_comment(r.doxygen) for r in return_values]
+    if len(return_values) == 0:
+        docstring += ':rtype: None\n'
+    elif len(return_values) == 1:
+        docstring += ':returns: %s\n' % (return_comments[0])
+        docstring += ':rtype: %s\n' % (param_type_comment(return_values[0]))
+    else:
+        docstring += ':returns: (%s)\n' % (', '.join([c.rstrip('.') for c in return_comments]))
+        docstring += ':rtype: tuple\n'
+
+    return docstring
+
+
 def return_comment(comment):
-    """Fix comment describing return value
-    """
+    """Fix comment describing return value"""
+
     on_return = 'on return, '
     if comment.lower().startswith(on_return):
-        comment = comment[len(on_return):]
+        comment = comment[len(on_return)].upper()+comment[len(on_return)+1:]
+    if not comment.strip():
+        return 'No description'
     return comment
 
 PARAMETER_TYPES = {
@@ -111,6 +166,7 @@ PARAMETER_TYPES = {
 
 def param_type_comment(param):
     """Python type corresponding to Fortran type for use in docstrings"""
+
     if param.var_type == Parameter.CUSTOM_TYPE:
         type = param.type_name[len('CMISS'):-len('Type')]
     else:
