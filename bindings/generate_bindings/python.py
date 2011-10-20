@@ -63,7 +63,6 @@ def type_to_py(type):
 def routine_to_py(routine):
     c_name = subroutine_c_name(routine)[0]
     name = c_name[len('CMISS'):]
-    routine.get_parameters()
 
     docstring = '\n    '.join(routine.comment_lines)
     docstring += '\n\n'

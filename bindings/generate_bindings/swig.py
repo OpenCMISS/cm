@@ -51,8 +51,6 @@ def routine_swig_lines(routine):
         start_lines.append('%%apply CMISSDummyFinaliseType *CMISSDummy{%s *%s};' % (type,name))
         end_lines.append('%%clear %s *%s;' % (type,name))
 
-    if routine.parameters is None:
-        routine.get_parameters()
     for param in routine.parameters:
         (p_start,p_end) = parameter_swig_lines(param)
         if p_start:

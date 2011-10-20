@@ -153,9 +153,6 @@ def subroutine_c_name(subroutine):
 def subroutine_to_c_header(subroutine):
     """Returns the function declaration in C"""
 
-    if subroutine.parameters is None:
-        subroutine.get_parameters()
-
     output = '\n/*>'
     output += '\n *>'.join(subroutine.comment_lines)
     output += ' */\n'
@@ -172,8 +169,6 @@ def subroutine_to_c_header(subroutine):
 def subroutine_to_c_f90(subroutine):
     """Returns the C function implemented in Fortran for opencmiss_c.f90"""
 
-    if subroutine.parameters is None:
-        subroutine.get_parameters()
     c_f90_params = [parameter_c_f90_names(param) for param in subroutine.parameters]
     c_f90_declarations = [parameter_c_f90_declaration(param) for param in subroutine.parameters]
     if subroutine.interface is not None:

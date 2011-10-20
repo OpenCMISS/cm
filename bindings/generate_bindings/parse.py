@@ -69,7 +69,7 @@ class LibrarySource(object):
                 self.source_file.types[name] = Type(name,self.lineno,self.lines,self.source_file)
 
         class PublicFinder(LineFinder):
-            line_re = re.compile(r'^\s*PUBLIC\s+([A-Z0-9_,\s]+)',re.IGNORECASE)
+            line_re = re.compile(r'^\s*PUBLIC\s*:*\s*([A-Z0-9_,\s]+)',re.IGNORECASE)
 
             def add(self,match,lineno):
                 for symbol in match.group(1).split(','):
@@ -191,6 +191,9 @@ class LibrarySource(object):
         #Also remove CMISSGeneratedMeshSurfaceGet for now as it takes an allocatable array but will be removed soon anyways.
         self.public_subroutines = filter(lambda r: not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or r.name.endswith('TypesCopy')),self.public_subroutines)
 
+        for routine in self.public_subroutines:
+            routine.get_parameters()
+
         #todo: work out which routines belong to classes
         self.unbound_routines = self.public_subroutines
 
@@ -310,7 +313,8 @@ class Interface(object):
 
     def _get_array_routines(self,routine_list):
         """Return a list of the routines that take array parameters if there
-        is an option between passing an array or a scalar
+        is an option between passing an array or a scalar. All other routines
+        are also returned.
 
         Arguments:
         routine_list -- List of subroutine names
@@ -367,16 +371,19 @@ class Subroutine(object):
             else: return string.strip()
 
         self.parameters = []
-        match = re.search(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(([A-Z0-9_,\s]*)\)',self.lines[0],re.IGNORECASE)
+        match = re.search(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(([A-Z0-9_,\*\s]*)\)',self.lines[0],re.IGNORECASE)
         parameters = [p.strip() for p in match.group(3).split(',')]
         try:
             parameters.remove('Err')
         except ValueError:
-            sys.stderr.write("Warning: Routine doesn't take Err parameter: %s\n" % self.name)
+            try:
+                parameters.remove('err')
+            except ValueError:
+                sys.stderr.write("Warning: Routine doesn't take Err parameter: %s\n" % self.name)
 
         for param in parameters:
             param_pattern = r"""
-            ^\s*([A-Z_]+\s*(\(([A-Z_=\*0-9]+)\))?) # parameter type at start of line, followed by possible type parameters in brackets
+            ^\s*([A-Z_]+\s*(\(([A-Z_=,\*0-9]+)\))?)# parameter type at start of line, followed by possible type parameters in brackets
             \s*([A-Z0-9\s_\(\):,\s]+)?\s*          # extra specifications such as intent
             ::
             [A-Z_,\s\(\):]*                        # Allow for other parameters to be included on the same line
