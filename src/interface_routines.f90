@@ -761,30 +761,45 @@ CONTAINS
     CALL ENTERS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET",ERR,ERROR,*999)
 
     ! Preliminary error checks to verify user input information
-    IF(.NOT.ASSOCIATED(MESH_CON)) CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
-    IF(MESH_CON%MESH_CONNECTIVITY_FINISHED) CALL FLAG_ERROR("Interface mesh connectivity already been finished.",ERR,ERROR,*999)
-    IF (.NOT.ALLOCATED(MESH_CON%ELEMENTS_CONNECTIVITY)) CALL FLAG_ERROR("Interface elements connectivity array not allocated.", &
-      & ERR,ERROR,*999)
-    IF((INT_ELEM > MESH_CON%NUMBER_INT_ELEM).OR.(INT_ELEM < 0)) CALL FLAG_ERROR("Interface mesh element number out of range.", &
-      & ERR,ERROR,*999)
-    IF((COUPLED_MESHID > MESH_CON%NUMBER_INT_DOM).OR.(COUPLED_MESHID < 0)) CALL FLAG_ERROR("Interface coupled mesh index number &
-      & out of range.",ERR,ERROR,*999)
-    IF((COUPLED_ELEM>MESH_CON%INTERFACE%COUPLED_MESHES(COUPLED_MESHID)%PTR%NUMBER_OF_ELEMENTS).OR.(COUPLED_ELEM<0))THEN
-      CALL FLAG_ERROR("Coupled mesh element number out of range.",ERR,ERROR,*999)
-    END IF
-    IF((COMP_NO<0).OR.(COMP_NO>MESH_CON%INTERFACE_MESH%NUMBER_OF_COMPONENTS+1)) CALL FLAG_ERROR("Interface component number is &
-      & out of range.",ERR,ERROR,*999)
-    IF((LOCAL_NODE<0).OR.(LOCAL_NODE> MESH_CON%BASIS%NUMBER_OF_NODES))THEN
-      CALL FLAG_ERROR("Interface local node number is out of range.",ERR,ERROR,*999)   
-    END IF
-
-    ! Core routine 
-    IF(MESH_CON%ELEMENTS_CONNECTIVITY(INT_ELEM,COUPLED_MESHID)%COUPLED_MESH_ELEMENT_NUMBER/=COUPLED_ELEM)THEN
-      CALL FLAG_ERROR("Coupled mesh element number doesn't match that set to the interface.",ERR,ERROR,*999)
+    IF(ASSOCIATED(MESH_CON)) THEN
+      IF(MESH_CON%MESH_CONNECTIVITY_FINISHED) THEN
+        CALL FLAG_ERROR("Interface mesh connectivity already been finished.",ERR,ERROR,*999)
+      ELSE
+        IF (ALLOCATED(MESH_CON%ELEMENTS_CONNECTIVITY)) THEN
+          IF((INT_ELEM > 0).OR.(INT_ELEM < MESH_CON%NUMBER_INT_ELEM)) THEN
+            IF((COUPLED_MESHID > 0).OR.(COUPLED_MESHID < MESH_CON%NUMBER_INT_DOM)) THEN
+              IF((COUPLED_ELEM>0).OR.(COUPLED_ELEM<MESH_CON%INTERFACE%COUPLED_MESHES(COUPLED_MESHID)%PTR%NUMBER_OF_ELEMENTS))THEN
+                IF((COMP_NO>0).OR.(COMP_NO<MESH_CON%INTERFACE_MESH%NUMBER_OF_COMPONENTS+1)) THEN
+                  IF((LOCAL_NODE>0).OR.(LOCAL_NODE<MESH_CON%BASIS%NUMBER_OF_NODES))THEN
+                    !Core routine 
+                    IF(MESH_CON%ELEMENTS_CONNECTIVITY(INT_ELEM,COUPLED_MESHID)%COUPLED_MESH_ELEMENT_NUMBER/=COUPLED_ELEM)THEN
+                      CALL FLAG_ERROR("Coupled mesh element number doesn't match that set to the interface.",ERR,ERROR,*999)
+                    ELSE
+                      MESH_CON%ELEMENTS_CONNECTIVITY(INT_ELEM,COUPLED_MESHID)%XI(:,COMP_NO,LOCAL_NODE)=XI(:)
+                    END IF
+                  ELSE
+                    CALL FLAG_ERROR("Interface local node number is out of range.",ERR,ERROR,*999)
+                  END IF
+                ELSE
+                  CALL FLAG_ERROR("Interface component number is out of range.",ERR,ERROR,*999)
+                ENDIF
+              ELSE
+                CALL FLAG_ERROR("Coupled mesh element number out of range.",ERR,ERROR,*999)
+              END IF
+            ELSE
+              CALL FLAG_ERROR("Interface coupled mesh index number out of range.",ERR,ERROR,*999)
+            ENDIF
+          ELSE
+            CALL FLAG_ERROR("Interface mesh element number out of range.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Interface elements connectivity array not allocated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
     ELSE
-      MESH_CON%ELEMENTS_CONNECTIVITY(INT_ELEM,COUPLED_MESHID)%XI(:,COMP_NO,LOCAL_NODE)=XI(:)
-    END IF
-    
+      CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
+    ENDIF
+
     CALL EXITS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET")
     RETURN
 999 CALL ERRORS("INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET",ERR,ERROR)
@@ -830,7 +845,8 @@ CONTAINS
                XI_DIR=MESH_CON%INTERFACE_MESH%NUMBER_OF_DIMENSIONS+1
                LOCAL_NODE=MESH_CON%BASIS%NUMBER_OF_NODES
                IF(.NOT.ALLOCATED(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI)) THEN
-                 ALLOCATE(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI(XI_DIR,XI_DIR,LOCAL_NODE))
+                 !\todo Update mesh component index to look at the number of mesh components in each element. Currently this defaults to the first mesh component ie %XI(XI_DIR,1,LOCAL_NODE)). The interface mesh types will also need to be restructured.
+                 ALLOCATE(MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI(XI_DIR,1,LOCAL_NODE))
                ENDIF
                MESH_CON%ELEMENTS_CONNECTIVITY(INT_MESH_ELEM,COUPLED_MESHID)%XI=0.0_DP
              ELSE
