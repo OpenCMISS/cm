@@ -26745,7 +26745,7 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>>Restores the specified field variable parameter set local single precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
+  !>Restores the specified field variable parameter set local single precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
   SUBROUTINE CMISSFieldParameterSetDataRestoreSPObj(Field,VariableType,FieldSetType,Parameters,Err)
   
     !Argument variables
@@ -26820,7 +26820,7 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>>Restores the specified field variable parameter set local double precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
+  !>Restores the specified field variable parameter set local double precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
   SUBROUTINE CMISSFieldParameterSetDataRestoreDPObj(Field,VariableType,FieldSetType,Parameters,Err)
   
     !Argument variables
@@ -26895,7 +26895,7 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>>Restores the specified field variable parameter set local logical array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
+  !>Restores the specified field variable parameter set local logical array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
   SUBROUTINE CMISSFieldParameterSetDataRestoreLObj(Field,VariableType,FieldSetType,Parameters,Err)
   
     !Argument variables
