@@ -49,13 +49,13 @@ def wrap_cmiss_routine(routine, args=None):
         status = r
         return_val = None
     if status != _opencmiss_swig.cvar.CMISSNoError:
-        if status == _opencmiss_swig.CMISSPointerIsNULL:
+        if status == _opencmiss_swig.cvar.CMISSPointerIsNULL:
             raise CMISSError, "CMISS type pointer is null"
-        elif status == _opencmiss_swig.CMISSPointerNotNULL:
+        elif status == _opencmiss_swig.cvar.CMISSPointerNotNULL:
             raise CMISSError, "CMISS type pointer is not null"
-        elif status == _opencmiss_swig.CMISSCouldNotAllocatePointer:
+        elif status == _opencmiss_swig.cvar.CMISSCouldNotAllocatePointer:
             raise CMISSError, "Could not allocate pointer"
-        elif status == _opencmiss_swig.CMISSErrorConvertingPointer:
+        elif status == _opencmiss_swig.cvar.CMISSErrorConvertingPointer:
             raise CMISSError, "Error converting pointer"
         else:
             raise CMISSError, _opencmiss_swig.CMISSExtractErrorMessage()[1]
