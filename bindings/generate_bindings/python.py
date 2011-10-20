@@ -76,15 +76,18 @@ def py_method(type, routine):
 
     c_name = subroutine_c_name(routine)[0]
     name = c_name[len(type.name)-len('Type'):]
+    if name == 'TypeFinalise':
+        name = 'Finalise'
+    create_start_name = type.name[:-len('Type')]+'CreateStart'
 
-    if name.endswith('CreateStart'):
+    if c_name.startswith(create_start_name):
         parameters = routine.parameters[:-1]
     else:
         parameters = routine.parameters[1:]
 
     py_args = [p.name for p in parameters if p.intent != 'OUT']
     method_args = ', '.join(['self']+py_args)
-    if name.endswith('CreateStart'):
+    if c_name.startswith(create_start_name):
         py_swig_args = ', '.join(py_args + ['self'])
     else:
         py_swig_args = ', '.join(['self'] + py_args)

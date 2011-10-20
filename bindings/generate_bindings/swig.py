@@ -80,6 +80,9 @@ def parameter_swig_lines(parameter):
             elif parameter.var_type == Parameter.FLOAT:
                 typemap = 'const int ArraySize, float *DummyOutputArray'
                 apply_to = 'const int %(name)sSize, float *%(name)s' % parameter.__dict__
+            elif parameter.var_type == Parameter.CHARACTER:
+                typemap = 'const int Size, char *DummyOutputString'
+                apply_to = 'const int %(name)sSize, char *%(name)s' % parameter.__dict__
         else:
             if parameter.var_type == Parameter.INTEGER:
                 typemap = 'int *DummyOutputInt'
@@ -93,9 +96,6 @@ def parameter_swig_lines(parameter):
             elif parameter.var_type == Parameter.LOGICAL:
                 typemap = 'int *DummyOutputBool'
                 apply_to = 'int *%(name)s' % parameter.__dict__
-            elif parameter.var_type == Parameter.CHARACTER:
-                typemap = 'const int Size, char *DummyOutputString'
-                apply_to = 'const int %(name)sSize, char *%(name)s' % parameter.__dict__
     else:
         if parameter.var_type == Parameter.CHARACTER:
             if parameter.array_dims == 1:
