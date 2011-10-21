@@ -401,7 +401,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     case FIELD_FIBRE_TYPE:
         switch( variableType )
@@ -415,7 +415,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "second time derivative of variable";
         default:
-            return "unknown field variable type";
+            return "real";
         }
     case FIELD_GENERAL_TYPE:
         switch( variableType )
@@ -429,7 +429,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     case FIELD_MATERIAL_TYPE:
         switch( variableType )
@@ -443,7 +443,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     default:
         switch( variableType )
@@ -457,7 +457,7 @@ static char *FieldExport_GetVariableLabel( const int fieldType, const int variab
         case FIELD_DEL2UDELT2_VARIABLE_TYPE:
             return "field,  unknown second time derivative of variable";
         default:
-            return "field,  unknown field variable type";
+            return "field,  real";
         }
     }
 }
@@ -977,7 +977,7 @@ static int FieldExport_FieldDerivateLabels( FileSession *session, const int numb
               FieldExport_FPrintf( session, "d4/ds1ds2ds3ds4" );
               break;
         default:
-              FieldExport_FPrintf( session, "unknown field variable type %d", derivatives[i] );
+              FieldExport_FPrintf( session, "real" );
         }
     }
     FieldExport_FPrintf( session, ")" );

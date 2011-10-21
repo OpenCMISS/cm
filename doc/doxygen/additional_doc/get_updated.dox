@@ -1,0 +1,31 @@
+/*!
+\page get_updated Get Updated
+\section essential_subscription Required Subscriptions
+To be involved and get updated with the OpenCMISS project, developers are required to subscribe the following mailing-lists and/or rss feeds.
+- For general queries, requests for assistance on the OpenCMISS code, and announcements, use:
+   - <a href="https://lists.sourceforge.net/lists/listinfo/opencmiss-developers">Developers' general list</a>
+- For information about committed changes to the main GitHub source repository or daily automatic build and non-scheduled build failure, use either 
+   - <a href="https://lists.sourceforge.net/lists/listinfo/opencmiss-automated1">Automated notifications</a> or
+   - <a href="http://pipes.yahoo.com/opencmiss/essential?_render=rss">Essential RSS Render</a>. This is a combined rss feed for:
+      - <a href="http://autotest.bioeng.auckland.ac.nz/opencmiss-build/rss">Latest testing results from automated build/test system (Buildbot) RSS feed</a>
+      - <a href="https://github.com/OpenCMISS/cm/commits/master.atom">Main Github source code cm repository atom feed</a>
+      - <a href="https://github.com/OpenCMISS/examples/commits/master.atom">Main Github source code examples repository atom feed</a>  
+      - <a href="https://github.com/OpenCMISS/cellml/commits/master.atom"> Main Github source code cellml repository atom feed</a>  
+\section alternative_subscription Alternative Subscriptions
+In addition, you might wish to subscribe the following rss feeds. 
+- Alterative RSS Feeds on OpenCMISS Tracker, Wiki, etc.
+   - <a href="http://pipes.yahoo.com/opencmiss/alternative?_render=rss">Alterative RSS Render</a>. This is a combined rss feed for:
+      - <a href="https://tracker.physiomeproject.org/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&product=OpenCMISS&query_format=advanced&title=Tracker%20Item%20List&ctype=atom">OpenCMISS Traker Atom Feed</a>
+      - <a href="http://sourceforge.net/apps/mediawiki/opencmiss/index.php?title=Special:RecentChanges&feed=rss">OpenCMISS Wiki RSS Feed</a>
+- Committed Changes to Github source repository.
+   - There are three ways to be notified or get history of changes from a Github source repository:
+      - "Watch" this repository by press the "Watch" button or https://github.com/<user_name>/<repository_name>/toggle_watch. Any changes will be notified at the Dashboard of your github.
+      - Pull the repository to local working directory and use "git log" to view commit logs. 
+      - Subscribe the atom feed for the repository: https://github.com/<user_name>/<repository_name>/commits/master.atom. 
+   - This feed includes <a href="http://pipes.yahoo.com/opencmiss/github_all?_render=rss">all Github source repositories</a>. It is formed by:
+      - <a href="http://pipes.yahoo.com/opencmiss/github_cm?_render=rss">All Github cm repositories</a>   
+      - <a href="http://pipes.yahoo.com/opencmiss/github_examples?_render=rss">All Github examples repositories</a>   
+      - <a href="http://pipes.yahoo.com/opencmiss/github_cellml?_render=rss">All Github cellml repositories</a>     
+\section all_subscriptions All Subscriptions
+For your convenience, all the feed described above are contained in <a href="http://pipes.yahoo.com/opencmiss/all_feeds?_render=rss">this feed</a>.       
+*/

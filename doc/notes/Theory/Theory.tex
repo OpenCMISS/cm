@@ -1134,6 +1134,15 @@ The Laplacian of a vector using covariant derivatives is
   \laplacian{\vect{\phi}}=\text{grad }\pbrac{\text{div }\vect{\phi}}-\text{curl } \pbrac{\text{curl }\vect{\phi}}==\mixedderiv{\vect{\phi}}{i}{i}
 \end{equation}
 
+The Laplacian of a contravariant (rank (0,1)) tensor $\phi^{k}$ is
+\begin{equation}
+  \laplacian{\vect{\phi}}=\pbrac{\laplacian{\phi_{k}}-2g^{ij}\christoffel{K}{j}{H}\delby{\phi^{h}}{x^{i}}+\phi^{h}\delby{g^{ij}\christoffel{K}{i}{j}}{x^{h}}}\vect{e}^{k}
+\end{equation}
+and the covariant derivative of a covariant tensor  (rank (1,0)) $\phi_{k}$ is
+\begin{equation}
+  \laplacian{\vect{\phi}}=\pbrac{\laplacian{\phi_{k}}-2g^{ij}\christoffel{h}{j}{k}\delby{\phi_{h}}{x^{i}}+\phi_{h}g^{ij}\delby{\christoffel{h}{i}{j}}{x^{i}}}\vect{e}_{k}
+\end{equation}
+
 \subsection{Coordinate Systems}
 \label{sec:coordinate systems}
 

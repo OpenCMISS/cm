@@ -1,58 +1,261 @@
 /*!
-\page code_style Coding Style
-This is an attempt to document the programming "style" for use with OpenCMISS.
-- Generally, try to ensure that new code is consistent in formating, style, look and feel and convention with existing code.
-- Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.
-- All dynamic arrays should be ALLOCATABLE rather than POINTER unless full pointer functionality is required.
-- A double space should be used for an indent. Tabs should not be used to indent code.
-- Use the UNIX standard for specifying end of line characters rather than the windows standard.
-- All unused variables should be removed before committing code.
-- All pointers should be checked to see if they are ASSOCIATED before de-referencing them.
-- Use fully spelt out variable names unless abbreviations are required to avoid maximum identifier length problems.
-- Use lower case for loop variables.
-- If there is just a single statement following an IF clause use the inline form of the IF statement and do not use THEN and ENDIF.
-- There should be a space before the first continuation character and a space after the second continuation character when continuing lines.
-- Use standard loop variable names e.g., local_node_idx, component_idx, when looping rather than temporary variable names.
-- When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented", ... statement for the cases that are not yet implemented.
-- All error messages should be a proper sentance (with a full stop).
-- Error messages should try to provide information on what variables are out of range and what the values are. 
-- Do not put in temporary write statements. Use diagnostics. 
-- As OpenCMISS is an output then all output should be able to be turned off.
-- All memory allocations should check to see if the allocation was successful and flag an error if not.
-- All locally allocated variables should be deallocated on the exit from a routine under error conditions.
-- Use a !================... line between subroutines and functions
-- For dummy array arguments the dimension qualifier should be with the array name i.e., use INTEGER(INTG) :: FRED(N) rather than INTEGER(INTG), DIMENSION(N) :: FRED.
-- Code should be no more than 132 characters in a line. Use continuation &'s if need be. Add the space before/after each & to distinguish with the complete line.
-- No need to allocate local arrays if the size of array is known. 
-  e.g. REAL(DP), ALLOCATABLE :: VALUE_BUFFER(:) and then ALLOCATE(VALUE_BUFFER(5),STAT=ERR)
-  can be replaced with REAL(DP)::VALUE_BUFFER(5)
-- Use node hierarchy consistently in subroutine calls. i.e., version_number,derivative_number,node_number,component_number,variable_number instead of reverse order.
-- Input arguments should be checked in a subroutine before being used.
-- No space between IF and condition i.e. IF( rather than IF (. 
-- END IF should be ENDIF, ELSEIF should be ELSE IF and END DO should be ENDDO.
-- Don't comment out code changes with dates and initials. The code management system stores all changes and who changed what.
-- Get routines
-  - Use subroutines instead of function.
-  - Return the result to the memory supplied by calling program. (i.e. using INTENT(OUT)::A(:) etc)
-  - Indicate in the doxygen comment that an argument is changed inside the get routine.
-  - Check that the size of the memory passed in is large enough to hold the data that it is going to store
-.
-The following styles are required by IBM Fortran Compiler:
-- For read/write/print statement, avoid the comma before the data variable. 
-  For example, use READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA) instead of READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)
-- In IF/WHILE statement, if it checks whether a logical value is true or false, 
-  use IF(SOMEVALUE) or IF(.NOT.SOMEVALUE) instead of IF(SOMEVALUE==.TRUE.) or IF(SOMEVALUE==.FALSE.)
-- For the complete array assignment, use A=B instead of A(:)=B(:)     
+\page new_code_style Coding Style
 
-Allowed Fortran features:
-- All of the features from the Fortran 95 standard.
-- In addition the following features from the Fortran 2003 standard:
-  - C interoperability.
-  - Access to the computing environment.
-  - ISO TR 15581 allocatable enhancements.
-  - [] array constructors should be used instead of /( )/.
-  - Pointer intents should be specified
-  - MOVE_ALLOC
-- In addition the following features from the Fortran 2008 standard:
-  - None.
+\section general_comments General comments
+
+- Generally, try to ensure that new code is consistent in formating, style, look and feel and convention with existing code. If in doubt about whether or not a new coding style rule is required please raise the issue rather than adopt a new style. 
+- Be professional in your coding style, comments, error messages, layout and other output.
+
+\subsection code_comments Code Comments
+
+- Do not comment out code changes with dates and initials. The code management system will record all changes and who changed what.
+- All new code should be properly commented and describe what the code does, why it was added and (if appropriate) describe any limitations.
+- Do not use comments as an excuse for poor code. 
+- If you implement an algorithm from a paper or book put a reference to the source in the comments.
+
+\subsection code_layout Code Layout
+
+- Free source form must be used.
+- A double space should be used for an indent. Tabs must not be used anywhere in the code.
+- Code should have no more than 132 characters in a line, use continuation &'s if need be. There should be a space before the first continuation character and a space after the second continuation character when continuing lines. Continuation lines should be indented by 2 spaces with respect to the first line.
+- All arguments to a SUBROUTINE/FUNCTION must be declared with one variable per line. Doxygen comments must be used to document the variable usage. If a variable is to be changed/returned by the SUBROUTINE/FUNCTION indicate this in the doxygen comment e.g., INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_NODES !<On return, the number of nodes in the basis.
+- When commenting array variables in doxygen, include in the doxygen comment information about the array indicies e.g. INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_DERIVATIVES(:) !<NUMBER_OF_DERIVATIVES(local_node_idx). The number of derivatives at the local_node_idx'th local node in the basis.
+- When commenting variables that are associated with a list of parameters a reference should be map in the doxygen comment to the doxygen description of those parameters e.g. INTEGER(INTG) :: TYPE !<The type of the field. \see FIELD_ROUTINES_FieldTypes
+- In general, code routines, local variable lists etc. should be alphabetical.
+- CASE keyword in a SELECT CASE statement should have the same indentation as the SELECT statement. The contents of the CASE statement should be indented by 2 spaces.
+- Add whitespace where appropriate to improve readability.
+- Use a !================... marker between subroutines and functions.
+
+\subsubsection for_discussion1 For discussion
+
+- What case should be used? Upper, lower, CamelCase?
+- Pros:
+- Cons:
+
+\section fortran_code Fortran code
+
+- IMPLICIT NONE must be used in all modules and programs.
+- INTENT(IN|OUT|INOUT) must be used for all dummy arguments including pointers. 
+- If there is just a single statement following an IF clause use the inline form of the IF statement and do not use THEN and ENDIF.
+- For dummy array arguments the dimension qualifier should be with the array name i.e., use INTEGER(INTG) :: FRED(N) rather than INTEGER(INTG), DIMENSION(N) :: FRED.
+- always name program units, types and interfaces and use the corresponding END PROGRAM, END SUBROUTINE, END MODULE, END TYPE, END INTERFACE etc. etc. 
+- Never use a Fortran keyword as a variable name. Never use the name of an intrinsic function as the name for a user-defined function.
+- Use :: after the declaration part of a variable, even if there are no attributes.
+- All explicit constants should have the kind attribute at the end i.e., 3.14159_DP rather than 3.14159.
+- Declare the length of character variables with CHARACTER(LEN=xxx). 
+- Use [] array constructors rather than /( )/.
+- All variable decalarations involving a base type must always be qualified with a KIND selection e.g., REAL(DP) :: rather than REAL :: 
+- Use the relational operators <, >, <=, >=, == and /= rather than .LT., .GT., .LE., .GE., .EQ. and .NE.
+- Use array syntax whenever possible e.g., A=B instead of A(:)=B(:)
+- Use assumed shape arrays whereever possible i.e., A(:) instead of A(*) for array arguments.
+- No space between the conditional statement and condition i.e. IF( rather than IF (, WHILE( rather than WHILE ( etc.
+- All multiword Fortran statements should have a space i.e., END IF, ELSE IF, END DO, END SELECT etc.
+- For read/write/print statement, avoid the comma before the data variable e.g., use READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS) REAL_DATA(1:LEN_OF_DATA) instead of READ(FILE_ID, CHAR(DP_FMT), IOSTAT=IOS), REAL_DATA(1:LEN_OF_DATA)
+- In IF/WHILE statement, do not use full logical expressions e.g., use IF(SOMEVALUE) or IF(.NOT.SOMEVALUE) instead of IF(SOMEVALUE==.TRUE.) or IF(SOMEVALUE==.FALSE.)
+- Do not use multiple statements in one line. Use separate lines for each statement.
+- An INTERFACE block must be used for all SUBROUTINES/FUNCTIONS that are not otherwise automatically available via a USE statement and MODULEs.
+- SELECT CASE statements must always have a CASE DEFAULT clause. If there is no default action include the CASE DEFAULT and put !Do nothing as a comment.
+
+\subsection fortran_avoided Fortran features to be avoided
+
+- COMMON blocks - use MODULES instead
+- EQUIVALENCE 
+- Assigned and computed GOTOs - use SELECT CASE statements
+- Artihmetic IF statements - use a full IF, ELSEIF, ELSE, ENDIF or SELECT CASE instead. 
+- GOTO and CONTINUE - use IF, CASE, DO WHILE, EXIT and CYCLE instead.
+- PAUSE statements
+- ENTRY statements
+- DATA and BLOCK DATA
+- Implicitly changing the shape of an array when passing it into a subroutine.
+
+\subsection fortran_allowed Allowed Fortran features
+
+\subsubsection fortran90_allowed Fortran 90
+
+- All features.
+
+\subsubsection fortran95_allowed Fotran 95
+
+- All features.
+
+\subsubsection fortran03_allowed Fortran 2003
+
+- C interoperability. Use C types for the interface only. Internal code should use Fortran types.
+- Access to the computing environment.
+- ISO TR 15581 allocatable enhancements.
+- [] array constructors.
+- Pointer intents.
+- MOVE_ALLOC
+
+\subsubsection fortran08_allowed Fortran 2008
+
+- No features at this stage.
+
+\section dynamic_memory Dynamic memory.
+ 
+- Automatic arrays (i.e., those arrays declared within a SUBROUTINE/FUNCTION using the size of an input argument) are preferred over ALLOCATABLE and POINTER arrays.
+- ALLOCATABLE arrays are preferred over POINTER arrays unless full pointer functionality is required.
+- All memory allocations should check to see if the allocation was successful and flag an error if not.
+- All pointers/allocated memory should be checked to see if they are ASSOCIATED/ALLOCATED before de-referencing/using them.
+- All pointers should be checked to ensure that they are not associated before allocation.
+- All dynamically allocated variables in a routine should be deallocated on the exit from a routine under error conditions.
+
+\section code_conventions Code conventions
+
+- Use fully spelt out variable names unless abbreviations are required to avoid maximum identifier length problems.
+- Use standard loop variable names e.g., local_node_idx, component_idx, when looping rather than temporary variable names.
+- The first arguement to routines should be the object the routine is operating on.
+- All TYPES shall have _INITIALISE and _FINALISE routines for construction and destruction. 
+- Within a module all named constants and procedure names should be prefixed by a name indicating that module so as to maintain a namespace.
+- Use lower case for loop variables.
+- Use dof/node hierarchy consistently in subroutine calls. i.e., version_number,derivative_number,node_number,component_number,variable_number instead of reverse order.
+- For subroutine arguments the input variables should be first, then the output variables and then the error variables. Variables should, in general, be arranged alphabetically unless another coding convention dictates otherwise (.e.g, dof/nod hierarchy).
+- If varaibles are out of range then any error messages should try to provide information on what variables are out of range and what the values are. 
+- Do not use temporary write statements for debugging or other purposes. Use diagnostics. If the values of the variables are of importance to you for working out how the routine works then they will be of importance to others at a later time and thus time should be taken to provide detailed diagnostic output. 
+- For routines that return information (i.e., get routines) use SUBROUTINEs instead of FUNCTIONs. The result should be returned in memory supplied by the calling routine. The size of the supplied memory should be checked to ensure that it is large enough to hold the result. 
+- When using case statements put in all known values of the the case variable and use a CALL FLAG_ERROR("Not implemented.", ... statement for the cases that are not yet implemented.
+- As OpenCMISS needs to be used as a wrapped library all output should have the ability to be turned on or off. The default behaviour is that all output should be off. 
+- All output should be through the input/output routines. No output should be written out via WRITE or PRINT statements.
+
+\subsection for_discussion2 For discussion
+
+- The use of guard clauses e.g., rather than IF(CHECK) THEN .. ELSE Error ENDIF use IF(.NOT.CHECK) Error
+- ASSERT macros????
+
+\section good_practice Good practice
+
+- All compiler warnings (e.g., unused variables) should be removed before committing code. Persistent compiler warnings can mask a new genuiue compiler warning leading to bugs.
+- All error messages should be a proper sentance (with a full stop).
+- Input arguments should be checked in a subroutine before being used.
+- All pointer arguments that are assigned within a routine should be checked to ensure that they are null on entry.
+- All constants should be declared as named parameters. Never hardcode a constant in the code.
+
+\section pre_processing Pre-processing
+
+- Pre-processing for file inclusion and conditional compilation are allowed. 
+
+\section sample_module Sample module
+
+\verbatim
+
+!> \file
+!> \author xxx
+!> \brief This module handles all problem routines.
+!>
+!> \section LICENSE
+!>
+!> Version: MPL 1.1/GPL 2.0/LGPL 2.1
+!>
+!> The contents of this file are subject to the Mozilla Public License
+!> Version 1.1 (the "License"); you may not use this file except in
+!> compliance with the License. You may obtain a copy of the License at
+!> http://www.mozilla.org/MPL/
+!>
+!> Software distributed under the License is distributed on an "AS IS"
+!> basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+!> License for the specific language governing rights and limitations
+!> under the License.
+!>
+!> The Original Code is OpenCMISS
+!>
+!> The Initial Developer of the Original Code is University of Auckland,
+!> Auckland, New Zealand and University of Oxford, Oxford, United
+!> Kingdom. Portions created by the University of Auckland and University
+!> of Oxford are Copyright (C) 2007 by the University of Auckland and
+!> the University of Oxford. All Rights Reserved.
+!>
+!> Contributor(s):
+!>
+!> Alternatively, the contents of this file may be used under the terms of
+!> either the GNU General Public License Version 2 or later (the "GPL"), or
+!> the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+!> in which case the provisions of the GPL or the LGPL are applicable instead
+!> of those above. If you wish to allow use of your version of this file only
+!> under the terms of either the GPL or the LGPL, and not to allow others to
+!> use your version of this file under the terms of the MPL, indicate your
+!> decision by deleting the provisions above and replace them with the notice
+!> and other provisions required by the GPL or the LGPL. If you do not delete
+!> the provisions above, a recipient may use your version of this file under
+!> the terms of any one of the MPL, the GPL or the LGPL.
+!>
+
+!> This module handles all problem routines.
+MODULE SAMPLE
+
+  USE xxx
+
+  IMPLICIT NONE
+
+  PRIVATE
+
+  !Module parameters
+
+  !Module types
+
+  !Module variables
+
+  !Interfaces
+
+ CONTAINS
+
+  !
+  !==================================================================================================================================
+  !
+
+  !>Subroutine description.
+  SUBROUTINE DO_SOMETHING(INPUT,OUTPUT,ERR,ERROR,*)
+
+    !Argument variables		
+    INTEGER(INTG), INTENT(IN) :: INPUT !<Input variable description.
+    INTEGER(INTG), INTENT(OUT) :: OUTPUT !<On return, the output variable description.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("DO_SOMETHING",ERR,ERROR,*999)
+
+
+    CALL EXITS("DO_SOMETHING")
+    RETURN
+999 CALL ERRORS("DO_SOMETHING",ERR,ERROR)    
+    CALL EXITS("DO_SOMETHING")
+    RETURN 1
+   
+  END SUBROUTINE DO_SOMETHING
+  
+  !	      
+  !==================================================================================================================================
+  !
+
+  !>Function description.
+  FUNCTION DO_SOMETHING_ELSE(INPUT,OUTPUT,ERR,ERROR)
+
+    !Argument variables		
+    INTEGER(INTG), INTENT(IN) :: INPUT !<Input variable description.
+    INTEGER(INTG), INTENT(OUT) :: OUTPUT !<On return, the output variable description. Should rarely be used - use the function variable instead in possible.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Function variable
+    INTEGER(INTG) :: DO_SOMETHING_ELSE
+    !Local Variables
+
+    CALL ENTERS("DO_SOMETHING_ELSE",ERR,ERROR,*999)
+
+
+    CALL EXITS("DO_SOMETHING_ELSE")
+    RETURN
+999 CALL ERRORS("DO_SOMETHING_ELSE",ERR,ERROR)    
+    CALL EXITS("DO_SOMETHING_ELSE")
+    RETURN
+   
+  END FUNCTION DO_SOMETHING_ELSE
+        
+  !
+  !==================================================================================================================================
+  !
+
+END MODULE SAMPLE
+
+\endverbatim
+
 */

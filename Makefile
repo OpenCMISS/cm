@@ -752,11 +752,26 @@ ELFLAGS += $(EXTERNAL_LIB_PATH)
 
 .SUFFIXES:	.f90	.c
 
-$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90
-	( cd $(OBJECT_DIR) ; $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
+main: preliminaries \
+	$(LIBRARY) \
+	$(MOD_INCLUDE) \
+	$(MOD_FIELDML_TARGET) \
+	$(HEADER_INCLUDE)
 
-$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c
-	( cd $(OBJECT_DIR) ; $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
+PREPROCESSED_OBJECTS = 
+
+$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
+	( cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
+
+$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c $(OBJECT_DIR)/.directory
+	( cd $(OBJECT_DIR) && $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
+
+$(PREPROCESSED_OBJECTS) : $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
+	( m4 --prefix-builtins $< > $(subst .o,-expanded.f90,$@) && cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $(subst .o,-expanded.f90,$@) )
+
+# Target to create directories (but as the changing mTime of directories confuses make, we create a hidden file in it and reference it instead of the directory)
+%/.directory:
+	( mkdir -p $(@D) && touch $@ )
 
 ifeq ($(USEFIELDML),true)
     FIELDML_OBJECT =  \
@@ -768,17 +783,17 @@ else
     FIELDML_OBJECT = #
 endif
 
-ifeq ($(COMPILER),intel) # TODO: temporarily disable intel build for opencmiss.f90 and etc.
-    FIELDML_OBJECT = #
-    MOD_INCLUDE := #
-    MOD_SOURCE_INC := #
-    MOD_FIELDML_TARGET := #
-    WRAPPER_OBJECTS = #   
-else
+#ifeq ($(COMPILER),intel) # TODO: temporarily disable intel build for opencmiss.f90 and etc.
+#    FIELDML_OBJECT = #
+#    MOD_INCLUDE := #
+#    MOD_SOURCE_INC := #
+#    MOD_FIELDML_TARGET := #
+#    WRAPPER_OBJECTS = #   
+#else
     WRAPPER_OBJECTS =  \
     $(OBJECT_DIR)/opencmiss.o \
     $(OBJECT_DIR)/opencmiss_c.o
-endif
+#endif
 
 OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
@@ -876,7 +891,8 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
-	$(FIELDML_OBJECT) 
+	$(FIELDML_OBJECT) \
+	$(PREPROCESSED_OBJECTS)
 
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   MACHINE_OBJECTS = $(OBJECT_DIR)/machine_constants_linux.o
@@ -890,32 +906,17 @@ endif
 
 OBJECTS += $(MACHINE_OBJECTS)
 
-main: preliminaries \
-	$(LIBRARY) \
-	$(MOD_INCLUDE) \
-	$(MOD_FIELDML_TARGET) \
-	$(HEADER_INCLUDE)
-
-preliminaries: $(OBJECT_DIR) \
-	$(INC_DIR) \
-	$(LIB_DIR)
-
-$(OBJECT_DIR) :
-	mkdir -p $@
-
-$(INC_DIR) :
-	mkdir -p $@; 
-
-$(LIB_DIR) :
-	mkdir -p $@; 
+preliminaries: $(OBJECT_DIR)/.directory \
+	$(INC_DIR)/.directory \
+	$(LIB_DIR)/.directory
 
 $(LIBRARY) : $(OBJECTS) 
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
-$(MOD_INCLUDE) : $(MOD_SOURCE_INC)
+$(MOD_INCLUDE) : $(MOD_SOURCE_INC) $(INC_DIR)/.directory
 	cp $(MOD_SOURCE_INC) $@ 
 
-MOD_FIELDML: $(FIELDML_OBJECT) 
+MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod
 	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
@@ -1091,6 +1092,7 @@ $(OBJECT_DIR)/cmiss_c.o	:	$(SOURCE_DIR)/cmiss_c.c
 $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
 	$(OBJECT_DIR)/base_routines.o \
+	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/kinds.o \
@@ -1990,6 +1992,8 @@ $(OBJECT_DIR)/node_routines.o	:	$(SOURCE_DIR)/node_routines.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o
+
+$(MOD_SOURCE_INC) : $(OBJECT_DIR)/opencmiss.o
 
 $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
