@@ -134,6 +134,21 @@
 
 - Pre-processing for file inclusion and conditional compilation are allowed. 
 
+\section commit_messages Commit messages
+
+- Commit messages must describe what a change does, and preferably also why the change was made if that is not obvious.
+- The recommended format for a commit message is to have the first line as a short summary, including the tracker number that the commit relates to. Then there should be a blank line and any further description of the change which can be in paragraphs or bulleted.
+- If there is no relevant tracker item then this should be stated.
+
+\subsection example_commit_message Example commit message
+
+\verbatim
+1234: Add a new finite elasticity constitutive relation
+
+Description of what the constitutive relation is used for
+and a reference to the paper it is described in.
+\endverbatim
+
 \section sample_module Sample module
 
 \verbatim
