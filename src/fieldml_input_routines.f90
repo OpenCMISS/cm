@@ -80,10 +80,6 @@ MODULE FIELDML_INPUT_ROUTINES
 
   !Interfaces
 
-  INTERFACE
-
-  END INTERFACE
-
   PUBLIC :: FieldmlInput_InitialiseFromFile, FieldmlInput_SetDofVariables, FieldmlInput_ReadMeshInfo, &
     & FieldmlInput_GetCoordinateSystemInfo, FieldmlInput_CreateBasis, FieldmlInput_CreateMeshComponent, &
     & FieldmlInput_CreateField

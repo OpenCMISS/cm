@@ -571,16 +571,17 @@ endif
 #TAO
 TAO_LIBRARIES =#
 TAO_LIB_PATH =#
-ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
-  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-else
-  ifeq ($(OPERATING_SYSTEM),aix)# AIX
-    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
-  else# windows
-    TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-  endif
-endif
+# Disable temporarily until TAO compatible with PETSc 3.2
+#ifeq ($(OPERATING_SYSTEM),linux)# Linux
+#  TAO_LIBRARIES = -ltaofortran -ltaopetsc -ltao
+#  TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+#else
+#  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+#    TAO_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+#  else# windows
+#    TAO_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+#  endif
+#endif
 
 #PETSc
 PETSC_LIBRARIES =#
@@ -649,7 +650,7 @@ endif
 PASTIX_LIBRARIES =#
 PASTIX_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  PASTIX_LIBRARIES = -lpastix
+  PASTIX_LIBRARIES = -lpastix -lrt
   PASTIX_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
   PASTIX_LIBRARIES = -lpastix
@@ -676,17 +677,47 @@ else
 endif
 
 #SuperLU_DIST
+SUPERLU_DIST_LIBRARIES =#
+SUPERLU_DIST_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  SUPERLU_DIST_LIBRARIES = -lsuperlu_dist
+  SUPERLU_DIST_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  SUPERLU_DIST_LIBRARIES = -lsuperlu_dist
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    SUPERLU_DIST_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    SUPERLU_DIST_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#SuperLU
 SUPERLU_LIBRARIES =#
 SUPERLU_LIB_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
-  SUPERLU_LIBRARIES = -lsuperlu_dist
+  SUPERLU_LIBRARIES = -lsuperlu
   SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
 else
-  SUPERLU_LIBRARIES = -lsuperlu_dist
+  SUPERLU_LIBRARIES = -lsuperlu
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     SUPERLU_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
   else# windows
     SUPERLU_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
+  endif
+endif
+
+#PLAPACK
+PLAPACK_LIBRARIES =#
+PLAPACK_LIB_PATH =#
+ifeq ($(OPERATING_SYSTEM),linux)# Linux
+  PLAPACK_LIBRARIES = -lPLAPACK
+  PLAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+else
+  PLAPACK_LIBRARIES = -lPLAPACK
+  ifeq ($(OPERATING_SYSTEM),aix)# AIX
+    PLAPACK_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib )
+  else# windows
+    PLAPACK_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
   endif
 endif
 
@@ -839,14 +870,20 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      ifeq ($(MPI),mvapich2)
+      ifeq ($(MPI),openmpi)
         MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
-        MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
+        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil
         MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
       else
-        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
-        MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
-        MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+        ifeq ($(MPI),mvapich2)
+          MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+          MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
+          MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+        else
+          MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+          MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
+          MPI_LIB_PATH += $(addprefix -L, $(EXTERNAL_CM_DIR)/lib/ )
+        endif 
       endif 
     endif
   endif
@@ -893,8 +930,8 @@ ifeq ($(USEFIELDML),true)
   EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
 endif
 
-EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
-EXTERNAL_LIB_PATH += $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
+EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(SUPERLU_DIST_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
+EXTERNAL_LIB_PATH += $(strip $(TAO_LIB_PATH) $(PETSC_LIB_PATH) $(SUNDIALS_LIB_PATH) $(HYPRE_LIB_PATH) $(SUPERLU_LIB_PATH) $(SUPERLU_DIST_LIB_PATH) $(PASTIX_LIB_PATH) $(SCOTCH_LIB_PATH) $(PASTIX_LIB_PATH) $(MUMPS_LIB_PATH) $(SCALAPACK_LIB_PATH) $(BLACS_LIB_PATH) $(PARMETIS_LIB_PATH) $(TAU_LIB_PATH) $(MPI_LIB_PATH) $(BLAS_LIB_PATH))
 EXTERNAL_INCLUDE_PATH += $(strip $(MPI_INCLUDE_PATH) )
 
 FPPFLAGS += $(OPENCMISS_INCLUDE_PATH) $(EXTERNAL_INCLUDE_PATH)
