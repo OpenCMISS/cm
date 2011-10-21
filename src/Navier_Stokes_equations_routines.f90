@@ -1452,6 +1452,9 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: EQUATIONS_MATERIALS
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: EQUATIONS_ANALYTIC
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD    
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -1462,6 +1465,7 @@ CONTAINS
     INTEGER(INTG) :: INDEPENDENT_FIELD_NUMBER_OF_COMPONENTS,INDEPENDENT_FIELD_NUMBER_OF_VARIABLES
     INTEGER(INTG) :: MATERIAL_FIELD_NUMBER_OF_VARIABLES,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,I
     INTEGER(INTG) :: ANALYTIC_FIELD_NUMBER_OF_VARIABLES,ANALYTIC_FIELD_NUMBER_OF_COMPONENTS
+    INTEGER(INTG) :: EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES,EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS
 
     CALL ENTERS("NAVIER_STOKES_SET_SETUP",ERR,ERROR,*999)
 
@@ -1469,6 +1473,8 @@ CONTAINS
     NULLIFY(EQUATIONS_MAPPING)
     NULLIFY(EQUATIONS_MATRICES)
     NULLIFY(GEOMETRIC_DECOMPOSITION)
+    NULLIFY(EQUATIONS_EQUATIONS_SET_FIELD)
+    NULLIFY(EQUATIONS_SET_FIELD_FIELD)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -1481,12 +1487,15 @@ CONTAINS
         & EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
         & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
+        !-----------------------------------------------------------------
+        ! I n i t i a l   s e t u p
+        !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET%SUBTYPE)
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               CALL NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
@@ -1494,6 +1503,75 @@ CONTAINS
               EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               !Do nothing
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE, &
+                & "*",ERR,ERROR))// " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
+                & SETUP_TYPE,"*",ERR,ERROR))// " is not implemented for a Navier-Stokes fluid."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
+          CASE (EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+              CALL NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
+                & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
+              EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
+
+              EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 1 
+              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4  !H, Umax, Re, C
+!              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = EQUATIONS_SET%REGION%MESHES%MESHES(1)%PTR%NUMBER_OF_ELEMENTS !num elements
+              EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+              IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
+                !Create the auto created equations set field field
+                CALL FIELD_CREATE_START(EQUATIONS_SET_SETUP%FIELD_USER_NUMBER,EQUATIONS_SET%REGION, &
+                  & EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
+                EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+
+                CALL FIELD_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,"Equations Set Field",ERR,ERROR,*999)
+                CALL FIELD_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_GENERAL_TYPE,&
+                  & ERR,ERROR,*999)
+
+                 CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET_FIELD_FIELD, &
+                   & EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
+                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                   & [FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+!                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+!                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
+                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_DP_TYPE,ERR,ERROR,*999)
+                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                   & FIELD_U_VARIABLE_TYPE,EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
+
+!                DO component_idx=1,EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS
+!                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD, &
+!                    & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
+!                END DO
+
+!                FIELD_VARIABLE=>EQUATIONS_SET_FIELD_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+!                IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_VALUES_SET_TYPE)%PTR)) THEN
+!                  CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
+!                    & FIELD_VALUES_SET_TYPE, ERR, ERROR, *999)
+!                ENDIF
+
+              ELSE
+                LOCAL_ERROR="User-specified fields are not yet implemented for an equations set field field &
+                  & setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
+                  & SETUP_TYPE,"*",ERR,ERROR))// " for a Navier-Stokes fluid."
+              ENDIF
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              IF(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
+                CALL FIELD_CREATE_FINISH(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
+!                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+!                    FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
+
+!                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,&
+!                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 1, 0.0_CMISSDP, ERR, ERROR, *999)
+!                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,&
+!                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, 2, 1_INTG, ERR, ERROR, *999)
+              ELSE
+                LOCAL_ERROR="User-specified fields are not yet implemented for an equations set field field &
+                  & setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
+                  & SETUP_TYPE,"*",ERR,ERROR))// " for a Navier-Stokes fluid."
+              ENDIF
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE, &
                 & "*",ERR,ERROR))// " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
@@ -1514,8 +1592,68 @@ CONTAINS
           CASE(EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
             & EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE, &
-            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+            & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
             !Do nothing???
+          CASE (EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
+            CASE(EQUATIONS_SET_SETUP_START_ACTION)
+!---
+!              FIELD_VARIABLE=>EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR
+
+!              IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_INITIAL_VALUES_SET_TYPE)%PTR)) THEN
+!                CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+!                  & FIELD_INITIAL_VALUES_SET_TYPE, ERR, ERROR, *999)
+!              ENDIF
+!               IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_PREVIOUS_VALUES_SET_TYPE)%PTR)) THEN
+!                 CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+!                   & FIELD_PREVIOUS_VALUES_SET_TYPE, ERR, ERROR, *999)
+!               ENDIF
+!               IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_MESH_DISPLACEMENT_SET_TYPE)%PTR)) THEN
+!                 CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+!                   & FIELD_MESH_DISPLACEMENT_SET_TYPE, ERR, ERROR, *999)
+!               ENDIF
+!               IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_MESH_VELOCITY_SET_TYPE)%PTR)) THEN
+!                 CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+!                   & FIELD_MESH_VELOCITY_SET_TYPE, ERR, ERROR, *999)
+!               ENDIF
+!               IF(.NOT.ASSOCIATED(FIELD_VARIABLE%PARAMETER_SETS%SET_TYPE(FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE)%PTR)) THEN
+!                 CALL FIELD_PARAMETER_SET_CREATE(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD, FIELD_U_VARIABLE_TYPE, &
+!                   & FIELD_NEGATIVE_MESH_VELOCITY_SET_TYPE, ERR, ERROR, *999)
+!               ENDIF
+!---
+
+              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 4
+              EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+              EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+              IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
+                CALL FIELD_MESH_DECOMPOSITION_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                  & GEOMETRIC_DECOMPOSITION,ERR,ERROR,*999)
+                CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,& 
+                  & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                  & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)                
+                DO component_idx = 1, EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,component_idx,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                    & FIELD_U_VARIABLE_TYPE,component_idx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
+                END DO
+                !Default the field scaling to that of the geometric field
+                CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
+                CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,GEOMETRIC_SCALING_TYPE, &
+                  & ERR,ERROR,*999)
+              ELSE
+                !Do nothing
+              ENDIF
+            CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
+              ! do nothing
+            CASE DEFAULT
+              LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+                & " is invalid for a linear diffusion equation."
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is invalid for a Navier-Stokes equation."
@@ -2060,11 +2198,18 @@ CONTAINS
             & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
             !variable X with has Y components, here Y represents viscosity only
             MATERIAL_FIELD_NUMBER_OF_VARIABLES=1!X
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+            CASE(EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
               MATERIAL_FIELD_NUMBER_OF_COMPONENTS=6!Y
-            ELSE
+            CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+             MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2!Y
+!              MATERIAL_FIELD_NUMBER_OF_VARIABLES=2
+!              MATERIAL_FIELD_NUMBER_OF_U_VAR_COMPONENTS = 2
+!              MATERIAL_FIELD_NUMBER_OF_COMPONENTS=6! viscosity, density, fluid metrics
+!              NULLIFY(EQUATIONS_SET%MATERIALS%$MATERIALS_FIELD_AUTO_CREATED
+            CASE DEFAULT
               MATERIAL_FIELD_NUMBER_OF_COMPONENTS=2! viscosity, density
-            ENDIF
+            END SELECT
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             !Specify start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -3530,7 +3675,8 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM,DPHIMS_DXI(3),DPHINS_DXI(3)
-    REAL(DP), ALLOCATABLE, DIMENSION(:,:) :: W_SUPG
+    REAL(DP) :: W_SUPG, TAU_SUPG,U_SUPG(3)
+!    REAL(DP), ALLOCATABLE, DIMENSION(:,:) :: W_SUPG
     REAL(DP), POINTER :: BIF_VALUES(:)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -3553,17 +3699,19 @@ CONTAINS
 
     LOGICAL :: UPDATE_JACOBIAN_MATRIX
 
+    !Temporary matrices- should get rid of for efficiency...
     !REAL(DP) :: test(89,89),test2(89,89),scaling,square
-    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
-    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+!    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
+!    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
     REAL(DP) :: J_MATRIX(256,256)
+
     REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
     REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
 
-    J1_MATRIX=0.0_DP
-    J2_MATRIX=0.0_DP
+!    J1_MATRIX=0.0_DP
+!    J2_MATRIX=0.0_DP
     J_MATRIX=0.0_DP
 
 !\todo: Check whether or not update flags work properly and how much time is spent in each section
@@ -3639,8 +3787,10 @@ CONTAINS
                 FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
                 LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                 IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-!                DEPENDENT_INTERP_POINT_METRICS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
-!                CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,W_SUPG,ERR,ERROR,*999)
+                !Initialize velocity metrics for recalculation
+!                NULLIFY (EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD%VARIABLES(1)% &
+!                  & PARAMETER_SETS%PARAMETER_SETS(2)%PTR%PARAMETERS)
+                CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
                 INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
                 INDEPENDENT_BASIS=>INDEPENDENT_FIELD%DECOMPOSITION%DOMAIN(INDEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)% & 
@@ -3738,6 +3888,22 @@ CONTAINS
                 & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
                 !Loop over field components
                 mhs=0
+
+                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                  U_SUPG(1:3)=0.0_DP
+                  DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+                    MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                    DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+!                    U_SUPG=0.0_DP
+                    DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                      PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                      U_SUPG(mh)=U_SUPG(mh)+U_VALUE(mh)*PHIMS
+                    END DO !ms
+                  END DO !mh
+                END IF ! SUPG
+
                 DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
@@ -3745,14 +3911,11 @@ CONTAINS
                   QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
                   JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                     & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                    ALLOCATE(W_SUPG(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,QUADRATURE_SCHEME%NUMBER_OF_GAUSS))
-                    W_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)=0.0_DP
-                    CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,W_SUPG,ERR,ERROR,*999)
-                  ENDIF
+
                   DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
                     nhs=0
+                    W_SUPG=0.0_DP
                     IF(UPDATE_JACOBIAN_MATRIX) THEN
                       !Loop over element columns
                       DO nh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
@@ -3778,16 +3941,28 @@ CONTAINS
                           PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
                           PHINS=QUADRATURE_SCHEME2%GAUSS_BASIS_FNS(ns,NO_PART_DERIV,ng)
                           SUM=0.0_DP
-
                           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
                           !Add SUPG weighting terms
-                            IF(UPDATE_JACOBIAN_MATRIX) THEN
+                           IF(UPDATE_JACOBIAN_MATRIX) THEN
                               !Calculate J1 only
-                              DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*(PHIMS+W_SUPG(ms,ng))*RHO_PARAM)
-                              ENDDO 
+                             W_SUPG=0.0_DP
+                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                               DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                               IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) DPHIMS_DXI(3)=0.0_DP
+                               DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                 DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                                  & DXI_DX(mi,ni)
+                               END DO !mi
+                               W_SUPG=W_SUPG+((U_SUPG(1)*DPHIMS_DXI(ni)*DXI_DX(ni,1))+ &
+                                            & (U_SUPG(2)*DPHIMS_DXI(ni)*DXI_DX(ni,2))+ &
+                                            & (U_SUPG(3)*DPHIMS_DXI(ni)*DXI_DX(ni,3)))*TAU_SUPG
+                             END DO !ni 
+                             DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                                SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*(PHIMS+W_SUPG)*RHO_PARAM)
+                             ENDDO 
                               !Calculate MATRIX  
-                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
 !                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
 !                               & +SUM*JGW
                               !Calculate J2 only
@@ -3796,15 +3971,19 @@ CONTAINS
                                 !Calculate SUM 
                                 DO x=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                                   DO mi=1,DEPENDENT_BASIS2%NUMBER_OF_XI
-                                    SUM=SUM+RHO_PARAM*(U_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS+W_SUPG(ms,ng))
+                                    SUM=SUM+RHO_PARAM*(U_VALUE(x))*DPHINS_DXI(mi)*DXI_DX(mi,x)*(PHIMS+W_SUPG)
                                   ENDDO !mi
                                 ENDDO !x
                                 !Calculate MATRIX
-                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+!                                 & +SUM*JGW
 !                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) = JACOBIAN_MATRIX%ELEMENT_JACOBIAN% &
 !                                 & MATRIX(mhs,nhs)+SUM*JGW
                               END IF
                             END IF
+
                           ELSE
                           !Normal Galerkin weighting
                             IF(UPDATE_JACOBIAN_MATRIX) THEN
@@ -3813,7 +3992,10 @@ CONTAINS
                                 SUM=SUM+(PHINS*U_DERIV(mh,ni)*DXI_DX(ni,nh)*PHIMS*RHO_PARAM)
                               ENDDO 
                               !Calculate MATRIX  
-                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+!                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
+                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+!                               & +SUM*JGW
                               !Calculate J2 only
                               IF(nh==mh) THEN 
                                 SUM=0.0_DP
@@ -3824,7 +4006,10 @@ CONTAINS
                                   ENDDO !mi
                                 ENDDO !x
                                 !Calculate MATRIX
-                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+!                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
+                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+!                                 & +SUM*JGW
                               END IF
                             END IF
                           END IF
@@ -3832,9 +4017,6 @@ CONTAINS
                       ENDDO !nh
                     ENDIF
                   ENDDO !ms
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                    DEALLOCATE(W_SUPG)
-                  ENDIF
                 ENDDO !mh
               END IF
 
@@ -3921,6 +4103,8 @@ CONTAINS
                               SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
                                  & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
                               J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+!                               & +SUM*JGW
                             END IF
                           END IF
 
@@ -3929,6 +4113,8 @@ CONTAINS
                             IF(nh==2) THEN
                               SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
                               J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
@@ -3937,6 +4123,8 @@ CONTAINS
                             IF(nh==1) THEN
                               SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
                               J_MATRIX(mhs+3,nhs)=J_MATRIX(mhs+3,nhs)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)+SUM*JGW
                             END IF
                           END IF
 
@@ -3945,6 +4133,8 @@ CONTAINS
                             IF(nh==2) THEN
                               SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
                               J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
@@ -3952,6 +4142,8 @@ CONTAINS
                             SUM=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
                                & ( 0.25*PHINS*(A_VALUE**(-0.75)) )
                             J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
                           END IF
 
                         ELSEIF(ELEMENT_NUMBER==2) THEN
@@ -3961,6 +4153,8 @@ CONTAINS
                               SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
                                  & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
                               J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
@@ -3969,6 +4163,8 @@ CONTAINS
                             IF(nh==2) THEN
                               SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
                               J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW
                             END IF
                           END IF
 
@@ -3977,6 +4173,8 @@ CONTAINS
                             IF(nh==1) THEN
                               SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
                               J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
@@ -3985,6 +4183,8 @@ CONTAINS
                             IF(nh==2) THEN
                               SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
                               J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW
                             END IF
                           END IF
 
@@ -3992,6 +4192,8 @@ CONTAINS
                             SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
                                & ( 0.25*PHINS*(A_VALUE**(-0.75)) ) 
                             J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)+SUM*JGW
                           END IF
 
                         ELSEIF(ELEMENT_NUMBER==3) THEN
@@ -4001,7 +4203,9 @@ CONTAINS
                               SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
                                  & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
                               J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-                            END IF
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW 
+                           END IF
                           END IF
 
                           !J2 ONLY
@@ -4009,6 +4213,8 @@ CONTAINS
                             IF(nh==2) THEN
                               SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
                               J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW 
                             END IF
                           END IF
 
@@ -4017,6 +4223,8 @@ CONTAINS
                             IF(nh==1) THEN
                               SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
                               J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW 
                             END IF
                           END IF
 
@@ -4025,6 +4233,8 @@ CONTAINS
                             IF(nh==2) THEN
                               SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
                               J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
                             END IF
                           END IF
 
@@ -4032,6 +4242,8 @@ CONTAINS
                             SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
                                & ( 0.25*PHINS*(A_VALUE**(-0.75) ) )   
                             J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+!                            JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
                           ENDIF
                         END IF
                         ENDDO !ns
@@ -4056,8 +4268,9 @@ CONTAINS
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               !Assemble Jacobian matrix first
               IF(UPDATE_JACOBIAN_MATRIX) THEN
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
-                  & J2_MATRIX(1:mhs_min,1:nhs_min)
+!                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
+!                  & J2_MATRIX(1:mhs_min,1:nhs_min)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J_MATRIX(1:mhs_min,1:nhs_min)
               END IF
             ENDIF
 
@@ -4158,8 +4371,8 @@ CONTAINS
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1,MESH_COMPONENT2, nhs_max, mhs_max, nhs_min, mhs_min
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),PHIMS,PHINS,MU_PARAM,RHO_PARAM,E_PARAM,H0_PARAM,A0_PARAM,SIGMA_PARAM, &
               & DPHIMS_DXI(3),DPHINS_DXI(3),X(3)
-    REAL(DP), ALLOCATABLE :: W_SUPG(:,:)
-    REAL(DP) :: ALPHA_SUPG,UMAX_SUPG,H_SUPG,RE_SUPG,PE_SUPG,SUPG_TOLERANCE,TAU_SUPG,LINE_LENGTH
+!    REAL(DP), ALLOCATABLE :: W_SUPG(:,:)
+    REAL(DP) :: TAU_SUPG, W_SUPG,U_SUPG(3)
     INTEGER(INTG) :: NODES_PER_ELEMENT,component_idx,nl,node_idx,element_node_idx,NUM_COMPONENTS,NODES_PER_COMPONENT
     REAL(DP), POINTER :: BIF_VALUES(:)
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS,INDEPENDENT_BASIS
@@ -4199,7 +4412,7 @@ CONTAINS
     REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
     REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
     REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
-    REAL(DP) :: U_SUPG(3),X1(3),X2(3) 
+    REAL(DP) :: X1(3),X2(3) 
     REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
     
 
@@ -4318,7 +4531,10 @@ CONTAINS
               IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
               IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
               IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-!                CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,W_SUPG,ERR,ERROR,*999)
+                !Initialize velocity metrics for recalculation
+!                NULLIFY(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD%VARIABLES(1)% &
+!                  & PARAMETER_SETS%PARAMETER_SETS(2)%PTR)
+                CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*999)
               END IF
             CASE(EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE,EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE)
               INDEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD
@@ -4378,6 +4594,7 @@ CONTAINS
             MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
             !Define RHO_PARAM, density=2
             RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+
             !Start with matrix calculations
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
@@ -4684,6 +4901,22 @@ CONTAINS
                 !Here W_VALUES must be ZERO if ALE part of linear matrix
                 W_VALUE=0.0_DP
                 mhs=0
+
+                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                  U_SUPG(1:3)=0.0_DP
+                  DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+                    MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+                    DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+!                    U_SUPG=0.0_DP
+                    DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                      PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+                      U_SUPG(mh)=U_SUPG(mh)+U_VALUE(mh)*PHIMS
+                    END DO !ms
+                  END DO !mh
+                END IF ! SUPG
+
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
@@ -4692,16 +4925,13 @@ CONTAINS
                   JGW=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%JACOBIAN* &
                     & QUADRATURE_SCHEME1%GAUSS_WEIGHTS(ng)
                   DXI_DX=0.0_DP
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                    ALLOCATE(W_SUPG(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,QUADRATURE_SCHEME%NUMBER_OF_GAUSS))
-                    W_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)=0.0_DP
-                    CALL NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,W_SUPG,ERR,ERROR,*999)
-                  ENDIF
+
                   DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                     DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
                       DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR%DXI_DX(mi,ni)
                     END DO
                   END DO
+
                   DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
                     mhs=mhs+1
                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
@@ -4710,8 +4940,20 @@ CONTAINS
 
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
                       !Apply streamline upwind petrov galerkin weights to convective term
+                      W_SUPG=0.0_DP
                       DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                        SUM=SUM+RHO_PARAM*(PHIMS+W_SUPG(ms,ng))*( & 
+                        DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+                        IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) DPHIMS_DXI(3)=0.0_DP
+                        DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                          DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+                           & DXI_DX(mi,ni)
+                        END DO !mi
+                         W_SUPG=W_SUPG+((U_SUPG(1)*DPHIMS_DXI(ni)*DXI_DX(ni,1))+ &
+                                      & (U_SUPG(2)*DPHIMS_DXI(ni)*DXI_DX(ni,2))+ &
+                                      & (U_SUPG(3)*DPHIMS_DXI(ni)*DXI_DX(ni,3)))*TAU_SUPG
+                      END DO !ni
+                      DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+                        SUM=SUM+RHO_PARAM*(PHIMS+W_SUPG)*( & 
                           & (U_VALUE(1))*(U_DERIV(mh,ni)*DXI_DX(ni,1))+ &
                           & (U_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
                           & (U_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
@@ -4729,7 +4971,7 @@ CONTAINS
                     ENDIF !SUPG check
                   ENDDO !ms
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
-                    DEALLOCATE(W_SUPG)
+!                    DEALLOCATE(W_SUPG)
                   ENDIF
                 ENDDO !mh
               ENDIF
@@ -6818,23 +7060,25 @@ CONTAINS
   !
 
   !>Update SUPG paramaters for Navier-Stokes equation
-  SUBROUTINE NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,W_SUPG,ERR,ERROR,*)
+  SUBROUTINE NAVIER_STOKES_SUPG_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,TAU_SUPG,ERR,ERROR,*)
 
     !Argument variables                               
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    REAL(DP), INTENT(INOUT):: W_SUPG(:,:)
+!    REAL(DP), INTENT(INOUT):: W_SUPG(:,:)
+    REAL(DP), INTENT(OUT):: TAU_SUPG
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables                        
     INTEGER(INTG) FIELD_VAR_TYPE,ng,mh,mhs,mi,ms,nh,nhs,ni,ns,MESH_COMPONENT1
-    REAL(DP) :: DXI_DX(3,3),PHIMS,MU_PARAM,RHO_PARAM,DPHIMS_DXI(3),X1(3),X2(3),U_VALUE(3)
-    REAL(DP) :: ALPHA_SUPG,UMAG_SUPG,UMAX_SUPG,H_SUPG,RE_SUPG,PE_SUPG,SUPG_TOLERANCE,TAU_SUPG,LINE_LENGTH,UTOT_SUPG,UAVG_SUPG
+    REAL(DP) :: DXI_DX(3,3),PHIMS,MU_PARAM,RHO_PARAM,DPHIMS_DXI(3),X1(3),X2(3),U_VALUE(3),U_SUPG(3)
+    REAL(DP) :: ALPHA_SUPG,UMAG_SUPG,UMAX_SUPG,H_SUPG,RE_SUPG,PE_SUPG,SUPG_TOLERANCE,LINE_LENGTH,UTOT_SUPG,UAVG_SUPG,VALUE
     INTEGER(INTG) :: NODES_PER_ELEMENT,component_idx,nl,NODE_IDX,element_node_idx,NUM_COMPONENTS,NODES_PER_COMPONENT
-    REAL(DP), ALLOCATABLE :: SUM_SUPG(:,:),U_SUPG(:,:)
+!    REAL(DP), ALLOCATABLE :: SUM_SUPG(:,:),Ut_SUPG(:,:),W_SUPG(:,:)
 
-    REAL(DP), POINTER :: SUPG_H
-    REAL(DP), DIMENSION(:,:), POINTER :: SUPG_W
+!    REAL(DP), POINTER :: SUPG_H
+!    REAL(DP), DIMENSION(:,:), POINTER :: SUPG_W
+    REAL(DP) :: H_PARAMETER,UMAX_PARAMETER,RE_PARAMETER
 
     TYPE(BASIS_TYPE), POINTER :: DEPENDENT_BASIS,DEPENDENT_BASIS1,DEPENDENT_BASIS2,GEOMETRIC_BASIS
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -6845,152 +7089,211 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
+!    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD
+    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
+!    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: PARAMETERS
+!    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: H_PARAMETER
+!    TYPE(FIELD_TYPE), POINTER :: FLUID_METRICS_PARAMETERS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_SUPG_CALCULATE",ERR,ERROR,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
-        CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+    IF(ASSOCIATED(EQUATIONS_SET))THEN
+      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
+        EQUATIONS=>EQUATIONS_SET%EQUATIONS
+        IF(ASSOCIATED(EQUATIONS)) THEN
           !Set general and specific pointers
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
-          GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
-          GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-            & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
           DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-
           QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
           NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
           FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
           FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
+          EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
+          IF(ASSOCIATED(EQUATIONS_EQUATIONS_SET_FIELD)) THEN
+            EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
+            IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
 
- 
-               !Calculate element length scale H
-                H_SUPG=0.0_DP
-                X1(1:3)=0.0_DP
-                X2(1:3)=0.0_DP
-                LINE_LENGTH=0.0_DP
-                !First element node that lengths will be calculated relative to
-                NODE_IDX=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                 & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
-                NUM_COMPONENTS=FIELD_VARIABLE%NUMBER_OF_COMPONENTS - 1
-                NODES_PER_COMPONENT=EQUATIONS_SET%REGION%MESHES%MESHES(1)%PTR%TOPOLOGY(1)%PTR%NODES%NUMBER_OF_NODES
-                X1(1)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                 & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX)
-                X1(2)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                 & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT)
-                IF(NUM_COMPONENTS==3) X1(3)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                   & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT*2)
+                CALL FIELD_PARAMETER_SET_GET_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 & ELEMENT_NUMBER,1,H_PARAMETER,ERR,ERROR,*999)                
 
-                DO element_node_idx=2,GEOMETRIC_BASIS%NUMBER_OF_NODES
-                  NODE_IDX=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
-                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(element_node_idx)
-                  X2(1)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                   & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX)
-                  X2(2)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                   & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT)
-                  IF(NUM_COMPONENTS==3) X2(3)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
-                   & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT*2)
-                  LINE_LENGTH = ((X1(1)-X2(1))**2+(X1(2)-X2(2))**2+(X1(3)-X2(3))**2)**(0.5)
-                  H_SUPG = MAX(H_SUPG,LINE_LENGTH)
-                END DO  
-
-              H_SUPG = H_SUPG/(2.0_DP*SQRT(REAL(NUM_COMPONENTS))) !H/2SQRT(num_dim) : average length side
-
-              UTOT_SUPG=0.0_DP
-              UAVG_SUPG=0.0_DP
-              UMAG_SUPG=0.0_DP
-              UMAX_SUPG=0.0_DP
-              U_VALUE(1:3)=0.0_DP
-              ALLOCATE(U_SUPG(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,3))
-              U_SUPG(1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS,1:3)=0.0_DP
-              !Calculate element-based velocity metrics
-              DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-                DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
-                  & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
-                  & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-                U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-                IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-                  U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                ELSE
-                  U_VALUE(3)=0.0_DP
-                END IF
-                DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                  PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                  U_SUPG(ng,1:3)=U_SUPG(ng,1:3)+U_VALUE(1:3)*PHIMS
-!                  U_SUPG(ng,1:3)=U_SUPG(ng,1:3)+U_VALUE(1:3)
-                END DO !ms
-                UMAG_SUPG=(U_SUPG(ng,1)**2+U_SUPG(ng,2)**2+U_SUPG(ng,3)**2)**(0.5_SP)
-                UMAX_SUPG=MAX(UMAG_SUPG,UMAX_SUPG) !maximum velocity magnitude over all gauss points
-              END DO !ng
-
-              MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-
-              !Calculate cell Reynolds (Re) and Peclet (Pe) numbers
-              RE_SUPG=UMAX_SUPG*H_SUPG*RHO_PARAM/MU_PARAM
-              PE_SUPG=RE_SUPG*UMAX_SUPG*H_SUPG
-              !TODO: set SUPG tolerance relative to iterative solver tolerance
-              SUPG_TOLERANCE=1.0E-8_DP
-              IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
-                ALPHA_SUPG = COTH(PE_SUPG/2.0_DP) - (2.0_DP/PE_SUPG)
-                TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
-              ELSE
-                TAU_SUPG=0.0_DP
-              ENDIF
-              ALLOCATE(SUM_SUPG(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,QUADRATURE_SCHEME%NUMBER_OF_GAUSS))
-              SUM_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)=0.0_DP
-              !Loop over gauss points
-              DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
-                !Loop over velocity components
-                DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
-                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
-                  DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                IF(.NOT.ASSOCIATED(EQUATIONS_SET_FIELD_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS) .OR. &
+                  H_PARAMETER==0.0_DP) THEN
+                  !Calculate element length scale H
+                  H_SUPG=0.0_DP
+                  X1(1:3)=0.0_DP
+                  X2(1:3)=0.0_DP
+                  LINE_LENGTH=0.0_DP
+                  GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
+                  GEOMETRIC_BASIS=>GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                  QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-                  DXI_DX=0.0_DP
-                  !Loop over coefficients
-                  DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
-                    PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
-                    !Loop over bases
-                    DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                      DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
-                      IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) DPHIMS_DXI(3)=0.0_DP
-                      DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
-                        DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
-                         & DXI_DX(mi,ni)
-                      END DO !mi
-                      !Construct W_SUPG
-                      SUM_SUPG(ms,ng)=SUM_SUPG(ms,ng)+(U_SUPG(ng,mh)*DPHIMS_DXI(ni)*DXI_DX(ni,mh))
-                    ENDDO !ni
-                  END DO !ms
-                END DO !mh
-              END DO !ng
-              W_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)= &
-               & SUM_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)*TAU_SUPG
+                  NODE_IDX=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+                   & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(1)
+                  NUM_COMPONENTS=FIELD_VARIABLE%NUMBER_OF_COMPONENTS - 1
+                  NODES_PER_COMPONENT=EQUATIONS_SET%REGION%MESHES%MESHES(1)%PTR%TOPOLOGY(1)%PTR%NODES%NUMBER_OF_NODES
+                  !First element node that lengths will be calculated relative to
+                  X1(1)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                   & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX)
+                  X1(2)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                   & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT)
+                  IF(NUM_COMPONENTS==3) X1(3)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                     & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT*2)
+                  DO element_node_idx=2,GEOMETRIC_BASIS%NUMBER_OF_NODES
+                    NODE_IDX=GEOMETRIC_FIELD%DECOMPOSITION%DOMAIN(GEOMETRIC_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
+                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(element_node_idx)
+                    X2(1)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                     & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX)
+                    X2(2)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                     & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT)
+                    IF(NUM_COMPONENTS==3) X2(3)=GEOMETRIC_FIELD%VARIABLES(1)%PARAMETER_SETS%PARAMETER_SETS(1)% &
+                     & PTR%PARAMETERS%CMISS%DATA_DP(NODE_IDX+NODES_PER_COMPONENT*2)
+                    LINE_LENGTH = ((X1(1)-X2(1))**2+(X1(2)-X2(2))**2+(X1(3)-X2(3))**2)**(0.5)
+                    H_SUPG = MAX(H_SUPG,LINE_LENGTH)
+                  END DO  
+                  H_SUPG = H_SUPG/(2.0_DP*SQRT(REAL(NUM_COMPONENTS))) !H/2SQRT(num_dim) : element length scale
 
-              DEALLOCATE(U_SUPG)
-              DEALLOCATE(SUM_SUPG)
+                  !Length scale hadn't been calculated for this element, so need to add element components for each metric
+                  CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   ELEMENT_NUMBER,1,H_SUPG,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   ELEMENT_NUMBER,2,0.0_DP,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   ELEMENT_NUMBER,3,0.0_DP,ERR,ERROR,*999)
+                  CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   ELEMENT_NUMBER,4,0.0_DP,ERR,ERROR,*999)
+                ELSE
+                  H_PARAMETER=-1.0_DP
+                  CALL FIELD_PARAMETER_SET_GET_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   & ELEMENT_NUMBER,1,H_PARAMETER,ERR,ERROR,*999)
+                  H_SUPG=H_PARAMETER
+                ENDIF !H_SUPG associated
 
-!           END IF ! Calculate SUPG_W
-        CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not a valid subtype to use SUPG weighting functions."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-      ELSE
-        CALL FLAG_ERROR("Equations set equatons is not associated.",ERR,ERROR,*999)
-      ENDIF               
+                  UMAG_SUPG=0.0_DP
+                  UMAX_SUPG=0.0_DP
+                  U_VALUE(1:3)=0.0_DP
+!                  ALLOCATE(Ut_SUPG(QUADRATURE_SCHEME%NUMBER_OF_GAUSS,3))
+!                  Ut_SUPG(1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS,1:3)=0.0_DP
+
+                  !Calculate element-based velocity metrics
+                  CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+                    & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+                    & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                  CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+                    & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+
+                  DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+                    U_SUPG(1:3)=0.0_DP
+                    CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                      & DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
+                    MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+                    DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+                      & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+                    QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+                    CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
+                      & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                    U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                    U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                    IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                      U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                    ELSE
+                      U_VALUE(3)=0.0_DP
+                    END IF
+                    DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+                      PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+!                      Ut_SUPG(ng,1:3)=Ut_SUPG(ng,1:3)+U_VALUE(1:3)*PHIMS
+                      U_SUPG(1:3)=U_SUPG(1:3)+U_VALUE(1:3)*PHIMS
+                    END DO !ms
+                    UMAG_SUPG=(U_SUPG(1)**2+U_SUPG(2)**2+U_SUPG(3)**2)**(0.5_SP)
+                    UMAX_SUPG=MAX(UMAG_SUPG,UMAX_SUPG) !maximum velocity magnitude over all gauss points
+                  END DO !ng
+
+                  CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,1,EQUATIONS%INTERPOLATION% &
+                    & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                  !Materials parameters
+                  MU_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                  RHO_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+
+                  !store umax for later metric calculation (courant #?)
+                  CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                   ELEMENT_NUMBER,2,UMAX_SUPG,ERR,ERROR,*999)
+
+                !Calculate cell Reynolds (Re) and Peclet (Pe) numbers
+                RE_SUPG=UMAX_SUPG*H_SUPG*RHO_PARAM/MU_PARAM
+                PE_SUPG=RE_SUPG*UMAX_SUPG*H_SUPG
+                !Store element (cell) Reynolds number
+                CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                 ELEMENT_NUMBER,3,RE_SUPG,ERR,ERROR,*999)
+                !TODO: set SUPG tolerance relative to iterative solver tolerance
+                SUPG_TOLERANCE=1.0E-8_DP
+                IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
+                  ALPHA_SUPG = COTH(PE_SUPG/2.0_DP) - (2.0_DP/PE_SUPG)
+                  TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
+                ELSE
+                  TAU_SUPG=0.0_DP
+                ENDIF
+
+! !!!!!!!       !THIS SHOULD BE DONE IN THE JACOBIAN/RESIDUAL GAUSS LOOPS
+!               ALLOCATE(SUM_SUPG(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,QUADRATURE_SCHEME%NUMBER_OF_GAUSS))
+!               SUM_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)=0.0_DP
+!               ALLOCATE(W_SUPG(DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,QUADRATURE_SCHEME%NUMBER_OF_GAUSS))
+!               W_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)=0.0_DP
+!               !Loop over gauss points
+
+!               DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
+!                 !Loop over velocity components
+!                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
+! !                  MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
+!                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+!                   DEPENDENT_BASIS1=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(MESH_COMPONENT1)%PTR% &
+!                     & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
+!                   QUADRATURE_SCHEME1=>DEPENDENT_BASIS1%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+!                   DXI_DX=0.0_DP
+!                   !Loop over coefficients
+!                   DO ms=1,DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS
+!                     PHIMS=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,NO_PART_DERIV,ng)
+!                     !Loop over bases
+!                     DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+!                       DPHIMS_DXI(ni)=QUADRATURE_SCHEME1%GAUSS_BASIS_FNS(ms,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(ni),ng)
+!                       IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==3) DPHIMS_DXI(3)=0.0_DP
+!                       DO mi=1,DEPENDENT_BASIS1%NUMBER_OF_XI
+!                         DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
+!                          & DXI_DX(mi,ni)
+!                       END DO !mi
+!                       !Construct W_SUPG
+!                       SUM_SUPG(ms,ng)=SUM_SUPG(ms,ng)+(Ut_SUPG(ng,mh)*DPHIMS_DXI(ni)*DXI_DX(ni,mh))
+!                     ENDDO !ni
+!                   END DO !ms
+!                 END DO !mh
+!               END DO !ng
+!               W_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)= &
+!                & SUM_SUPG(1:DEPENDENT_BASIS1%NUMBER_OF_ELEMENT_PARAMETERS,1:QUADRATURE_SCHEME%NUMBER_OF_GAUSS)*TAU_SUPG
+
+!              DEALLOCATE(Ut_SUPG)
+!              DEALLOCATE(SUM_SUPG)
+
+! !              END IF ! Calculate SUPG_W
+! !!!!!!!       !THIS SHOULD BE DONE IN THE JACOBIAN/RESIDUAL GAUSS LOOPS
+
+            ELSE
+              CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
+            ENDIF               
+          ELSE
+            CALL FLAG_ERROR("Equations equations set field is not associated.",ERR,ERROR,*999)
+          ENDIF               
+        ELSE
+          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        ENDIF               
+      CASE DEFAULT
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          & " is not a valid subtype to use SUPG weighting functions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF               
