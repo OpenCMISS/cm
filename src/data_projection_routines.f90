@@ -667,7 +667,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ndp
+    INTEGER(INTG) :: data_point_idx
     
     CALL ENTERS("DATA_PROJECTION_DATA_POINTS_INITIALISE",ERR,ERROR,*999)
 
@@ -676,17 +676,17 @@ CONTAINS
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
         IF(ASSOCIATED(DATA_POINTS%DATA_PROJECTION)) THEN
           IF(DATA_POINTS%DATA_PROJECTION%DATA_PROJECTION_FINISHED) THEN
-            DO ndp=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
-              DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_DISTANCE=0.0_DP
-              DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_NUMBER=0
-              DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_FACE_NUMBER=0
-              DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_LINE_NUMBER=0
-              DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_EXIT_TAG=DATA_PROJECTION_EXIT_TAG_NO_ELEMENT
-              ALLOCATE(DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_XI(DATA_POINTS%DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
+            DO data_point_idx=1,DATA_POINTS%NUMBER_OF_DATA_POINTS
+              DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_DISTANCE=0.0_DP
+              DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_NUMBER=0
+              DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_FACE_NUMBER=0
+              DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_LINE_NUMBER=0
+              DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_EXIT_TAG=DATA_PROJECTION_EXIT_TAG_NO_ELEMENT
+              ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_XI(DATA_POINTS%DATA_PROJECTION%NUMBER_OF_XI),STAT=ERR)
               IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points "// &
-                & "("//TRIM(NUMBER_TO_VSTRING (ndp,"*",ERR,ERROR))//").",ERR,ERROR,*999)
-              DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_XI=DATA_POINTS%DATA_PROJECTION%STARTING_XI
-            ENDDO !ndp
+                & "("//TRIM(NUMBER_TO_VSTRING (data_point_idx,"*",ERR,ERROR))//").",ERR,ERROR,*999)
+              DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_XI=DATA_POINTS%DATA_PROJECTION%STARTING_XI
+            ENDDO !data_point_idx
           ELSE
             CALL FLAG_ERROR("Data points data projection have not been finished.",ERR,ERROR,*999)
           ENDIF
@@ -777,7 +777,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: PROJECTED_ELEMENT(:),PROJECTED_SUB_ELEMENT(:),PROJECTION_EXIT_TAG(:)
     REAL(DP), ALLOCATABLE :: PROJECTED_DISTANCE(:,:),PROJECTED_XI(:,:)
     
-    INTEGER(INTG) :: ne,nse,ndp,ncn,ni
+    INTEGER(INTG) :: ne,nse,data_point_idx,ncn,ni
     INTEGER(INTG) :: temp_number,start_idx,finish_idx
     
     LOGICAL :: BOUNDARY_PROJECTION    
@@ -876,23 +876,23 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate closest distances.",ERR,ERROR,*999) 
         SELECT CASE(DATA_PROJECTION%PROJECTION_TYPE)
           CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE) !find closest candidate lines
-            DO ndp=1,NUMBER_OF_DATA_POINTS
-              CALL DATA_PROJECTION_CLOSEST_LINES_FIND(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CANDIDATE_ELEMENTS, &
-                & CANDIDATE_SUB_ELEMENTS,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(ndp,:),CLOSEST_SUB_ELEMENTS(ndp,:), &
-                & CLOSEST_DISTANCES(ndp,:),ERR,ERROR,*999)
-            ENDDO !ndp
+            DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+              CALL DATA_PROJECTION_CLOSEST_LINES_FIND(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx,CANDIDATE_ELEMENTS, &
+                & CANDIDATE_SUB_ELEMENTS,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_SUB_ELEMENTS( &
+                & data_point_idx,:),CLOSEST_DISTANCES(data_point_idx,:),ERR,ERROR,*999)
+            ENDDO !data_point_idx
           CASE (DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) !find closest candidate faces      
-            DO ndp=1,NUMBER_OF_DATA_POINTS
-              CALL DATA_PROJECTION_CLOSEST_FACES_FIND(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CANDIDATE_ELEMENTS, &
-                & CANDIDATE_SUB_ELEMENTS,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(ndp,:),CLOSEST_SUB_ELEMENTS(ndp,:), &
-                & CLOSEST_DISTANCES(ndp,:),ERR,ERROR,*999)
-            ENDDO !ndp
+            DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+              CALL DATA_PROJECTION_CLOSEST_FACES_FIND(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx,CANDIDATE_ELEMENTS, &
+                & CANDIDATE_SUB_ELEMENTS,NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_SUB_ELEMENTS( &
+                & data_point_idx,:),CLOSEST_DISTANCES(data_point_idx,:),ERR,ERROR,*999)
+            ENDDO !data_point_idx
           CASE (DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE) !find closest candidate elements
-            DO ndp=1,NUMBER_OF_DATA_POINTS
-              CALL DATA_PROJECTION_CLOSEST_ELEMENTS_FIND(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CANDIDATE_ELEMENTS, &
-                &  NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(ndp,:),CLOSEST_DISTANCES(ndp,:),ERR,ERROR,*999)
-              !CLOSEST_ELEMENTS(ndp,:)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(CLOSEST_ELEMENTS(ndp,:)) !local to global element number mapping
-            ENDDO !ndp
+            DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+              CALL DATA_PROJECTION_CLOSEST_ELEMENTS_FIND(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx,CANDIDATE_ELEMENTS, &
+                &  NUMBER_OF_CANDIDATES,CLOSEST_ELEMENTS(data_point_idx,:),CLOSEST_DISTANCES(data_point_idx,:),ERR,ERROR,*999)
+              !CLOSEST_ELEMENTS(data_point_idx,:)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(CLOSEST_ELEMENTS(data_point_idx,:)) !local to global element number mapping
+            ENDDO !data_point_idx
           CASE DEFAULT
             CALL FLAG_ERROR("No match for data projection type found",ERR,ERROR,*999)
         END SELECT
@@ -952,70 +952,81 @@ CONTAINS
           REDUCED_NUMBER_OF_CLOSEST_CANDIDATES=MIN(DATA_PROJECTION%NUMBER_OF_CLOSEST_ELEMENTS,TOTAL_NUMBER_OF_CLOSEST_CANDIDATES) 
           PROJECTED_DISTANCE(2,:)=MY_COMPUTATIONAL_NODE
           ! find the globally closest distances in the current domain
-          DO ndp=1,NUMBER_OF_DATA_POINTS
-            CALL BUBBLE_ISORT(GLOBAL_CLOSEST_DISTANCES(ndp,:),SORTING_IND_1,ERR,ERROR,*999)
+          DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+            CALL BUBBLE_ISORT(GLOBAL_CLOSEST_DISTANCES(data_point_idx,:),SORTING_IND_1,ERR,ERROR,*999)
             SORTING_IND_1=SORTING_IND_1-GLOBAL_MPI_DISPLACEMENTS(MY_COMPUTATIONAL_NODE+1) !shift the index to current computational node
-            GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)=0
+            GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)=0
             DO ne=1,REDUCED_NUMBER_OF_CLOSEST_CANDIDATES
               !sorted index indicates it is in the current computational domain
               IF((SORTING_IND_1(ne)>=1).AND.(SORTING_IND_1(ne)<=GLOBAL_NUMBER_OF_CLOSEST_CANDIDATES(MY_COMPUTATIONAL_NODE+1))) &
-                & GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)+1
+                & GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES( &
+                & data_point_idx)+1
             ENDDO
-            PROJECTED_DISTANCE(1,ndp)=GLOBAL_CLOSEST_DISTANCES(ndp,TOTAL_NUMBER_OF_CLOSEST_CANDIDATES) !assign initial distance to something large                           
+            PROJECTED_DISTANCE(1,data_point_idx)=GLOBAL_CLOSEST_DISTANCES(data_point_idx,TOTAL_NUMBER_OF_CLOSEST_CANDIDATES) !assign initial distance to something large                           
           ENDDO
           SELECT CASE(DATA_PROJECTION%PROJECTION_TYPE)
             CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE) !Newton project to closest lines, and find miminum projection
-              DO ndp=1,NUMBER_OF_DATA_POINTS
-                NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)
+              DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                 IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
-                  CALL DATA_PROJECTION_NEWTON_LINES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp,1: &
-                    & NUMBER_OF_CLOSEST_CANDIDATES),CLOSEST_SUB_ELEMENTS(ndp,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG &
-                    & (ndp),PROJECTED_ELEMENT(ndp),PROJECTED_SUB_ELEMENT(ndp),PROJECTED_DISTANCE(1,ndp),PROJECTED_XI(:,ndp),ERR, &
-                    & ERROR,*999)
-                  PROJECTED_ELEMENT(ndp)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT(ndp)) !map the element number to global number
+                  CALL DATA_PROJECTION_NEWTON_LINES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx,CLOSEST_ELEMENTS( &
+                    & data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),CLOSEST_SUB_ELEMENTS(data_point_idx,1: &
+                    & NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx),  &
+                    & PROJECTED_SUB_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx),PROJECTED_XI(:,data_point_idx), &
+                    & ERR,ERROR,*999)
+                  PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
+                    & data_point_idx)) !map the element number to global number
                 ENDIF
               ENDDO
             CASE (DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) !find closest candidate faces
-              DO ndp=1,NUMBER_OF_DATA_POINTS
-                NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)
+              DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                 IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
-                  CALL DATA_PROJECTION_NEWTON_FACES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp,1: &
-                    & NUMBER_OF_CLOSEST_CANDIDATES),CLOSEST_SUB_ELEMENTS(ndp,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG &
-                    & (ndp),PROJECTED_ELEMENT(ndp),PROJECTED_SUB_ELEMENT(ndp),PROJECTED_DISTANCE(1,ndp),PROJECTED_XI(:,ndp),ERR, &
-                    & ERROR,*999)
-                  PROJECTED_ELEMENT(ndp)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT(ndp)) !map the element number to global number
+                  CALL DATA_PROJECTION_NEWTON_FACES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx,CLOSEST_ELEMENTS( &
+                    & data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),CLOSEST_SUB_ELEMENTS(data_point_idx,1: &
+                    & NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx),PROJECTED_ELEMENT(data_point_idx), &
+                    & PROJECTED_SUB_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx),PROJECTED_XI(:,data_point_idx), &
+                    & ERR,ERROR,*999)
+                  PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
+                    & data_point_idx)) !map the element number to global number
                 ENDIF
               ENDDO
             CASE (DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE) !find closest candidate elements
               SELECT CASE(DATA_PROJECTION%NUMBER_OF_XI)
                 CASE (1) !1D element
-                  DO ndp=1,NUMBER_OF_DATA_POINTS
-                    NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)
+                  DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                    NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                     IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
-                      CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_1(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp &
-                        & ,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(ndp),PROJECTED_ELEMENT(ndp),PROJECTED_DISTANCE(1, &
-                        & ndp),PROJECTED_XI(:,ndp),ERR,ERROR,*999)
-                      PROJECTED_ELEMENT(ndp)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT(ndp)) !map the element number to global number
+                      CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_1(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx, &
+                        & CLOSEST_ELEMENTS(data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx), &
+                        & PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx),PROJECTED_XI(:,data_point_idx), &
+                        & ERR,ERROR,*999)
+                      PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
+                        & data_point_idx)) !map the element number to global number
                     ENDIF
                   ENDDO
                 CASE (2) !2D element
-                  DO ndp=1,NUMBER_OF_DATA_POINTS
-                    NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)
+                  DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                    NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                     IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
-                      CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_2(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp &
-                        & ,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(ndp),PROJECTED_ELEMENT(ndp),PROJECTED_DISTANCE(1, &
-                        & ndp),PROJECTED_XI(:,ndp),ERR,ERROR,*999)                    
-                      PROJECTED_ELEMENT(ndp)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT(ndp)) !map the element number to global number
+                      CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_2(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx, &
+                        & CLOSEST_ELEMENTS(data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx), &
+                        & PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx),PROJECTED_XI(:,data_point_idx), &
+                        & ERR,ERROR,*999)                    
+                      PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
+                        & data_point_idx)) !map the element number to global number
                     ENDIF
                   ENDDO
                 CASE (3) !3D element
-                  DO ndp=1,NUMBER_OF_DATA_POINTS
-                    NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(ndp)
+                  DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                    NUMBER_OF_CLOSEST_CANDIDATES=GLOBAL_TO_LOCAL_NUMBER_OF_CLOSEST_CANDIDATES(data_point_idx)
                     IF(NUMBER_OF_CLOSEST_CANDIDATES>0) THEN 
-                      CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_3(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp &
-                        & ,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(ndp),PROJECTED_ELEMENT(ndp),PROJECTED_DISTANCE(1, &
-                        & ndp),PROJECTED_XI(:,ndp),ERR,ERROR,*999)
-                      PROJECTED_ELEMENT(ndp)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT(ndp)) !map the element number to global number
+                      CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_3(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx, &
+                        & CLOSEST_ELEMENTS(data_point_idx,1:NUMBER_OF_CLOSEST_CANDIDATES),PROJECTION_EXIT_TAG(data_point_idx), &
+                        & PROJECTED_ELEMENT(data_point_idx),PROJECTED_DISTANCE(1,data_point_idx),PROJECTED_XI(:,data_point_idx), &
+                        & ERR,ERROR,*999)
+                      PROJECTED_ELEMENT(data_point_idx)=DOMAIN%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(PROJECTED_ELEMENT( &
+                        & data_point_idx)) !map the element number to global number
                     ENDIF
                   ENDDO
                 CASE DEFAULT
@@ -1057,64 +1068,71 @@ CONTAINS
             CALL MPI_ERROR_CHECK("MPI_ALLGATHERV",MPI_IERROR,ERR,ERROR,*999)
           ENDDO                      
           CALL MPI_ALLGATHERV(PROJECTION_EXIT_TAG(SORTING_IND_2(start_idx:finish_idx)),GLOBAL_NUMBER_OF_PROJECTED_POINTS( &
-            & MY_COMPUTATIONAL_NODE+1),MPI_INTEGER,PROJECTION_EXIT_TAG,GLOBAL_NUMBER_OF_PROJECTED_POINTS,GLOBAL_MPI_DISPLACEMENTS, &
-            & MPI_INTEGER,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR) !PROJECTION_EXIT_TAG
+            & MY_COMPUTATIONAL_NODE+1),MPI_INTEGER,PROJECTION_EXIT_TAG,GLOBAL_NUMBER_OF_PROJECTED_POINTS, &
+            & GLOBAL_MPI_DISPLACEMENTS,MPI_INTEGER,COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR) !PROJECTION_EXIT_TAG
           CALL MPI_ERROR_CHECK("MPI_ALLGATHERV",MPI_IERROR,ERR,ERROR,*999)
           !assign projection information to projected points
-          DO ndp=1,NUMBER_OF_DATA_POINTS          
-            DATA_POINTS%DATA_POINTS(SORTING_IND_2(ndp))%PROJECTION_EXIT_TAG=PROJECTION_EXIT_TAG(ndp)
-            DATA_POINTS%DATA_POINTS(SORTING_IND_2(ndp))%PROJECTION_ELEMENT_NUMBER=PROJECTED_ELEMENT(ndp)
-            DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_DISTANCE=PROJECTED_DISTANCE(1,ndp)
-            DATA_POINTS%DATA_POINTS(SORTING_IND_2(ndp))%PROJECTION_XI=PROJECTED_XI(:,ndp)
-          ENDDO !ndp
+          DO data_point_idx=1,NUMBER_OF_DATA_POINTS          
+            DATA_POINTS%DATA_POINTS(SORTING_IND_2(data_point_idx))%PROJECTION_EXIT_TAG=PROJECTION_EXIT_TAG(data_point_idx)
+            DATA_POINTS%DATA_POINTS(SORTING_IND_2(data_point_idx))%PROJECTION_ELEMENT_NUMBER=PROJECTED_ELEMENT(data_point_idx)
+            DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_DISTANCE=PROJECTED_DISTANCE(1,data_point_idx)
+            DATA_POINTS%DATA_POINTS(SORTING_IND_2(data_point_idx))%PROJECTION_XI=PROJECTED_XI(:,data_point_idx)
+          ENDDO !data_point_idx
           
           PROJECTED_XI(:,SORTING_IND_2)=PROJECTED_XI
           PROJECTED_ELEMENT(SORTING_IND_2)=PROJECTED_ELEMENT
                       
           IF(DATA_PROJECTION%PROJECTION_TYPE==DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE) THEN
-            DO ndp=1,NUMBER_OF_DATA_POINTS          
-              DATA_POINTS%DATA_POINTS(SORTING_IND_2(ndp))%PROJECTION_ELEMENT_LINE_NUMBER=PROJECTED_SUB_ELEMENT(ndp)
-            ENDDO !ndp
+            DO data_point_idx=1,NUMBER_OF_DATA_POINTS          
+              DATA_POINTS%DATA_POINTS(SORTING_IND_2(data_point_idx))%PROJECTION_ELEMENT_LINE_NUMBER=PROJECTED_SUB_ELEMENT( &
+                & data_point_idx)
+            ENDDO !data_point_idx
           ELSEIF(DATA_PROJECTION%PROJECTION_TYPE==DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) THEN
-            DO ndp=1,NUMBER_OF_DATA_POINTS          
-              DATA_POINTS%DATA_POINTS(SORTING_IND_2(ndp))%PROJECTION_ELEMENT_FACE_NUMBER=PROJECTED_SUB_ELEMENT(ndp)
-            ENDDO !ndp
+            DO data_point_idx=1,NUMBER_OF_DATA_POINTS          
+              DATA_POINTS%DATA_POINTS(SORTING_IND_2(data_point_idx))%PROJECTION_ELEMENT_FACE_NUMBER=PROJECTED_SUB_ELEMENT( &
+                & data_point_idx)
+            ENDDO !data_point_idx
           ENDIF            
         ELSE !no need to use mpi
           SELECT CASE(DATA_PROJECTION%PROJECTION_TYPE)
             CASE (DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE) !Newton project to closest lines, and find miminum projection
-              DO ndp=1,NUMBER_OF_DATA_POINTS
-                CALL DATA_PROJECTION_NEWTON_LINES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp,:), &
-                  & CLOSEST_SUB_ELEMENTS(ndp,:),DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_EXIT_TAG,DATA_POINTS%DATA_POINTS(ndp)% &
-                  & PROJECTION_ELEMENT_NUMBER,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_LINE_NUMBER,DATA_POINTS%DATA_POINTS &
-                  & (ndp)%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_XI,ERR,ERROR,*999)
+              DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                CALL DATA_PROJECTION_NEWTON_LINES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx,CLOSEST_ELEMENTS( &
+                  & data_point_idx,:),CLOSEST_SUB_ELEMENTS(data_point_idx,:),DATA_POINTS%DATA_POINTS(data_point_idx)% &
+                  & PROJECTION_EXIT_TAG,DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_NUMBER,DATA_POINTS% &
+                  & DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_LINE_NUMBER,DATA_POINTS%DATA_POINTS(data_point_idx)% &
+                  & PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_XI,ERR,ERROR,*999)
               ENDDO
             CASE (DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE) !find closest candidate faces
-              DO ndp=1,NUMBER_OF_DATA_POINTS
-                CALL DATA_PROJECTION_NEWTON_FACES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp,:), &
-                  & CLOSEST_SUB_ELEMENTS(ndp,:),DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_EXIT_TAG,DATA_POINTS%DATA_POINTS(ndp)% &
-                  & PROJECTION_ELEMENT_NUMBER,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_FACE_NUMBER,DATA_POINTS%DATA_POINTS &
-                  & (ndp)%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_XI,ERR,ERROR,*999)
+              DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                CALL DATA_PROJECTION_NEWTON_FACES_EVALUATE(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx,CLOSEST_ELEMENTS( &
+                  & data_point_idx,:),CLOSEST_SUB_ELEMENTS(data_point_idx,:),DATA_POINTS%DATA_POINTS(data_point_idx)% &
+                  & PROJECTION_EXIT_TAG,DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_NUMBER,DATA_POINTS% &
+                  & DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_FACE_NUMBER,DATA_POINTS%DATA_POINTS(data_point_idx)% &
+                  & PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_XI,ERR,ERROR,*999)
               ENDDO
             CASE (DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE) !find closest candidate elements        
               SELECT CASE(DATA_PROJECTION%NUMBER_OF_XI)
                 CASE (1) !1D mesh
-                  DO ndp=1,NUMBER_OF_DATA_POINTS
-                    CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_1(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp,: &
-                      & ),DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_EXIT_TAG,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_NUMBER &
-                      & ,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_XI,ERR,ERROR,*999)
+                  DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                    CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_1(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx, &
+                      & CLOSEST_ELEMENTS(data_point_idx,:),DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_EXIT_TAG, &
+                      & DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_NUMBER,DATA_POINTS%DATA_POINTS(data_point_idx &
+                      & )%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_XI,ERR,ERROR,*999)
                   ENDDO
                 CASE (2) !2D mesh
-                  DO ndp=1,NUMBER_OF_DATA_POINTS
-                    CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_2(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp,: &
-                      & ),DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_EXIT_TAG,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_NUMBER &
-                      & ,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_XI,ERR,ERROR,*999)
+                  DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                    CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_2(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx, &
+                      & CLOSEST_ELEMENTS(data_point_idx,:),DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_EXIT_TAG, &
+                      & DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_NUMBER,DATA_POINTS%DATA_POINTS(data_point_idx &
+                      & )%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_XI,ERR,ERROR,*999)
                   ENDDO
                 CASE (3) !3D mesh
-                  DO ndp=1,NUMBER_OF_DATA_POINTS
-                    CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_3(DATA_PROJECTION,INTERPOLATED_POINT,ndp,CLOSEST_ELEMENTS(ndp,: &
-                      & ),DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_EXIT_TAG,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_ELEMENT_NUMBER &
-                      & ,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(ndp)%PROJECTION_XI,ERR,ERROR,*999)
+                  DO data_point_idx=1,NUMBER_OF_DATA_POINTS
+                    CALL DATA_PROJECTION_NEWTON_ELEMENTS_EVALUATE_3(DATA_PROJECTION,INTERPOLATED_POINT,data_point_idx, &
+                      & CLOSEST_ELEMENTS(data_point_idx,:),DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_EXIT_TAG, &
+                      & DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_ELEMENT_NUMBER,DATA_POINTS%DATA_POINTS(data_point_idx &
+                      & )%PROJECTION_DISTANCE,DATA_POINTS%DATA_POINTS(data_point_idx)%PROJECTION_XI,ERR,ERROR,*999)
                   ENDDO
                 CASE DEFAULT
                   CALL FLAG_ERROR("Data projection number of xi is invalid",ERR,ERROR,*999)

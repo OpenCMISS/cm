@@ -1559,6 +1559,7 @@ MODULE OPENCMISS
   INTERFACE CMISSDataPointsCreateStart
     MODULE PROCEDURE CMISSDataPointsCreateStartNumber
     MODULE PROCEDURE CMISSDataPointsCreateStartObj
+    MODULE PROCEDURE CMISSDataPointsCreateStartInterfaceObj
   END INTERFACE !CMISSDataPointsCreateFinish
 
   !>Destroys data points.
@@ -1566,6 +1567,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataPointsDestroyNumber
     MODULE PROCEDURE CMISSDataPointsDestroyObj
   END INTERFACE !CMISSDataPointsDestroy
+
+  !>Returns the number of data points
+  INTERFACE CMISSDataPointsNumberOfDataPointsGet
+    MODULE PROCEDURE CMISSDataPointsNumberOfDataPointsGetNumber
+    MODULE PROCEDURE CMISSDataPointsNumberOfDataPointsGetObj
+  END INTERFACE !CMISSDataPointsNumberOfDataPointsGet
 
   !>Returns the label for a data point identified by a given global number. \todo should this be a user number?
   INTERFACE CMISSDataPointsLabelGet
@@ -1660,9 +1667,10 @@ MODULE OPENCMISS
 
   PUBLIC CMISSDataPointsDestroy
 
+  PUBLIC CMISSDataPointsNumberOfDataPointsGet
+
   PUBLIC CMISSDataPointsLabelGet,CMISSDataPointsLabelSet
 
-  
   PUBLIC CMISSDataPointsProjectionDistanceGet,CMISSDataPointsProjectionElementNumberGet
   
   PUBLIC CMISSDataPointsProjectionElementFaceNumberGet,CMISSDataPointsProjectionElementLineNumberGet
@@ -4918,6 +4926,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSRegionCreateStartNumber
     MODULE PROCEDURE CMISSRegionCreateStartObj
   END INTERFACE !CMISSRegionCreateStart
+
+  !>Returns the data points for a region.
+  INTERFACE CMISSRegionDataPointsGet
+    MODULE PROCEDURE CMISSRegionDataPointsGetObj
+  END INTERFACE !CMISSRegionDataPointsGet
     
   !>Destroys a region. 
   INTERFACE CMISSRegionDestroy
@@ -4949,6 +4962,8 @@ MODULE OPENCMISS
   PUBLIC CMISSRegionCoordinateSystemGet,CMISSRegionCoordinateSystemSet
 
   PUBLIC CMISSRegionCreateFinish,CMISSRegionCreateStart
+
+  PUBLIC CMISSRegionDataPointsGet
 
   PUBLIC CMISSRegionDestroy
 
@@ -17057,6 +17072,38 @@ CONTAINS
 
   !  
   !================================================================================================================================
+  !  
+
+  !>Starts the creation of a data points in a region for data points identified by an object.
+  SUBROUTINE CMISSDataPointsCreateStartInterfaceObj(INTERFACE,NumberOfDataPoints,DataPoints,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: INTERFACE !<The interface to start the creation of data points on.
+    INTEGER(INTG), INTENT(IN) :: NumberOfDataPoints !<The number of data points to create.
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<On return, the created data points.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSDataPointsCreateStartInterfaceObj",Err,ERROR,*999)
+
+#ifdef TAUPROF
+    CALL TAU_STATIC_PHASE_START('DataPoints Create')
+#endif
+
+    CALL DATA_POINTS_CREATE_START(Interface%INTERFACE,NumberOfDataPoints,DataPoints%DATA_POINTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsCreateStartInterfaceObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsCreateStartInterfaceObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsCreateStartInterfaceObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsCreateStartInterfaceObj
+
+
+  !  
+  !================================================================================================================================
   !
   
   !>Destroys the data points in a region for data points identified by user number.
@@ -17117,6 +17164,72 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSDataPointsDestroyObj
+
+  !  
+  !================================================================================================================================
+  !
+
+  !>Returns the number of data points 
+  SUBROUTINE CMISSDataPointsNumberOfDataPointsGetNumber(RegionUserNumber,NumberOfDataPoints,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the data points to get data point count for.
+    INTEGER(INTG), INTENT(OUT) :: NumberOfDataPoints !<On return, the number of data points
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSDataPointsNumberOfDataPointsGetNumber",Err,ERROR,*999)
+
+    NULLIFY(REGION)
+    NULLIFY(DATA_POINTS)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL REGION_DATA_POINTS_GET(REGION,DATA_POINTS,Err,ERROR,*999)
+      CALL DATA_POINTS_NUMBER_OF_DATA_POINTS_GET(DATA_POINTS,NumberOfDataPoints,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+ 
+    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsNumberOfDataPointsGetNumber",Err,ERROR)
+    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSDataPointsNumberOfDataPointsGetNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the number of data points
+  SUBROUTINE CMISSDataPointsNumberOfDataPointsGetObj(DataPoints,NumberOfDataPoints,Err)
+
+    !Argument variables
+    TYPE(CMISSDataPointsType), INTENT(IN) :: DataPoints !<The data points get data point count for.
+    INTEGER(INTG), INTENT(OUT) :: NumberOfDataPoints !<The number of data points
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+ 
+    CALL ENTERS("CMISSDataPointsNumberOfDataPointsGetObj",err,ERROR,*999)
+
+    CALL DATA_POINTS_NUMBER_OF_DATA_POINTS_GET(DataPoints%DATA_POINTS,NumberOfDataPoints,Err,ERROR,*999)
+
+    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSDataPointsNumberOfDataPointsGetObj",Err,ERROR)
+    CALL EXITS("CMISSDataPointsNumberOfDataPointsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSDataPointsNumberOfDataPointsGetObj
+
 
   !  
   !================================================================================================================================
@@ -40008,6 +40121,32 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSRegionDestroyNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the data points for a region identified by an object.
+  SUBROUTINE CMISSRegionDataPointsGetObj(Region,DataPoints,Err)
+  
+    !Argument variables
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<The region to get the data points for.
+    TYPE(CMISSDataPointsType), INTENT(INOUT) :: DataPoints !<On return, the regions data points.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSRegionDataPointsGetObj",Err,ERROR,*999)
+ 
+    CALL REGION_DATA_POINTS_GET(Region%REGION,DataPoints%DATA_POINTS,Err,ERROR,*999)
+
+    CALL EXITS("CMISSRegionDataPointsGetObj")
+    RETURN
+999 CALL ERRORS("CMISSRegionDataPointsGetObj",Err,ERROR)
+    CALL EXITS("CMISSRegionDataPointsGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSRegionDataPointsGetObj
 
   !  
   !================================================================================================================================

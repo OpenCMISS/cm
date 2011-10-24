@@ -5,6 +5,7 @@ ELSEIF(${OPERATING_SYSTEM} MATCHES aix)#AIX
 ELSE(${OPERATING_SYSTEM} MATCHES linux)# windows
     SET(MACHINE_ENTRY ${SOURCE_DIR}/machine_constants_windows.f90)
 ENDIF(${OPERATING_SYSTEM} MATCHES linux)
+FILE(GLOB MACHINE_ENTRY ${MACHINE_ENTRY}) # necessary to get an exact match of the filename in the list (for out-of-source builds)
 
 FILE(GLOB MACHINE_EXCLUDES "${SOURCE_DIR}" "${SOURCE_DIR}/machine_constants_*.f90")
 LIST(REMOVE_ITEM MACHINE_EXCLUDES ${MACHINE_ENTRY})
