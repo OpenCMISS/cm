@@ -31,6 +31,10 @@ class CMISSType(object):
             self.__dict__[attr_name] = value
 
 
+class Enum(object):
+    pass
+
+
 def wrap_cmiss_routine(routine, args=None):
     """Call a routine and check the return value, raise an
     exception if it is non-zero and return any other return values

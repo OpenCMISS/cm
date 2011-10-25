@@ -1,4 +1,5 @@
 import os
+import re
 from parse import *
 from c import subroutine_c_name
 
@@ -15,8 +16,10 @@ http://www.opencmiss.org
 INITIALISE = """WorldCoordinateSystem = CoordinateSystem()
 WorldRegion = Region()
 Initialise(WorldCoordinateSystem, WorldRegion)
-ErrorHandlingModeSet(ReturnErrorCode) #Don't output errors, we'll include trace in exception
+ErrorHandlingModeSet(ErrorHandlingModes.ReturnErrorCode) #Don't output errors, we'll include trace in exception
 """
+
+PREFIX='CMISS'
 
 def generate(cm_path,args):
     """
@@ -29,7 +32,7 @@ def generate(cm_path,args):
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
     module.write("import _opencmiss_swig\n")
-    module.write("from _utils import CMISSError, CMISSType, wrap_cmiss_routine as _wrap_routine\n\n")
+    module.write("from _utils import CMISSError, CMISSType, Enum, wrap_cmiss_routine as _wrap_routine\n\n")
 
     types = sorted(library.lib_source.types.values(), key=attrgetter('name'))
     for type in types:
@@ -38,11 +41,19 @@ def generate(cm_path,args):
     for routine in library.unbound_routines:
         module.write(routine_to_py(routine))
 
-    module.write('# OpenCMISS constants\n')
-    constants = [c for c in library.public_objects.values() if isinstance(c,Constant)]
-    constants=sorted(constants,key=attrgetter('name'))
-    for c in constants:
-        module.write("%s = %d #%s\n" % (c.name[5:], c.value, c.doxygen_comment))
+    (enums, ungrouped_constants) = library.group_constants()
+    for e in enums:
+        if e.name.startswith(PREFIX):
+            name = e.name[len(PREFIX):]
+        else:
+            name = e.name
+        module.write("class %s(Enum):\n" % name)
+        module.write('    """%s\n    """\n\n' % e.comment)
+        for c in e.constants:
+            module.write("    %s = %d #%s\n" % (c.name[len(PREFIX):], c.value, remove_doxygen_commands(c.doxygen_comment)))
+        module.write('\n')
+    for c in ungrouped_constants:
+        module.write("%s = %d #%s\n" % (c.name[5:], c.value, remove_doxygen_commands(c.doxygen_comment)))
     module.write('\n')
 
     module.write(INITIALISE)
@@ -53,8 +64,8 @@ def generate(cm_path,args):
 def type_to_py(type):
     """Convert CMISS type to Python class"""
 
-    cmiss_type = type.name[len('CMISS'):-len('Type')]
-    docstring = '\n    '.join(type.comment_lines)
+    cmiss_type = type.name[len(PREFIX):-len('Type')]
+    docstring = remove_doxygen_commands('\n    '.join(type.comment_lines))
 
     py_class = "class %s(CMISSType):\n" % cmiss_type
     py_class += '    """%s\n    """\n' % docstring
@@ -92,7 +103,7 @@ def py_method(type, routine):
     else:
         py_swig_args = ', '.join(['self'] + py_args)
 
-    docstring = '\n        '.join(routine.comment_lines)
+    docstring = remove_doxygen_commands('\n        '.join(routine.comment_lines))
     docstring += '\n\n'
     docstring += ' '*8 + '\n        '.join(parameters_docstring(parameters).splitlines())
     docstring = docstring.strip()
@@ -107,9 +118,9 @@ def py_method(type, routine):
 
 def routine_to_py(routine):
     c_name = subroutine_c_name(routine)[0]
-    name = c_name[len('CMISS'):]
+    name = c_name[len(PREFIX):]
 
-    docstring = '\n    '.join(routine.comment_lines)
+    docstring = remove_doxygen_commands('\n    '.join(routine.comment_lines))
     docstring += '\n\n'
     docstring += ' '*4 +'\n    '.join(parameters_docstring(routine.parameters).splitlines())
     docstring = docstring.strip()
@@ -133,9 +144,9 @@ def parameters_docstring(parameters):
         if param.intent == 'OUT':
             return_values.append(param)
         else:
-            docstring += ':param %s: %s\n' % (param.name, param.doxygen)
+            docstring += ':param %s: %s\n' % (param.name, replace_doxygen_commands(param))
             docstring += ':type %s: %s\n' % (param.name, param_type_comment(param))
-    return_comments = [return_comment(r.doxygen) for r in return_values]
+    return_comments = [return_comment(r) for r in return_values]
     if len(return_values) == 0:
         docstring += ':rtype: None\n'
     elif len(return_values) == 1:
@@ -148,15 +159,18 @@ def parameters_docstring(parameters):
     return docstring
 
 
-def return_comment(comment):
+def return_comment(return_param):
     """Fix comment describing return value"""
+
+    comment = replace_doxygen_commands(return_param)
 
     on_return = 'on return, '
     if comment.lower().startswith(on_return):
         comment = comment[len(on_return)].upper()+comment[len(on_return)+1:]
     if not comment.strip():
         return 'No description'
-    return comment
+    return comment.strip()
+
 
 PARAMETER_TYPES = {
     Parameter.INTEGER: 'int',
@@ -167,11 +181,12 @@ PARAMETER_TYPES = {
     Parameter.CUSTOM_TYPE: None
 }
 
+
 def param_type_comment(param):
     """Python type corresponding to Fortran type for use in docstrings"""
 
     if param.var_type == Parameter.CUSTOM_TYPE:
-        type = param.type_name[len('CMISS'):-len('Type')]
+        type = param.type_name[len(PREFIX):-len('Type')]
     else:
         type = PARAMETER_TYPES[param.var_type]
     if param.array_dims == 1:
@@ -185,3 +200,32 @@ def param_type_comment(param):
         else:
             type = "%dd list of %ss" % (param.array_dims, type)
     return type
+
+
+def remove_doxygen_commands(comment):
+    see_re = r'.?\s*\\see\s*[^\s]*'
+    match = re.search(see_re,comment)
+    if match:
+        comment = comment[0:match.start(0)]+comment[match.end(0):]
+    return comment.strip()
+
+def replace_doxygen_commands(param):
+    """Replace doxygen see command with a reference to the appropriate Python enum class"""
+
+    comment = param.doxygen
+
+    if param.var_type == Parameter.INTEGER:
+        see_re = r'.?\s*\\see\s*OPENCMISS_([^\s,.]*)'
+        match = re.search(see_re,comment)
+        if match:
+            enum = match.group(1)
+            if enum is not None:
+                if enum.startswith(PREFIX):
+                    enum = enum[len(PREFIX):]
+                comment = comment[0:match.start(0)]
+                if param.intent == 'IN':
+                    comment += '. Must be a value from the '+enum+' enum.'
+                else:
+                    comment += '. Will be a value from the '+enum+' enum.'
+
+    return comment

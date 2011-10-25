@@ -245,6 +245,33 @@ class LibrarySource(object):
         if not self.lib_source.constants[constant].resolved:
             sys.stderr.write("Warning: Couldn't resolve constant value: %s\n" % constant)
 
+    def group_constants(self):
+        """Returns a list of enums and ungrouped constants"""
+
+        enums = []
+        ungrouped_constants = []
+
+        current_enum = None
+        for k in sorted(self.public_objects.keys()):
+            o = self.public_objects[k]
+            if isinstance(o,DoxygenGrouping):
+                if o.type == 'group':
+                    current_enum = Enum(o.group)
+                elif o.type == 'brief':
+                    current_enum.comment = o.brief
+                elif o.type == 'close':
+                    if current_enum is not None and \
+                            len(current_enum.constants) > 0:
+                        enums.append(current_enum)
+                    current_enum = None
+            elif isinstance(o,Constant):
+                if current_enum is not None:
+                    current_enum.constants.append(o)
+                else:
+                    ungrouped_constants.append(o)
+        if current_enum is not None:
+            sys.stderr.write("Error: Didn't match a closing group for Doxygen groupings\n")
+        return (enums, ungrouped_constants)
 
 class Constant(object):
     """Information on a public constant"""
@@ -583,6 +610,29 @@ class DoxygenGrouping(object):
     def __init__(self,lineno,line):
         self.lineno = lineno
         self.line = line.strip()
+        if line.find(r'\see') > -1:
+            self.type = 'see'
+        elif line.find(r'\addtogroup') > -1:
+            self.type = 'group'
+            self.group = line[line.find('OPENCMISS_')+len('OPENCMISS_'):].split()[0]
+        elif line.find(r'\brief') > -1:
+            self.type = 'brief'
+            self.brief = line[line.find(r'\brief')+len(r'\brief'):].strip()
+        elif line.find(r'@{') > -1:
+            self.type = 'open'
+        elif line.find(r'@}') > -1:
+            self.type = 'close'
+        else:
+            self.type = None
+
+
+class Enum(object):
+    """A group of constants"""
+
+    def __init__(self, name):
+        self.name = name
+        self.constants = []
+        self.comment = ''
 
 
 def _join_lines(source):
