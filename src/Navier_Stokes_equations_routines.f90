@@ -3703,7 +3703,7 @@ CONTAINS
     !REAL(DP) :: test(89,89),test2(89,89),scaling,square
 !    REAL(DP) :: J1_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
 !    REAL(DP) :: J2_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
-    REAL(DP) :: J_MATRIX(256,256)
+!    REAL(DP) :: J_MATRIX(256,256)
 
     REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
     REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
@@ -3712,7 +3712,7 @@ CONTAINS
 
 !    J1_MATRIX=0.0_DP
 !    J2_MATRIX=0.0_DP
-    J_MATRIX=0.0_DP
+!    J_MATRIX=0.0_DP
 
 !\todo: Check whether or not update flags work properly and how much time is spent in each section
 
@@ -3962,9 +3962,9 @@ CONTAINS
                              ENDDO 
                               !Calculate MATRIX  
 !                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-!                               & +SUM*JGW
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
                               !Calculate J2 only
                               IF(nh==mh) THEN 
                                 SUM=0.0_DP
@@ -3976,9 +3976,9 @@ CONTAINS
                                 ENDDO !x
                                 !Calculate MATRIX
 !                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
-                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-!                                 & +SUM*JGW
+!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                                 & +SUM*JGW
 !                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) = JACOBIAN_MATRIX%ELEMENT_JACOBIAN% &
 !                                 & MATRIX(mhs,nhs)+SUM*JGW
                               END IF
@@ -3993,9 +3993,9 @@ CONTAINS
                               ENDDO 
                               !Calculate MATRIX  
 !                              J1_MATRIX(mhs,nhs)=J1_MATRIX(mhs,nhs)+SUM*JGW
-                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-!                               & +SUM*JGW
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
                               !Calculate J2 only
                               IF(nh==mh) THEN 
                                 SUM=0.0_DP
@@ -4007,9 +4007,9 @@ CONTAINS
                                 ENDDO !x
                                 !Calculate MATRIX
 !                                J2_MATRIX(mhs,nhs)=J2_MATRIX(mhs,nhs)+SUM*JGW
-                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-!                                 & +SUM*JGW
+!                                J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                                 & +SUM*JGW
                               END IF
                             END IF
                           END IF
@@ -4102,9 +4102,9 @@ CONTAINS
                             IF(nh==1) THEN
                               SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
                                  & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
-!                               & +SUM*JGW
+!                              J_MATRIX(mhs,nhs)=J_MATRIX(mhs,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
                             END IF
                           END IF
 
@@ -4112,9 +4112,9 @@ CONTAINS
                           IF(mh==1) THEN
                             IF(nh==2) THEN
                               SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-                              J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
+!                              J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
@@ -4122,9 +4122,9 @@ CONTAINS
                           IF(mh==2) THEN
                             IF(nh==1) THEN
                               SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+3,nhs)=J_MATRIX(mhs+3,nhs)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)+SUM*JGW
+!                              J_MATRIX(mhs+3,nhs)=J_MATRIX(mhs+3,nhs)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs)+SUM*JGW
                             END IF
                           END IF
 
@@ -4132,18 +4132,18 @@ CONTAINS
                           IF(mh==2) THEN
                             IF(nh==2) THEN
                               SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
+!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
                           IF(mh==2 .AND. ms==1 .AND. nh==2) THEN
                             SUM=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
                                & ( 0.25*PHINS*(A_VALUE**(-0.75)) )
-                            J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
+!                            J_MATRIX(mhs,nhs+3)=J_MATRIX(mhs,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+3)+SUM*JGW
                           END IF
 
                         ELSEIF(ELEMENT_NUMBER==2) THEN
@@ -4152,9 +4152,9 @@ CONTAINS
                             IF(nh==1) THEN
                               SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
                                  & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
+!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
@@ -4162,9 +4162,9 @@ CONTAINS
                           IF(mh==1) THEN
                             IF(nh==2) THEN
                               SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW
+!                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW
                             END IF
                           END IF
 
@@ -4172,9 +4172,9 @@ CONTAINS
                           IF(mh==2) THEN
                             IF(nh==1) THEN
                               SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW
+!                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW
                             END IF
                           END IF
 
@@ -4182,18 +4182,18 @@ CONTAINS
                           IF(mh==2) THEN
                             IF(nh==2) THEN
                               SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW
+!                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW
                             END IF
                           END IF
 
                           IF(mh==1 .AND. ms==2 .AND. nh==2) THEN
                             SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
                                & ( 0.25*PHINS*(A_VALUE**(-0.75)) ) 
-                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)+SUM*JGW
+!                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs,nhs+6)+SUM*JGW
                           END IF
 
                         ELSEIF(ELEMENT_NUMBER==3) THEN
@@ -4202,9 +4202,9 @@ CONTAINS
                             IF(nh==1) THEN
                               SUM=((PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1))*DXI_DX(1,1) + &
                                  & (8*3.1416*.0033*PHINS/A_VALUE))*PHIMS
-                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW 
+!                              J_MATRIX(mhs+3,nhs+3)=J_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+3)+SUM*JGW 
                            END IF
                           END IF
 
@@ -4212,9 +4212,9 @@ CONTAINS
                           IF(mh==1) THEN
                             IF(nh==2) THEN
                               SUM=(-8*3.1416*.0033*PHINS*U_VALUE(1)/(A_VALUE**2))*PHIMS
-                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW 
+!                              J_MATRIX(mhs+3,nhs+6)=J_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+3,nhs+6)+SUM*JGW 
                             END IF
                           END IF
 
@@ -4222,9 +4222,9 @@ CONTAINS
                           IF(mh==2) THEN
                             IF(nh==1) THEN
                               SUM=(  ( PHINS*A_DERIV+A_VALUE*DPHINS_DXI(1)  )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW 
+!                              J_MATRIX(mhs+6,nhs+3)=J_MATRIX(mhs+6,nhs+3)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+3)+SUM*JGW 
                             END IF
                           END IF
 
@@ -4232,18 +4232,18 @@ CONTAINS
                           IF(mh==2) THEN
                             IF(nh==2) THEN
                               SUM=(  ( PHINS*U_DERIV(1,1)+U_VALUE(1)*DPHINS_DXI(1) )*DXI_DX(1,1)  )*PHIMS
-                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
-!                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
+!                              J_MATRIX(mhs+6,nhs+6)=J_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                              JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
                             END IF
                           END IF
 
                           IF(mh==1 .AND. ms==3 .AND. nh==2) THEN
                             SUM=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
                                & ( 0.25*PHINS*(A_VALUE**(-0.75) ) )   
-                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
-!                            JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
-!                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
+!                            J_MATRIX(mhs,nhs+6)=J_MATRIX(mhs,nhs+6)+SUM*JGW
+                            JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)=JACOBIAN_MATRIX% &
+                               & ELEMENT_JACOBIAN%MATRIX(mhs+6,nhs+6)+SUM*JGW 
                           ENDIF
                         END IF
                         ENDDO !ns
@@ -4259,20 +4259,20 @@ CONTAINS
             mhs_max=nhs
             nhs_min=mhs
             nhs_max=nhs
-            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-              !Assemble Jacobian matrix first
-              IF(UPDATE_JACOBIAN_MATRIX) THEN
-!                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
-!                  & J2_MATRIX(1:mhs_min,1:nhs_min)
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J_MATRIX(1:mhs_min,1:nhs_min)
-              END IF
-            ENDIF
+ !            IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_QUASISTATIC_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
+!               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+!               !Assemble Jacobian matrix first
+! !              IF(UPDATE_JACOBIAN_MATRIX) THEN
+! !                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J1_MATRIX(1:mhs_min,1:nhs_min)+ & 
+! !                  & J2_MATRIX(1:mhs_min,1:nhs_min)
+!                 JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs_min,1:nhs_min)=J_MATRIX(1:mhs_min,1:nhs_min)
+!               END IF
+!             ENDIF
 
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
               IF(UPDATE_JACOBIAN_MATRIX) THEN
@@ -4310,27 +4310,27 @@ CONTAINS
 
               !--JACOBIAN MATRIX BIFURCATION MATRIX--!
               IF(ELEMENT_NUMBER==1) THEN
-                J_MATRIX(4,10)=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(4,10)=4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5 )* &
                              & ( 0.25*(A_BI_VALUE(1)**(-0.75)) )
-                J_MATRIX(10,4)=A_BI_VALUE(1)
-                J_MATRIX(10,10)=U_BI_VALUE(1)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(10,4)=A_BI_VALUE(1)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(10,10)=U_BI_VALUE(1)
 
               ELSEIF(ELEMENT_NUMBER==2) THEN
-                J_MATRIX(2,8)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(2,8)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
                              & ( 0.25*(A_BI_VALUE(2)**(-0.75)) ) 
-                J_MATRIX(7,2)=-A_BI_VALUE(2)
-                J_MATRIX(7,8)=-U_BI_VALUE(2)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,2)=-A_BI_VALUE(2)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,8)=-U_BI_VALUE(2)
 
               ELSEIF(ELEMENT_NUMBER==3) THEN
-                J_MATRIX(3,9)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(3,9)=-4*( ((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5 )* &
                              & ( 0.25*(A_BI_VALUE(3)**(-0.75) ))   
-                J_MATRIX(7,3)=-A_BI_VALUE(3)
-                J_MATRIX(7,9)=-U_BI_VALUE(3)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,3)=-A_BI_VALUE(3)
+                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(7,9)=-U_BI_VALUE(3)
 
               ENDIF
               !--JACOBIAN MATRIX BIFURCATION MATRIX--!
 
-                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs+6,1:nhs+6)=J_MATRIX(1:mhs+6,1:nhs+6)
+!                JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(1:mhs+6,1:nhs+6)=J_MATRIX(1:mhs+6,1:nhs+6)
               END IF
             ENDIF
 
@@ -4401,16 +4401,16 @@ CONTAINS
 
 !\todo: Check whether or not too much time is spent with the different matrix types
 
-    REAL(DP) :: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
-    REAL(DP) :: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
-    REAL(DP) :: ALE_MATRIX(256,256) ! "A"rbitrary "L"agrangian "E"ulerian Matrix - maximum size allocated
-    REAL(DP) :: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
-    REAL(DP) :: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
-    REAL(DP) :: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
-    REAL(DP) :: C_MATRIX(256,256)
-    REAL(DP) :: K_MATRIX(256,256)
-    REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
-    REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
+!    REAL(DP) :: AG_MATRIX(256,256) ! "A" Matrix ("G"radient part) - maximum size allocated
+!    REAL(DP) :: AL_MATRIX(256,256) ! "A" Matrix ("L"aplace part) - maximum size allocated
+!    REAL(DP) :: ALE_MATRIX(256,256) ! "A"rbitrary "L"agrangian "E"ulerian Matrix - maximum size allocated
+!    REAL(DP) :: BT_MATRIX(256,256) ! "B" "T"ranspose Matrix - maximum size allocated
+!    REAL(DP) :: MT_MATRIX(256,256) ! "M"ass "T"ime Matrix - maximum size allocated
+!    REAL(DP) :: CT_MATRIX(256,256) ! "C"onvective "T"erm Matrix - maximum size allocated
+!    REAL(DP) :: C_MATRIX(256,256)
+!    REAL(DP) :: K_MATRIX(256,256)
+!    REAL(DP) :: RH_VECTOR(256) ! "R"ight "H"and vector - maximum size allocated
+!    REAL(DP) :: NL_VECTOR(256) ! "N"on "L"inear vector - maximum size allocated
     REAL(DP) :: U_VALUE(3),W_VALUE(3),A_VALUE,U_BI_VALUE(3),A_BI_VALUE(3)!,P_VALUE
     REAL(DP) :: X1(3),X2(3) 
     REAL(DP) :: U_DERIV(3,3),A_DERIV!,P_DERIV
@@ -4419,16 +4419,16 @@ CONTAINS
 
     CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
     out=0
-    AG_MATRIX=0.0_DP
-    AL_MATRIX=0.0_DP
-    ALE_MATRIX=0.0_DP
-    BT_MATRIX=0.0_DP
-    MT_MATRIX=0.0_DP
-    CT_MATRIX=0.0_DP
-    C_MATRIX=0.0_DP
-    K_MATRIX=0.0_DP
-    RH_VECTOR=0.0_DP
-    NL_VECTOR=0.0_DP
+!    AG_MATRIX=0.0_DP
+!    AL_MATRIX=0.0_DP
+!    ALE_MATRIX=0.0_DP
+!    BT_MATRIX=0.0_DP
+!    MT_MATRIX=0.0_DP
+!    CT_MATRIX=0.0_DP
+!    C_MATRIX=0.0_DP
+!    K_MATRIX=0.0_DP
+!    RH_VECTOR=0.0_DP
+!    NL_VECTOR=0.0_DP
 !\todo: Set X and L through user input instead (or default)
     X=0.0_DP
 ! ! !     L=10.0_DP
@@ -4655,7 +4655,8 @@ CONTAINS
                               ENDDO !mi
                             ENDDO !x 
                             !Calculate MATRIX  
-                            AL_MATRIX(mhs,nhs)=AL_MATRIX(mhs,nhs)+SUM*JGW
+!                            AL_MATRIX(mhs,nhs)=AL_MATRIX(mhs,nhs)+SUM*JGW
+                            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
                           END IF
                         END IF
                         !General matrix
@@ -4672,8 +4673,10 @@ CONTAINS
                                 ENDDO !ni
                               ENDDO !mi
                               !Calculate MATRIX
-                              AG_MATRIX(mhs,nhs)=AG_MATRIX(mhs,nhs)+SUM*JGW
-                            END IF
+!                              AG_MATRIX(mhs,nhs)=AG_MATRIX(mhs,nhs)+SUM*JGW
+                              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs) &
+                               & +SUM*JGW
+                           END IF
                           END IF
                         END IF
                         !Contribution through ALE
@@ -4691,7 +4694,9 @@ CONTAINS
                                 ENDDO !ni
                               ENDDO !mi
                               !Calculate MATRIX
-                              ALE_MATRIX(mhs,nhs)=ALE_MATRIX(mhs,nhs)+SUM*JGW
+!                              ALE_MATRIX(mhs,nhs)=ALE_MATRIX(mhs,nhs)+SUM*JGW
+                              STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+ &
+                               & SUM*JGW
                             END IF
                           END IF
                         END IF
@@ -4705,7 +4710,8 @@ CONTAINS
                               SUM=SUM-PHINS*DPHIMS_DXI(ni)*DXI_DX(ni,mh)
                             ENDDO !ni
                             !Calculate MATRIX
-                            BT_MATRIX(mhs,nhs)=BT_MATRIX(mhs,nhs)+SUM*JGW
+!                            BT_MATRIX(mhs,nhs)=BT_MATRIX(mhs,nhs)+SUM*JGW
+                            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
                           END IF
                         END IF
                         !Damping matrix
@@ -4719,7 +4725,8 @@ CONTAINS
                               !Calculate SUM 
                               SUM=PHIMS*PHINS*RHO_PARAM
                               !Calculate MATRIX
-                              MT_MATRIX(mhs,nhs)=MT_MATRIX(mhs,nhs)+SUM*JGW
+!                              MT_MATRIX(mhs,nhs)=MT_MATRIX(mhs,nhs)+SUM*JGW
+                              DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)=DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
                             END IF
                           END IF
                         END IF
@@ -4866,11 +4873,13 @@ CONTAINS
                             !do nothing
                           ENDIF
                           !Calculate RH VECTOR
-                          RH_VECTOR(mhs)=RH_VECTOR(mhs)+SUM*JGW
+!                          RH_VECTOR(mhs)=RH_VECTOR(mhs)+SUM*JGW
+                           RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)+SUM*JGW
                         ENDDO !ms
                       ENDDO !mh
                     ELSE
-                      RH_VECTOR(mhs)=0.0_DP
+!                      RH_VECTOR(mhs)=0.0_DP
+                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(mhs)=0.0_DP
                     ENDIF                 
                   ENDIF
                 ENDIF                                                                     
@@ -4948,6 +4957,7 @@ CONTAINS
                           DXI_DX(mi,ni)=EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR% &
                            & DXI_DX(mi,ni)
                         END DO !mi
+
                          W_SUPG=W_SUPG+((U_SUPG(1)*DPHIMS_DXI(ni)*DXI_DX(ni,1))+ &
                                       & (U_SUPG(2)*DPHIMS_DXI(ni)*DXI_DX(ni,2))+ &
                                       & (U_SUPG(3)*DPHIMS_DXI(ni)*DXI_DX(ni,3)))*TAU_SUPG
@@ -4958,7 +4968,9 @@ CONTAINS
                           & (U_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
                           & (U_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
                       ENDDO !ni
-                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+!                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
+
                     ELSE 
                       !Normal (non-SUPG) Galerkin nonlinear vector
                       DO ni=1,DEPENDENT_BASIS1%NUMBER_OF_XI
@@ -4967,7 +4979,8 @@ CONTAINS
                           & (U_VALUE(2))*(U_DERIV(mh,ni)*DXI_DX(ni,2))+ &
                           & (U_VALUE(3))*(U_DERIV(mh,ni)*DXI_DX(ni,3)))
                       ENDDO !ni
-                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+!                      NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
                     ENDIF !SUPG check
                   ENDDO !ms
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE) THEN
@@ -5052,14 +5065,18 @@ CONTAINS
                             IF(mh==1) THEN
                               IF(nh==1) THEN
                                 SUM=PHINS*PHIMS
-                                C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
+!                                C_MATRIX(mhs,nhs)=C_MATRIX(mhs,nhs)+SUM*JGW
+                                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
+                                  & DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
                               END IF
                             END IF
 
                             IF(mh==2) THEN
                               IF(nh==2) THEN
                                 SUM=PHINS*PHIMS
-                                C_MATRIX(mhs+3,nhs+3)=C_MATRIX(mhs+3,nhs+3)+SUM*JGW
+!                                C_MATRIX(mhs+3,nhs+3)=C_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+3)= &
+                                  & DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+3)+SUM*JGW
                               END IF
                             END IF
 
@@ -5068,14 +5085,18 @@ CONTAINS
                             IF(mh==1) THEN
                               IF(nh==1) THEN
                                 SUM=PHINS*PHIMS
-                                C_MATRIX(mhs+3,nhs+3)=C_MATRIX(mhs+3,nhs+3)+SUM*JGW
+!                                C_MATRIX(mhs+3,nhs+3)=C_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+3)= &
+                                  & DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+3)+SUM*JGW
                               END IF
                             END IF
 
                             IF(mh==2) THEN
                               IF(nh==2) THEN
                                 SUM=PHINS*PHIMS
-                                C_MATRIX(mhs+6,nhs+6)=C_MATRIX(mhs+6,nhs+6)+SUM*JGW
+!                                C_MATRIX(mhs+6,nhs+6)=C_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+6,nhs+6)= &
+                                  & DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+6,nhs+6)+SUM*JGW
                               END IF
                             END IF
 
@@ -5084,14 +5105,18 @@ CONTAINS
                             IF(mh==1) THEN
                               IF(nh==1) THEN
                                 SUM=PHINS*PHIMS
-                                C_MATRIX(mhs+3,nhs+3)=C_MATRIX(mhs+3,nhs+3)+SUM*JGW
+!                                C_MATRIX(mhs+3,nhs+3)=C_MATRIX(mhs+3,nhs+3)+SUM*JGW
+                                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+3)= &
+                                  & DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+3)+SUM*JGW
                               END IF
                             END IF
 
                             IF(mh==2) THEN
                               IF(nh==2) THEN
                                 SUM=PHINS*PHIMS
-                                C_MATRIX(mhs+6,nhs+6)=C_MATRIX(mhs+6,nhs+6)+SUM*JGW
+!                                C_MATRIX(mhs+6,nhs+6)=C_MATRIX(mhs+6,nhs+6)+SUM*JGW
+                                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+6,nhs+6)= &
+                                  & DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+6,nhs+6)+SUM*JGW
                               END IF
                             END IF
 
@@ -5127,21 +5152,27 @@ CONTAINS
                             IF(mh==1) THEN
                               IF(nh==2) THEN
                                 SUM=((1.7725*E_PARAM*H0_PARAM)/((A0_PARAM**1.5)*RHO_PARAM))*DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
-                                K_MATRIX(mhs,nhs+3)=K_MATRIX(mhs,nhs+3)+SUM*JGW
+!                                K_MATRIX(mhs,nhs+3)=K_MATRIX(mhs,nhs+3)+SUM*JGW
+                                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs+3)= &
+                                 & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs+3)+SUM*JGW
                               END IF
                             END IF
                           ELSEIF(ELEMENT_NUMBER==2) THEN
                             IF(mh==1) THEN
                               IF(nh==2) THEN
                                 SUM=((1.7725*E_PARAM*H0_PARAM)/((A0_PARAM**1.5)*RHO_PARAM))*DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
-                                K_MATRIX(mhs+3,nhs+6)=K_MATRIX(mhs+3,nhs+6)+SUM*JGW
+!                                K_MATRIX(mhs+3,nhs+6)=K_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+6)= &
+                                 & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+6)+SUM*JGW
                               END IF
                             END IF
                           ELSEIF(ELEMENT_NUMBER==3) THEN
                             IF(mh==1) THEN
                               IF(nh==2) THEN
                                 SUM=((1.7725*E_PARAM*H0_PARAM)/((A0_PARAM**1.5)*RHO_PARAM))*DPHINS_DXI(1)*DXI_DX(1,1)*PHIMS
-                                K_MATRIX(mhs+3,nhs+6)=K_MATRIX(mhs+3,nhs+6)+SUM*JGW
+!                                K_MATRIX(mhs+3,nhs+6)=K_MATRIX(mhs+3,nhs+6)+SUM*JGW
+                                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+6)= &
+                                 & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs+3,nhs+6)+SUM*JGW
                               END IF
                             END IF
                           END IF
@@ -5197,34 +5228,40 @@ CONTAINS
                     IF(ELEMENT_NUMBER==1) THEN
                       IF(mh==1) THEN
                         SUM=((U_VALUE(1)*U_DERIV(1,1)*DXI_DX(1,1))+(8*3.1416*.0033*U_VALUE(1)/A_VALUE))*PHIMS
-                        NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+!                        NL_VECTOR(mhs)=NL_VECTOR(mhs)+SUM*JGW
+                        NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
                       ENDIF
 
                       IF(mh==2) THEN
                         SUM=( A_VALUE*U_DERIV(1,1)+U_VALUE(1)*A_DERIV )*DXI_DX(1,1)*PHIMS
-                        NL_VECTOR(mhs+3)=NL_VECTOR(mhs+3)+SUM*JGW
+!                        NL_VECTOR(mhs+3)=NL_VECTOR(mhs+3)+SUM*JGW
+                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+3)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+3)+SUM*JGW
                       ENDIF
 
                     ELSEIF(ELEMENT_NUMBER==2) THEN
                       IF(mh==1) THEN
                         SUM=((U_VALUE(1)*U_DERIV(1,1)*DXI_DX(1,1))+(8*3.1416*.0033*U_VALUE(1)/A_VALUE))*PHIMS
-                        NL_VECTOR(mhs+3)=NL_VECTOR(mhs+3)+SUM*JGW
+!                        NL_VECTOR(mhs+3)=NL_VECTOR(mhs+3)+SUM*JGW
+                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+3)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+3)+SUM*JGW
                       ENDIF
 
                       IF(mh==2) THEN
                         SUM=( A_VALUE*U_DERIV(1,1)+U_VALUE(1)*A_DERIV )*DXI_DX(1,1)*PHIMS
-                        NL_VECTOR(mhs+6)=NL_VECTOR(mhs+6)+SUM*JGW
+!                        NL_VECTOR(mhs+6)=NL_VECTOR(mhs+6)+SUM*JGW
+                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+6)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+6)+SUM*JGW
                       ENDIF
 
                     ELSEIF(ELEMENT_NUMBER==3) THEN
                       IF(mh==1) THEN
                         SUM=((U_VALUE(1)*U_DERIV(1,1)*DXI_DX(1,1))+(8*3.1416*.0033*U_VALUE(1)/A_VALUE))*PHIMS
-                        NL_VECTOR(mhs+3)=NL_VECTOR(mhs+3)+SUM*JGW
+!                        NL_VECTOR(mhs+3)=NL_VECTOR(mhs+3)+SUM*JGW
+                      NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+3)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+3)+SUM*JGW
                       ENDIF
 
                       IF(mh==2) THEN
                         SUM=( A_VALUE*U_DERIV(1,1)+U_VALUE(1)*A_DERIV )*DXI_DX(1,1)*PHIMS
-                        NL_VECTOR(mhs+6)=NL_VECTOR(mhs+6)+SUM*JGW
+!                        NL_VECTOR(mhs+6)=NL_VECTOR(mhs+6)+SUM*JGW
+                        NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+6)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs+6)+SUM*JGW
                       ENDIF
                     ENDIF
   
@@ -5235,15 +5272,18 @@ CONTAINS
                 IF(ELEMENT_NUMBER==1) THEN
                   SUM=-4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5)* &
                      & (A_VALUE**0.25)
-                  NL_VECTOR(4)=NL_VECTOR(4)+SUM*JGW
+!                  NL_VECTOR(4)=NL_VECTOR(4)+SUM*JGW
+                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(4)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(4)+SUM*JGW
                 ELSEIF(ELEMENT_NUMBER==2) THEN
                   SUM=4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5)* &
                      & (A_VALUE**0.25)
-                  NL_VECTOR(2)=NL_VECTOR(2)+SUM*JGW
+!                  NL_VECTOR(2)=NL_VECTOR(2)+SUM*JGW
+                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)+SUM*JGW
                 ELSEIF(ELEMENT_NUMBER==3) THEN
                   SUM=4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5)* &
                      & (A_VALUE**0.25)
-                  NL_VECTOR(3)=NL_VECTOR(3)+SUM*JGW
+!                  NL_VECTOR(3)=NL_VECTOR(3)+SUM*JGW
+                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)+SUM*JGW
                 ENDIF
                 !--NONLINEAR VECTOR BIFURCATION SECTION--!
 
@@ -5265,9 +5305,9 @@ CONTAINS
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
             IF(STIFFNESS_MATRIX%FIRST_ASSEMBLY) THEN
               IF(UPDATE_STIFFNESS_MATRIX) THEN
-                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=(AL_MATRIX(1:mhs_min,1:nhs_min)+ &
-                  & AG_MATRIX(1:mhs_min,1:nhs_min)+ALE_MATRIX(1:mhs_min,1:nhs_min))
-                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,nhs_min+1:nhs_max)=(BT_MATRIX(1:mhs_min,nhs_min+1:nhs_max))
+!                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=(AL_MATRIX(1:mhs_min,1:nhs_min)+ &
+!                  & AG_MATRIX(1:mhs_min,1:nhs_min)+ALE_MATRIX(1:mhs_min,1:nhs_min))
+!                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,nhs_min+1:nhs_max)=(BT_MATRIX(1:mhs_min,nhs_min+1:nhs_max))
                 DO mhs=mhs_min+1,mhs_max
                   DO nhs=1,nhs_min
                     !Transpose pressure type entries for mass equation  
@@ -5277,14 +5317,14 @@ CONTAINS
               ENDIF
             ENDIF
           ENDIF
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR.&
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR.&
-            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
-            IF(UPDATE_DAMPING_MATRIX) THEN
-              DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=MT_MATRIX(1:mhs_min,1:nhs_min)
-            END IF
-          END IF
+          ! IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE.OR.&
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR.&
+          !   & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
+          !   IF(UPDATE_DAMPING_MATRIX) THEN
+          !     DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=MT_MATRIX(1:mhs_min,1:nhs_min)
+          !   END IF
+          ! END IF
 
           IF (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE.OR.  &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE.OR. &
@@ -5294,15 +5334,15 @@ CONTAINS
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
             & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
             !Assemble RHS vector
-            IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
-              IF(UPDATE_RHS_VECTOR) THEN
-                RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1:mhs_max)=RH_VECTOR(1:mhs_max)
-              ENDIF
-            ENDIF
+            ! IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
+            !   IF(UPDATE_RHS_VECTOR) THEN
+            !     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1:mhs_max)=RH_VECTOR(1:mhs_max)
+            !   ENDIF
+            ! ENDIF
             !Assemble non-linear vector
-            IF(UPDATE_NONLINEAR_RESIDUAL) THEN
-               NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1:mhs_max)=NL_VECTOR(1:mhs_max)
-            END IF
+            ! IF(UPDATE_NONLINEAR_RESIDUAL) THEN
+            !    NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1:mhs_max)=NL_VECTOR(1:mhs_max)
+            ! END IF
           END IF
 
           IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
@@ -5312,35 +5352,45 @@ CONTAINS
 
                 !--STIFFNESS MATRIX BIFURCATION SECTION--!      
                 IF(ELEMENT_NUMBER==1) THEN
-                  K_MATRIX(4,3)=-1
-                  K_MATRIX(4,4)=1
-                  K_MATRIX(11,10)=1
-                  K_MATRIX(12,10)=1
+                  ! K_MATRIX(4,3)=-1
+                  ! K_MATRIX(4,4)=1
+                  ! K_MATRIX(11,10)=1
+                  ! K_MATRIX(12,10)=1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,3)=-1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(4,4)=1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(11,10)=1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(12,10)=1
                 ELSEIF(ELEMENT_NUMBER==2) THEN
-                  K_MATRIX(2,2)=1
-                  K_MATRIX(2,4)=-1
-                  K_MATRIX(8,8)=-2
+                  ! K_MATRIX(2,2)=1
+                  ! K_MATRIX(2,4)=-1
+                  ! K_MATRIX(8,8)=-2
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(2,2)=1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(2,4)=-1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(8,8)=-2
                 ELSEIF(ELEMENT_NUMBER==3) THEN
-                  K_MATRIX(3,3)=1
-                  K_MATRIX(3,4)=-1
-                  K_MATRIX(9,9)=-2
+                  ! K_MATRIX(3,3)=1
+                  ! K_MATRIX(3,4)=-1
+                  ! K_MATRIX(9,9)=-2
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(3,3)=1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(3,4)=-1
+                  STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(9,9)=-2
                 ENDIF
                 !--STIFFNESS MATRIX BIFURCATION SECTION--!
 
 
-                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs+6,1:nhs+6)=K_MATRIX(1:mhs+6,1:nhs+6)
+!                STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs+6,1:nhs+6)=K_MATRIX(1:mhs+6,1:nhs+6)
               ENDIF
             ENDIF
 
-            IF(UPDATE_DAMPING_MATRIX) THEN
-              DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs+6,1:nhs+6)=C_MATRIX(1:mhs+6,1:nhs+6)
-            END IF
+!            IF(UPDATE_DAMPING_MATRIX) THEN
+!              DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs+6,1:nhs+6)=C_MATRIX(1:mhs+6,1:nhs+6)
+!            END IF
 
-            IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
-              IF(UPDATE_RHS_VECTOR) THEN
-                RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1:mhs)=RH_VECTOR(1:mhs)
-              ENDIF
-            ENDIF
+            ! IF(RHS_VECTOR%FIRST_ASSEMBLY) THEN
+            !   IF(UPDATE_RHS_VECTOR) THEN
+            !     RHS_VECTOR%ELEMENT_VECTOR%VECTOR(1:mhs)=RH_VECTOR(1:mhs)
+            !   ENDIF
+            ! ENDIF
             
 
             !--NONLINEAR VECTOR BIFURCATION SECTION--!
@@ -5379,22 +5429,34 @@ CONTAINS
 
               !--NONLINEAR VECTOR BIFURCATION SECTION--!
               IF(ELEMENT_NUMBER==1) THEN
-                NL_VECTOR(4)=NL_VECTOR(4)+( 4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM)) &
-                            & **0.5)*(A_BI_VALUE(1)**0.25) )
-                NL_VECTOR(10)=(A_BI_VALUE(1)*U_BI_VALUE(1))-(A_BI_VALUE(2)*U_BI_VALUE(2))-(A_BI_VALUE(3)*U_BI_VALUE(3))
-                NL_VECTOR(11)=2*11.4-18.1
-                NL_VECTOR(12)=2*11.4-18.1
+              !   NL_VECTOR(4)=NL_VECTOR(4)+( 4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM)) &
+              !               & **0.5)*(A_BI_VALUE(1)**0.25) )
+              !   NL_VECTOR(10)=(A_BI_VALUE(1)*U_BI_VALUE(1))-(A_BI_VALUE(2)*U_BI_VALUE(2))-(A_BI_VALUE(3)*U_BI_VALUE(3))
+              !   NL_VECTOR(11)=2*11.4-18.1
+              !   NL_VECTOR(12)=2*11.4-18.1
+              ! ELSEIF(ELEMENT_NUMBER==2) THEN
+              !   NL_VECTOR(2)=NL_VECTOR(2)+( -4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM)) &
+              !               & **0.5)*(A_BI_VALUE(2)**0.25)  )
+              ! ELSEIF(ELEMENT_NUMBER==3) THEN
+              !   NL_VECTOR(3)=NL_VECTOR(3)+( -4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM)) &
+              !               & **0.5)*(A_BI_VALUE(3)**0.25)  )
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(4)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(4)+ &
+                 & (4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*18.1*RHO_PARAM))**0.5)*(A_BI_VALUE(1)**0.25) )
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(10)=(A_BI_VALUE(1)*U_BI_VALUE(1))-(A_BI_VALUE(2)*U_BI_VALUE(2))- &
+                 & (A_BI_VALUE(3)*U_BI_VALUE(3))
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(11)=2*11.4-18.1
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(12)=2*11.4-18.1
               ELSEIF(ELEMENT_NUMBER==2) THEN
-                NL_VECTOR(2)=NL_VECTOR(2)+( -4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM)) &
-                            & **0.5)*(A_BI_VALUE(2)**0.25)  )
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(2)+ &
+                 & (-4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5)*(A_BI_VALUE(2)**0.25))
               ELSEIF(ELEMENT_NUMBER==3) THEN
-                NL_VECTOR(3)=NL_VECTOR(3)+( -4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM)) &
-                            & **0.5)*(A_BI_VALUE(3)**0.25)  )       
+                NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)=NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(3)+ &
+                 & (-4*(((2*1.7725*H0_PARAM*E_PARAM)/(3*11.4*RHO_PARAM))**0.5)*(A_BI_VALUE(3)**0.25))
               ENDIF
               !--NONLINEAR VECTOR BIFURCATION SECTION--!
 
 
-              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1:mhs+6)=NL_VECTOR(1:mhs+6)
+!              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(1:mhs+6)=NL_VECTOR(1:mhs+6)
             END IF
           END IF
 
