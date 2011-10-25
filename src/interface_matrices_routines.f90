@@ -356,17 +356,17 @@ CONTAINS
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !matrix_idx
-                  RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
-                  IF(ASSOCIATED(RHS_VECTOR)) THEN
-                    RHS_MAPPING=>INTERFACE_MAPPING%RHS_MAPPING
-                    IF(ASSOCIATED(RHS_MAPPING)) THEN
-                      !Calculate the rows  for the equations RHS
-                      ROWS_FIELD_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-                      CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_CALCULATE(RHS_VECTOR%ELEMENT_VECTOR,RHS_VECTOR%UPDATE_VECTOR, &
-                        & ELEMENT_NUMBER,ROWS_FIELD_VARIABLE,ERR,ERROR,*999)
-                    ELSE
-                      CALL FLAG_ERROR("Interface mapping rhs mapping is not associated.",ERR,ERROR,*999)
-                    ENDIF
+                ENDIF
+                RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
+                IF(ASSOCIATED(RHS_VECTOR)) THEN
+                  RHS_MAPPING=>INTERFACE_MAPPING%RHS_MAPPING
+                  IF(ASSOCIATED(RHS_MAPPING)) THEN
+                    !Calculate the rows  for the equations RHS
+                    ROWS_FIELD_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
+                    CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_CALCULATE(RHS_VECTOR%ELEMENT_VECTOR,RHS_VECTOR%UPDATE_VECTOR, &
+                      & ELEMENT_NUMBER,ROWS_FIELD_VARIABLE,ERR,ERROR,*999)
+                  ELSE
+                    CALL FLAG_ERROR("Interface mapping rhs mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDIF
               ELSE

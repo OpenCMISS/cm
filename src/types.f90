@@ -2016,6 +2016,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information on a mesh connectivity point
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
     INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx) !\todo Comment
+    INTEGER(INTG) :: COUPLED_MESH_CONTACT_NUMBER !<LOCAL_MESH_CONTACT_NUMBERS(connectivity_point_idx)
+    INTEGER(INTG) :: COUPLED_MESH_CONTACT_XI_NORMAL !< LOCAL_MESH_LINE_XI_NORMAL(connectivity_point_idx)
     REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx) !\todo Comment
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
 

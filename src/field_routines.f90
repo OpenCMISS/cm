@@ -6020,10 +6020,11 @@ CONTAINS
 
   !>Computes the geometric position, normal and tangent vectors at a interpolated point metrics in a field. 
   SUBROUTINE FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_INT_PT_METRIC(INTERPOLATED_POINT_METRICS, &
-    & POSITION,NORMAL,TANGENTS,ERR,ERROR,*)
+    & REVERSE_NORMAL,POSITION,NORMAL,TANGENTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER, INTENT(IN) :: INTERPOLATED_POINT_METRICS !<A pointer to the interpolated point metric information to calculate the position etc. for
+    LOGICAL, INTENT(IN) :: REVERSE_NORMAL !<logical to decide if the normal needs to be reversed to get the outward normal if .TRUE. then reverse 
     REAL(DP), INTENT(OUT) :: POSITION(:) !<POSITION(coordinate_idx), on exit the geometric position of the node
     REAL(DP), INTENT(OUT) :: NORMAL(:) !<NORMAL(coordinate_idx), on exit the normal vector
     REAL(DP), INTENT(OUT) :: TANGENTS(:,:) !<TANGENTS(coordinate_idx,tangent_idx), on exit the tangent vectors for the tangent_idx'th tangent at the node. There are number_of_xi-1 tangent vectors.
@@ -6044,6 +6045,28 @@ CONTAINS
               INTERPOLATED_POINT=>INTERPOLATED_POINT_METRICS%INTERPOLATED_POINT
               IF(ASSOCIATED(INTERPOLATED_POINT)) THEN
                 POSITION=INTERPOLATED_POINT%VALUES(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,NO_PART_DERIV)
+                SELECT CASE(INTERPOLATED_POINT_METRICS%NUMBER_OF_XI_DIMENSIONS)
+                CASE(1)
+                  SELECT CASE(INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS)
+                  CASE(2)
+                    DO dimension_idx=1,INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS
+                      TANGENTS(dimension_idx,1)=INTERPOLATED_POINT_METRICS%DX_DXI &
+                        & (dimension_idx,1)
+                    ENDDO !dimension_idx 
+                    TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,1)= &
+                      & NORMALISE(TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,1),ERR,ERROR)
+                    IF(REVERSE_NORMAL) THEN
+                      NORMAL(1)=-TANGENTS(2,1)
+                      NORMAL(2)=-TANGENTS(1,1)
+                    ELSE
+                      NORMAL(1)=TANGENTS(2,1)
+                      NORMAL(2)=TANGENTS(1,1)
+                    END IF
+                    IF(ERR/=0) GOTO 999   
+                  CASE(3)
+                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)    
+                  END SELECT           
+                CASE(2)
                 NORMAL=0.0_DP
                 DO xi_idx=1,INTERPOLATED_POINT_METRICS%NUMBER_OF_XI_DIMENSIONS
                   DO dimension_idx=1,INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS
@@ -6053,6 +6076,13 @@ CONTAINS
                     & NORMALISE(TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,xi_idx),ERR,ERROR)
                   IF(ERR/=0) GOTO 999
                 ENDDO !xi_idx
+                CALL CROSS_PRODUCT(TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,1), &
+                  & TANGENTS(1:INTERPOLATED_POINT_METRICS%NUMBER_OF_X_DIMENSIONS,2),NORMAL,ERR,ERROR,*999)
+                IF(REVERSE_NORMAL) THEN
+                  NORMAL=-NORMAL  
+                ENDIF
+                
+                END SELECT
               ELSE
                 CALL FLAG_ERROR("Interpolated point metrics interpolated point is not associted.",ERR,ERROR,*999)
               ENDIF
