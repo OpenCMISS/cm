@@ -1747,6 +1747,8 @@ help:
 	@echo "	all64"
 	@echo "		Compile all 64-bit versions."
 	@echo
+	@echo "	python"
+	@echo "		Build the Python bindings. To install them, change directory to bindings/python and run 'python setup.py install'."
 	@echo
 	@echo "	externallibs"
 	@echo "		Compile the external libraries."
