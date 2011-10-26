@@ -2338,8 +2338,8 @@ CONTAINS
       PIOLA_TENSOR=PIOLA_TENSOR+0.5_DP*((P-C(6))**2/C(4))*(dfdJfact/(ffact**2))*Jznu*AZU
     CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_QUADRATIC_SUBTYPE)
       !Uses only quadratic terms of the hyperelastic polynomial model to avoid having non-zero stress at zero strain
-      !C(1)=Polynomical coefficient for (I1-3)^2
-      !C(2)=Polynomical coefficient for (I2-3)^2
+      !C(1)=Polynomial coefficient for (I1-3)^2
+      !C(2)=Polynomial coefficient for (I2-3)^2
       !C(3)=K, bulk modulus for compressibility
       !C(4)=p0, reference pressure
 
