@@ -249,6 +249,7 @@ class LibrarySource(object):
         """Returns a list of enums and ungrouped constants"""
 
         enums = []
+        enum_dict = {}
         ungrouped_constants = []
 
         current_enum = None
@@ -256,7 +257,11 @@ class LibrarySource(object):
             o = self.public_objects[k]
             if isinstance(o,DoxygenGrouping):
                 if o.type == 'group':
-                    current_enum = Enum(o.group)
+                    if enum_dict.has_key(o.group):
+                        current_enum = enum_dict[o.group]
+                    else:
+                        current_enum = Enum(o.group)
+                        enum_dict[o.group] = current_enum
                 elif o.type == 'brief':
                     current_enum.comment = o.brief
                 elif o.type == 'close':

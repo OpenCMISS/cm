@@ -49,8 +49,10 @@ def generate(cm_path,args):
             name = e.name
         module.write("class %s(Enum):\n" % name)
         module.write('    """%s\n    """\n\n' % e.comment)
-        for c in e.constants:
-            module.write("    %s = %d #%s\n" % (c.name[len(PREFIX):], c.value, remove_doxygen_commands(c.doxygen_comment)))
+        constant_names = remove_prefix_and_suffix([c.name for c in e.constants])
+        for (constant,constant_name) in zip(e.constants, constant_names):
+            module.write("    %s = %d #%s\n" % (constant_name, constant.value, \
+                    remove_doxygen_commands(constant.doxygen_comment)))
         module.write('\n')
     for c in ungrouped_constants:
         module.write("%s = %d #%s\n" % (c.name[5:], c.value, remove_doxygen_commands(c.doxygen_comment)))
@@ -78,6 +80,7 @@ def type_to_py(type):
     for method in type.methods:
         if not method.name.endswith('TypeInitialise'):
             py_class += py_method(type, method)
+    py_class += '\n'
 
     return py_class
 
@@ -203,7 +206,7 @@ def param_type_comment(param):
 
 
 def remove_doxygen_commands(comment):
-    see_re = r'.?\s*\\see\s*[^\s]*'
+    see_re = r'\.?\s*\\see\s*[^\s]*'
     match = re.search(see_re,comment)
     if match:
         comment = comment[0:match.start(0)]+comment[match.end(0):]
@@ -215,7 +218,7 @@ def replace_doxygen_commands(param):
     comment = param.doxygen
 
     if param.var_type == Parameter.INTEGER:
-        see_re = r'.?\s*\\see\s*OPENCMISS_([^\s,.]*)'
+        see_re = r'\.?\s*\\see\s*OPENCMISS_([^\s,\.]*)'
         match = re.search(see_re,comment)
         if match:
             enum = match.group(1)
@@ -229,3 +232,97 @@ def replace_doxygen_commands(param):
                     comment += '. Will be a value from the '+enum+' enum.'
 
     return comment
+
+def remove_prefix_and_suffix(names):
+    """Remove any common prefix and suffix from a list
+    of enum names. These are redundant due to the enum
+    class name"""
+
+    if len(names) == 0:
+        return names
+
+    prefix_length = 0
+    suffix_length = 0
+    if len(names) == 1:
+        #Special cases we have to specify
+        if names[0] == 'CMISSControlLoopNode':
+            prefix_length = len('CMISSControlLoop')
+        elif names[0] == 'CMISSEquationsSetHelmholtzEquationTwoDim1':
+            prefix_length = len('CMISSEquationsSetHelmholtzEquation')
+        elif names[0] == 'CMISSEquationsSetPoiseuilleTwoDim1':
+            prefix_length = len('CMISSEquationsSetPoiseuille')
+        elif names[0] == 'CMISSEquationsSetFiniteElasticityCylinder':
+            prefix_length = len('CMISSEquationsSetFiniteElasticity')
+        else:
+            sys.stderr.write("Warning: Found an unknown enum " \
+                    "group with only one name: %s.\n" % names[0])
+    else:
+        min_length = min([len(n) for n in names])
+
+        for i in range(min_length):
+            chars = [n[i] for n in names]
+            if chars.count(chars[0]) == len(chars):
+                prefix_length += 1
+            else:
+                break
+
+        for i in range(min_length):
+            chars = [n[-i-1] for n in names]
+            if chars.count(chars[0]) == len(chars):
+                suffix_length += 1
+            else:
+                break
+
+        #Make sure the suffix starts with uppercase
+        #So we get eg. EquationsLumpingTypes.Unlumped and Lumped rather than Unl and L
+        #And for the prefix so that TwoDim and ThreeDim don't become woDim and hreeDim
+        #This breaks with a CMISS or CMISSCellML prefix for example though
+        #
+        #Constants will change to capitals with underscores soon so this won't be an issue then, we can just
+        #check the prefix ends with an underscore
+        if prefix_length > 0:
+            prefix = names[0][0:prefix_length]
+            if prefix == PREFIX:
+                pass
+            elif prefix == PREFIX+'CellML':
+                pass
+            else:
+                while names[0][prefix_length-1].isupper():
+                    prefix_length -= 1
+        if suffix_length > 0:
+            while names[0][-suffix_length].islower():
+                suffix_length -= 1
+
+    if suffix_length == 0:
+        new_names = [name[prefix_length:] for name in names]
+    else:
+        new_names = [name[prefix_length:-suffix_length] for name in names]
+    for (i,name) in enumerate(new_names):
+        #Eg. NoOutputType should become None, not No
+        if name == 'No':
+            new_names[i] = 'NONE'
+        elif name == 'None':
+            #Can't assign to None
+            new_names[i] = 'NONE'
+        elif name[0].isdigit():
+            new_names[i] = digit_to_word(name[0])+name[1:]
+        elif name.endswith('VariableType'):
+            # The NumberOfVariableSubtypes in this enum stuffs everything up
+            new_names[i] = name[:-len('VariableType')]
+
+    return new_names
+
+def digit_to_word(digit):
+    words = {
+        0: 'Zero',
+        1: 'One',
+        2: 'Two',
+        3: 'Three',
+        4: 'Four',
+        5: 'Five',
+        6: 'Six',
+        7: 'Seven',
+        8: 'Eight',
+        9: 'Nine'
+    }
+    return words[int(digit)]
