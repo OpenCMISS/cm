@@ -47,8 +47,7 @@ def write_c_header(library,output):
 
     output.write(C_DEFINES)
 
-    for lineno in sorted(library.public_objects.keys()):
-        o = library.public_objects[lineno]
+    for o in library.ordered_objects:
         if isinstance(o,Subroutine):
             output.write(subroutine_to_c_header(o))
         elif isinstance(o,Constant):

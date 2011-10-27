@@ -169,14 +169,14 @@ class LibrarySource(object):
 
         #Get all public types, constants and routines to include
         #Store all objects to be output in a dictionary with line number as key
-        self.public_objects = {}
+        public_objects = {}
         for t in self.lib_source.types.values():
             if t.name in self.lib_source.public:
-                self.public_objects[t.lineno] = t
+                public_objects[t.lineno] = t
 
         for const in self.lib_source.constants.values():
             if const.name in self.lib_source.public:
-                self.public_objects[const.lineno] = const
+                public_objects[const.lineno] = const
 
         self.public_subroutines=[routine for routine in self.lib_source.subroutines.values() \
             if routine.name in self.lib_source.public]
@@ -209,10 +209,12 @@ class LibrarySource(object):
                 self.unbound_routines.append(routine)
 
         for routine in self.public_subroutines:
-            self.public_objects[routine.lineno] = routine
+            public_objects[routine.lineno] = routine
 
         for doxygen_grouping in self.lib_source.doxygen_groupings:
-            self.public_objects[doxygen_grouping.lineno] = doxygen_grouping
+            public_objects[doxygen_grouping.lineno] = doxygen_grouping
+
+        self.ordered_objects = [public_objects[k] for k in sorted(public_objects.keys())]
 
     def resolve_constants(self):
         """Go through all public constants and work out their actual values"""
@@ -253,8 +255,7 @@ class LibrarySource(object):
         ungrouped_constants = []
 
         current_enum = None
-        for k in sorted(self.public_objects.keys()):
-            o = self.public_objects[k]
+        for o in self.ordered_objects:
             if isinstance(o,DoxygenGrouping):
                 if o.type == 'group':
                     if enum_dict.has_key(o.group):
