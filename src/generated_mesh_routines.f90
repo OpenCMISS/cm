@@ -5086,6 +5086,23 @@ CONTAINS
   !================================================================================================================================
   !
   !>Calculates the user node numbers for an array of nodes numbered using one basis for regular mesh type
+
+  !1. For the current mesh component/basis, search previous basis to see if the
+  !current basis has occurred.
+  !2(1). If occurred, reuse user node number (i.e. same mesh topology)--> finish.
+  !2(2). If not occurred (i.e. different mesh topology), reuse corner nodes
+  !3. Search previous basis to see if current interpolation scheme in xi1/2/3
+  !direction has occurred in the same xi direction if previous basis.
+  !4(1). If occurred in xi1/2/3 direction, reuse node user numbers on
+  !corresponding edges/faces. e.g. linear-quadratic scheme v.s. biquadratic
+  !scheme, then node user numbers on edges alone xi2 direction can be reused.
+  !4(2). If never occurred (i.e. completely different basis. e.g. biquadratic v.s.
+  !bicubic), do nothing.
+  !5. Search previous basis to find the largest node user number, any new node
+  !user number will increment based on the current largest.
+  !6. Give node user numbers to nodes that have never appeared in previous
+  !basis.--> finish.
+
   SUBROUTINE GENERATED_MESH_REGULAR_COMPONENT_NODES_TO_USER_NUMBERS(ne,GENERATED_MESH,BASIS_INDEX, &
     & NODE_COMPONENT_NUMBERS,NODE_USER_NUMBERS,ERR,ERROR,*)
     INTEGER(INTG),INTENT(IN) :: ne!<global element number
@@ -5141,6 +5158,10 @@ CONTAINS
         END SELECT
       
         !If not the first basis, check if previous basis have same interpolation order in each xi direction
+        !SAME_BASIS(3) is initialised to have zeros in all entries. If an interpolation scheme has been 
+        !found to have appeared in previous basis, then record the basis number in the corresponding 
+        !xi direction. e.g. First basis: bi-quadratic, Second basis: quadratic-cubic, then SAME_BASIS(3) 
+        !for the second basis will be [1,0,0]
         SAME_BASIS=0     
         DO xi_idx=1,NUM_DIMS        
           DO basis_idx=1,BASIS_INDEX-1
@@ -5207,7 +5228,7 @@ CONTAINS
                 & ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(NODE_IDX_FIRST)
               ENDDO
             ENDDO
-          ENDDO   
+          ENDDO    
           
           !Find edge node user number from previous basis
           IF(SAME_BASIS(1)/=0 .AND. NUM_DIMS>1) THEN !Do not consider 1D since it's a complete new basis
@@ -5284,7 +5305,10 @@ CONTAINS
               ENDDO
             ENDDO
           ENDIF             
-          !The following code would only be executed if 3D (automatically satisfied, don't need to check) and has same basis in 2 xi direction
+          !The following code would only be executed if 3D (automatically satisfied, don't need to check, 
+          !since there must be at least 1 direction that has different interpolation scheme, if two direction 
+          ! has the same interpolation that has appeared before, then interpolation for the last direction 
+          ! must be different) and has same basis in 2 xi direction
           !i.e. find user node numbers for face nodes
           IF(SAME_BASIS(1)==SAME_BASIS(2) .AND. SAME_BASIS(1)/=0) THEN
             BASIS_PRE=>BASES(SAME_BASIS(1))%PTR
@@ -5303,9 +5327,8 @@ CONTAINS
                     & PTR%ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(NODE_IDX_PRE)
                 ENDDO
               ENDDO
-            ENDDO                       
-          ENDIF
-          IF(SAME_BASIS(1)==SAME_BASIS(3) .AND. SAME_BASIS(1)/=0) THEN
+            ENDDO                            
+          ELSE IF(SAME_BASIS(1)==SAME_BASIS(3) .AND. SAME_BASIS(1)/=0) THEN
             BASIS_PRE=>BASES(SAME_BASIS(1))%PTR
             NODE_IDX_CUR=0
             NODE_IDX_PRE=0
@@ -5324,9 +5347,8 @@ CONTAINS
                     & PTR%ELEMENTS%ELEMENTS(ne)%GLOBAL_ELEMENT_NODES(NODE_IDX_PRE)        
                 ENDDO
               ENDDO
-            ENDDO                       
-          ENDIF
-          IF(SAME_BASIS(2)==SAME_BASIS(3) .AND. SAME_BASIS(2)/=0) THEN
+            ENDDO                               
+          ELSE IF(SAME_BASIS(2)==SAME_BASIS(3) .AND. SAME_BASIS(2)/=0) THEN
             BASIS_PRE=>BASES(SAME_BASIS(2))%PTR
             DO nn3=2,NUMBER_OF_NODES_XIC(3)-1
               DO nn2=2,NUMBER_OF_NODES_XIC(2)-1
