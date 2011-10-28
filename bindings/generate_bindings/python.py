@@ -99,6 +99,8 @@ def py_method(type, routine):
     else:
         parameters = routine.parameters[1:]
 
+    parameters = add_size_parameters(parameters)
+
     py_args = [p.name for p in parameters if p.intent != 'OUT']
     method_args = ', '.join(['self']+py_args)
     if c_name.startswith(create_start_name):
@@ -123,12 +125,15 @@ def routine_to_py(routine):
     c_name = subroutine_c_name(routine)[0]
     name = c_name[len(PREFIX):]
 
+    parameters = routine.parameters[:]
+    parameters = add_size_parameters(parameters)
+
     docstring = remove_doxygen_commands('\n    '.join(routine.comment_lines))
     docstring += '\n\n'
-    docstring += ' '*4 +'\n    '.join(parameters_docstring(routine.parameters).splitlines())
+    docstring += ' '*4 +'\n    '.join(parameters_docstring(parameters).splitlines())
     docstring = docstring.strip()
 
-    args = ', '.join([p.name for p in routine.parameters if p.intent != 'OUT'])
+    args = ', '.join([p.name for p in parameters if p.intent != 'OUT'])
 
     py_routine = "def %s(%s):\n" % (name, args)
     py_routine += '    """%s\n    """\n\n' % docstring
@@ -326,3 +331,34 @@ def digit_to_word(digit):
         9: 'Nine'
     }
     return words[int(digit)]
+
+
+class SizeParameter(object):
+    def __init__(self, name, doxygen):
+        self.name = name
+        self.doxygen = doxygen
+        self.var_type = Parameter.INTEGER
+        self.intent = 'IN'
+        self.array_dims = 0
+
+
+def add_size_parameters(parameters):
+    """Returns a new list of parameters, inserting extra size parameters
+    required when retrieving an array"""
+
+    new_parameters = []
+
+    for param in parameters:
+        if param.intent == 'OUT':
+            if param.array_dims == 0:
+                pass
+            elif param.array_dims == 1:
+                new_parameters.append(SizeParameter(param.name+'Size', 'Expected length of %s list' % param.name))
+            else:
+                new_parameters.extend([SizeParameter(param.name+'Size%d' % i, \
+                        'Expected length of dimension %d for %s list' % (i, param.name)) \
+                        for i in range(1,param.array_dims+1)])
+
+        new_parameters.append(param)
+
+    return new_parameters
