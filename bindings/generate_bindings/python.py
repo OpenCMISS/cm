@@ -17,6 +17,10 @@ INITIALISE = """WorldCoordinateSystem = CoordinateSystem()
 WorldRegion = Region()
 Initialise(WorldCoordinateSystem, WorldRegion)
 ErrorHandlingModeSet(ErrorHandlingModes.ReturnErrorCode) #Don't output errors, we'll include trace in exception
+
+#Ignore SIGPIPE generated when closing the help pager when it isn't fully buffered,
+#otherwise it gets caught by OpenCMISS and crashes the interpreter
+signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 """
 
 PREFIX='CMISS'
@@ -32,6 +36,7 @@ def generate(cm_path,args):
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
     module.write("import _opencmiss_swig\n")
+    module.write("import signal\n")
     module.write("from _utils import CMISSError, CMISSType, Enum, wrap_cmiss_routine as _wrap_routine\n\n")
 
     types = sorted(library.lib_source.types.values(), key=attrgetter('name'))
