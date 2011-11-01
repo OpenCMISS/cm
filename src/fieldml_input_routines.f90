@@ -257,6 +257,24 @@ CONTAINS
       IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.2d.unit.bilinearLagrange.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      ALLOCATE( COLLAPSE(2), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
+      BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
+    ELSE IF( INDEX( NAME, 'interpolator.1d.unit.linearLagrange') == 1 ) THEN
+      PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
+        & "parameters.1d.unit.linearLagrange.argument"//C_NULL_CHAR )
+      ALLOCATE( BASIS_INTERPOLATIONS(1), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      ALLOCATE( COLLAPSE(1), STAT = ERR )
+      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
+      BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE
       CALL FLAG_ERROR( "Basis "//NAME(1:LENGTH)//" cannot yet be interpreted.", ERR, ERROR, *999 )
     ENDIF
@@ -303,6 +321,8 @@ CONTAINS
     LENGTH = Fieldml_CopyObjectDeclaredName( FIELDML_INFO%FML_HANDLE, LIBRARY_BASIS_HANDLE, NAME, MAXSTRLEN )
 
     IF( ( INDEX( NAME, 'interpolator.3d.unit.triquadraticLagrange') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.1d.unit.linearLagrange') /= 1 ) .AND. &
+      & ( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') /= 1 ) .AND. &
       & ( INDEX( NAME, 'interpolator.3d.unit.trilinearLagrange') /= 1 ) ) THEN
       FIELDML_INPUT_IS_KNOWN_BASIS = .FALSE.
       RETURN
@@ -647,7 +667,9 @@ CONTAINS
     CALL BASIS_TYPE_SET( BASIS, BASISTYPE, ERR, ERROR, *999 )
     CALL BASIS_NUMBER_OF_XI_SET( BASIS, size( BASIS_INTERPOLATIONS ), ERR, ERROR, *999 )
     CALL BASIS_INTERPOLATION_XI_SET( BASIS, BASIS_INTERPOLATIONS, ERR, ERROR, *999 )
-    CALL BASIS_COLLAPSED_XI_SET( BASIS, COLLAPSE, ERR, ERROR, *999 )
+    IF( size( BASIS_INTERPOLATIONS ) > 1 ) THEN
+      CALL BASIS_COLLAPSED_XI_SET( BASIS, COLLAPSE, ERR, ERROR, *999 )
+    ENDIF
     
     IF( ALLOCATED( BASIS_INTERPOLATIONS ) ) THEN
       DEALLOCATE( BASIS_INTERPOLATIONS )
@@ -1051,12 +1073,14 @@ CONTAINS
   !
 
   !<Update the given field's nodal parameters using the given parameter evaluator.
-  SUBROUTINE FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( FIELDML_INFO, EVALUATOR_NAME, FIELD, VARIABLE_TYPE, ERR, ERROR, * )
+  SUBROUTINE FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( FIELDML_INFO, EVALUATOR_NAME, FIELD, VARIABLE_TYPE, SET_TYPE, &
+    & ERR, ERROR, * )
     !Arguments
     TYPE(FIELDML_INFO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: EVALUATOR_NAME !<The name of the nodal dofs evaluator.
     TYPE(FIELD_TYPE), POINTER, INTENT(INOUT) :: FIELD !<The field whose parameters are to be updated.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type.
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
     
@@ -1117,7 +1141,7 @@ CONTAINS
       DO COMPONENT_NUMBER = 1, FIELD_DIMENSIONS
         !Default to version 1 of each node derivative (value hardcoded in loop)
         VERSION_NUMBER = 1
-        CALL FIELD_PARAMETER_SET_UPDATE_NODE( FIELD, VARIABLE_TYPE, FIELD_VALUES_SET_TYPE, VERSION_NUMBER, &
+        CALL FIELD_PARAMETER_SET_UPDATE_NODE( FIELD, VARIABLE_TYPE, SET_TYPE, VERSION_NUMBER, &
           & NO_GLOBAL_DERIV, NODE_NUMBER, COMPONENT_NUMBER, BUFFER( COMPONENT_NUMBER ), ERR, ERROR, *999 )
       ENDDO
     ENDDO

@@ -1097,7 +1097,7 @@ CONTAINS
   
   !<Create a parameter evaluator and associated data source containing the nodal dofs for the given field components.
   SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_NODE_DOFS( FIELDML_INFO, BASE_NAME, DOF_FORMAT, TYPE_HANDLE, FIELD, &
-    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, NODE_DOFS_HANDLE, ERR, ERROR, * )
+    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, SET_TYPE, NODE_DOFS_HANDLE, ERR, ERROR, * )
     !Argument variables
     TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: BASE_NAME !<The root name of the basis evaluator.
@@ -1106,6 +1106,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field for which dof evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBERS(:) !<The field component numbers for which dof evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The parameter set type.
     INTEGER(INTG), INTENT(INOUT) :: NODE_DOFS_HANDLE !<The handle of the nodal dofs parameter evaluator.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
@@ -1204,7 +1205,7 @@ CONTAINS
           IF( NODE_EXISTS ) THEN
             !Default to version 1 of each node derivative (value hardcoded in loop)
             VERSION_NUMBER = 1
-            CALL FIELD_PARAMETER_SET_GET_NODE( FIELD, VARIABLE_TYPE, FIELD_VALUES_SET_TYPE, VERSION_NUMBER, &
+            CALL FIELD_PARAMETER_SET_GET_NODE( FIELD, VARIABLE_TYPE, SET_TYPE, VERSION_NUMBER, &
               & NO_GLOBAL_DERIV, I, FIELD_COMPONENT_NUMBERS(J), DVALUE, ERR, ERROR, *999 )
           ENDIF
         ENDIF
@@ -1239,7 +1240,7 @@ CONTAINS
   
   !<Create a parameter evaluator and associated data source containing the element dofs for the given field components.
   SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_ELEMENT_DOFS( FIELDML_INFO, BASE_NAME, DOF_FORMAT, TYPE_HANDLE, FIELD, &
-    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, ELEMENT_DOFS_HANDLE, ERR, ERROR, * )
+    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, SET_TYPE, ELEMENT_DOFS_HANDLE, ERR, ERROR, * )
     !Argument variables
     TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: BASE_NAME !<The root name of the basis evaluator.
@@ -1248,6 +1249,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field for which dof evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBERS(:) !<The field component numbers for which dof evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The parameter set type.
     INTEGER(INTG), INTENT(INOUT) :: ELEMENT_DOFS_HANDLE !<The handle of the element dofs parameter evaluator.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
@@ -1339,7 +1341,7 @@ CONTAINS
       DO J = 1, COMPONENT_COUNT
         DVALUE = 0
         IF( IS_ELEMENT_BASED(J) ) THEN
-          CALL FIELD_PARAMETER_SET_GET_ELEMENT( FIELD, VARIABLE_TYPE, FIELD_VALUES_SET_TYPE, I, &
+          CALL FIELD_PARAMETER_SET_GET_ELEMENT( FIELD, VARIABLE_TYPE, SET_TYPE, I, &
             & FIELD_COMPONENT_NUMBERS(J), DVALUE, ERR, ERROR, *999 )
         ENDIF
         DBUFFER( J ) = DVALUE
@@ -1373,7 +1375,7 @@ CONTAINS
   
   !<Create a parameter evaluator and associated data source containing the globally constant dofs for the given field components.
   SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_CONSTANT_DOFS( FIELDML_INFO, BASE_NAME, DOF_FORMAT, TYPE_HANDLE, FIELD, &
-    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, CONSTANT_DOFS_HANDLE, ERR, ERROR, * )
+    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, SET_TYPE, CONSTANT_DOFS_HANDLE, ERR, ERROR, * )
     !Argument variables
     TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: BASE_NAME !<The root name of the basis evaluator.
@@ -1382,6 +1384,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field for which dof evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBERS(:) !<The field component numbers for which dof evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The parameter set type.
     INTEGER(INTG), INTENT(INOUT) :: CONSTANT_DOFS_HANDLE !<The handle of the constant dofs parameter evaluator.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
@@ -1485,7 +1488,7 @@ CONTAINS
       DO J = 1, COMPONENT_COUNT
         DVALUE = 0
         IF( IS_CONSTANT(J) ) THEN
-          CALL FIELD_PARAMETER_SET_GET_CONSTANT( FIELD, VARIABLE_TYPE, FIELD_VALUES_SET_TYPE, &
+          CALL FIELD_PARAMETER_SET_GET_CONSTANT( FIELD, VARIABLE_TYPE, SET_TYPE, &
             & FIELD_COMPONENT_NUMBERS(J), DVALUE, ERR, ERROR, *999 )
         ENDIF
         DBUFFER( J ) = DVALUE
@@ -1505,7 +1508,7 @@ CONTAINS
       DO J = 1, COMPONENT_COUNT
         IVALUE = 0
         IF( IS_CONSTANT(J) ) THEN
-          CALL FIELD_PARAMETER_SET_GET_CONSTANT( FIELD, VARIABLE_TYPE, FIELD_VALUES_SET_TYPE, &
+          CALL FIELD_PARAMETER_SET_GET_CONSTANT( FIELD, VARIABLE_TYPE, SET_TYPE, &
             & FIELD_COMPONENT_NUMBERS(J), IVALUE, ERR, ERROR, *999 )
         ENDIF
         IBUFFER( J ) = IVALUE
@@ -1550,9 +1553,10 @@ CONTAINS
     !Locals
     TYPE(REGION_TYPE), POINTER :: REGION
     INTEGER(INTG) :: COMPONENT_COUNT, I, NODE_COUNT, ELEMENT_COUNT, DIMENSIONS
-    INTEGER(INTG) :: REAL_1D_HANDLE, XI_COMPONENT_HANDLE, FML_ERR
+    INTEGER(INTG) :: REAL_1D_HANDLE, XI_COMPONENT_HANDLE, FML_ERR, SHAPE_HANDLE
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
     TYPE(NODES_TYPE), POINTER :: NODES
+    TYPE(VARYING_STRING) :: SHAPE_NAME
 
     CALL ENTERS( "FIELDML_OUTPUT_INITIALISE_INFO", ERR, ERROR, *999 )
     
@@ -1642,13 +1646,17 @@ CONTAINS
     ENDDO
     
     !TODO Proper shape assignment.
-    IF( DIMENSIONS == 2 ) THEN
-      FML_ERR = Fieldml_SetMeshDefaultShape( FIELDML_INFO%FML_HANDLE, FIELDML_INFO%MESH_HANDLE, "shape.square"//C_NULL_CHAR )
-      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set 2D mesh type element shape.", FIELDML_INFO, ERR, ERROR, *999 )
+    IF( DIMENSIONS == 1 ) THEN
+      SHAPE_NAME = "shape.unit.line"
+    ELSE IF( DIMENSIONS == 2 ) THEN
+      SHAPE_NAME = "shape.unit.square"
     ELSE
-      FML_ERR = Fieldml_SetMeshDefaultShape( FIELDML_INFO%FML_HANDLE, FIELDML_INFO%MESH_HANDLE, "shape.cube"//C_NULL_CHAR )
-      CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set 3D mesh type element shape.", FIELDML_INFO, ERR, ERROR, *999 )
+      SHAPE_NAME = "shape.unit.cube"
     ENDIF
+
+    SHAPE_HANDLE = FIELDML_OUTPUT_IMPORT( FIELDML_INFO%FML_HANDLE, SHAPE_NAME )
+    FML_ERR = Fieldml_SetMeshShapes( FIELDML_INFO%FML_HANDLE, FIELDML_INFO%MESH_HANDLE, SHAPE_HANDLE )
+    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot set mesh type element shape.", FIELDML_INFO, ERR, ERROR, *999 )
 
     CALL EXITS( "FIELDML_OUTPUT_INITIALISE_INFO" )
     RETURN
@@ -1664,7 +1672,7 @@ CONTAINS
   
   !< Add the components of the given field to the given FieldML evaluator, creating component templates as needed.
   SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( FIELDML_INFO, TYPE_HANDLE, BASE_NAME, DOF_FORMAT, FIELD, &
-    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, ERR, ERROR, * )
+    & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, SET_TYPE, ERR, ERROR, * )
     !Argument variables
     TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     INTEGER(INTG), INTENT(IN) :: TYPE_HANDLE !<The FieldML type handle for the field.
@@ -1673,6 +1681,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field for which dof components are to be created.
     INTEGER(INTG), INTENT(IN) :: FIELD_COMPONENT_NUMBERS(:) !<The field component numbers for which evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
 
@@ -1707,7 +1716,7 @@ CONTAINS
       IF( INTERPOLATION_TYPE == FIELD_NODE_BASED_INTERPOLATION ) THEN
         IF( NODAL_DOFS_HANDLE == FML_INVALID_HANDLE ) THEN
           CALL FIELDML_OUTPUT_ADD_FIELD_NODE_DOFS( FIELDML_INFO, BASE_NAME, DOF_FORMAT, TYPE_HANDLE, FIELD, &
-          & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, NODAL_DOFS_HANDLE, ERR, ERROR, *999 )
+          & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, SET_TYPE, NODAL_DOFS_HANDLE, ERR, ERROR, *999 )
         ENDIF
         CALL FIELD_COMPONENT_MESH_COMPONENT_GET( FIELD, VARIABLE_TYPE, FIELD_COMPONENT_NUMBERS(I), &
           & MESH_COMPONENT_NUMBER, ERR, ERROR, *999 )
@@ -1716,13 +1725,13 @@ CONTAINS
       ELSEIF( INTERPOLATION_TYPE == FIELD_ELEMENT_BASED_INTERPOLATION ) THEN
         IF( ELEMENT_DOFS_HANDLE == FML_INVALID_HANDLE ) THEN
           CALL FIELDML_OUTPUT_ADD_FIELD_ELEMENT_DOFS( FIELDML_INFO, BASE_NAME, DOF_FORMAT, TYPE_HANDLE, FIELD, &
-            & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, ELEMENT_DOFS_HANDLE, ERR, ERROR, *999 )
+            & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, SET_TYPE, ELEMENT_DOFS_HANDLE, ERR, ERROR, *999 )
         ENDIF
         COMPONENT_EVALUATORS( I ) = ELEMENT_DOFS_HANDLE
       ELSEIF( INTERPOLATION_TYPE == FIELD_CONSTANT_INTERPOLATION ) THEN
         IF( CONSTANT_DOFS_HANDLE == FML_INVALID_HANDLE ) THEN
           CALL FIELDML_OUTPUT_ADD_FIELD_CONSTANT_DOFS( FIELDML_INFO, BASE_NAME, DOF_FORMAT, TYPE_HANDLE, FIELD, &
-            & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, CONSTANT_DOFS_HANDLE, ERR, ERROR, *999 )
+            & FIELD_COMPONENT_NUMBERS, VARIABLE_TYPE, SET_TYPE, CONSTANT_DOFS_HANDLE, ERR, ERROR, *999 )
         ENDIF
         COMPONENT_EVALUATORS( I ) = CONSTANT_DOFS_HANDLE
       ENDIF
@@ -1780,13 +1789,15 @@ CONTAINS
   !
 
   !<Add the given field to the given FieldML document. The field's type will be determined by FieldmlUtilGetValueType. \see Fieldml_Util_Routines::FieldmlUtilGetValueType
-  SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_NO_TYPE( FIELDML_INFO, BASE_NAME, DOF_FORMAT, FIELD, VARIABLE_TYPE, ERR, ERROR, * )
+  SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_NO_TYPE( FIELDML_INFO, BASE_NAME, DOF_FORMAT, FIELD, VARIABLE_TYPE, SET_TYPE, &
+    & ERR, ERROR, * )
     !Argument variables
     TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: BASE_NAME !<The root name of the basis evaluator.
     TYPE(VARYING_STRING), INTENT(IN) :: DOF_FORMAT !<The name of the format to use when writing dof data.
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field for which evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
 
@@ -1797,7 +1808,7 @@ CONTAINS
 
     CALL FIELDML_OUTPUT_GET_VALUE_TYPE( FIELDML_INFO%FML_HANDLE, FIELD, VARIABLE_TYPE, .TRUE., TYPE_HANDLE, ERR, ERROR, *999 )
 
-    CALL FIELDML_OUTPUT_ADD_FIELD_WITH_TYPE( FIELDML_INFO, BASE_NAME, DOF_FORMAT, FIELD, VARIABLE_TYPE, TYPE_HANDLE, &
+    CALL FIELDML_OUTPUT_ADD_FIELD_WITH_TYPE( FIELDML_INFO, BASE_NAME, DOF_FORMAT, FIELD, VARIABLE_TYPE, SET_TYPE, TYPE_HANDLE, &
       & ERR, ERROR, *999 )
 
     CALL EXITS( "FIELDML_OUTPUT_ADD_FIELD_NO_TYPE" )
@@ -1813,14 +1824,15 @@ CONTAINS
   !
 
   !<Add the given field to the given FieldML document using the given FieldML type.
-  SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_WITH_TYPE( FIELDML_INFO, BASE_NAME, DOF_FORMAT, FIELD, VARIABLE_TYPE, TYPE_HANDLE, &
-    & ERR, ERROR, * )
+  SUBROUTINE FIELDML_OUTPUT_ADD_FIELD_WITH_TYPE( FIELDML_INFO, BASE_NAME, DOF_FORMAT, FIELD, VARIABLE_TYPE, SET_TYPE, &
+    & TYPE_HANDLE, ERR, ERROR, * )
     !Argument variables
     TYPE(FIELDML_INFO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: BASE_NAME !<The root name of the basis evaluator.
     TYPE(VARYING_STRING), INTENT(IN) :: DOF_FORMAT !<The name of the format to use when writing dof data.
     TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: FIELD !<The field for which evaluators are to be created.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type to generate dofs for.
+    INTEGER(INTG), INTENT(IN) :: SET_TYPE !<The parameter set type.
     INTEGER(INTG), INTENT(IN) :: TYPE_HANDLE !<The FieldML type handle for the field.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
@@ -1845,7 +1857,7 @@ CONTAINS
     ENDDO
 
     CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( FIELDML_INFO, TYPE_HANDLE, BASE_NAME, DOF_FORMAT, FIELD, FIELD_COMPONENT_NUMBERS, &
-      & VARIABLE_TYPE, ERR, ERROR, *999 )
+      & VARIABLE_TYPE, SET_TYPE, ERR, ERROR, *999 )
     
     DEALLOCATE( FIELD_COMPONENT_NUMBERS )
 
