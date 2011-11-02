@@ -1,6 +1,8 @@
-import sys, os
+import sys
+import os
 import re
 from operator import attrgetter
+
 
 class LibrarySource(object):
     """Holds info on all the library source code"""
@@ -11,20 +13,20 @@ class LibrarySource(object):
         class SectionFinder(object):
             """Match a section within a source file"""
 
-            def __init__(self,source_file):
+            def __init__(self, source_file):
                 self.match = None
                 self.lineno = 0
                 self.lines = []
                 self.source_file = source_file
 
-            def check_for_end(self,line):
+            def check_for_end(self, line):
                 if self.end_re.search(line):
                     self.finish()
                     self.lines = []
                     return True
                 return False
 
-            def check_for_start(self,lineno,line):
+            def check_for_start(self, lineno, line):
                 match = self.start_re.search(line)
                 if match:
                     self.match = match
@@ -36,69 +38,85 @@ class LibrarySource(object):
         class LineFinder(object):
             """Match a line within a source file"""
 
-            def __init__(self,source_file):
+            def __init__(self, source_file):
                 self.source_file = source_file
 
-            def check_match(self,line,lineno):
+            def check_match(self, line, lineno):
                 match = self.line_re.search(line)
                 if match:
-                    self.add(match,lineno)
+                    self.add(match, lineno)
 
         class SubroutineFinder(SectionFinder):
-            start_re = re.compile(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(',re.IGNORECASE)
-            end_re = re.compile(r'^\s*END\s*SUBROUTINE',re.IGNORECASE)
+            start_re = re.compile(
+                r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(',
+                re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s*SUBROUTINE', re.IGNORECASE)
 
             def finish(self):
                 name = self.match.group(2)
-                self.source_file.subroutines[name] = Subroutine(name,self.lineno,self.lines,self.source_file)
+                self.source_file.subroutines[name] = Subroutine(
+                    name, self.lineno, self.lines, self.source_file)
 
         class InterfaceFinder(SectionFinder):
-            start_re = re.compile(r'^\s*INTERFACE\s+([A-Z0-9_]+)',re.IGNORECASE)
-            end_re = re.compile(r'^\s*END\s*INTERFACE',re.IGNORECASE)
+            start_re = re.compile(
+                r'^\s*INTERFACE\s+([A-Z0-9_]+)',
+                re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s*INTERFACE', re.IGNORECASE)
 
             def finish(self):
                 name = self.match.group(1)
-                self.source_file.interfaces[name] = Interface(name,self.lineno,self.lines,self.source_file)
+                self.source_file.interfaces[name] = Interface(
+                    name, self.lineno, self.lines, self.source_file)
 
         class TypeFinder(SectionFinder):
-            start_re = re.compile(r'^\s*TYPE\s+([A-Z0-9_]+)',re.IGNORECASE)
-            end_re = re.compile(r'^\s*END\s*TYPE',re.IGNORECASE)
+            start_re = re.compile(r'^\s*TYPE\s+([A-Z0-9_]+)', re.IGNORECASE)
+            end_re = re.compile(r'^\s*END\s*TYPE', re.IGNORECASE)
 
             def finish(self):
                 name = self.match.group(1)
-                self.source_file.types[name] = Type(name,self.lineno,self.lines,self.source_file)
+                self.source_file.types[name] = Type(
+                    name, self.lineno, self.lines, self.source_file)
 
         class PublicFinder(LineFinder):
-            line_re = re.compile(r'^\s*PUBLIC\s*:*\s*([A-Z0-9_,\s]+)',re.IGNORECASE)
+            line_re = re.compile(
+                r'^\s*PUBLIC\s*:*\s*([A-Z0-9_,\s]+)',
+                re.IGNORECASE)
 
-            def add(self,match,lineno):
+            def add(self, match, lineno):
                 for symbol in match.group(1).split(','):
                     self.source_file.public.append(symbol.strip())
 
         class ConstantFinder(LineFinder):
-            line_re = re.compile(r'^\s*INTEGER\([A-Z0-9\(\),_\s]+::\s*([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)[^!]*(!<.*$)?',re.IGNORECASE)
+            line_re = re.compile(
+                r'^\s*INTEGER\([A-Z0-9\(\),_\s]+::\s*'
+                r'([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)[^!]*(!<.*$)?',
+                re.IGNORECASE)
 
-            def add(self,match,lineno):
+            def add(self, match, lineno):
                 name = match.group(1)
                 assignment = match.group(2)
                 if match.group(3) is None:
                     doxy = ''
                 else:
                     doxy = match.group(3)[2:].strip()
-                self.source_file.constants[name] = Constant(name,lineno,assignment,doxy)
+                self.source_file.constants[name] = Constant(
+                    name, lineno, assignment, doxy)
 
         class DoxygenGroupingFinder(LineFinder):
-            #match at least one whitespace character before the ! to make sure
-            #we don't get stuff from the file header
-            line_re = re.compile(r'^\s+!\s*>\s*(\\(addtogroup|brief|see)|@[\{\}])(.*$)',re.IGNORECASE)
+            # match at least one whitespace character before the ! to make sure
+            # we don't get stuff from the file header
+            line_re = re.compile(
+                r'^\s+!\s*>\s*(\\(addtogroup|brief|see)|@[\{\}])(.*$)',
+                re.IGNORECASE)
 
-            def add(self,match,lineno):
+            def add(self, match, lineno):
                 line = match.group(1)
                 if match.group(3) is not None:
                     line += match.group(3)
-                self.source_file.doxygen_groupings.append(DoxygenGrouping(lineno,line))
+                self.source_file.doxygen_groupings.append(
+                    DoxygenGrouping(lineno, line))
 
-        def __init__(self,source_file,params_only=False):
+        def __init__(self, source_file, params_only=False):
             """Initialise SourceFile object
 
             Arguments:
@@ -114,15 +132,16 @@ class LibrarySource(object):
             self.types = {}
             self.parse_file(params_only)
 
-        def parse_file(self,params_only=False):
+        def parse_file(self, params_only=False):
             """Run through file once, getting everything we'll need"""
 
-            source_lines = _join_lines(open(self.file_path,'r').read()).splitlines(True)
+            source_lines = _join_lines(
+                open(self.file_path, 'r').read()).splitlines(True)
             if not params_only:
-                #only keep the source_lines if we need them
+                # only keep the source_lines if we need them
                 self.source_lines = source_lines
 
-            #Set the things we want to find
+            # Set the things we want to find
             line_finders = []
             section_finders = []
             line_finders.append(self.ConstantFinder(self))
@@ -135,40 +154,45 @@ class LibrarySource(object):
                     self.InterfaceFinder(self),
                     self.TypeFinder(self)))
 
-            #Find them
+            # Find them
             current_section = None
-            for (lineno,line) in enumerate(source_lines):
+            for (lineno, line) in enumerate(source_lines):
                 if current_section is not None:
                     current_section.lines.append(line)
                     if current_section.check_for_end(line):
                         current_section = None
                 else:
                     for line_finder in line_finders:
-                        line_finder.check_match(line,lineno)
+                        line_finder.check_match(line, lineno)
 
                     for section in section_finders:
-                        if section.check_for_start(lineno,line):
+                        if section.check_for_start(lineno, line):
                             current_section = section
                             break
 
-    def __init__(self,cm_path):
+    def __init__(self, cm_path):
         """Load library information from source files
 
         Arguments:
         cm_path -- Path to OpenCMISS cm directory
         """
 
-        self.lib_source = self.SourceFile(os.sep.join((cm_path,'src','opencmiss.f90')))
-        cm_source_path = cm_path+os.sep+'src'
-        source_files = [cm_source_path+os.sep+file_name \
-                for file_name in os.listdir(cm_source_path) \
+        self.lib_source = self.SourceFile(
+            os.sep.join((cm_path, 'src', 'opencmiss.f90')))
+        cm_source_path = cm_path + os.sep + 'src'
+        source_files = [
+                cm_source_path + os.sep + file_name
+                for file_name in os.listdir(cm_source_path)
                 if file_name.endswith('.f90') and file_name != 'opencmiss.f90']
-        self.sources = [self.SourceFile(source,params_only=True) for source in source_files]
+        self.sources = [
+                self.SourceFile(source, params_only=True)
+                for source in source_files]
 
         self.resolve_constants()
 
-        #Get all public types, constants and routines to include
-        #Store all objects to be output in a dictionary with line number as key
+        # Get all public types, constants and routines to include
+        # Store all objects to be output in a dictionary with the line number
+        # as the key
         public_objects = {}
         for t in self.lib_source.types.values():
             if t.name in self.lib_source.public:
@@ -178,21 +202,29 @@ class LibrarySource(object):
             if const.name in self.lib_source.public:
                 public_objects[const.lineno] = const
 
-        self.public_subroutines=[routine for routine in self.lib_source.subroutines.values() \
+        self.public_subroutines = [
+            routine
+            for routine in self.lib_source.subroutines.values()
             if routine.name in self.lib_source.public]
 
         for interface in self.lib_source.interfaces.values():
             if interface.name in self.lib_source.public:
-                self.public_subroutines += [self.lib_source.subroutines[routine] \
-                        for routine in interface.get_subroutines()]
+                self.public_subroutines += [
+                    self.lib_source.subroutines[routine]
+                    for routine in interface.get_subroutines()]
 
-        self.public_subroutines=sorted(self.public_subroutines,key=attrgetter('name'))
-        #Remove CMISS...TypesCopy routines, as these are only used within the C bindings
-        #Also remove CMISSGeneratedMeshSurfaceGet for now as it takes an allocatable array but will be removed soon anyways.
-        #Disable FieldML routines as these don't match the style of other routines and require including FIELDML_TYPES
-        self.public_subroutines = filter(lambda r: not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or \
-                r.name.endswith('TypesCopy') or \
-                r.name.startswith('CMISSFieldml')), \
+        self.public_subroutines = sorted(
+            self.public_subroutines, key=attrgetter('name'))
+        # Remove CMISS...TypesCopy routines, as these are only used within the
+        # C bindings.  Also remove CMISSGeneratedMeshSurfaceGet for now as it
+        # takes an allocatable array but will be removed soon anyways.  Disable
+        # FieldML routines as these don't match the style of other routines and
+        # require including FIELDML_TYPES
+        self.public_subroutines = filter(
+                lambda r:
+                not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or
+                r.name.endswith('TypesCopy') or
+                r.name.startswith('CMISSFieldml')),
                 self.public_subroutines)
 
         self.unbound_routines = []
@@ -204,7 +236,8 @@ class LibrarySource(object):
                     type = self.lib_source.types[owner_class]
                     type.methods.append(routine)
                 except KeyError:
-                    sys.stderr.write("Warning: Couldn't find matching class for routine %s" % routine.name)
+                    sys.stderr.write("Warning: Couldn't find matching class "
+                        "for routine %s" % routine.name)
             else:
                 self.unbound_routines.append(routine)
 
@@ -214,16 +247,17 @@ class LibrarySource(object):
         for doxygen_grouping in self.lib_source.doxygen_groupings:
             public_objects[doxygen_grouping.lineno] = doxygen_grouping
 
-        self.ordered_objects = [public_objects[k] for k in sorted(public_objects.keys())]
+        self.ordered_objects = [public_objects[k]
+            for k in sorted(public_objects.keys())]
 
     def resolve_constants(self):
         """Go through all public constants and work out their actual values"""
 
         for pub in self.lib_source.public:
-            if self.lib_source.constants.has_key(pub):
+            if pub in self.lib_source.constants:
                 self.get_constant_value(pub)
 
-    def get_constant_value(self,constant):
+    def get_constant_value(self, constant):
         """Get the actual value for a constant from the source files
 
         Arguments:
@@ -232,12 +266,14 @@ class LibrarySource(object):
 
         assignment = self.lib_source.constants[constant].assignment
         exhausted = False
-        while (not self.lib_source.constants[constant].resolved) and (not exhausted):
-            for (i,source) in enumerate(self.sources):
-                if source.constants.has_key(assignment):
+        while ((not self.lib_source.constants[constant].resolved) and
+              (not exhausted)):
+            for (i, source) in enumerate(self.sources):
+                if assignment in source.constants:
                     if source.constants[assignment].resolved:
-                        self.lib_source.constants[constant].value=source.constants[assignment].value
-                        self.lib_source.constants[constant].resolved=True
+                        self.lib_source.constants[constant].value = (
+                                source.constants[assignment].value)
+                        self.lib_source.constants[constant].resolved = True
                         break
                     else:
                         assignment = source.constants[assignment].assignment
@@ -245,7 +281,8 @@ class LibrarySource(object):
                 if i == (len(self.sources) - 1):
                     exhausted = True
         if not self.lib_source.constants[constant].resolved:
-            sys.stderr.write("Warning: Couldn't resolve constant value: %s\n" % constant)
+            sys.stderr.write("Warning: Couldn't resolve constant value: %s\n"
+                % constant)
 
     def group_constants(self):
         """Returns a list of enums and ungrouped constants"""
@@ -256,9 +293,9 @@ class LibrarySource(object):
 
         current_enum = None
         for o in self.ordered_objects:
-            if isinstance(o,DoxygenGrouping):
+            if isinstance(o, DoxygenGrouping):
                 if o.type == 'group':
-                    if enum_dict.has_key(o.group):
+                    if o.group in enum_dict:
                         current_enum = enum_dict[o.group]
                     else:
                         current_enum = Enum(o.group)
@@ -266,29 +303,32 @@ class LibrarySource(object):
                 elif o.type == 'brief':
                     current_enum.comment = o.brief
                 elif o.type == 'close':
-                    if current_enum is not None and \
-                            len(current_enum.constants) > 0:
+                    if (current_enum is not None and
+                            len(current_enum.constants) > 0):
                         enums.append(current_enum)
                     current_enum = None
-            elif isinstance(o,Constant):
+            elif isinstance(o, Constant):
                 if current_enum is not None:
                     current_enum.constants.append(o)
                 else:
                     ungrouped_constants.append(o)
         if current_enum is not None:
-            sys.stderr.write("Error: Didn't match a closing group for Doxygen groupings\n")
+            sys.stderr.write("Error: Didn't match a closing group "
+            "for Doxygen groupings\n")
         return (enums, ungrouped_constants)
+
 
 class Constant(object):
     """Information on a public constant"""
 
-    def __init__(self,name,lineno,assignment,doxygen_comment):
+    def __init__(self, name, lineno, assignment, doxygen_comment):
         """Initialise Constant
 
         Arguments:
         name -- Variable name
         assignment -- Value or another variable assigned to this variable
-        doxygen_comment -- Contents of the doxygen comment describing the constant
+        doxygen_comment -- Contents of the doxygen comment describing
+                           the constant
         """
 
         self.name = name
@@ -310,7 +350,7 @@ class Constant(object):
 class Interface(object):
     """Information on an interface"""
 
-    def __init__(self,name,lineno,lines,source_file):
+    def __init__(self, name, lineno, lines, source_file):
         """Initialise an interface
 
         Arguments:
@@ -335,15 +375,17 @@ class Interface(object):
         """
 
         all_subroutines = []
-        routine_re=re.compile(r'MODULE PROCEDURE ([A-Z0-9_]+)',re.IGNORECASE)
-        varying_string_re=re.compile(r'VSC*(Obj|Number|)[0-9]*$',re.IGNORECASE)
+        routine_re = re.compile(
+            r'MODULE PROCEDURE ([A-Z0-9_]+)', re.IGNORECASE)
+        varying_string_re = re.compile(
+            r'VSC*(Obj|Number|)[0-9]*$', re.IGNORECASE)
 
         for line in self.lines:
             match = routine_re.search(line)
             if match:
                 routine_name = match.group(1)
                 if varying_string_re.search(routine_name):
-                    #Don't include routines using varying_string parameters
+                    # Don't include routines using varying_string parameters
                     pass
                 else:
                     all_subroutines.append(routine_name)
@@ -355,7 +397,7 @@ class Interface(object):
 
         return subroutines
 
-    def _get_array_routines(self,routine_list):
+    def _get_array_routines(self, routine_list):
         """Return a list of the routines that take array parameters if there
         is an option between passing an array or a scalar. All other routines
         are also returned.
@@ -367,11 +409,11 @@ class Interface(object):
         routine_groups = {}
         routines = []
 
-        #Group routines depending on their name, minus any number indicating
-        #whether they take a scalar or array
+        # Group routines depending on their name, minus any number indicating
+        # whether they take a scalar or array
         for routine in routine_list:
-            routine_group = re.sub('\d','0',routine)
-            if routine_groups.has_key(routine_group):
+            routine_group = re.sub('\d', '0', routine)
+            if routine_group in routine_groups:
                 routine_groups[routine_group].append(routine)
             else:
                 routine_groups[routine_group] = [routine]
@@ -380,11 +422,11 @@ class Interface(object):
             max_number = -1
             for routine in routine_groups[group]:
                 try:
-                    number = int(filter(str.isdigit,routine))
+                    number = int(filter(str.isdigit, routine))
                     if number > max_number:
                         array_routine = routine
                 except ValueError:
-                    #only one routine in group
+                    # only one routine in group
                     array_routine = routine
             routines.append(array_routine)
 
@@ -394,7 +436,7 @@ class Interface(object):
 class Subroutine(object):
     """Store information for a subroutine"""
 
-    def __init__(self,name,lineno,lines,source_file):
+    def __init__(self, name, lineno, lines, source_file):
         self.name = name
         self.lineno = lineno
         self.lines = lines
@@ -406,15 +448,22 @@ class Subroutine(object):
     def get_parameters(self):
         """Get details of the subroutine parameters
 
-        Sets the Subroutines parameters property as a list of all parameters, excluding the Err parameter
+        Sets the Subroutines parameters property as a list of all parameters,
+        excluding the Err parameter.
         """
 
         def filter_match(string):
-            if string is None: return ''
-            else: return string.strip()
+            if string is None:
+                return ''
+            else:
+                return string.strip()
 
         self.parameters = []
-        match = re.search(r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+([A-Z0-9_]+)\(([A-Z0-9_,\*\s]*)\)',self.lines[0],re.IGNORECASE)
+        match = re.search(
+                r'^\s*(RECURSIVE\s+)?SUBROUTINE\s+'
+                r'([A-Z0-9_]+)\(([A-Z0-9_,\*\s]*)\)',
+                self.lines[0],
+                re.IGNORECASE)
         parameters = [p.strip() for p in match.group(3).split(',')]
         try:
             parameters.remove('Err')
@@ -422,41 +471,52 @@ class Subroutine(object):
             try:
                 parameters.remove('err')
             except ValueError:
-                sys.stderr.write("Warning: Routine doesn't take Err parameter: %s\n" % self.name)
+                sys.stderr.write("Warning: Routine doesn't take Err parameter:"
+                    "%s\n" % self.name)
 
         for param in parameters:
             param_pattern = r"""
-            ^\s*([A-Z_]+\s*(\(([A-Z_=,\*0-9]+)\))?)# parameter type at start of line, followed by possible type parameters in brackets
-            \s*([A-Z0-9\s_\(\):,\s]+)?\s*          # extra specifications such as intent
+            ^\s*([A-Z_]+\s*(\((
+            [A-Z_=,\*0-9]+)\))?)          # parameter type at start of line,
+                                          # followed by possible type
+                                          # parameters in brackets
+            \s*([A-Z0-9\s_\(\):,\s]+)?\s* # extra specifications such as intent
             ::
-            [A-Z_,\s\(\):]*                        # Allow for other parameters to be included on the same line
-            [,\s:]                                 # Make sure we matched the full parameter name
-            %s                                     # Parameter name
-            (\(([0-9,:]+)\))?                      # Array dimensions if present
-            [,\s$]                                 # Whitespace, comma or end of line to make sure we've matched the full parameter name
-            [^!]*(!<(.*)$)?                        # Doxygen comment
+            [A-Z_,\s\(\):]*               # Allow for other parameters to be
+                                          # included on the same line
+            [,\s:]                        # Make sure we matched the full
+                                          # parameter name
+            %s                            # Parameter name
+            (\(([0-9,:]+)\))?             # Array dimensions if present
+            [,\s$]                        # Whitespace, comma or end of line to
+                                          # make sure we match full name
+            [^!]*(!<(.*)$)?               # Doxygen comment
             """ % param
-            param_re = re.compile(param_pattern,re.IGNORECASE|re.VERBOSE)
+            param_re = re.compile(param_pattern, re.IGNORECASE | re.VERBOSE)
 
             for line in self.lines:
                 match = param_re.search(line)
                 if match:
                     param_type = match.group(1)
-                    (type_params,extra_stuff,array,doxygen) = (filter_match(match.group(i)) for i in (3,4,6,8))
-                    self.parameters.append(Parameter(param,self,param_type,type_params,extra_stuff,array,doxygen))
+                    (type_params, extra_stuff, array, doxygen) = (
+                            filter_match(match.group(i)) for i in (3, 4, 6, 8))
+                    self.parameters.append(
+                            Parameter(param, self, param_type, type_params,
+                            extra_stuff, array, doxygen))
                     break
             if not match:
-                raise RuntimeError, "Couldn't find parameter %s for subroutine %s" % (param,self.name)
+                raise RuntimeError("Couldn't find parameter %s "
+                    "for subroutine %s" % (param, self.name))
 
     def get_class(self):
         """Work out if this routine is a method of a class
         """
-        #CreateStart routines have last parameter that returns a new type
-        if self.name.endswith('CreateStartObj') or \
-                self.name.endswith('CreateStartRegionObj') or \
-                self.name.endswith('CreateStartInterfaceObj'):
+        # CreateStart routines have last parameter that returns a new type
+        if (self.name.endswith('CreateStartObj') or
+                self.name.endswith('CreateStartRegionObj') or
+                self.name.endswith('CreateStartInterfaceObj')):
             type_name = self.parameters[-1].type_name
-            if self.name.startswith(type_name[:-len('Type')]+'CreateStart'):
+            if self.name.startswith(type_name[:-len('Type')] + 'CreateStart'):
                 return type_name
         try:
             if self.parameters[0].var_type == Parameter.CUSTOM_TYPE:
@@ -467,12 +527,15 @@ class Subroutine(object):
             pass
 
     def _get_comments(self):
-        """Sets the comment_lines property, a list of comments above the subroutine definition"""
+        """Sets the comment_lines property
+
+        This is a list of comments above this subroutine"""
 
         self.comment_lines = []
         line_num = self.lineno - 1
         while self.source_file.source_lines[line_num].strip().startswith('!>'):
-            self.comment_lines.append(self.source_file.source_lines[line_num].strip()[2:].strip())
+            self.comment_lines.append(
+                self.source_file.source_lines[line_num].strip()[2:].strip())
             line_num -= 1
         self.comment_lines.reverse()
 
@@ -480,16 +543,16 @@ class Subroutine(object):
 class Parameter(object):
     """Information on a subroutine parameter"""
 
-    #Parameter types enum:
-    (INTEGER, \
-    FLOAT, \
-    DOUBLE, \
-    CHARACTER, \
-    LOGICAL, \
-    CUSTOM_TYPE) \
-        = range(6)
+    # Parameter types enum:
+    (INTEGER,
+    FLOAT,
+    DOUBLE,
+    CHARACTER,
+    LOGICAL,
+    CUSTOM_TYPE) = range(6)
 
-    def __init__(self,name,routine,param_type,type_params,extra_stuff,array,doxygen):
+    def __init__(self, name, routine, param_type, type_params, extra_stuff,
+            array, doxygen):
         """Initialise a parameter
 
         Arguments:
@@ -497,8 +560,10 @@ class Parameter(object):
         routine -- Pointer back to the subroutine this parameter belongs to
         param_type -- String from the parameter declaration
         type_params -- Any parameters for parameter type, eg "DP" for a real
-        extra_stuff -- Any extra parameter properties listed after the type, including intent
-        array -- The array dimensions included after the parameter name if they exist, otherwise an empty string
+        extra_stuff -- Any extra parameter properties listed after the type,
+                including intent
+        array -- The array dimensions included after the parameter name if they
+                exist, otherwise an empty string
         doxygen -- The doxygen comment after the parameteter
         """
 
@@ -510,41 +575,48 @@ class Parameter(object):
         intent = None
 
         if extra_stuff != '':
-            match = re.search(r'INTENT\(([A-Z]+)\)?',extra_stuff,re.IGNORECASE)
+            match = re.search(
+                r'INTENT\(([A-Z]+)\)?', extra_stuff, re.IGNORECASE)
             if match is not None:
                 intent = match.group(1)
 
             if extra_stuff.find('DIMENSION') > -1:
-                sys.stderr.write("Warning: Ignoring DIMENSION specification on parameter %s of routine %s\n" % (self.name,routine.name))
-                sys.stderr.write("         Using DIMENSION goes against the OpenCMISS style guidelines.\n")
+                sys.stderr.write("Warning: Ignoring DIMENSION specification "
+                    "on parameter %s of routine %s\n" %
+                    (self.name, routine.name))
+                sys.stderr.write("         Using DIMENSION goes against "
+                    "the OpenCMISS style guidelines.\n")
 
             if extra_stuff.find('POINTER') > -1:
                 self.pointer = True
 
-        #Get parameter intent
+        # Get parameter intent
         if intent is None:
-            #cintent is the intent used in opencmiss_c.f90, which may be different to the intent in opencmiss.f90
+            # cintent is the intent used in opencmiss_c.f90, which may be
+            # different to the intent in opencmiss.f90
             self.intent = 'INOUT'
             self.cintent = 'INOUT'
-            sys.stderr.write("Warning: No intent for parameter %s of routine %s\n" % (self.name,routine.name))
+            sys.stderr.write("Warning: No intent for parameter %s of "
+                "routine %s\n" % (self.name, routine.name))
         else:
             self.intent = intent
             self.cintent = intent
 
-        #Get array dimensions and work out how many dimension sizes are variable
+        # Get array dimensions and work out how many dimension sizes
+        # are variable
         if array != '':
             self.array_spec = [a.strip() for a in array.split(',')]
             self.array_dims = len(self.array_spec)
             self.required_sizes = self.array_spec.count(':')
             if self.array_dims > 0 and not self.pointer:
-                #Need to pass C pointer by value
+                # Need to pass C pointer by value
                 self.cintent = 'IN'
         else:
             self.array_spec = []
             self.array_dims = 0
             self.required_sizes = 0
 
-        #Work out the type of parameter
+        # Work out the type of parameter
         param_type = param_type.upper()
         if param_type.startswith('INTEGER'):
             self.var_type = Parameter.INTEGER
@@ -557,11 +629,12 @@ class Parameter(object):
 
         elif param_type.startswith('CHARACTER'):
             self.var_type = Parameter.CHARACTER
-            #Add extra dimension, 1D array of strings in Fortran is a 2D array of chars in C
+            # Add extra dimension, 1D array of strings in Fortran is a 2D
+            # array of chars in C
             self.array_spec.append(':')
             self.array_dims += 1
             self.required_sizes += 1
-            #Need to pass C pointer by value
+            # Need to pass C pointer by value
             self.cintent = 'IN'
 
         elif param_type.startswith('LOGICAL'):
@@ -571,11 +644,13 @@ class Parameter(object):
             self.var_type = Parameter.CUSTOM_TYPE
             self.type_name = type_params
             if self.array_dims == 0 and self.intent == 'INOUT':
-                #Should actually be in, as we need to pass the pointer by value
+                # Should actually be in, as we need to pass the pointer
+                # by value
                 self.cintent = 'IN'
 
         else:
-            sys.stderr.write("Error: Unknown type %s for routine %s\n" % (param_type,routine.name))
+            sys.stderr.write("Error: Unknown type %s for routine %s\n" %
+                (param_type, routine.name))
             self.var_type = None
             self.type_name = param_type
 
@@ -583,7 +658,7 @@ class Parameter(object):
 class Type(object):
     """Information on a Fortran type"""
 
-    def __init__(self,name,lineno,lines,source_file):
+    def __init__(self, name, lineno, lines, source_file):
         """Initialise type
 
         Arguments:
@@ -600,12 +675,15 @@ class Type(object):
         self._get_comments()
 
     def _get_comments(self):
-        """Sets the comment_lines property, a list of comments above the type definition"""
+        """Sets the comment_lines property
+
+        This is a list of comments above the type definition"""
 
         self.comment_lines = []
         line_num = self.lineno - 1
         while self.source_file.source_lines[line_num].strip().startswith('!>'):
-            self.comment_lines.append(self.source_file.source_lines[line_num].strip()[2:].strip())
+            self.comment_lines.append(
+                self.source_file.source_lines[line_num].strip()[2:].strip())
             line_num -= 1
         self.comment_lines.reverse()
 
@@ -613,17 +691,18 @@ class Type(object):
 class DoxygenGrouping(object):
     """Store a line used for grouping in Doxygen"""
 
-    def __init__(self,lineno,line):
+    def __init__(self, lineno, line):
         self.lineno = lineno
         self.line = line.strip()
         if line.find(r'\see') > -1:
             self.type = 'see'
         elif line.find(r'\addtogroup') > -1:
             self.type = 'group'
-            self.group = line[line.find('OPENCMISS_')+len('OPENCMISS_'):].split()[0]
+            self.group = line[
+                    line.find('OPENCMISS_') + len('OPENCMISS_'):].split()[0]
         elif line.find(r'\brief') > -1:
             self.type = 'brief'
-            self.brief = line[line.find(r'\brief')+len(r'\brief'):].strip()
+            self.brief = line[line.find(r'\brief') + len(r'\brief'):].strip()
         elif line.find(r'@{') > -1:
             self.type = 'open'
         elif line.find(r'@}') > -1:
@@ -644,6 +723,4 @@ class Enum(object):
 def _join_lines(source):
     """Remove Fortran line continuations"""
 
-    return re.sub(r'[\t ]*&[\t ]*\n[\t ]*&[\t ]*',' ',source)
-
-
+    return re.sub(r'[\t ]*&[\t ]*\n[\t ]*&[\t ]*', ' ', source)
