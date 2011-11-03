@@ -15,7 +15,7 @@ class LibrarySource(object):
 
             def __init__(self, source_file):
                 self.match = None
-                self.lineno = 0
+                self.line_number = 0
                 self.lines = []
                 self.source_file = source_file
 
@@ -26,11 +26,11 @@ class LibrarySource(object):
                     return True
                 return False
 
-            def check_for_start(self, lineno, line):
+            def check_for_start(self, line_number, line):
                 match = self.start_re.search(line)
                 if match:
                     self.match = match
-                    self.lineno = lineno
+                    self.line_number = line_number
                     self.lines.append(line)
                     return True
                 return False
@@ -41,10 +41,10 @@ class LibrarySource(object):
             def __init__(self, source_file):
                 self.source_file = source_file
 
-            def check_match(self, line, lineno):
+            def check_match(self, line, line_number):
                 match = self.line_re.search(line)
                 if match:
-                    self.add(match, lineno)
+                    self.add(match, line_number)
 
         class SubroutineFinder(SectionFinder):
             start_re = re.compile(
@@ -55,7 +55,7 @@ class LibrarySource(object):
             def finish(self):
                 name = self.match.group(2)
                 self.source_file.subroutines[name] = Subroutine(
-                    name, self.lineno, self.lines, self.source_file)
+                    name, self.line_number, self.lines, self.source_file)
 
         class InterfaceFinder(SectionFinder):
             start_re = re.compile(
@@ -66,7 +66,7 @@ class LibrarySource(object):
             def finish(self):
                 name = self.match.group(1)
                 self.source_file.interfaces[name] = Interface(
-                    name, self.lineno, self.lines, self.source_file)
+                    name, self.line_number, self.lines, self.source_file)
 
         class TypeFinder(SectionFinder):
             start_re = re.compile(r'^\s*TYPE\s+([A-Z0-9_]+)', re.IGNORECASE)
@@ -75,14 +75,14 @@ class LibrarySource(object):
             def finish(self):
                 name = self.match.group(1)
                 self.source_file.types[name] = Type(
-                    name, self.lineno, self.lines, self.source_file)
+                    name, self.line_number, self.lines, self.source_file)
 
         class PublicFinder(LineFinder):
             line_re = re.compile(
                 r'^\s*PUBLIC\s*:*\s*([A-Z0-9_,\s]+)',
                 re.IGNORECASE)
 
-            def add(self, match, lineno):
+            def add(self, match, line_number):
                 for symbol in match.group(1).split(','):
                     self.source_file.public.append(symbol.strip())
 
@@ -92,7 +92,7 @@ class LibrarySource(object):
                 r'([A-Z0-9_]+)\s*=\s*([A-Z0-9_\-\.]+)[^!]*(!<.*$)?',
                 re.IGNORECASE)
 
-            def add(self, match, lineno):
+            def add(self, match, line_number):
                 name = match.group(1)
                 assignment = match.group(2)
                 if match.group(3) is None:
@@ -100,7 +100,7 @@ class LibrarySource(object):
                 else:
                     doxy = match.group(3)[2:].strip()
                 self.source_file.constants[name] = Constant(
-                    name, lineno, assignment, doxy)
+                    name, line_number, assignment, doxy)
 
         class DoxygenGroupingFinder(LineFinder):
             # match at least one whitespace character before the ! to make sure
@@ -109,12 +109,12 @@ class LibrarySource(object):
                 r'^\s+!\s*>\s*(\\(addtogroup|brief|see)|@[\{\}])(.*$)',
                 re.IGNORECASE)
 
-            def add(self, match, lineno):
+            def add(self, match, line_number):
                 line = match.group(1)
                 if match.group(3) is not None:
                     line += match.group(3)
                 self.source_file.doxygen_groupings.append(
-                    DoxygenGrouping(lineno, line))
+                    DoxygenGrouping(line_number, line))
 
         def __init__(self, source_file, params_only=False):
             """Initialise SourceFile object
@@ -156,17 +156,17 @@ class LibrarySource(object):
 
             # Find them
             current_section = None
-            for (lineno, line) in enumerate(source_lines):
+            for (line_number, line) in enumerate(source_lines):
                 if current_section is not None:
                     current_section.lines.append(line)
                     if current_section.check_for_end(line):
                         current_section = None
                 else:
                     for line_finder in line_finders:
-                        line_finder.check_match(line, lineno)
+                        line_finder.check_match(line, line_number)
 
                     for section in section_finders:
-                        if section.check_for_start(lineno, line):
+                        if section.check_for_start(line_number, line):
                             current_section = section
                             break
 
@@ -196,11 +196,11 @@ class LibrarySource(object):
         public_objects = {}
         for t in self.lib_source.types.values():
             if t.name in self.lib_source.public:
-                public_objects[t.lineno] = t
+                public_objects[t.line_number] = t
 
         for const in self.lib_source.constants.values():
             if const.name in self.lib_source.public:
-                public_objects[const.lineno] = const
+                public_objects[const.line_number] = const
 
         self.public_subroutines = [
             routine
@@ -242,10 +242,10 @@ class LibrarySource(object):
                 self.unbound_routines.append(routine)
 
         for routine in self.public_subroutines:
-            public_objects[routine.lineno] = routine
+            public_objects[routine.line_number] = routine
 
         for doxygen_grouping in self.lib_source.doxygen_groupings:
-            public_objects[doxygen_grouping.lineno] = doxygen_grouping
+            public_objects[doxygen_grouping.line_number] = doxygen_grouping
 
         self.ordered_objects = [public_objects[k]
             for k in sorted(public_objects.keys())]
@@ -318,21 +318,41 @@ class LibrarySource(object):
         return (enums, ungrouped_constants)
 
 
-class Constant(object):
+class CodeObject(object):
+    """Base class for any line or section of code"""
+
+    def __init__(self, name, line_number):
+        self.name = name
+        self.line_number = line_number
+
+    def _get_comments(self):
+        """Sets the comment_lines property
+
+        This is a list of comment lines above this section or line of code
+        """
+
+        self.comment_lines = []
+        line_num = self.line_number - 1
+        while self.source_file.source_lines[line_num].strip().startswith('!>'):
+            self.comment_lines.append(
+                self.source_file.source_lines[line_num].strip()[2:].strip())
+            line_num -= 1
+        self.comment_lines.reverse()
+
+
+class Constant(CodeObject):
     """Information on a public constant"""
 
-    def __init__(self, name, lineno, assignment, doxygen_comment):
+    def __init__(self, name, line_number, assignment, doxygen_comment):
         """Initialise Constant
 
-        Arguments:
-        name -- Variable name
+        Extra arguments:
         assignment -- Value or another variable assigned to this variable
         doxygen_comment -- Contents of the doxygen comment describing
                            the constant
         """
 
-        self.name = name
-        self.lineno = lineno
+        super(Constant, self).__init__(name, line_number)
         self.assignment = assignment
         self.doxygen_comment = doxygen_comment
         try:
@@ -347,21 +367,20 @@ class Constant(object):
                 self.resolved = False
 
 
-class Interface(object):
+class Interface(CodeObject):
     """Information on an interface"""
 
-    def __init__(self, name, lineno, lines, source_file):
+    def __init__(self, name, line_number, lines, source_file):
         """Initialise an interface
 
         Arguments:
         name -- Interface name
-        lineno -- Line number where the interface starts
+        line_number -- Line number where the interface starts
         lines -- Contents of interface as a list of lines
         source_file -- Source file containing the interface
         """
 
-        self.name = name
-        self.lineno = lineno
+        super(Interface, self).__init__(name, line_number)
         self.lines = lines
         self.source = source_file
 
@@ -433,12 +452,11 @@ class Interface(object):
         return routines
 
 
-class Subroutine(object):
+class Subroutine(CodeObject):
     """Store information for a subroutine"""
 
-    def __init__(self, name, lineno, lines, source_file):
-        self.name = name
-        self.lineno = lineno
+    def __init__(self, name, line_number, lines, source_file):
+        super(Subroutine, self).__init__(name, line_number)
         self.lines = lines
         self.source_file = source_file
         self.parameters = None
@@ -476,21 +494,24 @@ class Subroutine(object):
 
         for param in parameters:
             param_pattern = r"""
-            ^\s*([A-Z_]+\s*(\((
-            [A-Z_=,\*0-9]+)\))?)          # parameter type at start of line,
-                                          # followed by possible type
-                                          # parameters in brackets
-            \s*([A-Z0-9\s_\(\):,\s]+)?\s* # extra specifications such as intent
-            ::
-            [A-Z_,\s\(\):]*               # Allow for other parameters to be
-                                          # included on the same line
-            [,\s:]                        # Make sure we matched the full
-                                          # parameter name
-            %s                            # Parameter name
-            (\(([0-9,:]+)\))?             # Array dimensions if present
-            [,\s$]                        # Whitespace, comma or end of line to
-                                          # make sure we match full name
-            [^!]*(!<(.*)$)?               # Doxygen comment
+            # parameter type at start of line, followed by possible type
+            # info, eg DP or SP in brackets
+                ^\s*([A-Z_]+\s*(\(([A-Z_=,\*0-9]+)\))?)
+            # extra specifications such as intent or pointer
+                \s*([A-Z0-9\s_\(\):,\s]+)?\s*
+                ::
+            # Allow for other parameters to be included on the same line
+                [A-Z_,\s\(\):]*
+            # Before parameter name
+                [,\s:]
+            # Parameter name
+                %s
+            # Array dimensions if present
+                (\(([0-9,:]+)\))?
+            # Space or comma after parameter name
+                [,\s$]
+            # Doxygen comment
+                [^!]*(!<(.*)$)?
             """ % param
             param_re = re.compile(param_pattern, re.IGNORECASE | re.VERBOSE)
 
@@ -525,19 +546,6 @@ class Subroutine(object):
                     return type_name
         except IndexError:
             pass
-
-    def _get_comments(self):
-        """Sets the comment_lines property
-
-        This is a list of comments above this subroutine"""
-
-        self.comment_lines = []
-        line_num = self.lineno - 1
-        while self.source_file.source_lines[line_num].strip().startswith('!>'):
-            self.comment_lines.append(
-                self.source_file.source_lines[line_num].strip()[2:].strip())
-            line_num -= 1
-        self.comment_lines.reverse()
 
 
 class Parameter(object):
@@ -655,44 +663,30 @@ class Parameter(object):
             self.type_name = param_type
 
 
-class Type(object):
+class Type(CodeObject):
     """Information on a Fortran type"""
 
-    def __init__(self, name, lineno, lines, source_file):
+    def __init__(self, name, line_number, lines, source_file):
         """Initialise type
 
         Arguments:
         name -- Type name
-        lineno -- Line number in source where this is defined
+        line_number -- Line number in source where this is defined
         lines -- Contents of lines where this type is defined
         """
 
-        self.name = name
-        self.lineno = lineno
+        super(Type, self).__init__(name, line_number)
         self.lines = lines
         self.source_file = source_file
         self.methods = []
         self._get_comments()
 
-    def _get_comments(self):
-        """Sets the comment_lines property
-
-        This is a list of comments above the type definition"""
-
-        self.comment_lines = []
-        line_num = self.lineno - 1
-        while self.source_file.source_lines[line_num].strip().startswith('!>'):
-            self.comment_lines.append(
-                self.source_file.source_lines[line_num].strip()[2:].strip())
-            line_num -= 1
-        self.comment_lines.reverse()
-
 
 class DoxygenGrouping(object):
     """Store a line used for grouping in Doxygen"""
 
-    def __init__(self, lineno, line):
-        self.lineno = lineno
+    def __init__(self, line_number, line):
+        self.line_number = line_number
         self.line = line.strip()
         if line.find(r'\see') > -1:
             self.type = 'see'
