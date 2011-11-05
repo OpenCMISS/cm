@@ -44,7 +44,7 @@ def generate(cm_path, args):
     module.write("import _opencmiss_swig\n")
     module.write("import signal\n")
     module.write("from _utils import (CMISSError, CMISSType, Enum,\n"
-        "    wrap_cmiss_routine as _wrap_routine)\n\n")
+        "    wrap_cmiss_routine as _wrap_routine)\n\n\n")
 
     types = sorted(library.lib_source.types.values(), key=attrgetter('name'))
     for type in types:
@@ -91,16 +91,68 @@ def type_to_py(type):
             py_class.append(py_method(type, method))
             py_class.append('')
 
+    for (name, get_method, set_method, docstring) in type_properties(type):
+        py_class.append('    %s = property(%s, %s, None, """%s""")\n' %
+            (name[0].lower() + name[1:], get_method, set_method, docstring))
+
     return '\n'.join(py_class).rstrip()
 
 
-def py_method(type, routine):
-    """Write subroutine as method of Python class"""
+def type_properties(type):
+    """Returns a list of tuples representing properties of the type
+
+    Each tuple has the property name, the get method name, the set method
+    name, and the property docstring. There may be properties with only a
+    get method or only a set method.
+    """
+
+    get_methods = dict(
+        (method_name(type, m)[:-3], m)
+        for m in type.methods
+        if method_name(type, m).endswith("Get") and len(m.parameters) == 2)
+
+    set_methods = dict(
+        (method_name(type, m)[:-3], m)
+        for m in type.methods
+        if method_name(type, m).endswith("Set") and len(m.parameters) == 2)
+
+    # Use comment from get method rather than set method if both exist
+    all_properties = set_methods.copy()
+    all_properties.update(get_methods)
+    return [
+        (p,
+        p + 'Get' if p in get_methods else 'None',
+        p + 'Set' if p in set_methods else 'None',
+        property_docstring(all_properties[p].comment_lines))
+        for p in all_properties]
+
+
+def property_docstring(comment_lines):
+    """Return a docstring for a property, given the comment describing
+    either the get or set routine."""
+
+    comment = '\n'.join(comment_lines)
+    start_re = re.compile(
+        r'^((sets\/changes)|(set)|(get)|(return))s?\s+', re.IGNORECASE)
+    comment = start_re.sub('', comment, 1)
+    return comment[0].upper() + comment[1:]
+
+
+def method_name(type, routine):
+    "Return the name of a method of an object"""
 
     c_name = subroutine_c_names(routine)[0]
     name = c_name[len(type.name) - len('Type'):]
     if name == 'TypeFinalise':
         name = 'Finalise'
+    return name
+
+
+def py_method(type, routine):
+    """Write subroutine as method of Python class"""
+
+    name = method_name(type, routine)
+    c_name = subroutine_c_names(routine)[0]
     create_start_name = type.name[:-len('Type')] + 'CreateStart'
 
     if c_name.startswith(create_start_name):
@@ -180,7 +232,7 @@ def parameters_docstring(parameters):
             (', '.join([c.rstrip('.')for c in return_comments])))
         docstring.append(':rtype: tuple')
 
-    return '\n'.join(docstring)
+    return '\n'.join([l.rstrip() for l in docstring])
 
 
 def return_comment(return_param):

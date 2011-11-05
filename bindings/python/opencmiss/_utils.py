@@ -17,21 +17,7 @@ class CMISSError(Exception):
 class CMISSType(object):
     """Base class for all OpenCMISS types"""
 
-    def __getattr__(self, attr_name):
-        get_method = attr_name[0].upper() + attr_name[1:] + 'Get'
-        try:
-            method = self.__getattribute__(get_method)
-            return method()
-        except AttributeError:
-            raise AttributeError("CMISS type has no %s routine" % (get_method))
-
-    def __setattr__(self, attr_name, value):
-        set_method = attr_name[0].upper() + attr_name[1:] + 'Set'
-        try:
-            method = self.__getattribute__(set_method)
-            method(value)
-        except AttributeError:
-            self.__dict__[attr_name] = value
+    pass
 
 
 class Enum(object):
