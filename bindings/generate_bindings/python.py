@@ -214,16 +214,20 @@ def param_type_comment(param):
         type = param.type_name[len(PREFIX):-len('Type')]
     else:
         type = PARAMETER_TYPES[param.var_type]
-    if param.array_dims == 1:
-        if param.var_type == Parameter.CUSTOM_TYPE:
-            type = "Array of %s objects" % type
-        else:
+    if param.var_type == Parameter.CHARACTER:
+        if param.array_dims == 2:
             type = "Array of %ss" % type
-    elif param.array_dims >= 1:
-        if param.var_type == Parameter.CUSTOM_TYPE:
-            type = "%dd list of %s objects" % (param.array_dims, type)
-        else:
-            type = "%dd list of %ss" % (param.array_dims, type)
+    else:
+        if param.array_dims == 1:
+            if param.var_type == Parameter.CUSTOM_TYPE:
+                type = "Array of %s objects" % type
+            else:
+                type = "Array of %ss" % type
+        elif param.array_dims >= 1:
+            if param.var_type == Parameter.CUSTOM_TYPE:
+                type = "%dd list of %s objects" % (param.array_dims, type)
+            else:
+                type = "%dd list of %ss" % (param.array_dims, type)
     return type
 
 
@@ -397,8 +401,12 @@ def add_size_parameters(parameters):
             if param.array_dims == 0:
                 pass
             elif param.array_dims == 1:
-                new_parameters.append(SizeParameter(param.name + 'Size',
-                    'Expected length of %s list' % param.name))
+                if param.var_type == Parameter.CHARACTER:
+                    new_parameters.append(SizeParameter(param.name + 'Size',
+                        'Expected length of %s string' % param.name))
+                else:
+                    new_parameters.append(SizeParameter(param.name + 'Size',
+                        'Expected length of %s list' % param.name))
             else:
                 new_parameters.extend([SizeParameter(param.name + 'Size%d' % i,
                         'Expected length of dimension %d for %s list' %
