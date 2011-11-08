@@ -9606,8 +9606,8 @@ CONTAINS
   SUBROUTINE CMISSBasisInterpolationXiSetNumber(UserNumber,InterpolationXi,Err)
   
     !Argument variables
-     INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
-     INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
+    INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
+    INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS

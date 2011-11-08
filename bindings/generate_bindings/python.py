@@ -52,8 +52,12 @@ def generate(cm_path, args):
         module.write('\n' * 3)
 
     for routine in library.unbound_routines:
-        module.write(routine_to_py(routine))
-        module.write('\n' * 3)
+        try:
+            module.write(routine_to_py(routine))
+            module.write('\n' * 3)
+        except UnsupportedParameterError:
+            sys.stderr.write("Skipping routine with unsupported "
+                "parameter: %s\n" % routine.name)
 
     (enums, ungrouped_constants) = library.group_constants()
     for e in enums:
@@ -88,12 +92,16 @@ def type_to_py(type):
 
     for method in type.methods:
         if not method.name.endswith('TypeInitialise'):
-            py_class.append(py_method(type, method))
-            py_class.append('')
+            try:
+                py_class.append(py_method(type, method))
+                py_class.append('')
+            except UnsupportedParameterError:
+                sys.stderr.write("Skipping routine with unsupported "
+                    "parameter: %s\n" % method.name)
 
     for (name, get_method, set_method, docstring) in type_properties(type):
         py_class.append('    %s = property(%s, %s, None, """%s""")\n' %
-            (name[0].lower() + name[1:], get_method, set_method, docstring))
+            (lower_camel(name), get_method, set_method, docstring))
 
     return '\n'.join(py_class).rstrip()
 
@@ -156,31 +164,36 @@ def py_method(type, routine):
     create_start_name = type.name[:-len('Type')] + 'CreateStart'
 
     if c_name.startswith(create_start_name):
-        parameters = routine.parameters[:-1]
+        # Last parameter is self parameter
+        self_parameter = routine.parameters[-1]
+        all_parameters = routine.parameters[0:-1]
     else:
-        parameters = routine.parameters[1:]
+        self_parameter = routine.parameters[0]
+        all_parameters = routine.parameters[1:]
 
-    parameters = add_size_parameters(parameters)
+    (pre_code, py_args, swig_args) = process_parameters(all_parameters)
 
-    py_args = [p.name for p in parameters if p.intent != 'OUT']
-    method_args = ', '.join(['self'] + py_args)
     if c_name.startswith(create_start_name):
-        py_swig_args = ', '.join(py_args + ['self'])
+        swig_args = swig_args + [self_parameter.name]
     else:
-        py_swig_args = ', '.join(['self'] + py_args)
+        swig_args = [self_parameter.name] + swig_args
+    py_args = (['self'] + py_args)
 
     docstring = [remove_doxygen_commands(
             '\n        '.join(routine.comment_lines))]
     docstring.append('\n\n')
     docstring.append(' ' * 8)
-    docstring.append('\n        '.join(
-        parameters_docstring(parameters).splitlines()))
+    docstring.append("\n        ".join(
+        parameters_docstring(all_parameters).splitlines()))
     docstring = ''.join(docstring).strip()
 
-    method = ["    def %s(%s):" % (name, method_args)]
+    method = ["    def %s(%s):" % (name, ', '.join(py_args))]
     method.append('        """%s\n        """\n' % docstring)
-    method.append('        return _wrap_routine(_opencmiss_swig.%s, [%s])' %
-        (c_name, py_swig_args))
+    method.append("        %s = self" % self_parameter.name)
+    for line in pre_code:
+        method.append("        %s" % line)
+    method.append("        return _wrap_routine(_opencmiss_swig.%s, [%s])" %
+        (c_name, ', '.join(swig_args)))
 
     return '\n'.join(method)
 
@@ -189,23 +202,34 @@ def routine_to_py(routine):
     c_name = subroutine_c_names(routine)[0]
     name = c_name[len(PREFIX):]
 
-    parameters = routine.parameters[:]
-    parameters = add_size_parameters(parameters)
-
     docstring = [remove_doxygen_commands('\n    '.join(routine.comment_lines))]
     docstring.append('')
     docstring.append(' ' * 4 + '\n    '.join(
-            parameters_docstring(parameters).splitlines()))
+            parameters_docstring(routine.parameters).splitlines()))
     docstring = '\n'.join(docstring).strip()
 
-    args = ', '.join([p.name for p in parameters if p.intent != 'OUT'])
+    (pre_code, py_args, swig_args) = process_parameters(routine.parameters)
 
-    py_routine = ["def %s(%s):" % (name, args)]
+    py_routine = ["def %s(%s):" % (name, ', '.join(py_args))]
     py_routine.append('    """%s\n    """\n' % docstring)
+    for line in pre_code:
+        py_routine.append("    %s" % line)
     py_routine.append('    return _wrap_routine(_opencmiss_swig.%s, [%s])' %
-                      (c_name, args))
+                      (c_name, ', '.join(swig_args)))
 
     return '\n'.join(py_routine)
+
+
+def check_parameter(parameter):
+    """Checks whether a parameter is supported by the Python bindings
+
+    Raises an UnsupportedParameterError if it isn't supported,
+    otherwise does nothing.
+    """
+
+    if parameter.array_dims > 0 and parameter.pointer:
+        raise UnsupportedParameterError("Python bindings don't support "
+            "passing arrays by pointer")
 
 
 def parameters_docstring(parameters):
@@ -216,6 +240,15 @@ def parameters_docstring(parameters):
     for param in parameters:
         if param.intent == 'OUT':
             return_values.append(param)
+            if (param.array_dims == param.required_sizes == 1 and
+                    param.var_type != Parameter.CHARACTER):
+                docstring.append(':param %sSize: %s' %
+                    (param.name, "Size of " + param.name + " to allocate."))
+            elif (param.array_dims > 1 and
+                    param.array_dims == param.required_sizes):
+                docstring.append(':param %sSizes: %s' % (param.name,
+                    "Tuple of dimensions of %s to allocate, with length %d." %
+                    (param.name, param.array_dims)))
         else:
             docstring.append(':param %s: %s' %
                 (param.name, replace_doxygen_commands(param)))
@@ -225,12 +258,14 @@ def parameters_docstring(parameters):
     if len(return_values) == 0:
         docstring.append(':rtype: None')
     elif len(return_values) == 1:
-        docstring.append(':returns: %s' % (return_comments[0]))
+        docstring.append(':returns: %s. %s' % (return_values[0].name,
+            return_comments[0]))
         docstring.append(':rtype: %s' % (param_type_comment(return_values[0])))
     else:
         docstring.append(':returns: (%s)' %
             (', '.join([c.rstrip('.')for c in return_comments])))
-        docstring.append(':rtype: tuple')
+        docstring.append(':rtype: tuple. (%s)' % ', '.join(
+            param_type_comment(r) for r in return_values))
 
     return '\n'.join([l.rstrip() for l in docstring])
 
@@ -277,9 +312,9 @@ def param_type_comment(param):
                 type = "Array of %ss" % type
         elif param.array_dims >= 1:
             if param.var_type == Parameter.CUSTOM_TYPE:
-                type = "%dd list of %s objects" % (param.array_dims, type)
+                type = "%dd array of %s objects" % (param.array_dims, type)
             else:
-                type = "%dd list of %ss" % (param.array_dims, type)
+                type = "%dd array of %ss" % (param.array_dims, type)
     return type
 
 
@@ -433,38 +468,58 @@ def digit_to_word(digit):
     return words[int(digit)]
 
 
-class SizeParameter(object):
-    def __init__(self, name, doxygen):
-        self.name = name
-        self.doxygen = doxygen
-        self.var_type = Parameter.INTEGER
-        self.intent = 'IN'
-        self.array_dims = 0
+def process_parameters(parameters):
+    """Processes list of parameters
 
+    Adds any extra size parameters and returns parameters used by the
+    python module function and parameters sent to the underlying swig
+    module, with any extra parameters added.
 
-def add_size_parameters(parameters):
-    """Returns a new list of parameters, inserting extra size parameters
-    required when retrieving an array"""
+    Because the Fortran API expects return arrays to be already allocated
+    when passed in, the Python SWIG routines need the size of the array
+    to allocate to be passed in, which is an additional input parameter.
 
-    new_parameters = []
+    For strings, we don't know how long the string will be but these are
+    always just labels at the moment, so a maximum output size is defined
+    in the SWIG bindings.
+
+    Returns a tuple, the first value is a list of strings of extra code
+    called to set parameters.  The second is a list of parameters accepted
+    by the python routine.  The third is a list of parameters sent through
+    to the underlying SWIG routine.
+    """
+
+    pre_code = []
+    python_parameters = []
+    swig_parameters = []
 
     for param in parameters:
-        if param.intent == 'OUT':
-            if param.array_dims == 0:
+        check_parameter(param)
+        if param.intent in ('IN', 'INOUT'):
+            python_parameters.append(param.name)
+            swig_parameters.append(param.name)
+            if (param.array_dims == 1 and param.required_sizes == 0):
+                pre_code.append("assert(len(%s) == %d)" %
+                        (param.name, int(param.array_spec[0])))
+        elif param.intent == 'OUT' and param.array_dims > 0:
+            if (param.array_dims == 1 and
+                    param.var_type == Parameter.CHARACTER):
                 pass
-            elif param.array_dims == 1:
-                if param.var_type == Parameter.CHARACTER:
-                    new_parameters.append(SizeParameter(param.name + 'Size',
-                        'Expected length of %s string' % param.name))
-                else:
-                    new_parameters.append(SizeParameter(param.name + 'Size',
-                        'Expected length of %s list' % param.name))
+            elif (param.array_dims == 1 and param.required_sizes == 1):
+                python_parameters.append(param.name + 'Size')
+                swig_parameters.append(param.name + 'Size')
+            elif (param.array_dims > 1 and
+                    param.required_sizes == param.array_dims):
+                python_parameters.append(param.name + 'Sizes')
+                swig_parameters.append(param.name + 'Sizes')
+            elif (param.required_sizes == 0):
+                pass
             else:
-                new_parameters.extend([SizeParameter(param.name + 'Size%d' % i,
-                        'Expected length of dimension %d for %s list' %
-                        (i, param.name))
-                        for i in range(1, param.array_dims + 1)])
+                sys.stderr.write("Warning: Output of array with dimension = "
+                    "%d and required sizes = %d is not implemented.")
 
-        new_parameters.append(param)
+    return (pre_code, python_parameters, swig_parameters)
 
-    return new_parameters
+
+def lower_camel(s):
+    return s[0].lower() + s[1:]

@@ -1,5 +1,6 @@
 from __future__ import with_statement
 import os
+import sys
 
 from parse import LibrarySource, Parameter
 import c
@@ -79,7 +80,7 @@ def routine_swig_lines(routine):
 def parameter_swig_lines(parameter):
     typemap = apply_to = ''
     if parameter.intent == 'OUT':
-        if parameter.array_dims == 1:
+        if parameter.array_dims == parameter.required_sizes == 1:
             if parameter.var_type == Parameter.INTEGER:
                 typemap = 'const int ArraySize, int *DummyOutputArray'
                 apply_to = ('const int %(name)sSize, int *%(name)s' %
@@ -96,7 +97,39 @@ def parameter_swig_lines(parameter):
                 typemap = 'const int Size, char *DummyOutputString'
                 apply_to = ('const int %(name)sSize, char *%(name)s' %
                     parameter.__dict__)
+        elif parameter.array_dims == 1 and parameter.required_sizes == 0:
+            if parameter.var_type == Parameter.INTEGER:
+                typemap = ('int *DummyOutputArraySize%d' %
+                           int(parameter.array_spec[0]))
+                apply_to = ('int *%(name)s' %
+                            parameter.__dict__)
+            elif parameter.var_type == Parameter.DOUBLE:
+                typemap = ('double *DummyOutputArraySize%d' %
+                           int(parameter.array_spec[0]))
+                apply_to = ('double *%(name)s' %
+                            parameter.__dict__)
+            elif parameter.var_type == Parameter.FLOAT:
+                typemap = ('float *DummyOutputArraySize%d' %
+                           int(parameter.array_spec[0]))
+                apply_to = ('float *%(name)s' %
+                            parameter.__dict__)
+        elif parameter.array_dims == parameter.required_sizes == 2:
+            if parameter.var_type in (Parameter.INTEGER, Parameter.FLOAT,
+                    Parameter.DOUBLE):
+                c_type = c.PARAMETER_CTYPES[parameter.var_type]
+                typemap = ('const int ArraySize1, const int ArraySize2, '
+                    '%s *DummyOutputArray' % c_type)
+                apply_to = ('const int %(name)sSize1, '
+                    'const int %(name)sSize2, %(type)s *%(name)s' %
+                    {'name': parameter.name, 'type': c_type})
+        elif parameter.array_dims > 1:
+            sys.stderr.write("Error: Output of array with known sizes and "
+                "dimensions > 1 not implemented\n")
+        elif parameter.array_dims > 2:
+            sys.stderr.write("Error: Output of array with dimensions > 1 not "
+                "implemented\n")
         else:
+            # Output of scalar value
             if parameter.var_type == Parameter.INTEGER:
                 typemap = 'int *DummyOutputInt'
                 apply_to = 'int *%(name)s' % parameter.__dict__
@@ -110,6 +143,7 @@ def parameter_swig_lines(parameter):
                 typemap = 'int *DummyOutputBool'
                 apply_to = 'int *%(name)s' % parameter.__dict__
     else:
+        # Input parameter
         if parameter.var_type == Parameter.CHARACTER:
             if parameter.array_dims == 1:
                 typemap = 'const int Size, const char *DummyInputString'
@@ -121,7 +155,7 @@ def parameter_swig_lines(parameter):
                 apply_to = ('const int %(name)sNumStrings, '
                     'const int %(name)sStringLength, '
                     'const char *%(name)s' % parameter.__dict__)
-        elif parameter.array_dims == 1:
+        elif parameter.array_dims == parameter.required_sizes == 1:
             if parameter.var_type == Parameter.INTEGER:
                 typemap = 'const int ArraySize, const int *DummyInputArray'
                 apply_to = ('const int %(name)sSize, const int *%(name)s' %
@@ -139,6 +173,24 @@ def parameter_swig_lines(parameter):
                     'const CMISSDummyType *DummyTypes')
                 apply_to = ('const int %(name)sSize, '
                     'const %(type_name)s *%(name)s' % parameter.__dict__)
+        elif parameter.array_dims == 1 and parameter.required_sizes == 0:
+            sys.stderr.write("Error: Input of array of known size is not "
+                "implemented\n")
+        elif parameter.array_dims == 2 and parameter.required_sizes == 2:
+            if (parameter.var_type in
+                    (Parameter.INTEGER, Parameter.DOUBLE, Parameter.FLOAT)):
+                c_type = c.PARAMETER_CTYPES[parameter.var_type]
+                typemap = ('const int ArraySize1, const int ArraySize2, '
+                    'const %s *DummyInputArray' % c_type)
+                apply_to = ('const int %(name)sSize1, const int '
+                    '%(name)sSize2, const %(type)s *%(name)s' %
+                    {'name': parameter.name, 'type': c_type})
+        elif parameter.array_dims == 2 and parameter.required_sizes < 2:
+            sys.stderr.write("Error: Input of 2D array with known dimension "
+                "is not implemented\n")
+        elif parameter.array_dims > 2:
+            sys.stderr.write("Error: Input of array with dimensions > 1 not "
+                "implemented\n")
         elif parameter.var_type == Parameter.LOGICAL:
             typemap = 'const int DummyInputBool'
             apply_to = 'const int *%(name)s' % parameter.__dict__

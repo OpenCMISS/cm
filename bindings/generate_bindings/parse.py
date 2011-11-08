@@ -629,12 +629,11 @@ class Parameter(object):
         if param_type.startswith('INTEGER'):
             self.var_type = Parameter.INTEGER
         elif param_type.startswith('REAL'):
-            self.precision = type_params
-            if self.precision == 'DP':
+            precision = type_params
+            if precision == 'DP':
                 self.var_type = Parameter.DOUBLE
             else:
                 self.var_type = Parameter.FLOAT
-
         elif param_type.startswith('CHARACTER'):
             self.var_type = Parameter.CHARACTER
             # Add extra dimension, 1D array of strings in Fortran is a 2D
@@ -644,10 +643,8 @@ class Parameter(object):
             self.required_sizes += 1
             # Need to pass C pointer by value
             self.cintent = 'IN'
-
         elif param_type.startswith('LOGICAL'):
             self.var_type = Parameter.LOGICAL
-
         elif param_type.startswith('TYPE'):
             self.var_type = Parameter.CUSTOM_TYPE
             self.type_name = type_params
@@ -655,7 +652,6 @@ class Parameter(object):
                 # Should actually be in, as we need to pass the pointer
                 # by value
                 self.cintent = 'IN'
-
         else:
             sys.stderr.write("Error: Unknown type %s for routine %s\n" %
                 (param_type, routine.name))
@@ -712,6 +708,10 @@ class Enum(object):
         self.name = name
         self.constants = []
         self.comment = ''
+
+
+class UnsupportedParameterError(Exception):
+    pass
 
 
 def _join_lines(source):

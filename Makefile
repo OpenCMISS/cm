@@ -1643,11 +1643,11 @@ $(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIP
 
 $(PYTHON_WRAPPER) : $(PYTHON_INTERFACE) $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
 # Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
-	( cd $(BINDINGS_DIR)/python/opencmiss ; swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE); rm opencmiss_swig.py )
+	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm opencmiss_swig.py )
 
 $(PYTHON_MODULE_SO) : $(LIBRARY) $(PYTHON_WRAPPER) $(OBJECTS)
-	( cd $(BINDINGS_DIR)/python ; $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss/opencmiss_wrap.o )
-	( cd $(BINDINGS_DIR)/python ; $(CC) opencmiss/opencmiss_wrap.o $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )
+	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss/opencmiss_wrap.o )
+	( cd $(BINDINGS_DIR)/python && $(CC) opencmiss/opencmiss_wrap.o $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )
 
 # ----------------------------------------------------------------------------
 #
