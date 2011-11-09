@@ -7152,6 +7152,10 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+    ! LOGICAL :: ELEMENT_EXISTS !<is .TRUE. if the element user number exists in the decomposition topology, .FALSE. if not
+    ! INTEGER(INTG) :: LOCAL_ELEMENT_NUMBER !<if the element exists the local number corresponding to the user element number. If the element does not exist then local number will be 0.
+    ! LOGICAL :: GHOST_ELEMENT !<is .TRUE. if the local element (if it exists) is a ghost element, .FALSE. if not.
+
     CALL ENTERS("NAVIER_STOKES_SUPG_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET))THEN
@@ -7173,6 +7177,11 @@ CONTAINS
             EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
             IF(ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
 
+              ! CALL DECOMPOSITION_TOPOLOGY_ELEMENT_CHECK_EXISTS(DEPENDENT_FIELD%DECOMPOSITION%TOPOLOGY,ELEMENT_NUMBER, &
+              !   & ELEMENT_EXISTS,LOCAL_ELEMENT_NUMBER,GHOST_ELEMENT,ERR,ERROR,*999)
+              ! IF(ELEMENT_EXISTS) THEN
+
+                H_PARAMETER=0.0_DP
                 CALL FIELD_PARAMETER_SET_GET_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                  & ELEMENT_NUMBER,1,H_PARAMETER,ERR,ERROR,*999)                
 
@@ -7212,18 +7221,20 @@ CONTAINS
                   H_SUPG = H_SUPG/(2.0_DP*SQRT(REAL(NUM_COMPONENTS))) !H/2SQRT(num_dim) : element length scale
 
                   !Length scale hadn't been calculated for this element, so need to add element components for each metric
+!                  CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                   & ELEMENT_NUMBER,1,H_SUPG,ERR,ERROR,*999)
+
                   CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   ELEMENT_NUMBER,1,H_SUPG,ERR,ERROR,*999)
+                    & ELEMENT_NUMBER,1,H_SUPG,ERR,ERROR,*999)
                   CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   ELEMENT_NUMBER,2,0.0_DP,ERR,ERROR,*999)
+                    & ELEMENT_NUMBER,2,0.0_DP,ERR,ERROR,*999)
                   CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   ELEMENT_NUMBER,3,0.0_DP,ERR,ERROR,*999)
+                    & ELEMENT_NUMBER,3,0.0_DP,ERR,ERROR,*999)
                   CALL FIELD_PARAMETER_SET_ADD_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   ELEMENT_NUMBER,4,0.0_DP,ERR,ERROR,*999)
+                    & ELEMENT_NUMBER,4,0.0_DP,ERR,ERROR,*999)
                 ELSE
-                  H_PARAMETER=-1.0_DP
-                  CALL FIELD_PARAMETER_SET_GET_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   & ELEMENT_NUMBER,1,H_PARAMETER,ERR,ERROR,*999)
+!                  CALL FIELD_PARAMETER_SET_GET_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+!                   & ELEMENT_NUMBER,1,H_PARAMETER,ERR,ERROR,*999)
                   H_SUPG=H_PARAMETER
                 ENDIF !H_SUPG associated
 
@@ -7272,14 +7283,14 @@ CONTAINS
 
                   !store umax for later metric calculation (courant #?)
                   CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   ELEMENT_NUMBER,2,UMAX_SUPG,ERR,ERROR,*999)
+                   & ELEMENT_NUMBER,2,UMAX_SUPG,ERR,ERROR,*999)
 
                 !Calculate cell Reynolds (Re) and Peclet (Pe) numbers
                 RE_SUPG=UMAX_SUPG*H_SUPG*RHO_PARAM/MU_PARAM
                 PE_SUPG=RE_SUPG*UMAX_SUPG*H_SUPG
                 !Store element (cell) Reynolds number
                 CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                 ELEMENT_NUMBER,3,RE_SUPG,ERR,ERROR,*999)
+                  & ELEMENT_NUMBER,3,RE_SUPG,ERR,ERROR,*999)
                 !TODO: set SUPG tolerance relative to iterative solver tolerance
                 SUPG_TOLERANCE=1.0E-8_DP
                 IF(PE_SUPG.GT.SUPG_TOLERANCE) THEN
@@ -7287,8 +7298,8 @@ CONTAINS
                   TAU_SUPG=(ALPHA_SUPG*H_SUPG)/(2.0_DP*UMAX_SUPG)
                 ELSE
                   TAU_SUPG=0.0_DP
-                ENDIF
-
+              !  ENDIF
+              ENDIF
             ELSE
               CALL FLAG_ERROR("Equations set field field is not associated.",ERR,ERROR,*999)
             ENDIF               
