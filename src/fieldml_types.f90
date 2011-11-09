@@ -55,26 +55,28 @@ MODULE FIELDML_TYPES
   !
   ! FieldML types
 
-  TYPE FieldmlInfoType
-    INTEGER(C_INT) :: fmlHandle
-    INTEGER(C_INT) :: nodesHandle
-    INTEGER(C_INT) :: nodesArgumentHandle
-    INTEGER(C_INT) :: meshHandle
-    INTEGER(C_INT) :: elementsHandle
-    INTEGER(C_INT) :: elementsArgumentHandle
-    INTEGER(C_INT) :: xiHandle
-    INTEGER(C_INT) :: xiArgumentHandle
-    INTEGER(C_INT) :: nodeDofsHandle
-!    INTEGER(C_INT) :: elementDofsHandle
-!    INTEGER(C_INT) :: constantDofsHandle
-    INTEGER(C_INT), ALLOCATABLE :: componentHandles(:)
-    INTEGER(C_INT), ALLOCATABLE :: basisHandles(:)
-    INTEGER(C_INT), ALLOCATABLE :: basisConnectivityHandles(:)
-  END TYPE FieldmlInfoType
+  !<Contains information on the current FieldML parsing state.
+  TYPE FIELDML_INFO_TYPE
+    INTEGER(INTG) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG) :: NODES_HANDLE !<The FieldML global nodes type handle.
+    INTEGER(INTG) :: NODES_ARGUMENT_HANDLE !<The FieldML global nodes argument handle.
+    INTEGER(INTG) :: MESH_HANDLE !<The FieldML mesh type handle.
+    INTEGER(INTG) :: ELEMENTS_HANDLE !<The FieldML mesh elements type handle.
+    INTEGER(INTG) :: ELEMENTS_ARGUMENT_HANDLE !<The FieldML mesh elements argument handle.
+    INTEGER(INTG) :: XI_HANDLE !<The FieldML mesh chart type handle.
+    INTEGER(INTG) :: XI_ARGUMENT_HANDLE !<The FieldML mesh chart argument handle.
+    INTEGER(INTG) :: NODE_DOFS_HANDLE !<The FieldML nodal dofs evaluator handle.
+!    INTEGER(C_INT) :: elementDofsHandle !<The FieldML element dofs evaluator handle.
+!    INTEGER(C_INT) :: constantDofsHandle !<The FieldML constant dofs evaluator handle.
+    TYPE(LIST_TYPE), POINTER :: COMPONENT_HANDLES
+    TYPE(LIST_TYPE), POINTER :: BASIS_HANDLES
+    TYPE(LIST_TYPE), POINTER :: BASIS_CONNECTIVITY_HANDLES
+    TYPE(LIST_TYPE), POINTER :: BASIS_LAYOUT_HANDLES
+  END TYPE FIELDML_INFO_TYPE
 
   !Interfaces
   
-  PUBLIC :: FieldmlInfoType
+  PUBLIC :: FIELDML_INFO_TYPE
 
 CONTAINS
 
