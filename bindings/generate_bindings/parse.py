@@ -600,15 +600,11 @@ class Parameter(object):
 
         # Get parameter intent
         if intent is None:
-            # cintent is the intent used in opencmiss_c.f90, which may be
-            # different to the intent in opencmiss.f90
             self.intent = 'INOUT'
-            self.cintent = 'INOUT'
             sys.stderr.write("Warning: No intent for parameter %s of "
                 "routine %s\n" % (self.name, routine.name))
         else:
             self.intent = intent
-            self.cintent = intent
 
         # Get array dimensions and work out how many dimension sizes
         # are variable
@@ -616,9 +612,6 @@ class Parameter(object):
             self.array_spec = [a.strip() for a in array.split(',')]
             self.array_dims = len(self.array_spec)
             self.required_sizes = self.array_spec.count(':')
-            if self.array_dims > 0 and not self.pointer:
-                # Need to pass C pointer by value
-                self.cintent = 'IN'
         else:
             self.array_spec = []
             self.array_dims = 0
@@ -641,17 +634,11 @@ class Parameter(object):
             self.array_spec.append(':')
             self.array_dims += 1
             self.required_sizes += 1
-            # Need to pass C pointer by value
-            self.cintent = 'IN'
         elif param_type.startswith('LOGICAL'):
             self.var_type = Parameter.LOGICAL
         elif param_type.startswith('TYPE'):
             self.var_type = Parameter.CUSTOM_TYPE
             self.type_name = type_params
-            if self.array_dims == 0 and self.intent == 'INOUT':
-                # Should actually be in, as we need to pass the pointer
-                # by value
-                self.cintent = 'IN'
         else:
             sys.stderr.write("Error: Unknown type %s for routine %s\n" %
                 (param_type, routine.name))

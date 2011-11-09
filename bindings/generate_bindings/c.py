@@ -367,7 +367,7 @@ def parameter_conversion(parameter):
             local_variables.append('%s, POINTER :: %s(%s)' %
                 (PARAMETER_F90TYPES[parameter.var_type], parameter.name,
                 ','.join([':'] * parameter.array_dims)))
-        if parameter.pointer == True and parameter.cintent == 'OUT':
+        if parameter.pointer == True and c_intent(parameter) == 'OUT':
             # we are setting the value of a pointer
             pre_call.append('NULLIFY(%s)' % parameter.name)
             post_call.extend(('%sPtr = C_LOC(%s(1))' % (parameter.name,
@@ -420,14 +420,15 @@ def parameter_c_f90_declaration(parameter):
     c_f90_name = parameter_c_f90_name(parameter)
     output = []
 
+    param_cintent = c_intent(parameter)
     # pass by value?
-    if parameter.cintent == 'IN':
+    if param_cintent == 'IN':
         value = 'VALUE, '
     else:
         value = ''
 
     # possible size parameter
-    if parameter.pointer == True and parameter.cintent == 'OUT':
+    if parameter.pointer == True and param_cintent == 'OUT':
         size_type = 'INTEGER(C_INT), INTENT(OUT)'
     else:
         size_type = 'INTEGER(C_INT), VALUE, INTENT(IN)'
@@ -436,11 +437,11 @@ def parameter_c_f90_declaration(parameter):
 
     if parameter.array_dims > 0:
         output.append('TYPE(C_PTR), %sINTENT(%s) :: %s' %
-                (value, parameter.cintent, c_f90_name))
+                (value, param_cintent, c_f90_name))
     else:
         output.append('%s, %sINTENT(%s) :: %s' % (
                 PARAMETER_F90TYPES[parameter.var_type], value,
-                parameter.cintent, c_f90_name))
+                param_cintent, c_f90_name))
     return output
 
 
@@ -465,9 +466,9 @@ def parameter_to_c(parameter):
     param = parameter.name
     # pointer argument?
     if (parameter.array_dims > 0 or parameter.var_type == Parameter.CHARACTER
-            or parameter.cintent == 'OUT'):
+            or c_intent(parameter) == 'OUT'):
         param = '*' + param
-    if parameter.cintent == 'OUT' and parameter.pointer == True:
+    if c_intent(parameter) == 'OUT' and parameter.pointer == True:
         # add another * as we need a pointer to a pointer,
         # to modify the pointer value
         param = '*' + param
@@ -483,7 +484,7 @@ def parameter_to_c(parameter):
         param = 'const ' + param
 
     # size?
-    if parameter.pointer == True and parameter.cintent == 'OUT':
+    if parameter.pointer == True and c_intent(parameter) == 'OUT':
         # Size is an output
         size_type = 'int *'
     else:
@@ -561,6 +562,18 @@ def type_to_c_header(typedef):
 def doxygen_to_c_header(doxygen):
     """Return the doxygen comment for use in opencmiss.h"""
     return '/*>' + doxygen.line + ' */\n'
+
+
+def c_intent(parameter):
+    """Work out intent for use in opencmiss_c.f90"""
+
+    intent = parameter.intent
+    # C pointers to arrays must be passed by value
+    if parameter.array_dims > 0 and not parameter.pointer:
+        intent = 'IN'
+    if parameter.array_dims == 0 and parameter.intent == 'INOUT':
+        intent = 'IN'
+    return intent
 
 
 def _fix_length(line, max_length=132):
