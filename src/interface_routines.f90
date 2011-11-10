@@ -87,6 +87,8 @@ MODULE INTERFACE_ROUTINES
   PUBLIC INTERFACE_LABEL_GET,INTERFACE_LABEL_SET
 
   PUBLIC INTERFACE_MESH_CONNECTIVITY_CREATE_START, INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH
+  
+  PUBLIC INTERFACE_POINTS_CONNECTIVITY_CREATE_START
 
   PUBLIC INTERFACE_USER_NUMBER_FIND
 
@@ -95,6 +97,8 @@ MODULE INTERFACE_ROUTINES
   PUBLIC INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET, INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET
 
   PUBLIC INTERFACE_MESH_CONNECTIVITY_SET_BASIS
+  
+  PUBLIC INTERFACE_COORDINATE_SYSTEM_SET,INTERFACE_COORDINATE_SYSTEM_GET
   
 CONTAINS
 
@@ -449,11 +453,14 @@ CONTAINS
       INTERFACE%NUMBER_OF_COUPLED_MESHES=0
       NULLIFY(INTERFACE%COUPLED_MESHES)
       NULLIFY(INTERFACE%MESH_CONNECTIVITY)
+      NULLIFY(INTERFACE%POINTS_CONNECTIVITY)
       NULLIFY(INTERFACE%NODES)
       NULLIFY(INTERFACE%MESHES)
       NULLIFY(INTERFACE%GENERATED_MESHES)
       NULLIFY(INTERFACE%FIELDS)
       NULLIFY(INTERFACE%INTERFACE_CONDITIONS)
+      NULLIFY(INTERFACE%DATA_POINTS)
+      NULLIFY(INTERFACE%COORDINATE_SYSTEM)
       CALL MESHES_INITIALISE(INTERFACE,ERR,ERROR,*999)
       CALL GENERATED_MESHES_INITIALISE(INTERFACE,ERR,ERROR,*999)
       CALL FIELDS_INITIALISE(INTERFACE,ERR,ERROR,*999)
@@ -927,6 +934,88 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Initialises the interface data points connectivity.
+  SUBROUTINE INTERFACE_POINTS_CONNECTIVITY_INITIALISE(INTERFACE,MESH,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to initialise the mesh connectivity for
+    TYPE(MESH_TYPE), POINTER :: MESH
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+     
+    CALL ENTERS("INTERFACE_POINT_CONNECTIVITY_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(INTERFACE%POINTS_CONNECTIVITY)) THEN
+        CALL FLAG_ERROR("Interface points connectivity is already associated.",ERR,ERROR,*999)
+      ELSE
+        ALLOCATE(INTERFACE%POINTS_CONNECTIVITY,STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface points connectivity.",ERR,ERROR,*999)
+        INTERFACE%POINTS_CONNECTIVITY%INTERFACE=>INTERFACE
+        INTERFACE%POINTS_CONNECTIVITY%POINTS_CONNECTIVITY_FINISHED=.FALSE.
+        INTERFACE%POINTS_CONNECTIVITY%INTERFACE_MESH=>MESH
+        CALL INTERFACE_POINTS_CONNECTIVITY_POINTS_INITIALISE(INTERFACE,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_POINTS_CONNECTIVITY_INITIALISE")
+    RETURN
+999 CALL ERRORS("INTERFACE_POINTS_CONNECTIVITY_INITIALISE",ERR,ERROR)
+    CALL EXITS("INTERFACE_POINTS_CONNECTIVITY_INITIALISE")
+    RETURN 1
+  END SUBROUTINE INTERFACE_POINTS_CONNECTIVITY_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises data points connectivity for an interface.
+  SUBROUTINE INTERFACE_POINTS_CONNECTIVITY_CREATE_START(INTERFACE,MESH,INTERFACE_POINTS_CONNECTIVITY,ERR,ERROR,*) 
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to create the meshes connectivity for
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(INTERFACE_POINTS_CONNECTIVITY_TYPE), POINTER :: INTERFACE_POINTS_CONNECTIVITY !<On return, a pointer to the created points connectivity
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: DUMMY_ERR
+    TYPE(VARYING_STRING) :: DUMMY_ERROR
+
+    CALL ENTERS("INTERFACE_POINTS_CONNECTIVITY_CREATE_START",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN
+        IF(ASSOCIATED(INTERFACE%POINTS_CONNECTIVITY)) THEN
+          CALL FLAG_ERROR("The interface already has a points connectivity associated.",ERR,ERROR,*999)
+        ELSE
+          !Initialise the poins connectivity
+          CALL INTERFACE_POINTS_CONNECTIVITY_INITIALISE(INTERFACE,MESH,ERR,ERROR,*999)
+          !Return the pointer
+          INTERFACE_POINTS_CONNECTIVITY=>INTERFACE%POINTS_CONNECTIVITY
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_POINTS_CONNECTIVITY_CREATE_START")
+    RETURN
+999 CALL ERRORS("INTERFACE_POINTS_CONNECTIVITY_CREATE_START",ERR,ERROR)
+    CALL EXITS("INTERFACE_POINTS_CONNECTIVITY_CREATE_START")
+    RETURN 1
+    
+  END SUBROUTINE INTERFACE_POINTS_CONNECTIVITY_CREATE_START
+
+  !
+  !================================================================================================================================
+  !
+
   !>Finds and returns in INTERFACE a pointer to the interface identified by USER_NUMBER in the given PARENT_REGION. If no interface with that USER_NUMBER exists INTERFACE is left nullified.
   SUBROUTINE INTERFACE_USER_NUMBER_FIND(USER_NUMBER,PARENT_REGION,INTERFACE,ERR,ERROR,*)
 
@@ -958,7 +1047,7 @@ CONTAINS
           ENDDO
         ELSE
           LOCAL_ERROR="The interfaces on parent region number "// &
-            & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//" are not associated."
+            & TRIM(NUMBER_TO_VSTRING(PARENT_REGION%USER_NUMBER,"*",ERR,ERROR))//" are not associated."        
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
@@ -972,6 +1061,86 @@ CONTAINS
     CALL EXITS("INTERFACE_USER_NUMBER_FIND")
     RETURN 1
   END SUBROUTINE INTERFACE_USER_NUMBER_FIND
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the coordinate system of region. \see OPENCMISS::CMISSRegionCoordinateSystemGet
+  SUBROUTINE INTERFACE_COORDINATE_SYSTEM_GET(INTERFACE,COORDINATE_SYSTEM,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the region to get the coordinate system for
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<On exit, the coordinate system for the specified region. Must not be associated on entry.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    
+    CALL ENTERS("INTERFACE_COORDINATE_SYSTEM_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN
+        IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+          CALL FLAG_ERROR("Coordinate system is already associated.",ERR,ERROR,*999)
+        ELSE
+          COORDINATE_SYSTEM=>INTERFACE%COORDINATE_SYSTEM
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("Interface has not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_GET")
+    RETURN
+999 CALL ERRORS("INTERFACE_COORDINATE_SYSTEM_GET",ERR,ERROR)
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_GET")
+    RETURN 1
+  END SUBROUTINE INTERFACE_COORDINATE_SYSTEM_GET
+  
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the coordinate system of an interface.  \see OPENCMISS::CMISSInterfaceCoordinateSystemSet
+  SUBROUTINE INTERFACE_COORDINATE_SYSTEM_SET(INTERFACE,COORDINATE_SYSTEM,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to set the coordinate system for
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<The coordinate system to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("V",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(INTERFACE%INTERFACE_FINISHED) THEN
+        CALL FLAG_ERROR("Interface has been finished.",ERR,ERROR,*999)
+      ELSE
+        IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+          IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
+            INTERFACE%COORDINATE_SYSTEM=>COORDINATE_SYSTEM
+          ELSE
+            CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_SET")
+    RETURN
+999 CALL ERRORS("INTERFACE_COORDINATE_SYSTEM_SET",ERR,ERROR)
+    CALL EXITS("INTERFACE_COORDINATE_SYSTEM_SET")
+    RETURN 1
+  END SUBROUTINE INTERFACE_COORDINATE_SYSTEM_SET
+  
 
   !
   !================================================================================================================================
@@ -1140,6 +1309,53 @@ CONTAINS
     RETURN 1
   END SUBROUTINE INTERFACE_MESH_CONNECTIVITY_ELEMENT_INITIALISE
 
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises the interface mesh connectivity.
+  SUBROUTINE INTERFACE_POINTS_CONNECTIVITY_POINTS_INITIALISE(INTERFACE,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface to initialise the mesh connectivity for
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: I, J, K
+     
+    CALL ENTERS("INTERFACE_POINTS_CONNECTIVITY_POINTS_INITIALISE",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(INTERFACE)) THEN
+      IF(ASSOCIATED(INTERFACE%POINTS_CONNECTIVITY)) THEN
+        IF(ALLOCATED(INTERFACE%POINTS_CONNECTIVITY%POINTS_CONNECTIVITY)) THEN
+          CALL FLAG_ERROR("Interface points element connectivity is already allocated.",ERR,ERROR,*999)
+        ELSE
+          IF(INTERFACE%NUMBER_OF_COUPLED_MESHES<=0) CALL FLAG_ERROR("Interface coupled meshes are not associated.",ERR,ERROR,*999)
+          IF(INTERFACE%MESH_CONNECTIVITY%INTERFACE_MESH%NUMBER_OF_ELEMENTS<=0) CALL FLAG_ERROR("Interface coupled meshes are not & 
+            & associated.",ERR,ERROR,*999)
+          INTERFACE%POINTS_CONNECTIVITY%NUMBER_OF_DATA_POINTS=INTERFACE%DATA_POINTS%NUMBER_OF_DATA_POINTS
+          INTERFACE%POINTS_CONNECTIVITY%NUMBER_INT_DOM=INTERFACE%NUMBER_OF_COUPLED_MESHES
+          ALLOCATE(INTERFACE%POINTS_CONNECTIVITY%POINTS_CONNECTIVITY(INTERFACE%POINTS_CONNECTIVITY%NUMBER_OF_DATA_POINTS, &
+            & INTERFACE%POINTS_CONNECTIVITY%NUMBER_INT_DOM))
+          DO I = 1, INTERFACE%POINTS_CONNECTIVITY%NUMBER_OF_DATA_POINTS
+            DO J = 1, INTERFACE%POINTS_CONNECTIVITY%NUMBER_INT_DOM
+              INTERFACE%POINTS_CONNECTIVITY%POINTS_CONNECTIVITY(I,J)%COUPLED_MESH_ELEMENT_NUMBER=0
+            ENDDO! J
+          ENDDO! I
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Interface points connectivity is not associated.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("INTERFACE_POINTS_CONNECTIVITY_POINTS_INITIALISE")
+    RETURN
+999 CALL ERRORS("INTERFACE_POINTS_CONNECTIVITY_POINTS_INITIALISE",ERR,ERROR)
+    CALL EXITS("INTERFACE_POINTS_CONNECTIVITY_POINTS_INITIALISE")
+    RETURN 1
+  END SUBROUTINE INTERFACE_POINTS_CONNECTIVITY_POINTS_INITIALISE
 
   !
   !================================================================================================================================

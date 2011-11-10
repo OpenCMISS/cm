@@ -278,7 +278,6 @@ MODULE TYPES
     INTEGER(INTG) :: PROJECTION_EXIT_TAG !<The exit tage of the data projection. \See DATA_PROJECTION_ROUTINES. Assigned only if DATA_POINTS_PROJECTED is .TRUE. 
     REAL(DP), ALLOCATABLE :: PROJECTION_XI(:) !<The xi coordinate of the projection. Assigned only if DATA_POINTS_PROJECTED is .TRUE.
   END TYPE DATA_POINT_TYPE
-
   !>Contains information on the data points defined on a region. \see OPENCMISS::CMISSDataPointsType
   TYPE DATA_POINTS_TYPE
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region containing the data points. If the data points are in an interface rather than a region then this pointer will be NULL and the interface pointer should be used.
@@ -2015,7 +2014,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   
   !>Contains information on a mesh connectivity point
   TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
-    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx) !\todo Comment
+    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx) coupled mesh element number
+    INTEGER(INTG) :: COUPLED_MESH_CONTACT_NUMBER !<LOCAL_MESH_CONTACT_NUMBERS(connectivity_point_idx) contact line/face number
+    INTEGER(INTG) :: COUPLED_MESH_CONTACT_XI_NORMAL !< LOCAL_MESH_LINE_XI_NORMAL(connectivity_point_idx) contact line/face normal xi direction
     REAL(DP), ALLOCATABLE :: XI(:,:,:) !<XI(xi_idx,mesh_component,element_parameter_idx) !\todo Comment
   END TYPE INTERFACE_ELEMENT_CONNECTIVITY_TYPE
 
@@ -2029,6 +2030,24 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: NUMBER_INT_DOM !<Is the number of domains coupled via the interface
     TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), ALLOCATABLE :: ELEMENTS_CONNECTIVITY(:,:) !<ELEMENTS_CONNECTIVITY(element_idx,coupled_mesh_idx)
   END TYPE INTERFACE_MESH_CONNECTIVITY_TYPE
+  
+  !>Contains information on a data connectivity point 
+  TYPE INTERFACE_POINT_CONNECTIVITY_TYPE
+    INTEGER(INTG) :: COUPLED_MESH_ELEMENT_NUMBER !<GLOBAL_MESH_ELEMENT_NUMBERS(connectivity_point_idx) coupled mesh element number
+    INTEGER(INTG) :: COUPLED_MESH_CONTACT_NUMBER !<LOCAL_MESH_CONTACT_NUMBERS(connectivity_point_idx) contact line/face number
+    INTEGER(INTG) :: COUPLED_MESH_CONTACT_XI_NORMAL !< LOCAL_MESH_LINE_XI_NORMAL(connectivity_point_idx) contact line/face normal xi direction
+    REAL(DP), ALLOCATABLE :: XI(:,:) !<XI(xi_idx,mesh_component) !\todo Comment
+  END TYPE INTERFACE_POINT_CONNECTIVITY_TYPE
+    
+  !>Contains information on the data point coupling between meshes in the an interface
+  TYPE INTERFACE_POINTS_CONNECTIVITY_TYPE
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer back to the interface for the coupled mesh connectivity
+    TYPE(MESH_TYPE), POINTER :: INTERFACE_MESH
+    LOGICAL :: POINTS_CONNECTIVITY_FINISHED !<Is .TRUE. if the coupled mesh data points connectivity has finished being created, .FALSE. if not.
+    INTEGER(INTG) :: NUMBER_OF_DATA_POINTS !<Is the number of data points in the interface
+    INTEGER(INTG) :: NUMBER_INT_DOM !<Is the number of domains coupled via the interface
+    TYPE(INTERFACE_POINT_CONNECTIVITY_TYPE), ALLOCATABLE :: POINTS_CONNECTIVITY(:,:) !<POINTS_CONNECTIVITY(point_index,coupled_mesh_idx)
+  END TYPE INTERFACE_POINTS_CONNECTIVITY_TYPE
  
   !>Contains information for the interface data.
   TYPE INTERFACE_TYPE
@@ -2036,17 +2055,20 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER :: GLOBAL_NUMBER !<The global number of the interface in the list of interfaces for a particular parent region.
     LOGICAL :: INTERFACE_FINISHED !<Is .TRUE. if the interface has finished being created, .FALSE. if not.
     TYPE(VARYING_STRING) :: LABEL !<A user defined label for the region.
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM !<A pointer to the coordinate system used by the interface. 
     TYPE(INTERFACES_TYPE), POINTER :: INTERFACES !<A pointer back to the parent interfaces
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION !<A point to the parent region containing the interface.
     INTEGER(INTG) :: NUMBER_OF_COUPLED_MESHES !<The number of coupled meshes in the interface.
     TYPE(MESH_PTR_TYPE), POINTER :: COUPLED_MESHES(:) !<COUPLED_MESHES(mesh_idx). COUPLED_MESHES(mesh_idx)%PTR is the pointer to the mesh_idx'th mesh involved in the interface.
-    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY !<A pointer to the meshes connectivity the interface.
+    TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY !<A pointer to the meshes connectivity the interface.  
+    TYPE(INTERFACE_POINTS_CONNECTIVITY_TYPE), POINTER :: POINTS_CONNECTIVITY !<A pointer to the data points connectivity the interface.
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS  !<A pointer to the data points defined in an interface.          
     TYPE(NODES_TYPE), POINTER :: NODES !<A pointer to the nodes in an interface
     TYPE(MESHES_TYPE), POINTER :: MESHES !<A pointer to the mesh in an interface.
     TYPE(GENERATED_MESHES_TYPE), POINTER :: GENERATED_MESHES !<A pointer to the generated meshes in an interface.
     TYPE(FIELDS_TYPE), POINTER :: FIELDS !<A pointer to the fields defined over an interface.
     TYPE(INTERFACE_CONDITIONS_TYPE), POINTER :: INTERFACE_CONDITIONS !<The pointer to the interface conditions for this interface
+    INTEGER :: INTERFACE_METHOD !<temporary, 1 if mesh method, 2 if data point method
   END TYPE INTERFACE_TYPE
 
   !>A buffer type to allow for an array of pointers to a INTERFACE_TYPE.
