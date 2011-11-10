@@ -33,6 +33,14 @@ Generates a C header file with extra SWIG annotations to apply typemaps.
 
 Extra arguments required: path to opencmiss.i
 
+Testing
+-------
+
+The bindings generation scripts can be tested by running:
+    python -m tests/all_tests
+
+The tests are also useful for illustrating how the bindings generation works.
+
 Limitations
 -----------
 

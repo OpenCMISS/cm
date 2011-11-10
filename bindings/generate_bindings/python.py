@@ -131,19 +131,24 @@ def type_properties(type):
         (p,
         p + 'Get' if p in get_methods else 'None',
         p + 'Set' if p in set_methods else 'None',
-        property_docstring(all_properties[p].comment_lines))
+        property_docstring(all_properties[p]))
         for p in all_properties]
 
 
-def property_docstring(comment_lines):
+def property_docstring(property):
     """Return a docstring for a property, given the comment describing
     either the get or set routine."""
+
+    comment_lines = property.comment_lines
 
     comment = '\n'.join(comment_lines)
     start_re = re.compile(
         r'^((sets\/changes)|(set)|(get)|(return))s?\s+', re.IGNORECASE)
     comment = start_re.sub('', comment, 1)
-    return comment[0].upper() + comment[1:]
+    try:
+        return comment[0].upper() + comment[1:]
+    except IndexError:
+        return comment
 
 
 def method_name(type, routine):
@@ -522,4 +527,7 @@ def process_parameters(parameters):
 
 
 def lower_camel(s):
-    return s[0].lower() + s[1:]
+    try:
+        return s[0].lower() + s[1:]
+    except IndexError:
+        return s

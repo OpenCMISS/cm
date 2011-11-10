@@ -460,7 +460,8 @@ def parameter_call_name(parameter):
 def parameter_to_c(parameter):
     """Calculate C parameter declaration for opencmiss.h
 
-    For arrays, return two parameters with the first being the size
+    Returns a list of parameters, including extra size parameters
+    for arrays.
     """
 
     param = parameter.name
@@ -491,7 +492,7 @@ def parameter_to_c(parameter):
         size_type = 'const int '
 
     required_size_list = parameter_size_list(parameter)[1]
-    return tuple([size_type + size_name
+    return ([size_type + size_name
         for size_name in required_size_list] + [param])
 
 
