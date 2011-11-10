@@ -210,11 +210,17 @@ MODULE OPENCMISS
     TYPE(INTERFACE_EQUATIONS_TYPE), POINTER :: INTERFACE_EQUATIONS
   END TYPE CMISSInterfaceEquationsType
   
-   !>Contains information on an interfaces meshes connectivity.
+  !>Contains information on an interfaces meshes connectivity.
   TYPE CMISSInterfaceMeshConnectivityType
     PRIVATE
     TYPE(INTERFACE_MESH_CONNECTIVITY_TYPE), POINTER :: MESH_CONNECTIVITY
   END TYPE CMISSInterfaceMeshConnectivityType
+  
+  !>Contains information on an interfaces meshes connectivity.
+  TYPE CMISSInterfacePointsConnectivityType
+    PRIVATE
+    TYPE(INTERFACE_POINTS_CONNECTIVITY_TYPE), POINTER :: POINTS_CONNECTIVITY
+  END TYPE CMISSInterfacePointsConnectivityType
   
   !>Contains information on a mesh defined on a region.
   TYPE CMISSMeshType
@@ -336,7 +342,10 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceEquationsType,CMISSInterfaceEquationsTypeFinalise,CMISSInterfaceEquationsTypeInitialise
 
   PUBLIC CMISSInterfaceMeshConnectivityType,CMISSInterfaceMeshConnectivityTypeFinalise, &
-     & CMISSInterfaceMeshConnectivityTypeInitialise
+    & CMISSInterfaceMeshConnectivityTypeInitialise
+  
+  PUBLIC CMISSInterfacePointsConnectivityType,CMISSInterfacePointsConnectivityTypeInitialise, &
+    & CMISSInterfacePointsConnectivityNumberOfPointsSet
 
   PUBLIC CMISSMeshType,CMISSMeshTypeFinalise,CMISSMeshTypeInitialise
 
@@ -3762,6 +3771,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceCreateStartNumber
     MODULE PROCEDURE CMISSInterfaceCreateStartObj
   END INTERFACE !CMISSInterfaceCreateStart
+  
+  !>Set the coordinate system of an inteface
+  INTERFACE CMISSInterfaceCoordinateSystemSet
+    MODULE PROCEDURE CMISSInterfaceCoordinateSystemSetNumber
+    MODULE PROCEDURE CMISSInterfaceCoordinateSystemSetObj
+  END INTERFACE !CMISSInterfaceCoordinateSystemSet
+  
+  !>Get the coordinate system of an inteface
+  INTERFACE CMISSInterfaceCoordinateSystemGet
+    MODULE PROCEDURE CMISSInterfaceCoordinateSystemGetNumber
+    MODULE PROCEDURE CMISSInterfaceCoordinateSystemGetObj
+  END INTERFACE !CMISSInterfaceCoordinateSystemGet
 
   !>Destroys an interface.
   INTERFACE CMISSInterfaceDestroy
@@ -3796,6 +3817,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceMeshConnectivityCreateStartNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivityCreateStartObj
   END INTERFACE !CMISSInterfaceMeshConnectivityCreateStart
+  
+  !>Starts the creation of an interface points connectivity.
+  INTERFACE CMISSInterfacePointsConnectivityCreateStart
+    MODULE PROCEDURE CMISSInterfacePointsConnectivityCreateStartNumber
+    MODULE PROCEDURE CMISSInterfacePointsConnectivityCreateStartObj
+  END INTERFACE !CMISSInterfacePointsConnectivityCreateStart
 
   !>Sets the element xi values for the mesh connectivity between an element in the interface mesh and an element in a region mesh
   INTERFACE CMISSInterfaceMeshConnectivityElementXiSet
@@ -3826,10 +3853,14 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceCreateFinish,CMISSInterfaceCreateStart
   
   PUBLIC CMISSInterfaceDestroy
+  
+  PUBLIC CMISSInterfaceCoordinateSystemSet,CMISSInterfaceCoordinateSystemGet
 
   PUBLIC CMISSInterfaceLabelGet,CMISSInterfaceLabelSet
   
   PUBLIC CMISSInterfaceMeshConnectivityCreateFinish,CMISSInterfaceMeshConnectivityCreateStart
+  
+  PUBLIC CMISSInterfacePointsConnectivityCreateStart
   
   PUBLIC CMISSInterfaceMeshConnectivityDestroy, CMISSInterfaceMeshConnectivitySetBasis
 
@@ -7036,6 +7067,57 @@ CONTAINS
   !
   !================================================================================================================================
   !
+  
+  !>Initialises a CMISSInterfaceMeshConnectivityType object.
+   SUBROUTINE CMISSInterfacePointsConnectivityTypeInitialise(CMISSInterfacePointsConnectivity,Err)
+   
+     !Argument variables
+     TYPE(CMISSInterfacePointsConnectivityType), INTENT(OUT) :: CMISSInterfacePointsConnectivity !<The CMISSInterfacePointsConnectivityType object to initialise.
+     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+     !Local variables
+ 
+     CALL ENTERS("CMISSInterfacePointsConnectivityTypeInitialise",Err,ERROR,*999)
+     
+     NULLIFY(CMISSInterfacePointsConnectivity%POINTS_CONNECTIVITY)
+ 
+     CALL EXITS("CMISSInterfacePointsConnectivityTypeInitialise")
+     RETURN
+ 999 CALL ERRORS("CMISSInterfacePointsConnectivityTypeInitialise",Err,ERROR)
+     CALL EXITS("CMISSInterfacePointsConnectivityTypeInitialise")    
+     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+     RETURN
+     
+   END SUBROUTINE CMISSInterfacePointsConnectivityTypeInitialise
+
+  !
+  !================================================================================================================================
+  !		
+  
+    !>Initialises a CMISSInterfaceMeshConnectivityType object.
+   SUBROUTINE CMISSInterfacePointsConnectivityNumberOfPointsSet(CMISSInterfacePointsConnectivity,NumberOfDataPoints,Err)
+   
+     !Argument variables
+     TYPE(CMISSInterfacePointsConnectivityType), INTENT(INOUT) :: CMISSInterfacePointsConnectivity !<The CMISSInterfacePointsConnectivityType object to initialise.
+     INTEGER(INTG), INTENT(IN) :: NumberOfDataPoints
+     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+     !Local variables
+ 
+     CALL ENTERS("CMISSInterfacePointsConnectivityNumberOfPointsSet",Err,ERROR,*999)
+     
+     
+ 
+     CALL EXITS("CMISSInterfacePointsConnectivityNumberOfPointsSet")
+     RETURN
+ 999 CALL ERRORS("CMISSInterfacePointsConnectivityNumberOfPointsSet",Err,ERROR)
+     CALL EXITS("CMISSInterfacePointsConnectivityNumberOfPointsSet")    
+     CALL CMISS_HANDLE_ERROR(Err,ERROR)
+     RETURN
+     
+   END SUBROUTINE CMISSInterfacePointsConnectivityNumberOfPointsSet
+
+  !
+  !================================================================================================================================
+  !		
 
   !>Finalises a CMISSHistoryType object.
   SUBROUTINE CMISSHistoryTypeFinalise(CMISSHistory,Err)
@@ -31925,10 +32007,161 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSInterfaceCreateStartObj
+  
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the coordinate system for a region identified by an user number.
+  SUBROUTINE CMISSInterfaceCoordinateSystemSetNumber(InterfaceUserNumber,ParentRegionUserNumber,CoordinateSystemUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the region to set the coordinate system for.
+    INTEGER(INTG), INTENT(IN) :: ParentRegionUserNumber !<The user number of the parent region where interface was created.
+    INTEGER(INTG), INTENT(IN) :: CoordinateSystemUserNumber !<The user number of the coordinate system to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceCoordinateSystemSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(INTERFACE)
+    NULLIFY(REGION)
+    NULLIFY(COORDINATE_SYSTEM)
+    CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,REGION,Err,ERROR,*999)
+    CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+    
+    IF(ASSOCIATED(INTERFACE)) THEN
+      CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(CoordinateSystemUserNumber,COORDINATE_SYSTEM,Err,ERROR,*999)
+      IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+        CALL INTERFACE_COORDINATE_SYSTEM_SET(INTERFACE,COORDINATE_SYSTEM,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="A coordinate system with an user number of "// &
+          & TRIM(NUMBER_TO_VSTRING(CoordinateSystemUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceCoordinateSystemSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCoordinateSystemSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCoordinateSystemSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCoordinateSystemSetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Sets/changes the coordinate system for a region identified by an object.
+  SUBROUTINE CMISSInterfaceCoordinateSystemSetObj(Interface,CoordinateSystem,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to set the coordinate system for
+    TYPE(CMISSCoordinateSystemType), INTENT(IN) :: CoordinateSystem !<The coordinate system to set.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceCoordinateSystemSetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_COORDINATE_SYSTEM_SET(Interface%INTERFACE,CoordinateSystem%COORDINATE_SYSTEM,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceCoordinateSystemSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCoordinateSystemSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCoordinateSystemSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCoordinateSystemSetObj
 
   !  
   !================================================================================================================================
   !   
+  
+  !>Returns the coordinate system for a region identified by an user number.
+  SUBROUTINE CMISSInterfaceCoordinateSystemGetNumber(InterfaceUserNumber,ParentRegionUserNumber,CoordinateSystemUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to get the coordinate system for.
+    INTEGER(INTG), INTENT(IN) :: ParentRegionUserNumber !<The user number of the region to get the coordinate system for.
+    INTEGER(INTG), INTENT(OUT) :: CoordinateSystemUserNumber !<On return, the coordinate system user number.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceCoordinateSystemGetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(COORDINATE_SYSTEM)
+    CALL REGION_USER_NUMBER_FIND(ParentRegionUserNumber,REGION,Err,ERROR,*999)
+    CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+    IF(ASSOCIATED(INTERFACE)) THEN
+      CALL INTERFACE_COORDINATE_SYSTEM_GET(INTERFACE,COORDINATE_SYSTEM,Err,ERROR,*999)
+      IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
+        CoordinateSystemUserNumber = COORDINATE_SYSTEM%USER_NUMBER
+      ELSE
+        LOCAL_ERROR="The coordinate system is not associated for region number "// &
+          & TRIM(NUMBER_TO_VSTRING(ParentRegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceCoordinateSystemGetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCoordinateSystemGetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCoordinateSystemGetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCoordinateSystemGetNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Returns the coordinate system for a region identified by an object.
+  SUBROUTINE CMISSInterfaceCoordinateSystemGetObj(Interface,CoordinateSystem,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The region to get the coordinate system for.
+    TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: CoordinateSystem !<On return, the regions coordinate system.
+   INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceCoordinateSystemGetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_COORDINATE_SYSTEM_GET(Interface%INTERFACE,CoordinateSystem%COORDINATE_SYSTEM,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceCoordinateSystemGetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceCoordinateSystemGetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceCoordinateSystemGetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceCoordinateSystemGetObj
+  
+  !  
+  !================================================================================================================================
+  !
 
   !>Destroys an interface identified by a user number.
   SUBROUTINE CMISSInterfaceDestroyNumber(RegionUserNumber,InterfaceUserNumber,Err)
@@ -32542,6 +32775,91 @@ CONTAINS
   !  
   !================================================================================================================================
   !   
+  
+  !>Starts the creation of an interface meshes connectivity identified by a user number.
+  SUBROUTINE CMISSInterfacePointsConnectivityCreateStartNumber(RegionUserNumber,InterfaceUserNumber,MeshNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: MeshNumber !<The user number of the interface mesh
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(MESH_TYPE), POINTER :: MESH
+    TYPE(INTERFACE_POINTS_CONNECTIVITY_TYPE), POINTER :: INTERFACE_POINTS_CONNECTIVITY
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfacePointsConnectivityCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_POINTS_CONNECTIVITY)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL MESH_USER_NUMBER_FIND(MeshNumber,INTERFACE,MESH,ERR,ERROR,*999)
+        IF(ASSOCIATED(MESH)) THEN
+          CALL INTERFACE_POINTS_CONNECTIVITY_CREATE_START(INTERFACE,MESH,INTERFACE_POINTS_CONNECTIVITY,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+           & " does not exist on the interface with user number "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        END IF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfacePointsConnectivityCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivityCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfacePointsConnectivityCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivityCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of an interface meshes connectivity identified by an object.
+  SUBROUTINE CMISSInterfacePointsConnectivityCreateStartObj(INTERFACE,INTERFACE_MESH,InterfacePointsConnectivity,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceType), INTENT(IN) :: Interface !<The interface to start the creation of the meshes connectivity for
+    TYPE(CMISSMeshType), INTENT(IN) :: INTERFACE_MESH
+    TYPE(CMISSInterfacePointsConnectivityType), INTENT(INOUT) :: InterfacePointsConnectivity !<On return, the created meshes connectivity
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSInterfacePointsConnectivityCreateStartObj",Err,ERROR,*999)
+
+    CALL INTERFACE_POINTS_CONNECTIVITY_CREATE_START(INTERFACE%INTERFACE,INTERFACE_MESH%MESH, &
+      & InterfacePointsConnectivity%POINTS_CONNECTIVITY,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfacePointsConnectivityCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfacePointsConnectivityCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfacePointsConnectivityCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfacePointsConnectivityCreateStartObj
+
+
+  !  
+  !================================================================================================================================
+  ! 
 
   !>Sets the number of coupled mesh elements which are linked to a specific interface element.
   SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberSetNumber(RegionUserNumber,InterfaceUserNumber, &
