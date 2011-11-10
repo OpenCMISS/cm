@@ -48106,7 +48106,8 @@ CONTAINS
     
     stringName = name
     
-    handle = FIELDML_OUTPUT_IMPORT( fieldml%fieldmlInfo%FML_HANDLE, stringName )
+    handle = FIELDML_OUTPUT_IMPORT( fieldml%fieldmlInfo%FML_HANDLE, stringName, Err, ERROR )
+    IF(Err/=0) GOTO 999
 
     CALL EXITS("CMISSFieldMLOutputAddImport")
     RETURN
