@@ -3829,6 +3829,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiSetNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiSetObj
   END INTERFACE !CMISSInterfaceMeshConnectivityElementXiSet <<>>
+  
+  !>Sets the element xi values for the mesh connectivity between an element in the interface mesh and an element in a region mesh
+  INTERFACE CMISSInterfaceMeshConnectivityElementXiContactSet
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiContactSetNumber
+    MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiContactSetObj
+  END INTERFACE !CMISSInterfaceMeshConnectivityElementXiContactSet <<>>
 
   !>Sets the number of elements coupled through a given interface mesh element
   INTERFACE CMISSInterfaceMeshConnectivityElementNumberSet
@@ -3891,6 +3897,8 @@ MODULE OPENCMISS
   !> \see OPENCMISS::InterfaceConditions,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionFieldContinuityOperator = INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR !<Continuous field operator, i.e., lambda.(u_1-u_2). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionFrictionlessContactOperator = &
+    & INTERFACE_CONDITION_FRICTIONLESS_CONTACT_OPERATOR !<Frictionless contact operator, i.e., lambda.(g_1.n-g_2.n). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionFieldNormalContinuityOperator = &
     & INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR !<Continuous field normal operator, i.e., lambda(u_1.n_1-u_2.n_2). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionSolidFluidOperator = INTERFACE_CONDITION_SOLID_FLUID_OPERATOR !<Solid fluid operator, i.e., lambda.(v_f-du_s/dt). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
@@ -4009,8 +4017,9 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceConditionLagrangeMultipliers,CMISSInterfaceConditionAugmentedLagrangeMethod, &
     & CMISSInterfaceConditionPenaltyMethod,CMISSInterfaceConditionPointToPointMethod
 
-  PUBLIC CMISSInterfaceConditionFieldContinuityOperator,CMISSInterfaceConditionFieldNormalContinuityOperator, &
-    & CMISSInterfaceConditionSolidFluidOperator,CMISSInterfaceConditionSolidFluidNormalOperator
+  PUBLIC CMISSInterfaceConditionFieldContinuityOperator,CMISSInterfaceConditionFrictionlessContactOperator, &
+    & CMISSInterfaceConditionFieldNormalContinuityOperator,CMISSInterfaceConditionSolidFluidOperator, &
+    & CMISSInterfaceConditionSolidFluidNormalOperator
 
   PUBLIC CMISSInterfaceConditionCreateFinish,CMISSInterfaceConditionCreateStart
 
@@ -32906,11 +32915,98 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSInterfaceMeshConnectivityElementNumberSetNumber
+  
+  !  
+  !================================================================================================================================
+  !  
+  
+  !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementXiContactSetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceElementNumber, & 
+    &  CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalLineNumber,LocalNodeNumber,ComponentNumber,Xi,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface to start the creation of the meshes connectivity.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface to start the creation of the meshes connectivity for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshElementNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: LocalLineNumber !<The local line number of the couple mesh element
+    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The number of elements
+    REAL(DP), INTENT(IN) :: Xi(:)
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementXiContactSetNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_CONTACT_SET(INTERFACE%MESH_CONNECTIVITY,InterfaceElementNumber, &
+         & CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalLineNumber,LocalNodeNumber,ComponentNumber,Xi,Err,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiContactSetNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementXiContactSetNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiContactSetNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementXiContactSetNumber
+
+  !  
+  !================================================================================================================================
+  ! 
+   
+  !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
+  SUBROUTINE CMISSInterfaceMeshConnectivityElementXiContactSetObj(InterfaceMeshConnectivity,InterfaceElementNumber, & 
+    &  CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalLineNumber,LocalNodeNumber,ComponentNumber,Xi,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceMeshConnectivityType), INTENT(IN) :: InterfaceMeshConnectivity !<The interface to start the creation of the meshes connectivity for
+    INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
+    INTEGER(INTG), INTENT(IN) :: CoupledMeshElementNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: LocalLineNumber !<The local line number of the couple mesh element
+    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The number of elements
+    REAL(DP), INTENT(IN) :: Xi(:)
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceMeshConnectivityElementXiContactSetObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_CONTACT_SET(InterfaceMeshConnectivity%MESH_CONNECTIVITY,InterfaceElementNumber, &
+         & CoupledMeshIndexNumber,CoupledMeshElementNumber,LocalLineNumber,LocalNodeNumber,ComponentNumber,Xi,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiContactSetObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceMeshConnectivityElementXiContactSetObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceMeshConnectivityElementXiContactSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceMeshConnectivityElementXiContactSetObj
 
   !  
   !================================================================================================================================
   !  
- 
 
   !>Sets the xi coordinate mapping between the interface and xi coordinates in a coupled region mesh
   SUBROUTINE CMISSInterfaceMeshConnectivityElementXiSetNumber(RegionUserNumber,InterfaceUserNumber,InterfaceElementNumber, & 
