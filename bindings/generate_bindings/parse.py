@@ -343,18 +343,18 @@ class CodeObject(object):
 class Constant(CodeObject):
     """Information on a public constant"""
 
-    def __init__(self, name, line_number, assignment, doxygen_comment):
+    def __init__(self, name, line_number, assignment, comment):
         """Initialise Constant
 
         Extra arguments:
         assignment -- Value or another variable assigned to this variable
-        doxygen_comment -- Contents of the doxygen comment describing
+        comment -- Contents of the doxygen comment describing
                            the constant
         """
 
         super(Constant, self).__init__(name, line_number)
         self.assignment = assignment
-        self.doxygen_comment = doxygen_comment
+        self.comment = comment
         try:
             self.value = int(self.assignment)
             self.resolved = True
@@ -519,11 +519,11 @@ class Subroutine(CodeObject):
                 match = param_re.search(line)
                 if match:
                     param_type = match.group(1)
-                    (type_params, extra_stuff, array, doxygen) = (
+                    (type_params, extra_stuff, array, comment) = (
                             filter_match(match.group(i)) for i in (3, 4, 6, 8))
                     self.parameters.append(
                             Parameter(param, self, param_type, type_params,
-                            extra_stuff, array, doxygen))
+                            extra_stuff, array, comment))
                     break
             if not match:
                 raise RuntimeError("Couldn't find parameter %s "
@@ -560,7 +560,7 @@ class Parameter(object):
     CUSTOM_TYPE) = range(6)
 
     def __init__(self, name, routine, param_type, type_params, extra_stuff,
-            array, doxygen):
+            array, comment):
         """Initialise a parameter
 
         Arguments:
@@ -572,13 +572,13 @@ class Parameter(object):
                 including intent
         array -- The array dimensions included after the parameter name if they
                 exist, otherwise an empty string
-        doxygen -- The doxygen comment after the parameteter
+        comment -- The doxygen comment after the parameteter
         """
 
         self.name = name
         self.routine = routine
         self.pointer = False
-        self.doxygen = doxygen
+        self.comment = comment
         self.type_name = None
         intent = None
 

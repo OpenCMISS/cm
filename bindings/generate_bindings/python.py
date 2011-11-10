@@ -65,7 +65,7 @@ def generate(cm_path, args):
         module.write('\n' * 3)
     if ungrouped_constants:
         for c in ungrouped_constants:
-            doxygen_comment = remove_doxygen_commands(c.doxygen_comment)
+            doxygen_comment = remove_doxygen_commands(c.comment)
             if doxygen_comment.strip():
                 module.write("%s = %d  # %s\n" % (c.name[5:], c.value,
                     doxygen_comment))
@@ -329,7 +329,7 @@ def remove_doxygen_commands(comment):
 def replace_doxygen_commands(param):
     """Replace doxygen see command with a reference to the Python enum class"""
 
-    comment = param.doxygen
+    comment = param.comment
 
     if param.var_type == Parameter.INTEGER:
         see_re = r'\.?\s*\\see\s*OPENCMISS_([^\s,\.]*)'
@@ -361,7 +361,7 @@ def enum_to_py(enum):
     constant_names = remove_prefix_and_suffix(
             [c.name for c in enum.constants])
     for (constant, constant_name) in zip(enum.constants, constant_names):
-        doxygen_comment = remove_doxygen_commands(constant.doxygen_comment)
+        doxygen_comment = remove_doxygen_commands(constant.comment)
         if doxygen_comment.strip():
             output.append("    %s = %d  # %s" %
                     (constant_name, constant.value, doxygen_comment))

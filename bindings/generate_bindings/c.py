@@ -129,9 +129,9 @@ def constant_to_c_header(constant):
     """Return the C definition of this constant"""
 
     if constant.resolved:
-        if constant.doxygen_comment != '':
+        if constant.comment != '':
             return 'const int %s = %d; /*<%s */\n' % (constant.name,
-                    constant.value, constant.doxygen_comment)
+                    constant.value, constant.comment)
         else:
             return 'const int %s = %d;\n' % (constant.name, constant.value)
     else:
@@ -545,7 +545,7 @@ def parameter_doxygen_comments(parameter):
 
     size_doxygen = parameter_size_list(parameter)[2]
 
-    return size_doxygen + [parameter.doxygen]
+    return size_doxygen + [parameter.comment]
 
 
 def type_to_c_header(typedef):
