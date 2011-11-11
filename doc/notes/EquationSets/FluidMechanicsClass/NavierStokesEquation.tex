@@ -17,7 +17,7 @@ where $\vect{u}(\vect{x},t)=(u_1,u_2,u_3)^T$ is the velocity vector depending on
 As with Stokes flow, the incompressibility condition $\diverg{\vect{u}}=0$ also creates restrictions on the formulation known as the Ladyzhenkaya, Babuska, and Brezzi(LBB) or inf-sup consistency condition. Several methods have been devised to define a pressure function that is consistent with the velocity space using primitive variables. These include mixed element methods, penalty methods, generalized petrov-galerkin methods using pressure poisson correction, operator splitting, and semi-implicit pressure correction (Chung).
 
 Using a classic Galerkin formulation, mixed methods are perhaps conceptually the most straightforward method of satisfying LBB, in which velocity is defined over a space one order higher than pressure (e.g. quadratic elements for velocity, linear for pressure), allowing incompressibility to be satisfied. It should be noted that our use of a mixed formulation to satisfy LBB will also be reflected in the shape functions that our weak formulation depends on. For example, using 2D elements with biquadratic velocity and linear pressure, we will have 9 weight functions for each velocity component and 4 for the pressure. 
-% talk about the meaning of pressure in NSE.
+% meaning of pressure in NSE.
 
 \subsubsection{Weak Formulation}
 % Galerkin formulation
@@ -109,12 +109,7 @@ or
 \end{multline} 
 
 
-We will assume that the dependent variables $\vect{u}$ and $p$ can be
-interpolated separately in space and time. Here we must also be
-careful to note again the discrepancy between the functional
-spaces for velocity and pressure using a mixed formulation to satisfy the LBB
-consistency requirement. We will therefore define two separate weighting functions: for the velocity space on $\Omega$, the test function will be $\psi_i$ and for the pressure space, $\phi_i$,
-giving:
+We will assume that the dependent variables $\vect{u}$ and $p$ can be interpolated separately in space and time. Here we must also be careful to note again the discrepancy between the functional spaces for velocity and pressure using a mixed formulation to satisfy the LBB consistency requirement. We will therefore define two separate weighting functions: for the velocity space on $\Omega$, the test function will be $\psi_i$ and for the pressure space, $\phi_i$, giving:
 
 \begin{gather}
   \fnof{\vect{u}}{\vect{x},t}=\gbfn{n}{}{\vect{x}}\fnof{\nodept{\vect{u}}{n}}{t}\\
@@ -130,17 +125,9 @@ In standard interpolation notation within an element, we transform from $\vect{x
   \fnof{\idxnodedof{p}{}{n}{\beta}}{t}\idxgsf{i}{n}{\beta}
 \end{gather}
 
-where $\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}$ are the time varying nodal
-degrees-of-freedom for velocity component $i$, node $n$, global
-derivative $\beta$
-$\idxgbfn{i}{n}{\beta}{\vect{\xi}}$ are the corresponding velocity basis functions 
-and $\idxgsf{i}{n}{\beta}$ are the scale factors. The scalar pressure
-DOFs, $\fnof{\idxnodedof{p}{}{n}{\beta}}{t}$ are interpolated
-similarly.
+where $\fnof{\idxnodedof{u}{i}{n}{\beta}}{t}$ are the time varying nodal degrees-of-freedom for velocity component $i$, node $n$, global derivative $\beta$, $\idxgbfn{i}{n}{\beta}{\vect{\xi}}$ are the corresponding velocity basis functions and $\idxgsf{i}{n}{\beta}$ are the scale factors. The scalar pressure DOFs, $\fnof{\idxnodedof{p}{}{n}{\beta}}{t}$ are interpolated similarly.
 
-For the natural boundary, we can separate $q_i$ into its
-component velocity and pressure terms as noted in
-\eqref{NSENeumannBC} and shown in \eqref{FEMNSE2}. For our current treatment, we will also assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
+For the natural boundary, we can separate $q_i$ into its component velocity and pressure terms as noted in \eqref{NSENeumannBC} and shown in \eqref{FEMNSE2}. For our current treatment, we will also assume the values of viscosity $\mu$ and density $\rho$ are constant. These can be interpolated:
 
 \begin{equation}
   \begin{split}
@@ -278,7 +265,7 @@ We now seek to assemble this into the corresponding general form for dynamic equ
   \fnof{\vect{g}}{\fnof{\vect{d}}{t}}+\fnof{\vect{f}}{t}=\vect{0}
   \label{eqn:NSEGeneralDynamic}
 \end{equation}
-where $\dot{\vect{d}}(t)$ and $\ddot{\vect{d}}(t)$ represent the first and second derivatives (respectively) of the degrees of freedom vector $\vect{d}(t)$, which consists of the dependent variables $\vect{u}(\vect{x},t)$ and $p(\vect{x},t)$. $\matr{M}$ is the mass matrix, which provides the shape function based weights and $\matr{C}$ is the transient damping matrix. $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function that will be used to represent the convective term and $\fnof{\vect{f}}{t}$ the forcing vector.
+where $\dot{\vect{d}}(t)$ and $\ddot{\vect{d}}(t)$ represent the first and second derivatives (respectively) of the degrees of freedom vector $\vect{d}(t)$, which consists of the dependent variables $\vect{u}(\vect{x},t)$ and $p(x,t)$. $\matr{M}$ is the mass matrix, which provides the shape function based weights and $\matr{C}$ is the transient damping matrix. $\matr{K}$ represents the stiffness matrix, which will contain the linear parts of the operator. $\fnof{\vect{g}}{\fnof{\vect{u}}{t}}$ is the nonlinear vector function that will be used to represent the convective term and $\fnof{\vect{f}}{t}$ the forcing vector.
 
  We will assume cartesian coordinates $\vect{x}=\bbrac{x,y,z}$ and denote the corresponding velocity components $\vect{u}=\bbrac{u,v,w}$, with $N$ representing the number of velocity DOFs and $M$ the number of pressure DOFs. The DOFs vector $d$ then becomes:
 \begin{equation}
@@ -292,7 +279,7 @@ Where $u$ has been used instead of $u(t)$ for simplicity. For further illustrati
   \begin{bmatrix}\vect{u}\\\vect{v}\\\vect{p}\end{bmatrix}
 \end{equation}
 
-All the components of \eqref{eqn:NSEGeneralDynamic} will similarly depend on the number of dimensions,$N_{dim}$, and the size of the matrices will be: $(N{\cdot}{N_{dim}}+M)^{N_{dim}}$. For the simple example used above, the size of the $d_{example}$ vector would be 36 and the matrices that operate on it would be 36 x 36. 
+All the components of \eqref{eqn:NSEGeneralDynamic} will similarly depend on the number of dimensions,$N_{dim}$, and the size of the matrices will be: $(N{\cdot}{N_{dim}}+M)^{N_{dim}}$. For the simple example used above, the size of the $d_{example}$ vector would be 36 and the matrices would be 36 x 36. 
 
 Returning to the general case, the mass matrix $\matr{M}$ will take the form:
 
@@ -346,7 +333,7 @@ The nonlinear vector, $\vect{g}(t)$ will provide the convective operators and fo
   \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}
 \end{equation}
 
-\subsubsection{Streamline Upwind/Petrov-Galerkin (SUPG) Modification}
+\subsubsection{Streamline Upwind/Petrov-Galerkin (SUPG)}
 
 For convection dominated flows, it is often useful to modify the Galerkin formulation account for numerical problems associated with large asymmetric  velocity gradients. We describe augmenting the Galerkin Navier-Stokes formulation to form a Petrov-Galerkin form, which uses a different test function for the convective term to stabilize the algorithm with a balancing diffusive term. Please refer to section ?? for more details. 
 
@@ -364,26 +351,24 @@ For the Navier-Stokes equations (and most nonlinear problems), the use of a Petr
 -\dsum_{f=1}^{F}\gint{\Gamma_N}{}{{\delta}^{jk}{p}{n_i}{w_i}}{\Gamma_N}
 \end{multline}
 
-where $w_i$ will be the classic Galerkin weight and $\Psi_i$ will be the Petrov-Galerkin for the Navier-Stokes equations:
-
-\begin{equation}
- \label{PGTest}
-  \Psi_i = \pbrac{\frac{({\coth{\gamma} - \frac{1}{\gamma}}){L}}{2}{\frac{u_j}{\abs{u_j}}}}{\partialderiv{w_{i}}{k}}
-\end{equation},
- for which it is practical to approximate the coth function:
-
-
-
-Here we see that we retain the same value for $\alpha={\coth{\gamma} - \frac{1}{\gamma}}$ as found for the linearized advection-diffusion equation. We must also define $\gamma$ for the Navier-Stokes equations to describe the ratio of the convective:diffusive operators. Here, the effective Peclet number will be based on the cell Reynolds number:
+where $w_i$ will be the classic Galerkin weight and $\Psi_i$ will be the Petrov-Galerkin for the Navier-Stokes equations. We must also define the Peclet number, $\gamma$, for the Navier-Stokes equations to describe the ratio of the convective:viscous operators. Here, the effective Peclet number will be based on the cell Reynolds number:
 
 \begin{equation}
  Re = \frac{\rho\bar{U}L}{\mu}  =\frac{\bar{U}L}{\nu}
 \end{equation}
-where $\bar{U}$ is the characteristic velocity and $\nu=\frac{\mu}{\rho}$ is the kinematic viscosity. The length scale $L$ for a given element will be the largest distance between two nodes in the given element. The effective Peclet number $\gamma$ will be:
+where $\bar{U}$ is the characteristic velocity and $\nu=\frac{\mu}{\rho}$ is the kinematic viscosity. $L$ will be the characteristic length scale for a given element. The effective Peclet number $\gamma$ will be:
 
 \begin{equation}
   \gamma= \frac{Re}{2}  = \frac{\bar{u}L}{2\nu}
 \end{equation}
+
+We will retain the same value for $\alpha={\coth{\frac{\gamma}{2}} - \frac{2}{\gamma}}$ as found for the linearized advection-diffusion equation. 
+
+\begin{equation}
+ \label{PGTest}
+  \Psi_i = \pbrac{\frac{\alpha{L}}{2}{\frac{u_j}{\abs{u_j}}}}{\partialderiv{w_{i}}{k}}
+\end{equation},
+
 
 Equation \eqref{NSEPGFEM1} then becomes after integration and simplification:
 
@@ -403,7 +388,7 @@ Equation \eqref{NSEPGFEM1} then becomes after integration and simplification:
  %P-G term
   -\dsum_{e=1}^{E}{\idxnodedof{u}{j}{n}{\beta}}(t){\idxgsf{i}{n}{\beta}}^2{\idxgsf{i}{m}{\alpha}}
    \dintl{\vect{0}}{\vect{1}}\delta^{jk}{\fnof{\rho}{\vect{\xi}}\idxgbfn{j}{n}{\beta}{\vect{\xi}}\\
-    \pbrac{\frac{({\coth{\gamma(\vect{\xi})} - \frac{1}{\gamma(\vect{\xi})}}){L(\vect{\xi})}}{2}{\frac{u_j}{\abs{u_j}}}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
+    \pbrac{\frac{(\alpha){L(\vect{\xi})}}{2}{\frac{u_j}{\abs{u_j}}}}\idxgbfn{i}{m}{\alpha}{\vect{\xi}}
      \pbrac{\delby{\idxgbfn{i}{n}{\beta}{\vect{\xi}}}{x^{k}}}
   \abs{\fnof{\matr{J}}{\vect{\xi}}}}d{\vect{\xi}}\\
  %pressure
