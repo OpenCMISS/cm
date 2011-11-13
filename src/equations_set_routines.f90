@@ -1088,7 +1088,7 @@ CONTAINS
                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(EQUATIONS_NONLINEAR)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)             
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_NONLINEAR_BCS)
               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
@@ -1183,7 +1183,7 @@ CONTAINS
               CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
               CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ENDDO !element_idx                  
+            ENDDO !element_idx
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
@@ -1207,7 +1207,7 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
-                & ERR,ERROR,*999)              
+                & ERR,ERROR,*999)
             ENDIF
             !Loop over the boundary and ghost elements
             DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
@@ -1394,7 +1394,7 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
-                & ERR,ERROR,*999)              
+                & ERR,ERROR,*999)
             ENDIF
             !Loop over the boundary and ghost elements
 #ifdef TAUPROF
@@ -1535,7 +1535,7 @@ CONTAINS
               CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
               CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ENDDO !element_idx                  
+            ENDDO !element_idx
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
@@ -1559,7 +1559,7 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
-                & ERR,ERROR,*999)              
+                & ERR,ERROR,*999)
             ENDIF
             !Loop over the boundary and ghost elements
             DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
@@ -1630,7 +1630,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  ! sander, 26/03/10
   !>Assembles the equations stiffness matrix, residuals and rhs for a nonlinear quasistatic equations set using the finite element method.
   !> currently the same as the static nonlinear case
   SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_NONLINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
@@ -1652,7 +1651,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-! chrm, 17/09/09
   !>Assembles the equations stiffness matrix and rhs for a linear quasistatic equations set using the finite element method.
   SUBROUTINE EQUATIONS_SET_ASSEMBLE_QUASISTATIC_LINEAR_FEM(EQUATIONS_SET,ERR,ERROR,*)
 
@@ -1711,7 +1709,7 @@ CONTAINS
               CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
               CALL EQUATIONS_SET_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ENDDO !element_idx                  
+            ENDDO !element_idx
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
@@ -1735,7 +1733,7 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
-                & ERR,ERROR,*999)              
+                & ERR,ERROR,*999)
             ENDIF
             !Loop over the boundary and ghost elements
             DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
@@ -4281,7 +4279,7 @@ CONTAINS
       IF(ASSOCIATED(EQUATIONS)) THEN
         IF(EQUATIONS%EQUATIONS_FINISHED) THEN
           SELECT CASE(EQUATIONS%LINEARITY)
-          CASE(EQUATIONS_LINEAR)            
+          CASE(EQUATIONS_LINEAR)
             SELECT CASE(EQUATIONS%TIME_DEPENDENCE)
             CASE(EQUATIONS_STATIC)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -4659,7 +4657,7 @@ CONTAINS
               CALL EQUATIONS_MATRICES_ELEMENT_CALCULATE(EQUATIONS_MATRICES,ne,ERR,ERROR,*999)
               CALL EQUATIONS_SET_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ne,ERR,ERROR,*999)
               CALL EQUATIONS_MATRICES_JACOBIAN_ELEMENT_ADD(EQUATIONS_MATRICES,ERR,ERROR,*999)
-            ENDDO !element_idx                  
+            ENDDO !element_idx
             !Output timing information if required
             IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_TIMING_OUTPUT) THEN
               CALL CPU_TIMER(USER_CPU,USER_TIME3,ERR,ERROR,*999)
@@ -4683,7 +4681,7 @@ CONTAINS
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"User time for parameter transfer completion = ",USER_ELAPSED, &
                 & ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"System time for parameter transfer completion = ",SYSTEM_ELAPSED, &
-                & ERR,ERROR,*999)              
+                & ERR,ERROR,*999)
             ENDIF
             !Loop over the boundary and ghost elements
             DO element_idx=ELEMENTS_MAPPING%BOUNDARY_START,ELEMENTS_MAPPING%GHOST_FINISH
@@ -4779,7 +4777,7 @@ CONTAINS
       IF(ASSOCIATED(EQUATIONS)) THEN
         IF(EQUATIONS%EQUATIONS_FINISHED) THEN
           SELECT CASE(EQUATIONS%LINEARITY)
-          CASE(EQUATIONS_LINEAR)            
+          CASE(EQUATIONS_LINEAR)
             CALL FLAG_ERROR("Can not evaluate a residual for linear equations.",ERR,ERROR,*999)
           CASE(EQUATIONS_NONLINEAR)
             SELECT CASE(EQUATIONS%TIME_DEPENDENCE)

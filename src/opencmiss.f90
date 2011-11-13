@@ -3925,6 +3925,18 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceConditionLagrangeFieldCreateStartObj
   END INTERFACE !CMISSInterfaceConditionLagrangeFieldCreateStart
 
+  !>Finishes the creation of a Penalty field for an interface condition. \see OPENCMISS::CMISSInterfaceConditionPenaltyFieldCreateStart
+  INTERFACE CMISSInterfaceConditionPenaltyFieldCreateFinish
+    MODULE PROCEDURE CMISSInterfaceConditionPenaltyFieldCreateFinishNumber
+    MODULE PROCEDURE CMISSInterfaceConditionPenaltyFieldCreateFinishObj
+  END INTERFACE !CMISSInterfaceConditionPenaltyFieldCreateFinish
+
+  !>Starts the creation of a Penalty field for an interface condition. \see OPENCMISS::CMISSInterfaceConditionPenaltyFieldCreateFinish
+  INTERFACE CMISSInterfaceConditionPenaltyFieldCreateStart
+    MODULE PROCEDURE CMISSInterfaceConditionPenaltyFieldCreateStartNumber
+    MODULE PROCEDURE CMISSInterfaceConditionPenaltyFieldCreateStartObj
+  END INTERFACE !CMISSInterfaceConditionPenaltyFieldCreateStart
+
   !>Returns the method for an interface condition. 
   INTERFACE CMISSInterfaceConditionMethodGet
     MODULE PROCEDURE CMISSInterfaceConditionMethodGetNumber
@@ -3990,6 +4002,8 @@ MODULE OPENCMISS
   PUBLIC CMISSInterfaceConditionEquationsDestroy
 
   PUBLIC CMISSInterfaceConditionLagrangeFieldCreateFinish,CMISSInterfaceConditionLagrangeFieldCreateStart
+
+  PUBLIC CMISSInterfaceConditionPenaltyFieldCreateFinish,CMISSInterfaceConditionPenaltyFieldCreateStart
 
   PUBLIC CMISSInterfaceConditionMethodGet,CMISSInterfaceConditionMethodSet
   
@@ -33655,6 +33669,181 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSInterfaceConditionLagrangeFieldCreateStartObj
+
+  !  
+  !================================================================================================================================
+  !   
+
+  !>Finishes the creation of a penalty Field for an interface condition identified by an user number.
+  SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateFinishNumber(RegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to finish the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containg the interface condition to finish the penalty  field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to finish creating the penalty field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionPenaltyFieldCreateFinishNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceConditionUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_FINISH(INTERFACE_CONDITION,Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateFinishNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionPenaltyFieldCreateFinishNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateFinishNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateFinishNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Finishes the creation of a penalty field for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateFinishObj(InterfaceCondition,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to finish creating the penalty field for.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionPenaltyFieldCreateFinishObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_FINISH(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateFinishObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionPenaltyFieldCreateFinishObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateFinishObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateFinishObj
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a penalty field for an interface condition identified by a user number.
+  SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateStartNumber(RegionUserNumber,InterfaceUserNumber, &
+    & InterfaceConditionUserNumber,PenaltyFieldUserNumber,Err)
+  
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: RegionUserNumber !<The user number of the region containing the interface and interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceUserNumber !<The user number of the interface containing the interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: InterfaceConditionUserNumber !<The user number of the interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: PenaltyFieldUserNumber !<The user number of the penalty field.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(FIELD_TYPE), POINTER :: PENALTY_FIELD
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
+    TYPE(INTERFACE_CONDITION_TYPE), POINTER :: INTERFACE_CONDITION
+    TYPE(REGION_TYPE), POINTER :: REGION
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    
+    CALL ENTERS("CMISSInterfaceConditionPenaltyFieldCreateStartNumber",Err,ERROR,*999)
+ 
+    NULLIFY(REGION)
+    NULLIFY(INTERFACE)
+    NULLIFY(INTERFACE_CONDITION)
+    NULLIFY(PENALTY_FIELD)
+    CALL REGION_USER_NUMBER_FIND(RegionUserNumber,REGION,Err,ERROR,*999)
+    IF(ASSOCIATED(REGION)) THEN
+      CALL INTERFACE_USER_NUMBER_FIND(InterfaceUserNumber,REGION,INTERFACE,Err,ERROR,*999)
+      IF(ASSOCIATED(INTERFACE)) THEN
+        CALL INTERFACE_CONDITION_USER_NUMBER_FIND(InterfaceUserNumber,INTERFACE,INTERFACE_CONDITION,Err,ERROR,*999)
+        IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
+          CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_START(INTERFACE_CONDITION,PenaltyFieldUserNumber,PENALTY_FIELD, &
+            & Err,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="An interface condition with an user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceConditionUserNumber,"*",Err,ERROR))// &
+            & " does not exist on the interface with a user number of "// &
+            & TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+            & " defined on a region with a user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+        ENDIF
+      ELSE
+        LOCAL_ERROR="An interface with an user number of "//TRIM(NUMBER_TO_VSTRING(InterfaceUserNumber,"*",Err,ERROR))// &
+          & " does not exist on the region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+      ENDIF
+    ELSE
+      LOCAL_ERROR="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(RegionUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateStartNumber")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionPenaltyFieldCreateStartNumber",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateStartNumber")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateStartNumber
+
+  !  
+  !================================================================================================================================
+  !  
+ 
+  !>Starts the creation of a penalty field for an interface condition identified by an object.
+  SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateStartObj(InterfaceCondition,PenaltyFieldUserNumber,PenaltyField,Err)
+  
+    !Argument variables
+    TYPE(CMISSInterfaceConditionType), INTENT(IN) :: InterfaceCondition !<The interface condition to start the creation of the penalty field for.
+    INTEGER(INTG), INTENT(IN) :: PenaltyFieldUserNumber !<The user number of the penalty field.
+    TYPE(CMISSFieldType), INTENT(INOUT) :: PenaltyField !<If associated on entry, the user created penalty field which has the same user number as the specified penalty field user number. If not associated on entry, on return, the created penalty field for the interface condition.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+  
+    CALL ENTERS("CMISSInterfaceConditionPenaltyFieldCreateStartObj",Err,ERROR,*999)
+ 
+    CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_START(InterfaceCondition%INTERFACE_CONDITION,PenaltyFieldUserNumber, &
+      & PenaltyField%FIELD,Err,ERROR,*999)
+
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateStartObj")
+    RETURN
+999 CALL ERRORS("CMISSInterfaceConditionPenaltyFieldCreateStartObj",Err,ERROR)
+    CALL EXITS("CMISSInterfaceConditionPenaltyFieldCreateStartObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+    
+  END SUBROUTINE CMISSInterfaceConditionPenaltyFieldCreateStartObj
 
   !  
   !================================================================================================================================

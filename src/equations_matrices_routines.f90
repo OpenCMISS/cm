@@ -1024,13 +1024,13 @@ CONTAINS
       ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS=ROWS_FIELD_VARIABLE%MAX_NUMBER_OF_INTERPOLATION_PARAMETERS* &
         & ROWS_FIELD_VARIABLE%NUMBER_OF_COMPONENTS
       IF(ALLOCATED(ELEMENT_VECTOR%ROW_DOFS)) THEN
-        CALL FLAG_ERROR("Element vector row dofs is already allocated.",ERR,ERROR,*999)        
+        CALL FLAG_ERROR("Element vector row dofs is already allocated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(ELEMENT_VECTOR%ROW_DOFS(ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element vector row dofs.",ERR,ERROR,*999)
       ENDIF
       IF(ALLOCATED(ELEMENT_VECTOR%VECTOR)) THEN
-        CALL FLAG_ERROR("Element vector vector already allocated.",ERR,ERROR,*999)        
+        CALL FLAG_ERROR("Element vector vector already allocated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(ELEMENT_VECTOR%VECTOR(ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate element vector vector.",ERR,ERROR,*999)
