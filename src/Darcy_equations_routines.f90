@@ -2810,7 +2810,6 @@ CONTAINS
               ENDDO !ms
             ENDDO !mh
 
-
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) THEN
             !Calculate the momentum coupling matrices
 
@@ -3044,7 +3043,12 @@ CONTAINS
 !             CASE DEFAULT
 !               !Do nothing
 !             END SELECT
-           ENDDO !ng
+          ENDDO !ng
+
+          IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+            ! Integrate pressure over faces, and add to RHS vector
+            CALL DarcyEquation_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
+          ENDIF
 
           ! CHECK STIFFNESS MATRIX WITH CMHEART
           IF(DIAGNOSTICS5) THEN
@@ -3138,6 +3142,172 @@ CONTAINS
     CALL EXITS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE")
     RETURN 1
   END SUBROUTINE DARCY_EQUATION_FINITE_ELEMENT_CALCULATE
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates the face integration term of the finite element formulation for Darcy's equation,
+  !>required for pressure boundary conditions.
+  SUBROUTINE DarcyEquation_FiniteElementFaceIntegrate(equationsSet,elementNumber,dependentVariable,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<The equations set to calculate the RHS term for
+    INTEGER(INTG), INTENT(IN) :: elementNumber !<The element number to calculat the RHS term for
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: dependentVariable
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
+    TYPE(DECOMPOSITION_ELEMENT_TYPE), POINTER :: decompElement
+    TYPE(BASIS_TYPE), POINTER :: dependentBasis
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(DECOMPOSITION_FACE_TYPE), POINTER :: face
+    TYPE(BASIS_TYPE), POINTER :: faceBasis
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: dependentInterpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: dependentInterpolationParameters
+    TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme
+    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: geometricInterpolatedPoint
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: geometricInterpolationParameters
+    TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
+    INTEGER(INTG) :: faceIdx, faceNumber
+    INTEGER(INTG) :: componentIdx, gaussIdx
+    INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx
+    INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx
+    INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx
+    REAL(DP) :: gaussWeight, normalProjection, sqrtG, pressureGauss
+    REAL(DP) :: dzdxi(3,3),dzdxiT(3,3),Gijl(3,3),Giju(3,3)
+
+    CALL ENTERS("DarcyEquation_FiniteElementFaceIntegrate",err,error,*999)
+
+    NULLIFY(decomposition)
+    NULLIFY(decompElement)
+    NULLIFY(dependentBasis)
+    NULLIFY(equations)
+    NULLIFY(equationsMatrices)
+    NULLIFY(face)
+    NULLIFY(faceBasis)
+    NULLIFY(faceQuadratureScheme)
+    NULLIFY(dependentInterpolatedPoint)
+    NULLIFY(dependentInterpolationParameters)
+    NULLIFY(geometricInterpolatedPoint)
+    NULLIFY(geometricInterpolationParameters)
+    NULLIFY(rhsVector)
+
+    equations=>equationsSet%EQUATIONS
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%EQUATIONS
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%EQUATIONS_MATRICES
+        IF(ASSOCIATED(equationsMatrices)) THEN
+          rhsVector=>equationsMatrices%RHS_VECTOR
+        END IF
+      ELSE
+        CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
+      END IF
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+    END IF
+
+    SELECT CASE(equationsSet%SUBTYPE)
+    CASE(EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, &
+        & EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE, &
+        & EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
+        & EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE)
+
+      !Get the mesh decomposition and basis for this element
+      decomposition=>dependentVariable%FIELD%DECOMPOSITION
+      !These RHS terms are associated with the equations for the three velocity components,
+      !rather than the pressure term
+      meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
+      dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
+        & ELEMENTS(elementNumber)%BASIS
+      decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)
+
+      !Only add RHS terms if the face geometric parameters are calculated
+      IF(decomposition%CALCULATE_FACES) THEN
+        !Get interpolation parameters and point for Darcy pressure
+        dependentInterpolationParameters=>equations%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS( &
+          & dependentVariable%VARIABLE_TYPE)%PTR
+        dependentInterpolatedPoint=>equations%INTERPOLATION%DEPENDENT_INTERP_POINT( &
+          & dependentVariable%VARIABLE_TYPE)%PTR
+
+        DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
+          !Get the face normal and quadrature information
+          IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
+            faceNumber=decompElement%ELEMENT_FACES(faceIdx)
+          ELSE
+            CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
+          END IF
+          face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
+          !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
+          !correspond to the other element.
+          IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
+          CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faceNumber, &
+            & dependentInterpolationParameters,err,error,*999)
+          normalComponentIdx=ABS(face%XI_DIRECTION)
+          faceBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%FACES%FACES(faceNumber)%BASIS
+          faceQuadratureScheme=>faceBasis%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
+
+          DO gaussIdx=1,faceQuadratureScheme%NUMBER_OF_GAUSS
+            gaussWeight=faceQuadratureScheme%GAUSS_WEIGHTS(gaussIdx)
+            !Get interpolated Darcy pressure
+            CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussIdx, &
+              & dependentInterpolatedPoint,err,error,*999)
+            pressureGauss=dependentInterpolatedPoint%values(4,1) !(component,derivative)
+
+            !Use the geometric field to find the face normal and the Jacobian for the face integral
+            geometricInterpolationParameters=>equations%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS( &
+              & FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber, &
+              & geometricInterpolationParameters,err,error,*999)
+            geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
+              & geometricInterpolatedPoint,err,error,*999)
+            dzdxi=geometricInterpolatedPoint%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
+
+            !Calculate covariant metric tensor
+            CALL MATRIX_TRANSPOSE(dzdxi,dzdxiT,err,error,*999)
+            CALL MATRIX_PRODUCT(dzdxiT,dzdxi,Gijl,err,error,*999) !g_ij = dZdXI' * dZdXI
+            CALL INVERT(Gijl,Giju,sqrtG,err,error,*999) !g^ij = inv(g_ij), G=DET(Gijl)
+            sqrtG=SQRT(sqrtG)
+            DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
+              normalProjection=DOT_PRODUCT(Giju(normalComponentIdx,:),dzdxi(componentIdx,:))
+              IF(face%XI_DIRECTION<0) THEN
+                normalProjection=-normalProjection
+              END IF
+              IF(ABS(normalProjection)<ZERO_TOLERANCE) CYCLE
+              !Work out the first index of the rhs vector for this element - 1
+              elementBaseDofIdx=dependentBasis%NUMBER_OF_ELEMENT_PARAMETERS*(componentIdx-1)
+              DO faceNodeIdx=1,faceBasis%NUMBER_OF_NODES
+                elementNodeIdx=dependentBasis%NODE_NUMBERS_IN_LOCAL_FACE(faceNodeIdx,faceIdx)
+                DO faceNodeDerivativeIdx=1,faceBasis%NUMBER_OF_DERIVATIVES(faceNodeIdx)
+                  nodeDerivativeIdx=dependentBasis%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(faceNodeDerivativeIdx,faceIdx)
+                  parameterIdx=dependentBasis%ELEMENT_PARAMETER_INDEX(nodeDerivativeIdx,elementNodeIdx)
+                  faceParameterIdx=faceBasis%ELEMENT_PARAMETER_INDEX(faceNodeDerivativeIdx,faceNodeIdx)
+                  elementDofIdx=elementBaseDofIdx+parameterIdx
+                  rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) - &
+                    & gaussWeight*pressureGauss*normalProjection* &
+                    & faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
+                    & sqrtG
+                END DO !nodeDerivativeIdx
+              END DO !faceNodeIdx
+            END DO !componentIdx
+          END DO !gaussIdx
+        END DO !faceIdx
+      END IF !decomposition%calculate_faces
+
+    CASE DEFAULT
+      ! Do nothing for other equation set subtypes
+    END SELECT
+
+    CALL EXITS("DarcyEquation_FiniteElementFaceIntegrate")
+    RETURN
+999 CALL ERRORS("DarcyEquation_FiniteElementFaceIntegrate",err,error)
+    CALL EXITS("DarcyEquation_FiniteElementFaceIntegrate")
+    RETURN 1
+  END SUBROUTINE
 
   !
   !================================================================================================================================
@@ -7566,7 +7736,7 @@ CONTAINS
     INTEGER(INTG) :: face_parameter_idx_2,face_node_derivative_idx_2
     INTEGER(INTG) :: var2
 
-    REAL(DP) :: GAUSS_WEIGHT,PRESSURE_GAUSS,NORMAL_PROJECTION_1,NORMAL_PROJECTION_2, PENALTY_PARAM
+    REAL(DP) :: GAUSS_WEIGHT,NORMAL_PROJECTION_1,NORMAL_PROJECTION_2, PENALTY_PARAM
     REAL(DP) :: DZDXI(3,3),DZDXIT(3,3),GIJL(3,3),GIJU(3,3),G,SQRT_G, PGM, PGN, SUM
     LOGICAL :: IMPERMEABLE_BC
 
