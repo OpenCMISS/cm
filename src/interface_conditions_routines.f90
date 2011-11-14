@@ -808,7 +808,7 @@ CONTAINS
                   LOCAL_ERROR="The field variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
                     & " is invalid. The variable type must be between 1 and "// &
                     & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)              
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
@@ -1248,6 +1248,7 @@ CONTAINS
       NULLIFY(INTERFACE_CONDITION%DEPENDENT)
       NULLIFY(INTERFACE_CONDITION%INTERFACE_EQUATIONS)
       CALL INTERFACE_CONDITION_GEOMETRY_INITIALISE(INTERFACE_CONDITION,ERR,ERROR,*999)
+      NULLIFY(INTERFACE_CONDITION%BOUNDARY_CONDITIONS)
     ENDIF
        
     CALL EXITS("INTERFACE_CONDITION_INITIALISE")
