@@ -838,7 +838,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i,j,LEVEL
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
-    CHARACTER(LEN=1) :: CHARAC1, CHARAC2
+    CHARACTER(LEN=1) :: CHARAC
     CHARACTER(LEN=MAXSTRLEN) :: FILENAME
     TYPE(ROUTINE_LIST_ITEM_TYPE), POINTER :: NEXT_ROUTINE,PREVIOUS_ROUTINE,ROUTINE
     TYPE(VARYING_STRING) :: LOCAL_STRING
@@ -877,15 +877,10 @@ CONTAINS
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
       ROUTINE%NAME=""
       DO i=1,LEN(ROUTINE_LIST(1))
-        CHARAC1=ROUTINE_LIST(1)(i:i)
-        IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-          CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-        ELSE
-          CHARAC2=CHARAC1
-        ENDIF
+        CHARAC=ROUTINE_LIST(1)(i:i)
         !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-        !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-        LOCAL_STRING=ROUTINE%NAME//CHARAC2
+        !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+        LOCAL_STRING=ROUTINE%NAME//CHARAC
         ROUTINE%NAME=CHAR(LOCAL_STRING)
       ENDDO !i
       PREVIOUS_ROUTINE=>ROUTINE
@@ -896,15 +891,10 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
         ROUTINE%NAME=""
         DO j=1,LEN(ROUTINE_LIST(i))
-          CHARAC1=ROUTINE_LIST(i)(j:j)
-          IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-            CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-          ELSE
-            CHARAC2=CHARAC1
-          ENDIF
+          CHARAC=ROUTINE_LIST(i)(j:j)
           !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-          !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-          LOCAL_STRING=ROUTINE%NAME//CHARAC2
+          !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+          LOCAL_STRING=ROUTINE%NAME//CHARAC
           ROUTINE%NAME=CHAR(LOCAL_STRING)
         ENDDO !i
         NULLIFY(ROUTINE%NEXT_ROUTINE)
@@ -1171,7 +1161,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i,j
     INTEGER(INTG), PARAMETER :: OFFSET=(ICHAR("A")-ICHAR("a"))
-    CHARACTER(LEN=1) :: CHARAC1,CHARAC2
+    CHARACTER(LEN=1) :: CHARAC
     CHARACTER(LEN=MAXSTRLEN) :: FILENAME
     TYPE(ROUTINE_LIST_ITEM_TYPE), POINTER :: NEXT_ROUTINE,PREVIOUS_ROUTINE,ROUTINE
     TYPE(VARYING_STRING) :: LOCAL_STRING
@@ -1209,15 +1199,10 @@ CONTAINS
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
       ROUTINE%NAME=""
       DO i=1,LEN(ROUTINE_LIST(1))
-        CHARAC1=ROUTINE_LIST(1)(i:i)
-        IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-          CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-        ELSE
-          CHARAC2=CHARAC1
-        ENDIF
+        CHARAC=ROUTINE_LIST(1)(i:i)
         !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-        !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-        LOCAL_STRING=ROUTINE%NAME//CHARAC2
+        !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+        LOCAL_STRING=ROUTINE%NAME//CHARAC
         ROUTINE%NAME=CHAR(LOCAL_STRING)
       ENDDO !i
       PREVIOUS_ROUTINE=>ROUTINE
@@ -1233,15 +1218,10 @@ CONTAINS
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate routine list item.",ERR,ERROR,*999)
         ROUTINE%NAME=""
         DO j=1,LEN(ROUTINE_LIST(i))
-          CHARAC1=ROUTINE_LIST(i)(j:j)
-          IF(LGE(CHARAC1,"a").AND.LLE(CHARAC1,"z")) THEN
-            CHARAC2=CHAR(ICHAR(CHARAC1)+OFFSET)
-          ELSE
-            CHARAC2=CHARAC1
-          ENDIF
+          CHARAC=ROUTINE_LIST(i)(j:j)
           !CPB 26/9/05 Aix compiler doesn't like the vstring so split the statement and put a char() around it
-          !ROUTINE%NAME=ROUTINE%NAME//CHARAC2
-          LOCAL_STRING=ROUTINE%NAME//CHARAC2
+          !ROUTINE%NAME=ROUTINE%NAME//CHARAC
+          LOCAL_STRING=ROUTINE%NAME//CHARAC
           ROUTINE%NAME=CHAR(LOCAL_STRING)
         ENDDO !i
         NULLIFY(ROUTINE%NEXT_ROUTINE)
