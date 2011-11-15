@@ -58,22 +58,23 @@ class HtmlOutput(Plugin):
         self.html=['</div>','<ul id="tree1" class="mktree">']
 
     def insertLog(self, test):
-        compiler = os.environ['COMPILER']
+        logPath=""
+        historyPath=""
         if str(test).find('test_build_library')!=-1 :
-          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + compiler + str(date.today()) 
-          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + compiler
+          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + list(test.test.arg)[0] + str(date.today()) 
+          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + list(test.test.arg)[0]
         elif str(test).find('test_example')!=-1 :
           path = list(test.test.arg)[1]
           path = path[path.find("/examples/")+10:]
           if list(test.test.arg)[0]=='build' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history_" + compiler
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + list(test.test.arg)[2] + str(date.today())
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history_" + list(test.test.arg)[2]
           elif list(test.test.arg)[0]=='run' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history_" + compiler
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + list(test.test.arg)[3] + str(date.today())
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history_" + list(test.test.arg)[3]
           elif list(test.test.arg)[0]=='check' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + compiler + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history_" + compiler
+            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + list(test.test.arg)[2] + str(date.today())
+            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history_" + list(test.test.arg)[2]
         self.html.append('&nbsp;<a href="'+logPath+'">log</a>')
         self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
     
