@@ -56,7 +56,23 @@ MODULE FIELDML_TYPES
   ! FieldML types
 
   !<Contains information on the current FieldML parsing state.
-  TYPE FIELDML_INFO_TYPE
+  TYPE FIELDML_OUTPUT_TYPE
+    INTEGER(INTG) :: FML_HANDLE !<The FieldML session handle.
+    INTEGER(INTG) :: NODES_HANDLE !<The FieldML global nodes type handle.
+    INTEGER(INTG) :: NODES_ARGUMENT_HANDLE !<The FieldML global nodes argument handle.
+    INTEGER(INTG) :: MESH_HANDLE !<The FieldML mesh type handle.
+    INTEGER(INTG) :: ELEMENTS_HANDLE !<The FieldML mesh elements type handle.
+    INTEGER(INTG) :: ELEMENTS_ARGUMENT_HANDLE !<The FieldML mesh elements argument handle.
+    INTEGER(INTG) :: XI_HANDLE !<The FieldML mesh chart type handle.
+    INTEGER(INTG) :: XI_ARGUMENT_HANDLE !<The FieldML mesh chart argument handle.
+    INTEGER(INTG) :: NODE_DOFS_HANDLE !<The FieldML nodal dofs evaluator handle.
+!    INTEGER(C_INT) :: elementDofsHandle !<The FieldML element dofs evaluator handle.
+!    INTEGER(C_INT) :: constantDofsHandle !<The FieldML constant dofs evaluator handle.
+    TYPE(LIST_TYPE), POINTER :: COMPONENT_HANDLES
+  END TYPE FIELDML_OUTPUT_TYPE
+
+  !<Contains information on the current FieldML parsing state.
+  TYPE FIELDML_INPUT_TYPE
     INTEGER(INTG) :: FML_HANDLE !<The FieldML session handle.
     INTEGER(INTG) :: NODES_HANDLE !<The FieldML global nodes type handle.
     INTEGER(INTG) :: NODES_ARGUMENT_HANDLE !<The FieldML global nodes argument handle.
@@ -72,11 +88,11 @@ MODULE FIELDML_TYPES
     TYPE(LIST_TYPE), POINTER :: BASIS_HANDLES
     TYPE(LIST_TYPE), POINTER :: BASIS_CONNECTIVITY_HANDLES
     TYPE(LIST_TYPE), POINTER :: BASIS_LAYOUT_HANDLES
-  END TYPE FIELDML_INFO_TYPE
+  END TYPE FIELDML_INPUT_TYPE
 
   !Interfaces
   
-  PUBLIC :: FIELDML_INFO_TYPE
+  PUBLIC :: FIELDML_OUTPUT_TYPE, FIELDML_INPUT_TYPE
 
 CONTAINS
 
