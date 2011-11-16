@@ -48178,7 +48178,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputGetSession( fieldml, sessionHandle, Err )
     !Argument variables
     TYPE(CMISSFieldMLInputType), INTENT(INOUT) :: FIELDML !< The FieldML context whose session handle is to be returned.
-    INTEGER(INTG), INTENT(INOUT) :: sessionHandle !<The session handle.
+    INTEGER(INTG), INTENT(OUT) :: sessionHandle !<The session handle.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     
     CALL ENTERS("CMISSFieldMLInputGetSession", Err, ERROR, *999 )
@@ -48201,7 +48201,7 @@ CONTAINS
   !>Finalises a Fieldml context.
   SUBROUTINE CMISSFieldMLInputTypeFinalise( fieldml, Err )
     !Argument variables
-    TYPE(CMISSFieldMLInputType), INTENT(INOUT) :: FIELDML !< The FieldML context to finalise.
+    TYPE(CMISSFieldMLInputType), INTENT(OUT) :: FIELDML !< The FieldML context to finalise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     
     CALL ENTERS("CMISSFieldMLInputTypeFinalise", Err, ERROR, *999 )
@@ -48248,7 +48248,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputGetSession( fieldml, sessionHandle, Err )
     !Argument variables
     TYPE(CMISSFieldMLOutputType), INTENT(INOUT) :: FIELDML !< The FieldML context whose session handle is to be returned.
-    INTEGER(INTG), INTENT(INOUT) :: sessionHandle !<The session handle.
+    INTEGER(INTG), INTENT(OUT) :: sessionHandle !<The session handle.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     
     CALL ENTERS("CMISSFieldMLOutputGetSession", Err, ERROR, *999 )
@@ -48271,7 +48271,7 @@ CONTAINS
   !>Finalises a Fieldml context.
   SUBROUTINE CMISSFieldMLOutputTypeFinalise( fieldml, Err )
     !Argument variables
-    TYPE(CMISSFieldMLOutputType), INTENT(INOUT) :: FIELDML !< The FieldML context to finalise.
+    TYPE(CMISSFieldMLOutputType), INTENT(OUT) :: FIELDML !< The FieldML context to finalise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     
     CALL ENTERS("CMISSFieldMLOutputTypeFinalise", Err, ERROR, *999 )
