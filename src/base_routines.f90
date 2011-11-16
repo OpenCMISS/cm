@@ -192,6 +192,11 @@ MODULE BASE_ROUTINES
 
   END INTERFACE
 
+  INTERFACE EXTRACT_ERROR_MESSAGE
+    MODULE PROCEDURE EXTRACT_ERROR_MESSAGE_C
+    MODULE PROCEDURE EXTRACT_ERROR_MESSAGE_VS
+  END INTERFACE !EXTRACT_ERROR_MESSAGE
+
   !>Flags an error condition \see BASE_ROUTINES
   INTERFACE FLAG_ERROR
     MODULE PROCEDURE FLAG_ERROR_C
@@ -535,27 +540,46 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Extracts the error message from a CMISS error string and returns it as varying string
-  FUNCTION EXTRACT_ERROR_MESSAGE(ERR,ERROR)
+  !>Extracts the error message from a CMISS error string and returns it as a varying string
+  SUBROUTINE EXTRACT_ERROR_MESSAGE_VS(ERROR_MESSAGE,ERR,ERROR,*)
 
-    !Argument variables    
+    !Argument variables
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR_MESSAGE !<The extracted error message
     INTEGER(INTG), INTENT(IN) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(IN) :: ERROR !<The error string
-    !Function variable
-    TYPE(VARYING_STRING) :: EXTRACT_ERROR_MESSAGE !<On exit, the error message contained in the error string
     !Local Variables
     INTEGER(INTG) :: POSITION
-    
+
     POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-    EXTRACT_ERROR_MESSAGE=EXTRACT(ERROR,1,POSITION-1)
-    
-    RETURN    
-  END FUNCTION EXTRACT_ERROR_MESSAGE
-    
+    ERROR_MESSAGE=EXTRACT(ERROR,1,POSITION-1)
+
+    RETURN
+  END SUBROUTINE EXTRACT_ERROR_MESSAGE_VS
+
   !
   !================================================================================================================================
   !
- 
+
+  !>Extracts the error message from a CMISS error string and returns it as a character array
+  SUBROUTINE EXTRACT_ERROR_MESSAGE_C(ERROR_MESSAGE,ERR,ERROR,*)
+
+    !Argument variables
+    CHARACTER(LEN=*), INTENT(OUT) :: ERROR_MESSAGE !<The extracted error message
+    INTEGER(INTG), INTENT(IN) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(IN) :: ERROR !<The error string
+    !Local Variables
+    INTEGER(INTG) :: POSITION
+
+    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
+    ERROR_MESSAGE=EXTRACT(ERROR,1,POSITION-1)
+
+    RETURN
+  END SUBROUTINE EXTRACT_ERROR_MESSAGE_C
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets the error string specified by a character string and flags an error 
   SUBROUTINE FLAG_ERROR_C(STRING,ERR,ERROR,*)
 

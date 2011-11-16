@@ -611,7 +611,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBasisXiCollapsed = BASIS_XI_COLLAPSED !<The Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBasisCollapsedAtXi0 = BASIS_COLLAPSED_AT_XI0 !<The Xi direction at the xi=0 end of this Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBasisCollapsedAtXi1 = BASIS_COLLAPSED_AT_XI1 !<The Xi direction at the xi=1 end of this Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisNotCollapsed = BASIS_NOT_COLLAPSED !<The Xi direction is not collapsed \see OPENCMISS_XiCollapse,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSBasisNotCollapsed = BASIS_NOT_COLLAPSED !<The Xi direction is not collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
   !>@}
   !>@}
 
@@ -914,6 +914,12 @@ MODULE OPENCMISS
   
   !Interfaces
 
+  !>Extracts the OpenCMISS error message.
+  INTERFACE CMISSExtractErrorMessage
+    MODULE PROCEDURE CMISSExtractErrorMessageC
+    MODULE PROCEDURE CMISSExtractErrorMessageVS
+  END INTERFACE !CMISSExtractErrorMessage
+
   !>Gets the random seeds for OpenCMISS.
   INTERFACE CMISSRandomSeedsGet
     MODULE PROCEDURE CMISSRandomSeedsGet0
@@ -929,6 +935,8 @@ MODULE OPENCMISS
   PUBLIC CMISSReturnErrorCode,CMISSOutputError,CMISSTrapError
 
   PUBLIC CMISSErrorHandlingModeGet,CMISSErrorHandlingModeSet
+
+  PUBLIC CMISSExtractErrorMessage
 
   PUBLIC CMISSRandomSeedsGet,CMISSRandomSeedsSizeGet,CMISSRandomSeedsSet
   
@@ -9245,7 +9253,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the collapsed Xi flags for.
-    INTEGER(INTG), INTENT(OUT) :: CollapsedXi(:) !<CollapsedXi(ni). On return, the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
+    INTEGER(INTG), INTENT(OUT) :: CollapsedXi(:) !<CollapsedXi(ni). On return, the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_BasisXiCollapse
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -9280,7 +9288,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSBasisType), INTENT(IN) :: Basis !<The basis to get the collapsed Xi flags for.
-    INTEGER(INTG), INTENT(OUT) :: CollapsedXi(:) !<CollapsedXi(ni). On return, the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_XiCollapse
+    INTEGER(INTG), INTENT(OUT) :: CollapsedXi(:) !<CollapsedXi(ni). On return, the collapsed Xi parameter for the ni'th Xi direction. \see OPENCMISS_BasisXiCollapse
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -9306,7 +9314,7 @@ CONTAINS
   
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to set the collapsed Xi flags for.
-    INTEGER(INTG), INTENT(IN) :: CollapsedXi(:) !<CollapsedXi(ni). The collapsed Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_XiCollapse
+    INTEGER(INTG), INTENT(IN) :: CollapsedXi(:) !<CollapsedXi(ni). The collapsed Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_BasisXiCollapse
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -9341,7 +9349,7 @@ CONTAINS
   
     !Argument variables
     TYPE(CMISSBasisType), INTENT(INOUT) :: Basis !<The basis to set the collapsed Xi flags for.
-    INTEGER(INTG), INTENT(IN) :: CollapsedXi(:) !<CollapsedXi(ni). The collapsed Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_XiCollapse
+    INTEGER(INTG), INTENT(IN) :: CollapsedXi(:) !<CollapsedXi(ni). The collapsed Xi parameter for the ni'th Xi direction to set. \see OPENCMISS_BasisXiCollapse
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
@@ -9614,8 +9622,8 @@ CONTAINS
   SUBROUTINE CMISSBasisInterpolationXiSetNumber(UserNumber,InterpolationXi,Err)
   
     !Argument variables
-     INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
-     INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
+    INTEGER(INTG), INTENT(IN) :: UserNumber !<The user number of the basis to get the interpolation xi for.
+    INTEGER(INTG), INTENT(IN) :: InterpolationXi(:) !<The interpolation xi parameters for each Xi direction \see OPENCMISS_BasisInterpolationSpecifications.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
@@ -10261,7 +10269,7 @@ CONTAINS
 
     !Argument variables
     TYPE(CMISSBasisType), INTENT(INOUT) :: Basis !<The basis to get the quadrature type for.
-    LOGICAL, INTENT(IN) :: faceGaussEvaluate !<The type of quadrature in the specified basis to set. \see OPENCMISS_QuadratureTypes
+    LOGICAL, INTENT(IN) :: faceGaussEvaluate !<The type of quadrature in the specified basis to set.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
 
     CALL ENTERS("CMISSBasisQuadratureLocalFaceGaussEvaluateSetObj",Err,ERROR,*999)
@@ -11424,10 +11432,48 @@ CONTAINS
     
   END SUBROUTINE CMISSErrorHandlingModeSet
 
-  !  
+  !
   !================================================================================================================================
   !
-  
+
+  !>Extracts the most recent error string for OpenCMISS
+  SUBROUTINE CMISSExtractErrorMessageC(ErrorMessage,Err)
+
+    !Argument variables
+    CHARACTER(LEN=*), INTENT(OUT) :: ErrorMessage !<On return, the extracted error message.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL EXTRACT_ERROR_MESSAGE(ErrorMessage,Err,ERROR,*999)
+
+    RETURN
+999 RETURN 1
+
+  END SUBROUTINE CMISSExtractErrorMessageC
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Extracts the most recent error string for OpenCMISS
+  SUBROUTINE CMISSExtractErrorMessageVS(ErrorMessage,Err)
+
+    !Argument variables
+    TYPE(VARYING_STRING), INTENT(OUT) :: ErrorMessage !<On return, the extracted error message.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL EXTRACT_ERROR_MESSAGE(ErrorMessage,Err,ERROR,*999)
+
+    RETURN
+999 RETURN 1
+
+  END SUBROUTINE CMISSExtractErrorMessageVS
+
+  !
+  !================================================================================================================================
+  !
+
   !>Returns the random seeds for OpenCMISS
   SUBROUTINE CMISSRandomSeedsGet0(RandomSeed,Err)
   
@@ -26715,7 +26761,7 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>>Restores the specified field variable parameter set local single precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
+  !>Restores the specified field variable parameter set local single precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
   SUBROUTINE CMISSFieldParameterSetDataRestoreSPObj(Field,VariableType,FieldSetType,Parameters,Err)
   
     !Argument variables
@@ -26790,7 +26836,7 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>>Restores the specified field variable parameter set local double precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
+  !>Restores the specified field variable parameter set local double precision array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
   SUBROUTINE CMISSFieldParameterSetDataRestoreDPObj(Field,VariableType,FieldSetType,Parameters,Err)
   
     !Argument variables
@@ -26865,7 +26911,7 @@ CONTAINS
   !================================================================================================================================
   !  
  
-  !>>Restores the specified field variable parameter set local logical array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
+  !>Restores the specified field variable parameter set local logical array that was obtained with an OPENCMISS::CMISSFieldParameterSetDataGet call for a field that is specified with an object.
   SUBROUTINE CMISSFieldParameterSetDataRestoreLObj(Field,VariableType,FieldSetType,Parameters,Err)
   
     !Argument variables
