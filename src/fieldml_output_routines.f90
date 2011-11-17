@@ -149,6 +149,7 @@ CONTAINS
       IMPORT_INDEX = Fieldml_AddImportSource( FML_HANDLE, &
         & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//C_NULL_CHAR, "library"//C_NULL_CHAR )
       FIELDML_OUTPUT_IMPORT = Fieldml_AddImport( FML_HANDLE, IMPORT_INDEX, cchar(REMOTE_NAME), cchar(REMOTE_NAME) )
+      IF( FIELDML_OUTPUT_IMPORT == FML_INVALID_HANDLE ) ERR = 1
     ENDIF
 
     CALL EXITS( "FIELDML_OUTPUT_IMPORT" )
@@ -529,12 +530,11 @@ CONTAINS
         & ERR, ERROR, *999 )
     ENDIF
 
-    IMPORT_INDEX = Fieldml_AddImportSource( FML_HANDLE, &
-      & "http://www.fieldml.org/resources/xml/0.4/FieldML_Library_0.4.xml"//C_NULL_CHAR, "library"//C_NULL_CHAR )
-    CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot access built-in FieldML library.", FML_HANDLE, ERR, ERROR, *999 )
+    EVALUATOR_HANDLE = FIELDML_OUTPUT_IMPORT( FML_HANDLE, INTERPOLATOR_NAME, ERR, ERROR )
+    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not import interpolator "//char(INTERPOLATOR_NAME)//".", ERR, ERROR, *999 )
 
-    EVALUATOR_HANDLE = Fieldml_AddImport( FML_HANDLE, IMPORT_INDEX, cchar(INTERPOLATOR_NAME), cchar(INTERPOLATOR_NAME) )
-    PARAMETERS_HANDLE = Fieldml_AddImport( FML_HANDLE, IMPORT_INDEX, cchar(PARAMETER_NAME), cchar(PARAMETER_NAME) )
+    PARAMETERS_HANDLE = FIELDML_OUTPUT_IMPORT( FML_HANDLE, PARAMETER_NAME, ERR, ERROR )
+    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not import parameter type "//char(INTERPOLATOR_NAME)//".", ERR, ERROR, *999 )
     
     IF( EVALUATOR_HANDLE == FML_INVALID_HANDLE ) THEN
       CALL FLAG_ERROR( "Cannot get a handle for basis evaluator "//char(INTERPOLATOR_NAME)//".", ERR, ERROR, *999 )
