@@ -74,7 +74,9 @@ endif
 ifndef GLOBAL_ROOT
   $(error GLOBAL_ROOT is not setup)
 else
-  GLOBAL_CELLML_ROOT := $(GLOBAL_ROOT)/../cellml
+  ifndef GLOBAL_CELLML_ROOT
+    GLOBAL_CELLML_ROOT := $(GLOBAL_ROOT)/../cellml
+  endif
 endif
 
 ifndef OPENCMISSEXAMPLES_ROOT
