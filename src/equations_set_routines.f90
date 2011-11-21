@@ -2160,7 +2160,8 @@ CONTAINS
                                   CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,row_idx,VALUE,ERR,ERROR,*999)
                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                     & variable_dof,VALUE,ERR,ERROR,*999)
-                                CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_PRESSURE,BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
+                                CASE(BOUNDARY_CONDITION_FIXED,BOUNDARY_CONDITION_FIXED_INCREMENTED,BOUNDARY_CONDITION_PRESSURE, &
+                                    & BOUNDARY_CONDITION_PRESSURE_INCREMENTED)
                                   !Do nothing
                                 CASE(BOUNDARY_CONDITION_MIXED)
                                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
