@@ -61,6 +61,10 @@ endif
 
 GLOBAL_CM_ROOT = $(CURDIR)
 
+ifndef GLOBAL_MPI_ROOT
+  GLOBAL_MPI_ROOT := ${OPENCMISSEXTRAS_ROOT}/mpi
+endif
+
 ifndef GLOBAL_CELLML_ROOT
   GLOBAL_CELLML_ROOT := ${OPENCMISS_ROOT}/cellml
 endif
@@ -148,12 +152,18 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
     endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
+    endif
     OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
     INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
     LIB_DIR := $(GLOBAL_CM_ROOT)/lib/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)_$(COMPILER_VERSION)
   else
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
     endif
     OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
     INC_DIR := $(GLOBAL_CM_ROOT)/include/$(BIN_ARCH_DIR)/$(MPI)/$(COMPILER)
@@ -164,9 +174,15 @@ else
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
     endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
+    endif
   else# windows
     ifndef EXTERNAL_CM_DIR
       EXTERNAL_CM_DIR := $(EXTERNAL_CM_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
+    endif
+    ifndef MPI_DIR
+      MPI_DIR := $(GLOBAL_MPI_ROOT)/$(LIB_ARCH_DIR)$(DEBUG_SUFFIX)$(PROF_SUFFIX)
     endif
   endif
   OBJECT_DIR := $(GLOBAL_CM_ROOT)/object/$(LIB_ARCH_DIR)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX)/$(MPI)/$(COMPILER)
@@ -708,11 +724,11 @@ endif
 MPI_INCLUDE_PATH =#
 ifeq ($(OPERATING_SYSTEM),linux)# Linux
   ifeq ($(MPI),mpich2)
-    MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
   else
     ifeq ($(MPI),openmpi)
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
-      MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/include/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
+      MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
     else
       ifeq ($(MPI),intel)
         ifeq ($(MPIPROF),true)
@@ -724,7 +740,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
           MPI_INCLUDE_PATH += $(addprefix -I, $(I_MPI_ROOT)/include/ )
         endif
       else
-        MPI_INCLUDE_PATH += $(addprefix -I, $(EXTERNAL_CM_DIR)/lib/ )
+        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
       endif
     endif
   endif
