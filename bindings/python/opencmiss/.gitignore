@@ -1,0 +1,4 @@
+*.pyc
+CMISS.py
+_opencmiss_swig.so
+opencmiss_wrap*
