@@ -1,2 +1,61 @@
+\subsection{Darcy Equation}
 
-\subsection{Darcy Equation} 
+Darcy's equation describes the flow of fluid through a porous material:
+
+\begin{equation}
+\vect{v} = -\frac{\tensor{K}}{\mu} \gradient p
+\end{equation}
+
+$\vect{v}$ is the relative mass flow vector, given by $n \rho_f (\boldsymbol{V}^f - \boldsymbol{V}^s)$ where
+$n$ is the porosity, $\rho_f$ is fluid density, and $\boldsymbol{V}^f$ and $\boldsymbol{V}^s$ are the
+Eulerian fluid and solid component velocities.
+$\tensor{K}$ is the permeability tensor, $\mu$ is viscosity
+and $p$ is the fluid pressure.
+
+Conservation of mass also gives:
+
+\begin{equation}
+\gradient \cdot \vect{v} = 0
+\end{equation}
+
+The weighted residual forms of these equations over a region $\Omega$ with surface $\Gamma$ are:
+
+\begin{equation}
+\gint{\Omega}{}{\left(\vect{v} \vect{w} + \frac{\tensor{K}}{\mu} \gradient p \vect{w}\right)}{\Omega} = 0
+\end{equation}
+
+\begin{equation}
+\gint{\Omega}{}{q \gradient \cdot \vect{v}}{\Omega} = 0
+\end{equation}
+
+Where $\vect{w}$ is the weighting function for the flow and $q$ is the weighting function
+for pressure.
+Applying Green's theorem to the pressure term to give the weak form of the equations, and multiplying through by
+$\mu \tensor{K}^{-1}$:
+
+\begin{equation}
+  \gint{\Omega}{}{\left(\mu \tensor{K}^{-1} \vect{v} \vect{w} - p \gradient \vect{w}\right)}{\Omega}  + %
+  \gint{\Gamma}{}{p \vect{n} \vect{w}}{\Gamma}= 0
+\end{equation}
+
+\begin{equation}
+  \gint{\Omega}{}{q \gradient \cdot \vect{v}}{\Omega}= 0
+\end{equation}
+
+Where $\vect{n}$ is the normal vector to the surface $\Gamma$.
+
+The OpenCMISS implementation of Darcy's equation uses the stabilised form of the finite element
+equations developed by \cite{masud:2002}. This adds stabilising terms, so that the final form
+of the implemented equations is:
+
+\begin{equation}
+  \gint{\Omega}{}{\left(\mu \tensor{K}^{-1} \vect{v} \vect{w} - p \gradient \vect{w} - %
+  \frac{1}{2} \left( \gradient p \vect{w} + \mu \tensor{K}^{-1} \vect{v} \vect{w} \right) \right)}{\Omega} + %
+  \gint{\Gamma}{}{p \vect{n} \vect{w}}{\Gamma}= 0
+\end{equation}
+
+\begin{equation}
+  \gint{\Omega}{}{q \gradient \cdot \vect{v} + %
+  \frac{1}{2} \left( \gradient q \cdot \vect{v} + %
+  \frac{\tensor{K}}{\mu} \gradient p \cdot \gradient q \right)}{\Omega}= 0
+\end{equation}
