@@ -1,13 +1,14 @@
 \subsection{Darcy Equation}
 
-Darcy's equation describes the flow of fluid through a porous material:
+Darcy's equation describes the flow of fluid through a porous material. Ignoring inertial
+and body forces, Darcy's equation is:
 
 \begin{equation}
 \vect{v} = -\frac{\tensor{K}}{\mu} \gradient p
 \end{equation}
 
-$\vect{v}$ is the relative mass flow vector, given by $n \rho_f (\boldsymbol{V}^f - \boldsymbol{V}^s)$ where
-$n$ is the porosity, $\rho_f$ is fluid density, and $\boldsymbol{V}^f$ and $\boldsymbol{V}^s$ are the
+$\vect{v}$ is the relative fluid flow vector, given by $n (\vect{v}^f - \vect{v}^s)$ where
+$n$ is the porosity, and $\vect{v}^f$ and $\vect{v}^s$ are the
 Eulerian fluid and solid component velocities.
 $\tensor{K}$ is the permeability tensor, $\mu$ is viscosity
 and $p$ is the fluid pressure.
