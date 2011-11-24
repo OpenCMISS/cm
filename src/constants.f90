@@ -91,6 +91,7 @@ MODULE CONSTANTS
   INTEGER(INTG), PARAMETER :: SINGLE_COMPLEX_TYPE=9 !<Single precision complex data type \see CONSTANTS_DataTypes,CONSTANTS
   INTEGER(INTG), PARAMETER :: DOUBLE_COMPLEX_TYPE=10 !<Double precision complex data type \see CONSTANTS_DataTypes,CONSTANTS
   INTEGER(INTG), PARAMETER :: QUADRUPLE_COMPLEX_TYPE=11  !<Quadruple precision complex data type \see CONSTANTS_DataTypes,CONSTANTS
+  INTEGER(INTG), PARAMETER :: C_INT_TYPE=12  !<C integer data type \see CONSTANTS_DataTypes,CONSTANTS
   !>@}
 
   !> \addtogroup CONSTANTS_EndianTypes CONSTANTS::EndianTypes

@@ -470,6 +470,12 @@ MODULE FIELD_ROUTINES
     MODULE PROCEDURE FIELD_USER_NUMBER_FIND_REGION
   END INTERFACE !FIELD_USER_NUMBER_FIND
   
+  !> Find the field with the given user number, or throw an error if it does not exist.
+  INTERFACE FIELD_USER_NUMBER_TO_FIELD
+    MODULE PROCEDURE FIELD_USER_NUMBER_TO_FIELD_INTERFACE
+    MODULE PROCEDURE FIELD_USER_NUMBER_TO_FIELD_REGION
+  END INTERFACE !FIELD_USER_NUMBER_TO_FIELD
+  
   !>Gets the label for a field variable type.
   INTERFACE FIELD_VARIABLE_LABEL_GET
     MODULE PROCEDURE FIELD_VARIABLE_LABEL_GET_C
@@ -623,7 +629,7 @@ MODULE FIELD_ROUTINES
 
   PUBLIC FIELD_TYPE_CHECK,FIELD_TYPE_GET,FIELD_TYPE_SET,FIELD_TYPE_SET_AND_LOCK
   
-  PUBLIC FIELD_USER_NUMBER_FIND
+  PUBLIC FIELD_USER_NUMBER_FIND, FIELD_USER_NUMBER_TO_FIELD
 
   PUBLIC FIELD_VARIABLE_GET
 
@@ -24045,7 +24051,7 @@ CONTAINS
     RETURN 1
   END SUBROUTINE MESH_EMBEDDING_PULL_GAUSS_POINT_DATA
 
- !
+  !
   !================================================================================================================================
   !
 
@@ -24082,5 +24088,79 @@ CONTAINS
     CALL EXITS("FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD")
     RETURN 1
   END SUBROUTINE FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD
-!========================================================================================================================================
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Find the field with the given user number, or throw an error if it does not exist.
+  SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_REGION( USER_NUMBER, REGION, FIELD, ERR, ERROR, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field to find
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the specified user number.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_USER_NUMBER_TO_FIELD_REGION", ERR, ERROR, *999 )
+
+    NULLIFY( FIELD )
+    CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, REGION, FIELD, ERR, ERROR, *999 )
+      CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, REGION, FIELD, ERR, ERROR, *999 )
+    IF( .NOT.ASSOCIATED( FIELD ) ) THEN
+      LOCAL_ERROR = "A field with an user number of "//TRIM(NUMBER_TO_VSTRING( USER_NUMBER, "*", ERR, ERROR ))// &
+        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( REGION%USER_NUMBER, "*", ERR, ERROR ))//"."
+      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+    ENDIF
+
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_REGION" )
+    RETURN
+999 CALL ERRORS( "FIELD_USER_NUMBER_TO_FIELD_REGION", ERR, ERROR )
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_REGION" )
+    RETURN 1
+
+  END SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_REGION
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Find the field with the given user number, or throw an error if it does not exist.
+  SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_INTERFACE( USER_NUMBER, INTERFACE, FIELD, ERR, ERROR, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the field to find
+    TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface containing the field
+    TYPE(FIELD_TYPE), POINTER :: FIELD !<On exit, a pointer to the field with the specified user number.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("FIELD_USER_NUMBER_TO_FIELD_INTERFACE", ERR, ERROR, *999 )
+
+    NULLIFY( FIELD )
+    CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, INTERFACE, FIELD, ERR, ERROR, *999 )
+      CALL FIELD_USER_NUMBER_FIND( USER_NUMBER, INTERFACE, FIELD, ERR, ERROR, *999 )
+    IF( .NOT.ASSOCIATED( FIELD ) ) THEN
+      LOCAL_ERROR = "A field with an user number of "//TRIM(NUMBER_TO_VSTRING( USER_NUMBER, "*", ERR, ERROR ))// &
+        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( INTERFACE%USER_NUMBER, "*", ERR, ERROR ))//"."
+      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+    ENDIF
+
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_INTERFACE" )
+    RETURN
+999 CALL ERRORS( "FIELD_USER_NUMBER_TO_FIELD_INTERFACE", ERR, ERROR )
+    CALL EXITS( "FIELD_USER_NUMBER_TO_FIELD_INTERFACE" )
+    RETURN 1
+
+  END SUBROUTINE FIELD_USER_NUMBER_TO_FIELD_INTERFACE
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE FIELD_ROUTINES
