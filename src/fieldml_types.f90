@@ -55,7 +55,7 @@ MODULE FIELDML_TYPES
   !
   ! FieldML types
 
-  !<Contains information on the current FieldML parsing state.
+  !>Contains information on the current FieldML parsing state.
   TYPE FIELDML_IO_TYPE
     INTEGER(INTG) :: FML_HANDLE !<The FieldML session handle.
     INTEGER(INTG) :: NODES_HANDLE !<The FieldML global nodes type handle.
