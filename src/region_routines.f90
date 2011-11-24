@@ -98,7 +98,7 @@ MODULE REGION_ROUTINES
   
   PUBLIC REGION_NODES_GET
   
-  PUBLIC REGION_USER_NUMBER_FIND
+  PUBLIC REGION_USER_NUMBER_FIND, REGION_USER_NUMBER_TO_REGION
 
   PUBLIC REGIONS_INITIALISE,REGIONS_FINALISE
 
@@ -881,6 +881,38 @@ CONTAINS
     CALL EXITS("REGIONS_INITIALISE")
     RETURN 1
   END SUBROUTINE REGIONS_INITIALISE
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Find the region with the given user number, or throw an error if it does not exist.
+  SUBROUTINE REGION_USER_NUMBER_TO_REGION( USER_NUMBER, REGION, ERR, ERROR, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the region to find
+    TYPE(REGION_TYPE), POINTER :: REGION !<On return, a pointer to the region with the specified user number.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("REGION_USER_NUMBER_TO_REGION", ERR, ERROR, *999 )
+
+    NULLIFY( REGION )
+    CALL REGION_USER_NUMBER_FIND( USER_NUMBER, REGION, ERR, ERROR, *999 )
+    IF( .NOT.ASSOCIATED( REGION ) ) THEN
+      LOCAL_ERROR = "A region with an user number of "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*", ERR, ERROR ) )//" does not exist."
+      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+    ENDIF
+
+    CALL EXITS( "REGION_USER_NUMBER_TO_REGION" )
+    RETURN
+999 CALL ERRORS( "REGION_USER_NUMBER_TO_REGION", ERR, ERROR )
+    CALL EXITS( "REGION_USER_NUMBER_TO_REGION" )
+    RETURN 1
+
+  END SUBROUTINE REGION_USER_NUMBER_TO_REGION
 
   !
   !================================================================================================================================
