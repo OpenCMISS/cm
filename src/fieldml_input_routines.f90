@@ -73,11 +73,34 @@ MODULE FIELDML_INPUT_ROUTINES
 
   PUBLIC :: FIELDML_INPUT_INITIALISE_FROM_FILE, FIELDML_INPUT_MESH_CREATE_START, &
     & FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START, FIELDML_INPUT_BASIS_CREATE_START, FIELDML_INPUT_CREATE_MESH_COMPONENT, &
-    & FIELDML_INPUT_FIELD_CREATE_START, FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE, FIELDML_INPUT_NODES_CREATE_START, &
-    & FIELDML_INPUT_INITIALISE, FIELDML_INPUT_FINALISE
+    & FIELDML_INPUT_FIELD_CREATE_START, FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE, FIELDML_INPUT_NODES_CREATE_START
 
 CONTAINS
 
+  !
+  !================================================================================================================================
+  !
+
+  SUBROUTINE FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, * )
+    !Argument variables
+    TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
+    
+    CALL ENTERS( "FIELDML_ASSERT_IS_IN", ERR, ERROR, *999 )
+
+    IF( FIELDML_INFO%IS_OUT ) THEN
+      CALL FLAG_ERROR( "Outbound FieldML handle used four an input-only operation.", ERR, ERROR, *999 )
+    ENDIF
+    
+    CALL EXITS( "FIELDML_ASSERT_IS_IN" )
+    RETURN
+999 CALL ERRORS( "FIELDML_ASSERT_IS_IN", ERR, ERROR )
+    CALL EXITS( "FIELDML_ASSERT_IS_IN" )
+    RETURN 1
+    
+  END SUBROUTINE FIELDML_ASSERT_IS_IN
+  
   !
   !================================================================================================================================
   !
@@ -86,7 +109,7 @@ CONTAINS
   SUBROUTINE FIELDML_INPUT_GET_BASIS_CONNECTIVITY_INFO( FIELDML_INFO, BASIS_HANDLE, PARAM_ARG_HANDLE, CONNECTIVITY_HANDLE, &
     & LAYOUT_HANDLE, ERR, ERROR, * )
     !Argument variables
-    TYPE(FIELDML_INPUT_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     INTEGER(INTG), INTENT(IN) :: BASIS_HANDLE !<The basis handle.
     INTEGER(INTG), INTENT(IN) :: PARAM_ARG_HANDLE !<The basis parameters argument handle.
     INTEGER(INTG), INTENT(OUT) :: CONNECTIVITY_HANDLE !<The basis connectivity evaluator handle.
@@ -151,7 +174,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !<Determine the basis collapse parameters from the given evaluator's name.
+  !>Determine the basis collapse parameters from the given evaluator's name.
   SUBROUTINE FIELDML_INPUT_GET_BASIS_COLLAPSE( NAME, COLLAPSE, ERR, ERROR, * )
     !Argument variables
     TYPE(VARYING_STRING), INTENT(IN) :: NAME !<The basis evaluator name.
@@ -205,11 +228,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Determines the basis configuration from the given basis evaluator.
+  !>Determines the basis configuration from the given basis evaluator.
   SUBROUTINE FIELDML_INPUT_GET_BASIS_INFO( FIELDML_INFO, BASIS_HANDLE, CONNECTIVITY_HANDLE, LAYOUT_HANDLE, BASISTYPE, &
     & BASIS_INTERPOLATIONS, COLLAPSE, ERR, ERROR, * )
     !Argument variables
-    TYPE(FIELDML_INPUT_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     INTEGER(INTG), INTENT(IN) :: BASIS_HANDLE !<The basis evaluator handle.
     INTEGER(INTG), INTENT(OUT) :: CONNECTIVITY_HANDLE !<The basis connectivity evaluator handle.
     INTEGER(INTG), INTENT(OUT) :: LAYOUT_HANDLE !<The local node layout.
@@ -302,10 +325,10 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Determines whether or not the given basis evaluator is known to OpenCMISS.
+  !>Determines whether or not the given basis evaluator is known to OpenCMISS.
   FUNCTION FIELDML_INPUT_IS_KNOWN_BASIS( FIELDML_INFO, BASIS_HANDLE, ERR, ERROR )
     !Argument variables
-    TYPE(FIELDML_INPUT_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     INTEGER(INTG), INTENT(IN) :: BASIS_HANDLE !<The basis handle.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -348,9 +371,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Determines whether or not the given evaluator is a recognisable mesh component evaluator.
+  !>Determines whether or not the given evaluator is a recognisable mesh component evaluator.
   FUNCTION FIELDML_INPUT_IS_TEMPLATE_COMPATIBLE( FIELDML_INFO, COMPONENT_HANDLE, ELEMENT_TYPE, ERR, ERROR )
-    TYPE(FIELDML_INPUT_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     INTEGER(INTG), INTENT(IN) :: COMPONENT_HANDLE !<The mesh component evaluator.
     INTEGER(INTG), INTENT(IN) :: ELEMENT_TYPE !<The element ensemble type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
@@ -430,10 +453,10 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Determines whether or not the given field evaluator can be parsed as an OpenCMISS field. 
+  !>Determines whether or not the given field evaluator can be parsed as an OpenCMISS field. 
   SUBROUTINE FIELDML_INPUT_CHECK_FIELD_COMPATIBLE( FIELDML_INFO, FIELD_HANDLE, ELEMENT_TYPE, ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     INTEGER(INTG), INTENT(IN) :: FIELD_HANDLE !<The field evaluator handle.
     INTEGER(INTG), INTENT(IN) :: ELEMENT_TYPE !<The element ensemble type.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
@@ -491,11 +514,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Creates an OpenCMISS coordinate system using relevant parameters from FieldML. Does not call CreateFinish.
+  !>Creates an OpenCMISS coordinate system using relevant parameters from FieldML. Does not call CreateFinish.
   SUBROUTINE FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START( FIELDML_INFO, EVALUATOR_NAME, COORDINATE_SYSTEM, USER_NUMBER, &
     & ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: EVALUATOR_NAME !<The name of the coordinate system evaluator.
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER, INTENT(IN) :: COORDINATE_SYSTEM !<The OpenCMISS coordinate system to initialize.
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to assign to the coordinate system.
@@ -510,6 +533,8 @@ CONTAINS
     INTEGER(INTG) :: COORDINATE_COUNT
 
     CALL ENTERS( "FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START", ERR, ERROR, *999 )
+    
+    CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
 
     COORDINATE_TYPE = 0 !There doesn't seem to be a COORDINATE_UNKNOWN_TYPE
 
@@ -551,10 +576,10 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !<Creates an OpenCMISS nodes object using relevant parameters from FieldML. Does not call CreateFinish.
+  !>Creates an OpenCMISS nodes object using relevant parameters from FieldML. Does not call CreateFinish.
   SUBROUTINE FIELDML_INPUT_NODES_CREATE_START( FIELDML_INFO, NODES_ARGUMENT_NAME, REGION, NODES, ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: NODES_ARGUMENT_NAME !<The argument evaluator used as the node index in relevant evaluators.
     TYPE(REGION_TYPE), POINTER, INTENT(IN) :: REGION !<The region in which to create the nodes.
     TYPE(NODES_TYPE), POINTER, INTENT(INOUT) :: NODES !<The OpenCMISS nodes object to create.
@@ -565,6 +590,8 @@ CONTAINS
     INTEGER(INTG) :: NODES_ARGUMENT_HANDLE, NODES_HANDLE, NODE_COUNT
     
     CALL ENTERS( "FIELDML_INPUT_NODES_CREATE_START", ERR, ERROR, *999 )
+    
+    CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
     
     NODES_ARGUMENT_HANDLE = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, cchar(NODES_ARGUMENT_NAME) )
     IF( NODES_ARGUMENT_HANDLE == FML_INVALID_HANDLE ) THEN
@@ -596,10 +623,10 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Creates an OpenCMISS mesh using relevant parameters from FieldML. Does not call CreateFinish.
+  !>Creates an OpenCMISS mesh using relevant parameters from FieldML. Does not call CreateFinish.
   SUBROUTINE FIELDML_INPUT_MESH_CREATE_START( FIELDML_INFO, MESH_ARGUMENT_NAME, MESH, MESH_NUMBER, REGION, ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: MESH_ARGUMENT_NAME !<The argument evaluator used as the mesh location in relevant evaluators.
     TYPE(MESH_TYPE), POINTER, INTENT(INOUT) :: MESH !<The OpenCMISS mesh object to create.
     INTEGER(INTG), INTENT(IN) :: MESH_NUMBER !<The user number to assign to the mesh.
@@ -612,6 +639,8 @@ CONTAINS
     INTEGER(INTG) :: MESH_ARGUMENT, XI_DIMENSIONS, ELEMENT_COUNT
 
     CALL ENTERS( "FIELDML_INPUT_MESH_CREATE_START", ERR, ERROR, *999 )
+    
+    CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
     
     MESH_ARGUMENT = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, cchar(MESH_ARGUMENT_NAME) )
     IF( MESH_ARGUMENT == FML_INVALID_HANDLE ) THEN
@@ -656,10 +685,10 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !<Creates an OpenCMISS basis object using relevant parameters from FieldML. Does not call CreateFinish.
+  !>Creates an OpenCMISS basis object using relevant parameters from FieldML. Does not call CreateFinish.
   SUBROUTINE FIELDML_INPUT_BASIS_CREATE_START( FIELDML_INFO, EVALUATOR_NAME, USER_NUMBER, BASIS, ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: EVALUATOR_NAME !<The name of the basis evaluator.
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to assign to the basis.
     TYPE(BASIS_TYPE), POINTER, INTENT(INOUT) :: BASIS !<The OpenCMISS basis object to create.
@@ -674,6 +703,8 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: COLLAPSE(:)
     
     CALL ENTERS( "FIELDML_INPUT_BASIS_CREATE_START", ERR, ERROR, *999 )
+    
+    CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
 
     HANDLE = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, cchar(EVALUATOR_NAME) )
     CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot find basis evaluator "//EVALUATOR_NAME//".", FIELDML_INFO%FML_HANDLE, &
@@ -721,10 +752,10 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Initialize the given FieldML parsing state from the given FieldML file.
+  !>Initialize the given FieldML parsing state from the given FieldML file.
   SUBROUTINE FIELDML_INPUT_INITIALISE_FROM_FILE( FIELDML_INFO, FILENAME, ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: FILENAME !<The name of the FieldML file to parse.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
@@ -735,7 +766,7 @@ CONTAINS
     
     CALL ENTERS( "FIELDML_INPUT_INITIALISE_FROM_FILE", ERR, ERROR, *999 )
 
-    CALL FIELDML_INPUT_INITIALISE( FIELDML_INFO, ERR, ERROR, *999 )
+    CALL FIELDML_IO_INITIALISE( FIELDML_INFO, .FALSE., ERR, ERROR, *999 )
 
     FIELDML_INFO%FML_HANDLE = Fieldml_CreateFromFile( cchar(FILENAME) )
     
@@ -761,10 +792,10 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !<Reads an ensemble ordering using the given data source.
+  !>Reads an ensemble ordering using the given data source.
   SUBROUTINE FIELDML_INPUT_READ_ORDER( FIELDML_INFO, ORDER_HANDLE, ORDER, COUNT, ERR, ERROR, * )
     !Argument
-    TYPE(FIELDML_INPUT_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
     INTEGER(INTG), INTENT(IN) :: ORDER_HANDLE !<The data source containing the ordering.
     INTEGER(INTG), ALLOCATABLE, TARGET, INTENT(INOUT) :: ORDER(:) !<The array in which the order is stored.
     INTEGER(INTG), INTENT(IN) :: COUNT !<The number of entries in the ordering.
@@ -816,7 +847,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Reorder the given values according to the given ordering.
+  !>Reorder the given values according to the given ordering.
   SUBROUTINE FIELDML_INPUT_REORDER( INPUT_BUFFER, ORDER, COUNT, OUTPUT_BUFFER, ERR, ERROR, * )
     !Argument
     INTEGER(INTG), INTENT(IN) :: INPUT_BUFFER(:) !<The values to reorder.
@@ -851,10 +882,10 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Creates an OpenCMISS mesh component using relevant parameters from FieldML. Does not call CreateFinish.
+  !>Creates an OpenCMISS mesh component using relevant parameters from FieldML. Does not call CreateFinish.
   SUBROUTINE FIELDML_INPUT_CREATE_MESH_COMPONENT( FIELDML_INFO, MESH, COMPONENT_NUMBER, EVALUATOR_NAME, ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(MESH_TYPE), POINTER, INTENT(IN) :: MESH !<The OpenCMISS mesh in which to create the component.
     INTEGER(INTG), INTENT(IN) :: COMPONENT_NUMBER !<The component number to create.
     TYPE(VARYING_STRING), INTENT(IN) :: EVALUATOR_NAME !<The name of the mesh component evaluator.
@@ -874,6 +905,8 @@ CONTAINS
     TYPE(MESH_ELEMENTS_TYPE), POINTER :: MESH_ELEMENTS
 
     CALL ENTERS( "FIELDML_INPUT_CREATE_MESH_COMPONENT", ERR, ERROR, *999 )
+    
+    CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
     
     NULLIFY( BASIS )
     NULLIFY( MESH_ELEMENTS )    
@@ -1041,11 +1074,11 @@ CONTAINS
   !================================================================================================================================
   !
   
-  !<Creates an OpenCMISS field using relevant parameters from FieldML. Does not call CreateFinish.
+  !>Creates an OpenCMISS field using relevant parameters from FieldML. Does not call CreateFinish.
   SUBROUTINE FIELDML_INPUT_FIELD_CREATE_START( FIELDML_INFO, REGION, DECOMPOSITION, FIELD_NUMBER, FIELD, VARIABLE_TYPE, &
     & EVALUATOR_NAME, ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(REGION_TYPE), POINTER, INTENT(IN) :: REGION !<The region in which to create the field.
     TYPE(DECOMPOSITION_TYPE), POINTER, INTENT(IN) :: DECOMPOSITION !<The decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: FIELD_NUMBER !<The user number to assign to the created field.
@@ -1060,6 +1093,8 @@ CONTAINS
     INTEGER(INTG) :: COMPONENT_NUMBER, TEMPLATE_COMPONENT_NUMBER, FIELD_DIMENSIONS
 
     CALL ENTERS( "FIELDML_INPUT_FIELD_CREATE_START", ERR, ERROR, *999 )
+    
+    CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
 
     FIELD_HANDLE = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, cchar(EVALUATOR_NAME) )
     CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get named field evaluator "//EVALUATOR_NAME//".", &
@@ -1104,11 +1139,11 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !<Update the given field's nodal parameters using the given parameter evaluator.
+  !>Update the given field's nodal parameters using the given parameter evaluator.
   SUBROUTINE FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( FIELDML_INFO, EVALUATOR_NAME, FIELD, VARIABLE_TYPE, SET_TYPE, &
     & ERR, ERROR, * )
     !Arguments
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
+    TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
     TYPE(VARYING_STRING), INTENT(IN) :: EVALUATOR_NAME !<The name of the nodal dofs evaluator.
     TYPE(FIELD_TYPE), POINTER, INTENT(INOUT) :: FIELD !<The field whose parameters are to be updated.
     INTEGER(INTG), INTENT(IN) :: VARIABLE_TYPE !<The OpenCMISS variable type.
@@ -1126,6 +1161,8 @@ CONTAINS
     INTEGER(INTG) :: READER
     
     CALL ENTERS( "FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE", ERR, ERROR, *999 )
+    
+    CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
     
     MESH => FIELD%DECOMPOSITION%MESH
 
@@ -1195,100 +1232,6 @@ CONTAINS
     RETURN 1
   
   END SUBROUTINE FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE
-
-  !
-  !================================================================================================================================
-  !
-  
-  !<Initialise up the given FieldML parsing state.
-  SUBROUTINE FIELDML_INPUT_INITIALISE( FIELDML_INFO, ERR, ERROR, * )
-    !Argument variables
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state to clean up.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-
-    CALL ENTERS( "FIELDML_INPUT_INITIALISE", ERR, ERROR, *999 )
-
-    FIELDML_INFO%FML_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%NODES_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%MESH_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%ELEMENTS_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%XI_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%NODE_DOFS_HANDLE = FML_INVALID_HANDLE
-    !fieldmlInfo%elementDofsHandle = FML_INVALID_HANDLE
-    !fieldmlInfo%constantDofsHandle = FML_INVALID_HANDLE
-    
-    NULLIFY( FIELDML_INFO%COMPONENT_HANDLES )
-    CALL LIST_CREATE_START( FIELDML_INFO%COMPONENT_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%COMPONENT_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
-    CALL LIST_MUTABLE_SET( FIELDML_INFO%COMPONENT_HANDLES, .TRUE., ERR, ERROR, *999 )
-    CALL LIST_CREATE_FINISH( FIELDML_INFO%COMPONENT_HANDLES, ERR, ERROR, *999 )
-    
-    NULLIFY( FIELDML_INFO%BASIS_HANDLES )
-    CALL LIST_CREATE_START( FIELDML_INFO%BASIS_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
-    CALL LIST_CREATE_FINISH( FIELDML_INFO%BASIS_HANDLES, ERR, ERROR, *999 )
-    
-    NULLIFY( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES )
-    CALL LIST_CREATE_START( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
-    CALL LIST_CREATE_FINISH( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, ERR, ERROR, *999 )
-    
-    NULLIFY( FIELDML_INFO%BASIS_LAYOUT_HANDLES )
-    CALL LIST_CREATE_START( FIELDML_INFO%BASIS_LAYOUT_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DATA_TYPE_SET( FIELDML_INFO%BASIS_LAYOUT_HANDLES, LIST_INTG_TYPE, ERR, ERROR, *999 )
-    CALL LIST_CREATE_FINISH( FIELDML_INFO%BASIS_LAYOUT_HANDLES, ERR, ERROR, *999 )
-
-    CALL EXITS( "FIELDML_INPUT_INITIALISE" )
-    RETURN
-999 CALL ERRORS( "FIELDML_INPUT_INITIALISE", ERR, ERROR )
-    CALL EXITS( "FIELDML_INPUT_INITIALISE" )
-    RETURN 1
-    
-  END SUBROUTINE FIELDML_INPUT_INITIALISE
-
-  !
-  !================================================================================================================================
-  !
-
-  !<Clean up the given FieldML parsing state.
-  SUBROUTINE FIELDML_INPUT_FINALISE( FIELDML_INFO, ERR, ERROR, * )
-    !Argument variables
-    TYPE(FIELDML_INPUT_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state to clean up.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string.
-    
-    !Locals
-    INTEGER(INTG) :: FML_ERR
-
-    CALL ENTERS( "FIELDML_INPUT_FINALISE", ERR, ERROR, *999 )
-
-    FML_ERR = Fieldml_Destroy( FIELDML_INFO%FML_HANDLE )
-    
-    FIELDML_INFO%FML_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%NODES_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%NODES_ARGUMENT_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%MESH_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%ELEMENTS_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%ELEMENTS_ARGUMENT_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%XI_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%XI_ARGUMENT_HANDLE = FML_INVALID_HANDLE
-    FIELDML_INFO%NODE_DOFS_HANDLE = FML_INVALID_HANDLE
-!    fieldmlInfo%elementDofsHandle = FML_INVALID_HANDLE
-!    fieldmlInfo%constantDofsHandle = FML_INVALID_HANDLE
-    
-    CALL LIST_DESTROY( FIELDML_INFO%COMPONENT_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DESTROY( FIELDML_INFO%BASIS_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DESTROY( FIELDML_INFO%BASIS_CONNECTIVITY_HANDLES, ERR, ERROR, *999 )
-    CALL LIST_DESTROY( FIELDML_INFO%BASIS_LAYOUT_HANDLES, ERR, ERROR, *999 )
-
-    CALL EXITS( "FIELDML_INPUT_FINALISE" )
-    RETURN
-999 CALL ERRORS( "FIELDML_INPUT_FINALISE", ERR, ERROR )
-    CALL EXITS( "FIELDML_INPUT_FINALISE" )
-    RETURN 1
-    
-  END SUBROUTINE FIELDML_INPUT_FINALISE
 
   !
   !================================================================================================================================
