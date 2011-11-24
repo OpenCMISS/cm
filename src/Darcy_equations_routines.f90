@@ -3170,14 +3170,14 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: faceQuadratureScheme
     TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: geometricInterpolatedPoint
     TYPE(FIELD_INTERPOLATION_PARAMETERS_TYPE), POINTER :: geometricInterpolationParameters
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_TYPE), POINTER :: pointMetrics
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: rhsVector
     INTEGER(INTG) :: faceIdx, faceNumber
     INTEGER(INTG) :: componentIdx, gaussIdx
     INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx
     INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx, parameterIdx
     INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx
-    REAL(DP) :: gaussWeight, normalProjection, sqrtG, pressureGauss
-    REAL(DP) :: dzdxi(3,3),dzdxiT(3,3),Gijl(3,3),Giju(3,3)
+    REAL(DP) :: gaussWeight, normalProjection, pressureGauss
 
     CALL ENTERS("DarcyEquation_FiniteElementFaceIntegrate",err,error,*999)
 
@@ -3265,15 +3265,12 @@ CONTAINS
             geometricInterpolatedPoint=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR
             CALL FIELD_INTERPOLATE_LOCAL_FACE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,faceIdx,gaussIdx, &
               & geometricInterpolatedPoint,err,error,*999)
-            dzdxi=geometricInterpolatedPoint%VALUES(1:3,PARTIAL_DERIVATIVE_FIRST_DERIVATIVE_MAP(1:3)) !(component,derivative)
+            !Calculate the metric tensors and Jacobian
+            pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
+            CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
 
-            !Calculate covariant metric tensor
-            CALL MATRIX_TRANSPOSE(dzdxi,dzdxiT,err,error,*999)
-            CALL MATRIX_PRODUCT(dzdxiT,dzdxi,Gijl,err,error,*999) !g_ij = dZdXI' * dZdXI
-            CALL INVERT(Gijl,Giju,sqrtG,err,error,*999) !g^ij = inv(g_ij), G=DET(Gijl)
-            sqrtG=SQRT(sqrtG)
             DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
-              normalProjection=DOT_PRODUCT(Giju(normalComponentIdx,:),dzdxi(componentIdx,:))
+              normalProjection=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
               IF(face%XI_DIRECTION<0) THEN
                 normalProjection=-normalProjection
               END IF
@@ -3290,7 +3287,7 @@ CONTAINS
                   rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) = rhsVector%ELEMENT_VECTOR%VECTOR(elementDofIdx) - &
                     & gaussWeight*pressureGauss*normalProjection* &
                     & faceQuadratureScheme%GAUSS_BASIS_FNS(faceParameterIdx,NO_PART_DERIV,gaussIdx)* &
-                    & sqrtG
+                    & pointMetrics%JACOBIAN
                 END DO !nodeDerivativeIdx
               END DO !faceNodeIdx
             END DO !componentIdx
