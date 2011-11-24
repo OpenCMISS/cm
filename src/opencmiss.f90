@@ -32664,8 +32664,8 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
     INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
     INTEGER(INTG), INTENT(IN) :: CoupledMeshElementNumber !<The number of elements
-    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The number of elements
-    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The local node number of the interface mesh
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number of the interface mesh
     REAL(DP), INTENT(IN) :: Xi(:)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -32717,7 +32717,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
     INTEGER(INTG), INTENT(IN) :: CoupledMeshElementNumber !<The number of elements
     INTEGER(INTG), INTENT(IN) :: LocalNodeNumber !<The number of elements
-    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The number of elements
+    INTEGER(INTG), INTENT(IN) :: ComponentNumber !<The component number
     REAL(DP), INTENT(IN) :: Xi(:)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
@@ -32749,7 +32749,6 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: InterfaceElementNumber !<The element number of the interface mesh
     INTEGER(INTG), INTENT(IN) :: CoupledMeshIndexNumber !<The index number to the coupled mesh
     INTEGER(INTG), INTENT(IN) :: NumberOfElements !<The number of elements
-
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
