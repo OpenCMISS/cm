@@ -1,0 +1,27 @@
+\subsection{Poroelasticity}
+
+\subsubsection{Coupled Darcy Equation and Elasticity with Sub-iterations}
+
+CMISSProblemFiniteElasticityDarcyType couples the finite elasticity equations and
+Darcy's equation by solving each equation in term, iterating between the two equations
+until convergence is reached. The full Darcy equations with velocity and pressure
+are solved.
+
+Darcy's equation is solved on the deformed geometry and the finite elasticity
+constitutive relation has a dependence on the Darcy fluid pressure.
+
+\subsubsection{Coupled Darcy Fluid Pressure and Elasticity}
+
+The fully dynamic governing equations for poromechanics are described in \cite{coussy:2004}.
+CMISSProblemfiniteElasticityFluidPressureType implements a static form of these equations
+and strongly couples the equations
+for finite elasticity to an equation describing the Darcy fluid pressure. Darcy's
+equation describing the fluid flow is substituted into the mass conservation
+equation to give:
+
+\begin{equation}
+\gradient \cdot \left(\frac{\tensor{K}}{\mu} \gradient p\right) = 0
+\end{equation}
+
+A static form of the constitutive law developed by \cite{chapelle:2010} is implemented in the equations
+set subtype CMISSEquationsSetElasticityFluidPressureStaticInriaSubtype.
