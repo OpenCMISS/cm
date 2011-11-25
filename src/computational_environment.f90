@@ -498,12 +498,10 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
-  !>
+
   !>Finalises the computational environment data structures and deallocates all memory.
-  !>
   SUBROUTINE COMPUTATIONAL_ENVIRONMENT_FINALISE(ERR,ERROR,*)
-  
+
     !Argument Variables
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -512,10 +510,6 @@ CONTAINS
 
     CALL ENTERS("COMPUTATIONAL_ENVIRONMENT_FINALISE",ERR,ERROR,*999)
 
-    !Finalise PetSc
-    !CALL PETSC_LOGPRINTSUMMARY(PETSC_COMM_WORLD,"OpenCMISSTest.petsc",ERR,ERROR,*999)
-    CALL PETSC_FINALIZE(ERR,ERROR,*999)
-    
     IF(ALLOCATED(COMPUTATIONAL_ENVIRONMENT%COMPUTATIONAL_NODES)) THEN
        DO COMPUTATIONAL_NODE=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
           CALL COMPUTATIONAL_NODE_FINALISE(COMPUTATIONAL_ENVIRONMENT%COMPUTATIONAL_NODES(COMPUTATIONAL_NODE),ERR,ERROR,*999)
@@ -528,7 +522,13 @@ CONTAINS
 
     CALL MPI_COMM_FREE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_COMM_FREE",MPI_IERROR,ERR,ERROR,*999)
-    
+
+    !Finalise PetSc
+    !Call this after MPI_COMM_FREE as PETSc routines are called when some
+    !MPI comm attributes are freed.
+    !CALL PETSC_LOGPRINTSUMMARY(PETSC_COMM_WORLD,"OpenCMISSTest.petsc",ERR,ERROR,*999)
+    CALL PETSC_FINALIZE(ERR,ERROR,*999)
+
     CALL MPI_FINALIZE(MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_FINALIZE",MPI_IERROR,ERR,ERROR,*999)
 
@@ -543,11 +543,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>
   !>Initialises the computational environment data structures.
-  !>
   SUBROUTINE COMPUTATIONAL_ENVIRONMENT_INITIALISE(ERR,ERROR,*)
-  
+
     !Argument Variables
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
