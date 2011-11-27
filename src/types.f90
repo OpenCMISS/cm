@@ -92,6 +92,10 @@ MODULE TYPES
   TYPE INTEGER_INTG_PTR_TYPE
     INTEGER(INTG), POINTER :: PTR(:)
   END TYPE INTEGER_INTG_PTR_TYPE
+
+  TYPE INTEGER_CINT_ALLOC_TYPE
+    INTEGER(C_INT), ALLOCATABLE :: ARRAY(:)
+  END TYPE INTEGER_CINT_ALLOC_TYPE
   
   !
   !================================================================================================================================
@@ -106,6 +110,7 @@ MODULE TYPES
 
   !>Contains information on a list
   TYPE LIST_TYPE
+    LOGICAL :: MUTABLE !<If true, list entries can be changed once they have been added. False by default.
     LOGICAL :: LIST_FINISHED !<Is .TRUE. if the list has finished being created, .FALSE. if not.
     INTEGER(INTG) :: NUMBER_IN_LIST !<The number of items currently in the list
     INTEGER(INTG) :: DATA_DIMENSION !<The dimension of the data being stored
@@ -121,6 +126,8 @@ MODULE TYPES
     REAL(SP), ALLOCATABLE :: LIST_SP2(:,:) !<The single precision data (dimension > 1) for single precision real lists. 
     REAL(DP), ALLOCATABLE :: LIST_DP(:) !<The double precision data (dimension = 1)for double precision real lists. 
     REAL(DP), ALLOCATABLE :: LIST_DP2(:,:) !<The double precision data (dimension > 1) for double precision real lists. 
+    INTEGER(C_INT), ALLOCATABLE :: LIST_C_INT(:) !<The integer data (dimension = 1) for integer lists. 
+    INTEGER(C_INT), ALLOCATABLE :: LIST_C_INT2(:,:) !<The integer data (dimension > 1) for integer lists. 
   END TYPE LIST_TYPE
     
   !
