@@ -80,7 +80,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-uu
+
   SUBROUTINE FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, * )
     !Argument variables
     TYPE(FIELDML_IO_TYPE), INTENT(IN) :: FIELDML_INFO !<The FieldML parsing state.
