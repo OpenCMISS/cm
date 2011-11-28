@@ -1647,7 +1647,7 @@ $(PYTHON_WRAPPER) : $(PYTHON_INTERFACE) $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
 
 $(PYTHON_MODULE_SO) : $(LIBRARY) $(PYTHON_WRAPPER) $(OBJECTS)
 	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -o opencmiss/opencmiss_wrap.o )
-	( cd $(BINDINGS_DIR)/python && $(CC) opencmiss/opencmiss_wrap.o $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )
+	( cd $(BINDINGS_DIR)/python && $(FC) opencmiss/opencmiss_wrap.o $(OBJECTS) $(DLFLAGS) -o $(PYTHON_MODULE_SO) )
 
 # ----------------------------------------------------------------------------
 #
