@@ -217,14 +217,11 @@ class LibrarySource(object):
             self.public_subroutines, key=attrgetter('name'))
         # Remove CMISS...TypesCopy routines, as these are only used within the
         # C bindings.  Also remove CMISSGeneratedMeshSurfaceGet for now as it
-        # takes an allocatable array but will be removed soon anyways.  Disable
-        # FieldML routines as these don't match the style of other routines and
-        # require including FIELDML_TYPES
+        # takes an allocatable array but will be removed soon anyways.
         self.public_subroutines = filter(
                 lambda r:
                 not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or
-                r.name.endswith('TypesCopy') or
-                r.name.startswith('CMISSFieldml')),
+                r.name.endswith('TypesCopy')),
                 self.public_subroutines)
 
         self.unbound_routines = []
@@ -532,17 +529,32 @@ class Subroutine(CodeObject):
     def get_class(self):
         """Work out if this routine is a method of a class
         """
+
+        # Have to include this specifically as it doesn't match other CreateStart
+        # routines
+        if self.name.startswith('CMISSFieldMLOutputCreate'):
+            type_name = self.parameters[-1].type_name
+            return type_name
+
         # CreateStart routines have last parameter that returns a new type
         if (self.name.endswith('CreateStartObj') or
                 self.name.endswith('CreateStartRegionObj') or
                 self.name.endswith('CreateStartInterfaceObj')):
             type_name = self.parameters[-1].type_name
-            if self.name.startswith(type_name[:-len('Type')] + 'CreateStart'):
+            if type_name is None:
+                # Last parameter isn't CUSTOM_TYPE
+                pass
+            elif self.name.startswith(type_name[:-len('Type')] + 'CreateStart'):
                 return type_name
         try:
             if self.parameters[0].var_type == Parameter.CUSTOM_TYPE:
                 type_name = self.parameters[0].type_name
-                if self.name.startswith(type_name[:-len('Type')]):
+                if type_name == 'CMISSFieldMLIOType':
+                    # Have to account for routines that don't have an 'IO' in the name
+                    check_name = 'CMISSFieldML'
+                else:
+                    check_name = type_name[:-len('Type')]
+                if self.name.startswith(check_name):
                     return type_name
         except IndexError:
             pass

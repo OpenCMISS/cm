@@ -170,32 +170,53 @@ def method_name(type, routine):
     c_name = subroutine_c_names(routine)[0]
     if '_' in c_name:
         name = c_name.split('_')[-1]
+    elif (c_name.startswith('CMISSFieldML') and
+            not c_name.startswith('CMISSFieldMLIO')):
+        # Special case for FieldML routines that start
+        # with FieldML but take a CMISSFieldMLIOType, although
+        # some start with CMISSFieldMLIO...
+        name = c_name[len('CMISSFieldML'):]
     else:
         # Old code style
         name = c_name[len(type.name) - len('Type'):]
-        if name == 'TypeFinalise':
-            name = 'Finalise'
+    if name == 'TypeFinalise':
+        name = 'Finalise'
     return name
 
 
 def py_method(type, routine):
     """Write subroutine as method of Python class"""
 
+    if type.name == 'CMISSFieldMLIOType':
+        type_name = 'CMISSFieldMLType'
+    else:
+        type_name = type.name
+
     name = method_name(type, routine)
     c_name = subroutine_c_names(routine)[0]
-    create_start_name = type.name[:-len('Type')] + 'CreateStart'
+    create_start_name = type_name[:-len('Type')] + 'Create'
 
-    if c_name.startswith(create_start_name):
+    if c_name.startswith('CMISSFieldMLOutputCreate'):
+        # Have to account for this specifically as it doesn't
+        # match other create start routines
+        is_create_start = True
+        self_parameter = routine.parameters[-1]
+        all_parameters = routine.parameters[0:-1]
+    elif (c_name.startswith(create_start_name) and
+            routine.parameters[-1].var_type == Parameter.CUSTOM_TYPE and
+            routine.parameters[-1].type_name  == type.name):
+        is_create_start = True
         # Last parameter is self parameter
         self_parameter = routine.parameters[-1]
         all_parameters = routine.parameters[0:-1]
     else:
+        is_create_start = False
         self_parameter = routine.parameters[0]
         all_parameters = routine.parameters[1:]
 
     (pre_code, py_args, swig_args) = process_parameters(all_parameters)
 
-    if c_name.startswith(create_start_name):
+    if is_create_start:
         swig_args = swig_args + [self_parameter.name]
     else:
         swig_args = [self_parameter.name] + swig_args
@@ -446,6 +467,8 @@ def remove_prefix_and_suffix(names):
             if prefix == PREFIX:
                 pass
             elif prefix == PREFIX + 'CellML':
+                pass
+            elif prefix == PREFIX + 'FieldML':
                 pass
             else:
                 while names[0][prefix_length - 1].isupper():
