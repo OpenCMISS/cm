@@ -252,7 +252,7 @@ preliminaries: $(OBJECT_DIR)/.directory \
 	$(INC_DIR)/.directory \
 	$(LIB_DIR)/.directory
 
-$(LIBRARY) : $(OBJECTS)
+$(LIBRARY) : $(OBJECTS) $(LIB_DIR)/.directory
 	$(AR) $(ARFLAGS) $@ $(OBJECTS)
 
 $(MOD_INCLUDE) : $(MOD_SOURCE_INC) $(INC_DIR)/.directory

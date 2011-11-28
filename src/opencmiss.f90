@@ -305,6 +305,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSCellMLEquationsType,CMISSCellMLEquationsTypeFinalise,CMISSCellMLEquationsTypeInitialise
 
+  PUBLIC CMISSComputationalWorkGroupType,CMISSComputationalWorkGroupTypeInitialise
+
   PUBLIC CMISSControlLoopType,CMISSControlLoopTypeFinalise,CMISSControlLoopTypeInitialise
 
   PUBLIC CMISSCoordinateSystemType,CMISSCoordinateSystemTypeFinalise,CMISSCoordinateSystemTypeInitialise
@@ -353,9 +355,6 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverType,CMISSSolverTypeFinalise,CMISSSolverTypeInitialise
 
   PUBLIC CMISSSolverEquationsType,CMISSSolverEquationsTypeFinalise,CMISSSolverEquationsTypeInitialise
-
-  PUBLIC CMISSComputationalWorkGroupType
-  
 
 !!==================================================================================================================================
 !!
@@ -3688,7 +3687,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetChildNodePosition, CMISSMeshEmbeddingType
 
-  PUBLIC CMISSEmbeddedMeshTypeInitialise, CMISSMeshEmbeddingSetGaussPointData
+  PUBLIC CMISSMeshEmbeddingTypeInitialise, CMISSMeshEmbeddingSetGaussPointData
   
   PUBLIC CMISSMeshEmbeddingPushData, CMISSMeshEmbeddingPullGaussPointData
   
@@ -6159,6 +6158,31 @@ CONTAINS
     
   END SUBROUTINE CMISSCellMLEquationsTypeFinalise
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSComputationalWorkGroupType object.
+  SUBROUTINE CMISSComputationalWorkGroupTypeInitialise(CMISSComputationalWorkGroup,Err)
+
+    !Argument variables
+    TYPE(CMISSComputationalWorkGroupType), INTENT(OUT) :: CMISSComputationalWorkGroup !<The CMISSComputationalWorkGroupType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSComputationalWorkGroupTypeInitialise",Err,ERROR,*999)
+
+    NULLIFY(CMISSComputationalWorkGroup%COMPUTATIONAL_WORK_GROUP)
+
+    CALL EXITS("CMISSComputationalWorkGroupTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSComputationalWorkGroupTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSComputationalWorkGroupTypeInitialise")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSComputationalWorkGroupTypeInitialise
+
   !
   !================================================================================================================================
   !
@@ -13888,7 +13912,6 @@ CONTAINS
 
     CALL ENTERS("CMISSComputationalWorkGroupCreateStart",ERR,ERROR,*999)
 
-    NULLIFY(WorldWorkGroup%COMPUTATIONAL_WORK_GROUP)
     CALL COMPUTATIONAL_WORK_GROUP_CREATE_START(WorldWorkGroup%COMPUTATIONAL_WORK_GROUP,NumberComputationalNodes, &
       & Err,ERROR,*999)
 
@@ -31488,24 +31511,24 @@ CONTAINS
   !
 
   !>Initialises a EmbeddedMeshType object.
-  SUBROUTINE CMISSEmbeddedMeshTypeInitialise(MeshEmbedding,Err)
+  SUBROUTINE CMISSMeshEmbeddingTypeInitialise(MeshEmbedding,Err)
     !Argument variables
     TYPE(CMISSMeshEmbeddingType), INTENT(OUT) ::  MeshEmbedding !<The  MeshEmbeddingType object to initialise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSEmbeddedMeshTypeInitialise",Err,ERROR,*999)
+    CALL ENTERS("CMISSMeshEmbeddingTypeInitialise",Err,ERROR,*999)
     
     NULLIFY(MeshEmbedding%MESH_EMBEDDING)
 
-    CALL EXITS("CMISSEmbeddedMeshTypeInitialise")
+    CALL EXITS("CMISSMeshEmbeddingTypeInitialise")
     RETURN
-999 CALL ERRORS("CMISSEmbeddedMeshTypeInitialise",Err,ERROR)
-    CALL EXITS("CMISSEmbeddedMeshTypeInitialise")    
+999 CALL ERRORS("CMISSMeshEmbeddingTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSMeshEmbeddingTypeInitialise")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSEmbeddedMeshTypeInitialise
+  END SUBROUTINE CMISSMeshEmbeddingTypeInitialise
 
   !
   !================================================================================================================================

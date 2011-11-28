@@ -83,15 +83,28 @@ def type_to_py(type):
     cmiss_type = type.name[len(PREFIX):-len('Type')]
     docstring = remove_doxygen_commands('\n    '.join(type.comment_lines))
 
+    # Find initialise routine
+    for method in type.methods:
+        if method.name.endswith('_Initialise'):
+            initialise_method = method.name
+            break
+        if method.name.endswith('TypeInitialise'):
+            initialise_method = method.name
+            break
+    else:
+        raise RuntimeError("Couldn't find initialise routine for %s" %
+                type.name)
+
     py_class = ["class %s(CMISSType):" % cmiss_type]
     py_class.append('    """%s\n    """\n' % docstring)
     py_class.append("    def __init__(self):")
     py_class.append('        """Initialise a null %s"""\n' % type.name)
     py_class.append("        self.cmiss_type = "
-        "_wrap_routine(_opencmiss_swig.%sInitialise, None)\n" % type.name)
+        "_wrap_routine(_opencmiss_swig.%s, None)\n" % initialise_method)
 
     for method in type.methods:
-        if not method.name.endswith('TypeInitialise'):
+        if (not method.name.endswith('TypeInitialise') and
+                not method.name.endswith('_Initialise')):
             try:
                 py_class.append(py_method(type, method))
                 py_class.append('')
@@ -155,9 +168,13 @@ def method_name(type, routine):
     "Return the name of a method of an object"""
 
     c_name = subroutine_c_names(routine)[0]
-    name = c_name[len(type.name) - len('Type'):]
-    if name == 'TypeFinalise':
-        name = 'Finalise'
+    if '_' in c_name:
+        name = c_name.split('_')[-1]
+    else:
+        # Old code style
+        name = c_name[len(type.name) - len('Type'):]
+        if name == 'TypeFinalise':
+            name = 'Finalise'
     return name
 
 
