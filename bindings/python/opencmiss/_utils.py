@@ -43,7 +43,13 @@ def wrap_cmiss_routine(routine, args=None):
                 new_args.append(arg.cmiss_type)
             else:
                 try:
-                    new_args.append([a.cmiss_type for a in arg])
+                    # Try to convert a list of CMISS types first.
+                    # Check length to avoid empty strings being converted
+                    # to an empty list
+                    if len(arg) > 0:
+                        new_args.append([a.cmiss_type for a in arg])
+                    else:
+                        new_args.append(arg)
                 except (TypeError, AttributeError):
                     new_args.append(arg)
         r = routine(*new_args)
