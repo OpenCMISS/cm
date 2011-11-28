@@ -274,10 +274,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
 
   # Set the flags for the various different CC compilers
   ifeq ($(CC),gcc)# gcc
-    C_FLGS += -pipe -m$(ABI)
-    # Position independent code is actually only required for objects
-    # in shared libraries but debug version may be built as shared libraries.
-    DBGC_FLGS += -fPIC
+    # Position independent code is required for the Python bindings
+    C_FLGS += -pipe -m$(ABI) -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         C_FLGS += -march=nocona
@@ -353,14 +351,11 @@ ifeq ($(OPERATING_SYSTEM),linux)
   ifeq ($(FC),gfortran)
     #FC = /home/users/local/packages/gfortran/irun/bin/gfortran
     # -fstatck-check
-    F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input
+    F_FLGS += -pipe -m$(ABI) -fno-second-underscore -Wall -x f95-cpp-input -fPIC
     # Restrict line length to 132
     F_FLGS += -ffree-line-length-132
     # for now change max identifier length. Should restrict to 63 (F2003) in future
     F_FLGS += -fmax-identifier-length=63
-    # Position independent code is actually only required for objects
-    # in shared libraries but debug version may be built as shared libraries.
-    DBGF_FLGS += -fPIC
     ifeq ($(MACHNAME),x86_64)
       ifneq ($(shell grep Intel /proc/cpuinfo 2>/dev/null),)
         F_FLGS += -march=nocona
@@ -387,8 +382,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     ELFLAGS += -m$(ABI)
   endif
   ifeq ($(FC),g95)
-    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003
-    DBGF_FLGS += -fPIC
+    F_FLAGS += -fno-second-underscore -Wall -m$(ABI) -std=f2003 -fPIC
     DBGF_FLGS += -O0 -fbounds-check
     OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
     ELFLAGS += -m$(ABI)
