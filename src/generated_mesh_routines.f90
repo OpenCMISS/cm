@@ -3441,7 +3441,7 @@ CONTAINS
                       & component_node,NODE_USER_NUMBER,ERR,ERROR,*999)
                     CALL DOMAIN_TOPOLOGY_NODE_CHECK_EXISTS(FIELD_VARIABLE_COMPONENT%DOMAIN%TOPOLOGY, &
                       & NODE_USER_NUMBER,NODE_EXISTS,node_idx,GHOST_NODE,ERR,ERROR,*999)
-                    IF(NODE_EXISTS) THEN
+                    IF(NODE_EXISTS.AND..NOT.GHOST_NODE) THEN
                       node_position_idx(3)=(component_node-1)/(TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))+1
                       node_position_idx(2)=MOD(component_node-1,TOTAL_NUMBER_OF_NODES_XI(2)*TOTAL_NUMBER_OF_NODES_XI(1))/ &
                         & TOTAL_NUMBER_OF_NODES_XI(1)+1
