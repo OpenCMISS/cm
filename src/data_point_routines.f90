@@ -95,9 +95,9 @@ MODULE DATA_POINT_ROUTINES
 
   PUBLIC DATA_POINTS_CREATE_FINISH,DATA_POINTS_CREATE_START,DATA_POINTS_DESTROY
   
-  PUBLIC DATA_POINTS_DATA_PROJECTION_GET
+  PUBLIC DATA_POINTS_DATA_PROJECTION_GET,DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET
 
-  PUBLIC DATA_POINTS_LABEL_GET,DATA_POINTS_LABEL_SET
+  PUBLIC DATA_POINTS_GLOBAL_NUMBER_GET,DATA_POINTS_LABEL_GET,DATA_POINTS_LABEL_SET
   
   PUBLIC DATA_POINTS_VALUES_GET,DATA_POINTS_VALUES_SET
 
@@ -174,7 +174,7 @@ CONTAINS
     DATA_POINT%USER_NUMBER=0
     IF(ALLOCATED(DATA_POINT%VALUES)) DEALLOCATE(DATA_POINT%VALUES)
     IF(ALLOCATED(DATA_POINT%WEIGHTS)) DEALLOCATE(DATA_POINT%WEIGHTS)
-    IF(ALLOCATED(DATA_POINT%PROJECTION_XI)) DEALLOCATE(DATA_POINT%PROJECTION_XI)
+    IF(ALLOCATED(DATA_POINT%DATA_PROJECTIONS_RESULT)) DEALLOCATE(DATA_POINT%DATA_PROJECTIONS_RESULT)
     
     CALL EXITS("DATA_POINT_FINALISE")
     RETURN
@@ -238,12 +238,14 @@ CONTAINS
   !
 
   !>Starts the process of creating generic data points
-  SUBROUTINE DATA_POINTS_CREATE_START_GENERIC(DATA_POINTS,NUMBER_OF_DATA_POINTS,NUMBER_OF_DIMENSIONS,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_CREATE_START_GENERIC(DATA_POINTS,NUMBER_OF_DATA_POINTS,NUMBER_OF_DIMENSIONS,NUMBER_OF_DATA_PROJECTIONS, &
+    & ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the created data points
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_POINTS !<The number of data points to create
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DIMENSIONS !<The number of dimensions for data points values
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_PROJECTIONS !<The number of data projections for data points values
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -257,6 +259,12 @@ CONTAINS
         ALLOCATE(DATA_POINTS%DATA_POINTS(NUMBER_OF_DATA_POINTS),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points.",ERR,ERROR,*999)
         DATA_POINTS%NUMBER_OF_DATA_POINTS=NUMBER_OF_DATA_POINTS
+        DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS=NUMBER_OF_DATA_PROJECTIONS
+        ALLOCATE(DATA_POINTS%DATA_PROJECTIONS(NUMBER_OF_DATA_PROJECTIONS),STAT=ERR)
+        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data projections.",ERR,ERROR,*999)
+        CALL TREE_CREATE_START(DATA_POINTS%DATA_PROJECTIONS_TREE,ERR,ERROR,*999)
+        CALL TREE_INSERT_TYPE_SET(DATA_POINTS%DATA_PROJECTIONS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
+        CALL TREE_CREATE_FINISH(DATA_POINTS%DATA_PROJECTIONS_TREE,ERR,ERROR,*999)
         CALL TREE_CREATE_START(DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
         CALL TREE_INSERT_TYPE_SET(DATA_POINTS%DATA_POINTS_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
         CALL TREE_CREATE_FINISH(DATA_POINTS%DATA_POINTS_TREE,ERR,ERROR,*999)
@@ -267,19 +275,20 @@ CONTAINS
           DATA_POINTS%DATA_POINTS(data_point_idx)%LABEL=""
           ! initialise data points values to 0.0 and weights to 1.0
           ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES(NUMBER_OF_DIMENSIONS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points values("//TRIM(NUMBER_TO_VSTRING &
-            & (data_point_idx,"*",ERR,ERROR))//").",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points("//TRIM(NUMBER_TO_VSTRING &
+            & (data_point_idx,"*",ERR,ERROR))//") values.",ERR,ERROR,*999)
           ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%WEIGHTS(NUMBER_OF_DIMENSIONS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points weights("//TRIM(NUMBER_TO_VSTRING &
-            & (data_point_idx,"*",ERR,ERROR))//").",ERR,ERROR,*999)              
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points("//TRIM(NUMBER_TO_VSTRING &
+            & (data_point_idx,"*",ERR,ERROR))//") weights.",ERR,ERROR,*999)              
           DO coord_idx=1,NUMBER_OF_DIMENSIONS
             DATA_POINTS%DATA_POINTS(data_point_idx)%VALUES(coord_idx)=0.0_DP
             DATA_POINTS%DATA_POINTS(data_point_idx)%WEIGHTS(coord_idx)=1.0_DP
           ENDDO
+          ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%DATA_PROJECTIONS_RESULT(NUMBER_OF_DATA_PROJECTIONS),STAT=ERR)
+          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points("//TRIM(NUMBER_TO_VSTRING &
+            & (data_point_idx,"*",ERR,ERROR))//") data projections result",ERR,ERROR,*999)  
           CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_POINTS_TREE,data_point_idx,data_point_idx,INSERT_STATUS,ERR,ERROR,*999)
         ENDDO !data_point_idx
-        NULLIFY(DATA_POINTS%DATA_PROJECTION)
-        DATA_POINTS%DATA_POINTS_PROJECTED=.FALSE.    
       ELSE
         LOCAL_ERROR="The specified number of data points of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))// &
           & " is invalid. The number of data points must be > 0."
@@ -288,8 +297,6 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
-
-    NULLIFY(DATA_POINTS)
 
     CALL EXITS("DATA_POINTS_CREATE_START_GENERIC")
     RETURN  
@@ -304,11 +311,12 @@ CONTAINS
   !
 
   !>Starts the process of creating data points in an interface.
-  SUBROUTINE DATA_POINTS_CREATE_START_INTERFACE(INTERFACE,NUMBER_OF_DATA_POINTS,DATA_POINTS,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_CREATE_START_INTERFACE(INTERFACE,NUMBER_OF_DATA_POINTS,NUMBER_OF_DATA_PROJECTIONS,DATA_POINTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE !<A pointer to the interface in which to create the data points
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_POINTS !<The number of data points to create
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_PROJECTIONS !<The number of data projections to create
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the created data points. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -329,7 +337,7 @@ CONTAINS
           CALL DATA_POINTS_INITIALISE(INTERFACE,ERR,ERROR,*999)
           !Create the data points 
           CALL DATA_POINTS_CREATE_START_GENERIC(INTERFACE%DATA_POINTS,NUMBER_OF_DATA_POINTS,INTERFACE%PARENT_REGION% &
-            & COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            & COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS,NUMBER_OF_DATA_PROJECTIONS,ERR,ERROR,*999)
           !Return the pointer        
           DATA_POINTS=>INTERFACE%DATA_POINTS
         ENDIF
@@ -352,11 +360,12 @@ CONTAINS
   !
 
   !>Starts the process of creating data points in an region.
-  SUBROUTINE DATA_POINTS_CREATE_START_REGION(REGION,NUMBER_OF_DATA_POINTS,DATA_POINTS,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_CREATE_START_REGION(REGION,NUMBER_OF_DATA_POINTS,NUMBER_OF_DATA_PROJECTIONS,DATA_POINTS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region in which to create the data points
     INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_POINTS !<The number of data points to create
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_DATA_PROJECTIONS !<The number of data projections to create
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<On exit, a pointer to the created data points. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -377,7 +386,7 @@ CONTAINS
           CALL DATA_POINTS_INITIALISE(REGION,ERR,ERROR,*999)
           !Create the data points 
           CALL DATA_POINTS_CREATE_START_GENERIC(REGION%DATA_POINTS,NUMBER_OF_DATA_POINTS,REGION%COORDINATE_SYSTEM% &
-            & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
+            & NUMBER_OF_DIMENSIONS,NUMBER_OF_DATA_PROJECTIONS,ERR,ERROR,*999)
           !Return the pointer        
           DATA_POINTS=>REGION%DATA_POINTS
         ENDIF
@@ -439,10 +448,11 @@ CONTAINS
   !  
 
   !>Gets the user number for a data point identified by a given global number. 
-  SUBROUTINE DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,DATA_PROJECTION,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_DATA_PROJECTION_GET(DATA_POINTS,GLOBAL_NUMBER,DATA_PROJECTION,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to get the data projection for
+    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the data projection for
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION !<On exit, a pointer to the data projection for the data points. Must not be associated on entry.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -454,8 +464,9 @@ CONTAINS
         IF(ASSOCIATED(DATA_PROJECTION)) THEN
           CALL FLAG_ERROR("Data projection is already associated.",ERR,ERROR,*999)
         ELSE
-          DATA_PROJECTION=>DATA_POINTS%DATA_PROJECTION
-          IF(.NOT.ASSOCIATED(DATA_PROJECTION)) CALL FLAG_ERROR("Data projection is not associated.",ERR,ERROR,*999)
+          DATA_PROJECTION=>DATA_POINTS%DATA_PROJECTIONS(GLOBAL_NUMBER)%PTR
+          IF(.NOT.ASSOCIATED(DATA_PROJECTION)) CALL FLAG_ERROR("Data points data projections("//TRIM(NUMBER_TO_VSTRING( &
+            & GLOBAL_NUMBER,"*",ERR,ERROR))//") ptr is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
         CALL FLAG_ERROR("Data points has not been finished.",ERR,ERROR,*999)
@@ -528,6 +539,8 @@ CONTAINS
       DATA_POINTS%DATA_POINTS_FINISHED=.FALSE.
       DATA_POINTS%NUMBER_OF_DATA_POINTS=0
       NULLIFY(DATA_POINTS%DATA_POINTS_TREE)
+      DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS=0
+      NULLIFY(DATA_POINTS%DATA_PROJECTIONS_TREE)
     ELSE
       CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
@@ -609,6 +622,47 @@ CONTAINS
     CALL EXITS("DATA_POINTS_INITIALISE_REGION")
     RETURN 1
   END SUBROUTINE DATA_POINTS_INITIALISE_REGION
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Gets the user number for a data point identified by a given global number. 
+  SUBROUTINE DATA_POINTS_GLOBAL_NUMBER_GET(DATA_POINTS,USER_NUMBER,GLOBAL_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to get the number for
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to get the global number foror
+    INTEGER(INTG), INTENT(OUT) :: GLOBAL_NUMBER !<On exit, the global number of the specified user data point
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(TREE_NODE_TYPE), POINTER :: TREE_NODE
+    
+    CALL ENTERS("DATA_POINTS_GLOBAL_NUMBER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_POINTS)) THEN
+      NULLIFY(TREE_NODE)
+      CALL TREE_SEARCH(DATA_POINTS%DATA_POINTS_TREE,USER_NUMBER,TREE_NODE,ERR,ERROR,*999)
+      IF(ASSOCIATED(TREE_NODE)) THEN
+        CALL TREE_NODE_VALUE_GET(DATA_POINTS%DATA_POINTS_TREE,TREE_NODE,GLOBAL_NUMBER,ERR,ERROR,*999)
+      ELSE
+        LOCAL_ERROR="Tree node is not associates (cannot find the user number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR, &
+          & ERROR))//"."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_POINTS_GLOBAL_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("DATA_POINST_GLOBAL_NUMBER_GET",ERR,ERROR)    
+    CALL EXITS("DATA_POINTS_GLOBAL_NUMBER_GET")
+    RETURN 1
+   
+  END SUBROUTINE DATA_POINTS_GLOBAL_NUMBER_GET
        
   !
   !================================================================================================================================
@@ -1121,17 +1175,65 @@ CONTAINS
     RETURN 1
 
   END SUBROUTINE DATA_POINTS_WEIGHTS_SET  
+
+  !
+  !================================================================================================================================
+  !  
+
+  !>Gets the user number for a data point identified by a given global number. 
+  SUBROUTINE DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,USER_NUMBER,GLOBAL_NUMBER,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to get the number for
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number to get the global number foror
+    INTEGER(INTG), INTENT(OUT) :: GLOBAL_NUMBER !<On exit, the global number of the specified user data projection
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(TREE_NODE_TYPE), POINTER :: TREE_NODE
+    
+    CALL ENTERS("DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(DATA_POINTS)) THEN
+      IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
+        NULLIFY(TREE_NODE)
+        CALL TREE_SEARCH(DATA_POINTS%DATA_PROJECTIONS_TREE,USER_NUMBER,TREE_NODE,ERR,ERROR,*999)
+        IF(ASSOCIATED(TREE_NODE)) THEN
+          CALL TREE_NODE_VALUE_GET(DATA_POINTS%DATA_PROJECTIONS_TREE,TREE_NODE,GLOBAL_NUMBER,ERR,ERROR,*999)
+        ELSE
+          LOCAL_ERROR="Tree node is not associates (cannot find the user number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR, &
+            & ERROR))//"."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        ENDIF
+
+      ELSE
+        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET")
+    RETURN
+999 CALL ERRORS("DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET",ERR,ERROR)    
+    CALL EXITS("DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET")
+    RETURN 1
+   
+  END SUBROUTINE DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET
         
   !
   !================================================================================================================================
   !
   
   !>Gets the projection distance for a data point identified by a given global number.
-  SUBROUTINE DATA_POINTS_PROJECTION_DISTANCE_GET(DATA_POINTS,GLOBAL_NUMBER,PROJECTION_DISTANCE,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_PROJECTION_DISTANCE_GET(DATA_POINTS,DATA_POINTS_GLOBAL_NUMBER,DATA_PROJECTIONS_GLOBAL_NUMBER, &
+    & PROJECTION_DISTANCE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to set the number for
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the projection distance for
+    INTEGER(INTG), INTENT(IN) :: DATA_POINTS_GLOBAL_NUMBER !<The data points global number to get the projection distance for
+    INTEGER(INTG), INTENT(IN) :: DATA_PROJECTIONS_GLOBAL_NUMBER !<The data projections global number to get the projection distance for
     REAL(DP), INTENT(OUT) :: PROJECTION_DISTANCE !<On exit, the projection distance of the specified global data point
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1142,13 +1244,14 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        IF(DATA_POINTS%DATA_POINTS_PROJECTED) THEN
+        IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%DATA_PROJECTION_PROJECTED) THEN
           !Check the data point global number exists
-          IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
-            PROJECTION_DISTANCE=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_DISTANCE
+          IF(DATA_POINTS_GLOBAL_NUMBER>=1.AND.DATA_POINTS_GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
+            PROJECTION_DISTANCE=DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%DISTANCE
           ELSE
-            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-              & " is invalid. The global data point number should be between 1 and "// &
+            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(DATA_POINTS_GLOBAL_NUMBER,"*",ERR, &
+              & ERROR))//" is invalid. The global data point number should be between 1 and "// &
               & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -1170,17 +1273,18 @@ CONTAINS
 
   END SUBROUTINE DATA_POINTS_PROJECTION_DISTANCE_GET
 
-
   !
   !================================================================================================================================
   !
-  
+
   !>Gets the projection element number for a data point identified by a given global number.
-  SUBROUTINE DATA_POINTS_PROJECTION_ELEMENT_NUMBER_GET(DATA_POINTS,GLOBAL_NUMBER,PROJECTION_ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_PROJECTION_ELEMENT_NUMBER_GET(DATA_POINTS,DATA_POINTS_GLOBAL_NUMBER,DATA_PROJECTIONS_GLOBAL_NUMBER, &
+    & PROJECTION_ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to set the number for
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the projection element number for
+    INTEGER(INTG), INTENT(IN) :: DATA_POINTS_GLOBAL_NUMBER !<The global number to get the projection element number for
+    INTEGER(INTG), INTENT(IN) :: DATA_PROJECTIONS_GLOBAL_NUMBER !<The data projections global number to get the projection element number for
     INTEGER(INTG), INTENT(OUT) :: PROJECTION_ELEMENT_NUMBER !<On exit, the projection element number of the specified global data point
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1191,13 +1295,14 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        IF(DATA_POINTS%DATA_POINTS_PROJECTED) THEN
+        IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%DATA_PROJECTION_PROJECTED) THEN
           !Check the data point global number exists
-          IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
-            PROJECTION_ELEMENT_NUMBER=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_ELEMENT_NUMBER
+          IF(DATA_POINTS_GLOBAL_NUMBER>=1.AND.DATA_POINTS_GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
+            PROJECTION_ELEMENT_NUMBER=DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%ELEMENT_NUMBER
           ELSE
-            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-              & " is invalid. The global data point number should be between 1 and "// &
+            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(DATA_POINTS_GLOBAL_NUMBER,"*",ERR, &
+              & ERROR))//" is invalid. The global data point number should be between 1 and "// &
               & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -1224,11 +1329,13 @@ CONTAINS
   !
   
   !>Gets the projection element face number for a data point identified by a given global number.
-  SUBROUTINE DATA_POINTS_PROJECTION_ELEMENT_FACE_NUMBER_GET(DATA_POINTS,GLOBAL_NUMBER,PROJECTION_ELEMENT_FACE_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_PROJECTION_ELEMENT_FACE_NUMBER_GET(DATA_POINTS,DATA_POINTS_GLOBAL_NUMBER,DATA_PROJECTIONS_GLOBAL_NUMBER, &
+    & PROJECTION_ELEMENT_FACE_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to set the number for
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the projection element face number for
+    INTEGER(INTG), INTENT(IN) :: DATA_POINTS_GLOBAL_NUMBER !<The global number to get the projection element face number for
+    INTEGER(INTG), INTENT(IN) :: DATA_PROJECTIONS_GLOBAL_NUMBER !<The data projections global number to get the projection element face number for
     INTEGER(INTG), INTENT(OUT) :: PROJECTION_ELEMENT_FACE_NUMBER !<On exit, the projection element face number of the specified global data point
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1239,15 +1346,17 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        IF(DATA_POINTS%DATA_POINTS_PROJECTED) THEN
+        IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%DATA_PROJECTION_PROJECTED) THEN
           ! Check if boundary faces projection type was set
-          IF(DATA_POINTS%DATA_PROJECTION%PROJECTION_TYPE==DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE)THEN
+          IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%PROJECTION_TYPE== &
+            & DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE)THEN
             !Check the data point global number exists
-            IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
-              PROJECTION_ELEMENT_FACE_NUMBER=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_ELEMENT_FACE_NUMBER
+            IF(DATA_POINTS_GLOBAL_NUMBER>=1.AND.DATA_POINTS_GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
+              PROJECTION_ELEMENT_FACE_NUMBER=DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%ELEMENT_FACE_NUMBER
             ELSE
-              LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-                & " is invalid. The global data point number should be between 1 and "// &
+              LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(DATA_POINTS_GLOBAL_NUMBER,"*",ERR, &
+                & ERROR))//" is invalid. The global data point number should be between 1 and "// &
                 & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
@@ -1278,11 +1387,13 @@ CONTAINS
   !
   
   !>Gets the projection element line number for a data point identified by a given global number.
-  SUBROUTINE DATA_POINTS_PROJECTION_ELEMENT_LINE_NUMBER_GET(DATA_POINTS,GLOBAL_NUMBER,PROJECTION_ELEMENT_LINE_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_PROJECTION_ELEMENT_LINE_NUMBER_GET(DATA_POINTS,DATA_POINTS_GLOBAL_NUMBER,DATA_PROJECTIONS_GLOBAL_NUMBER, &
+    & PROJECTION_ELEMENT_LINE_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to set the number for
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the projection element line number for
+    INTEGER(INTG), INTENT(IN) :: DATA_POINTS_GLOBAL_NUMBER !<The global number to get the projection element line number for
+    INTEGER(INTG), INTENT(IN) :: DATA_PROJECTIONS_GLOBAL_NUMBER !<The data projections global number to get the projection element line number for
     INTEGER(INTG), INTENT(OUT) :: PROJECTION_ELEMENT_LINE_NUMBER !<On exit, the projection element line number of the specified global data point
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1293,15 +1404,17 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        IF(DATA_POINTS%DATA_POINTS_PROJECTED) THEN
+        IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%DATA_PROJECTION_PROJECTED) THEN
           ! Check if boundary lines projection type was set
-          IF(DATA_POINTS%DATA_PROJECTION%PROJECTION_TYPE==DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE)THEN
+          IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%PROJECTION_TYPE== &
+            & DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE)THEN
             !Check the data point global number exists
-            IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
-              PROJECTION_ELEMENT_LINE_NUMBER=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_ELEMENT_LINE_NUMBER
+            IF(DATA_POINTS_GLOBAL_NUMBER>=1.AND.DATA_POINTS_GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
+              PROJECTION_ELEMENT_LINE_NUMBER=DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%ELEMENT_LINE_NUMBER
             ELSE
-              LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-                & " is invalid. The global data point number should be between 1 and "// &
+              LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(DATA_POINTS_GLOBAL_NUMBER,"*",ERR, &
+                & ERROR))//" is invalid. The global data point number should be between 1 and "// &
                 & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
@@ -1332,11 +1445,13 @@ CONTAINS
   !
   
   !>Gets the projection exit tag for a data point identified by a given global number.
-  SUBROUTINE DATA_POINTS_PROJECTION_EXIT_TAG_GET(DATA_POINTS,GLOBAL_NUMBER,PROJECTION_EXIT_TAG,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_PROJECTION_EXIT_TAG_GET(DATA_POINTS,DATA_POINTS_GLOBAL_NUMBER,DATA_PROJECTIONS_GLOBAL_NUMBER, &
+    & PROJECTION_EXIT_TAG,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to set the number for
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the projection exit tag for
+    INTEGER(INTG), INTENT(IN) :: DATA_POINTS_GLOBAL_NUMBER !<The global number to get the projection exit tag for
+    INTEGER(INTG), INTENT(IN) :: DATA_PROJECTIONS_GLOBAL_NUMBER !<The data projections global number to get the projection exit tag for
     INTEGER(INTG), INTENT(OUT) :: PROJECTION_EXIT_TAG !<On exit, the projection exit tag of the specified global data point
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1347,13 +1462,14 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        IF(DATA_POINTS%DATA_POINTS_PROJECTED) THEN
+        IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%DATA_PROJECTION_PROJECTED) THEN
           !Check the data point global number exists
-          IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
-            PROJECTION_EXIT_TAG=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_EXIT_TAG
+          IF(DATA_POINTS_GLOBAL_NUMBER>=1.AND.DATA_POINTS_GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
+            PROJECTION_EXIT_TAG=DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%EXIT_TAG
           ELSE
-            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-              & " is invalid. The global data point number should be between 1 and "// &
+            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(DATA_POINTS_GLOBAL_NUMBER,"*",ERR, &
+              & ERROR))//" is invalid. The global data point number should be between 1 and "// &
               & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -1380,11 +1496,13 @@ CONTAINS
   !
   
   !>Gets the projection xi for a data point identified by a given global number.
-  SUBROUTINE DATA_POINTS_PROJECTION_XI_GET(DATA_POINTS,GLOBAL_NUMBER,PROJECTION_XI,ERR,ERROR,*)
+  SUBROUTINE DATA_POINTS_PROJECTION_XI_GET(DATA_POINTS,DATA_POINTS_GLOBAL_NUMBER,DATA_PROJECTIONS_GLOBAL_NUMBER,PROJECTION_XI, &
+    & ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to set the number for
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_NUMBER !<The global number to get the projection xi for
+    INTEGER(INTG), INTENT(IN) :: DATA_POINTS_GLOBAL_NUMBER !<The global number to get the projection xi for
+    INTEGER(INTG), INTENT(IN) :: DATA_PROJECTIONS_GLOBAL_NUMBER !<The data projections global number to get the projection xi for
     REAL(DP), INTENT(OUT) :: PROJECTION_XI(:) !<On exit, the projection xi of the specified global data point
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
@@ -1395,20 +1513,23 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        IF(DATA_POINTS%DATA_POINTS_PROJECTED) THEN
+        IF(DATA_POINTS%DATA_PROJECTIONS(DATA_PROJECTIONS_GLOBAL_NUMBER)%PTR%DATA_PROJECTION_PROJECTED) THEN
           !Check the data point global number exists
-          IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
-            IF(SIZE(PROJECTION_XI,1)==SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_XI,1)) THEN
-              PROJECTION_XI=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_XI
+          IF(DATA_POINTS_GLOBAL_NUMBER>=1.AND.DATA_POINTS_GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
+            IF(SIZE(PROJECTION_XI,1)==SIZE(DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%XI,1)) THEN
+              PROJECTION_XI=DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%XI
             ELSE
               CALL FLAG_ERROR("projection xi has size of "//TRIM(NUMBER_TO_VSTRING(SIZE(PROJECTION_XI,1),"*",ERR,ERROR))// &
                 & "but it needs to have size of "// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%PROJECTION_XI,1),"*",ERR,ERROR))// &
+                & TRIM(NUMBER_TO_VSTRING(SIZE(DATA_POINTS%DATA_POINTS(DATA_POINTS_GLOBAL_NUMBER)%DATA_PROJECTIONS_RESULT &
+              & (DATA_PROJECTIONS_GLOBAL_NUMBER)%XI,1),"*",ERR,ERROR))// &
                 & "." ,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
-              & " is invalid. The global data point number should be between 1 and "// &
+            LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(DATA_POINTS_GLOBAL_NUMBER,"*",ERR, &
+              & ERROR))//" is invalid. The global data point number should be between 1 and "// &
               & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -1433,7 +1554,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
 END MODULE DATA_POINT_ROUTINES
 
 
