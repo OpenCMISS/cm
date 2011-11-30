@@ -3275,6 +3275,18 @@ CONTAINS
                     & " Gauss points are insufficient for cubic Hermite interpolation"
                   CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
                 ENDIF
+              CASE(BASIS_LINEAR_SIMPLEX_INTERPOLATION)
+                IF(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)<2) THEN
+                  LOCAL_WARNING=TRIM(NUMBER_TO_VSTRING(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni),"*",ERR,ERROR))// &
+                    & " Gauss points are insufficient for linear Simplex interpolation"
+                  CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
+                ENDIF
+              CASE(BASIS_QUADRATIC_SIMPLEX_INTERPOLATION)
+                IF(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni)<2) THEN
+                  LOCAL_WARNING=TRIM(NUMBER_TO_VSTRING(BASIS%QUADRATURE%NUMBER_OF_GAUSS_XI(ni),"*",ERR,ERROR))//&
+                    & " Gauss points are insufficient for quadratic Simplex interpolation"
+                  CALL FLAG_WARNING(LOCAL_WARNING,ERR,ERROR,*999)
+                ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="Interpolation xi value "//TRIM(NUMBER_TO_VSTRING(BASIS%INTERPOLATION_XI(ni),"*",ERR,ERROR))// &
                   & " is invalid for xi direction "//TRIM(NUMBER_TO_VSTRING(ni,"*",ERR,ERROR))
