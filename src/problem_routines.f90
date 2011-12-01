@@ -319,7 +319,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     
     CALL ENTERS("PROBLEM_CELLML_EQUATIONS_SOLVE",ERR,ERROR,*999)
     
@@ -3295,8 +3294,7 @@ CONTAINS
     !Local Variables
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS !<A pointer the solvers to update the variables from
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to update the variables from
-    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2 !<A pointer the sub control loop
-    INTEGER(INTG) :: solver_idx,loop_idx
+    INTEGER(INTG) :: solver_idx
 
     NULLIFY(SOLVER)
 
