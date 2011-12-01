@@ -80,6 +80,9 @@ endif
 ifndef GLOBAL_UTILS_ROOT
   GLOBAL_UTILS_ROOT := ${OPENCMISSEXTRAS_ROOT}/utils
 endif
+ifndef GLOBAL_MPI_ROOT
+  GLOBAL_MPI_ROOT := ${OPENCMISSEXTRAS_ROOT}/mpi
+endif
 
 ifeq ($(USECUDA),true)
   ifndef CUDA_ROOT
@@ -962,8 +965,8 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
         MPI_LIB_PATH += $(addprefix -L, $(I_MPI_ROOT)/lib/ )
       endif
     else
-      MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
       ifeq ($(MPI),openmpi)
+        MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
         MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
         MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -libverbs -lnsl -lutil -ldl -lnsl -lutil
         MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
@@ -973,7 +976,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
           MPI_LIBRARIES += -lmpich -lmpichf90 -lpthread  -lrt -luuid -lrt
           MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
         else
-          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
+          MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
           MPI_LIBRARIES += -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -lnsl -lutil
           MPI_LIB_PATH += $(addprefix -L, $(MPI_DIR)/lib/ )
         endif

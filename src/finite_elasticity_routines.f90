@@ -1454,24 +1454,6 @@ CONTAINS
                     ENDDO
                   ENDDO
                 ENDDO !gauss_idx
-                !Scale factor adjustment for RHS
-                IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                    & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-                  FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLES(var1)
-                  element_dof_idx=0
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    DEPENDENT_BASIS=>DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY% &
-                      & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                    DO parameter_idx=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                      element_dof_idx=element_dof_idx+1
-                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(element_dof_idx)= &
-                          & RHS_VECTOR%ELEMENT_VECTOR%VECTOR(element_dof_idx)* &
-                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR% &
-                          & SCALE_FACTORS(parameter_idx,component_idx)
-                    ENDDO !parameter_idx
-                  ENDDO !component_idx
-                ENDIF
               ENDIF
             ENDIF
           ENDIF
