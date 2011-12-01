@@ -119,7 +119,7 @@ MODULE MESH_ROUTINES
   
   PUBLIC DECOMPOSITION_TYPE_GET,DECOMPOSITION_TYPE_SET
   
-  PUBLIC DECOMPOSITION_USER_NUMBER_FIND
+  PUBLIC DECOMPOSITION_USER_NUMBER_FIND, DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION
   
   PUBLIC DECOMPOSITION_NODE_DOMAIN_GET
 
@@ -151,7 +151,7 @@ MODULE MESH_ROUTINES
 
   PUBLIC MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET,MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET
 
-  PUBLIC MESH_USER_NUMBER_FIND
+  PUBLIC MESH_USER_NUMBER_FIND, MESH_USER_NUMBER_TO_MESH
   
   PUBLIC MESH_SURROUNDING_ELEMENTS_CALCULATE_SET
 
@@ -5219,7 +5219,7 @@ CONTAINS
     !Argument variables
     TYPE(DOMAIN_TOPOLOGY_TYPE), POINTER :: DOMAIN_TOPOLOGY !<A pointer to the domain topology to check the node exists on
     INTEGER(INTG), INTENT(IN) :: USER_NODE_NUMBER !<The user node number to check if it exists
-    LOGICAL, INTENT(OUT) :: NODE_EXISTS !<On exit, is .TRUE. if the node user number exists in the domain nodes topolgoy, .FALSE. if not
+    LOGICAL, INTENT(OUT) :: NODE_EXISTS !<On exit, is .TRUE. if the node user number exists in the domain nodes topolgoy (even if it is a ghost node), .FALSE. if not
     INTEGER(INTG), INTENT(OUT) :: DOMAIN_LOCAL_NODE_NUMBER !<On exit, if the node exists the local number corresponding to the user node number. If the node does not exist then global number will be 0.
     LOGICAL, INTENT(OUT) :: GHOST_NODE !<On exit, is .TRUE. if the local node (if it exists) is a ghost node, .FALSE. if not. 
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
@@ -9136,9 +9136,77 @@ CONTAINS
   END SUBROUTINE MESH_EMBEDDING_SET_GAUSS_POINT_DATA
 
 
-!   !
-!   !================================================================================================================================
-!   !
+  !
+  !================================================================================================================================
+  !
+
+  !> Find the mesh with the given user number, or throw an error if it does not exist.
+  SUBROUTINE MESH_USER_NUMBER_TO_MESH( USER_NUMBER, REGION, MESH, ERR, ERROR, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the mesh to find
+    TYPE(REGION_TYPE), POINTER :: REGION !<The region containing the mesh
+    TYPE(MESH_TYPE), POINTER :: MESH !<On exit, a pointer to the mesh with the specified user number.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("MESH_USER_NUMBER_TO_MESH", ERR, ERROR, *999 )
+
+    NULLIFY( MESH )
+    CALL MESH_USER_NUMBER_FIND( USER_NUMBER, REGION, MESH, ERR, ERROR, *999 )
+    IF( .NOT.ASSOCIATED( MESH ) ) THEN
+      LOCAL_ERROR = "A mesh with an user number of "//TRIM(NUMBER_TO_VSTRING( USER_NUMBER, "*", ERR, ERROR ))// &
+        & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING( REGION%USER_NUMBER, "*", ERR, ERROR ))//"."
+      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+    ENDIF
+
+    CALL EXITS( "MESH_USER_NUMBER_TO_MESH" )
+    RETURN
+999 CALL ERRORS( "MESH_USER_NUMBER_TO_MESH", ERR, ERROR )
+    CALL EXITS( "MESH_USER_NUMBER_TO_MESH" )
+    RETURN 1
+
+  END SUBROUTINE MESH_USER_NUMBER_TO_MESH
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Find the decomposition with the given user number, or throw an error if it does not exist.
+  SUBROUTINE DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION( USER_NUMBER, MESH, DECOMPOSITION, ERR, ERROR, * )
+    !Arguments
+    INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the decomposition to find
+    TYPE(MESH_TYPE), POINTER :: MESH !<The mesh containing the decomposition
+    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<On exit, a pointer to the decomposition with the specified user number.
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+
+    !Locals
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION", ERR, ERROR, *999 )
+
+    NULLIFY( DECOMPOSITION )
+    CALL DECOMPOSITION_USER_NUMBER_FIND( USER_NUMBER, MESH, DECOMPOSITION, ERR, ERROR, *999 )
+    IF( .NOT.ASSOCIATED( DECOMPOSITION ) ) THEN
+      LOCAL_ERROR = "A decomposition with an user number of "//TRIM(NUMBER_TO_VSTRING( USER_NUMBER, "*", ERR, ERROR ))// &
+        & " does not exist on mesh number "//TRIM(NUMBER_TO_VSTRING( MESH%USER_NUMBER, "*", ERR, ERROR ))//"."
+      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+    ENDIF
+
+    CALL EXITS( "DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION" )
+    RETURN
+999 CALL ERRORS( "DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION", ERR, ERROR )
+    CALL EXITS( "DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION" )
+    RETURN 1
+
+  END SUBROUTINE DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION
+
+  !
+  !================================================================================================================================
+  !
 
 END MODULE MESH_ROUTINES
 
