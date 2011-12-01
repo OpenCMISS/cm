@@ -2367,6 +2367,9 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   !>Contains information for an external differential-algebraic equation solver
   TYPE EXTERNAL_DAE_SOLVER_TYPE
     TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER !<A pointer to the differential-algebraic solver
+    INTEGER(INTG) :: THREADS_PER_BLOCK !<The number of threads per block
+    INTEGER(INTG) :: NUMBER_OF_PARTITIONS !<The number of partittion \todo elaborate
+    INTEGER(INTG) :: NUMBER_OF_STREAMS !<The number of streams
   END TYPE EXTERNAL_DAE_SOLVER_TYPE
   
   !>Contains information for an differential-algebraic equation solver
