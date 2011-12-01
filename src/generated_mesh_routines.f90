@@ -3409,14 +3409,18 @@ CONTAINS
                       DERIVATIVE_VALUES(GLOBAL_DERIV_S1)= &
                         & REGULAR_MESH%BASE_VECTORS(component_idx,1)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(1)
                     END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S2)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,2)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)
-                    END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S3)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,3)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)
-                    END IF
+                    IF(REGULAR_MESH%MESH_DIMENSION>1) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S2)= &
+                          & REGULAR_MESH%BASE_VECTORS(component_idx,2)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)
+                      END IF
+                    ENDIF
+                    IF(REGULAR_MESH%MESH_DIMENSION>2) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S3)= &
+                          & REGULAR_MESH%BASE_VECTORS(component_idx,3)/REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)
+                      END IF
+                    ENDIF
                   CASE DEFAULT
                     !Arc length or arithmetic mean scaling
                     DERIVATIVE_VALUES=0.0_DP
@@ -3424,14 +3428,18 @@ CONTAINS
                       DERIVATIVE_VALUES(GLOBAL_DERIV_S1)= &
                         & REGULAR_MESH%BASE_VECTORS(component_idx,1)/REGULAR_MESH%MAXIMUM_EXTENT(1)
                     END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S2)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,2)/REGULAR_MESH%MAXIMUM_EXTENT(2)
-                    END IF
-                    IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
-                      DERIVATIVE_VALUES(GLOBAL_DERIV_S3)= &
-                        & REGULAR_MESH%BASE_VECTORS(component_idx,3)/REGULAR_MESH%MAXIMUM_EXTENT(3)
-                    END IF
+                    IF(REGULAR_MESH%MESH_DIMENSION>1) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(2)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S2)= &
+                          & REGULAR_MESH%BASE_VECTORS(component_idx,2)/REGULAR_MESH%MAXIMUM_EXTENT(2)
+                      END IF
+                    ENDIF
+                    IF(REGULAR_MESH%MESH_DIMENSION>2) THEN
+                      IF(REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(3)>0) THEN
+                        DERIVATIVE_VALUES(GLOBAL_DERIV_S3)= &
+                          & REGULAR_MESH%BASE_VECTORS(component_idx,3)/REGULAR_MESH%MAXIMUM_EXTENT(3)
+                      END IF
+                    ENDIF
                   END SELECT
                   !Update geometric parameters in this computational domain only
                   DOMAIN=>FIELD_VARIABLE_COMPONENT%DOMAIN
