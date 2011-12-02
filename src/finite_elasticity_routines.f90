@@ -3080,13 +3080,6 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-
-!                IF(IS_HYDROSTATIC_PRESSURE_DEPENDENT_FIELD) THEN
-!                  NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS + 1
-!                ELSE
-!                  NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS
-!                ENDIF
-
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS, &
                   & ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,NUMBER_OF_COMPONENTS, &
@@ -4370,7 +4363,15 @@ CONTAINS
                 & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 3;
               CASE(EQUATIONS_SET_MEMBRANE_SUBTYPE)
-                NUMBER_OF_COMPONENTS = 3 !\todo This has been hard-coded for Mooney Rivlin for all membranes, need to be generalised for all
+                !\todo Currently the number of components for a membrane problem's material field has been set to 3 in 3D space or
+                ! 2 in 2D space to work with a Mooney Rivlin material (2 material parameters) and a membrane thickness parameter 
+                ! (only if in 3D space). Extra subtypes will need to be added to use other constitutive relations with 
+                ! membrane mechanics problems.
+                IF (NUMBER_OF_DIMENSIONS==3) THEN
+                  NUMBER_OF_COMPONENTS = 3
+                ELSE
+                  NUMBER_OF_COMPONENTS = 2
+                ENDIF
               CASE(EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 2;
               CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE)
