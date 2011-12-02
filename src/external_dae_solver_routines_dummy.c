@@ -1,6 +1,6 @@
 /* \file
  * \author Chris Bradley
- * \brief This file provides the routines for solving differential-algebraic equations with an external solver.
+ * \brief This file provides the dummy routines for solving differential-algebraic equations with an external solver.
  *.
  * \section LICENSE
  * 
@@ -43,10 +43,10 @@
  */
 
 /*
-File: external_dae_solver_routines.c
-===================
+File: external_dae_solver_routines_dummy.c
+==========================================
  
-This file provides provides the routines for solving differential-algebraic equations with an external solver.
+This file provides provides the dummy routines for solving differential-algebraic equations with an external solver.
 
 Functions included:
 
@@ -56,11 +56,6 @@ SolverDAEExternalIntegrate     Solves the differential-algebraic equation.
 
 /* Included files */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "external_dae_solver_routines.h"
-
 /* Type definitions */
 
 /* Function Definitions */
@@ -69,6 +64,9 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				const double StartTime,
 				const double EndTime,
 				double *InitialStep,
+				const int ThreadsPerBlock,
+				const int NumberOfPartitions,
+				const int NumberOfStreams,
 				const int OnlyOneModelIndex,
 				int *ModelsData,
 				int NumberOfState,
@@ -80,8 +78,7 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 				int *err)
 {
 
-  printf("Hello World!\n");
-     
-}
+  // Do Nothing
 
+}
 

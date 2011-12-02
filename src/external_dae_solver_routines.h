@@ -42,3 +42,22 @@
  *
  */
 
+extern "C"
+{
+	void SolverDAEExternalIntegrate(const int NumberOfDofs,
+					const double StartTime,
+					const double EndTime,
+					double *InitialStep,
+					const int ThreadsPerBlock,
+					const int NumberOfPartitions,
+					const int NumberOfStreams,
+					const int OnlyOneModelIndex,
+					int *ModelsData,
+					int NumberOfState,
+					double *StateData,
+					int NumberOfParameters,
+					double *ParametersData,
+					int NumberOfIntermediate,
+					double *IntermediateData,
+					int *err);
+}

@@ -2326,7 +2326,6 @@ MODULE OPENCMISS
     & EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionOneDim1 = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1 
-
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM !<Prescribed solution, using a source term to correct for error - 2D with 2 compartments
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim = &
@@ -2544,7 +2543,6 @@ MODULE OPENCMISS
     & CMISSEquationsSetExponentialSourceDiffusionOneDim1,CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim, &
     & CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim,CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim, &
     & CMISSEquationsSetMultiCompDiffusionFourCompThreeDim
-
 
   PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
 
@@ -3509,7 +3507,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldIONodesExportVSVSObj
   END INTERFACE !CMISSFieldIONodesExport
 
-  PUBLIC CMISSFieldIOElementsExport,CMISSFieldIONodesExport
+  PUBLIC CMISSFieldIOElementsExport,CMISSFieldIONodesExport,CMISSFieldIOFieldsImport, CMISSReadVTK
   
 !!==================================================================================================================================
 !!
@@ -3809,7 +3807,7 @@ MODULE OPENCMISS
   INTERFACE CMISSInterfaceMeshConnectivityElementXiSet
     MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiSetNumber
     MODULE PROCEDURE CMISSInterfaceMeshConnectivityElementXiSetObj
-  END INTERFACE !CMISSInterfaceMeshConnectivityElementXiSet <<>>
+  END INTERFACE !CMISSInterfaceMeshConnectivityElementXiSet 
 
   !>Sets the number of elements coupled through a given interface mesh element
   INTERFACE CMISSInterfaceMeshConnectivityElementNumberSet
@@ -5257,6 +5255,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverDAETimeStepSetObj
   END INTERFACE !CMISSSolverDAETimeStepSet
   
+      !>Sets/changes the parameters relating to an external differential-algebraic equation solver.
+  INTERFACE CMISSSolverExternalDAESolverParametersSet
+    MODULE PROCEDURE CMISSSolverExternalDAESolverParametersSetNumber0
+    MODULE PROCEDURE CMISSSolverExternalDAESolverParametersSetNumber1
+    MODULE PROCEDURE CMISSSolverExternalDAESolverParametersSetObj
+  END INTERFACE !CMISSSolverExternalDAESolverParametersSet
+
   !>Returns the degree of the polynomial used to interpolate time for a dynamic solver.
   INTERFACE CMISSSolverDynamicDegreeGet
     MODULE PROCEDURE CMISSSolverDynamicDegreeGetNumber0
@@ -5644,7 +5649,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSSolverDAESolverTypeGet,CMISSSolverDAESolverTypeSet
 
-  PUBLIC CMISSSolverDAETimesSet,CMISSSolverDAETimeStepSet
+  PUBLIC CMISSSolverDAETimesSet,CMISSSolverDAETimeStepSet,CMISSSolverExternalDAESolverParametersSet
 
   PUBLIC CMISSSolverDynamicDegreeGet,CMISSSolverDynamicDegreeSet
 
@@ -5754,13 +5759,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldMLInputFieldCreateStartNumberC
   END INTERFACE CMISSFieldMLInputFieldCreateStart
 
-  !> Updates the given field's nodal dofs using the given parameter evaluator.
-  INTERFACE CMISSFieldMLInputFieldNodalParametersUpdate
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateObjVS
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateNumberVS
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateObjC
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateNumberC
-  END INTERFACE CMISSFieldMLInputFieldNodalParametersUpdate
+  !> Updates the given field's dofs using the given parameter evaluator.
+  INTERFACE CMISSFieldMLInputFieldParametersUpdate
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateObjVS
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateNumberVS
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateObjC
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateNumberC
+  END INTERFACE CMISSFieldMLInputFieldParametersUpdate
 
   !> Creates a basis using the given FieldML evaluator.
   INTERFACE CMISSFieldMLInputBasisCreateStart
@@ -5803,7 +5808,7 @@ MODULE OPENCMISS
   PUBLIC :: CMISSFieldMLInputCreateFromFile, CMISSFieldMLInputMeshCreateStart, &
     & CMISSFieldMLInputCoordinateSystemCreateStart, CMISSFieldMLInputCreateMeshComponent, &
     & CMISSFieldMLInputFieldCreateStart, CMISSFieldMLInputBasisCreateStart, CMISSFieldMLInputNodesCreateStart, &
-    & CMISSFieldMLInputFieldNodalParametersUpdate
+    & CMISSFieldMLInputFieldParametersUpdate
 
   PUBLIC :: CMISSFieldMLIOTypeFinalise, CMISSFieldMLIOTypeInitialise, CMISSFieldMLIOGetSession
 
@@ -11379,7 +11384,7 @@ CONTAINS
     CALL EXTRACT_ERROR_MESSAGE(ErrorMessage,Err,ERROR,*999)
 
     RETURN
-999 RETURN 1
+999 RETURN
 
   END SUBROUTINE CMISSExtractErrorMessageC
 
@@ -11398,7 +11403,7 @@ CONTAINS
     CALL EXTRACT_ERROR_MESSAGE(ErrorMessage,Err,ERROR,*999)
 
     RETURN
-999 RETURN 1
+999 RETURN
 
   END SUBROUTINE CMISSExtractErrorMessageVS
 
@@ -20441,7 +20446,6 @@ CONTAINS
     
   END SUBROUTINE CMISSEquationsSetAnalyticDestroyObj
 
- 
   !  
   !================================================================================================================================
   !  
@@ -20652,7 +20656,6 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSEquationsSetAnalyticTimeSetObj
-
 
   !
   !================================================================================================================================
@@ -30141,6 +30144,85 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldIONodesExportVSVSObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !> Import mesh from file \todo number method
+  SUBROUTINE CMISSFieldIOFieldsImport(FileName, Method, Region, Mesh, MeshUserNumber, Decomposition, &
+    & DecompositionUserNumber, DecompositionMethod, FieldValuesSetType, FieldScalingType, Err)
+    !Argument variables
+    CHARACTER(LEN=*), INTENT(IN):: FileName !<name of input
+    CHARACTER(LEN=*), INTENT(IN) :: Method !<method used for import
+    TYPE(CMISSRegionType), INTENT(IN) :: Region !<region
+    TYPE(CMISSMeshType), INTENT(IN) :: Mesh !<mesh type
+    INTEGER(INTG), INTENT(IN) :: MeshUserNumber !<user number for mesh
+    TYPE(CMISSDecompositionType), INTENT(INOUT) :: Decomposition !< decompistion
+    INTEGER(INTG), INTENT(IN) :: DecompositionUserNumber !<user number for decompistion
+    INTEGER(INTG), INTENT(IN) :: DecompositionMethod !<decompistion method
+    INTEGER(INTG), INTENT(IN) :: FieldValuesSetType
+    INTEGER(INTG), INTENT(IN) :: FieldScalingType
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local variables
+    TYPE(VARYING_STRING) :: VFileName
+    TYPE(VARYING_STRING) :: VMethod
+    INTEGER(INTG) :: FileNameLength
+    INTEGER(INTG) :: MethodLength
+
+    CALL ENTERS("CMISSFieldIOFieldsImport",Err,ERROR,*999)
+
+    FileNameLength = LEN_TRIM(FileName)
+    VFileName = FileName(1:FileNameLength)
+    MethodLength = LEN_TRIM(Method)
+    VMethod = Method(1:MethodLength)
+
+    CALL FIELD_IO_FIELDS_IMPORT(VFileName, VMethod, Region%REGION, Mesh%MESH, MeshUserNumber, Decomposition%DECOMPOSITION, &
+    & DecompositionUserNumber, DecompositionMethod, FieldValuesSetType, FieldScalingType, Err, ERROR, *999)
+
+    CALL EXITS("CMISSFieldIOFieldsImport")
+    RETURN
+999 CALL ERRORS("CMISSFieldIOFieldsImport",Err,ERROR)
+    CALL EXITS("CMISSFieldIOFieldsImport")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+  END SUBROUTINE CMISSFieldIOFieldsImport
+  !
+  !================================================================================================================================
+  !
+
+  !> Import mesh from vtk file
+  SUBROUTINE CMISSReadVTK(filePath, numberOfMeshDimensions, nodesPerElement, points, numPoints, cells, numCells, Err)
+    !Argument variables
+    USE CMISS_FORTRAN_C
+    USE ISO_C_BINDING
+    CHARACTER(LEN=*), INTENT(IN) :: filePath
+    INTEGER(INTG), INTENT(IN) :: numberOfMeshDimensions
+    INTEGER(INTG), INTENT(IN) :: nodesPerElement
+    REAL(DP), POINTER, INTENT(OUT) :: points(:)
+    INTEGER(INTG), INTENT(OUT) :: numPoints
+    INTEGER(INTG), POINTER, INTENT(OUT) :: cells(:)
+    INTEGER(INTG), INTENT(OUT) :: numCells
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code
+    !Local variables
+    CHARACTER(LEN=1,KIND=C_CHAR) :: Cstring(256)
+    TYPE(C_PTR) :: points_c,cells_c
+
+    CALL ENTERS("CMISSReadVTK",Err,ERROR,*999)
+
+    CALL CMISSF2CString(filePath,CString)
+    CALL READ_VTK(Cstring, numberOfMeshDimensions, nodesPerElement, points_c, numPoints, cells_c, numCells)
+    CALL C_F_POINTER(points_c,points,[numPoints*NumberOfMeshDimensions])
+    CALL C_F_POINTER(cells_c,cells,[numCells*nodesPerElement])
+
+    CALL EXITS("CMISSReadVTK")
+    RETURN
+999 CALL ERRORS("CMISSReadVTK",Err,ERROR)
+    CALL EXITS("CMISSReadVTK")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSReadVTK
 
 !!==================================================================================================================================
 !!
@@ -41359,6 +41441,122 @@ CONTAINS
   !  
   !================================================================================================================================
   !
+
+  !>Sets/changes the parameters realting to an external differential-algebraic equation solver identified by an user number.
+  SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex, &
+        & ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifier !<The control loop identifier with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ThreadsPerBlock !<The number of threads per block
+    INTEGER(INTG), INTENT(IN) :: NumberOfPartitons !<The number of partittion \todo elaborate
+    INTEGER(INTG), INTENT(IN) :: NumberOfStreams !<The number of streams
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolverExternalDAESolverParametersSetNumber0",Err,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifier,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_EXTERNAL_DAE_PARAMETERS_SET(SOLVER,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSSolverExternalDAESolverParametersSetNumber0",Err,ERROR)
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber0")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the parameters realting to an external differential-algebraic equation solver identified by an user number.
+  SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber1(ProblemUserNumber,ControlLoopIdentifiers,SolverIndex, &
+        & ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: ProblemUserNumber !<The user number of the problem number with the solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ControlLoopIdentifiers(:) !<ControlLoopIdentifiers(i). The i'th control loop identifier to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: SolverIndex !<The solver index to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ThreadsPerBlock !<The number of threads per block
+    INTEGER(INTG), INTENT(IN) :: NumberOfPartitons !<The number of partittion \todo elaborate
+    INTEGER(INTG), INTENT(IN) :: NumberOfStreams !<The number of streams
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSSolverExternalDAESolverParametersSetNumber1",Err,ERROR,*999)
+
+    NULLIFY(PROBLEM)
+    NULLIFY(SOLVER)
+    CALL PROBLEM_USER_NUMBER_FIND(ProblemUserNumber,PROBLEM,Err,ERROR,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_SOLVER_GET(PROBLEM,ControlLoopIdentifiers,SolverIndex,SOLVER,Err,ERROR,*999)
+      CALL SOLVER_EXTERNAL_DAE_PARAMETERS_SET(SOLVER,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err,ERROR,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(ProblemUserNumber,"*",Err,ERROR))// &
+        & " does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSSolverExternalDAESolverParametersSetNumber1",Err,ERROR)
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetNumber1")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverExternalDAESolverParametersSetNumber1
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the parameters realting to an external differential-algebraic equation solver identified by an object.
+  SUBROUTINE CMISSSolverExternalDAESolverParametersSetObj(Solver,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err)
+
+    !Argument variables
+    TYPE(CMISSSolverType), INTENT(IN) :: Solver !<The solver to set the DAE times for.
+    INTEGER(INTG), INTENT(IN) :: ThreadsPerBlock !<The number of threads per block
+    INTEGER(INTG), INTENT(IN) :: NumberOfPartitons !<The number of partittion \todo elaborate
+    INTEGER(INTG), INTENT(IN) :: NumberOfStreams !<The number of streams
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSSolverExternalDAESolverParametersSetObj",Err,ERROR,*999)
+
+    CALL SOLVER_EXTERNAL_DAE_PARAMETERS_SET(Solver%SOLVER,ThreadsPerBlock,NumberOfPartitons,NumberOfStreams,Err,ERROR,*999)
+
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetObj")
+    RETURN
+999 CALL ERRORS("CMISSSolverExternalDAESolverParametersSetObj",Err,ERROR)
+    CALL EXITS("CMISSSolverExternalDAESolverParametersSetObj")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSSolverExternalDAESolverParametersSetObj
+
+  !
+  !================================================================================================================================
+  !
   
   !>Returns the degree of the polynomial used to interpolate time for a dynamic solver identified by an user number.
   SUBROUTINE CMISSSolverDynamicDegreeGetNumber0(ProblemUserNumber,ControlLoopIdentifier,SolverIndex,Degree,Err)
@@ -47553,8 +47751,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of the given field, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjVS( fieldml, field, evaluatorName, variableType, &
+  !> Update the DOF parameters of the given field, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjVS( fieldml, field, evaluatorName, variableType, &
     & setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47564,26 +47762,26 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateObjVS",Err,ERROR,*999)
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field%FIELD, variableType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field%FIELD, variableType, &
       &  setType, err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjVS")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateObjVS",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjVS")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjVS
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjVS
 
   !  
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of field with the given user number, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberVS( fieldml, regionNumber, fieldNumber, &
+  !> Update the DOF parameters of field with the given user number, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberVS( fieldml, regionNumber, fieldNumber, &
     & evaluatorName, variableType, setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47598,29 +47796,29 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateNumberVS",Err,ERROR,*999)
 
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field, variableType, setType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field, variableType, setType, &
       & err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberVS")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateNumberVS",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberVS")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberVS
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberVS
 
   !  
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of the given field, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjC( fieldml, field, evaluatorName, &
+  !> Update the DOF parameters of the given field, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjC( fieldml, field, evaluatorName, &
     & variableType, setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47630,26 +47828,26 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateObjC",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateObjC",Err,ERROR,*999)
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field%FIELD, variableType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field%FIELD, variableType, &
       & setType, err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjC")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjC")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateObjC",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjC")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateObjC",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjC")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjC
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjC
 
   !  
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of field with the given user number, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberC( fieldml, regionNumber, fieldNumber, &
+  !> Update the DOF parameters of field with the given user number, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberC( fieldml, regionNumber, fieldNumber, &
     & evaluatorName, variableType, setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47664,22 +47862,22 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateNumberC",Err,ERROR,*999)
 
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field, variableType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field, variableType, &
       & setType, err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberC")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateNumberC",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberC")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberC
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberC
 
   !  
   !================================================================================================================================
@@ -47691,8 +47889,6 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: filename !< The name of the file to write the FieldML document to.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
-
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("CMISSFieldMLOutputWriteVS",Err,ERROR,*999)
 
@@ -48384,7 +48580,7 @@ CONTAINS
     
   END SUBROUTINE CMISSFieldMLIOGetSession
 
-#endif !USEFIELDML
+#endif
 
   !
   !================================================================================================================================

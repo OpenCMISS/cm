@@ -307,7 +307,9 @@ MODULE SOLVER_ROUTINES
 
   INTERFACE
 
+
     SUBROUTINE SOLVER_DAE_EXTERNAL_INTEGRATE(NUMBER_OF_DOFS,START_TIME,END_TIME,INITIAL_STEP, &
+      & THREADS_PER_BLOCK,NUMBER_OF_PARTITIONS,NUMBER_OF_STREAMS, &
       & ONLY_ONE_MODEL_INDEX,MODELS_DATA,NUMBER_OF_STATE,STATE_DATA,NUMBER_OF_PARAMETERS, &
       & PARAMETERS_DATA,NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR) BIND(C, NAME="SolverDAEExternalIntegrate")
       
@@ -317,6 +319,9 @@ MODULE SOLVER_ROUTINES
       REAL(C_DOUBLE), VALUE, INTENT(IN) :: START_TIME
       REAL(C_DOUBLE), VALUE, INTENT(IN) :: END_TIME
       REAL(C_DOUBLE), INTENT(INOUT) :: INITIAL_STEP
+      INTEGER(C_INT), VALUE, INTENT(IN) :: THREADS_PER_BLOCK
+      INTEGER(C_INT), VALUE, INTENT(IN) :: NUMBER_OF_PARTITIONS
+      INTEGER(C_INT), VALUE, INTENT(IN) :: NUMBER_OF_STREAMS
       INTEGER(C_INT), VALUE, INTENT(IN) :: ONLY_ONE_MODEL_INDEX
       INTEGER(C_INT), INTENT(IN) :: MODELS_DATA(*)
       INTEGER(C_INT), VALUE, INTENT(IN) :: NUMBER_OF_STATE
@@ -420,7 +425,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_DAE_SOLVER_TYPE_GET,SOLVER_DAE_SOLVER_TYPE_SET
 
-  PUBLIC SOLVER_DAE_TIMES_SET,SOLVER_DAE_TIME_STEP_SET
+  PUBLIC SOLVER_DAE_TIMES_SET,SOLVER_DAE_TIME_STEP_SET,SOLVER_EXTERNAL_DAE_PARAMETERS_SET
   
   PUBLIC SOLVER_DAE_EULER_SOLVER_TYPE_GET,SOLVER_DAE_EULER_SOLVER_TYPE_SET
   
@@ -2063,6 +2068,7 @@ CONTAINS
                         ENDIF
                       ELSE
                         NULLIFY(STATE_DATA)
+                        NULLIFY(STATE_FIELD)
                       ENDIF
                       
                       !Get the parameters information if this environment has any.
@@ -2075,7 +2081,8 @@ CONTAINS
                           NULLIFY(PARAMETERS_DATA)
                         ENDIF
                       ELSE
-                        NULLIFY(PARAMETERS_DATA)
+                        NULLIFY(PARAMETERS_DATA)                        
+                        NULLIFY(PARAMETERS_FIELD)
                       ENDIF
                       
                       !Get the intermediate information if this environment has any.
@@ -2089,6 +2096,7 @@ CONTAINS
                         ENDIF
                       ELSE
                         NULLIFY(INTERMEDIATE_DATA)
+                        NULLIFY(INTERMEDIATE_FIELD)
                       ENDIF
 
                       !Integrate these CellML equations
@@ -2097,7 +2105,7 @@ CONTAINS
                         & CELLML_ENVIRONMENT%MODELS_FIELD%ONLY_ONE_MODEL_INDEX,MODELS_DATA,CELLML_ENVIRONMENT% &
                         & MAXIMUM_NUMBER_OF_STATE,STATE_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS, &
                         & PARAMETERS_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR,ERROR,*999)
-                      
+
                       !Restore field data
                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                         & MODELS_DATA,ERR,ERROR,*999)
@@ -3238,6 +3246,9 @@ CONTAINS
         !Initialise
         DAE_SOLVER%EXTERNAL_SOLVER%DAE_SOLVER=>DAE_SOLVER
         !Defaults
+        DAE_SOLVER%EXTERNAL_SOLVER%THREADS_PER_BLOCK=512
+        DAE_SOLVER%EXTERNAL_SOLVER%NUMBER_OF_PARTITIONS=1
+        DAE_SOLVER%EXTERNAL_SOLVER%NUMBER_OF_STREAMS=1
       ENDIF      
     ELSE
       CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
@@ -3274,6 +3285,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    INTEGER(INTG) :: N
+
 
     CALL ENTERS("SOLVER_DAE_EXTERNAL_SOLVE",ERR,ERROR,*999)
 
@@ -3336,11 +3350,20 @@ CONTAINS
                       ENDIF
                     ELSE
                       NULLIFY(INTERMEDIATE_DATA)
+                      NULLIFY(INTERMEDIATE_FIELD)
                     ENDIF
+
+                    !PRINT *,STATE_DATA(4470)
+                    !DO N=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                    !  IF (IsNaN(STATE_DATA(N))) THEN 
+                    !    PRINT *,N,STATE_DATA(N)
+                    !  ENDIF
+                    !ENDDO
 
                     !Call the external solver to integrate these CellML equations
                     CALL SOLVER_DAE_EXTERNAL_INTEGRATE(MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS,DAE_SOLVER%START_TIME, &
-                      & DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP,CELLML_ENVIRONMENT%MODELS_FIELD% &
+                      & DAE_SOLVER%END_TIME,DAE_SOLVER%INITIAL_STEP,EXTERNAL_SOLVER%THREADS_PER_BLOCK,EXTERNAL_SOLVER% &
+                      & NUMBER_OF_PARTITIONS,EXTERNAL_SOLVER%NUMBER_OF_STREAMS,CELLML_ENVIRONMENT%MODELS_FIELD% &
                       & ONLY_ONE_MODEL_INDEX,MODELS_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_STATE,STATE_DATA, &
                       & CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS,PARAMETERS_DATA,CELLML_ENVIRONMENT% &
                       & MAXIMUM_NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR)
@@ -3614,6 +3637,13 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+
+    ! TEMP ADDED BY JIN
+    REAL TEMP, ODE_TIME
+    REAL TIMEARRAY(2)
+    COMMON ODE_TIME
+    TEMP = DTIME(TIMEARRAY)
+
     CALL ENTERS("SOLVER_DAE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
@@ -3680,6 +3710,10 @@ CONTAINS
     ELSE
       CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
+
+
+    ! TEMP CODE ADDED BY JIN
+    ODE_TIME = ODE_TIME + DTIME(TIMEARRAY)
          
     CALL EXITS("SOLVER_DAE_SOLVE")
     RETURN
@@ -3917,6 +3951,56 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_DAE_TIME_STEP_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Set/change the parameters realting to the external differential-algebraic equation solver
+  SUBROUTINE SOLVER_EXTERNAL_DAE_PARAMETERS_SET(SOLVER,THREADS_PER_BLOCK,NUMBER_OF_PARTITIONS,NUMBER_OF_STREAMS,ERR,ERROR,*)
+
+    !Argument variables
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the differential-algebraic equation solver to set the times for
+    INTEGER(INTG), INTENT(IN) :: THREADS_PER_BLOCK !<The number of threads per block
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_PARTITIONS !<The number of partittion \todo elaborate
+    INTEGER(INTG), INTENT(IN) :: NUMBER_OF_STREAMS !<The number of streams
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+    TYPE(DAE_SOLVER_TYPE), POINTER :: DAE_SOLVER
+    TYPE(EXTERNAL_DAE_SOLVER_TYPE), POINTER :: EXTERNAL_DAE_SOLVER
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("SOLVER_EXTERNAL_DAE_PARAMETERS_SET",ERR,ERROR,*999)
+
+    IF(ASSOCIATED(SOLVER)) THEN
+      IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
+        DAE_SOLVER=>SOLVER%DAE_SOLVER
+        IF(ASSOCIATED(DAE_SOLVER)) THEN
+          EXTERNAL_DAE_SOLVER=>DAE_SOLVER%EXTERNAL_SOLVER
+          IF(ASSOCIATED(EXTERNAL_DAE_SOLVER)) THEN
+            EXTERNAL_DAE_SOLVER%THREADS_PER_BLOCK=THREADS_PER_BLOCK !\TODO validate data entry
+            EXTERNAL_DAE_SOLVER%NUMBER_OF_PARTITIONS=NUMBER_OF_PARTITIONS
+            EXTERNAL_DAE_SOLVER%NUMBER_OF_STREAMS=NUMBER_OF_STREAMS
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        ENDIF
+      ELSE
+        CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+      ENDIF
+    ELSE
+      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    ENDIF
+
+    CALL EXITS("SOLVER_EXTERNAL_DAE_PARAMETERS_SET")
+    RETURN
+999 CALL ERRORS("SOLVER_EXTERNAL_DAE_PARAMETERS_SET",ERR,ERROR)
+    CALL EXITS("SOLVER_EXTERNAL_DAE_PARAMETERS_SET")
+    RETURN 1
+
+  END SUBROUTINE SOLVER_EXTERNAL_DAE_PARAMETERS_SET
+
 
   !
   !================================================================================================================================
