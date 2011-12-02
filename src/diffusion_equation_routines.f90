@@ -3652,10 +3652,10 @@ CONTAINS
                                         CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                      CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                    CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !component_idx
                               ELSE

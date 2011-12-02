@@ -58,6 +58,9 @@ endif
 ifndef EXTERNAL_CM_ROOT
   EXTERNAL_CM_ROOT := ${OPENCMISSEXTRAS_ROOT}/cm/external
 endif
+ifndef GLOBAL_MPI_ROOT
+  GLOBAL_MPI_ROOT := ${OPENCMISSEXTRAS_ROOT}/mpi
+endif
 ifndef EXTERNAL_CELLML_ROOT
   EXTERNAL_CELLML_ROOT := ${OPENCMISSEXTRAS_ROOT}/cellml
 endif
@@ -81,6 +84,17 @@ ifndef GLOBAL_MPI_ROOT
   GLOBAL_MPI_ROOT := ${OPENCMISSEXTRAS_ROOT}/mpi
 endif
 
+ifeq ($(USECUDA),true)
+  ifndef CUDA_ROOT
+    $(error CUDA_ROOT is not defined)
+  endif
+  CUDA_DIR := ${CUDA_ROOT}
+  ifndef CUDA_SDK_ROOT
+    $(error CUDA_SDK_ROOT is not defined)
+  endif
+  CUDA_SDK_DIR := ${CUDA_SDK_ROOT}
+endif
+
 include $(GLOBAL_UTILS_ROOT)/Makefile.inc
 
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -95,6 +109,10 @@ endif
 
 ifndef USEFIELDML
   USEFIELDML := true
+endif
+
+ifndef USECUDA
+  USECUDA := false
 endif
 
 ifeq ($(MPI),mpich2)
@@ -209,6 +227,7 @@ else
 endif
 FC = $(MPIFC)
 CC = $(MPICC)
+NVCC = nvcc
 AR = ar
 EXE_LINK = $(FC)
 DSO_LINK = ld
@@ -220,19 +239,26 @@ CFLAGS = $(strip $(CFL_FLGS) $(CFE_FLGS) $(CF_FLGS) $(C_FLGS))
 FFLAGS = $(strip $(CFL_FLGS) $(CFE_FLGS) $(CF_FLGS) $(F_FLGS))
 ELFLAGS = $(strip $(CFL_FLGS) $(L_FLGS) $(CFE_FLGS))
 DLFLAGS = $(strip $(CFL_FLGS) $(L_FLGS) $(D_FLGS))
+NVCCFLAGS = $(strip $(NVCC_FLGS))#
+MVCCPPFLAGS =#
 ifneq ($(DEBUG),false)
   CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
   FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
   DLFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
+  NVCCFLAGS += $(strip $(DBGNVCC_FLGS))
   CPPFLAGS += -DDEBUG
+  NVCCPPFLAGS += -DDEBUG
 else
   ifneq ($(MPIPROF),false)
     CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
     FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
+    NVCCFLAGS += $(strip $(DBGNVCC_FLGS))
     CPPFLAGS += -DDEBUG
+    NVCCPPFLAGS += -DDEBUG
   else
     CFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTC_FLGS))
     FFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTF_FLGS))
+    NVCCFLAGS += $(strip $(OPTNVCC_FLGS))
     ELFLAGS += $(OPTCFE_FLGS)
   endif
 endif
@@ -473,6 +499,16 @@ ifeq ($(OPERATING_SYSTEM),linux)
       F_FLGS += -g -pg
       ELFLAGS += -pg
     endif
+  endif
+
+  ifeq ($(NVCC),nvcc)
+    NVCC_FLGS += --generate-code=arch=compute_20,code=\"sm_20,compute_20\" --compile -m64 --compiler-options -fno-strict-aliasing,-fPIC --ptxas-options=-v 
+    DBGNVCC_FLGS += -O0 -g -G0
+    OPTNVCC_FLGS = --use_fast_math -O2
+    ifeq ($(PROF),true)
+      NVCC_FLGS += -pg
+    endif
+    NVCCPPFLAGS += -DUNIX -I$(SOURCE_DIR) -I$(CUDA_ROOT)/include -I$(CUDA_SDK_ROOT)/C/common/inc -I$(CUDA_SDK_ROOT)/shared/inc 
   endif
 
   # Avoid versioning problems with libgcc_s by linking statically.
@@ -905,7 +941,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifeq ($(MPIPROF),true)
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
-    MPL_LIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libmpl* )
+    MPL_LIB = $(call searchdirs, $(MPI_DIR)/lib/, libmpl* )
     MPI_LIBRARIES += -lmpich
     ifneq (,$(MPL_LIB))
       MPI_LIBRARIES += -lmpl
@@ -951,11 +987,37 @@ else
   ifeq ($(OPERATING_SYSTEM),aix)# AIX
     MPI_LIBRARIES = -lmpi
     MPI_LIB_PATH += $(addprefix -L, /usr/lpp/ppe.poe/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
   else# windows
     MPI_LIBRARIES = -lmpichf90 -lmpich -lpthread -lrt
     MPI_LIB_PATH += $(addprefix -L, /home/users/local/lib/ )
-    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/include/ )
+    MPI_INCLUDE_PATH += $(addprefix -I, $(MPI_DIR)/lib/ )
+  endif
+endif
+
+#CUDA
+CUDA_LIBRARIES =#
+CUDA_LIB_PATH =#
+CUDA_SDK_LIBRARIES =#
+CUDA_SDK_LIB_PATH =#
+ifeq ($(USECUDA),true)
+  ifeq ($(OPERATING_SYSTEM),linux)# Linux
+    CUDA_LIBRARIES += -lcudart
+    ifeq ($(API),32)
+      CUDA_LIB_PATH += $(addprefix -L, $(CUDA_DIR)/lib )
+      CUDA_SDK_LIBRARIES += -lcutil -lshrutil
+    else
+      CUDA_LIB_PATH += $(addprefix -L, $(CUDA_DIR)/lib64 )
+      CUDA_SDK_LIBRARIES += -lcutil_x86_64 -lshrutil_x86_64
+    endif
+    CUDA_SDK_LIB_PATH += $(addprefix -L, $(CUDA_SDK_DIR)/C/lib )
+    CUDA_SDK_LIB_PATH += $(addprefix -L, $(CUDA_SDK_DIR)/shared/lib )
+  else
+    ifeq ($(OPERATING_SYSTEM),aix)# AIX
+        $(error CUDA not implemented for AIX)
+    else# windows
+        $(error CUDA not implemented for Windows)
+    endif
   endif
 endif
 
@@ -978,11 +1040,11 @@ EXTERNAL_LIB_PATH = #
 EXTERNAL_INCLUDE_PATH = #
 
 ifeq ($(USECELLML),true)
+  EXTERNAL_LIBRARIES += $(CELLML_LIBRARIES)
+  EXTERNAL_LIB_PATH += $(CELLML_LIB_PATH)
   EXTERNAL_INCLUDE_PATH += $(CELLML_INCLUDE_PATH)
   FPPFLAGS += -DUSECELLML
   CPPFLAGS += -DUSECELLML
-  EXTERNAL_LIBRARIES += $(CELLML_LIBRARIES)
-  EXTERNAL_LIB_PATH += $(CELLML_LIB_PATH)
 endif
 
 ifeq ($(USEFIELDML),true)
@@ -991,6 +1053,13 @@ ifeq ($(USEFIELDML),true)
   EXTERNAL_INCLUDE_PATH += $(FIELDML_INCLUDE_PATH)
   FPPFLAGS += -DUSEFIELDML
   CPPFLAGS += -DUSEFIELDML
+endif
+
+ifeq ($(USECUDA),true)
+  EXTERNAL_LIBRARIES += $(CUDA_SDK_LIBRARIES) $(CUDA_LIBRARIES) 
+  EXTERNAL_LIB_PATH += $(CUDA_SDK_LIB_PATH) $(CUDA_LIB_PATH)
+  FPPFLAGS += -DUSECUDA
+  CPPFLAGS += -DUSECUDA
 endif
 
 EXTERNAL_LIBRARIES += $(strip $(TAO_LIBRARIES) $(PETSC_LIBRARIES) $(SUNDIALS_LIBRARIES) $(HYPRE_LIBRARIES) $(SUPERLU_LIBRARIES) $(SUPERLU_DIST_LIBRARIES) $(PASTIX_LIBRARIES) $(SCOTCH_LIBRARIES) $(PLAPACK_LIBRARIES) $(MUMPS_LIBRARIES) $(SCALAPACK_LIBRARIES) $(BLACS_LIBRARIES) $(PARMETIS_LIBRARIES) $(TAU_LIBRARIES) $(MPI_LIBRARIES) $(BLAS_LIBRARIES))
