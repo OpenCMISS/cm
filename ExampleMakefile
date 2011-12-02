@@ -54,7 +54,7 @@
 ifndef GLOBAL_ROOT
   $(error GLOBAL_ROOT is not setup)
 else
-	GLOBAL_CM_ROOT := $(GLOBAL_ROOT)
+  GLOBAL_CM_ROOT := $(GLOBAL_ROOT)
 endif
 
 ifndef OPENCMISSEXAMPLES_ROOT
