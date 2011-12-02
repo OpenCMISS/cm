@@ -57,6 +57,8 @@ SolverDAEExternalIntegrate     Solves the differential-algebraic equation.
 /* Included files */
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+
 
 #include "external_dae_solver_routines.h"
 #include "cuda_solver_routines.cu"
@@ -91,12 +93,18 @@ void SolverDAEExternalIntegrate(const int NumberOfDofs,
 
 	if (!timing_file) {
 		timing_file = fopen(filename, "wt");
+		if (!timing_file) {
+		        fprintf(stderr,"File error: %s\n",strerror(errno));
+			fprintf(stderr, "Timing file could not be opened or created.");
+			exit(EXIT_FAILURE);
+		}
 		fprintf(timing_file,"Cell Model\tIntegrator\tNumber of Threads\tNumber 0f Blocks\tThreads Per Block\tNumber of Partitions\tNumber of Streams\tTotal Computational Time(s)\tTotal GFLOPS\n");
 //		fprintf(timing_file,"Cell Model\tIntegrator\tNumber of Threads\tNumber 0f Blocks\tThreads Per Block\tNumber of Partitions\tNumber of Streams\tTotal Computational Time(s)\tTotal GFLOPS\tSingle Kernel Computaional Time(s)\tKernel GFLOPS\tDevice Utilisation\n");
 	} else {
-		fclose(timing_file);
+		fclose(timing_file); 
 		timing_file = fopen(filename, "at");
 		if (!timing_file) {
+		        fprintf(stderr,"File error: %s\n",strerror(errno));
 			fprintf(stderr, "Timing file could not be opened or created.");
 			exit(EXIT_FAILURE);
 		}
