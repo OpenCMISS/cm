@@ -142,10 +142,10 @@ $(EXE_DIR) :
 
 $(EXECUTABLE) : $(OBJECTS) $(OPENCMISS_LIBRARY)
 	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES)
+#	$(EXE_LINK) -o $@ $(OBJECTS) $(OPENCMISS_LIBRARY) $(ELFLAGS) $(EXTERNAL_LIBRARIES) -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -lcudart -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/lib -L/people/vbud003/NVIDIA_GPU_Computing_SDK/C/common/lib/linux -L/people/vbud003/NVIDIA_GPU_Computing_SDK/shared//lib -L/usr/local/cuda/lib64/ -lcudart -lcutil_x86_64 -lshrutil_x86_64
 
 $(OPENCMISS_LIBRARY) :
 	( cd $(GLOBAL_CM_ROOT); $(MAKE) )
-
 
 # Place the list of dependencies for the objects here.
 #
@@ -215,13 +215,14 @@ help:
 	@echo "Options: (The former is the default unless specified.)"
 	@echo
 	@echo "	(DEBUG=|OPT=)"
-	@echo "	MPI=(mpich2|intel|openmpi|mvapich2|cray)"
+	@echo "	MPI=(mpich2|intel|openmpi)"
 	@echo "	PROF=(true|)"
 	@echo "	MPIPROF=(true|)"
 	@echo "	ABI=(32|64)"
 	@echo "	COMPILER=(intel|gnu|ibm|cray)"
 	@echo "	USECELLML=(false|true)"
-	@echo "	USEFIELDML=(false|true)"
+	@echo "	USEFIELDML=(true|false)"
+	@echo "	USECUDA=(false|true)"
 	@echo
 	@echo "Available targets:                            "
 	@echo

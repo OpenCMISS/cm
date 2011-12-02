@@ -102,11 +102,16 @@ main: preliminaries \
 
 PREPROCESSED_OBJECTS = 
 
+.SUFFIXES:	.f90	.c  .cu
+
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
 	( cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $< )
 
 $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.c $(OBJECT_DIR)/.directory
 	( cd $(OBJECT_DIR) && $(CC) -o $@ $(CFLAGS) $(CPPFLAGS) -c $< )
+
+$(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.cu
+	( cd $(OBJECT_DIR) ; $(NVCC) -o $@ $(NVCCFLAGS) $(NVCCPPFLAGS) -c $< )
 
 $(PREPROCESSED_OBJECTS) : $(OBJECT_DIR)/%.o : $(SOURCE_DIR)/%.f90 $(OBJECT_DIR)/.directory
 	( m4 --prefix-builtins $< > $(subst .o,-expanded.f90,$@) && cd $(OBJECT_DIR) && $(FC) -o $@ $(FFLAGS) $(FPPFLAGS) -c $(subst .o,-expanded.f90,$@) )
@@ -123,6 +128,12 @@ ifeq ($(USEFIELDML),true)
       $(OBJECT_DIR)/fieldml_types.o
 else
     FIELDML_OBJECT = #
+endif
+
+ifeq ($(USECUDA),true)
+    CUDA_OBJECT =  $(OBJECT_DIR)/external_dae_solver_routines.o 
+else
+    CUDA_OBJECT =  $(OBJECT_DIR)/external_dae_solver_routines_dummy.o 
 endif
 
 #ifeq ($(COMPILER),intel) # TODO: temporarily disable intel build for opencmiss.f90 and etc.
@@ -180,7 +191,6 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/equations_matrices_routines.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
 	$(OBJECT_DIR)/equations_set_routines.o \
-	$(OBJECT_DIR)/external_dae_solver_routines.o \
 	$(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/field_IO_routines.o \
 	$(OBJECT_DIR)/finite_elasticity_routines.o \
@@ -233,6 +243,8 @@ OBJECTS = $(OBJECT_DIR)/advection_diffusion_equation_routines.o \
 	$(OBJECT_DIR)/trees.o \
 	$(OBJECT_DIR)/types.o \
 	$(OBJECT_DIR)/util_array.o \
+	$(OBJECT_DIR)/vtk_import_routines.o \
+	$(CUDA_OBJECT) \
 	$(FIELDML_OBJECT) \
 	$(PREPROCESSED_OBJECTS)
 
@@ -443,6 +455,8 @@ $(OBJECT_DIR)/cmiss_cellml.o	:	$(SOURCE_DIR)/cmiss_cellml.f90 \
 $(OBJECT_DIR)/cmiss_cellml_dummy.o	:	$(SOURCE_DIR)/cmiss_cellml_dummy.f90
 
 $(OBJECT_DIR)/cmiss_fortran_c.o	:	$(SOURCE_DIR)/cmiss_fortran_c.f90
+
+$(OBJECT_DIR)/cmiss_fortran_c.o	:	$(SOURCE_DIR)/cmiss_fortran_c.f90 
 
 $(OBJECT_DIR)/cmiss_mpi.o	:	$(SOURCE_DIR)/cmiss_mpi.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -874,8 +888,10 @@ $(OBJECT_DIR)/equations_set_routines.o	:	$(SOURCE_DIR)/equations_set_routines.f9
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/external_dae_solver_routines.o	:	$(SOURCE_DIR)/external_dae_solver_routines.c \
-	$(SOURCE_DIR)/external_dae_solver_routines.h
+$(OBJECT_DIR)/external_dae_solver_routines.o	:	$(SOURCE_DIR)/external_dae_solver_routines.cu \
+	$(SOURCE_DIR)/external_dae_solver_routines.h 
+
+$(OBJECT_DIR)/external_dae_solver_routines_dummy.o	:	$(SOURCE_DIR)/external_dae_solver_routines_dummy.c 
 
 $(OBJECT_DIR)/field_routines.o	:	$(SOURCE_DIR)/field_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -912,7 +928,8 @@ $(OBJECT_DIR)/field_IO_routines.o	:	$(SOURCE_DIR)/field_IO_routines.f90 \
 	$(OBJECT_DIR)/mesh_routines.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/strings.o \
-	$(OBJECT_DIR)/types.o
+	$(OBJECT_DIR)/types.o \
+	$(OBJECT_DIR)/vtk_import_routines.o
 
 $(OBJECT_DIR)/finite_elasticity_routines.o	:	$(SOURCE_DIR)/finite_elasticity_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1404,7 +1421,6 @@ $(OBJECT_DIR)/Poiseuille_equations_routines.o	:	$(SOURCE_DIR)/Poiseuille_equatio
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
-
 $(OBJECT_DIR)/Poisson_equations_routines.o	:	$(SOURCE_DIR)/Poisson_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -1511,7 +1527,7 @@ $(OBJECT_DIR)/solver_routines.o	:	$(SOURCE_DIR)/solver_routines.f90 \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/distributed_matrix_vector.o \
 	$(OBJECT_DIR)/equations_set_constants.o \
-	$(OBJECT_DIR)/external_dae_solver_routines.o \
+	$(CUDA_OBJECT) \
         $(OBJECT_DIR)/field_routines.o \
 	$(OBJECT_DIR)/kinds.o \
 	$(OBJECT_DIR)/input_output.o \
@@ -1621,6 +1637,9 @@ $(OBJECT_DIR)/types.o	:	$(SOURCE_DIR)/types.f90 \
 $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/types.o
+
+$(OBJECT_DIR)/vtk_import_routines.o	:	$(SOURCE_DIR)/vtk_import_routines.c \
+	$(SOURCE_DIR)/vtk_import_routines.h 
 
 # ----------------------------------------------------------------------------
 #

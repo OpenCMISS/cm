@@ -352,6 +352,19 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT), VALUE :: valueIndex
       INTEGER(C_INT) :: FieldExport_DerivativeIndices
     END FUNCTION FieldExport_DerivativeIndices
+    
+    SUBROUTINE READ_VTK(filePath, numberOfMeshDimensions, nodesPerElement, points, numPoints, cells, numCells) &
+      & BIND(C, NAME="readVTK")
+      USE TYPES
+      USE ISO_C_BINDING
+      CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN) :: filePath(*)
+      INTEGER(C_INT), VALUE, INTENT(IN) :: numberOfMeshDimensions
+      INTEGER(C_INT), VALUE, INTENT(IN) :: nodesPerElement
+      TYPE(C_PTR), INTENT(OUT):: points
+      INTEGER(C_INT), INTENT(OUT) :: numPoints
+      TYPE(C_PTR), INTENT(OUT) :: cells
+      INTEGER(C_INT), INTENT(OUT) :: numCells
+    END SUBROUTINE READ_VTK
 
   END INTERFACE
 
@@ -382,7 +395,7 @@ MODULE FIELD_IO_ROUTINES
     MODULE PROCEDURE CHECKED_DEALLOCATE_FIELD
   END INTERFACE !CHECKED_DEALLOCATE
 
-  PUBLIC :: FIELD_IO_FIELDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT
+  PUBLIC :: FIELD_IO_FIELDS_IMPORT, FIELD_IO_NODES_EXPORT, FIELD_IO_ELEMENTS_EXPORT, READ_VTK
 
 
 CONTAINS
@@ -529,7 +542,6 @@ CONTAINS
   !
   !================================================================================================================================
   !
-
   SUBROUTINE REALLOCATE_FIELD( array, newSize, errorMessage, ERR, ERROR, * )
     TYPE(FIELD_PTR_TYPE), ALLOCATABLE, INTENT(INOUT) :: array(:)
     INTEGER(INTG), INTENT(IN) :: newSize
@@ -821,6 +833,7 @@ CONTAINS
 
   END SUBROUTINE CHECKED_DEALLOCATE_BASIS
 
+  !
   !================================================================================================================================
   !
 
