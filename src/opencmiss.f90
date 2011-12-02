@@ -5754,13 +5754,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSFieldMLInputFieldCreateStartNumberC
   END INTERFACE CMISSFieldMLInputFieldCreateStart
 
-  !> Updates the given field's nodal dofs using the given parameter evaluator.
-  INTERFACE CMISSFieldMLInputFieldNodalParametersUpdate
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateObjVS
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateNumberVS
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateObjC
-    MODULE PROCEDURE CMISSFieldMLInputFieldNodalParametersUpdateNumberC
-  END INTERFACE CMISSFieldMLInputFieldNodalParametersUpdate
+  !> Updates the given field's dofs using the given parameter evaluator.
+  INTERFACE CMISSFieldMLInputFieldParametersUpdate
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateObjVS
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateNumberVS
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateObjC
+    MODULE PROCEDURE CMISSFieldMLInputFieldParametersUpdateNumberC
+  END INTERFACE CMISSFieldMLInputFieldParametersUpdate
 
   !> Creates a basis using the given FieldML evaluator.
   INTERFACE CMISSFieldMLInputBasisCreateStart
@@ -5803,7 +5803,7 @@ MODULE OPENCMISS
   PUBLIC :: CMISSFieldMLInputCreateFromFile, CMISSFieldMLInputMeshCreateStart, &
     & CMISSFieldMLInputCoordinateSystemCreateStart, CMISSFieldMLInputCreateMeshComponent, &
     & CMISSFieldMLInputFieldCreateStart, CMISSFieldMLInputBasisCreateStart, CMISSFieldMLInputNodesCreateStart, &
-    & CMISSFieldMLInputFieldNodalParametersUpdate
+    & CMISSFieldMLInputFieldParametersUpdate
 
   PUBLIC :: CMISSFieldMLIOTypeFinalise, CMISSFieldMLIOTypeInitialise, CMISSFieldMLIOGetSession
 
@@ -47553,8 +47553,8 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of the given field, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjVS( fieldml, field, evaluatorName, variableType, &
+  !> Update the DOF parameters of the given field, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjVS( fieldml, field, evaluatorName, variableType, &
     & setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47564,26 +47564,26 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateObjVS",Err,ERROR,*999)
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field%FIELD, variableType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field%FIELD, variableType, &
       &  setType, err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjVS")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjVS")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateObjVS",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjVS")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjVS
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjVS
 
   !  
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of field with the given user number, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberVS( fieldml, regionNumber, fieldNumber, &
+  !> Update the DOF parameters of field with the given user number, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberVS( fieldml, regionNumber, fieldNumber, &
     & evaluatorName, variableType, setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47598,29 +47598,29 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateNumberVS",Err,ERROR,*999)
 
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field, variableType, setType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field, variableType, setType, &
       & err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberVS")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberVS")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateNumberVS",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberVS")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberVS
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberVS
 
   !  
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of the given field, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjC( fieldml, field, evaluatorName, &
+  !> Update the DOF parameters of the given field, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjC( fieldml, field, evaluatorName, &
     & variableType, setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47630,26 +47630,26 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateObjC",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateObjC",Err,ERROR,*999)
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field%FIELD, variableType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field%FIELD, variableType, &
       & setType, err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjC")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjC")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateObjC",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateObjC")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateObjC",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjC")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateObjC
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjC
 
   !  
   !================================================================================================================================
   !
 
-  !> Update the nodal parameters of field with the given user number, using the given FieldML evaluator.
-  SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberC( fieldml, regionNumber, fieldNumber, &
+  !> Update the DOF parameters of field with the given user number, using the given FieldML evaluator.
+  SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberC( fieldml, regionNumber, fieldNumber, &
     & evaluatorName, variableType, setType, err )
     !Arguments
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
@@ -47664,22 +47664,22 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
-    CALL ENTERS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateNumberC",Err,ERROR,*999)
 
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
-    CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field, variableType, &
+    CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field, variableType, &
       & setType, err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC")
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberC")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputFieldNodalParametersUpdateNumberC")
+999 CALL ERRORS("CMISSFieldMLInputFieldParametersUpdateNumberC",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberC")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputFieldNodalParametersUpdateNumberC
+  END SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberC
 
   !  
   !================================================================================================================================
