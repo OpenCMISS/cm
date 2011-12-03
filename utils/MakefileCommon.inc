@@ -500,7 +500,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
 
   ifeq ($(NVCC),nvcc)
     NVCC_FLGS += --generate-code=arch=compute_20,code=\"sm_20,compute_20\" --compile -m64 --compiler-options -fno-strict-aliasing,-fPIC --ptxas-options=-v 
-    DBGNVCC_FLGS += -O0 -g -G0
+    DBGNVCC_FLGS += -g -G
     OPTNVCC_FLGS = --use_fast_math -O2
     ifeq ($(PROF),true)
       NVCC_FLGS += -pg
