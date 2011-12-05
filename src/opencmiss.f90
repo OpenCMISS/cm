@@ -305,6 +305,8 @@ MODULE OPENCMISS
 
   PUBLIC CMISSCellMLEquationsType,CMISSCellMLEquationsTypeFinalise,CMISSCellMLEquationsTypeInitialise
 
+  PUBLIC CMISSComputationalWorkGroupType,CMISSComputationalWorkGroupTypeInitialise
+
   PUBLIC CMISSControlLoopType,CMISSControlLoopTypeFinalise,CMISSControlLoopTypeInitialise
 
   PUBLIC CMISSCoordinateSystemType,CMISSCoordinateSystemTypeFinalise,CMISSCoordinateSystemTypeInitialise
@@ -353,9 +355,6 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverType,CMISSSolverTypeFinalise,CMISSSolverTypeInitialise
 
   PUBLIC CMISSSolverEquationsType,CMISSSolverEquationsTypeFinalise,CMISSSolverEquationsTypeInitialise
-
-  PUBLIC CMISSComputationalWorkGroupType
-  
 
 !!==================================================================================================================================
 !!
@@ -3696,7 +3695,7 @@ MODULE OPENCMISS
 
   PUBLIC CMISSMeshEmbeddingCreate, CMISSMeshEmbeddingSetChildNodePosition, CMISSMeshEmbeddingType
 
-  PUBLIC CMISSEmbeddedMeshTypeInitialise, CMISSMeshEmbeddingSetGaussPointData
+  PUBLIC CMISSMeshEmbeddingTypeInitialise, CMISSMeshEmbeddingSetGaussPointData
   
   PUBLIC CMISSMeshEmbeddingPushData, CMISSMeshEmbeddingPullGaussPointData
   
@@ -5733,6 +5732,7 @@ MODULE OPENCMISS
 !!==================================================================================================================================
 
 #ifdef USEFIELDML
+  !> Provides input and output of fields through the FieldML API
   TYPE CMISSFieldMLIOType
     PRIVATE
     TYPE(FIELDML_IO_TYPE), POINTER :: fieldmlInfo
@@ -5797,7 +5797,7 @@ MODULE OPENCMISS
   !> Initialise the given FieldML context using the given FieldML XML file.
   INTERFACE CMISSFieldMLInputCreateFromFile
     MODULE PROCEDURE CMISSFieldMLInputCreateFromFileVS
-    MODULE PROCEDURE CMISSFieldMLInputCreateFromFileCH
+    MODULE PROCEDURE CMISSFieldMLInputCreateFromFileC
   END INTERFACE CMISSFieldMLInputCreateFromFile
 
   PUBLIC :: CMISSFieldMLInputCreateFromFile, CMISSFieldMLInputMeshCreateStart, &
@@ -5838,7 +5838,7 @@ MODULE OPENCMISS
   !> Write the current FieldML document to the given file.  
   INTERFACE CMISSFieldMLOutputWrite
     MODULE PROCEDURE CMISSFieldMLOutputWriteVS
-    MODULE PROCEDURE CMISSFieldMLOutputWriteCH
+    MODULE PROCEDURE CMISSFieldMLOutputWriteC
   END INTERFACE CMISSFieldMLOutputWrite
 
   PUBLIC :: CMISSFieldMLIOType
@@ -6174,6 +6174,31 @@ CONTAINS
     
   END SUBROUTINE CMISSCellMLEquationsTypeFinalise
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialises a CMISSComputationalWorkGroupType object.
+  SUBROUTINE CMISSComputationalWorkGroupTypeInitialise(CMISSComputationalWorkGroup,Err)
+
+    !Argument variables
+    TYPE(CMISSComputationalWorkGroupType), INTENT(OUT) :: CMISSComputationalWorkGroup !<The CMISSComputationalWorkGroupType object to initialise.
+    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSComputationalWorkGroupTypeInitialise",Err,ERROR,*999)
+
+    NULLIFY(CMISSComputationalWorkGroup%COMPUTATIONAL_WORK_GROUP)
+
+    CALL EXITS("CMISSComputationalWorkGroupTypeInitialise")
+    RETURN
+999 CALL ERRORS("CMISSComputationalWorkGroupTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSComputationalWorkGroupTypeInitialise")
+    CALL CMISS_HANDLE_ERROR(Err,ERROR)
+    RETURN
+
+  END SUBROUTINE CMISSComputationalWorkGroupTypeInitialise
+
   !
   !================================================================================================================================
   !
@@ -13903,7 +13928,6 @@ CONTAINS
 
     CALL ENTERS("CMISSComputationalWorkGroupCreateStart",ERR,ERROR,*999)
 
-    NULLIFY(WorldWorkGroup%COMPUTATIONAL_WORK_GROUP)
     CALL COMPUTATIONAL_WORK_GROUP_CREATE_START(WorldWorkGroup%COMPUTATIONAL_WORK_GROUP,NumberComputationalNodes, &
       & Err,ERROR,*999)
 
@@ -31601,24 +31625,24 @@ CONTAINS
   !
 
   !>Initialises a EmbeddedMeshType object.
-  SUBROUTINE CMISSEmbeddedMeshTypeInitialise(MeshEmbedding,Err)
+  SUBROUTINE CMISSMeshEmbeddingTypeInitialise(MeshEmbedding,Err)
     !Argument variables
     TYPE(CMISSMeshEmbeddingType), INTENT(OUT) ::  MeshEmbedding !<The  MeshEmbeddingType object to initialise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSEmbeddedMeshTypeInitialise",Err,ERROR,*999)
+    CALL ENTERS("CMISSMeshEmbeddingTypeInitialise",Err,ERROR,*999)
     
     NULLIFY(MeshEmbedding%MESH_EMBEDDING)
 
-    CALL EXITS("CMISSEmbeddedMeshTypeInitialise")
+    CALL EXITS("CMISSMeshEmbeddingTypeInitialise")
     RETURN
-999 CALL ERRORS("CMISSEmbeddedMeshTypeInitialise",Err,ERROR)
-    CALL EXITS("CMISSEmbeddedMeshTypeInitialise")    
+999 CALL ERRORS("CMISSMeshEmbeddingTypeInitialise",Err,ERROR)
+    CALL EXITS("CMISSMeshEmbeddingTypeInitialise")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSEmbeddedMeshTypeInitialise
+  END SUBROUTINE CMISSMeshEmbeddingTypeInitialise
 
   !
   !================================================================================================================================
@@ -46802,25 +46826,25 @@ CONTAINS
   !
 
   !> Initialise the given FieldML context using the given FieldML XML file.
-  SUBROUTINE CMISSFieldMLInputCreateFromFileCH( fieldml, filename, err )
+  SUBROUTINE CMISSFieldMLInputCreateFromFileC( fieldml, filename, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context to initialise. 
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context to initialise. 
     CHARACTER(LEN=*), INTENT(IN) :: filename !< The FieldML XML file to parse.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
     
-    CALL ENTERS("CMISSFieldMLInputCreateFromFileCH",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLInputCreateFromFileC",Err,ERROR,*999)
 
     ALLOCATE( fieldml%fieldmlInfo, stat=err )
     CALL FIELDML_INPUT_INITIALISE_FROM_FILE( fieldml%fieldmlInfo, var_str(filename), err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLInputCreateFromFileCH")
+    CALL EXITS("CMISSFieldMLInputCreateFromFileC")
     RETURN
-999 CALL ERRORS("CMISSFieldMLInputCreateFromFileCH",Err,ERROR)
-    CALL EXITS("CMISSFieldMLInputCreateFromFileCH")
+999 CALL ERRORS("CMISSFieldMLInputCreateFromFileC",Err,ERROR)
+    CALL EXITS("CMISSFieldMLInputCreateFromFileC")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLInputCreateFromFileCH
+  END SUBROUTINE CMISSFieldMLInputCreateFromFileC
   
   !  
   !================================================================================================================================
@@ -46829,7 +46853,7 @@ CONTAINS
   !> Creates a mesh using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputMeshCreateStartObjVS( fieldml, meshArgumentName, mesh, meshNumber, region, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: meshArgumentName !< The name of the argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which to create the mesh.
@@ -46857,7 +46881,7 @@ CONTAINS
   !> Creates a mesh with the given user number using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputMeshCreateStartNumberVS( fieldml, meshArgumentName, meshNumber, regionNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: meshArgumentName !< The name of the mesh argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which to create the mesh.
@@ -46889,7 +46913,7 @@ CONTAINS
   !> Creates a mesh using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputMeshCreateStartObjC( fieldml, meshArgumentName, mesh, meshNumber, region, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: meshArgumentName !< The name of the argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which to create the mesh.
@@ -46917,7 +46941,7 @@ CONTAINS
   !> Creates a mesh with the given user number using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputMeshCreateStartNumberC( fieldml, meshArgumentName, meshNumber, regionNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: meshArgumentName !< The name of the mesh argument evaluator to create a mesh from.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number to assign to the new mesh.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which to create the mesh.
@@ -46950,7 +46974,7 @@ CONTAINS
   !> Create a coordinate system using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputCoordinateSystemCreateStartObjVS( fieldml, evaluatorName, coordinateSystem, userNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
     TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: coordinateSystem !< On return, the newly created coordinate system.
@@ -46977,7 +47001,7 @@ CONTAINS
   !> Create a coordinate system using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputCoordinateSystemCreateStartNumberVS( fieldml, evaluatorName, userNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
@@ -47007,7 +47031,7 @@ CONTAINS
   !> Create a coordinate system using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputCoordinateSystemCreateStartObjC( fieldml, evaluatorName, coordinateSystem, userNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
     TYPE(CMISSCoordinateSystemType), INTENT(OUT) :: coordinateSystem !< On return, the newly created coordinate system.
@@ -47034,7 +47058,7 @@ CONTAINS
   !> Create a coordinate system using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputCoordinateSystemCreateStartNumberC( fieldml, evaluatorName, userNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the coordinate system from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
@@ -47064,7 +47088,7 @@ CONTAINS
   !> Create a basis using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputBasisCreateStartNumberVS( fieldml, evaluatorName, userNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
@@ -47093,7 +47117,7 @@ CONTAINS
   !> Create a basis using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputBasisCreateStartObjVS( fieldml, evaluatorName, userNumber, basis, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
     TYPE(CMISSBasisType), INTENT(OUT) :: basis !<On return, the newly created basis.
@@ -47119,7 +47143,7 @@ CONTAINS
   !> Create a basis using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputBasisCreateStartNumberC( fieldml, evaluatorName, userNumber, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
@@ -47148,7 +47172,7 @@ CONTAINS
   !> Create a basis using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputBasisCreateStartObjC( fieldml, evaluatorName, userNumber, basis, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the basis from.
     INTEGER(INTG), INTENT(IN) :: userNumber !< The user number to assign to the new basis.
     TYPE(CMISSBasisType), INTENT(OUT) :: basis !<On return, the newly created basis.
@@ -47174,7 +47198,7 @@ CONTAINS
   !> Creates a region's nodes using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputNodesCreateStartNumberVS( fieldml, nodesArgumentName, regionNumber, nodes, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the nodes from.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region to create to the nodes in.
     TYPE(CMISSNodesType), INTENT(OUT) :: nodes !< On return, the newly created nodes.
@@ -47204,7 +47228,7 @@ CONTAINS
   !> Creates a region's nodes using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputNodesCreateStartObjVS( fieldml, nodesArgumentName, region, nodes, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the basis from.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The user number of the region to create to the nodes in.
     TYPE(CMISSNodesType), INTENT(OUT) :: nodes  !< On return, the newly created nodes.
@@ -47230,7 +47254,7 @@ CONTAINS
   !> Creates a region's nodes using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputNodesCreateStartNumberC( fieldml, nodesArgumentName, regionNumber, nodes, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the nodes from.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region to create to the nodes in.
     TYPE(CMISSNodesType), INTENT(OUT) :: nodes !< On return, the newly created nodes.
@@ -47260,7 +47284,7 @@ CONTAINS
   !> Creates a region's nodes using the given FieldML evaluator.
   SUBROUTINE CMISSFieldMLInputNodesCreateStartObjC( fieldml, nodesArgumentName, region, nodes, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(LEN=*), INTENT(IN) :: nodesArgumentName !< The name of the argument evaluator to create the basis from.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The user number of the region to create to the nodes in.
     TYPE(CMISSNodesType), INTENT(OUT) :: nodes  !< On return, the newly created nodes.
@@ -47287,7 +47311,7 @@ CONTAINS
   !> Use the given FieldML evaluator as a template to create a component on the given mesh.
   SUBROUTINE CMISSFieldMLInputCreateMeshComponentObjVS( fieldml, mesh, componentNumber, evaluatorName, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(CMISSMeshType), INTENT(IN) :: mesh !< The mesh for which to create the mesh component.
     INTEGER(INTG), INTENT(IN) :: componentNumber !< The number of the mesh component to create.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the mesh from.
@@ -47314,7 +47338,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputCreateMeshComponentNumberVS( fieldml, regionNumber, meshNumber, componentNumber, evaluatorName, &
     & err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which the mesh component is to be created.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh for which the mesh component is to be created.
     INTEGER(INTG), INTENT(IN) :: componentNumber !< The number of the mesh component to create.
@@ -47348,7 +47372,7 @@ CONTAINS
   !> Use the given FieldML evaluator as a template to create a component on the given mesh.
   SUBROUTINE CMISSFieldMLInputCreateMeshComponentObjC( fieldml, mesh, componentNumber, evaluatorName, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(CMISSMeshType), INTENT(IN) :: mesh !< The mesh for which to create the mesh component.
     INTEGER(INTG), INTENT(IN) :: componentNumber !< The number of the mesh component to create.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the mesh from.
@@ -47376,7 +47400,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputCreateMeshComponentNumberC( fieldml, regionNumber, meshNumber, componentNumber, evaluatorName, &
     & err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which the mesh component is to be created.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh for which the mesh component is to be created.
     INTEGER(INTG), INTENT(IN) :: componentNumber !< The number of the mesh component to create.
@@ -47411,7 +47435,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldCreateStartObjVS( fieldml, region, decomposition, fieldNumber, field, variableType, &
     & evaluatorName, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which the field is to be created.
     TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !< The decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field. 
@@ -47442,7 +47466,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldCreateStartNumberVS( fieldml, regionNumber, meshNumber, decompositionNumber, fieldNumber, &
     & variableType, evaluatorName, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which to create the field.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: decompositionNumber !< The user number of the decomposition to use when creating the field.
@@ -47484,7 +47508,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldCreateStartObjC( fieldml, region, decomposition, fieldNumber, field, variableType, &
     & evaluatorName, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(CMISSRegionType), INTENT(IN) :: region !< The region in which the field is to be created.
     TYPE(CMISSDecompositionType), INTENT(IN) :: decomposition !< The decomposition to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number to assign to the new field. 
@@ -47515,7 +47539,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldCreateStartNumberC( fieldml, regionNumber, meshNumber, decompositionNumber, fieldNumber, &
     & variableType, evaluatorName, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region in which to create the field.
     INTEGER(INTG), INTENT(IN) :: meshNumber !< The user number of the mesh to use when creating the field.
     INTEGER(INTG), INTENT(IN) :: decompositionNumber !< The user number of the decomposition to use when creating the field.
@@ -47557,7 +47581,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjVS( fieldml, field, evaluatorName, variableType, &
     & setType, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the field object.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
     INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
@@ -47586,7 +47610,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberVS( fieldml, regionNumber, fieldNumber, &
     & evaluatorName, variableType, setType, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region of the field for which parameters are to be updated.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field for which parameters are to be updated.
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
@@ -47623,7 +47647,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldParametersUpdateObjC( fieldml, field, evaluatorName, &
     & variableType, setType, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the field object.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
     INTEGER(INTG), INTENT(IN) :: variableType !<The OpenCMISS variable type.
@@ -47652,7 +47676,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLInputFieldParametersUpdateNumberC( fieldml, regionNumber, fieldNumber, &
     & evaluatorName, variableType, setType, err )
     !Arguments
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region of the field for which parameters are to be updated.
     INTEGER(INTG), INTENT(IN) :: fieldNumber !< The user number of the field for which parameters are to be updated.
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to get the parameters from.
@@ -47688,7 +47712,7 @@ CONTAINS
   !> Write the FieldML document managed by the given context to a file with the given name. 
   SUBROUTINE CMISSFieldMLOutputWriteVS( fieldml, filename, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: filename !< The name of the file to write the FieldML document to.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
@@ -47716,13 +47740,13 @@ CONTAINS
   !
 
   !> Write the FieldML document managed by the given context to a file with the given name. 
-  SUBROUTINE CMISSFieldMLOutputWriteCH( fieldml, filename, err )
+  SUBROUTINE CMISSFieldMLOutputWriteC( fieldml, filename, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: filename !< The name of the file to write the FieldML document to.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
-    CALL ENTERS("CMISSFieldMLOutputWriteCH",Err,ERROR,*999)
+    CALL ENTERS("CMISSFieldMLOutputWriteC",Err,ERROR,*999)
 
     IF( .NOT. fieldml%fieldmlInfo%IS_OUT ) THEN
       CALL FLAG_ERROR( "Inbound FieldML handle used four an output-only operation.", ERR, ERROR, *999 )
@@ -47730,14 +47754,14 @@ CONTAINS
 
     CALL FIELDML_OUTPUT_WRITE( fieldml%fieldmlInfo, var_str(filename), err, error, *999 )
 
-    CALL EXITS("CMISSFieldMLOutputWriteCH")
+    CALL EXITS("CMISSFieldMLOutputWriteC")
     RETURN
-999 CALL ERRORS("CMISSFieldMLOutputWriteCH",Err,ERROR)
-    CALL EXITS("CMISSFieldMLOutputWriteCH")
+999 CALL ERRORS("CMISSFieldMLOutputWriteC",Err,ERROR)
+    CALL EXITS("CMISSFieldMLOutputWriteC")
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
-  END SUBROUTINE CMISSFieldMLOutputWriteCH
+  END SUBROUTINE CMISSFieldMLOutputWriteC
 
   !  
   !================================================================================================================================
@@ -47746,7 +47770,7 @@ CONTAINS
   !> Add the given field to the given FieldML context. The FieldML type will be inferred.
   SUBROUTINE CMISSFieldMLOutputAddFieldNoTypeObjVS( fieldml, baseName, dofFormat, field, variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add.
@@ -47776,7 +47800,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldNoTypeNumberVS( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region containing the field to add to the FieldML context.
@@ -47812,7 +47836,7 @@ CONTAINS
   !> Add the given field to the given FieldML context, using the given FieldML type.
   SUBROUTINE CMISSFieldMLOutputAddFieldWithTypeObjVS( fieldml, baseName, dofFormat, field, variableType, setType, typeHandle, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add to the FieldML context.
@@ -47843,7 +47867,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldWithTypeNumberVS( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, setType, typeHandle, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the field to add.
@@ -47881,7 +47905,7 @@ CONTAINS
   !> Add the given field to the given FieldML context. The FieldML type will be inferred.
   SUBROUTINE CMISSFieldMLOutputAddFieldNoTypeObjC( fieldml, baseName, dofFormat, field, variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add.
@@ -47911,7 +47935,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldNoTypeNumberC( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region containing the field to add to the FieldML context.
@@ -47948,7 +47972,7 @@ CONTAINS
   !> Add the given field to the given FieldML context, using the given FieldML type.
   SUBROUTINE CMISSFieldMLOutputAddFieldWithTypeObjC( fieldml, baseName, dofFormat, field, variableType, setType, typeHandle, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     TYPE(CMISSFieldType), INTENT(IN) :: field !< The field to add to the FieldML context.
@@ -47979,7 +48003,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldWithTypeNumberC( fieldml, baseName, dofFormat, regionNumber, fieldNumber, &
     & variableType, setType, typeHandle, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
     INTEGER(INTG), INTENT(IN) :: regionNumber !< The user number of the region owning the field to add.
@@ -48021,7 +48045,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
-    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
   
     CALL ENTERS("CMISSFieldMLOutputCreateObjVS",Err,ERROR,*999)
@@ -48051,7 +48075,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
-    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
     
     !Locals
@@ -48085,7 +48109,7 @@ CONTAINS
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
-    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
   
     CALL ENTERS("CMISSFieldMLOutputCreateObjC",Err,ERROR,*999)
@@ -48115,7 +48139,7 @@ CONTAINS
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: location !< The root directory in which associated data files should be created.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: connectivityFormat !<The name of the format to use when writing connectivity data.
-    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
     
     !Locals
@@ -48147,7 +48171,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldComponentsObjVS( fieldml, typeHandle, baseName, dofFormat, field, fieldComponentNumbers, &
     & variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field.
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
@@ -48179,7 +48203,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldComponentsNumberVS( fieldml, typeHandle, baseName, dofFormat, regionNumber, &
     & fieldNumber, fieldComponentNumbers, variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field. 
     TYPE(VARYING_STRING), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     TYPE(VARYING_STRING), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
@@ -48219,7 +48243,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldComponentsObjC( fieldml, typeHandle, baseName, dofFormat, field, fieldComponentNumbers, &
     & variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
@@ -48251,7 +48275,7 @@ CONTAINS
   SUBROUTINE CMISSFieldMLOutputAddFieldComponentsNumberC( fieldml, typeHandle, baseName, dofFormat, regionNumber, &
     & fieldNumber, fieldComponentNumbers, variableType, setType, err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field. 
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: baseName !< The prefix to use when naming automatically created FieldML objects in the context.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: dofFormat !<The name of the format to use when writing dof data.
@@ -48290,7 +48314,7 @@ CONTAINS
   !>Import a FieldML object from the library into the current session.
   SUBROUTINE CMISSFieldMLOutputAddImport( fieldml, name, handle, Err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(IN) :: FIELDML !< The FieldML context containing the evaluator to use.
+    TYPE(CMISSFieldMLIOType), INTENT(IN) :: fieldml !< The FieldML context containing the evaluator to use.
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: name !< The name of the object to import.
     INTEGER(INTG), INTENT(OUT) :: handle !< A handle to the newly imported FieldML object.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
@@ -48321,7 +48345,7 @@ CONTAINS
   !>Finalises a Fieldml context.
   SUBROUTINE CMISSFieldMLIOTypeFinalise( fieldml, Err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: FIELDML !< The FieldML context to finalise.
+    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: fieldml !< The FieldML context to finalise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     
     CALL ENTERS("CMISSFieldMLIOTypeFinalise", Err, ERROR, *999 )
@@ -48344,7 +48368,7 @@ CONTAINS
   !>Initialises a Fieldml context.
   SUBROUTINE CMISSFieldMLIOTypeInitialise( fieldml, Err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: FIELDML !< The FieldML context to initialise.
+    TYPE(CMISSFieldMLIOType), INTENT(OUT) :: fieldml !< The FieldML context to initialise.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     
     CALL ENTERS("CMISSFieldMLIOTypeInitialise", Err, ERROR, *999 )
@@ -48367,7 +48391,7 @@ CONTAINS
   !>Get the session handle from a Fieldml context.
   SUBROUTINE CMISSFieldMLIOGetSession( fieldml, sessionHandle, Err )
     !Argument variables
-    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: FIELDML !< The FieldML context whose session handle is to be returned.
+    TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context whose session handle is to be returned.
     INTEGER(INTG), INTENT(OUT) :: sessionHandle !<The session handle.
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     
