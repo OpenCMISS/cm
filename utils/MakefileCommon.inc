@@ -905,7 +905,7 @@ ifeq ($(OPERATING_SYSTEM),linux)# Linux
     ifeq ($(MPIPROF),true)
       MPI_LIBRARIES += -lmpe_f2cmpi -llmpe -lmpe
     endif
-    MPL_LIB = $(call searchdirs, $(EXTERNAL_CM_DIR)/lib/, libmpl* )
+    MPL_LIB = $(call searchdirs, $(MPI_DIR)/lib/, libmpl* )
     MPI_LIBRARIES += -lmpich
     ifneq (,$(MPL_LIB))
       MPI_LIBRARIES += -lmpl
