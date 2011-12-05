@@ -997,7 +997,7 @@ CONTAINS
             ENDDO ! component_idx
 
             !Hydrostatic pressure component (skip for membrane problems)
-            IF (EQUATIONS_SET%SUBTYPE /= EQUATIONS_SET_MEMBRANE_SUBTYPE) THEN
+            IF (EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_MEMBRANE_SUBTYPE) THEN
               HYDROSTATIC_PRESSURE_COMPONENT=DEPENDENT_FIELD%VARIABLES(var1)%NUMBER_OF_COMPONENTS
               DEPENDENT_COMPONENT_INTERPOLATION_TYPE=DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%INTERPOLATION_TYPE
               IF(DEPENDENT_COMPONENT_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION) THEN !node based
@@ -1454,24 +1454,6 @@ CONTAINS
                     ENDDO
                   ENDDO
                 ENDDO !gauss_idx
-                !Scale factor adjustment for RHS
-                IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                    & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-                  FIELD_VARIABLE=>DEPENDENT_FIELD%VARIABLES(var1)
-                  element_dof_idx=0
-                  DO component_idx=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
-                    DEPENDENT_BASIS=>DEPENDENT_FIELD%VARIABLES(var1)%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY% &
-                      & ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
-                    DO parameter_idx=1,DEPENDENT_BASIS%NUMBER_OF_ELEMENT_PARAMETERS
-                      element_dof_idx=element_dof_idx+1
-                      RHS_VECTOR%ELEMENT_VECTOR%VECTOR(element_dof_idx)= &
-                          & RHS_VECTOR%ELEMENT_VECTOR%VECTOR(element_dof_idx)* &
-                          & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR% &
-                          & SCALE_FACTORS(parameter_idx,component_idx)
-                    ENDDO !parameter_idx
-                  ENDDO !component_idx
-                ENDIF
               ENDIF
             ENDIF
           ENDIF
@@ -2283,7 +2265,7 @@ CONTAINS
         ! Assume incompressible => I3 = 1 => C33(C11 x C22 - C12*C21) = 1
         AZL(3,3) = 1.0_DP / ((AZL(1,1) * AZL(2,2)) - (AZL(1,2) * AZL (2,1)))
         ! Assume Mooney-Rivlin constitutive relation
-        P = -1*((C(1) + C(2) * (AZL(1,1) + AZL(2,2))) * AZL(3,3))
+        P = -1.0_DP*((C(1) + C(2) * (AZL(1,1) + AZL(2,2))) * AZL(3,3))
         ! Assume stress normal to the surface is neglible i.e. PIOLA_TENSOR(:,3) = 0,PIOLA_TENSOR(3,:) = 0
         PIOLA_TENSOR(:,3) = 0.0_DP
         PIOLA_TENSOR(3,:) = 0.0_DP
@@ -4363,7 +4345,15 @@ CONTAINS
                 & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 3;
               CASE(EQUATIONS_SET_MEMBRANE_SUBTYPE)
-                NUMBER_OF_COMPONENTS = NUMBER_OF_DIMENSIONS
+                !\todo Currently the number of components for a membrane problem's material field has been set to 3 in 3D space or
+                ! 2 in 2D space to work with a Mooney Rivlin material (2 material parameters) and a membrane thickness parameter 
+                ! (only if in 3D space). Extra subtypes will need to be added to use other constitutive relations with 
+                ! membrane mechanics problems.
+                IF (NUMBER_OF_DIMENSIONS==3) THEN
+                  NUMBER_OF_COMPONENTS = 3
+                ELSE
+                  NUMBER_OF_COMPONENTS = 2
+                ENDIF
               CASE(EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 2;
               CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE)

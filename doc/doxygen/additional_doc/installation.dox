@@ -48,6 +48,15 @@ Furthermore, a number of external packages can be checked out from https://svn.p
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cm/trunk/external/packages cm/external/packages \endcode
 Please note that this packages directory is extremely large and is only required if you want to build the opencmissextras/cm libraries from scratch.
 
+To check out the main trunk of the various MPI libraries required with OpenCMISS issue the following command in the opencmissextras directory:
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/mpi/trunk/architecture mpi/architecture \endcode
+where architecture is the appropriate architecture for the machine. Currently, the list of possible achitectures comprehends:
+- x86_64-linux
+- x86_64-linux-debug
+.
+There is also a packages directory for MPI in the code repository. To check it out issue the following command in the opencmissextras directory:
+\code svn co https://svn.physiomeproject.org/svn/opencmissextras/mpi/trunk/packages mpi/packages \endcode
+
 To check out the main trunk of the various cellml libraries required with OpenCMISS issue the following command in the opencmissextras directory:
 \code svn co https://svn.physiomeproject.org/svn/opencmissextras/cellml/trunk/architecture cellml/architecture \endcode
 where architecture is the appropriate architecture for the machine. Currently, the list of possible achitectures comprehends:
