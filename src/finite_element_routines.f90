@@ -73,110 +73,111 @@ CONTAINS
   !
 
   !>Evaluates the element Jacobian matrix entries using finite differencing for a general finite element equations set.
-  SUBROUTINE EquationsSet_FiniteElementJacobianEvaluateFD(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE EquationsSet_FiniteElementJacobianEvaluateFD(equationsSet,elementNumber,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
-    INTEGER(INTG), INTENT(OUT) :: ERR           !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR  !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet  !<A pointer to the equations set to evaluate the element Jacobian for
+    INTEGER(INTG), INTENT(IN) :: elementNumber  !<The element number to calculate the Jacobian for
+    INTEGER(INTG), INTENT(OUT) :: err  !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error  !<The error string
     !Local Variables
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
-    TYPE(BASIS_TYPE), POINTER :: BASIS
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: PARAMETERS
-    REAL(DP),POINTER :: DATA(:) ! parameter_set vector
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: ROW_VARIABLE,COLUMN_VARIABLE
-    TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_VECTOR1
-    INTEGER(INTG) :: component_idx,local_ny,version,derivative_idx,derivative,node_idx,node,column,jacobian_idx
-    INTEGER(INTG) :: COMPONENT_INTERPOLATION_TYPE
-    REAL(DP) :: DELTA, ORIG_DEP_VAR
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+    TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: elementsTopology
+    TYPE(BASIS_TYPE), POINTER :: basis
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: parameters
+    REAL(DP),POINTER :: columnData(:)  ! parameter set vector
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: rowVariable,columnVariable
+    TYPE(ELEMENT_VECTOR_TYPE) :: elementVector
+    INTEGER(INTG) :: componentIdx,localNy,version,derivativeIdx,derivative,nodeIdx,node,column,jacobianIdx
+    INTEGER(INTG) :: componentInterpolationType
+    REAL(DP) :: delta,origDepVar
 
-    CALL ENTERS("EquationsSet_FiniteElementJacobianEvaluateFD",ERR,ERROR,*999)
+    CALL ENTERS("EquationsSet_FiniteElementJacobianEvaluateFD",err,error,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-        NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-        NONLINEAR_MAPPING=>EQUATIONS%EQUATIONS_MAPPING%NONLINEAR_MAPPING
+    IF(ASSOCIATED(equationsSet)) THEN
+      equations=>equationsSet%EQUATIONS
+      IF(ASSOCIATED(equations)) THEN
+        equationsMatrices=>equations%EQUATIONS_MATRICES
+        nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+        nonlinearMapping=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING
         ! The first residual variable is always the row variable, which is the variable the
         ! residual is calculated for
-        ROW_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
+        rowVariable=>nonlinearMapping%RESIDUAL_VARIABLES(1)%PTR
         ! make a temporary copy of the unperturbed residuals
-        CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999) ! can't we reuse old results?
-        ELEMENT_VECTOR1=NONLINEAR_MATRICES%ELEMENT_RESIDUAL
-        DO jacobian_idx=1,NONLINEAR_MATRICES%NUMBER_OF_JACOBIANS
+        ! can't reuse old results as they will be for another element
+        CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(equationsSet,elementNumber,err,error,*999)
+        elementVector=nonlinearMatrices%ELEMENT_RESIDUAL
+        DO jacobianIdx=1,nonlinearMatrices%NUMBER_OF_JACOBIANS
           ! For coupled nonlinear problems there will be multiple Jacobians
           ! For this equations set, we calculate the residual for the row variable
           ! while pertubing parameters from the column variable.
           ! For non coupled problems these two variables will be the same
-          COLUMN_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(jacobian_idx)%PTR
-          PARAMETERS=>COLUMN_VARIABLE%PARAMETER_SETS%PARAMETER_SETS(1)%PTR%PARAMETERS  ! vector of dependent variables, basically
+          columnVariable=>nonlinearMapping%RESIDUAL_VARIABLES(jacobianIdx)%PTR
+          parameters=>columnVariable%PARAMETER_SETS%PARAMETER_SETS(FIELD_VALUES_SET_TYPE)%PTR%PARAMETERS  ! vector of dependent variables, basically
           ! determine step size
-          CALL DISTRIBUTED_VECTOR_DATA_GET(PARAMETERS,DATA,ERR,ERROR,*999)
-          DELTA=MAX(MAXVAL(ABS(DATA))*1E-6_DP,1E-9)
-          CALL DISTRIBUTED_VECTOR_DATA_RESTORE(PARAMETERS,DATA,ERR,ERROR,*999)
+          CALL DISTRIBUTED_VECTOR_DATA_GET(parameters,columnData,err,error,*999)
+          delta=MAX(MAXVAL(ABS(columnData))*1E-6_DP,1E-9)
+          CALL DISTRIBUTED_VECTOR_DATA_RESTORE(parameters,columnData,err,error,*999)
           ! the actual finite differencing algorithm is about 4 lines but since the parameters are all
           ! distributed out, have to use proper field accessing routines..
           ! so let's just loop over component, node/el, derivative
           column=0  ! element jacobian matrix column number
-          DO component_idx=1,COLUMN_VARIABLE%NUMBER_OF_COMPONENTS
-            ELEMENTS_TOPOLOGY=>COLUMN_VARIABLE%COMPONENTS(component_idx)%DOMAIN%TOPOLOGY%ELEMENTS
-            COMPONENT_INTERPOLATION_TYPE=COLUMN_VARIABLE%COMPONENTS(component_idx)%INTERPOLATION_TYPE
-            SELECT CASE (COMPONENT_INTERPOLATION_TYPE)
+          DO componentIdx=1,columnVariable%NUMBER_OF_COMPONENTS
+            elementsTopology=>columnVariable%COMPONENTS(componentIdx)%DOMAIN%TOPOLOGY%ELEMENTS
+            componentInterpolationType=columnVariable%COMPONENTS(componentIdx)%INTERPOLATION_TYPE
+            SELECT CASE (componentInterpolationType)
             CASE (FIELD_NODE_BASED_INTERPOLATION)
-              BASIS=>ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%BASIS
-              DO node_idx=1,BASIS%NUMBER_OF_NODES
-                node=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_NODES(node_idx)
-                DO derivative_idx=1,BASIS%NUMBER_OF_DERIVATIVES(node_idx)
-                  derivative=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(1,derivative_idx,node_idx)
-                  version=ELEMENTS_TOPOLOGY%ELEMENTS(ELEMENT_NUMBER)%ELEMENT_DERIVATIVES(2,derivative_idx,node_idx)
-                  local_ny=COLUMN_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
+              basis=>elementsTopology%ELEMENTS(elementNumber)%BASIS
+              DO nodeIdx=1,basis%NUMBER_OF_NODES
+                node=elementsTopology%ELEMENTS(elementNumber)%ELEMENT_NODES(nodeIdx)
+                DO derivativeIdx=1,basis%NUMBER_OF_DERIVATIVES(nodeIdx)
+                  derivative=elementsTopology%ELEMENTS(elementNumber)%ELEMENT_DERIVATIVES(1,derivativeIdx,nodeIdx)
+                  version=elementsTopology%ELEMENTS(elementNumber)%ELEMENT_DERIVATIVES(2,derivativeIdx,nodeIdx)
+                  localNy=columnVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node)% &
                     & DERIVATIVES(derivative)%VERSIONS(version)
                   ! one-sided finite difference
-                  CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-                  CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
-                  NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
-                  CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-                  CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
+                  CALL DISTRIBUTED_VECTOR_VALUES_GET(parameters,localNy,origDepVar,err,error,*999)
+                  CALL DISTRIBUTED_VECTOR_VALUES_SET(parameters,localNy,origDepVar+delta,err,error,*999)
+                  nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
+                  CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(equationsSet,elementNumber,err,error,*999)
+                  CALL DISTRIBUTED_VECTOR_VALUES_SET(parameters,localNy,origDepVar,err,error,*999)
                   column=column+1
-                  NONLINEAR_MATRICES%JACOBIANS(jacobian_idx)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                      & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
-                ENDDO !derivative_idx
-              ENDDO !node_idx
+                  nonlinearMatrices%JACOBIANS(jacobianIdx)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
+                      & (nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR-elementVector%VECTOR)/delta
+                ENDDO !derivativeIdx
+              ENDDO !nodeIdx
             CASE (FIELD_ELEMENT_BASED_INTERPOLATION)
-              local_ny=COLUMN_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(ELEMENT_NUMBER)
+              localNy=columnVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(elementNumber)
               ! one-sided finite difference
-              CALL DISTRIBUTED_VECTOR_VALUES_GET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR+DELTA,ERR,ERROR,*999)
-              NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
-              CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-              CALL DISTRIBUTED_VECTOR_VALUES_SET(PARAMETERS,local_ny,ORIG_DEP_VAR,ERR,ERROR,*999)
+              CALL DISTRIBUTED_VECTOR_VALUES_GET(parameters,localNy,origDepVar,err,error,*999)
+              CALL DISTRIBUTED_VECTOR_VALUES_SET(parameters,localNy,origDepVar+delta,err,error,*999)
+              nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR=0.0_DP ! must remember to flush existing results, otherwise they're added
+              CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(equationsSet,elementNumber,err,error,*999)
+              CALL DISTRIBUTED_VECTOR_VALUES_SET(parameters,localNy,origDepVar,err,error,*999)
               column=column+1
-              NONLINEAR_MATRICES%JACOBIANS(jacobian_idx)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
-                  & (NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR-ELEMENT_VECTOR1%VECTOR)/DELTA
+              nonlinearMatrices%JACOBIANS(jacobianIdx)%PTR%ELEMENT_JACOBIAN%MATRIX(:,column)= &
+                  & (nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR-elementVector%VECTOR)/delta
             CASE DEFAULT
-              CALL FLAG_ERROR("Unsupported type of interpolation.",ERR,ERROR,*999)
+              CALL FLAG_ERROR("Unsupported type of interpolation.",err,error,*999)
             END SELECT
           ENDDO
 
           ! put the original residual back in
-          NONLINEAR_MATRICES%ELEMENT_RESIDUAL=ELEMENT_VECTOR1
+          nonlinearMatrices%ELEMENT_RESIDUAL=elementVector
         ENDDO
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
     CALL EXITS("EquationsSet_FiniteElementJacobianEvaluateFD")
     RETURN
-999 CALL ERRORS("EquationsSet_FiniteElementJacobianEvaluateFD",ERR,ERROR)
+999 CALL ERRORS("EquationsSet_FiniteElementJacobianEvaluateFD",err,error)
     CALL EXITS("EquationsSet_FiniteElementJacobianEvaluateFD")
     RETURN 1
   END SUBROUTINE EquationsSet_FiniteElementJacobianEvaluateFD
