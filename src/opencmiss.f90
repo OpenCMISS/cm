@@ -2088,8 +2088,8 @@ MODULE OPENCMISS
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE !< Orthotropic Holzapfel-Ogden constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityFluidPressureStaticINRIASubtype = &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE !< Static finite elasticity coupled with fluid pressure set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityFluidPressureQuadraticSubtype = &
-    & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_QUADRATIC_SUBTYPE !< Static finite elasticity coupled with fluid pressure, with quadratic polynomial constitutive relation \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityFluidPressureHolmesMowSubtype= &
+    & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE !<Holmes and Mow's poroelastic constitutive relation subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticStokesSubtype = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceStokesSubtype = EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientStokesSubtype = EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2469,7 +2469,8 @@ MODULE OPENCMISS
     & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype,CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype, &
     & CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype,CMISSEquationsSetTransverseIsotropicGuccioneSubtype, &
     & CMISSEquationsSetMembraneSubtype, CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype, &
-    & CMISSEquationsSetElasticityFluidPressureStaticINRIASubtype,CMISSEquationsSetElasticityFluidPressureQuadraticSubtype, &
+    & CMISSEquationsSetElasticityFluidPressureStaticINRIASubtype, &
+    & CMISSEquationsSetElasticityFluidPressureHolmesMowSubtype,&
     & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
     & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
     & CMISSEquationsSetOptimisedStokesSubtype,CMISSEquationsSetStaticNavierStokesSubtype, &
