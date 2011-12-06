@@ -61,20 +61,21 @@ class HtmlOutput(Plugin):
         logPath=""
         historyPath=""
         if str(test).find('test_build_library')!=-1 :
-          logPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_" + list(test.test.arg)[0] + str(date.today()) 
-          historyPath = self.buildbotUrl + "logs_x86_64-linux/nose_library_build_history_" + list(test.test.arg)[0]
+          (compiler_version, arch, system) = list(test.test.arg)[:3]
+          logPath = "%slogs_%s-%s/nose_library_build_%s%s" %(self.buildbotUrl, arch, system, compiler_version, str(date.today())) 
+          historyPath = "%slogs_%s-%s/nose_library_build_history_%s" %(self.buildbotUrl, arch, system, compiler_version)
         elif str(test).find('test_example')!=-1 :
-          example = list(test.test.arg)[1]
-          path = example.path[example.path.rfind("/examples/")+1:]
-          if list(test.test.arg)[0]=='build' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_" + example.compilerVersion + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_build_history_" + example.compilerVersion
-          elif list(test.test.arg)[0]=='run' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_" + example.compilerVersion + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_run_history_" + example.compilerVersion
-          elif list(test.test.arg)[0]=='check' :
-            logPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_" + example.compilerVersion + str(date.today())
-            historyPath = self.buildbotUrl + "logs_x86_64-linux/"+path+"/nose_check_history_" + example.compilerVersion
+          (status,example) = list(test.test.arg)[:2]
+          if (status == "build") : 
+            path = example.path[example.path.rfind("/examples/")+1:]
+          else :
+            testPoint =  list(test.test.arg)[2]
+            path = testPoint.path[testPoint.path.rfind("/examples/")+1:]
+          arch = example.arch
+          system = example.system
+          compiler_version = example.compilerVersion
+          logPath = "%slogs_%s-%s/%s/nose_%s_%s%s" %(self.buildbotUrl, arch, system, path, status, compiler_version, str(date.today())) 
+          historyPath = "%slogs_%s-%s/%s/nose_%s_history_%s" %(self.buildbotUrl, arch, system, path, status, compiler_version)
         self.html.append('&nbsp;<a href="'+logPath+'">log</a>')
         self.html.append('&nbsp;<a href="'+historyPath+'">history</a>')
     
@@ -155,8 +156,7 @@ class HtmlOutput(Plugin):
           self.current = ResultTree(self.current)
         ### OpenCMISS example build, execute and check ###
         if str(test).find('test_example')!=-1 :
-          status = list(test.test.arg)[0]
-          example = list(test.test.arg)[1]
+          (status, example) = list(test.test.arg)[:2]
           ## Build the example ##
           if status =='build' :
             for k in range(0,len(self.testLevelsInner)) :
