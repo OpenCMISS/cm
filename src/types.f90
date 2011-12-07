@@ -1377,6 +1377,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: FIRST_ASSEMBLY !<Is .TRUE. if this residual vector has not been assembled
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL !<A pointer to the distributed residual vector for nonlinear equations
     TYPE(ELEMENT_VECTOR_TYPE) :: ELEMENT_RESIDUAL !<The element residual information for nonlinear equations. Old CMISS name RE1
+    INTEGER(INTG) :: ELEMENT_RESIDUAL_CALCULATED !<The number of the element the residual is calculated for, or zero if it isn't calculated
   END TYPE EQUATIONS_MATRICES_NONLINEAR_TYPE
 
   !>Contains information of the RHS vector for equations matrices

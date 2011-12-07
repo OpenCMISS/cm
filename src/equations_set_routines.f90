@@ -2965,7 +2965,7 @@ CONTAINS
                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE(EQUATIONS_SET_FINITE_DIFFERENCE_JACOBIAN)
-                  CALL EquationsSet_FiniteElementJacobianEvaluateFD(EQUATIONS_SET,ELEMENT_NUMBER,matrix_idx,ERR,ERROR,*999)
+                CALL EquationsSet_FiniteElementJacobianEvaluateFD(EQUATIONS_SET,ELEMENT_NUMBER,matrix_idx,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="Jacobian calculation type "//TRIM(NUMBER_TO_VSTRING(NONLINEAR_MAPPING%VAR_TO_JACOBIAN_MAP( &
                   & matrix_idx)%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))//" is not valid."
@@ -3072,9 +3072,13 @@ CONTAINS
         ! The first residual variable is always the row variable, which is the variable the
         ! residual is calculated for
         rowVariable=>nonlinearMapping%RESIDUAL_VARIABLES(1)%PTR
+        ! For coupled problems this routine will be called multiple times if multiple Jacobians use finite
+        ! differencing, so make sure we only calculate the residual vector once, to save time and because
+        ! it would otherwise add together
+        IF(nonlinearMatrices%ELEMENT_RESIDUAL_CALCULATED/=elementNumber) THEN
+          CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(equationsSet,elementNumber,err,error,*999)
+        END IF
         ! make a temporary copy of the unperturbed residuals
-        ! can't reuse old results as they will be for another element
-        CALL EQUATIONS_SET_FINITE_ELEMENT_RESIDUAL_EVALUATE(equationsSet,elementNumber,err,error,*999)
         elementVector=nonlinearMatrices%ELEMENT_RESIDUAL
         IF(jacobianNumber<=nonlinearMatrices%NUMBER_OF_JACOBIANS) THEN
           ! For coupled nonlinear problems there will be multiple Jacobians
@@ -3129,7 +3133,6 @@ CONTAINS
               CALL FLAG_ERROR("Unsupported type of interpolation.",err,error,*999)
             END SELECT
           END DO
-
           ! put the original residual back in
           nonlinearMatrices%ELEMENT_RESIDUAL=elementVector
         ELSE
@@ -3199,44 +3202,45 @@ CONTAINS
       END SELECT
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_ELEMENT_MATRIX_OUTPUT) THEN
-          EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-          IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
-            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element residual matrices and vectors:",ERR,ERROR,*999)          
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
-            LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-            IF(ASSOCIATED(LINEAR_MATRICES)) THEN
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Linear matrices:",ERR,ERROR,*999)                        
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of element matrices = ",LINEAR_MATRICES% &
-                & NUMBER_OF_LINEAR_MATRICES,ERR,ERROR,*999)
-              DO matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element matrix : ",matrix_idx,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update matrix = ",LINEAR_MATRICES%MATRICES(matrix_idx)%PTR% &
-                  & UPDATE_MATRIX,ERR,ERROR,*999)
-                IF(LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%UPDATE_MATRIX) THEN
-                  ELEMENT_MATRIX=>LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%ELEMENT_MATRIX
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
-                    & ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
-                    & ERR,ERROR,*999)
-                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX% &
-                    & MAX_NUMBER_OF_COLUMNS,ERR,ERROR,*999)
-                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
-                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX% &
-                    & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-                  CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
-                    & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
-                    & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
-                    & '(16X,8(X,E13.6))',ERR,ERROR,*999)
-                ENDIF
-              ENDDO !matrix_idx
-            ENDIF
-            NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-            IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element residual vector:",ERR,ERROR,*999)                        
+        EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
+        IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
+          NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
+          IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
+            NONLINEAR_MATRICES%ELEMENT_RESIDUAL_CALCULATED=ELEMENT_NUMBER
+            IF(EQUATIONS%OUTPUT_TYPE>=EQUATIONS_ELEMENT_MATRIX_OUTPUT) THEN
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Finite element residual matrices and vectors:",ERR,ERROR,*999)
+              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element number = ",ELEMENT_NUMBER,ERR,ERROR,*999)
+              LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
+              IF(ASSOCIATED(LINEAR_MATRICES)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Linear matrices:",ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Number of element matrices = ",LINEAR_MATRICES% &
+                  & NUMBER_OF_LINEAR_MATRICES,ERR,ERROR,*999)
+                DO matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Element matrix : ",matrix_idx,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update matrix = ",LINEAR_MATRICES%MATRICES(matrix_idx)%PTR% &
+                    & UPDATE_MATRIX,ERR,ERROR,*999)
+                  IF(LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%UPDATE_MATRIX) THEN
+                    ELEMENT_MATRIX=>LINEAR_MATRICES%MATRICES(matrix_idx)%PTR%ELEMENT_MATRIX
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_MATRIX%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of columns = ",ELEMENT_MATRIX%NUMBER_OF_COLUMNS, &
+                      & ERR,ERROR,*999)
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_MATRIX%MAX_NUMBER_OF_ROWS, &
+                      & ERR,ERROR,*999)
+                    CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of columns = ",ELEMENT_MATRIX% &
+                      & MAX_NUMBER_OF_COLUMNS,ERR,ERROR,*999)
+                    CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,8,8,ELEMENT_MATRIX%ROW_DOFS, &
+                      & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                    CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX% &
+                      & COLUMN_DOFS,'("  Column dofs  :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                    CALL WRITE_STRING_MATRIX(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_MATRIX%NUMBER_OF_ROWS,1,1,ELEMENT_MATRIX% &
+                      & NUMBER_OF_COLUMNS,8,8,ELEMENT_MATRIX%MATRIX(1:ELEMENT_MATRIX%NUMBER_OF_ROWS,1:ELEMENT_MATRIX% &
+                      & NUMBER_OF_COLUMNS),WRITE_STRING_MATRIX_NAME_AND_INDICES,'("  Matrix','(",I2,",:)',' :",8(X,E13.6))', &
+                      & '(16X,8(X,E13.6))',ERR,ERROR,*999)
+                  ENDIF
+                ENDDO !matrix_idx
+              ENDIF
+              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element residual vector:",ERR,ERROR,*999)
               CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",NONLINEAR_MATRICES%UPDATE_RESIDUAL,ERR,ERROR,*999)
               IF(NONLINEAR_MATRICES%UPDATE_RESIDUAL) THEN
                 ELEMENT_VECTOR=>NONLINEAR_MATRICES%ELEMENT_RESIDUAL
@@ -3248,40 +3252,42 @@ CONTAINS
                 CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
                   & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
               ENDIF
-            ENDIF
-            RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
-            IF(ASSOCIATED(RHS_VECTOR)) THEN
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",RHS_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
-              IF(RHS_VECTOR%UPDATE_VECTOR) THEN
-                ELEMENT_VECTOR=>RHS_VECTOR%ELEMENT_VECTOR
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
-                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
-                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+              RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
+              IF(ASSOCIATED(RHS_VECTOR)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element RHS vector :",ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",RHS_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
+                IF(RHS_VECTOR%UPDATE_VECTOR) THEN
+                  ELEMENT_VECTOR=>RHS_VECTOR%ELEMENT_VECTOR
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
+                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
+                    & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+                ENDIF
               ENDIF
-            ENDIF
-            SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
-            IF(ASSOCIATED(SOURCE_VECTOR)) THEN
-              CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element source vector :",ERR,ERROR,*999)
-              CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",SOURCE_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
-              IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
-                ELEMENT_VECTOR=>SOURCE_VECTOR%ELEMENT_VECTOR
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
-                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
-                  & ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
-                  & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
-                CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
-                  & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+              SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
+              IF(ASSOCIATED(SOURCE_VECTOR)) THEN
+                CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Element source vector :",ERR,ERROR,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Update vector = ",SOURCE_VECTOR%UPDATE_VECTOR,ERR,ERROR,*999)
+                IF(SOURCE_VECTOR%UPDATE_VECTOR) THEN
+                  ELEMENT_VECTOR=>SOURCE_VECTOR%ELEMENT_VECTOR
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Number of rows = ",ELEMENT_VECTOR%NUMBER_OF_ROWS,ERR,ERROR,*999)
+                  CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Maximum number of rows = ",ELEMENT_VECTOR%MAX_NUMBER_OF_ROWS, &
+                    & ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%ROW_DOFS, &
+                    & '("  Row dofs     :",8(X,I13))','(16X,8(X,I13))',ERR,ERROR,*999)
+                  CALL WRITE_STRING_VECTOR(GENERAL_OUTPUT_TYPE,1,1,ELEMENT_VECTOR%NUMBER_OF_ROWS,8,8,ELEMENT_VECTOR%VECTOR, &
+                    & '("  Vector(:)    :",8(X,E13.6))','(16X,8(X,E13.6))',ERR,ERROR,*999)
+                ENDIF
               ENDIF
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equation matrices is not associated.",ERR,ERROR,*999)
+            CALL FLAG_ERROR("Equation nonlinear matrices not associated.",ERR,ERROR,*999)
           ENDIF
+        ELSE
+          CALL FLAG_ERROR("Equation matrices is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
         CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
