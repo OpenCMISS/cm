@@ -118,9 +118,8 @@ CONTAINS
           columnVariable=>nonlinearMapping%RESIDUAL_VARIABLES(jacobianIdx)%PTR
           parameters=>columnVariable%PARAMETER_SETS%PARAMETER_SETS(FIELD_VALUES_SET_TYPE)%PTR%PARAMETERS  ! vector of dependent variables, basically
           ! determine step size
-          CALL DISTRIBUTED_VECTOR_DATA_GET(parameters,columnData,err,error,*999)
-          delta=MAX(MAXVAL(ABS(columnData))*1E-6_DP,1E-9)
-          CALL DISTRIBUTED_VECTOR_DATA_RESTORE(parameters,columnData,err,error,*999)
+          CALL DistributedVector_L2Norm(parameters,delta,err,error,*999)
+          delta=(1.0_DP+delta)*1E-9_DP
           ! the actual finite differencing algorithm is about 4 lines but since the parameters are all
           ! distributed out, have to use proper field accessing routines..
           ! so let's just loop over component, node/el, derivative
