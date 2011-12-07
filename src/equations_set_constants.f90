@@ -479,8 +479,14 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2=2 !<Solution to a generalised burgers equation
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1=1 !<Solution to a static burgers equation
   !>@}
+
+  !> \addtogroup EQUATIONS_SET_CONSTANTS_JacobianEvaluationTypes EQUATIONS_SET_CONSTANTS:JacobianEvaluationTypes
+  !> \brief Jacobian evaluation types
+  !>@{
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_FINITE_DIFFERENCE_JACOBIAN=1 !<Use finite differencing to calculate the Jacobian
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_ANALYTIC_JACOBIAN=2 !<Use an analytic Jacobian evaluation
+  !>@}
   !>@}
 
-  
 END MODULE EQUATIONS_SET_CONSTANTS
 

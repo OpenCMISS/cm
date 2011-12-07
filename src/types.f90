@@ -1492,6 +1492,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
   TYPE VAR_TO_EQUATIONS_JACOBIAN_MAP_TYPE
     INTEGER(INTG) :: JACOBIAN_NUMBER !<The equations Jacobian matrix number
     INTEGER(INTG) :: VARIABLE_TYPE !<The variable type for this variable to equations matrices map
+    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The calculation type (analytic of finite difference) of the residual variable Jacobian.
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: VARIABLE !<A pointer to the field variable for this variable to equations matrices map
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_COLUMNS_MAP(:) !<DOF_TO_COLUMNS_MAP(dof_idx). The Jacobian column number for dof_idx'th variable dof
     INTEGER(INTG), ALLOCATABLE :: DOF_TO_ROWS_MAP(:) !<DOF_TO_ROWS_MAP(dof_idx). The row number that the dof_idx'th variable dof is mapped to.
@@ -1550,6 +1551,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP), ALLOCATABLE :: LINEAR_MATRIX_COEFFICIENTS(:) !<LINEAR_MATRIX_COEFFICIENTS(matrix_idx). The coefficient of the matrix_idx'th linear matrix in the equations set.
     INTEGER(INTG) :: NUMBER_OF_RESIDUAL_VARIABLES !<The number of residual variables for the nonlinear equations.
     INTEGER(INTG), ALLOCATABLE :: RESIDUAL_VARIABLE_TYPES(:) !<RESIDUAL_VARIABLE_TYPES(jacobian_idx). The type of the jacobian_idx'th Jacobian.
+    INTEGER(INTG), ALLOCATABLE :: RESIDUAL_VARIABLE_JACOBIAN_TYPES(:) !<RESIDUAL_VARIABLE_JACOBIAN_TYPES(jacobian_idx). The calculation type (analytic of finite difference) of the jacobian_idx'th Jacobian.
     REAL(DP) :: RESIDUAL_COEFFICIENT !<The coefficient multiplying the residual vector.
     INTEGER(INTG) :: RHS_VARIABLE_TYPE !<The dependent variable type mapped to the rhs vector.
     REAL(DP) :: RHS_COEFFICIENT !<The coefficient multiplying the RHS vector.
@@ -1622,7 +1624,6 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES
     TYPE(EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the equations.
-    
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING !<A pointer to the equations mapping for the equations.
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES !<A pointer to the equations matrices and vectors used for the equations.
   END TYPE EQUATIONS_TYPE

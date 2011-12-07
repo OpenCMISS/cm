@@ -48,7 +48,6 @@ MODULE ELASTICITY_ROUTINES
   USE CONTROL_LOOP_ROUTINES
   USE EQUATIONS_SET_CONSTANTS
   USE FINITE_ELASTICITY_ROUTINES
-  USE FiniteElementRoutines
   USE INPUT_OUTPUT
   USE ISO_VARYING_STRING
   USE KINDS
@@ -197,8 +196,7 @@ CONTAINS
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        !Use the general finite difference Jacobian evaluation for a finite element equations set
-        CALL EquationsSet_FiniteElementJacobianEvaluateFD(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equation set class."
