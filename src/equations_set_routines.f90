@@ -3089,7 +3089,7 @@ CONTAINS
           parameters=>columnVariable%PARAMETER_SETS%PARAMETER_SETS(FIELD_VALUES_SET_TYPE)%PTR%PARAMETERS  ! vector of dependent variables, basically
           ! determine step size
           CALL DistributedVector_L2Norm(parameters,delta,err,error,*999)
-          delta=(1.0_DP+delta)*1E-9_DP
+          delta=(1.0_DP+delta)*1E-7_DP
           ! the actual finite differencing algorithm is about 4 lines but since the parameters are all
           ! distributed out, have to use proper field accessing routines..
           ! so let's just loop over component, node/el, derivative
