@@ -5732,11 +5732,12 @@ MODULE OPENCMISS
 !!
 !!==================================================================================================================================
 
-#ifdef USEFIELDML
   !> Provides input and output of fields through the FieldML API
   TYPE CMISSFieldMLIOType
     PRIVATE
+#ifdef USEFIELDML
     TYPE(FIELDML_IO_TYPE), POINTER :: fieldmlInfo
+#endif
   END TYPE CMISSFieldMLIOType
 
   !> Creates a mesh component using the given FieldML evaluator.
@@ -5846,7 +5847,6 @@ MODULE OPENCMISS
 
   PUBLIC :: CMISSFieldMLOutputWrite, CMISSFieldMLOutputAddField, CMISSFieldMLOutputCreate, CMISSFieldMLOutputAddFieldComponents, &
     & CMISSFieldMLOutputAddImport
-#endif
 
 !!==================================================================================================================================
 !!
@@ -46799,8 +46799,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-#ifdef USEFIELDML
-
   !> Initialise the given FieldML context using the given FieldML XML file.
   SUBROUTINE CMISSFieldMLInputCreateFromFileVS( fieldml, filename, err )
     !Arguments
@@ -46810,8 +46808,14 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLInputCreateFromFileVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     ALLOCATE( fieldml%fieldmlInfo, stat=err )
     CALL FIELDML_INPUT_INITIALISE_FROM_FILE( fieldml%fieldmlInfo, filename, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCreateFromFileVS")
     RETURN
@@ -46835,8 +46839,14 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLInputCreateFromFileC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     ALLOCATE( fieldml%fieldmlInfo, stat=err )
     CALL FIELDML_INPUT_INITIALISE_FROM_FILE( fieldml%fieldmlInfo, var_str(filename), err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCreateFromFileC")
     RETURN
@@ -46863,8 +46873,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputMeshCreateStartObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_MESH_CREATE_START( fieldml%fieldmlInfo, meshArgumentName, mesh%MESH, meshNumber, region%REGION, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputMeshCreateStartObjVS")
     RETURN
@@ -46894,9 +46910,15 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputMeshCreateStartNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     NULLIFY( mesh )
     CALL FIELDML_INPUT_MESH_CREATE_START( fieldml%fieldmlInfo, meshArgumentName, mesh, meshNumber, region, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputMeshCreateStartNumberVS")
     RETURN
@@ -46923,8 +46945,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputMeshCreateStartObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_MESH_CREATE_START( fieldml%fieldmlInfo, var_str(meshArgumentName), mesh%MESH, meshNumber, region%REGION, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputMeshCreateStartObjC")
     RETURN
@@ -46954,10 +46982,16 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputMeshCreateStartNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     NULLIFY( mesh )
     CALL FIELDML_INPUT_MESH_CREATE_START( fieldml%fieldmlInfo, var_str(meshArgumentName), mesh, meshNumber, region, &
       & err, error, *999)
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputMeshCreateStartNumberC")
     RETURN
@@ -46983,8 +47017,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputCoordinateSystemCreateStartObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START( fieldml%fieldmlInfo, evaluatorName, coordinateSystem%COORDINATE_SYSTEM, & 
       & userNumber, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCoordinateSystemCreateStartObjVS")
    RETURN
@@ -47012,9 +47052,15 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputCoordinateSystemCreateStartNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     NULLIFY( COORDINATE_SYSTEM )
     CALL FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START( fieldml%fieldmlInfo, evaluatorName, COORDINATE_SYSTEM, & 
       & userNumber, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCoordinateSystemCreateStartNumberVS")
    RETURN
@@ -47040,8 +47086,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputCoordinateSystemCreateStartObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START( fieldml%fieldmlInfo, var_str(evaluatorName), &
       & coordinateSystem%COORDINATE_SYSTEM, userNumber, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCoordinateSystemCreateStartObjC")
    RETURN
@@ -47069,9 +47121,15 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputCoordinateSystemCreateStartNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     NULLIFY( COORDINATE_SYSTEM )
     CALL FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START( fieldml%fieldmlInfo, var_str(evaluatorName), COORDINATE_SYSTEM, & 
       & userNumber, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCoordinateSystemCreateStartNumberC")
    RETURN
@@ -47099,8 +47157,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputBasisCreateStartNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     NULLIFY( basis )
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, evaluatorName, userNumber, basis, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputBasisCreateStartNumberVS")
     RETURN
@@ -47126,7 +47190,13 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputBasisCreateStartObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, evaluatorName, userNumber, basis%BASIS, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputBasisCreateStartObjVS")
     RETURN
@@ -47154,8 +47224,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputBasisCreateStartNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     NULLIFY( basis )
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, var_str(evaluatorName), userNumber, basis, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputBasisCreateStartNumberC")
     RETURN
@@ -47181,7 +47257,13 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputBasisCreateStartObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_BASIS_CREATE_START( fieldml%fieldmlInfo, var_str(evaluatorName), userNumber, basis%BASIS, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputBasisCreateStartObjC")
     RETURN
@@ -47210,8 +47292,14 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLInputNodesCreateStartNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, nodesArgumentName, region, nodes%NODES, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputNodesCreateStartNumberVS")
     RETURN
@@ -47237,7 +47325,13 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputNodesCreateStartObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, nodesArgumentName, region%REGION, nodes%NODES, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputNodesCreateStartObjVS")
     RETURN
@@ -47266,8 +47360,14 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLInputNodesCreateStartNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, var_str(nodesArgumentName), region, nodes%NODES, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputNodesCreateStartNumberC")
     RETURN
@@ -47293,8 +47393,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputNodesCreateStartObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_NODES_CREATE_START( fieldml%fieldmlInfo, var_str(nodesArgumentName), region%REGION, nodes%NODES, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputNodesCreateStartObjC")
     RETURN
@@ -47320,7 +47426,13 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputCreateMeshComponentObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh%MESH, componentNumber, evaluatorName, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCreateMeshComponentObjVS")
     RETURN
@@ -47352,11 +47464,17 @@ CONTAINS
     
     CALL ENTERS( "CMISSFieldMLInputCreateMeshComponentNumberVS", Err, ERROR, *999 )
  
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh, componentNumber, evaluatorName, err, error, *999 )
 
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
+
+    CALL EXITS("CMISSFieldMLInputNodesCreateStartObjVS")
     CALL EXITS("CMISSFieldMLInputCreateMeshComponentNumberVS")
     RETURN
 999 CALL ERRORS("CMISSFieldMLInputCreateMeshComponentNumberVS",Err,ERROR)
@@ -47381,8 +47499,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputCreateMeshComponentObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh%MESH, componentNumber, var_str(evaluatorName), &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputCreateMeshComponentObjC")
     RETURN
@@ -47414,11 +47538,18 @@ CONTAINS
     
     CALL ENTERS( "CMISSFieldMLInputCreateMeshComponentNumberC", Err, ERROR, *999 )
  
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_INPUT_CREATE_MESH_COMPONENT( fieldml%fieldmlInfo, mesh, componentNumber, var_str(evaluatorName), err, error, *999 )
 
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
+
+    CALL EXITS("CMISSFieldMLInputNodesCreateStartObjVS")
     CALL EXITS("CMISSFieldMLInputCreateMeshComponentNumberC")
     RETURN
 999 CALL ERRORS("CMISSFieldMLInputCreateMeshComponentNumberC",Err,ERROR)
@@ -47447,8 +47578,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldCreateStartObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region%REGION, decomposition%DECOMPOSITION, fieldNumber, &
       & field%FIELD, variableType, evaluatorName, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldCreateStartObjVS")
     RETURN
@@ -47484,6 +47621,8 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldCreateStartNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
     CALL DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION( decompositionNumber, mesh, decomposition, err, error, *999 )
@@ -47491,6 +47630,10 @@ CONTAINS
     NULLIFY( field )
     CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region, decomposition, fieldNumber, field, variableType, &
       & evaluatorName, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldCreateStartNumberVS")
     RETURN
@@ -47520,8 +47663,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldCreateStartObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region%REGION, decomposition%DECOMPOSITION, fieldNumber, &
       & field%FIELD, variableType, var_str(evaluatorName), err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldCreateStartObjC")
     RETURN
@@ -47557,6 +47706,8 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldCreateStartNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
     CALL DECOMPOSITION_USER_NUMBER_TO_DECOMPOSITION( decompositionNumber, mesh, decomposition, err, error, *999 )
@@ -47564,6 +47715,10 @@ CONTAINS
     NULLIFY( field )
     CALL FIELDML_INPUT_FIELD_CREATE_START( fieldml%fieldmlInfo, region, decomposition, fieldNumber, field, variableType, &
       & var_str(evaluatorName), err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldCreateStartNumberC")
     RETURN
@@ -47591,8 +47746,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field%FIELD, variableType, &
       &  setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjVS")
     RETURN
@@ -47625,11 +47786,17 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, evaluatorName, field, variableType, setType, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberVS")
     RETURN
@@ -47657,8 +47824,14 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field%FIELD, variableType, &
       & setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldParametersUpdateObjC")
     RETURN
@@ -47691,11 +47864,17 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLInputFieldParametersUpdateNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_INPUT_FIELD_PARAMETERS_UPDATE( fieldml%fieldmlInfo, var_str(evaluatorName), field, variableType, &
       & setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLInputFieldParametersUpdateNumberC")
     RETURN
@@ -47721,11 +47900,17 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLOutputWriteVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     IF( .NOT. fieldml%fieldmlInfo%IS_OUT ) THEN
       CALL FLAG_ERROR( "Inbound FieldML handle used four an output-only operation.", ERR, ERROR, *999 )
     ENDIF
 
     CALL FIELDML_OUTPUT_WRITE( fieldml%fieldmlInfo, filename, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputWriteVS")
     RETURN
@@ -47749,11 +47934,17 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLOutputWriteC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     IF( .NOT. fieldml%fieldmlInfo%IS_OUT ) THEN
       CALL FLAG_ERROR( "Inbound FieldML handle used four an output-only operation.", ERR, ERROR, *999 )
     ENDIF
 
     CALL FIELDML_OUTPUT_WRITE( fieldml%fieldmlInfo, var_str(filename), err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputWriteC")
     RETURN
@@ -47781,8 +47972,14 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldNoTypeObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field%FIELD, variableType, setType, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldNoTypeObjVS")
     RETURN
@@ -47816,10 +48013,16 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldNoTypeNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field, variableType, setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldNoTypeNumberVS")
     RETURN
@@ -47848,8 +48051,14 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldWithTypeObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field%FIELD, variableType, setType, typeHandle, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldWithTypeObjVS")
     RETURN
@@ -47884,11 +48093,17 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldWithTypeNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, baseName, dofFormat, field, variableType, setType, typeHandle, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldWithTypeNumberVS")
     RETURN
@@ -47916,8 +48131,14 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldNoTypeObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field%FIELD, variableType, &
       & setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldNoTypeObjC")
     RETURN
@@ -47951,11 +48172,17 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldNoTypeNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field, variableType, &
       & setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldNoTypeNumberC")
     RETURN
@@ -47984,8 +48211,14 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldWithTypeObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field%FIELD, variableType, &
       & typeHandle, setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldWithTypeObjC")
     RETURN
@@ -48020,11 +48253,17 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldWithTypeNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD( fieldml%fieldmlInfo, var_str(baseName), var_str(dofFormat), field, variableType, &
       & setType, typeHandle, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldWithTypeNumberC")
     RETURN
@@ -48051,9 +48290,15 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputCreateObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     ALLOCATE( fieldml%fieldmlInfo, stat=err )
     CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh%MESH, location, baseName, connectivityFormat, fieldml%fieldmlInfo, &
       & err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputCreateObjVS")
     RETURN
@@ -48085,10 +48330,16 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputCreateNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, location, baseName, connectivityFormat, fieldml%fieldmlInfo, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputCreateNumberVS")
     RETURN
@@ -48115,9 +48366,15 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputCreateObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     ALLOCATE( fieldml%fieldmlInfo, stat=err )
     CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh%MESH, var_str(location), var_str(baseName), var_str(connectivityFormat), &
       & fieldml%fieldmlInfo, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputCreateObjC")
     RETURN
@@ -48149,11 +48406,17 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputCreateNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL MESH_USER_NUMBER_TO_MESH( meshNumber, region, mesh, err, error, *999 )
 
     CALL FIELDML_OUTPUT_INITIALISE_INFO( mesh, var_str(location), var_str(baseName), var_str(connectivityFormat), &
       & fieldml%fieldmlInfo, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputCreateNumberC")
     RETURN
@@ -48184,8 +48447,14 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldComponentsObjVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, baseName, dofFormat, field%FIELD, &
       & fieldComponentNumbers, variableType, setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldComponentsObjVS")
     RETURN
@@ -48221,11 +48490,17 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLOutputAddFieldComponentsNumberVS",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, baseName, dofFormat, field, fieldComponentNumbers,&
       & variableType, setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldComponentsNumberVS")
     RETURN
@@ -48256,8 +48531,14 @@ CONTAINS
   
     CALL ENTERS("CMISSFieldMLOutputAddFieldComponentsObjC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, var_str(baseName), var_str(dofFormat), &
       & field%FIELD, fieldComponentNumbers, variableType, setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldComponentsObjC")
     RETURN
@@ -48293,11 +48574,17 @@ CONTAINS
 
     CALL ENTERS("CMISSFieldMLOutputAddFieldComponentsNumberC",Err,ERROR,*999)
 
+#ifdef USEFIELDML
+
     CALL REGION_USER_NUMBER_TO_REGION( regionNumber, region, err, error, *999 )
     CALL FIELD_USER_NUMBER_TO_FIELD( fieldNumber, region, field, err, error, *999 )
 
     CALL FIELDML_OUTPUT_ADD_FIELD_COMPONENTS( fieldml%fieldmlInfo, typeHandle, var_str(baseName), var_str(dofFormat), &
       & field, fieldComponentNumbers, variableType, setType, err, error, *999 )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddFieldComponentsNumberC")
     RETURN
@@ -48325,10 +48612,16 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLOutputAddImport",Err,ERROR,*999)
     
+#ifdef USEFIELDML
+
     stringName = name
     
     handle = FIELDML_OUTPUT_IMPORT( fieldml%fieldmlInfo, stringName, Err, ERROR )
     IF(Err/=0) GOTO 999
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLOutputAddImport")
     RETURN
@@ -48351,7 +48644,13 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLIOTypeFinalise", Err, ERROR, *999 )
     
+#ifdef USEFIELDML
+
     CALL FIELDML_IO_FINALISE( fieldml%fieldmlInfo, Err, ERROR, *999  )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLIOTypeFinalise")
     RETURN
@@ -48374,7 +48673,13 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLIOTypeInitialise", Err, ERROR, *999 )
     
+#ifdef USEFIELDML
+
     NULLIFY( fieldml%fieldmlInfo )
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLIOTypeInitialise")
     RETURN
@@ -48398,7 +48703,13 @@ CONTAINS
     
     CALL ENTERS("CMISSFieldMLIOGetSession", Err, ERROR, *999 )
     
+#ifdef USEFIELDML
+
     sessionHandle = fieldml%fieldmlInfo%FML_HANDLE
+
+#else
+    CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,ERROR,*999)
+#endif
 
     CALL EXITS("CMISSFieldMLIOGetSession")
     RETURN
@@ -48408,8 +48719,6 @@ CONTAINS
     RETURN
     
   END SUBROUTINE CMISSFieldMLIOGetSession
-
-#endif !USEFIELDML
 
   !
   !================================================================================================================================
