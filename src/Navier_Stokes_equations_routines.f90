@@ -846,6 +846,9 @@ CONTAINS
                           CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
                           !Create the equations matrices
                           CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
+                          ! Use the analytic Jacobian calculation
+                          CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
+                            & ERR,ERROR,*999)
                           SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                             CASE(EQUATIONS_MATRICES_FULL_MATRICES)
                               CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
@@ -917,8 +920,6 @@ CONTAINS
 !                            & ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE], &
                             & ERR,ERROR,*999)
-                          CALL EQUATIONS_MAPPING_RESIDUAL_JACOBIAN_TYPES_SET(EQUATIONS_MAPPING,[EQUATIONS_SET_ANALYTIC_JACOBIAN], &
-                            & ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR, & 
@@ -926,6 +927,9 @@ CONTAINS
                           CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
                           !Create the equations matrices
                           CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
+                          ! Use the analytic Jacobian calculation
+                          CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
+                            & ERR,ERROR,*999)
                           SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                             CASE(EQUATIONS_MATRICES_FULL_MATRICES)
                               CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES,[MATRIX_BLOCK_STORAGE_TYPE, &
@@ -1001,11 +1005,12 @@ CONTAINS
                             & ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE, & 
                             & ERR,ERROR,*999)
-                          CALL EQUATIONS_MAPPING_RESIDUAL_JACOBIAN_TYPES_SET(EQUATIONS_MAPPING,[EQUATIONS_SET_ANALYTIC_JACOBIAN], &
-                            & ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
                           !Create the equations matrices
                           CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
+                          ! Use the analytic Jacobian calculation
+                          CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
+                            & ERR,ERROR,*999)
                           SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                             CASE(EQUATIONS_MATRICES_FULL_MATRICES)
                               CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
