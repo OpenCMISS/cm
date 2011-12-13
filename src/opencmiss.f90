@@ -2409,14 +2409,6 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityCylinder = EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
   !>@}
   !>@}
-
-  !> \addtogroup OPENCMISS_EquationsSetJacobianEvaluationTypes OPENCMISS::EquationsSet::JacobianEvaluationTypes
-  !> \brief Jacobian evaluation types
-  !> \see OPENCMISS::EquationsSet::JacobianEvaluationsTypes,OPENCMISS
-  !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteDifferenceJacobianEvaluation = EQUATIONS_SET_FINITE_DIFFERENCE_JACOBIAN !<Use finite differencing to calculate the Jacobian \see OPENCMISS_EquationsSetJacobianEvaluationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetAnalyticJacobianEvaluation = EQUATIONS_SET_ANALYTIC_JACOBIAN !<Use an analytic Jacobian evaluation \see OPENCMISS_EquationsSetJacobianEvaluationTypes,OPENCMISS
-  !>@}
   !>@}
 
   !> \addtogroup OPENCMISS_AnalyticParamIndices OPENCMISS::FiniteElasticity::AnalyticParamIndices
