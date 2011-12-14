@@ -5087,8 +5087,8 @@ MODULE OPENCMISS
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianNotCaclulated = SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED !<The Jacobian values will not be calculated for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianAnalyticCalculated = SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED !<The Jacobian values will be calculated analytically for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianFDCalculated = SOLVER_NEWTON_JACOBIAN_FD_CALCULATED !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianEquationsCalculated = SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED !<The Jacobian values will be calculated according to the nonlinear equations set, either analytically or using finite differences and taking advantage of the problem structure. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianFDCalculated = SOLVER_NEWTON_JACOBIAN_FD_CALCULATED !<The Jacobian values will be calcualted using finite differences for the nonlinear problem. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   !>@}  
   !> \addtogroup OPENCMISS_DynamicOrderTypes OPENCMISS::Solver::DynamicOrderTypes
   !> \brief The order types for a dynamic solver.
@@ -5604,7 +5604,7 @@ MODULE OPENCMISS
   PUBLIC CMISSSolverNewtonLinesearchNoNorms,CMISSSolverNewtonLinesearchNone,CMISSSolverNewtonLinesearchQuadratic, &
     & CMISSSolverNewtonLinesearchCubic
 
-  PUBLIC CMISSSolverNewtonJacobianNotCaclulated,CMISSSolverNewtonJacobianAnalyticCalculated, &
+  PUBLIC CMISSSolverNewtonJacobianNotCaclulated,CMISSSolverNewtonJacobianEquationsCalculated, &
     & CMISSSolverNewtonJacobianFDCalculated
 
   PUBLIC CMISSSolverDynamicFirstOrder,CMISSSolverDynamicSecondOrder
