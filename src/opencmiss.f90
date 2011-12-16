@@ -517,17 +517,17 @@ MODULE OPENCMISS
   !> \brief Diganostic constants.
   !> \see OPENCMISS::DiagnosticTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSAllDiagType = ALL_DIAG_TYPE !<Type for setting diagnostic output in all routines \see OPENCMISS_DiagnosticTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInDiagType = IN_DIAG_TYPE !<Type for setting diagnostic output in one routine \see OPENCMISS_DiagnosticTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFromDiagType = FROM_DIAG_TYPE !<Type for setting diagnostic output in one routine downwards \see OPENCMISS_DiagnosticTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_ALL_DIAG_TYPE = ALL_DIAG_TYPE !<Type for setting diagnostic output in all routines \see OPENCMISS_DiagnosticTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_IN_DIAG_TYPE = IN_DIAG_TYPE !<Type for setting diagnostic output in one routine \see OPENCMISS_DiagnosticTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FROM_DIAG_TYPE = FROM_DIAG_TYPE !<Type for setting diagnostic output in one routine downwards \see OPENCMISS_DiagnosticTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_TimingTypes OPENCMISS::DiagnosticAndTiming::TimingTypes
   !> \brief Timing constants.
   !> \see OPENCMISS::TimingTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSAllTimingType = ALL_TIMING_TYPE !<Type for setting timing output in all routines \see OPENCMISS_TimingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInTimingType = IN_TIMING_TYPE !<Type for setting timing output in one routine \see OPENCMISS_TimingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFromTimingType = FROM_TIMING_TYPE !<Type for setting timing output from one routine downwards \see OPENCMISS_TimingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_ALL_TIMING_TYPE = ALL_TIMING_TYPE !<Type for setting timing output in all routines \see OPENCMISS_TimingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_IN_TIMING_TYPE = IN_TIMING_TYPE !<Type for setting timing output in one routine \see OPENCMISS_TimingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FROM_TIMING_TYPE = FROM_TIMING_TYPE !<Type for setting timing output from one routine downwards \see OPENCMISS_TimingTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -537,9 +537,9 @@ MODULE OPENCMISS
 
   !Interfaces
 
-  PUBLIC CMISSAllDiagType,CMISSInDiagType,CMISSFromDiagType
+  PUBLIC CMISS_ALL_DIAG_TYPE,CMISS_IN_DIAG_TYPE,CMISS_FROM_DIAG_TYPE
 
-  PUBLIC CMISSAllTimingType,CMISSInTimingType,CMISSFromTimingType
+  PUBLIC CMISS_ALL_TIMING_TYPE,CMISS_IN_TIMING_TYPE,CMISS_FROM_TIMING_TYPE
 
   PUBLIC CMISSDiagnosticsSetOff,CMISSDiagnosticsSetOn
 
@@ -562,55 +562,55 @@ MODULE OPENCMISS
   !> \brief Basis definition type parameters.
   !> \see OPENCMISS::BasisConstants,OPENCMISS
   !>@{ symbol 'nodenumber' at (1) has no IMPLICIT type.
-  INTEGER(INTG), PARAMETER :: CMISSBasisLagrangeHermiteTPType = BASIS_LAGRANGE_HERMITE_TP_TYPE !<Lagrange-Hermite tensor product basis type \see OPENCMISS_BasisTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisSimplexType = BASIS_SIMPLEX_TYPE !<Simplex basis type \see OPENCMISS_BasisTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisSerendipityType = BASIS_SERENDIPITY_TYPE !<Serendipity basis type \see OPENCMISS_BasisTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisAuxilliaryType = BASIS_AUXILLIARY_TYPE !<Auxillary basis type \see OPENCMISS_BasisTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisBSplineTPType = BASIS_B_SPLINE_TP_TYPE !<B-spline basis type \see OPENCMISS_BasisTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisFourierLagrangeHermiteTPType = BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE !<Fourier-Lagrange tensor product basis type \see OPENCMISS_BasisTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisExtendedLagrangeTPType = BASIS_EXTENDED_LAGRANGE_TP_TYPE !< Extendend Lagrange tensor product basis type \see OPENCMISS_BasisTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_LAGRANGE_HERMITE_TP_TYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE !<Lagrange-Hermite tensor product basis type \see OPENCMISS_BasisTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_SIMPLEX_TYPE = BASIS_SIMPLEX_TYPE !<Simplex basis type \see OPENCMISS_BasisTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_SERENDIPITY_TYPE = BASIS_SERENDIPITY_TYPE !<Serendipity basis type \see OPENCMISS_BasisTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_AUXILLIARY_TYPE = BASIS_AUXILLIARY_TYPE !<Auxillary basis type \see OPENCMISS_BasisTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_B_SPLINE_TP_TYPE = BASIS_B_SPLINE_TP_TYPE !<B-spline basis type \see OPENCMISS_BasisTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE = BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE !<Fourier-Lagrange tensor product basis type \see OPENCMISS_BasisTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_EXTENDED_LAGRANGE_TP_TYPE = BASIS_EXTENDED_LAGRANGE_TP_TYPE !< Extendend Lagrange tensor product basis type \see OPENCMISS_BasisTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_BasisInterpolationSpecifications OPENCMISS::Basis::InterpolationSpecifications
   !> \brief Interpolation specification parameters
   !> \see OPENCMISS::BasisConstants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSBasisLinearLagrangeInterpolation = BASIS_LINEAR_LAGRANGE_INTERPOLATION !<Linear Lagrange interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisQuadraticLagrangeInterpolation = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION !<Quadratic Lagrange interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisCubicLagrangeInterpolation = BASIS_CUBIC_LAGRANGE_INTERPOLATION !<Cubic Lagrange interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisCubicHermiteInterpolation = BASIS_CUBIC_HERMITE_INTERPOLATION !<Cubic Hermite interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisQuadratic1HermiteInterpolation = BASIS_QUADRATIC1_HERMITE_INTERPOLATION !<Quadratic Hermite (no derivative at xi=0) interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisQuadratic2HermiteInterpolation = BASIS_QUADRATIC2_HERMITE_INTERPOLATION !<Quadratic Hermite (no derivative at xi=1) interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisLinearSimplexInterpolation = BASIS_LINEAR_SIMPLEX_INTERPOLATION !<Linear Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisQuadraticSimplexInterpolation = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION !<Quadratic Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisCubicSimplexInterpolation = BASIS_CUBIC_SIMPLEX_INTERPOLATION !<Cubic Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_LINEAR_LAGRANGE_INTERPOLATION = BASIS_LINEAR_LAGRANGE_INTERPOLATION !<Linear Lagrange interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_QUADRATIC_LAGRANGE_INTERPOLATION = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION !<Quadratic Lagrange interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_CUBIC_LAGRANGE_INTERPOLATION = BASIS_CUBIC_LAGRANGE_INTERPOLATION !<Cubic Lagrange interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_CUBIC_HERMITE_INTERPOLATION = BASIS_CUBIC_HERMITE_INTERPOLATION !<Cubic Hermite interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_QUADRATIC1_HERMITE_INTERPOLATION = BASIS_QUADRATIC1_HERMITE_INTERPOLATION !<Quadratic Hermite (no derivative at xi=0) interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_QUADRATIC2_HERMITE_INTERPOLATION = BASIS_QUADRATIC2_HERMITE_INTERPOLATION !<Quadratic Hermite (no derivative at xi=1) interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_LINEAR_SIMPLEX_INTERPOLATION = BASIS_LINEAR_SIMPLEX_INTERPOLATION !<Linear Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_QUADRATIC_SIMPLEX_INTERPOLATION = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION !<Quadratic Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_CUBIC_SIMPLEX_INTERPOLATION = BASIS_CUBIC_SIMPLEX_INTERPOLATION !<Cubic Simplex interpolation specification \see OPENCMISS_BasisInterpolationSpecifications,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_BasisQuadratureSchemes OPENCMISS::Basis::QuadratureSchemes
   !> \brief Quadrature scheme parameters
   !> \see OPENCMISS::BasisConstants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSBasisDefaultQuadratureScheme = BASIS_DEFAULT_QUADRATURE_SCHEME !<Identifier for the default quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisLowQuadratureScheme = BASIS_LOW_QUADRATURE_SCHEME !<Identifier for a low order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisMidQuadratureScheme = BASIS_MID_QUADRATURE_SCHEME !<Identifier for a mid order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisHighQuadratureScheme = BASIS_HIGH_QUADRATURE_SCHEME !<Identifier for a high order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_DEFAULT_QUADRATURE_SCHEME = BASIS_DEFAULT_QUADRATURE_SCHEME !<Identifier for the default quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_LOW_QUADRATURE_SCHEME = BASIS_LOW_QUADRATURE_SCHEME !<Identifier for a low order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_MID_QUADRATURE_SCHEME = BASIS_MID_QUADRATURE_SCHEME !<Identifier for a mid order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_HIGH_QUADRATURE_SCHEME = BASIS_HIGH_QUADRATURE_SCHEME !<Identifier for a high order quadrature scheme \see OPENCMISS_BasisQuadratureSchemes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_BasisQuadratureTypes OPENCMISS::Basis::QuadratureTypes
   !> \brief Basis quadrature type parameters.
   !> \see OPENCMISS::BasisConstants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSBasisGaussLegendreQuadrature = BASIS_GAUSS_LEGENDRE_QUADRATURE !<Gauss-Legendre quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisGaussLaguerreQuadrature = BASIS_GAUSS_LAGUERRE_QUADRATURE !<Gauss-Laguerre quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisGaussHermiteQuadrature = BASIS_GUASS_HERMITE_QUADRATURE !<Gauss-Hermite quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisAdaptiveGaussLegendreQuadrature = BASIS_ADAPTIVE_GAUSS_LEGENDRE_QUADRATURE !<Adaptive Gauss-Legendre quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisGaussSimplexQuadrature = BASIS_GAUSS_SIMPLEX_QUADRATURE !<Gauss-Legendre for Simplex elements quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_GAUSS_LEGENDRE_QUADRATURE = BASIS_GAUSS_LEGENDRE_QUADRATURE !<Gauss-Legendre quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_GAUSS_LAGUERRE_QUADRATURE = BASIS_GAUSS_LAGUERRE_QUADRATURE !<Gauss-Laguerre quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_GUASS_HERMITE_QUADRATURE = BASIS_GUASS_HERMITE_QUADRATURE !<Gauss-Hermite quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_ADAPTIVE_GAUSS_LEGENDRE_QUADRATURE = BASIS_ADAPTIVE_GAUSS_LEGENDRE_QUADRATURE !<Adaptive Gauss-Legendre quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_GAUSS_SIMPLEX_QUADRATURE = BASIS_GAUSS_SIMPLEX_QUADRATURE !<Gauss-Legendre for Simplex elements quadrature \see OPENCMISS_BasisQuadratureTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_BasisXiCollapse OPENCMISS::Basis::XiCollapse
   !> \brief Basis Xi collapse parameters.
   !> \see OPENCMISS::Basis,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSBasisXiCollapsed = BASIS_XI_COLLAPSED !<The Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisCollapsedAtXi0 = BASIS_COLLAPSED_AT_XI0 !<The Xi direction at the xi=0 end of this Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisCollapsedAtXi1 = BASIS_COLLAPSED_AT_XI1 !<The Xi direction at the xi=1 end of this Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBasisNotCollapsed = BASIS_NOT_COLLAPSED !<The Xi direction is not collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_XI_COLLAPSED = BASIS_XI_COLLAPSED !<The Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_COLLAPSED_AT_XI0 = BASIS_COLLAPSED_AT_XI0 !<The Xi direction at the xi=0 end of this Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_COLLAPSED_AT_XI1 = BASIS_COLLAPSED_AT_XI1 !<The Xi direction at the xi=1 end of this Xi direction is collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BASIS_NOT_COLLAPSED = BASIS_NOT_COLLAPSED !<The Xi direction is not collapsed \see OPENCMISS_BasisXiCollapse,OPENCMISS
   !>@}
   !>@}
 
@@ -734,20 +734,22 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBasisTypeSetObj
   END INTERFACE !CMISSBasisTypeSet
 
-  PUBLIC CMISSBasisLagrangeHermiteTPType,CMISSBasisSimplexType,CMISSBasisSerendipityType,CMISSBasisAuxilliaryType, &
-    & CMISSBasisBSplineTPType,CMISSBasisFourierLagrangeHermiteTPType,CMISSBasisExtendedLagrangeTPType
+  PUBLIC CMISS_BASIS_LAGRANGE_HERMITE_TP_TYPE,CMISS_BASIS_SIMPLEX_TYPE,CMISS_BASIS_SERENDIPITY_TYPE,CMISS_BASIS_AUXILLIARY_TYPE, &
+    & CMISS_BASIS_B_SPLINE_TP_TYPE,CMISS_BASIS_FOURIER_LAGRANGE_HERMITE_TP_TYPE,CMISS_BASIS_EXTENDED_LAGRANGE_TP_TYPE
 
-  PUBLIC CMISSBasisLinearLagrangeInterpolation,CMISSBasisQuadraticLagrangeInterpolation,CMISSBasisCubicLagrangeInterpolation, &
-    & CMISSBasisCubicHermiteInterpolation,CMISSBasisQuadratic1HermiteInterpolation,CMISSBasisQuadratic2HermiteInterpolation, &
-    & CMISSBasisLinearSimplexInterpolation,CMISSBasisQuadraticSimplexInterpolation,CMISSBasisCubicSimplexInterpolation
+  PUBLIC CMISS_BASIS_LINEAR_LAGRANGE_INTERPOLATION,CMISS_BASIS_QUADRATIC_LAGRANGE_INTERPOLATION, &
+    & CMISS_BASIS_CUBIC_LAGRANGE_INTERPOLATION, &
+    & CMISS_BASIS_CUBIC_HERMITE_INTERPOLATION,CMISS_BASIS_QUADRATIC1_HERMITE_INTERPOLATION, &
+    & CMISS_BASIS_QUADRATIC2_HERMITE_INTERPOLATION, &
+    & CMISS_BASIS_LINEAR_SIMPLEX_INTERPOLATION,CMISS_BASIS_QUADRATIC_SIMPLEX_INTERPOLATION,CMISS_BASIS_CUBIC_SIMPLEX_INTERPOLATION
 
-  PUBLIC CMISSBasisDefaultQuadratureScheme,CMISSBasisLowQuadratureScheme,CMISSBasisMidQuadratureScheme, &
-    & CMISSBasisHighQuadratureScheme
+  PUBLIC CMISS_BASIS_DEFAULT_QUADRATURE_SCHEME,CMISS_BASIS_LOW_QUADRATURE_SCHEME,CMISS_BASIS_MID_QUADRATURE_SCHEME, &
+    & CMISS_BASIS_HIGH_QUADRATURE_SCHEME
 
-  PUBLIC CMISSBasisGaussLegendreQuadrature,CMISSBasisGaussLaguerreQuadrature,CMISSBasisGaussHermiteQuadrature, &
-    & CMISSBasisAdaptiveGaussLegendreQuadrature,CMISSBasisGaussSimplexQuadrature
+  PUBLIC CMISS_BASIS_GAUSS_LEGENDRE_QUADRATURE,CMISS_BASIS_GAUSS_LAGUERRE_QUADRATURE,CMISS_BASIS_GUASS_HERMITE_QUADRATURE, &
+    & CMISS_BASIS_ADAPTIVE_GAUSS_LEGENDRE_QUADRATURE,CMISS_BASIS_GAUSS_SIMPLEX_QUADRATURE
 
-  PUBLIC CMISSBasisXiCollapsed,CMISSBasisCollapsedAtXi0,CMISSBasisCollapsedAtXi1,CMISSBasisNotCollapsed
+  PUBLIC CMISS_BASIS_XI_COLLAPSED,CMISS_BASIS_COLLAPSED_AT_XI0,CMISS_BASIS_COLLAPSED_AT_XI1,CMISS_BASIS_NOT_COLLAPSED
 
   PUBLIC CMISSBasisCollapsedXiGet,CMISSBasisCollapsedXiSet
 
@@ -783,31 +785,31 @@ MODULE OPENCMISS
   !> \brief Boundary conditions type parameters.
   !> \see OPENCMISS::BoundaryConditions,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFree = BOUNDARY_CONDITION_FREE !<The dof is free. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixed = BOUNDARY_CONDITION_FIXED !<The dof is fixed as a boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMixed = BOUNDARY_CONDITION_MIXED !<The dof is set as a mixed boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FREE = BOUNDARY_CONDITION_FREE !<The dof is free. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED = BOUNDARY_CONDITION_FIXED !<The dof is fixed as a boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_MIXED = BOUNDARY_CONDITION_MIXED !<The dof is set as a mixed boundary condition. \see OPENCMISS_BoundaryConditionsTypes,OPENCMISS
 
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedWall = BOUNDARY_CONDITION_FIXED_WALL
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionInletWall = BOUNDARY_CONDITION_FIXED_INLET
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionOutletWall = BOUNDARY_CONDITION_FIXED_OUTLET
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWall = BOUNDARY_CONDITION_MOVED_WALL
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionMovedWallIncremented = BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFreeWall = BOUNDARY_CONDITION_FREE_WALL
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED_WALL = BOUNDARY_CONDITION_FIXED_WALL
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED_INLET = BOUNDARY_CONDITION_FIXED_INLET
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED_OUTLET = BOUNDARY_CONDITION_FIXED_OUTLET
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_MOVED_WALL = BOUNDARY_CONDITION_MOVED_WALL
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED = BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FREE_WALL = BOUNDARY_CONDITION_FREE_WALL
 
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannPoint = BOUNDARY_CONDITION_NEUMANN_POINT
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannIntegrated = BOUNDARY_CONDITION_NEUMANN_INTEGRATED
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionNeumannFree = BOUNDARY_CONDITION_NEUMANN_FREE
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionDirichlet = BOUNDARY_CONDITION_DIRICHLET
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCauchy = BOUNDARY_CONDITION_CAUCHY
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionRobin = BOUNDARY_CONDITION_ROBIN
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_POINT = BOUNDARY_CONDITION_NEUMANN_POINT
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED = BOUNDARY_CONDITION_NEUMANN_INTEGRATED
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_FREE = BOUNDARY_CONDITION_NEUMANN_FREE
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_DIRICHLET = BOUNDARY_CONDITION_DIRICHLET
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_CAUCHY = BOUNDARY_CONDITION_CAUCHY
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_ROBIN = BOUNDARY_CONDITION_ROBIN
 
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionFixedIncremented = BOUNDARY_CONDITION_FIXED_INCREMENTED
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressure = BOUNDARY_CONDITION_PRESSURE
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionPressureIncremented = BOUNDARY_CONDITION_PRESSURE_INCREMENTED
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED_INCREMENTED = BOUNDARY_CONDITION_FIXED_INCREMENTED
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_PRESSURE = BOUNDARY_CONDITION_PRESSURE
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_PRESSURE_INCREMENTED = BOUNDARY_CONDITION_PRESSURE_INCREMENTED
 
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionCorrectionMassIncrease = BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionImpermeableWall = BOUNDARY_CONDITION_IMPERMEABLE_WALL
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE = BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL = BOUNDARY_CONDITION_IMPERMEABLE_WALL
   !>@}
   !>@}
 
@@ -867,15 +869,15 @@ MODULE OPENCMISS
    MODULE PROCEDURE CMISSBoundaryConditionsAddDOFToBoundaryObj
  END INTERFACE !CMISSBoundaryConditionsAddDOFToBoundary
 
-  PUBLIC CMISSBoundaryConditionFree,CMISSBoundaryConditionFixed,CMISSBoundaryConditionMixed
+  PUBLIC CMISS_BOUNDARY_CONDITION_FREE,CMISS_BOUNDARY_CONDITION_FIXED,CMISS_BOUNDARY_CONDITION_MIXED
   !Temporary boundary flags (to be removed when general boundary object becomes available!)
-  PUBLIC CMISSBoundaryConditionFixedWall,CMISSBoundaryConditionInletWall,CMISSBoundaryConditionMovedWall, &
-    & CMISSBoundaryConditionFreeWall,CMISSBoundaryConditionOutletWall,CMISSBoundaryConditionMovedWallIncremented, &
-    & CMISSBoundaryConditionCorrectionMassIncrease,CMISSBoundaryConditionImpermeableWall
+  PUBLIC CMISS_BOUNDARY_CONDITION_FIXED_WALL,CMISS_BOUNDARY_CONDITION_FIXED_INLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL, &
+    & CMISS_BOUNDARY_CONDITION_FREE_WALL,CMISS_BOUNDARY_CONDITION_FIXED_OUTLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
+    & CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL
 
-  PUBLIC CMISSBoundaryConditionNeumannPoint,CMISSBoundaryConditionNeumannIntegrated,CMISSBoundaryConditionDirichlet
-  PUBLIC CMISSBoundaryConditionCauchy,CMISSBoundaryConditionRobin,CMISSBoundaryConditionFixedIncremented
-  PUBLIC CMISSBoundaryConditionPressure,CMISSBoundaryConditionPressureIncremented,CMISSBoundaryConditionNeumannFree
+  PUBLIC CMISS_BOUNDARY_CONDITION_NEUMANN_POINT,CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED,CMISS_BOUNDARY_CONDITION_DIRICHLET
+  PUBLIC CMISS_BOUNDARY_CONDITION_CAUCHY,CMISS_BOUNDARY_CONDITION_ROBIN,CMISS_BOUNDARY_CONDITION_FIXED_INCREMENTED
+  PUBLIC CMISS_BOUNDARY_CONDITION_PRESSURE,CMISS_BOUNDARY_CONDITION_PRESSURE_INCREMENTED,CMISS_BOUNDARY_CONDITION_NEUMANN_FREE
 
   PUBLIC CMISSBoundaryConditionsDestroy
 
@@ -901,9 +903,9 @@ MODULE OPENCMISS
   !> \brief CMISS error handling mode parameters
   !> \see OPENCMISS::CMISS,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSReturnErrorCode = CMISS_RETURN_ERROR_CODE !<Just return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSOutputError = CMISS_OUTPUT_ERROR !<Output the error traceback and return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSTrapError = CMISS_TRAP_ERROR!<Trap the error by outputing the error traceback and stopping the program \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CMISS_RETURN_ERROR_CODE = CMISS_RETURN_ERROR_CODE !<Just return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CMISS_OUTPUT_ERROR = CMISS_OUTPUT_ERROR !<Output the error traceback and return the error code \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CMISS_TRAP_ERROR = CMISS_TRAP_ERROR!<Trap the error by outputing the error traceback and stopping the program \see OPENCMISS_CMISSErrorHandlingModes,OPENCMISS
   !>@}
   !>@}
 
@@ -931,7 +933,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSRandomSeedsSet1
   END INTERFACE !CMISSRandomSeedsSet
 
-  PUBLIC CMISSReturnErrorCode,CMISSOutputError,CMISSTrapError
+  PUBLIC CMISS_CMISS_RETURN_ERROR_CODE,CMISS_CMISS_OUTPUT_ERROR,CMISS_CMISS_TRAP_ERROR
 
   PUBLIC CMISSErrorHandlingModeGet,CMISSErrorHandlingModeSet
 
@@ -954,10 +956,10 @@ MODULE OPENCMISS
   !> \brief CellML field type parameters.
   !> \see OPENCMISS::CellML,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSCellMLModelsFieldType = CELLML_MODELS_FIELD !<CellML models field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCellMLStateFieldType = CELLML_STATE_FIELD !<CellML state field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCellMLIntermediateFieldType = CELLML_INTERMEDIATE_FIELD !<CellML intermediate field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCellMLParametersFieldType = CELLML_PARAMETERS_FIELD !<CellML parameters field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CELLML_MODELS_FIELD = CELLML_MODELS_FIELD !<CellML models field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CELLML_STATE_FIELD = CELLML_STATE_FIELD !<CellML state field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CELLML_INTERMEDIATE_FIELD = CELLML_INTERMEDIATE_FIELD !<CellML intermediate field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CELLML_PARAMETERS_FIELD = CELLML_PARAMETERS_FIELD !<CellML parameters field type \see OPENCMISS_CellMLFieldTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -1123,7 +1125,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCellMLGenerateObj
   END INTERFACE !CMISSCellMLGenerate
 
-  PUBLIC CMISSCellMLModelsFieldType,CMISSCellMLStateFieldType,CMISSCellMLIntermediateFieldType,CMISSCellMLParametersFieldType
+  PUBLIC CMISS_CELLML_MODELS_FIELD,CMISS_CELLML_STATE_FIELD,CMISS_CELLML_INTERMEDIATE_FIELD,CMISS_CELLML_PARAMETERS_FIELD
 
   PUBLIC CMISSCellMLVariableSetAsKnown,CMISSCellMLVariableSetAsWanted
 
@@ -1191,14 +1193,14 @@ MODULE OPENCMISS
   !> \brief Global derivative constant identifiers
   !> \see OPENCMISS_CONSTANTS,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSNoGlobalDerivative = NO_GLOBAL_DERIV !<No global derivative i.e., u \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1 = GLOBAL_DERIV_S1 !<First global derivative in the s1 direction i.e., du/ds1 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS2 = GLOBAL_DERIV_S2 !<First global derivative in the s2 direction i.e., du/ds2 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1S2 = GLOBAL_DERIV_S1_S2 !<Global Cross derivative in the s1 and s2 direction i.e., d^2u/ds1ds2 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS3 = GLOBAL_DERIV_S3 !<First global derivative in the s3 direction i.e., du/ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1S3 = GLOBAL_DERIV_S1_S3 !<Global Cross derivative in the s1 and s3 direction i.e., d^2u/ds1ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS2S3 = GLOBAL_DERIV_S2_S3 !<Global Cross derivative in the s2 and s3 direction i.e., d^2u/ds2ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGlobalDerivativeS1S2S3 = GLOBAL_DERIV_S1_S2_S3 !<Cross derivative in the s1, s2 and s3 direction i.e., d^3u/ds1ds2ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_NO_GLOBAL_DERIV = NO_GLOBAL_DERIV !<No global derivative i.e., u \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GLOBAL_DERIV_S1 = GLOBAL_DERIV_S1 !<First global derivative in the s1 direction i.e., du/ds1 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GLOBAL_DERIV_S2 = GLOBAL_DERIV_S2 !<First global derivative in the s2 direction i.e., du/ds2 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GLOBAL_DERIV_S1_S2 = GLOBAL_DERIV_S1_S2 !<Global Cross derivative in the s1 and s2 direction i.e., d^2u/ds1ds2 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GLOBAL_DERIV_S3 = GLOBAL_DERIV_S3 !<First global derivative in the s3 direction i.e., du/ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GLOBAL_DERIV_S1_S3 = GLOBAL_DERIV_S1_S3 !<Global Cross derivative in the s1 and s3 direction i.e., d^2u/ds1ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GLOBAL_DERIV_S2_S3 = GLOBAL_DERIV_S2_S3 !<Global Cross derivative in the s2 and s3 direction i.e., d^2u/ds2ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GLOBAL_DERIV_S1_S2_S3 = GLOBAL_DERIV_S1_S2_S3 !<Cross derivative in the s1, s2 and s3 direction i.e., d^3u/ds1ds2ds3 \see OPENCMISS_GlobalDerivativeConstants,OPENCMISS
   !>@}
   !>@}
 
@@ -1208,8 +1210,8 @@ MODULE OPENCMISS
 
   !Interfaces
 
-  PUBLIC CMISSNoGlobalDerivative,CMISSGlobalDerivativeS1,CMISSGlobalDerivativeS2,CMISSGlobalDerivativeS1S2, &
-    & CMISSGlobalDerivativeS3,CMISSGlobalDerivativeS1S3,CMISSGlobalDerivativeS2S3,CMISSGlobalDerivativeS1S2S3
+  PUBLIC CMISS_NO_GLOBAL_DERIV,CMISS_GLOBAL_DERIV_S1,CMISS_GLOBAL_DERIV_S2,CMISS_GLOBAL_DERIV_S1_S2, &
+    & CMISS_GLOBAL_DERIV_S3,CMISS_GLOBAL_DERIV_S1_S3,CMISS_GLOBAL_DERIV_S2_S3,CMISS_GLOBAL_DERIV_S1_S2_S3
 
 !!==================================================================================================================================
 !!
@@ -1226,15 +1228,15 @@ MODULE OPENCMISS
   !> \brief The control loop identification parameters.
   !> \see OPENCMISS::ControlLoop,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSControlLoopNode = CONTROL_LOOP_NODE !<The identifier for a each "leaf" node in a control loop. \see OPENCMISS_ControlLoopIdentifiers,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CONTROL_LOOP_NODE = CONTROL_LOOP_NODE !<The identifier for a each "leaf" node in a control loop. \see OPENCMISS_ControlLoopIdentifiers,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_ControlLoopOutputTypes OPENCMISS::ControlLoop::OutputTypes
   !> \brief The control loop output types.
   !> \see OPENCMISS::ControlLoop,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSControlLoopNoOutput = CONTROL_LOOP_NO_OUTPUT !<No output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSControlLoopProgressOutput = CONTROL_LOOP_PROGRESS_OUTPUT !<Progress output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSControlLoopTimingOutput = CONTROL_LOOP_TIMING_OUTPUT !<Timing output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CONTROL_LOOP_NO_OUTPUT = CONTROL_LOOP_NO_OUTPUT !<No output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CONTROL_LOOP_PROGRESS_OUTPUT = CONTROL_LOOP_PROGRESS_OUTPUT !<Progress output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_CONTROL_LOOP_TIMING_OUTPUT = CONTROL_LOOP_TIMING_OUTPUT !<Timing output from the control loop. \see OPENCMISS_ControlLoopOutputTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -1365,9 +1367,9 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoopTypeSetObj
   END INTERFACE !CMISSControlLoopTypeSet
 
-  PUBLIC CMISSControlLoopNode
+  PUBLIC CMISS_CONTROL_LOOP_NODE
 
-  PUBLIC CMISSControlLoopNoOutput,CMISSControlLoopProgressOutput,CMISSControlLoopTimingOutput
+  PUBLIC CMISS_CONTROL_LOOP_NO_OUTPUT,CMISS_CONTROL_LOOP_PROGRESS_OUTPUT,CMISS_CONTROL_LOOP_TIMING_OUTPUT
 
   PUBLIC CMISSControlLoopCurrentTimesGet
 
@@ -1407,20 +1409,20 @@ MODULE OPENCMISS
   !> \brief Coordinate system type parameters.
   !> \see OPENCMISS::Coordinate,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateRectangularCartesianType = COORDINATE_RECTANGULAR_CARTESIAN_TYPE !<Rectangular Cartesian coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateCylindricalPolarType = COORDINATE_CYLINDRICAL_POLAR_TYPE !<Cylindrical polar coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateSphericalPolarType = COORDINATE_SPHERICAL_POLAR_TYPE !<Spherical polar coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateProlateSpheroidalType = COORDINATE_PROLATE_SPHEROIDAL_TYPE !<Prolate spheroidal coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateOblateSpheroidalType = COORDINATE_OBLATE_SPHEROIDAL_TYPE !<Oblate spheroidal coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_RECTANGULAR_CARTESIAN_TYPE = COORDINATE_RECTANGULAR_CARTESIAN_TYPE !<Rectangular Cartesian coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_CYLINDRICAL_POLAR_TYPE = COORDINATE_CYLINDRICAL_POLAR_TYPE !<Cylindrical polar coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_SPHERICAL_POLAR_TYPE = COORDINATE_SPHERICAL_POLAR_TYPE !<Spherical polar coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_PROLATE_SPHEROIDAL_TYPE = COORDINATE_PROLATE_SPHEROIDAL_TYPE !<Prolate spheroidal coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_OBLATE_SPHEROIDAL_TYPE = COORDINATE_OBLATE_SPHEROIDAL_TYPE !<Oblate spheroidal coordinate system type \see OPENCMISS_CoordinateSystemTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_CoordinateRadialInterpolations OPENCMISS::Coordinate::RadialInterpolations
   !> \brief The type of radial interpolation for polar coordinate systems
   !> \see OPENCMISS::Coordinate,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateNoRadialInterpolationType = COORDINATE_NO_RADIAL_INTERPOLATION_TYPE !<No radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateRadialInterpolationType = COORDINATE_RADIAL_INTERPOLATION_TYPE !<r radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateRadialSquaredInterpolationType = COORDINATE_RADIAL_SQUARED_INTERPOLATION_TYPE !<r^2 radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSCoordinateRadialCubedInterpolationType = COORDINATE_RADIAL_CUBED_INTERPOLATION_TYPE !<r^3 radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_NO_RADIAL_INTERPOLATION_TYPE = COORDINATE_NO_RADIAL_INTERPOLATION_TYPE !<No radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_RADIAL_INTERPOLATION_TYPE = COORDINATE_RADIAL_INTERPOLATION_TYPE !<r radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_RADIAL_SQUARED_INTERPOLATION_TYPE = COORDINATE_RADIAL_SQUARED_INTERPOLATION_TYPE !<r^2 radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_COORDINATE_RADIAL_CUBED_INTERPOLATION_TYPE = COORDINATE_RADIAL_CUBED_INTERPOLATION_TYPE !<r^3 radial interpolation \see OPENCMISS_CoordinateRadialInterpolations,OPENCMISS
   !>@}
   !>@}
 
@@ -1520,11 +1522,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSCoordinateSystemOrientationSetObj
   END INTERFACE !CMISSCoordinateSystemOrientationSet
 
-  PUBLIC CMISSCoordinateRectangularCartesianType,CMISSCoordinateCylindricalPolarType,CMISSCoordinateSphericalPolarType, &
-    & CMISSCoordinateProlateSpheroidalType,CMISSCoordinateOblateSpheroidalType
+  PUBLIC CMISS_COORDINATE_RECTANGULAR_CARTESIAN_TYPE,CMISS_COORDINATE_CYLINDRICAL_POLAR_TYPE, &
+    & CMISS_COORDINATE_SPHERICAL_POLAR_TYPE, &
+    & CMISS_COORDINATE_PROLATE_SPHEROIDAL_TYPE,CMISS_COORDINATE_OBLATE_SPHEROIDAL_TYPE
 
-  PUBLIC CMISSCoordinateNoRadialInterpolationType,CMISSCoordinateRadialInterpolationType, &
-    & CMISSCoordinateRadialSquaredInterpolationType,CMISSCoordinateRadialCubedInterpolationType
+  PUBLIC CMISS_COORDINATE_NO_RADIAL_INTERPOLATION_TYPE,CMISS_COORDINATE_RADIAL_INTERPOLATION_TYPE, &
+    & CMISS_COORDINATE_RADIAL_SQUARED_INTERPOLATION_TYPE,CMISS_COORDINATE_RADIAL_CUBED_INTERPOLATION_TYPE
 
   PUBLIC CMISSCoordinateSystemCreateFinish,CMISSCoordinateSystemCreateStart
 
@@ -1705,9 +1708,9 @@ MODULE OPENCMISS
   !> \brief Equations projection types
   !> \see OPENCMISS::DataProjection,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSDataProjectionBoundaryLinesProjectionType = DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE!<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSDataProjectionBoundaryFacesProjectionType = DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE !<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSDataProjectionAllElementsProjectionType = DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE !<The element projection type for data projection, projects to all elements in mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE = DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE!<The boundary line projection type for data projection, only projects to boundary lines of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE = DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE !<The boundary face projection type for data projection, only projects to boundary faces of the mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE = DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE !<The element projection type for data projection, projects to all elements in mesh. \see OPENCMISS_DataProjectionProjectionTypes,OPENCMISS
 
   !Module types
 
@@ -1823,9 +1826,9 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDataProjectionStartingXiSetObj
   END INTERFACE !CMISSDataProjectionStartingXiSet
 
-  PUBLIC CMISSDataProjectionBoundaryLinesProjectionType,CMISSDataProjectionBoundaryFacesProjectionType
+  PUBLIC CMISS_DATA_PROJECTION_BOUNDARY_LINES_PROJECTION_TYPE,CMISS_DATA_PROJECTION_BOUNDARY_FACES_PROJECTION_TYPE
 
-  PUBLIC CMISSDataProjectionAllElementsProjectionType
+  PUBLIC CMISS_DATA_PROJECTION_ALL_ELEMENTS_PROJECTION_TYPE
 
   PUBLIC CMISSDataProjectionAbsoluteToleranceGet,CMISSDataProjectionAbsoluteToleranceSet
 
@@ -1862,42 +1865,42 @@ MODULE OPENCMISS
   !> \brief Equations output types
   !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsNoOutput = EQUATIONS_NO_OUTPUT!<No output from the equations \see OPENCMISS_EquationsOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsTimingOutput = EQUATIONS_TIMING_OUTPUT !<Timing information output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsMatrixOutput = EQUATIONS_MATRIX_OUTPUT !<All below and equation matrices output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsElementMatrixOutput = EQUATIONS_ELEMENT_MATRIX_OUTPUT !<All below and element matrices output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NO_OUTPUT = EQUATIONS_NO_OUTPUT!<No output from the equations \see OPENCMISS_EquationsOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_TIMING_OUTPUT = EQUATIONS_TIMING_OUTPUT !<Timing information output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_MATRIX_OUTPUT = EQUATIONS_MATRIX_OUTPUT !<All below and equation matrices output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_ELEMENT_MATRIX_OUTPUT = EQUATIONS_ELEMENT_MATRIX_OUTPUT !<All below and element matrices output. \see OPENCMISS_EquationsOutputTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSparsityTypes OPENCMISS::Equations::SparsityTypes
   !> \brief Equations sparsity types
   !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSparseMatrices = EQUATIONS_SPARSE_MATRICES !<Use sparse matrices for the equations. \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsFullMatrices = EQUATIONS_FULL_MATRICES !<Use fully populated matrices for the equations. \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SPARSE_MATRICES = EQUATIONS_SPARSE_MATRICES !<Use sparse matrices for the equations. \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_FULL_MATRICES = EQUATIONS_FULL_MATRICES !<Use fully populated matrices for the equations. \see OPENCMISS_EquationsSparsityTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsLumpingTypes OPENCMISS::Equations::LumpingTypes
   !> \brief Equations lumping types
   !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsUnlumpedMatrices = EQUATIONS_UNLUMPED_MATRICES !<The equations matrices are not lumped. \see OPENCMISS_EquationsLumpingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsLumpedMatrices = EQUATIONS_LUMPED_MATRICES !<The equations matrices are "mass" lumped. \see OPENCMISS_EquationsLumpingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_UNLUMPED_MATRICES = EQUATIONS_UNLUMPED_MATRICES !<The equations matrices are not lumped. \see OPENCMISS_EquationsLumpingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_LUMPED_MATRICES = EQUATIONS_LUMPED_MATRICES !<The equations matrices are "mass" lumped. \see OPENCMISS_EquationsLumpingTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsLinearityTypes OPENCMISS::Equations::LinearityTypes
   !> \brief The equations linearity types
   !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsLinear = EQUATIONS_LINEAR !<The equations are linear. \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsNonlinear = EQUATIONS_NONLINEAR !<The equations are non-linear. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsNonlinearBCs = EQUATIONS_NONLINEAR_BCS !<The equations have non-linear boundary conditions. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_LINEAR = EQUATIONS_LINEAR !<The equations are linear. \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NONLINEAR = EQUATIONS_NONLINEAR !<The equations are non-linear. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NONLINEAR_BCS = EQUATIONS_NONLINEAR_BCS !<The equations have non-linear boundary conditions. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsTimeDepedenceTypes OPENCMISS::Equations::TimeDepedenceTypes
   !> \brief The equations time dependence types
   !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsStatic = EQUATIONS_STATIC !<The equations are static and have no time dependence. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsQuasistatic = EQUATIONS_QUASISTATIC !<The equations are quasi-static. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsFirstOrderDynamic = EQUATIONS_FIRST_ORDER_DYNAMIC !<The equations are first order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSecondOrderDynamic = EQUATIONS_SECOND_ORDER_DYNAMIC !<The equations are a second order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsTimeStepping = EQUATIONS_TIME_STEPPING !<The equations are for time stepping. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_STATIC = EQUATIONS_STATIC !<The equations are static and have no time dependence. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_QUASISTATIC = EQUATIONS_QUASISTATIC !<The equations are quasi-static. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_FIRST_ORDER_DYNAMIC = EQUATIONS_FIRST_ORDER_DYNAMIC !<The equations are first order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SECOND_ORDER_DYNAMIC = EQUATIONS_SECOND_ORDER_DYNAMIC !<The equations are a second order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_TIME_STEPPING = EQUATIONS_TIME_STEPPING !<The equations are for time stepping. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -1961,16 +1964,17 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSEquationsTimeDependenceTypeGetObj
   END INTERFACE !CMISSEquationsTimeDependenceTypeGet
 
- PUBLIC CMISSEquationsNoOutput,CMISSEquationsTimingOutput,CMISSEquationsMatrixOutput,CMISSEquationsElementMatrixOutput
+ PUBLIC CMISS_EQUATIONS_NO_OUTPUT,CMISS_EQUATIONS_TIMING_OUTPUT,CMISS_EQUATIONS_MATRIX_OUTPUT,CMISS_EQUATIONS_ELEMENT_MATRIX_OUTPUT
 
-  PUBLIC CMISSEquationsSparseMatrices,CMISSEquationsFullMatrices
+  PUBLIC CMISS_EQUATIONS_SPARSE_MATRICES,CMISS_EQUATIONS_FULL_MATRICES
 
-  PUBLIC CMISSEquationsUnlumpedMatrices,CMISSEquationsLumpedMatrices
+  PUBLIC CMISS_EQUATIONS_UNLUMPED_MATRICES,CMISS_EQUATIONS_LUMPED_MATRICES
 
-  PUBLIC CMISSEquationsLinear,CMISSEquationsNonlinear,CMISSEquationsNonlinearBCs
+  PUBLIC CMISS_EQUATIONS_LINEAR,CMISS_EQUATIONS_NONLINEAR,CMISS_EQUATIONS_NONLINEAR_BCS
 
-  PUBLIC CMISSEquationsStatic,CMISSEquationsQuasistatic,CMISSEquationsFirstOrderDynamic,CMISSEquationsSecondOrderDynamic, &
-    & CMISSEquationsTimeStepping
+  PUBLIC CMISS_EQUATIONS_STATIC,CMISS_EQUATIONS_QUASISTATIC,CMISS_EQUATIONS_FIRST_ORDER_DYNAMIC, &
+    & CMISS_EQUATIONS_SECOND_ORDER_DYNAMIC, &
+    & CMISS_EQUATIONS_TIME_STEPPING
 
   PUBLIC CMISSEquationsDestroy
 
@@ -1999,52 +2003,54 @@ MODULE OPENCMISS
   !> \brief Equations set classes.
   !> \see OPENCMISS::EquationsSet,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoClass = EQUATIONS_SET_NO_CLASS !<No equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityClass = EQUATIONS_SET_ELASTICITY_CLASS !<Elasticity equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFluidMechanicsClass = EQUATIONS_SET_FLUID_MECHANICS_CLASS !<Fluid Mechanics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElectroMechanicsClass = EQUATIONS_SET_ELECTROMAGNETICS_CLASS !<Electromagnetics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetClassicalFieldClass = EQUATIONS_SET_CLASSICAL_FIELD_CLASS !<Classical Field equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBioelectricsClass = EQUATIONS_SET_BIOELECTRICS_CLASS !<Bioelectrics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetModalClass = EQUATIONS_SET_MODAL_CLASS !<Modal equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFittingClass = EQUATIONS_SET_FITTING_CLASS !<Fitting equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisationClass = EQUATIONS_SET_OPTIMISATION_CLASS !<Optimisation equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiPhysicsClass = EQUATIONS_SET_MULTI_PHYSICS_CLASS !<Multi Physics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_CLASS = EQUATIONS_SET_NO_CLASS !<No equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_CLASS = EQUATIONS_SET_ELASTICITY_CLASS !<Elasticity equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FLUID_MECHANICS_CLASS = EQUATIONS_SET_FLUID_MECHANICS_CLASS !<Fluid Mechanics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELECTROMAGNETICS_CLASS = EQUATIONS_SET_ELECTROMAGNETICS_CLASS !<Electromagnetics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CLASSICAL_FIELD_CLASS = EQUATIONS_SET_CLASSICAL_FIELD_CLASS !<Classical Field equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BIOELECTRICS_CLASS = EQUATIONS_SET_BIOELECTRICS_CLASS !<Bioelectrics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MODAL_CLASS = EQUATIONS_SET_MODAL_CLASS !<Modal equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FITTING_CLASS = EQUATIONS_SET_FITTING_CLASS !<Fitting equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_OPTIMISATION_CLASS = EQUATIONS_SET_OPTIMISATION_CLASS !<Optimisation equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_PHYSICS_CLASS = EQUATIONS_SET_MULTI_PHYSICS_CLASS !<Multi Physics equations set class \see OPENCMISS_EquationsSetClasses,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetTypes OPENCMISS::EquationsSet::Types
   !> \brief Equations set Types.
   !> \see OPENCMISS::EquationsSet,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoType = EQUATIONS_SET_NO_TYPE !<No equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityType = EQUATIONS_SET_LINEAR_ELASTICITY_TYPE !<Linear elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityType = EQUATIONS_SET_FINITE_ELASTICITY_TYPE !<Finite elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesEquationType = EQUATIONS_SET_STOKES_EQUATION_TYPE !<Stokes equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesEquationType = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyEquationType = EQUATIONS_SET_DARCY_EQUATION_TYPE !<Darcy equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyPressureEquationType = EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE !<Darcy pressure equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoiseuilleEquationType = EQUATIONS_SET_POISEUILLE_EQUATION_TYPE !<Poiseuille equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBurgersEquationType = EQUATIONS_SET_BURGERS_EQUATION_TYPE !<Burgers equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElectrostaticType = EQUATIONS_SET_ELECTROSTATIC_TYPE !<Electrostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMagnetoStaticType = EQUATIONS_SET_MAGNETOSTATIC_TYPE !<Magnetostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMaxwellsEquationType = EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE !<Maxwells equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationType = EQUATIONS_SET_LAPLACE_EQUATION_TYPE !<Laplace equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonEquationType = EQUATIONS_SET_POISSON_EQUATION_TYPE !<Poisson equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetHelmholtzEquationType = EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE !<Helmholtz equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetWaveEquationType = EQUATIONS_SET_WAVE_EQUATION_TYPE !<Wave equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionEquationType = EQUATIONS_SET_DIFFUSION_EQUATION_TYPE !<Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetAdvectionDiffusionEquationType = EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionEquationType = EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBiharmonicEquationType = EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE !<Biharmonic equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainEquationType = EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE !<Monodomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBidomainEquationType = EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE !<Bidomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticModalType = EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE !<Linear elasticity modal equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDataFittingEquationType = EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityDarcyType = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityStokesType = EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityNavierStokesType = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_TYPE = EQUATIONS_SET_NO_TYPE !<No equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_TYPE = EQUATIONS_SET_LINEAR_ELASTICITY_TYPE !<Linear elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_TYPE = EQUATIONS_SET_FINITE_ELASTICITY_TYPE !<Finite elasticity equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_TYPE = EQUATIONS_SET_STOKES_EQUATION_TYPE !<Stokes equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_EQUATION_TYPE = EQUATIONS_SET_DARCY_EQUATION_TYPE !<Darcy equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE = EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE !<Darcy pressure equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TYPE = EQUATIONS_SET_POISEUILLE_EQUATION_TYPE !<Poiseuille equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BURGERS_EQUATION_TYPE = EQUATIONS_SET_BURGERS_EQUATION_TYPE !<Burgers equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELECTROSTATIC_TYPE = EQUATIONS_SET_ELECTROSTATIC_TYPE !<Electrostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MAGNETOSTATIC_TYPE = EQUATIONS_SET_MAGNETOSTATIC_TYPE !<Magnetostatic equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE = EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE !<Maxwells equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TYPE = EQUATIONS_SET_LAPLACE_EQUATION_TYPE !<Laplace equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_TYPE = EQUATIONS_SET_POISSON_EQUATION_TYPE !<Poisson equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE = EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE !<Helmholtz equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_WAVE_EQUATION_TYPE = EQUATIONS_SET_WAVE_EQUATION_TYPE !<Wave equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_TYPE = EQUATIONS_SET_DIFFUSION_EQUATION_TYPE !<Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE = &
+    & EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE = EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE = EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE !<Biharmonic equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE = EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE !<Monodomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE = EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE !<Bidomain equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE = EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE !<Linear elasticity modal equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE = EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE !<Galerkin projection equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE = EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE = EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE = &
     & EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity Navier Stokes equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionDiffusionType = EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionAdvectionDiffusionType = EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainSSEquationType = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE = EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE = &
+    & EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE = &
     & EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation equations Strang Splitting set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
 
   !>@}
@@ -2052,202 +2058,210 @@ MODULE OPENCMISS
   !> \brief Equations set subtypes.
   !> \see OPENCMISS::EquationsSet,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSubtype = EQUATIONS_SET_NO_SUBTYPE !<No equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetThreeDimensionalSubtype = EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE !<Three dimensional linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPlaneStressSubtype = EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE !<Plane stress linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPlaneStrainSubtype = EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE !<Plane strain linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetOneDimensionalSubtype = EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE !<One dimensional linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPlateSubtype = EQUATIONS_SET_PLATE_SUBTYPE !<Plate linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetShellSubtype = EQUATIONS_SET_SHELL_SUBTYPE !<Shell linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMooneyRivlinSubtype = EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE !< Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetActiveContractionSubtype =&
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SUBTYPE = EQUATIONS_SET_NO_SUBTYPE !<No equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE = EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE !<Three dimensional linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE = &
+    & EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE !<Plane stress linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE = &
+    & EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE !<Plane strain linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE = EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE !<One dimensional linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PLATE_SUBTYPE = EQUATIONS_SET_PLATE_SUBTYPE !<Plate linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_SHELL_SUBTYPE = EQUATIONS_SET_SHELL_SUBTYPE !<Shell linear elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE = EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE !< Mooney-Rivlin constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE =&
     & EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE !< Active contraction/costa-based law with quasistatic time loop for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIsotropicExponentialSubtype = EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransverseIsotropicExponentialSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE = EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE !< Transverse isotropic exponential constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetOrthotropicMaterialCostaSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE = &
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE !< Orthotropic Costa constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetCompressibleFiniteElasticitySubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE= &
     & EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransverseIsotropicGuccioneSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE = &
     & EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE !< Transverse isotropic Guccione constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE= &
     & EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE !<Incompressible version for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityDarcyInriaModelSubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE= &
     & EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE !<INRIA Model for finite elasticity coupled with Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_MULTI_COMP_DARCY_INRIA_SUBTYPE= &
     & EQUATIONS_SET_ELASTICITY_MULTI_COMPARTMENT_DARCY_INRIA_SUBTYPE !<Multi Compartment Darcy INRIA Model coupled with finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESS_ELASTICITY_DRIVEN_DARCY_SUBTYPE= &
     & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE !< Incompressible finite elasticity with Darcy flow driven by solid hydrostatic pressure \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE= &
     & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE !< Incompressible finite elasticity with Darcy flow driven by solid hydrostatic pressure, formulated in terms of modified invariants. \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMPRESS_ELAST_MULTI_COMP_DARCY_SUBTYPE= &
     & EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMembraneSubtype = EQUATIONS_SET_MEMBRANE_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE = EQUATIONS_SET_MEMBRANE_SUBTYPE !<Compressible version for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE = &
     & EQUATIONS_SET_ORTHOTROPIC_MATERIAL_HOLZAPFEL_OGDEN_SUBTYPE !< Orthotropic Holzapfel-Ogden constitutive law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityFluidPressureStaticINRIASubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE = &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE !< Static finite elasticity coupled with fluid pressure set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetElasticityFluidPressureHolmesMowSubtype= &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE= &
     & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE !<Holmes and Mow's poroelastic constitutive relation subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticStokesSubtype = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceStokesSubtype = EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientStokesSubtype = EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetALEStokesSubtype = EQUATIONS_SET_ALE_STOKES_SUBTYPE !<ALE Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPGMStokesSubtype = EQUATIONS_SET_PGM_STOKES_SUBTYPE !<PGM Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisedStokesSubtype = EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE !<Optimised Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticNavierStokesSubtype = EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceNavierStokesSubtype = EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientNavierStokesSubtype = EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSet1DTransientNavierStokesSubtype = EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetALENavierStokesSubtype = EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPGMNavierStokesSubtype = EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetOptimisedNavierStokesSubtype = EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardDarcySubtype = EQUATIONS_SET_STANDARD_DARCY_SUBTYPE !<Standard Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuasistaticDarcySubtype = EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE !<Quasistatic Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetALEDarcySubtype = EQUATIONS_SET_ALE_DARCY_SUBTYPE !<ALE Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientDarcySubtype = EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE !<Transient Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetTransientALEDarcySubtype = EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE !<Transient ALE Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompartmentDarcySubtype = EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE !<Multi Compartment Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBurgersSubtype = EQUATIONS_SET_BURGERS_SUBTYPE !<Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedBurgersSubtype = EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE !<Generalised Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticBurgersSubtype = EQUATIONS_SET_STATIC_BURGERS_SUBTYPE !<Static Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetInviscidBurgersSubtype = EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE !<Inviscid Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_STOKES_SUBTYPE = EQUATIONS_SET_STATIC_STOKES_SUBTYPE !<Static Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE = EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_STOKES_SUBTYPE = EQUATIONS_SET_ALE_STOKES_SUBTYPE !<ALE Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PGM_STOKES_SUBTYPE = EQUATIONS_SET_PGM_STOKES_SUBTYPE !<PGM Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE = EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE !<Optimised Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = &
+    & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STANDARD_DARCY_SUBTYPE = EQUATIONS_SET_STANDARD_DARCY_SUBTYPE !<Standard Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE = EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE !<Quasistatic Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_DARCY_SUBTYPE = EQUATIONS_SET_ALE_DARCY_SUBTYPE !<ALE Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE = EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE !<Transient Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE = EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE !<Transient ALE Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE = EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE !<Multi Compartment Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BURGERS_SUBTYPE = EQUATIONS_SET_BURGERS_SUBTYPE !<Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE = EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE !<Generalised Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_BURGERS_SUBTYPE = EQUATIONS_SET_STATIC_BURGERS_SUBTYPE !<Static Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE = EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE !<Inviscid Burgers equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardLaplaceSubtype = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedLaplaceSubtype = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMovingMeshLaplaceSubtype = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticPoiseuilleSubtype = EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE !<Static Poiseuille equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDynamicPoiseuilleSubtype = EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE !<Dynamic Poiseuille equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearPressurePoissonSubtype = EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNonlinearPressurePoissonSubtype = EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetALEPressurePoissonSubtype = EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFittedPressurePoissonSubtype = EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourcePoissonSubtype = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourcePoissonSubtype = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourcePoissonSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourcePoissonSubtype = EQUATIONS_SET_EXPONENTIAL_SOURCE_POISSON_SUBTYPE !<Exponential source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardHelmholtzSubtype = EQUATIONS_SET_STANDARD_HELMHOLTZ_SUBTYPE !<No source Helmholtz equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedHelmholtzSubtype = EQUATIONS_SET_GENERALISED_HELMHOLTZ_SUBTYPE !<No source Helmholtz equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceDiffusionSubtype = EQUATIONS_SET_NO_SOURCE_DIFFUSION_SUBTYPE !<No source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceDiffusionSubtype = EQUATIONS_SET_CONSTANT_SOURCE_DIFFUSION_SUBTYPE !<Constant source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceDiffusionSubtype = EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE !<Linear source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceDiffusionSubtype = EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_SUBTYPE !<Quadratic source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE = EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE = EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE = EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE !<Moving mesh Laplace equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE = EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE !<Static Poiseuille equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE = EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE !<Dynamic Poiseuille equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE = EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE = &
+    & EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE = EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE = EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE = EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE !<Constant source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE = EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE = EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE !<Quadratic source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_POISSON_SUBTYPE = &
+    & EQUATIONS_SET_EXPONENTIAL_SOURCE_POISSON_SUBTYPE !<Exponential source Poisson equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STANDARD_HELMHOLTZ_SUBTYPE = EQUATIONS_SET_STANDARD_HELMHOLTZ_SUBTYPE !<No source Helmholtz equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GENERALISED_HELMHOLTZ_SUBTYPE = EQUATIONS_SET_GENERALISED_HELMHOLTZ_SUBTYPE !<No source Helmholtz equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_DIFFUSION_SUBTYPE = EQUATIONS_SET_NO_SOURCE_DIFFUSION_SUBTYPE !<No source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_DIFFUSION_SUBTYPE = &
+    & EQUATIONS_SET_CONSTANT_SOURCE_DIFFUSION_SUBTYPE !<Constant source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE = EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE !<Linear source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_SUBTYPE = &
+    & EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_SUBTYPE !<Quadratic source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_SUBTYPE !<Exponential source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEDiffusionSubtype = EQUATIONS_SET_NO_SOURCE_ALE_DIFFUSION_SUBTYPE !<No source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceALEDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_ALE_DIFFUSION_SUBTYPE = EQUATIONS_SET_NO_SOURCE_ALE_DIFFUSION_SUBTYPE !<No source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ALE_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_SOURCE_ALE_DIFFUSION_SUBTYPE !<Constant source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceALEDiffusionSubtype = EQUATIONS_SET_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Linear source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceALEDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE = &
+    & EQUATIONS_SET_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Linear source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_ALE_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_QUADRATIC_SOURCE_ALE_DIFFUSION_SUBTYPE !<Quadratic source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceALEDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_ALE_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_ALE_DIFFUSION_SUBTYPE !<Exponential source diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE !<Multi-compartment transport diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_QUADRATIC_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE = &
     & EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE !<In CellML evaluated incompressible material law for finite elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_ALE_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_QUADRATIC_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceStaticAdvecDiffSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUAD_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_QUAD_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceALEAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceALEAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVEC_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceALEAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVEC_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadSourceALEAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUAD_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_QUAD_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Quadratic source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExpSourceALEAdvectionDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE !<Exponential source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONST_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<Constant source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LIN_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE !<Linear source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportAdvecDiffSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE !<Multi-component transport advection-diffusion equations set \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULT_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE = &
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE !<Multi-component transport advection-diffusion equations set using SUPG scheme \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionCellMLReacSplitSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE !CellML Reaction Diffusion with order splitting \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionCellMLReacNoSplitSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CELLML_REAC_NO_SPLIT_REAC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_CELLML_REAC_NO_SPLIT_REAC_DIFF_SUBTYPE !CellML Reaction Diffusion without order splitting \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetReactionDiffusionConstantReacSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_REAC_DIFF_SUBTYPE = &
     & EQUATIONS_SET_CONSTANT_REAC_DIFF_SUBTYPE !Standard Reaction Diffusion without order splitting, and constant source \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainBuenoOrovioSubtype= EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMonodomainTenTusscher06Subtype= EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE= EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE= EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<First monodomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFirstBidomainSubtype = EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE !<First bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetSecondBidomainSubtype = EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE !<Second bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE = EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE !<First bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE = EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE !<Second bidomain equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE !<Generalised Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE !<Material Properties Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMatPropertiesInriaModelDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MAT_PROP_INRIA_MODEL_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE !<Material Properties INRIA Model Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetVectorDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDivFreeVectorDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE = &
     & EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetVectorDataPreFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDivFreeVectorDataPreFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin Projection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
 
 
   INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardElasticityDarcySubtype = EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStandardMonodomainElasticitySubtype =  &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE =  &
     & EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE !<Standard Monodomain Elasticity equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
   !>@}
@@ -2255,13 +2269,13 @@ MODULE OPENCMISS
   !> \brief The solution method parameters
   !> \see OPENCMISS::EquationsSet,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFEMSolutionMethod = EQUATIONS_SET_FEM_SOLUTION_METHOD !<Finite Element Method solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBEMSolutionMethod = EQUATIONS_SET_BEM_SOLUTION_METHOD !<Boundary Element Method solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFDSolutionMethod = EQUATIONS_SET_FD_SOLUTION_METHOD !<Finite Difference solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFVSolutionMethod = EQUATIONS_SET_FV_SOLUTION_METHOD !<Finite Volume solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGFEMSolutionMethod = EQUATIONS_SET_GFEM_SOLUTION_METHOD !<Grid-based Finite Element Method solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGFDSolutionMethod = EQUATIONS_SET_GFD_SOLUTION_METHOD !<Grid-based Finite Difference solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGFVSolutionMethod = EQUATIONS_SET_GFV_SOLUTION_METHOD !<Grid-based Finite Volume solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FEM_SOLUTION_METHOD = EQUATIONS_SET_FEM_SOLUTION_METHOD !<Finite Element Method solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BEM_SOLUTION_METHOD = EQUATIONS_SET_BEM_SOLUTION_METHOD !<Boundary Element Method solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FD_SOLUTION_METHOD = EQUATIONS_SET_FD_SOLUTION_METHOD !<Finite Difference solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FV_SOLUTION_METHOD = EQUATIONS_SET_FV_SOLUTION_METHOD !<Finite Volume solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFEM_SOLUTION_METHOD = EQUATIONS_SET_GFEM_SOLUTION_METHOD !<Grid-based Finite Element Method solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD = EQUATIONS_SET_GFD_SOLUTION_METHOD !<Grid-based Finite Difference solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD = EQUATIONS_SET_GFV_SOLUTION_METHOD !<Grid-based Finite Volume solution method. \see OPENCMISS_EquationsSetSolutionMethods,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes
   !> \brief The analytic function types.
@@ -2271,142 +2285,152 @@ MODULE OPENCMISS
   !> \brief The analytic function types for a Laplace equation
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationTwoDim1 = EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1 !<u=x**2+2*x*y-y**2 \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationTwoDim2 = EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2 !<u=cos(x)cosh(y) \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationThreeDim1 = EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1 !<u=x**2-2*y**2+z**2 \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLaplaceEquationThreeDim2 = EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2 !<u=cos(x)*cosh(y)*z \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1 = EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1 !<u=x**2+2*x*y-y**2 \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2 = EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2 !<u=cos(x)cosh(y) \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1 = EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1 !<u=x**2-2*y**2+z**2 \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2 = EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2 !<u=cos(x)*cosh(y)*z \see OPENCMISS_EquationsSetLaplaceAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Helmholtz
   !> \brief The analytic function types for a Helmholtz equation
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetHelmholtzEquationTwoDim1 = EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1 !<u=cos(sqrt(2)*k*x)*sin(sqrt(2)*k*y) \see OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1 = EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1 !<u=cos(sqrt(2)*k*x)*sin(sqrt(2)*k*y) \see OPENCMISS_EquationsSetHelmholtzAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_PoiseuilleAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poiseuille
   !> \brief The analytic function types for a Poiseuille equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoiseuilleTwoDim1 = EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoiseuilleAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1 = EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoiseuilleAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_PoissonAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Poisson
   !> \brief The analytic function types for a Poisson equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim1 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim2 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonTwoDim3 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim1 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 !<u=ln(6/(x+y+z+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim2 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPoissonThreeDim3 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPressurePoissonThreeDim1 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetPressurePoissonThreeDim2 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumann = TEST_CASE_NEUMANN !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumannWithoutSource = TEST_CASE_NEUMANN_WITHOUT_SOURCE !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseDirichlet = TEST_CASE_DIRICHLET !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_1 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_1 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_2 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_2 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_3 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_3 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_4 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_4 !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1 !<u=ln(4/(x+y+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_2 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3 = EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1 !<u=ln(6/(x+y+z+1^2)) \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 = EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2 = EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetPoissonAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_NEUMANN = TEST_CASE_NEUMANN !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_NEUMANN_WITHOUT_SOURCE = TEST_CASE_NEUMANN_WITHOUT_SOURCE !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_DIRICHLET = TEST_CASE_DIRICHLET !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_1 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_1 !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_2 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_2 !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_3 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_3 !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_4 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_4 !<Test case setup for testing of Neumann boundary conditions
   INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_5 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_5 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_6 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_6 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseMixedNeumannDirichlet_7 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_7 !<Test case setup for testing of Neumann boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISSTestCaseNeumannCubic = TEST_CASE_NEUMANN_CUBIC !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_6 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_6 !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_7 = TEST_CASE_MIXED_NEUMANN_DIRICHLET_7 !<Test case setup for testing of Neumann boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_TEST_CASE_NEUMANN_CUBIC = TEST_CASE_NEUMANN_CUBIC !<Test case setup for testing of Neumann boundary conditions
   !>@}
   !> \addtogroup OPENCMISS_DiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Diffusion
   !> \brief The analytic function types for a diffusion equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionOneDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_ONE_DIM_1
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionTwoDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDiffusionThreeDim1 = EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1 !<
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearSourceDiffusionThreeDim1 = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_ONE_DIM_1 = EQUATIONS_SET_DIFFUSION_EQUATION_ONE_DIM_1
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 = EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1 = EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1 !<
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_THREE_DIM_1 = &
     & EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_EQUATION_THREE_DIM_1
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetQuadraticSourceDiffusionOneDim1 = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_ONE_DIM_1 = &
     & EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetExponentialSourceDiffusionOneDim1 = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_ONE_DIM_1 = &
     & EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_EQUATION_ONE_DIM_1
 
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM !<Prescribed solution, using a source term to correct for error - 2D with 2 compartments
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_THREE_DIM = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_THREE_DIM !<Prescribed solution, using a source term to correct for error - 3D with 2 compartments
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_THREE_COMP_THREE_DIM = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_THREE_COMP_THREE_DIM !<Prescribed solution, using a source term to correct for error - 3D with 3 compartments
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetMultiCompDiffusionFourCompThreeDim = &
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_FOUR_COMP_THREE_DIM = &
     & EQUATIONS_SET_MULTI_COMP_DIFFUSION_FOUR_COMP_THREE_DIM !<Prescribed solution, using a source term to correct for error - 3D with 3 compartments
   !>@}
   !> \addtogroup OPENCMISS_AdvectionDiffusionAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::AdvectionDiffusion
   !> \brief The analytic function types for an advection-diffusion equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetAdvectionDiffusionTwoDim1 = EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1 = &
+    & EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1 !<u=exp(-kt)*sin(sqrt(k)*(x*cos(phi)+y*sin(phi))) \see OPENCMISS_EquationsSetDiffusionAnalyticFunctionTypes,OPENCMISS
   !> \addtogroup OPENCMISS_StokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Stokes
   !> \brief The analytic function types for a Stokes equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim1 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim2 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim3 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim4 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesTwoDim5 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim1 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim2 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim3 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim4 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStokesThreeDim5 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5 = EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5 = EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetStokesAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_NavierStokesAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::NavierStokes
   !> \brief The analytic function types for a Navier-Stokes equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim4 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesTwoDim5 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim4 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetNavierStokesThreeDim5 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1 = &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2 = &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3 = &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 = &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5 = &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DarcyAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Darcy
   !> \brief The analytic function types for a Darcy equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyTwoDim1 = EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyTwoDim2 = EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyTwoDim3 = EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyThreeDim1 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyThreeDim2 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetDarcyThreeDim3 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetIncompElastDarcyAnalyticDarcy = EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY !<this is a solution where the finite elasticity solve is skipped to allow easy analytic testing of the mass increase & velocity solve step of incompressible poromechanical model
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_1 = EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_2 = EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_3 = EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3 = EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetDarcyAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY = &
+    & EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY !<this is a solution where the finite elasticity solve is skipped to allow easy analytic testing of the mass increase & velocity solve step of incompressible poromechanical model
   !>@}
   !> \addtogroup OPENCMISS_BurgersAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::Burgers
   !> \brief The analytic function types for a Burgers equation.
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetBurgersOneDim1 = EQUATIONS_SET_BURGERS_EQUATION_ONE_DIM_1
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedBurgersOneDim1 = EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_1
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetGeneralisedBurgersOneDim2 = EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetStaticBurgersOneDim1 = EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_BURGERS_EQUATION_ONE_DIM_1 = EQUATIONS_SET_BURGERS_EQUATION_ONE_DIM_1
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_1 = &
+    & EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_1
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2 = &
+    & EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1 = &
+    & EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1
   !>@}
 
   !> \addtogroup OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::LinearElasticity
   !> \brief The analytic function types for a LinearElasticity equation
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityOneDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_ONE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityTwoDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityTwoDim2 = EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityThreeDim1 = EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetLinearElasticityThreeDim2 = EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_ONE_DIM_1 = EQUATIONS_SET_LINEAR_ELASTICITY_ONE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_1 = EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_2 = EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_1 = EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_2 = EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_EquationsSetFiniteElasticityAnalyticFunctionTypes OPENCMISS::EquationsSet::AnalyticFunctionTypes::FiniteElasticity
   !> \brief The analytic function types for a FiniteElasticity equation
   !> \see OPENCMISS::EquationsSet::AnalyticFunctionTypes,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSEquationsSetFiniteElasticityCylinder = EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER = EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER !<u=tbd \see OPENCMISS_EquationsSetLinearElasticityAnalyticFunctionTypes,OPENCMISS
   !>@}
   !>@}
   !>@}
@@ -2415,21 +2439,21 @@ MODULE OPENCMISS
   !> \brief Indices for EQUATIONS_SET_ANALYTIC_TYPE%ANALYTIC_USER_PARAMS
   !> \see OPENCMISS::FiniteElasticity::AnalyticParamIndices,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamPinIdx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX !<Inner pressure parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamPoutIdx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX !<Outer pressure parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamLambdaIdx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX !<Lambda parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamTsiIdx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_TSI_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_TSI_IDX !<Tsi parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamRinIdx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_RIN_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_RIN_IDX !<Inner radius parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamRoutIdx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_ROUT_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_ROUT_IDX !<Outer radius parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamC1Idx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C1_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C1_IDX !<c1 parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFiniteElasticityAnalyticCylinderParamC2Idx = &
+  INTEGER(INTG), PARAMETER :: CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX = &
     & FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX !<c2 parameter index \see OPENCMISS_AnalyticParamIndices,OPENCMISS
   !>@}
 
@@ -2439,146 +2463,178 @@ MODULE OPENCMISS
 
   !Interfaces
 
-  PUBLIC CMISSEquationsSetNoClass,CMISSEquationsSetElasticityClass,CMISSEquationsSetFluidMechanicsClass, &
-    & CMISSEquationsSetElectroMechanicsClass,CMISSEquationsSetClassicalFieldClass,CMISSEquationsSetBioelectricsClass, &
-    & CMISSEquationsSetModalClass,CMISSEquationsSetFittingClass,CMISSEquationsSetOptimisationClass, &
-    & CMISSEquationsSetMultiPhysicsClass
+  PUBLIC CMISS_EQUATIONS_SET_NO_CLASS,CMISS_EQUATIONS_SET_ELASTICITY_CLASS,CMISS_EQUATIONS_SET_FLUID_MECHANICS_CLASS, &
+    & CMISS_EQUATIONS_SET_ELECTROMAGNETICS_CLASS,CMISS_EQUATIONS_SET_CLASSICAL_FIELD_CLASS,CMISS_EQUATIONS_SET_BIOELECTRICS_CLASS, &
+    & CMISS_EQUATIONS_SET_MODAL_CLASS,CMISS_EQUATIONS_SET_FITTING_CLASS,CMISS_EQUATIONS_SET_OPTIMISATION_CLASS, &
+    & CMISS_EQUATIONS_SET_MULTI_PHYSICS_CLASS
 
-  PUBLIC CMISSEquationsSetNoType,CMISSEquationsSetLinearElasticityType,CMISSEquationsSetFiniteElasticityType, &
-    & CMISSEquationsSetStokesEquationType,CMISSEquationsSetNavierStokesEquationType,CMISSEquationsSetDarcyEquationType, &
-    & CMISSEquationsSetDarcyPressureEquationType,CMISSEquationsSetBurgersEquationType,CMISSEquationsSetStaticPoiseuilleSubtype, &
-    & CMISSEquationsSetDynamicPoiseuilleSubtype, &
-    & CMISSEquationsSetElectrostaticType,CMISSEquationsSetMagnetoStaticType,CMISSEquationsSetMaxwellsEquationType, &
-    & CMISSEquationsSetLaplaceEquationType,CMISSEquationsSetPoiseuilleEquationType,CMISSEquationsSetPoissonEquationType, &
-    & CMISSEquationsSetHelmholtzEquationType,CMISSEquationsSetWaveEquationType,CMISSEquationsSetDiffusionEquationType, &
-    & CMISSEquationsSetAdvectionDiffusionEquationType,CMISSEquationsSetReactionDiffusionEquationType, &
-    & CMISSEquationsSetBiharmonicEquationType,CMISSEquationsSetMonodomainEquationType,CMISSEquationsSetBidomainEquationType, &
-    & CMISSEquationsSetLinearElasticModalType,CMISSEquationsSetDataFittingEquationType,CMISSEquationsSetMonodomainSSEquationType
+  PUBLIC CMISS_EQUATIONS_SET_NO_TYPE,CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_TYPE,CMISS_EQUATIONS_SET_FINITE_ELASTICITY_TYPE, &
+    & CMISS_EQUATIONS_SET_STOKES_EQUATION_TYPE,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_DARCY_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE,CMISS_EQUATIONS_SET_BURGERS_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ELECTROSTATIC_TYPE,CMISS_EQUATIONS_SET_MAGNETOSTATIC_TYPE,CMISS_EQUATIONS_SET_MAXWELLS_EQUATIONS_TYPE, &
+    & CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TYPE,CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_POISSON_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE,CMISS_EQUATIONS_SET_WAVE_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE,CMISS_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE,CMISS_EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_ELASTIC_MODAL_TYPE,CMISS_EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE
 
-  PUBLIC CMISSEquationsSetFiniteElasticityDarcyType, &
-    & CMISSEquationsSetFiniteElasticityStokesType, CMISSEquationsSetFiniteElasticityNavierStokesType, &
-    & CMISSEquationsSetDiffusionDiffusionType, CMISSEquationsSetDiffusionAdvectionDiffusionType
+  PUBLIC CMISS_EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE, &
+    & CMISS_EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE, CMISS_EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE, &
+    & CMISS_EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE, CMISS_EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE
 
-  PUBLIC CMISSEquationsSetNoSubtype,CMISSEquationsSetThreeDimensionalSubtype,CMISSEquationsSetPlaneStressSubtype, &
-    & CMISSEquationsSetPlaneStrainSubtype,CMISSEquationsSetOneDimensionalSubtype,CMISSEquationsSetPlateSubtype, &
-    & CMISSEquationsSetShellSubtype, &
-    & CMISSEquationsSetMooneyRivlinSubtype,CMISSEquationsSetIsotropicExponentialSubtype,CMISSEquationsSetActiveContractionSubtype,&
-    & CMISSEquationsSetTransverseIsotropicExponentialSubtype, CMISSEquationsSetOrthotropicMaterialCostaSubtype, &
-    & CMISSEquationsSetCompressibleFiniteElasticitySubtype,CMISSEquationsSetIncompressibleFiniteElasticityDarcySubtype, &
-    & CMISSEquationsSetElasticityDarcyInriaModelSubtype,CMISSEquationsSetElasticityMultiCompartmentDarcyInriaSubtype, &
-    & CMISSEquationsSetIncompressibleElasticityDrivenDarcySubtype,CMISSEquationsSetIncompressibleElasticityDrivenMRSubtype, &
-    & CMISSEquationsSetIncompressibleElastMultiCompDarcySubtype,CMISSEquationsSetTransverseIsotropicGuccioneSubtype, &
-    & CMISSEquationsSetMembraneSubtype, CMISSEquationsSetOrthotropicMaterialHolzapfelOgdenSubtype, &
-    & CMISSEquationsSetElasticityFluidPressureStaticINRIASubtype, &
-    & CMISSEquationsSetElasticityFluidPressureHolmesMowSubtype,&
-    & CMISSEquationsSetStaticStokesSubtype, CMISSEquationsSetLaplaceStokesSubtype, &
-    & CMISSEquationsSetTransientStokesSubtype,CMISSEquationsSetALEStokesSubtype,CMISSEquationsSetALENavierStokesSubtype, &
-    & CMISSEquationsSetOptimisedStokesSubtype,CMISSEquationsSetStaticNavierStokesSubtype, &
-    & CMISSEquationsSetLaplaceNavierStokesSubtype,CMISSEquationsSetTransientNavierStokesSubtype, &
-    & CMISSEquationsSet1DTransientNavierStokesSubtype, &
-    & CMISSEquationsSetOptimisedNavierStokesSubtype,CMISSEquationsSetStandardDarcySubtype, &
-    & CMISSEquationsSetQuasistaticDarcySubtype,CMISSEquationsSetALEDarcySubtype,CMISSEquationsSetTransientDarcySubtype, &
-    & CMISSEquationsSetTransientALEDarcySubtype,CMISSEquationsSetMultiCompartmentDarcySubtype, &
-    & CMISSEquationsSetStandardLaplaceSubtype,CMISSEquationsSetMovingMeshLaplaceSubtype, &
-    & CMISSEquationsSetGeneralisedLaplaceSubtype,CMISSEquationsSetConstantSourcePoissonSubtype, &
-    & CMISSEquationsSetLinearPressurePoissonSubtype, CMISSEquationsSetNonlinearPressurePoissonSubtype, &
-    & CMISSEquationsSetALEPressurePoissonSubtype, CMISSEquationsSetFittedPressurePoissonSubtype,&
-    & CMISSEquationsSetLinearSourcePoissonSubtype,CMISSEquationsSetQuadraticSourcePoissonSubtype, &
-    & CMISSEquationsSetExponentialSourcePoissonSubtype,CMISSEquationsSetStandardHelmholtzSubtype, &
-    & CMISSEquationsSetGeneralisedHelmholtzSubtype, &
-    & CMISSEquationsSetNoSourceDiffusionSubtype,CMISSEquationsSetConstantSourceDiffusionSubtype, &
-    & CMISSEquationsSetLinearSourceDiffusionSubtype,CMISSEquationsSetQuadraticSourceDiffusionSubtype, &
-    & CMISSEquationsSetExponentialSourceDiffusionSubtype,CMISSEquationsSetMultiCompTransportDiffusionSubtype, &
-    & CMISSEquationsSetNoSourceALEDiffusionSubtype,CMISSEquationsSetConstantSourceALEDiffusionSubtype, &
-    & CMISSEquationsSetLinearSourceALEDiffusionSubtype,CMISSEquationsSetQuadraticSourceALEDiffusionSubtype, &
-    & CMISSEquationsSetExponentialSourceALEDiffusionSubtype, &
-    & CMISSEquationsSetNoSourceAdvectionDiffusionSubtype, &
-    & CMISSEquationsSetConstantSourceAdvectionDiffusionSubtype,CMISSEquationsSetLinearSourceAdvectionDiffusionSubtype, &
-    & CMISSEquationsSetQuadraticSourceAdvectionDiffusionSubtype,CMISSEquationsSetExponentialSourceAdvectionDiffusionSubtype, &
-    & CMISSEquationsSetNoSourceALEAdvectionDiffusionSubtype, &
-    & CMISSEquationsSetConstantSourceALEAdvectionDiffusionSubtype,CMISSEquationsSetLinearSourceALEAdvectionDiffusionSubtype, &
-    & CMISSEquationsSetQuadraticSourceALEAdvectionDiffusionSubtype,CMISSEquationsSetExpSourceALEAdvectionDiffusionSubtype, &
-    & CMISSEquationsSetNoSourceStaticAdvecDiffSubtype, CMISSEquationsSetConstantSourceStaticAdvecDiffSubtype, &
-    & CMISSEquationsSetLinearSourceStaticAdvecDiffSubtype, &
-    & CMISSEquationsSetNoSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetConstantSourceAdvectionDiffSUPGSubtype, &
-    & CMISSEquationsSetLinearSourceAdvectionDiffSUPGSubtype, CMISSEquationsSetQuadSourceAdvectionDiffSUPGSubtype, &
-    & CMISSEquationsSetExpSourceAdvectionDiffSUPGSubtype, &
-    & CMISSEquationsSetNoSourceALEAdvectionDiffSUPGSubtype, CMISSEquationsSetConstantSourceALEAdvectionDiffSUPGSubtype, &
-    & CMISSEquationsSetLinearSourceALEAdvectionDiffSUPGSubtype, CMISSEquationsSetQuadSourceALEAdvectionDiffSUPGSubtype, &
-    & CMISSEquationsSetExpSourceALEAdvectionDiffSUPGSubtype, &
-    & CMISSEquationsSetNoSourceStaticAdvecDiffSUPGSubtype, &
-    & CMISSEquationsSetConstantSourceStaticAdvecDiffSUPGSubtype, CMISSEquationsSetLinearSourceStaticAdvecDiffSUPGSubtype, &
-    & CMISSEquationsSetMultiCompTransportAdvecDiffSubtype, CMISSEquationsSetMultiCompTransportAdvecDiffSUPGSubtype, &
-    & CMISSEquationsSetPGMStokesSubtype, &
-    & CMISSEquationsSetFirstBidomainSubtype,CMISSEquationsSetSecondBidomainSubtype,CMISSEquationsSetMonodomainBuenoOrovioSubtype,&
-    & CMISSEquationsSetMonodomainTenTusscher06Subtype  ,&
-    & CMISSEquationsSetStandardDataFittingSubtype,CMISSEquationsSetGeneralisedDataFittingSubtype, &
-    & CMISSEquationsSetVectorDataFittingSubtype,CMISSEquationsSetDivFreeVectorDataFittingSubtype, &
-    & CMISSEquationsSetVectorDataPreFittingSubtype,CMISSEquationsSetDivFreeVectorDataPreFittingSubtype, &
-    & CMISSEquationsSetMatPropertiesDataFittingSubtype,CMISSEquationsSetMatPropertiesInriaModelDataFittingSubtype, &
-    & CMISSEquationsSetPGMNavierStokesSubtype, &
-    & CMISSEquationsSetConstitutiveLawInCellMLEvaluateSubtype, &
-    & CMISSEquationsSetCoupledSourceDiffusionDiffusionSubtype, CMISSEquationsSetCoupledSourceDiffusionAdvecDiffusionSubtype, &
-    & CMISSEquationsSetBurgersSubtype,CMISSEquationsSetGeneralisedBurgersSubtype,CMISSEquationsSetStaticBurgersSubtype, &
-    & CMISSEquationsSetInviscidBurgersSubtype,CMISSEquationsSetStandardMonodomainElasticitySubtype
-
-
-  PUBLIC CMISSEquationsSetReactionDiffusionCellMLReacSplitSubtype, CMISSEquationsSetReactionDiffusionCellMLReacNoSplitSubtype, &
-    & CMISSEquationsSetReactionDiffusionConstantReacSubtype
-
-  PUBLIC CMISSEquationsSetFEMSolutionMethod,CMISSEquationsSetBEMSolutionMethod,CMISSEquationsSetFDSolutionMethod, &
-    & CMISSEquationsSetFVSolutionMethod,CMISSEquationsSetGFEMSolutionMethod,CMISSEquationsSetGFDSolutionMethod, &
-    & CMISSEquationsSetGFVSolutionMethod
-
-  PUBLIC CMISSEquationsSetLaplaceEquationTwoDim1,CMISSEquationsSetLaplaceEquationTwoDim2, &
-    & CMISSEquationsSetLaplaceEquationThreeDim1,CMISSEquationsSetLaplaceEquationThreeDim2
-
-  PUBLIC CMISSEquationsSetHelmholtzEquationTwoDim1
-
-  PUBLIC CMISSEquationsSetLinearElasticityOneDim1,CMISSEquationsSetLinearElasticityTwoDim1, &
-    & CMISSEquationsSetLinearElasticityTwoDim2,CMISSEquationsSetLinearElasticityThreeDim1, &
-    & CMISSEquationsSetLinearElasticityThreeDim2
-
-  PUBLIC CMISSEquationsSetDiffusionOneDim1,CMISSEquationsSetDiffusionTwoDim1,CMISSEquationsSetDiffusionThreeDim1, &
-    & CMISSEquationsSetLinearSourceDiffusionThreeDim1,CMISSEquationsSetQuadraticSourceDiffusionOneDim1, &
-    & CMISSEquationsSetExponentialSourceDiffusionOneDim1,CMISSEquationsSetMultiCompDiffusionTwoCompTwoDim, &
-    & CMISSEquationsSetMultiCompDiffusionTwoCompThreeDim,CMISSEquationsSetMultiCompDiffusionThreeCompThreeDim, &
-    & CMISSEquationsSetMultiCompDiffusionFourCompThreeDim
+  PUBLIC CMISS_EQUATIONS_SET_NO_SUBTYPE,CMISS_EQUATIONS_SET_THREE_DIMENSIONAL_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRESS_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TWO_DIMENSIONAL_PLANE_STRAIN_SUBTYPE,CMISS_EQUATIONS_SET_ONE_DIMENSIONAL_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_PLATE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_SHELL_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_MOONEY_RIVLIN_SUBTYPE,CMISS_EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE,&
+    & CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_EXPONENTIAL_SUBTYPE, CMISS_EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,CMISS_EQUATIONS_SET_INCOMPRESS_FINITE_ELASTICITY_DARCY_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE,CMISS_EQUATIONS_SET_ELASTICITY_MULTI_COMP_DARCY_INRIA_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_INCOMPRESS_ELASTICITY_DRIVEN_DARCY_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_MR_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_INCOMPRESS_ELAST_MULTI_COMP_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_TRANSVERSE_ISOTROPIC_GUCCIONE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_MEMBRANE_SUBTYPE, CMISS_EQUATIONS_SET_ORTHOTROPIC_HOLZAPFEL_OGDEN_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_STATIC_INRIA_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ELASTICITY_FLUID_PRES_HOLMES_MOW_SUBTYPE,&
+    & CMISS_EQUATIONS_SET_STATIC_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TRANSIENT_ALE_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE,CMISS_EQUATIONS_SET_MOVING_MESH_LAPLACE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_GENERALISED_LAPLACE_SUBTYPE,CMISS_EQUATIONS_SET_CONSTANT_SOURCE_POISSON_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE, CMISS_EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE, CMISS_EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE,&
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_POISSON_SUBTYPE,CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_POISSON_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_POISSON_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_HELMHOLTZ_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_GENERALISED_HELMHOLTZ_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_DIFFUSION_SUBTYPE,CMISS_EQUATIONS_SET_CONSTANT_SOURCE_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_SUBTYPE,CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_SUBTYPE,CMISS_EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_ALE_DIFFUSION_SUBTYPE,CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ALE_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE,CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_ALE_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_ALE_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_ADVEC_DIFF_SUBTYPE,CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVEC_DIFF_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVEC_DIFF_SUBTYPE,CMISS_EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVEC_DIFF_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_ALE_ADVEC_DIFF_SUBTYPE,CMISS_EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE, CMISS_EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE, CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE, CMISS_EQUATIONS_SET_QUAD_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVEC_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVEC_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_QUAD_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CONST_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_LIN_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE,CMISS_EQUATIONS_SET_MULT_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_PGM_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE,CMISS_EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_MONODOMAIN_BUENOOROVIO_SUBTYPE,&
+    & CMISS_EQUATIONS_SET_MONODOMAIN_TENTUSSCHER06_SUBTYPE  ,&
+    & CMISS_EQUATIONS_SET_STANDARD_DATA_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE,CMISS_EQUATIONS_SET_MAT_PROP_INRIA_MODEL_DATA_FITTING_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CONSTITUTIVE_LAW_IN_CELLML_EVALUATE_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFF_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_BURGERS_SUBTYPE,CMISS_EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_STATIC_BURGERS_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE
 
 
-  PUBLIC CMISSEquationsSetAdvectionDiffusionTwoDim1
+  PUBLIC CMISS_EQUATIONS_SET_CELLML_REAC_SPLIT_REAC_DIFF_SUBTYPE, CMISS_EQUATIONS_SET_CELLML_REAC_NO_SPLIT_REAC_DIFF_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CONSTANT_REAC_DIFF_SUBTYPE
 
-  PUBLIC CMISSEquationsSetPoiseuilleTwoDim1
+  PUBLIC CMISS_EQUATIONS_SET_FEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_BEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_FD_SOLUTION_METHOD, &
+    & CMISS_EQUATIONS_SET_FV_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFEM_SOLUTION_METHOD,CMISS_EQUATIONS_SET_GFD_SOLUTION_METHOD, &
+    & CMISS_EQUATIONS_SET_GFV_SOLUTION_METHOD
 
-  PUBLIC CMISSEquationsSetBurgersOneDim1,CMISSEquationsSetGeneralisedBurgersOneDim1,CMISSEquationsSetGeneralisedBurgersOneDim2, &
-    & CMISSEquationsSetStaticBurgersOneDim1
+  PUBLIC CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TWO_DIM_2, &
+    & CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_LAPLACE_EQUATION_THREE_DIM_2
 
-  PUBLIC CMISSEquationsSetPoissonTwoDim1,CMISSEquationsSetPoissonTwoDim2,CMISSEquationsSetPoissonTwoDim3
-  PUBLIC CMISSEquationsSetPoissonThreeDim1,CMISSEquationsSetPoissonThreeDim2,CMISSEquationsSetPoissonThreeDim3
-  PUBLIC CMISSTestCaseNeumann,CMISSTestCaseDirichlet,CMISSTestCaseNeumannWithoutSource
-  PUBLIC CMISSTestCaseMixedNeumannDirichlet_1,CMISSTestCaseMixedNeumannDirichlet_2,CMISSTestCaseMixedNeumannDirichlet_3
-  PUBLIC CMISSTestCaseMixedNeumannDirichlet_4,CMISSTestCaseMixedNeumannDirichlet_6,CMISSTestCaseMixedNeumannDirichlet_7
-  PUBLIC CMISSTestCaseNeumannCubic,CMISSEquationsSetPressurePoissonThreeDim1,CMISSEquationsSetPressurePoissonThreeDim2
+  PUBLIC CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1
 
-  PUBLIC CMISSEquationsSetStokesTwoDim1,CMISSEquationsSetStokesTwoDim2,CMISSEquationsSetStokesTwoDim3
-  PUBLIC CMISSEquationsSetStokesTwoDim4,CMISSEquationsSetStokesTwoDim5
-  PUBLIC CMISSEquationsSetStokesThreeDim1,CMISSEquationsSetStokesThreeDim2,CMISSEquationsSetStokesThreeDim3
-  PUBLIC CMISSEquationsSetStokesThreeDim4,CMISSEquationsSetStokesThreeDim5
+  PUBLIC CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_ONE_DIM_1,CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_1, &
+    & CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_TWO_DIM_2,CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_1, &
+    & CMISS_EQUATIONS_SET_LINEAR_ELASTICITY_THREE_DIM_2
 
-  PUBLIC CMISSEquationsSetNavierStokesTwoDim1,CMISSEquationsSetNavierStokesTwoDim2,CMISSEquationsSetNavierStokesTwoDim3
-  PUBLIC CMISSEquationsSetNavierStokesTwoDim4,CMISSEquationsSetNavierStokesTwoDim5
-  PUBLIC CMISSEquationsSetNavierStokesThreeDim1,CMISSEquationsSetNavierStokesThreeDim2,CMISSEquationsSetNavierStokesThreeDim3
-  PUBLIC CMISSEquationsSetNavierStokesThreeDim4,CMISSEquationsSetNavierStokesThreeDim5
+  PUBLIC CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_ONE_DIM_1,CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_TWO_DIM_1, &
+    & CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_THREE_DIM_1, &
+    & CMISS_EQUATIONS_SET_LINEAR_SOURCE_DIFFUSION_THREE_DIM_1,CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_DIFFUSION_ONE_DIM_1, &
+    & CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_DIFFUSION_ONE_DIM_1,CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_TWO_DIM, &
+    & CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_TWO_COMP_THREE_DIM,CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_THREE_COMP_THREE_DIM, &
+    & CMISS_EQUATIONS_SET_MULTI_COMP_DIFFUSION_FOUR_COMP_THREE_DIM
 
-  PUBLIC CMISSEquationsSetDarcyTwoDim1,CMISSEquationsSetDarcyTwoDim2,CMISSEquationsSetDarcyTwoDim3
-  PUBLIC CMISSEquationsSetDarcyThreeDim1,CMISSEquationsSetDarcyThreeDim2,CMISSEquationsSetDarcyThreeDim3
-  PUBLIC CMISSEquationsSetIncompElastDarcyAnalyticDarcy
 
-  PUBLIC CMISSEquationsSetFiniteElasticityCylinder
-  PUBLIC CMISSFiniteElasticityAnalyticCylinderParamPinIdx,CMISSFiniteElasticityAnalyticCylinderParamPoutIdx
-  PUBLIC CMISSFiniteElasticityAnalyticCylinderParamLambdaIdx,CMISSFiniteElasticityAnalyticCylinderParamTsiIdx
-  PUBLIC CMISSFiniteElasticityAnalyticCylinderParamRinIdx,CMISSFiniteElasticityAnalyticCylinderParamRoutIdx
-  PUBLIC CMISSFiniteElasticityAnalyticCylinderParamC1Idx,CMISSFiniteElasticityAnalyticCylinderParamC2Idx
+  PUBLIC CMISS_EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1
+
+  PUBLIC CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1
+
+  PUBLIC CMISS_EQUATIONS_SET_BURGERS_EQUATION_ONE_DIM_1,CMISS_EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_1, &
+    & CMISS_EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2, &
+    & CMISS_EQUATIONS_SET_STATIC_BURGERS_EQUATION_ONE_DIM_1
+
+  PUBLIC CMISS_EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_2, &
+    & CMISS_EQUATIONS_SET_POISSON_EQUATION_TWO_DIM_3
+  PUBLIC CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_2, &
+    & CMISS_EQUATIONS_SET_POISSON_EQUATION_THREE_DIM_3
+  PUBLIC CMISS_TEST_CASE_NEUMANN,CMISS_TEST_CASE_DIRICHLET,CMISS_TEST_CASE_NEUMANN_WITHOUT_SOURCE
+  PUBLIC CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_1,CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_2, &
+    & CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_3
+  PUBLIC CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_4,CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_6, &
+    & CMISS_TEST_CASE_MIXED_NEUMANN_DIRICHLET_7
+  PUBLIC CMISS_TEST_CASE_NEUMANN_CUBIC,CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_1, &
+    & CMISS_EQUATIONS_SET_PRESSURE_POISSON_THREE_DIM_2
+
+  PUBLIC CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2, &
+    & CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3
+  PUBLIC CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4,CMISS_EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5
+  PUBLIC CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2, &
+    & CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3
+  PUBLIC CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4,CMISS_EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5
+
+  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2, &
+    & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3
+  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5
+  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2, &
+    & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3
+  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5
+
+  PUBLIC CMISS_EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_2, &
+    & CMISS_EQUATIONS_SET_DARCY_EQUATION_TWO_DIM_3
+  PUBLIC CMISS_EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1,CMISS_EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_2, &
+    & CMISS_EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3
+  PUBLIC CMISS_EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY
+
+  PUBLIC CMISS_EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER
+  PUBLIC CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_PIN_IDX,CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_POUT_IDX
+  PUBLIC CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_LAMBDA_IDX,CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_TSI_IDX
+  PUBLIC CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_RIN_IDX,CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_ROUT_IDX
+  PUBLIC CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C1_IDX,CMISS_FINITE_ELASTICITY_ANALYTIC_CYLINDER_PARAM_C2_IDX
 
 !!==================================================================================================================================
 !!
@@ -2828,139 +2884,139 @@ MODULE OPENCMISS
   !> \brief Depedent field parameter types.
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldIndependentType = FIELD_INDEPENDENT_TYPE !<Independent field type \see OPENCMISS_FieldDependentTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDependentType = FIELD_DEPENDENT_TYPE !<Dependent field type \see OPENCMISS_FieldDependentTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_INDEPENDENT_TYPE = FIELD_INDEPENDENT_TYPE !<Independent field type \see OPENCMISS_FieldDependentTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEPENDENT_TYPE = FIELD_DEPENDENT_TYPE !<Dependent field type \see OPENCMISS_FieldDependentTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldDimensionTypes OPENCMISS::Field::DimensionTypes
   !> \brief Field dimension parameter types.
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldScalarDimensionType = FIELD_SCALAR_DIMENSION_TYPE !<Scalar field \see OPENCMISS_FieldDimensionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldVectorDimensionType = FIELD_VECTOR_DIMENSION_TYPE !<Vector field \see OPENCMISS_FieldDimensionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldTensorDimensionType = FIELD_TENSOR_DIMENSION_TYPE !<Tensor field \see OPENCMISS_FieldDimensionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_SCALAR_DIMENSION_TYPE = FIELD_SCALAR_DIMENSION_TYPE !<Scalar field \see OPENCMISS_FieldDimensionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_VECTOR_DIMENSION_TYPE = FIELD_VECTOR_DIMENSION_TYPE !<Vector field \see OPENCMISS_FieldDimensionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_TENSOR_DIMENSION_TYPE = FIELD_TENSOR_DIMENSION_TYPE !<Tensor field \see OPENCMISS_FieldDimensionTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldTypes OPENCMISS::Field::Types
   !> \brief Field type parameters.
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldGeometricType = FIELD_GEOMETRIC_TYPE !<Geometric field \see OPENCMISS_FieldTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldFibreType = FIELD_FIBRE_TYPE !<Fibre field \see OPENCMISS_FieldTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldGeneralType = FIELD_GENERAL_TYPE !<General field \see OPENCMISS_FieldTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldMaterialType = FIELD_MATERIAL_TYPE !<Material field \see OPENCMISS_FieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_GEOMETRIC_TYPE = FIELD_GEOMETRIC_TYPE !<Geometric field \see OPENCMISS_FieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_FIBRE_TYPE = FIELD_FIBRE_TYPE !<Fibre field \see OPENCMISS_FieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_GENERAL_TYPE = FIELD_GENERAL_TYPE !<General field \see OPENCMISS_FieldTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_MATERIAL_TYPE = FIELD_MATERIAL_TYPE !<Material field \see OPENCMISS_FieldTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldInterpolationTypes OPENCMISS::Field::InterpolationTypes
   !> \brief Field interpolation parameters.
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldConstantInterpolation = FIELD_CONSTANT_INTERPOLATION !<Constant interpolation. One parameter for the field \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldElementBasedInterpolation = FIELD_ELEMENT_BASED_INTERPOLATION !<Element based interpolation. Parameters are different in each element \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldNodeBasedInterpolation = FIELD_NODE_BASED_INTERPOLATION !<Node based interpolation. Parameters are nodal based and a basis function is used \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldGridPointBasedInterpolation = FIELD_GRID_POINT_BASED_INTERPOLATION !<Grid point based interpolation. Parameters are different at each grid point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldGaussPointBasedInterpolation = FIELD_GAUSS_POINT_BASED_INTERPOLATION !<Gauss point based interpolation. Parameters are different at each Gauss point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_CONSTANT_INTERPOLATION = FIELD_CONSTANT_INTERPOLATION !<Constant interpolation. One parameter for the field \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_ELEMENT_BASED_INTERPOLATION = FIELD_ELEMENT_BASED_INTERPOLATION !<Element based interpolation. Parameters are different in each element \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_NODE_BASED_INTERPOLATION = FIELD_NODE_BASED_INTERPOLATION !<Node based interpolation. Parameters are nodal based and a basis function is used \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION = FIELD_GRID_POINT_BASED_INTERPOLATION !<Grid point based interpolation. Parameters are different at each grid point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION = FIELD_GAUSS_POINT_BASED_INTERPOLATION !<Gauss point based interpolation. Parameters are different at each Gauss point \see OPENCMISS_FieldInterpolationTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldVariableTypes OPENCMISS::Field::VariableTypes
   !> \brief Field variable type parameters.
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldNumberOfVariableSubtypes = FIELD_NUMBER_OF_VARIABLE_SUBTYPES !<The number of subtypes of a variable - i.e., u, du/dn, du/dt, d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldUVariableType = FIELD_U_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelNVariableType = FIELD_DELUDELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelUDelTVariableType = FIELD_DELUDELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2UDelT2VariableType = FIELD_DEL2UDELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldVVariableType = FIELD_V_VARIABLE_TYPE !<Second standard variable type i.e., v \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelVDelNVariableType = FIELD_DELVDELN_VARIABLE_TYPE !<Second normal derivative variable type i.e., dv/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelVDelTVariableType = FIELD_DELVDELT_VARIABLE_TYPE !<Second first time derivative variable type i.e., dv/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2VDelT2VariableType = FIELD_DEL2VDELT2_VARIABLE_TYPE !<Second second time derivative variable type i.e., d^2v/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU1VariableType = FIELD_U1_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU1DelNVariableType = FIELD_DELU1DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU1DelTVariableType = FIELD_DELU1DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U1DelT2VariableType = FIELD_DEL2U1DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU2VariableType = FIELD_U2_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU2DelNVariableType = FIELD_DELU2DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU2DelTVariableType = FIELD_DELU2DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U2DelT2VariableType = FIELD_DEL2U2DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU3VariableType = FIELD_U3_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU3DelNVariableType = FIELD_DELU3DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU3DelTVariableType = FIELD_DELU3DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U3DelT2VariableType = FIELD_DEL2U3DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU4VariableType = FIELD_U4_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU4DelNVariableType = FIELD_DELU4DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU4DelTVariableType = FIELD_DELU4DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U4DelT2VariableType = FIELD_DEL2U4DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU5VariableType = FIELD_U5_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU5DelNVariableType = FIELD_DELU5DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU5DelTVariableType = FIELD_DELU5DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U5DelT2VariableType = FIELD_DEL2U5DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU6VariableType = FIELD_U6_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU6DelNVariableType = FIELD_DELU6DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU6DelTVariableType = FIELD_DELU6DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U6DelT2VariableType = FIELD_DEL2U6DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU7VariableType = FIELD_U7_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU7DelNVariableType = FIELD_DELU7DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU7DelTVariableType = FIELD_DELU7DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U7DelT2VariableType = FIELD_DEL2U7DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU8VariableType = FIELD_U8_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU8DelNVariableType = FIELD_DELU8DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU8DelTVariableType = FIELD_DELU8DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U8DelT2VariableType = FIELD_DEL2U8DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU9VariableType = FIELD_U9_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU9DelNVariableType = FIELD_DELU9DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU9DelTVariableType = FIELD_DELU9DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U9DelT2VariableType = FIELD_DEL2U9DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldU10VariableType = FIELD_U10_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU10DelNVariableType = FIELD_DELU10DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDelU10DelTVariableType = FIELD_DELU10DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDel2U10DelT2VariableType = FIELD_DEL2U10DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_NUMBER_OF_VARIABLE_SUBTYPES = FIELD_NUMBER_OF_VARIABLE_SUBTYPES !<The number of subtypes of a variable - i.e., u, du/dn, du/dt, d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U_VARIABLE_TYPE = FIELD_U_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELUDELN_VARIABLE_TYPE = FIELD_DELUDELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELUDELT_VARIABLE_TYPE = FIELD_DELUDELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2UDELT2_VARIABLE_TYPE = FIELD_DEL2UDELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_V_VARIABLE_TYPE = FIELD_V_VARIABLE_TYPE !<Second standard variable type i.e., v \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELVDELN_VARIABLE_TYPE = FIELD_DELVDELN_VARIABLE_TYPE !<Second normal derivative variable type i.e., dv/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELVDELT_VARIABLE_TYPE = FIELD_DELVDELT_VARIABLE_TYPE !<Second first time derivative variable type i.e., dv/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2VDELT2_VARIABLE_TYPE = FIELD_DEL2VDELT2_VARIABLE_TYPE !<Second second time derivative variable type i.e., d^2v/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U1_VARIABLE_TYPE = FIELD_U1_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU1DELN_VARIABLE_TYPE = FIELD_DELU1DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU1DELT_VARIABLE_TYPE = FIELD_DELU1DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U1DELT2_VARIABLE_TYPE = FIELD_DEL2U1DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U2_VARIABLE_TYPE = FIELD_U2_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU2DELN_VARIABLE_TYPE = FIELD_DELU2DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU2DELT_VARIABLE_TYPE = FIELD_DELU2DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U2DELT2_VARIABLE_TYPE = FIELD_DEL2U2DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U3_VARIABLE_TYPE = FIELD_U3_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU3DELN_VARIABLE_TYPE = FIELD_DELU3DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU3DELT_VARIABLE_TYPE = FIELD_DELU3DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U3DELT2_VARIABLE_TYPE = FIELD_DEL2U3DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U4_VARIABLE_TYPE = FIELD_U4_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU4DELN_VARIABLE_TYPE = FIELD_DELU4DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU4DELT_VARIABLE_TYPE = FIELD_DELU4DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U4DELT2_VARIABLE_TYPE = FIELD_DEL2U4DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U5_VARIABLE_TYPE = FIELD_U5_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU5DELN_VARIABLE_TYPE = FIELD_DELU5DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU5DELT_VARIABLE_TYPE = FIELD_DELU5DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U5DELT2_VARIABLE_TYPE = FIELD_DEL2U5DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U6_VARIABLE_TYPE = FIELD_U6_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU6DELN_VARIABLE_TYPE = FIELD_DELU6DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU6DELT_VARIABLE_TYPE = FIELD_DELU6DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U6DELT2_VARIABLE_TYPE = FIELD_DEL2U6DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U7_VARIABLE_TYPE = FIELD_U7_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU7DELN_VARIABLE_TYPE = FIELD_DELU7DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU7DELT_VARIABLE_TYPE = FIELD_DELU7DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U7DELT2_VARIABLE_TYPE = FIELD_DEL2U7DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U8_VARIABLE_TYPE = FIELD_U8_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU8DELN_VARIABLE_TYPE = FIELD_DELU8DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU8DELT_VARIABLE_TYPE = FIELD_DELU8DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U8DELT2_VARIABLE_TYPE = FIELD_DEL2U8DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U9_VARIABLE_TYPE = FIELD_U9_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU9DELN_VARIABLE_TYPE = FIELD_DELU9DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU9DELT_VARIABLE_TYPE = FIELD_DELU9DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U9DELT2_VARIABLE_TYPE = FIELD_DEL2U9DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_U10_VARIABLE_TYPE = FIELD_U10_VARIABLE_TYPE !<Standard variable type i.e., u \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU10DELN_VARIABLE_TYPE = FIELD_DELU10DELN_VARIABLE_TYPE !<Normal derivative variable type i.e., du/dn \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DELU10DELT_VARIABLE_TYPE = FIELD_DELU10DELT_VARIABLE_TYPE !<First time derivative variable type i.e., du/dt \see OPENCMISS_FieldVariableTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DEL2U10DELT2_VARIABLE_TYPE = FIELD_DEL2U10DELT2_VARIABLE_TYPE !<Second time derivative variable type i.e., d^2u/dt^2 \see OPENCMISS_FieldVariableTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldDataTypes OPENCMISS::Field::DataTypes
   !> \brief Field data types
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldIntgType = FIELD_INTG_TYPE !<Integer field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldSPType = FIELD_SP_TYPE !<Single precision real field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldDPType = FIELD_DP_TYPE !<Double precision real field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldLType = FIELD_L_TYPE !<Logical field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_INTG_TYPE = FIELD_INTG_TYPE !<Integer field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_SP_TYPE = FIELD_SP_TYPE !<Single precision real field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_DP_TYPE = FIELD_DP_TYPE !<Double precision real field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_L_TYPE = FIELD_L_TYPE !<Logical field data type \see OPENCMISS_FieldDataTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldDOFOrderTypes OPENCMISS::Field::DOFOrderTypes
   !> \brief Field DOF order types
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldSeparatedComponentDOFOrder = FIELD_SEPARATED_COMPONENT_DOF_ORDER !<Field variable component dofs are not contiguous \see OPENCMISS_FieldDOFOrderTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldContiguousComponentDOFOrder = FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER !<Field variable component dofs are contiguous \see OPENCMISS_FieldDOFOrderTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_SEPARATED_COMPONENT_DOF_ORDER = FIELD_SEPARATED_COMPONENT_DOF_ORDER !<Field variable component dofs are not contiguous \see OPENCMISS_FieldDOFOrderTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER = FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER !<Field variable component dofs are contiguous \see OPENCMISS_FieldDOFOrderTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldParameterSetTypes OPENCMISS::Field::ParameterSetTypes
   !> \brief Field parameter set type parameters
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldValuesSetType = FIELD_VALUES_SET_TYPE !<The parameter set corresponding to the field values (at time T+DT for dynamic problems) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_VALUES_SET_TYPE = FIELD_VALUES_SET_TYPE !<The parameter set corresponding to the field values (at time T+DT for dynamic problems) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionsSetType = FIELD_BOUNDARY_CONDITIONS_SET_TYPE !<The parameter set corresponding to the field boundary condition values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInitialValuesSetType = FIELD_INITIAL_VALUES_SET_TYPE !<The parameter set corresponding to the field initial values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldIncrementalValuesSetType = FIELD_INCREMENTAL_VALUES_SET_TYPE !<The parameter set corresponding to the field incremental values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldAnalyticValuesSetType = FIELD_ANALYTIC_VALUES_SET_TYPE !<The parameter set corresponding to the analytic field values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSPreviousValuesSetType = FIELD_PREVIOUS_VALUES_SET_TYPE !<The parameter set corresponding to the previous field values (at time T) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSMeanPredictedDisplacementSetType = FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE !<The parameter set corresponding to the mean predicited avalues (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldVelocityValuesSetType = FIELD_VELOCITY_VALUES_SET_TYPE !<The parameter set corresponding to the velocity values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldInitialVelocitySetType = FIELD_INITIAL_VELOCITY_SET_TYPE !<The parameter set corresponding to the initial velocity values for dynamic problems. This is also the previous velocity values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldPreviousVelocitySetType = FIELD_PREVIOUS_VELOCITY_SET_TYPE !<The parameter set corresponding to the previous velocity values (at time T). This is also the initial velocity values for dynamic problems. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldMeanPredictedVelocitySetType = FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE !<The parameter set corresponding to the mean predicited velocity values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldAccelerationValuesSetType = FIELD_ACCELERATION_VALUES_SET_TYPE !<The parameter set corresponding to the acceleration values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInitialAccelerationSetType = FIELD_INITIAL_ACCELERATION_SET_TYPE !<The parameter set corresponding to the initial acceleration values for dynamic problems. This is also the previous accelearation values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldPreviousAccelerationSetType = FIELD_PREVIOUS_ACCELERATION_SET_TYPE !<The parameter set corresponding to the previous acceleration values (at time T).This is also the initial acceleration values for dynamic problems. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSMeanPredictedAccelerationSetType = FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE !<The parameter set corresponding to the mean predicited acceleration values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldPressureValuesSetType = FIELD_PRESSURE_VALUES_SET_TYPE !<The parameter set corresponding to the surface pressure values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldPreviousPressureSetType = FIELD_PREVIOUS_PRESSURE_SET_TYPE !<The parameter set corresponding to the previous surface pressure values (at time T). \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldImpermeableFlagValuesSetType = FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE !<The parameter set corresponding to the impermeable flag values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_INITIAL_VALUES_SET_TYPE = FIELD_INITIAL_VALUES_SET_TYPE !<The parameter set corresponding to the field initial values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_INCREMENTAL_VALUES_SET_TYPE = FIELD_INCREMENTAL_VALUES_SET_TYPE !<The parameter set corresponding to the field incremental values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_ANALYTIC_VALUES_SET_TYPE = FIELD_ANALYTIC_VALUES_SET_TYPE !<The parameter set corresponding to the analytic field values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_PREVIOUS_VALUES_SET_TYPE = FIELD_PREVIOUS_VALUES_SET_TYPE !<The parameter set corresponding to the previous field values (at time T) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE = FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE !<The parameter set corresponding to the mean predicited avalues (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_VELOCITY_VALUES_SET_TYPE = FIELD_VELOCITY_VALUES_SET_TYPE !<The parameter set corresponding to the velocity values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_INITIAL_VELOCITY_SET_TYPE = FIELD_INITIAL_VELOCITY_SET_TYPE !<The parameter set corresponding to the initial velocity values for dynamic problems. This is also the previous velocity values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_PREVIOUS_VELOCITY_SET_TYPE = FIELD_PREVIOUS_VELOCITY_SET_TYPE !<The parameter set corresponding to the previous velocity values (at time T). This is also the initial velocity values for dynamic problems. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE = FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE !<The parameter set corresponding to the mean predicited velocity values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_ACCELERATION_VALUES_SET_TYPE = FIELD_ACCELERATION_VALUES_SET_TYPE !<The parameter set corresponding to the acceleration values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_INITIAL_ACCELERATION_SET_TYPE = FIELD_INITIAL_ACCELERATION_SET_TYPE !<The parameter set corresponding to the initial acceleration values for dynamic problems. This is also the previous accelearation values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_PREVIOUS_ACCELERATION_SET_TYPE = FIELD_PREVIOUS_ACCELERATION_SET_TYPE !<The parameter set corresponding to the previous acceleration values (at time T).This is also the initial acceleration values for dynamic problems. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE = FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE !<The parameter set corresponding to the mean predicited acceleration values (at time T+DT) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_PRESSURE_VALUES_SET_TYPE = FIELD_PRESSURE_VALUES_SET_TYPE !<The parameter set corresponding to the surface pressure values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_PREVIOUS_PRESSURE_SET_TYPE = FIELD_PREVIOUS_PRESSURE_SET_TYPE !<The parameter set corresponding to the previous surface pressure values (at time T). \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE = FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE !<The parameter set corresponding to the impermeable flag values. \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_FieldScalingTypes OPENCMISS::Field::ScalingTypes
   !> \brief Field scaling type parameters
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSFieldNoScaling = FIELD_NO_SCALING !<The field is not scaled \see OPENCMISS_FieldScalingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldUnitScaling = FIELD_UNIT_SCALING !<The field has unit scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldArcLengthScaling = FIELD_ARC_LENGTH_SCALING !<The field has arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldArithmeticMeanScaling = FIELD_ARITHMETIC_MEAN_SCALING !<The field has arithmetic mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldGeometricMeanScaling = FIELD_GEOMETRIC_MEAN_SCALING !<The field has geometric mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSFieldHarmonicMeanScaling = FIELD_HARMONIC_MEAN_SCALING !<The field has geometric mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_NO_SCALING = FIELD_NO_SCALING !<The field is not scaled \see OPENCMISS_FieldScalingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_UNIT_SCALING = FIELD_UNIT_SCALING !<The field has unit scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_ARC_LENGTH_SCALING = FIELD_ARC_LENGTH_SCALING !<The field has arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_ARITHMETIC_MEAN_SCALING = FIELD_ARITHMETIC_MEAN_SCALING !<The field has arithmetic mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_GEOMETRIC_MEAN_SCALING = FIELD_GEOMETRIC_MEAN_SCALING !<The field has geometric mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_HARMONIC_MEAN_SCALING = FIELD_HARMONIC_MEAN_SCALING !<The field has geometric mean of the arc length scaling \see OPENCMISS_FieldScalingTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -3385,44 +3441,58 @@ MODULE OPENCMISS
   END INTERFACE !CMISSFieldVariableTypesSet
 
 
-  PUBLIC CMISSFieldDependentType,CMISSFieldIndependentType
+  PUBLIC CMISS_FIELD_DEPENDENT_TYPE,CMISS_FIELD_INDEPENDENT_TYPE
 
-  PUBLIC CMISSFieldScalarDimensionType,CMISSFieldVectorDimensionType,CMISSFieldTensorDimensionType
+  PUBLIC CMISS_FIELD_SCALAR_DIMENSION_TYPE,CMISS_FIELD_VECTOR_DIMENSION_TYPE,CMISS_FIELD_TENSOR_DIMENSION_TYPE
 
-  PUBLIC CMISSFieldGeometricType,CMISSFieldFibreType,CMISSFieldGeneralType,CMISSFieldMaterialType
+  PUBLIC CMISS_FIELD_GEOMETRIC_TYPE,CMISS_FIELD_FIBRE_TYPE,CMISS_FIELD_GENERAL_TYPE,CMISS_FIELD_MATERIAL_TYPE
 
-  PUBLIC CMISSFieldConstantInterpolation,CMISSFieldElementBasedInterpolation,CMISSFieldNodeBasedInterpolation, &
-    & CMISSFieldGridPointBasedInterpolation,CMISSFieldGaussPointBasedInterpolation
+  PUBLIC CMISS_FIELD_CONSTANT_INTERPOLATION,CMISS_FIELD_ELEMENT_BASED_INTERPOLATION,CMISS_FIELD_NODE_BASED_INTERPOLATION, &
+    & CMISS_FIELD_GRID_POINT_BASED_INTERPOLATION,CMISS_FIELD_GAUSS_POINT_BASED_INTERPOLATION
 
-  PUBLIC CMISSFieldNumberOfVariableSubtypes
+  PUBLIC CMISS_FIELD_NUMBER_OF_VARIABLE_SUBTYPES
 
-  PUBLIC CMISSFieldUVariableType,CMISSFieldDelUDelNVariableType,CMISSFieldDelUDelTVariableType,CMISSFieldDel2UDelT2VariableType, &
-    & CMISSFieldVVariableType,CMISSFieldDelVDelNVariableType,CMISSFieldDelVDelTVariableType,CMISSFieldDel2VDelT2VariableType, &
-    & CMISSFieldU1VariableType,CMISSFieldDelU1DelNVariableType,CMISSFieldDelU1DelTVariableType,CMISSFieldDel2U1DelT2VariableType, &
-    & CMISSFieldU2VariableType,CMISSFieldDelU2DelNVariableType,CMISSFieldDelU2DelTVariableType,CMISSFieldDel2U2DelT2VariableType, &
-    & CMISSFieldU3VariableType,CMISSFieldDelU3DelNVariableType,CMISSFieldDelU3DelTVariableType,CMISSFieldDel2U3DelT2VariableType, &
-    & CMISSFieldU4VariableType,CMISSFieldDelU4DelNVariableType,CMISSFieldDelU4DelTVariableType,CMISSFieldDel2U4DelT2VariableType, &
-    & CMISSFieldU5VariableType,CMISSFieldDelU5DelNVariableType,CMISSFieldDelU5DelTVariableType,CMISSFieldDel2U5DelT2VariableType, &
-    & CMISSFieldU6VariableType,CMISSFieldDelU6DelNVariableType,CMISSFieldDelU6DelTVariableType,CMISSFieldDel2U6DelT2VariableType, &
-    & CMISSFieldU7VariableType,CMISSFieldDelU7DelNVariableType,CMISSFieldDelU7DelTVariableType,CMISSFieldDel2U7DelT2VariableType, &
-    & CMISSFieldU8VariableType,CMISSFieldDelU8DelNVariableType,CMISSFieldDelU8DelTVariableType,CMISSFieldDel2U8DelT2VariableType, &
-    & CMISSFieldU9VariableType,CMISSFieldDelU9DelNVariableType,CMISSFieldDelU9DelTVariableType,CMISSFieldDel2U9DelT2VariableType, &
-    & CMISSFieldU10VariableType,CMISSFieldDelU10DelNVariableType,CMISSFieldDelU10DelTVariableType, &
-    & CMISSFieldDel2U10DelT2VariableType
+  PUBLIC CMISS_FIELD_U_VARIABLE_TYPE,CMISS_FIELD_DELUDELN_VARIABLE_TYPE,CMISS_FIELD_DELUDELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2UDELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_V_VARIABLE_TYPE,CMISS_FIELD_DELVDELN_VARIABLE_TYPE,CMISS_FIELD_DELVDELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2VDELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U1_VARIABLE_TYPE,CMISS_FIELD_DELU1DELN_VARIABLE_TYPE,CMISS_FIELD_DELU1DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U1DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U2_VARIABLE_TYPE,CMISS_FIELD_DELU2DELN_VARIABLE_TYPE,CMISS_FIELD_DELU2DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U2DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U3_VARIABLE_TYPE,CMISS_FIELD_DELU3DELN_VARIABLE_TYPE,CMISS_FIELD_DELU3DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U3DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U4_VARIABLE_TYPE,CMISS_FIELD_DELU4DELN_VARIABLE_TYPE,CMISS_FIELD_DELU4DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U4DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U5_VARIABLE_TYPE,CMISS_FIELD_DELU5DELN_VARIABLE_TYPE,CMISS_FIELD_DELU5DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U5DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U6_VARIABLE_TYPE,CMISS_FIELD_DELU6DELN_VARIABLE_TYPE,CMISS_FIELD_DELU6DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U6DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U7_VARIABLE_TYPE,CMISS_FIELD_DELU7DELN_VARIABLE_TYPE,CMISS_FIELD_DELU7DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U7DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U8_VARIABLE_TYPE,CMISS_FIELD_DELU8DELN_VARIABLE_TYPE,CMISS_FIELD_DELU8DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U8DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U9_VARIABLE_TYPE,CMISS_FIELD_DELU9DELN_VARIABLE_TYPE,CMISS_FIELD_DELU9DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U9DELT2_VARIABLE_TYPE, &
+    & CMISS_FIELD_U10_VARIABLE_TYPE,CMISS_FIELD_DELU10DELN_VARIABLE_TYPE,CMISS_FIELD_DELU10DELT_VARIABLE_TYPE, &
+    & CMISS_FIELD_DEL2U10DELT2_VARIABLE_TYPE
 
-  PUBLIC CMISSFieldIntgType,CMISSFieldSPType,CMISSFieldDPType,CMISSFieldLType
+  PUBLIC CMISS_FIELD_INTG_TYPE,CMISS_FIELD_SP_TYPE,CMISS_FIELD_DP_TYPE,CMISS_FIELD_L_TYPE
 
-  PUBLIC CMISSFieldSeparatedComponentDOFOrder,CMISSFieldContiguousComponentDOFOrder
+  PUBLIC CMISS_FIELD_SEPARATED_COMPONENT_DOF_ORDER,CMISS_FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER
 
-  PUBLIC CMISSFieldValuesSetType,CMISSInitialValuesSetType,CMISSFieldIncrementalValuesSetType,CMISSFieldAnalyticValuesSetType, &
-    & CMISSPreviousValuesSetType,CMISSMeanPredictedDisplacementSetType,CMISSFieldVelocityValuesSetType, &
-    & CMISSFieldInitialVelocitySetType,CMISSFieldPreviousVelocitySetType,CMISSFieldMeanPredictedVelocitySetType, &
-    & CMISSFieldAccelerationValuesSetType,CMISSInitialAccelerationSetType,CMISSFieldPreviousAccelerationSetType, &
-    & CMISSMeanPredictedAccelerationSetType, CMISSFieldPressureValuesSetType, CMISSFieldPreviousPressureSetType, &
-    & CMISSFieldImpermeableFlagValuesSetType
+  PUBLIC CMISS_FIELD_VALUES_SET_TYPE,CMISS_FIELD_INITIAL_VALUES_SET_TYPE,CMISS_FIELD_INCREMENTAL_VALUES_SET_TYPE, &
+    & CMISS_FIELD_ANALYTIC_VALUES_SET_TYPE, &
+    & CMISS_FIELD_PREVIOUS_VALUES_SET_TYPE,CMISS_FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,CMISS_FIELD_VELOCITY_VALUES_SET_TYPE, &
+    & CMISS_FIELD_INITIAL_VELOCITY_SET_TYPE,CMISS_FIELD_PREVIOUS_VELOCITY_SET_TYPE,CMISS_FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE, &
+    & CMISS_FIELD_ACCELERATION_VALUES_SET_TYPE,CMISS_FIELD_INITIAL_ACCELERATION_SET_TYPE, &
+    & CMISS_FIELD_PREVIOUS_ACCELERATION_SET_TYPE, &
+    & CMISS_FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE, CMISS_FIELD_PRESSURE_VALUES_SET_TYPE, &
+    & CMISS_FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
+    & CMISS_FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE
 
-  PUBLIC CMISSFieldNoScaling,CMISSFieldUnitScaling,CMISSFieldArcLengthScaling,CMISSFieldArithmeticMeanScaling, &
-    & CMISSFieldGeometricMeanScaling,CMISSFieldHarmonicMeanScaling
+  PUBLIC CMISS_FIELD_NO_SCALING,CMISS_FIELD_UNIT_SCALING,CMISS_FIELD_ARC_LENGTH_SCALING,CMISS_FIELD_ARITHMETIC_MEAN_SCALING, &
+    & CMISS_FIELD_GEOMETRIC_MEAN_SCALING,CMISS_FIELD_HARMONIC_MEAN_SCALING
 
   PUBLIC CMISSFieldComponentInterpolationGet,CMISSFieldComponentInterpolationSet
 
@@ -3526,11 +3596,11 @@ MODULE OPENCMISS
   !> \brief Generated mesh types.
   !> \see OPENCMISS::GeneratedMesh,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularMeshType = GENERATED_MESH_REGULAR_MESH_TYPE !<A regular generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshPolarMeshType = GENERATED_MESH_POLAR_MESH_TYPE !<A polar generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshFractalTreeMeshType = GENERATED_MESH_FRACTAL_TREE_MESH_TYPE !<A fractal tree generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderMeshType = GENERATED_MESH_CYLINDER_MESH_TYPE !<A cylinder generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidMeshType = GENERATED_MESH_ELLIPSOID_MESH_TYPE !<An ellipsoid generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_REGULAR_MESH_TYPE = GENERATED_MESH_REGULAR_MESH_TYPE !<A regular generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_POLAR_MESH_TYPE = GENERATED_MESH_POLAR_MESH_TYPE !<A polar generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_FRACTAL_TREE_MESH_TYPE = GENERATED_MESH_FRACTAL_TREE_MESH_TYPE !<A fractal tree generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_CYLINDER_MESH_TYPE = GENERATED_MESH_CYLINDER_MESH_TYPE !<A cylinder generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_ELLIPSOID_MESH_TYPE = GENERATED_MESH_ELLIPSOID_MESH_TYPE !<An ellipsoid generated mesh. \see OPENCMISS_GeneratedMeshTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -3541,19 +3611,19 @@ MODULE OPENCMISS
   !> \brief Generated mesh surface types.
   !> \see OPENCMISS::GeneratedMesh,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderInnerSurfaceType = GENERATED_MESH_CYLINDER_INNER_SURFACE !<Cylinder inner surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderOuterSurfaceType = GENERATED_MESH_CYLINDER_OUTER_SURFACE !<Cylinder outer surface. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderTopSurfaceType = GENERATED_MESH_CYLINDER_TOP_SURFACE !<Cylinder top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshCylinderBottomSurfaceType = GENERATED_MESH_CYLINDER_BOTTOM_SURFACE !<Cylinder bottom surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidInnerSurfaceType = GENERATED_MESH_ELLIPSOID_INNER_SURFACE !<Ellipsoid inner surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidOuterSurfaceType = GENERATED_MESH_ELLIPSOID_OUTER_SURFACE !<Ellipsoid outer surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshEllipsoidTopSurfaceType = GENERATED_MESH_ELLIPSOID_TOP_SURFACE !<Ellipsoid top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularLeftSurface = GENERATED_MESH_REGULAR_LEFT_SURFACE !<Regular left surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularRightSurface = GENERATED_MESH_REGULAR_RIGHT_SURFACE !<Regular right surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularTopSurface = GENERATED_MESH_REGULAR_TOP_SURFACE !<Regular top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularBottomSurface = GENERATED_MESH_REGULAR_BOTTOM_SURFACE !<Regular bottom surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularFrontSurface = GENERATED_MESH_REGULAR_FRONT_SURFACE !<Regular front surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSGeneratedMeshRegularBackSurface = GENERATED_MESH_REGULAR_BACK_SURFACE !<Regular back surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_CYLINDER_INNER_SURFACE = GENERATED_MESH_CYLINDER_INNER_SURFACE !<Cylinder inner surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_CYLINDER_OUTER_SURFACE = GENERATED_MESH_CYLINDER_OUTER_SURFACE !<Cylinder outer surface. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_CYLINDER_TOP_SURFACE = GENERATED_MESH_CYLINDER_TOP_SURFACE !<Cylinder top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_CYLINDER_BOTTOM_SURFACE = GENERATED_MESH_CYLINDER_BOTTOM_SURFACE !<Cylinder bottom surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_ELLIPSOID_INNER_SURFACE = GENERATED_MESH_ELLIPSOID_INNER_SURFACE !<Ellipsoid inner surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_ELLIPSOID_OUTER_SURFACE = GENERATED_MESH_ELLIPSOID_OUTER_SURFACE !<Ellipsoid outer surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_ELLIPSOID_TOP_SURFACE = GENERATED_MESH_ELLIPSOID_TOP_SURFACE !<Ellipsoid top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_REGULAR_LEFT_SURFACE = GENERATED_MESH_REGULAR_LEFT_SURFACE !<Regular left surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_REGULAR_RIGHT_SURFACE = GENERATED_MESH_REGULAR_RIGHT_SURFACE !<Regular right surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_REGULAR_TOP_SURFACE = GENERATED_MESH_REGULAR_TOP_SURFACE !<Regular top surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_REGULAR_BOTTOM_SURFACE = GENERATED_MESH_REGULAR_BOTTOM_SURFACE !<Regular bottom surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_REGULAR_FRONT_SURFACE = GENERATED_MESH_REGULAR_FRONT_SURFACE !<Regular front surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_GENERATED_MESH_REGULAR_BACK_SURFACE = GENERATED_MESH_REGULAR_BACK_SURFACE !<Regular back surface constant. \see OPENCMISS_GeneratedMeshSurfaceTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -3702,21 +3772,23 @@ MODULE OPENCMISS
 
   PUBLIC CMISSFieldParameterSetGetGaussPointCoord
 
-  PUBLIC CMISSGeneratedMeshRegularMeshType,CMISSGeneratedMeshPolarMeshType,CMISSGeneratedMeshFractalTreeMeshType
+  PUBLIC CMISS_GENERATED_MESH_REGULAR_MESH_TYPE,CMISS_GENERATED_MESH_POLAR_MESH_TYPE,CMISS_GENERATED_MESH_FRACTAL_TREE_MESH_TYPE
 
-  PUBLIC CMISSGeneratedMeshCylinderMeshType, CMISSGeneratedMeshEllipsoidMeshType
+  PUBLIC CMISS_GENERATED_MESH_CYLINDER_MESH_TYPE, CMISS_GENERATED_MESH_ELLIPSOID_MESH_TYPE
 
-  PUBLIC CMISSGeneratedMeshCylinderInnerSurfaceType,CMISSGeneratedMeshCylinderOuterSurfaceType
+  PUBLIC CMISS_GENERATED_MESH_CYLINDER_INNER_SURFACE,CMISS_GENERATED_MESH_CYLINDER_OUTER_SURFACE
 
-  PUBLIC CMISSGeneratedMeshCylinderTopSurfaceType, CMISSGeneratedMeshCylinderBottomSurfaceType
+  PUBLIC CMISS_GENERATED_MESH_CYLINDER_TOP_SURFACE, CMISS_GENERATED_MESH_CYLINDER_BOTTOM_SURFACE
 
-  PUBLIC CMISSGeneratedMeshEllipsoidInnerSurfaceType, CMISSGeneratedMeshEllipsoidOuterSurfaceType
+  PUBLIC CMISS_GENERATED_MESH_ELLIPSOID_INNER_SURFACE, CMISS_GENERATED_MESH_ELLIPSOID_OUTER_SURFACE
 
-  PUBLIC CMISSGeneratedMeshEllipsoidTopSurfaceType
+  PUBLIC CMISS_GENERATED_MESH_ELLIPSOID_TOP_SURFACE
 
-  PUBLIC CMISSGeneratedMeshRegularLeftSurface, CMISSGeneratedMeshRegularRightSurface, CMISSGeneratedMeshRegularTopSurface
+  PUBLIC CMISS_GENERATED_MESH_REGULAR_LEFT_SURFACE, CMISS_GENERATED_MESH_REGULAR_RIGHT_SURFACE, &
+    & CMISS_GENERATED_MESH_REGULAR_TOP_SURFACE
 
-  PUBLIC CMISSGeneratedMeshRegularBottomSurface, CMISSGeneratedMeshRegularFrontSurface, CMISSGeneratedMeshRegularBackSurface
+  PUBLIC CMISS_GENERATED_MESH_REGULAR_BOTTOM_SURFACE, CMISS_GENERATED_MESH_REGULAR_FRONT_SURFACE, &
+    & CMISS_GENERATED_MESH_REGULAR_BACK_SURFACE
 
   PUBLIC CMISSGeneratedMeshBasisGet,CMISSGeneratedMeshBasisSet
 
@@ -3858,20 +3930,22 @@ MODULE OPENCMISS
   !> \brief Interface condition methods.
   !> \see OPENCMISS::InterfaceConditions,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionLagrangeMultipliers = INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD !<Lagrange multipliers interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionAugmentedLagrangeMethod = INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD !<Augmented Lagrange multiplers interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionPenaltyMethod = INTERFACE_CONDITION_PENALTY_METHOD !<Penalty interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionPointToPointMethod = INTERFACE_CONDITION_POINT_TO_POINT_METHOD !<Point to point interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD = &
+    & INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD !<Lagrange multipliers interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD = INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD !<Augmented Lagrange multiplers interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_PENALTY_METHOD = INTERFACE_CONDITION_PENALTY_METHOD !<Penalty interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_POINT_TO_POINT_METHOD = INTERFACE_CONDITION_POINT_TO_POINT_METHOD !<Point to point interface condition method. \see OPENCMISS_InterfaceConditionMethods,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_InterfaceConditionOperators OPENCMISS::InterfaceConditions::Operators
   !> \brief Interface condition operator types.
   !> \see OPENCMISS::InterfaceConditions,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionFieldContinuityOperator = INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR !<Continuous field operator, i.e., lambda.(u_1-u_2). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionFieldNormalContinuityOperator = &
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR = INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR !<Continuous field operator, i.e., lambda.(u_1-u_2). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR = &
     & INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR !<Continuous field normal operator, i.e., lambda(u_1.n_1-u_2.n_2). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionSolidFluidOperator = INTERFACE_CONDITION_SOLID_FLUID_OPERATOR !<Solid fluid operator, i.e., lambda.(v_f-du_s/dt). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSInterfaceConditionSolidFluidNormalOperator = INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR !<Solid fluid normal operator, i.e., lambda(v_f.n_f-du_s/dt.n_s). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_SOLID_FLUID_OPERATOR = INTERFACE_CONDITION_SOLID_FLUID_OPERATOR !<Solid fluid operator, i.e., lambda.(v_f-du_s/dt). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR = &
+    & INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR !<Solid fluid normal operator, i.e., lambda(v_f.n_f-du_s/dt.n_s). \see OPENCMISS_InterfaceConditionOperators,OPENCMISS
   !>@}
   !>@}
 
@@ -3983,11 +4057,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSInterfaceEquationsOutputTypeSetObj
   END INTERFACE !CMISSInterfaceEquationsOutputTypeSet
 
-  PUBLIC CMISSInterfaceConditionLagrangeMultipliers,CMISSInterfaceConditionAugmentedLagrangeMethod, &
-    & CMISSInterfaceConditionPenaltyMethod,CMISSInterfaceConditionPointToPointMethod
+  PUBLIC CMISS_INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,CMISS_INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD, &
+    & CMISS_INTERFACE_CONDITION_PENALTY_METHOD,CMISS_INTERFACE_CONDITION_POINT_TO_POINT_METHOD
 
-  PUBLIC CMISSInterfaceConditionFieldContinuityOperator,CMISSInterfaceConditionFieldNormalContinuityOperator, &
-    & CMISSInterfaceConditionSolidFluidOperator,CMISSInterfaceConditionSolidFluidNormalOperator
+  PUBLIC CMISS_INTERFACE_CONDITION_FIELD_CONTINUITY_OPERATOR,CMISS_INTERFACE_CONDITION_FIELD_NORMAL_CONTINUITY_OPERATOR, &
+    & CMISS_INTERFACE_CONDITION_SOLID_FLUID_OPERATOR,CMISS_INTERFACE_CONDITION_SOLID_FLUID_NORMAL_OPERATOR
 
   PUBLIC CMISSInterfaceConditionCreateFinish,CMISSInterfaceConditionCreateStart
 
@@ -4072,9 +4146,9 @@ MODULE OPENCMISS
   !> \brief The Decomposition types parameters
   !> \see OPENCMISS::Mesh,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSDecompositionAllType = DECOMPOSITION_ALL_TYPE !<The decomposition contains all elements. \see OPENCMISS_DecompositionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSDecompositionCalculatedType = DECOMPOSITION_CALCULATED_TYPE !<The element decomposition is calculated by graph partitioning. \see OPENCMISS_DecompositionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSDecompositionUserDefinedType = DECOMPOSITION_USER_DEFINED_TYPE !<The user will set the element decomposition. \see OPENCMISS_DecompositionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_DECOMPOSITION_ALL_TYPE = DECOMPOSITION_ALL_TYPE !<The decomposition contains all elements. \see OPENCMISS_DecompositionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_DECOMPOSITION_CALCULATED_TYPE = DECOMPOSITION_CALCULATED_TYPE !<The element decomposition is calculated by graph partitioning. \see OPENCMISS_DecompositionTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_DECOMPOSITION_USER_DEFINED_TYPE = DECOMPOSITION_USER_DEFINED_TYPE !<The user will set the element decomposition. \see OPENCMISS_DecompositionTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -4302,7 +4376,7 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSDecompositionNodeDomainGetObj
   END INTERFACE !CMISSDecompositionElementDomainGet
 
-  PUBLIC CMISSDecompositionAllType,CMISSDecompositionCalculatedType,CMISSDecompositionUserDefinedType
+  PUBLIC CMISS_DECOMPOSITION_ALL_TYPE,CMISS_DECOMPOSITION_CALCULATED_TYPE,CMISS_DECOMPOSITION_USER_DEFINED_TYPE
 
   PUBLIC CMISSDecompositionCreateFinish,CMISSDecompositionCreateStart
 
@@ -4435,167 +4509,167 @@ MODULE OPENCMISS
   !> \brief Problem classes.
   !> \see OPENCMISS::Problem,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoClass = PROBLEM_NO_CLASS !<No problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemElasticityClass = PROBLEM_ELASTICITY_CLASS !<Elasticity problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFluidMechanicsClass = PROBLEM_FLUID_MECHANICS_CLASS !<Fluid mechanics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemElectromagneticsClass = PROBLEM_ELECTROMAGNETICS_CLASS !<Electromagnetics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemClassicalFieldClass = PROBLEM_CLASSICAL_FIELD_CLASS !<Classical field problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemBioelectricsClass = PROBLEM_BIOELECTRICS_CLASS !<Bioelectrics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemModalClass = PROBLEM_MODAL_CLASS !<Modal problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFittingClass = PROBLEM_FITTING_CLASS !<Fitting problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemOptimisationClass = PROBLEM_OPTIMISATION_CLASS !<Optimisation problem class \see OPENCMISS_ProblemClasses,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMultiPhysicsClass = PROBLEM_MULTI_PHYSICS_CLASS !<Multi physics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_CLASS = PROBLEM_NO_CLASS !<No problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ELASTICITY_CLASS = PROBLEM_ELASTICITY_CLASS !<Elasticity problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FLUID_MECHANICS_CLASS = PROBLEM_FLUID_MECHANICS_CLASS !<Fluid mechanics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ELECTROMAGNETICS_CLASS = PROBLEM_ELECTROMAGNETICS_CLASS !<Electromagnetics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CLASSICAL_FIELD_CLASS = PROBLEM_CLASSICAL_FIELD_CLASS !<Classical field problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_BIOELECTRICS_CLASS = PROBLEM_BIOELECTRICS_CLASS !<Bioelectrics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MODAL_CLASS = PROBLEM_MODAL_CLASS !<Modal problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FITTING_CLASS = PROBLEM_FITTING_CLASS !<Fitting problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_OPTIMISATION_CLASS = PROBLEM_OPTIMISATION_CLASS !<Optimisation problem class \see OPENCMISS_ProblemClasses,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MULTI_PHYSICS_CLASS = PROBLEM_MULTI_PHYSICS_CLASS !<Multi physics problem class \see OPENCMISS_ProblemClasses,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_ProblemTypes OPENCMISS::Problem::Types
   !> \brief Problem Types.
   !> \see OPENCMISS::Problem,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoType = PROBLEM_NO_TYPE !<No problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearElasticityType = PROBLEM_LINEAR_ELASTICITY_TYPE !<Linear elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityType = PROBLEM_FINITE_ELASTICITY_TYPE !<Finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStokesEquationType = PROBLEM_STOKES_EQUATION_TYPE !<Stokes equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNavierStokesEquationType = PROBLEM_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDarcyEquationType = PROBLEM_DARCY_EQUATION_TYPE !<Darcy equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemPoiseuilleEquationType = PROBLEM_POISEUILLE_EQUATION_TYPE !<Poiseuille equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemBurgersEquationType = PROBLEM_BURGERS_EQUATION_TYPE !<Burgers equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemElectrostaticType = PROBLEM_ELECTROSTATIC_TYPE !<Electrostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMagnetostaticType = PROBLEM_MAGNETOSTATIC_TYPE !<Magnetostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMaxwellsEquationsType = PROBLEM_MAXWELLS_EQUATIONS_TYPE !<Maxwell's equations problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLaplaceEquationType = PROBLEM_LAPLACE_EQUATION_TYPE !<Laplace problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemPoissonEquationType = PROBLEM_POISSON_EQUATION_TYPE !<Poisson problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemHelmholtzEquationType = PROBLEM_HELMHOLTZ_EQUATION_TYPE !<Helmholtz problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemWaveEquationType = PROBLEM_WAVE_EQUATION_TYPE !<Wave equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionEquationType = PROBLEM_DIFFUSION_EQUATION_TYPE !<Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemAdvectionDiffusionEquationType = PROBLEM_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionEquationType = PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemBiharmonicEquationType = PROBLEM_BIHARMONIC_EQUATION_TYPE !<Bi-harmonic equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainEquationType = PROBLEM_MONODOMAIN_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemBidomainEquationType = PROBLEM_BIDOMAIN_EQUATION_TYPE !<Bidomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearElasticModalType = PROBLEM_LINEAR_ELASTIC_MODAL_TYPE !<Linear elastic modal problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDataFittingType = PROBLEM_DATA_FITTING_TYPE !<Galerkin projection problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityDarcyType = PROBLEM_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityStokesType = PROBLEM_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityNavierStokesType = PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity NavierStokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionDiffusionType = PROBLEM_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDiffusionAdvectionDiffusionType = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMultiCompartmentTransportType = PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE !<Multi-compartment transport problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityFluidPressureType = PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE !<Finite elasticity fluid pressure problem type \see OPENCMISS_ProblemTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemBioelectricFiniteElasticityType = PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE !<Monodomain finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_TYPE = PROBLEM_NO_TYPE !<No problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_ELASTICITY_TYPE = PROBLEM_LINEAR_ELASTICITY_TYPE !<Linear elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_TYPE = PROBLEM_FINITE_ELASTICITY_TYPE !<Finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STOKES_EQUATION_TYPE = PROBLEM_STOKES_EQUATION_TYPE !<Stokes equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NAVIER_STOKES_EQUATION_TYPE = PROBLEM_NAVIER_STOKES_EQUATION_TYPE !<Navier-Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DARCY_EQUATION_TYPE = PROBLEM_DARCY_EQUATION_TYPE !<Darcy equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_POISEUILLE_EQUATION_TYPE = PROBLEM_POISEUILLE_EQUATION_TYPE !<Poiseuille equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_BURGERS_EQUATION_TYPE = PROBLEM_BURGERS_EQUATION_TYPE !<Burgers equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ELECTROSTATIC_TYPE = PROBLEM_ELECTROSTATIC_TYPE !<Electrostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MAGNETOSTATIC_TYPE = PROBLEM_MAGNETOSTATIC_TYPE !<Magnetostatic problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MAXWELLS_EQUATIONS_TYPE = PROBLEM_MAXWELLS_EQUATIONS_TYPE !<Maxwell's equations problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LAPLACE_EQUATION_TYPE = PROBLEM_LAPLACE_EQUATION_TYPE !<Laplace problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_POISSON_EQUATION_TYPE = PROBLEM_POISSON_EQUATION_TYPE !<Poisson problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_HELMHOLTZ_EQUATION_TYPE = PROBLEM_HELMHOLTZ_EQUATION_TYPE !<Helmholtz problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_WAVE_EQUATION_TYPE = PROBLEM_WAVE_EQUATION_TYPE !<Wave equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIFFUSION_EQUATION_TYPE = PROBLEM_DIFFUSION_EQUATION_TYPE !<Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ADVECTION_DIFFUSION_EQUATION_TYPE = PROBLEM_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE = PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_BIHARMONIC_EQUATION_TYPE = PROBLEM_BIHARMONIC_EQUATION_TYPE !<Bi-harmonic equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_EQUATION_TYPE = PROBLEM_MONODOMAIN_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_BIDOMAIN_EQUATION_TYPE = PROBLEM_BIDOMAIN_EQUATION_TYPE !<Bidomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_ELASTIC_MODAL_TYPE = PROBLEM_LINEAR_ELASTIC_MODAL_TYPE !<Linear elastic modal problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DATA_FITTING_TYPE = PROBLEM_DATA_FITTING_TYPE !<Galerkin projection problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_DARCY_TYPE = PROBLEM_FINITE_ELASTICITY_DARCY_TYPE !<Finite Elasticity Darcy problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_STOKES_TYPE = PROBLEM_FINITE_ELASTICITY_STOKES_TYPE !<Finite Elasticity Stokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE = PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE !<Finite Elasticity NavierStokes problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIFFUSION_DIFFUSION_TYPE = PROBLEM_DIFFUSION_DIFFUSION_TYPE !<Diffusion Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE = PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE !<Diffusion Advection Diffusion problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE = PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE !<Multi-compartment transport problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE = PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE !<Finite elasticity fluid pressure problem type \see OPENCMISS_ProblemTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE = PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE !<Monodomain finite elasticity problem type \see OPENCMISS_ProblemTypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplittingEquationType = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE = &
     & PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE !<Monodomain equation problem type \see OPENCMISS_ProblemTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_ProblemSubTypes OPENCMISS::Problem::Subtypes
   !> \brief Problem Subtypes.
   !> \see OPENCMISS::Problem,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSubtype = PROBLEM_NO_SUBTYPE !<No problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStaticStokesSubtype = PROBLEM_STATIC_STOKES_SUBTYPE !<Static Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLaplaceStokesSubtype = PROBLEM_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemTransientStokesSubtype = PROBLEM_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemALEStokesSubtype = PROBLEM_ALE_STOKES_SUBTYPE !<ALE Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemPGMStokesSubtype = PROBLEM_PGM_STOKES_SUBTYPE !<PGM Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemOptimisedStokesSubtype = PROBLEM_OPTIMISED_STOKES_SUBTYPE !<Optimised Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStaticNavierStokesSubtype = PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLaplaceNavierStokesSubtype = PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemTransientNavierStokesSubtype = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblem1DTransientNavierStokesSubtype = PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemALENavierStokesSubtype = PROBLEM_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemPGMNavierStokesSubtype = PROBLEM_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemOptimisedNavierStokesSubtype = PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardDarcySubtype = PROBLEM_STANDARD_DARCY_SUBTYPE !<Standard Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticDarcySubtype = PROBLEM_QUASISTATIC_DARCY_SUBTYPE !<Quasistatic Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemALEDarcySubtype = PROBLEM_ALE_DARCY_SUBTYPE !<ALE Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemTransientDarcySubtype = PROBLEM_TRANSIENT_DARCY_SUBTYPE !<Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemPGMDarcySubtype = PROBLEM_PGM_DARCY_SUBTYPE !<PGM Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemPGMTransientDarcySubtype = PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE !<PGM Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardLaplaceSubtype = PROBLEM_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedLaplaceSubtype = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStaticPoiseuilleSubtype = PROBLEM_STATIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
- INTEGER(INTG), PARAMETER :: CMISSProblemDynamicPoiseuilleSubtype = PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourcePoissonSubtype = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearPressurePoissonSubtype = PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearPressurePoissonSubtype = PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemALEPressurePoissonSubtype = PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFittedPressurePoissonSubtype = PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourcePoissonSubtype = PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE !<Nonlinear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardHelmholtzSubtype = PROBLEM_STANDARD_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedHelmholtzSubtype = PROBLEM_GENERALISED_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceDiffusionSubtype = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceDiffusionSubtype = PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE !<Linear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceDiffusionSubtype = PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE !<Nonlinear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceALEDiffusionSubtype = PROBLEM_NO_SOURCE_ALE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceALEDiffusionSubtype = PROBLEM_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Linear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceALEDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_SUBTYPE = PROBLEM_NO_SUBTYPE !<No problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_STOKES_SUBTYPE = PROBLEM_STATIC_STOKES_SUBTYPE !<Static Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LAPLACE_STOKES_SUBTYPE = PROBLEM_LAPLACE_STOKES_SUBTYPE !<Laplace type Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_STOKES_SUBTYPE = PROBLEM_TRANSIENT_STOKES_SUBTYPE !<Transient Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_STOKES_SUBTYPE = PROBLEM_ALE_STOKES_SUBTYPE !<ALE Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_STOKES_SUBTYPE = PROBLEM_PGM_STOKES_SUBTYPE !<PGM Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_OPTIMISED_STOKES_SUBTYPE = PROBLEM_OPTIMISED_STOKES_SUBTYPE !<Optimised Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE = PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE = PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE = PROBLEM_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE = PROBLEM_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE = PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STANDARD_DARCY_SUBTYPE = PROBLEM_STANDARD_DARCY_SUBTYPE !<Standard Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_QUASISTATIC_DARCY_SUBTYPE = PROBLEM_QUASISTATIC_DARCY_SUBTYPE !<Quasistatic Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_DARCY_SUBTYPE = PROBLEM_ALE_DARCY_SUBTYPE !<ALE Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_DARCY_SUBTYPE = PROBLEM_TRANSIENT_DARCY_SUBTYPE !<Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_DARCY_SUBTYPE = PROBLEM_PGM_DARCY_SUBTYPE !<PGM Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE = PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE !<PGM Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STANDARD_LAPLACE_SUBTYPE = PROBLEM_STANDARD_LAPLACE_SUBTYPE !<Standard Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_GENERALISED_LAPLACE_SUBTYPE = PROBLEM_GENERALISED_LAPLACE_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_POISEUILLE_SUBTYPE = PROBLEM_STATIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+ INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE = PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE !<Static Poiseuille problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE = PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE !<Linear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE = PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE = PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE = PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE = PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE !<Vector source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE = PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE !<Nonlinear source Poisson problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STANDARD_HELMHOLTZ_SUBTYPE = PROBLEM_STANDARD_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_GENERALISED_HELMHOLTZ_SUBTYPE = PROBLEM_GENERALISED_HELMHOLTZ_SUBTYPE !<No source Helmholtz problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE = PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE = PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE !<Linear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE = PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE !<Nonlinear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_SOURCE_ALE_DIFFUSION_SUBTYPE = PROBLEM_NO_SOURCE_ALE_DIFFUSION_SUBTYPE !<No source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE = PROBLEM_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Linear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE = &
     & PROBLEM_NONLINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE !<Nonlinear source Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
     & PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
     & PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Linear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
     & PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE = &
     & PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE = &
     & PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Linear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceALEAdvectionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE = &
     & PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSProblemNoSourceStaticAdvecDiffSubtype = PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemLinearSourceStaticAdvecDiffSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE = PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<No source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE = &
     & PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Linear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemNonlinearSourceStaticAdvecDiffSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_NONLINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE = &
     & PROBLEM_NONLINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE !<Nonlinear source advection-Diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStaticBurgersSubtype = PROBLEM_STATIC_BURGERS_SUBTYPE !<static Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDynamicBurgersSubtype = PROBLEM_DYNAMIC_BURGERS_SUBTYPE !<dynamic Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionCellMLReacIntegStrangSplitSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_BURGERS_SUBTYPE = PROBLEM_STATIC_BURGERS_SUBTYPE !<static Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DYNAMIC_BURGERS_SUBTYPE = PROBLEM_DYNAMIC_BURGERS_SUBTYPE !<dynamic Burgers problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE = &
     & PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE !CellML reaction integrated strang-split subtype of reaction diffusion \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionCellMLReacEvalNoSplitSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE = &
     & PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE !CellML reaction evaluated no-split subtype of reaction diffusion \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemReactionDiffusionConstantReacNoSplitSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE = &
     & PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE !Standard constant reaction reaction diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STANDARD_DATA_FITTING_SUBTYPE = &
     & PROBLEM_STANDARD_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemVectorDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_VECTOR_DATA_FITTING_SUBTYPE = &
     & PROBLEM_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDivFreeVectorDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE = &
     & PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemVectorDataPreFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemDivFreeVectorDataPreFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE = &
     & PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE !<Standard Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemGeneralisedDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE = &
     & PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE !<Generalised Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMatPropertiesDataFittingSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE = &
     & PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE !<Material Properties Galerkin projection problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityDarcySubtype = PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemPGMElasticityDarcySubtype = PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE !<PGM Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticElasticityTransientDarcySubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE = PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE !<Standard Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE = PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE !<PGM Elasticity Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE = &
     & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE !<Quasistatic Elasticity Transient Darcy problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE = &
     & PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE !<Quasistatic Elasticity Transient Darcy Material Solve problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE = &
     & PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE !<Coupled source diffusion-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE = &
     & PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE !<Coupled source diffusion & advection-diffusion problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardMultiCompartmentTransportSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE = &
     & PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE !<Standard multi-compartment transport problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemStandardElasticityFluidPressureSubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE = &
     & PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE !<Standard elasticity fluid pressure problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemGudunovMonodomainSimpleElasticitySubtype = &
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE = &
     & PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE !<Transient monodomain simple elasticity problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSProblemQuasistaticFiniteElasticitySubtype = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemFiniteElasticityCellMLSubtype = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE = PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE = PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE !<Quasistatic finite elasticity subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
-  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainGudunovSplitSubtype = PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainStrangSplitSubtype = PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemBidomainGudunovSplitSubtype = PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Bidomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemBidomainStrangSplitSubtype = PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE !<Bidomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainBuenoOrovioSubtype = PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemMonodomainTenTusscher06Subtype = PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE = PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE = PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE !<Monodomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE = PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE !<Bidomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE = PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE !<Bidomain Gudunov split problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE = PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE = PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE !<Generalised Laplace problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
 
 
   !>@}
@@ -4603,11 +4677,11 @@ MODULE OPENCMISS
   !> \brief Problem control loop type parameters
   !> \see OPENCMISS::Problem,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSProblemControlSimpleType = PROBLEM_CONTROL_SIMPLE_TYPE !<Simple, one iteration control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemControlFixedLoopType = PROBLEM_CONTROL_FIXED_LOOP_TYPE !<Fixed iteration control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemControlTimeLoopType = PROBLEM_CONTROL_TIME_LOOP_TYPE !<Time control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemControlWhileLoopType = PROBLEM_CONTROL_WHILE_LOOP_TYPE !<While control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSProblemControlLoadIncrementLoopType = PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE !<Load increment control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CONTROL_SIMPLE_TYPE = PROBLEM_CONTROL_SIMPLE_TYPE !<Simple, one iteration control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CONTROL_FIXED_LOOP_TYPE = PROBLEM_CONTROL_FIXED_LOOP_TYPE !<Fixed iteration control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CONTROL_TIME_LOOP_TYPE = PROBLEM_CONTROL_TIME_LOOP_TYPE !<Time control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CONTROL_WHILE_LOOP_TYPE = PROBLEM_CONTROL_WHILE_LOOP_TYPE !<While control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE = PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE !<Load increment control loop. \see OPENCMISS_ProblemControlLoopTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -4617,99 +4691,104 @@ MODULE OPENCMISS
 
   !Interfaces
 
-  PUBLIC CMISSProblemNoClass,CMISSProblemElasticityClass,CMISSProblemFluidMechanicsClass,CMISSProblemElectromagneticsClass, &
-    & CMISSProblemClassicalFieldClass,CMISSProblemBioelectricsClass,CMISSProblemModalClass,CMISSProblemFittingClass, &
-    & CMISSProblemOptimisationClass,CMISSProblemMultiPhysicsClass
+  PUBLIC CMISS_PROBLEM_NO_CLASS,CMISS_PROBLEM_ELASTICITY_CLASS,CMISS_PROBLEM_FLUID_MECHANICS_CLASS, &
+    & CMISS_PROBLEM_ELECTROMAGNETICS_CLASS, &
+    & CMISS_PROBLEM_CLASSICAL_FIELD_CLASS,CMISS_PROBLEM_BIOELECTRICS_CLASS,CMISS_PROBLEM_MODAL_CLASS,CMISS_PROBLEM_FITTING_CLASS, &
+    & CMISS_PROBLEM_OPTIMISATION_CLASS,CMISS_PROBLEM_MULTI_PHYSICS_CLASS
 
-  PUBLIC CMISSProblemNoType
+  PUBLIC CMISS_PROBLEM_NO_TYPE
 
-  PUBLIC CMISSProblemLinearElasticityType,CMISSProblemFiniteElasticityType
+  PUBLIC CMISS_PROBLEM_LINEAR_ELASTICITY_TYPE,CMISS_PROBLEM_FINITE_ELASTICITY_TYPE
 
-  PUBLIC CMISSProblemStokesEquationType,CMISSProblemNavierStokesEquationType,CMISSProblemDarcyEquationType, &
-    & CMISSProblemPoiseuilleEquationType,CMISSProblemBurgersEquationType
+  PUBLIC CMISS_PROBLEM_STOKES_EQUATION_TYPE,CMISS_PROBLEM_NAVIER_STOKES_EQUATION_TYPE,CMISS_PROBLEM_DARCY_EQUATION_TYPE, &
+    & CMISS_PROBLEM_POISEUILLE_EQUATION_TYPE,CMISS_PROBLEM_BURGERS_EQUATION_TYPE
 
-  PUBLIC CMISSProblemElectrostaticType,CMISSProblemMagnetostaticType,CMISSProblemMaxwellsEquationsType
+  PUBLIC CMISS_PROBLEM_ELECTROSTATIC_TYPE,CMISS_PROBLEM_MAGNETOSTATIC_TYPE,CMISS_PROBLEM_MAXWELLS_EQUATIONS_TYPE
 
-  PUBLIC CMISSProblemLaplaceEquationType,CMISSProblemPoissonEquationType,CMISSProblemHelmholtzEquationType, &
-    & CMISSProblemWaveEquationType,CMISSProblemDiffusionEquationType,CMISSProblemAdvectionDiffusionEquationType, &
-    & CMISSProblemReactionDiffusionEquationType,CMISSProblemBiharmonicEquationType
+  PUBLIC CMISS_PROBLEM_LAPLACE_EQUATION_TYPE,CMISS_PROBLEM_POISSON_EQUATION_TYPE,CMISS_PROBLEM_HELMHOLTZ_EQUATION_TYPE, &
+    & CMISS_PROBLEM_WAVE_EQUATION_TYPE,CMISS_PROBLEM_DIFFUSION_EQUATION_TYPE,CMISS_PROBLEM_ADVECTION_DIFFUSION_EQUATION_TYPE, &
+    & CMISS_PROBLEM_REACTION_DIFFUSION_EQUATION_TYPE,CMISS_PROBLEM_BIHARMONIC_EQUATION_TYPE
 
-  PUBLIC CMISSProblemMonodomainEquationType,CMISSProblemBidomainEquationType
+  PUBLIC CMISS_PROBLEM_MONODOMAIN_EQUATION_TYPE,CMISS_PROBLEM_BIDOMAIN_EQUATION_TYPE
 
-  PUBLIC CMISSProblemLinearElasticModalType
+  PUBLIC CMISS_PROBLEM_LINEAR_ELASTIC_MODAL_TYPE
 
-  PUBLIC CMISSProblemDataFittingType
+  PUBLIC CMISS_PROBLEM_DATA_FITTING_TYPE
 
-  PUBLIC CMISSProblemFiniteElasticityDarcyType, &
-    & CMISSProblemFiniteElasticityStokesType, CMISSProblemFiniteElasticityNavierStokesType, &
-    & CMISSProblemDiffusionDiffusionType, CMISSProblemDiffusionAdvectionDiffusionType, &
-    & CMISSProblemMultiCompartmentTransportType,CMISSProblemFiniteElasticityFluidPressureType, &
-    & CMISSProblemBioelectricFiniteElasticityType
+  PUBLIC CMISS_PROBLEM_FINITE_ELASTICITY_DARCY_TYPE, &
+    & CMISS_PROBLEM_FINITE_ELASTICITY_STOKES_TYPE, CMISS_PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE, &
+    & CMISS_PROBLEM_DIFFUSION_DIFFUSION_TYPE, CMISS_PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE, &
+    & CMISS_PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE,CMISS_PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE, &
+    & CMISS_PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
 
-  PUBLIC CMISSProblemNoSubtype
+  PUBLIC CMISS_PROBLEM_NO_SUBTYPE
 
-  PUBLIC CMISSProblemStaticStokesSubtype,CMISSProblemLaplaceStokesSubtype,CMISSProblemTransientStokesSubtype, &
-    & CMISSProblemOptimisedStokesSubtype,CMISSProblemALEStokesSubtype,CMISSProblemPGMStokesSubtype
+  PUBLIC CMISS_PROBLEM_STATIC_STOKES_SUBTYPE,CMISS_PROBLEM_LAPLACE_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_OPTIMISED_STOKES_SUBTYPE,CMISS_PROBLEM_ALE_STOKES_SUBTYPE,CMISS_PROBLEM_PGM_STOKES_SUBTYPE
 
-  PUBLIC CMISSProblemStaticNavierStokesSubtype,CMISSProblemLaplaceNavierStokesSubtype,CMISSProblemTransientNavierStokesSubtype, &
-    & CMISSProblem1DTransientNavierStokesSubtype,CMISSProblemOptimisedNavierStokesSubtype,CMISSProblemALENavierStokesSubtype, &
-    & CMISSProblemPGMNavierStokesSubtype
+  PUBLIC CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE
 
-  PUBLIC CMISSProblemStandardDarcySubtype,CMISSProblemQuasistaticDarcySubtype,CMISSProblemALEDarcySubtype, &
-    & CMISSProblemTransientDarcySubtype,CMISSProblemPGMDarcySubtype,CMISSProblemPGMTransientDarcySubtype
+  PUBLIC CMISS_PROBLEM_STANDARD_DARCY_SUBTYPE,CMISS_PROBLEM_QUASISTATIC_DARCY_SUBTYPE,CMISS_PROBLEM_ALE_DARCY_SUBTYPE, &
+    & CMISS_PROBLEM_TRANSIENT_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE
 
-  PUBLIC CMISSProblemStaticPoiseuilleSubtype,CMISSProblemDynamicPoiseuilleSubtype
+  PUBLIC CMISS_PROBLEM_STATIC_POISEUILLE_SUBTYPE,CMISS_PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE
 
-  PUBLIC CMISSProblemStaticBurgersSubtype,CMISSProblemDynamicBurgersSubtype
+  PUBLIC CMISS_PROBLEM_STATIC_BURGERS_SUBTYPE,CMISS_PROBLEM_DYNAMIC_BURGERS_SUBTYPE
 
-  PUBLIC CMISSProblemStandardLaplaceSubtype,CMISSProblemGeneralisedLaplaceSubtype,CMISSProblemMonodomainStrangSplittingEquationType
+  PUBLIC CMISS_PROBLEM_STANDARD_LAPLACE_SUBTYPE,CMISS_PROBLEM_GENERALISED_LAPLACE_SUBTYPE, &
+    & CMISS_PROBLEM_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE
 
-  PUBLIC CMISSProblemLinearSourcePoissonSubtype,CMISSProblemNonlinearSourcePoissonSubtype, &
-    & CMISSProblemLinearPressurePoissonSubtype,CMISSProblemNonlinearPressurePoissonSubtype, &
-    & CMISSProblemALEPressurePoissonSubtype, CMISSProblemFittedPressurePoissonSubtype
-
-
-  PUBLIC CMISSProblemStandardHelmholtzSubtype,CMISSProblemGeneralisedHelmholtzSubtype
-
-  PUBLIC CMISSProblemNoSourceDiffusionSubtype,CMISSProblemLinearSourceDiffusionSubtype,CMISSProblemNonlinearSourceDiffusionSubtype
-
-  PUBLIC CMISSProblemNoSourceALEDiffusionSubtype,CMISSProblemLinearSourceALEDiffusionSubtype, &
-    & CMISSProblemNonlinearSourceALEDiffusionSubtype
-
-  PUBLIC CMISSProblemNoSourceAdvectionDiffusionSubtype,CMISSProblemLinearSourceAdvectionDiffusionSubtype, &
-    & CMISSProblemNonlinearSourceAdvectionDiffusionSubtype
-
-  PUBLIC CMISSProblemNoSourceALEAdvectionDiffusionSubtype,CMISSProblemLinearSourceALEAdvectionDiffusionSubtype, &
-    & CMISSProblemNonlinearSourceALEAdvectionDiffusionSubtype
-
-  PUBLIC CMISSProblemNoSourceStaticAdvecDiffSubtype,CMISSProblemLinearSourceStaticAdvecDiffSubtype, &
-    & CMISSProblemNonlinearSourceStaticAdvecDiffSubtype
-
-  PUBLIC CMISSProblemReactionDiffusionCellMLReacIntegStrangSplitSubtype, &
-    & CMISSProblemReactionDiffusionCellMLReacEvalNoSplitSubtype, &
-    & CMISSProblemReactionDiffusionConstantReacNoSplitSubtype
+  PUBLIC CMISS_PROBLEM_LINEAR_SOURCE_POISSON_SUBTYPE,CMISS_PROBLEM_NONLINEAR_SOURCE_POISSON_SUBTYPE, &
+    & CMISS_PROBLEM_LINEAR_PRESSURE_POISSON_SUBTYPE,CMISS_PROBLEM_NONLINEAR_PRESSURE_POISSON_SUBTYPE, &
+    & CMISS_PROBLEM_ALE_PRESSURE_POISSON_SUBTYPE, CMISS_PROBLEM_FITTED_PRESSURE_POISSON_SUBTYPE
 
 
-  PUBLIC CMISSProblemStandardDataFittingSubtype,CMISSProblemGeneralisedDataFittingSubtype, &
-    & CMISSProblemVectorDataFittingSubtype,CMISSProblemDivFreeVectorDataFittingSubtype, &
-    & CMISSProblemVectorDataPreFittingSubtype,CMISSProblemDivFreeVectorDataPreFittingSubtype, &
-    & CMISSProblemMatPropertiesDataFittingSubtype
+  PUBLIC CMISS_PROBLEM_STANDARD_HELMHOLTZ_SUBTYPE,CMISS_PROBLEM_GENERALISED_HELMHOLTZ_SUBTYPE
 
-  PUBLIC CMISSProblemMonodomainGudunovSplitSubtype,CMISSProblemMonodomainStrangSplitSubtype, &
-    & CMISSProblemBidomainGudunovSplitSubtype,CMISSProblemBidomainStrangSplitSubtype
+  PUBLIC CMISS_PROBLEM_NO_SOURCE_DIFFUSION_SUBTYPE,CMISS_PROBLEM_LINEAR_SOURCE_DIFFUSION_SUBTYPE, &
+    & CMISS_PROBLEM_NONLINEAR_SOURCE_DIFFUSION_SUBTYPE
 
-  PUBLIC CMISSProblemMonodomainBuenoOrovioSubtype, CMISSProblemMonodomainTenTusscher06Subtype
+  PUBLIC CMISS_PROBLEM_NO_SOURCE_ALE_DIFFUSION_SUBTYPE,CMISS_PROBLEM_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE, &
+    & CMISS_PROBLEM_NONLINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE
 
-  PUBLIC CMISSProblemControlSimpleType,CMISSProblemControlFixedLoopType,CMISSProblemControlTimeLoopType, &
-    & CMISSProblemControlWhileLoopType,CMISSProblemControlLoadIncrementLoopType
+  PUBLIC CMISS_PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,CMISS_PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
+    & CMISS_PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE
 
-  PUBLIC CMISSProblemStandardElasticityDarcySubtype, CMISSProblemPGMElasticityDarcySubtype, &
-   & CMISSProblemQuasistaticElasticityTransientDarcySubtype,CMISSProblemQuasistaticElastTransDarcyMatSolveSubtype, &
-   & CMISSProblemCoupledSourceDiffusionDiffusionSubtype, CMISSProblemCoupledSourceDiffusionAdvecDiffusionSubtype, &
-   & CMISSProblemStandardMultiCompartmentTransportSubtype,CMISSProblemStandardElasticityFluidPressureSubtype, &
-   & CMISSProblemGudunovMonodomainSimpleElasticitySubtype
+  PUBLIC CMISS_PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE,CMISS_PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE, &
+    & CMISS_PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE
 
-  PUBLIC CMISSProblemQuasistaticFiniteElasticitySubtype,CMISSProblemFiniteElasticityCellMLSubtype
+  PUBLIC CMISS_PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE,CMISS_PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE, &
+    & CMISS_PROBLEM_NONLINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE
+
+  PUBLIC CMISS_PROBLEM_CELLML_REAC_INTEG_REAC_DIFF_STRANG_SPLIT_SUBTYPE, &
+    & CMISS_PROBLEM_CELLML_REAC_EVAL_REAC_DIFF_NO_SPLIT_SUBTYPE, &
+    & CMISS_PROBLEM_CONSTANT_REAC_DIFF_NO_SPLIT_SUBTYPE
+
+
+  PUBLIC CMISS_PROBLEM_STANDARD_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE, &
+    & CMISS_PROBLEM_VECTOR_DATA_FITTING_SUBTYPE,CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_FITTING_SUBTYPE, &
+    & CMISS_PROBLEM_VECTOR_DATA_PRE_FITTING_SUBTYPE,CMISS_PROBLEM_DIV_FREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
+    & CMISS_PROBLEM_MAT_PROPERTIES_DATA_FITTING_SUBTYPE
+
+  PUBLIC CMISS_PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE,CMISS_PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE, &
+    & CMISS_PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE,CMISS_PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE
+
+  PUBLIC CMISS_PROBLEM_MONODOMAIN_BUENOOROVIO_SUBTYPE, CMISS_PROBLEM_MONODOMAIN_TENTUSSCHER06_SUBTYPE
+
+  PUBLIC CMISS_PROBLEM_CONTROL_SIMPLE_TYPE,CMISS_PROBLEM_CONTROL_FIXED_LOOP_TYPE,CMISS_PROBLEM_CONTROL_TIME_LOOP_TYPE, &
+    & CMISS_PROBLEM_CONTROL_WHILE_LOOP_TYPE,CMISS_PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE
+
+  PUBLIC CMISS_PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, CMISS_PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
+   & CMISS_PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,CMISS_PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE, &
+   & CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE, CMISS_PROBLEM_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE, &
+   & CMISS_PROBLEM_STANDARD_MULTI_COMPARTMENT_TRANSPORT_SUBTYPE,CMISS_PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE, &
+   & CMISS_PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE
+
+  PUBLIC CMISS_PROBLEM_QUASISTATIC_FINITE_ELASTICITY_SUBTYPE,CMISS_PROBLEM_FINITE_ELASTICITY_CELLML_SUBTYPE
 !!==================================================================================================================================
 !!
 !! PROBLEM_ROUTINES
@@ -4994,204 +5073,205 @@ MODULE OPENCMISS
   !> \brief The types of solver
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverLinearType = SOLVER_LINEAR_TYPE !<A linear solver. \see OPENCMISS_SolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearType = SOLVER_NONLINEAR_TYPE !<A nonlinear solver. \see OPENCMISS_SolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicType = SOLVER_DYNAMIC_TYPE !<A dynamic solver. \see  OPENCMISS_SolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEType = SOLVER_DAE_TYPE !<A differential-algebraic equation solver. \see OPENCMISS_SolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverEigenproblemType = SOLVER_EIGENPROBLEM_TYPE !<A eigenproblem solver. \see OPENCMISS_SolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverOptimiserType = SOLVER_OPTIMISER_TYPE !<An optimiser solver. \see OPENCMISS_SolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_LINEAR_TYPE = SOLVER_LINEAR_TYPE !<A linear solver. \see OPENCMISS_SolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_TYPE = SOLVER_NONLINEAR_TYPE !<A nonlinear solver. \see OPENCMISS_SolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_TYPE = SOLVER_DYNAMIC_TYPE !<A dynamic solver. \see  OPENCMISS_SolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_TYPE = SOLVER_DAE_TYPE !<A differential-algebraic equation solver. \see OPENCMISS_SolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_EIGENPROBLEM_TYPE = SOLVER_EIGENPROBLEM_TYPE !<A eigenproblem solver. \see OPENCMISS_SolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_OPTIMISER_TYPE = SOLVER_OPTIMISER_TYPE !<An optimiser solver. \see OPENCMISS_SolverTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISSSolverCellMLEvaluatorType = SOLVER_CELLML_EVALUATOR_TYPE !<A CellML evaluator solver. \see OPENCMISS_SolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_SolverLibraries OPENCMISS::Solver::SolverLibraries
   !> \brief The types of solver libraries.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverCMISSLibrary = SOLVER_CMISS_LIBRARY !<CMISS (internal) solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverPETScLibrary = SOLVER_PETSC_LIBRARY !<PETSc solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverMUMPSLibrary = SOLVER_MUMPS_LIBRARY !<MUMPS solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverSuperLULibrary = SOLVER_SUPERLU_LIBRARY !<SuperLU solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverSpoolesLULibrary = SOLVER_SPOOLES_LIBRARY !<SPOOLES solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverUMFPACKLibrary = SOLVER_UMFPACK_LIBRARY !<UMFPACK solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverLUSOLLibrary = SOLVER_LUSOL_LIBRARY !<LUSOL solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverESSLLibrary = SOLVER_ESSL_LIBRARY !<ESSL solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverLAPACKLibrary = SOLVER_LAPACK_LIBRARY !<LAPACK solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverTAOLibrary = SOLVER_TAO_LIBRARY !<TAO solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverHypreLibrary = SOLVER_HYPRE_LIBRARY !<Hypre solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverPaStiXLibrary = SOLVER_PASTIX_LIBRARY !<PaStiX solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_CMISS_LIBRARY = SOLVER_CMISS_LIBRARY !<CMISS (internal) solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_PETSC_LIBRARY = SOLVER_PETSC_LIBRARY !<PETSc solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_MUMPS_LIBRARY = SOLVER_MUMPS_LIBRARY !<MUMPS solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_SUPERLU_LIBRARY = SOLVER_SUPERLU_LIBRARY !<SuperLU solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_SPOOLES_LIBRARY = SOLVER_SPOOLES_LIBRARY !<SPOOLES solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_UMFPACK_LIBRARY = SOLVER_UMFPACK_LIBRARY !<UMFPACK solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_LUSOL_LIBRARY = SOLVER_LUSOL_LIBRARY !<LUSOL solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ESSL_LIBRARY = SOLVER_ESSL_LIBRARY !<ESSL solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_LAPACK_LIBRARY = SOLVER_LAPACK_LIBRARY !<LAPACK solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_TAO_LIBRARY = SOLVER_TAO_LIBRARY !<TAO solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_HYPRE_LIBRARY = SOLVER_HYPRE_LIBRARY !<Hypre solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_PASTIX_LIBRARY = SOLVER_PASTIX_LIBRARY !<PaStiX solver library. \see OPENCMISS_SolverLibraries,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_LinearSolverTypes OPENCMISS::Solver::LinearSolverTypes
   !> \brief The types of linear solvers.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverLinearDirectSolveType = SOLVER_LINEAR_DIRECT_SOLVE_TYPE !<Direct linear solver type. \see OPENCMISS_LinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverLinearIterativeSolveType = SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE !<Iterative linear solver type. \see OPENCMISS_LinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_LINEAR_DIRECT_SOLVE_TYPE = SOLVER_LINEAR_DIRECT_SOLVE_TYPE !<Direct linear solver type. \see OPENCMISS_LinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE = SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE !<Iterative linear solver type. \see OPENCMISS_LinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DirectLinearSolverTypes OPENCMISS::Solver::DirectLinearSolverTypes
   !> \brief The types of direct linear solvers. \todo Move libraries to a more appropriate place.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectLU = SOLVER_DIRECT_LU !<LU direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectCholesky = SOLVER_DIRECT_CHOLESKY !<Cholesky direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDirectSVD = SOLVER_DIRECT_SVD !<SVD direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DIRECT_LU = SOLVER_DIRECT_LU !<LU direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DIRECT_CHOLESKY = SOLVER_DIRECT_CHOLESKY !<Cholesky direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DIRECT_SVD = SOLVER_DIRECT_SVD !<SVD direct linear solver. \see OPENCMISS_DirectLinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_IterativeLinearSolverTypes OPENCMISS::Solver::IterativeLinearSolverTypes
   !> \brief The types of iterative linear solvers.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeRichardson = SOLVER_ITERATIVE_RICHARDSON !<Richardson iterative solver type. \see  OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeChebychev = SOLVER_ITERATIVE_CHEBYCHEV !<Chebychev iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeConjugateGradient = SOLVER_ITERATIVE_CONJUGATE_GRADIENT !<Conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiconjugateGradient = SOLVER_ITERATIVE_BICONJUGATE_GRADIENT !<Bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeGMRES = SOLVER_ITERATIVE_GMRES !<Generalised minimum residual iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBiCGSTAB = SOLVER_ITERATIVE_BiCGSTAB !<Stabalised bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverConjgradSquared = SOLVER_ITERATIVE_CONJGRAD_SQUARED !<Conjugate gradient squared iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_RICHARDSON = SOLVER_ITERATIVE_RICHARDSON !<Richardson iterative solver type. \see  OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_CHEBYCHEV = SOLVER_ITERATIVE_CHEBYCHEV !<Chebychev iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT = SOLVER_ITERATIVE_CONJUGATE_GRADIENT !<Conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_BICONJUGATE_GRADIENT = SOLVER_ITERATIVE_BICONJUGATE_GRADIENT !<Bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_GMRES = SOLVER_ITERATIVE_GMRES !<Generalised minimum residual iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_BiCGSTAB = SOLVER_ITERATIVE_BiCGSTAB !<Stabalised bi-conjugate gradient iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_CONJGRAD_SQUARED = SOLVER_ITERATIVE_CONJGRAD_SQUARED !<Conjugate gradient squared iterative solver type. \see OPENCMISS_IterativeLinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_IterativePreconditionerTypes OPENCMISS::Solver::IterativePreconditionerTypes
   !> \brief The types of iterative preconditioners.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeNoPreconditioner = SOLVER_ITERATIVE_NO_PRECONDITIONER !<No preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeJacobiPreconditioner = SOLVER_ITERATIVE_JACOBI_PRECONDITIONER !<Jacobi preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeBlockJacobiPreconditioner = SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER !<Iterative block Jacobi preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeSORPreconditioner = SOLVER_ITERATIVE_SOR_PRECONDITIONER !<Successive over relaxation preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeIncompleteCholeskyPreconditioner = &
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_NO_PRECONDITIONER = SOLVER_ITERATIVE_NO_PRECONDITIONER !<No preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_JACOBI_PRECONDITIONER = SOLVER_ITERATIVE_JACOBI_PRECONDITIONER !<Jacobi preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER = SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER !<Iterative block Jacobi preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_SOR_PRECONDITIONER = SOLVER_ITERATIVE_SOR_PRECONDITIONER !<Successive over relaxation preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER = &
     & SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER !<Incomplete Cholesky preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeIncompleteLUPreconditioner = SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER !<Incomplete LU preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverIterativeAdditiveSchwarzPreconditioner = SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER !<Additive Schwrz preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER = SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER !<Incomplete LU preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER =  &
+    & SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER !<Additive Schwrz preconditioner type. \see OPENCMISS_IterativePreconditionerTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_NonlinearSolverTypes OPENCMISS::Solver::NonlinearSolverTypes
   !> \brief The types of nonlinear solvers.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearNewton = SOLVER_NONLINEAR_NEWTON !<Newton nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearBFGSInverse = SOLVER_NONLINEAR_BFGS_INVERSE !<BFGS inverse nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNonlinearSQP = SOLVER_NONLINEAR_SQP !<Sequential Quadratic Program nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_NEWTON = SOLVER_NONLINEAR_NEWTON !<Newton nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_BFGS_INVERSE = SOLVER_NONLINEAR_BFGS_INVERSE !<BFGS inverse nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NONLINEAR_SQP = SOLVER_NONLINEAR_SQP !<Sequential Quadratic Program nonlinear solver type. \see OPENCMISS_NonlinearSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_NewtonSolverTypes OPENCMISS::Solver::NewtonSolverTypes
   !> \brief The types of nonlinear Newton solvers.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonLinesearch = SOLVER_NEWTON_LINESEARCH !<Newton line search nonlinear solver type. \see OPENCMISS_NewtonSolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonTrustregion = SOLVER_NEWTON_TRUSTREGION !<Newton trust region nonlinear solver type. \see OPENCMISS_NewtonSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH = SOLVER_NEWTON_LINESEARCH !<Newton line search nonlinear solver type. \see OPENCMISS_NewtonSolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_TRUSTREGION = SOLVER_NEWTON_TRUSTREGION !<Newton trust region nonlinear solver type. \see OPENCMISS_NewtonSolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_NewtonLineSearchTypes OPENCMISS::Solver::NewtonLineSearchTypes
   !> \brief The types line search techniques for Newton line search nonlinear solvers.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonLinesearchNoNorms = SOLVER_NEWTON_LINESEARCH_NONORMS !<No norms line search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonLinesearchNone = SOLVER_NEWTON_LINESEARCH_NONE !<No line search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonLinesearchQuadratic = SOLVER_NEWTON_LINESEARCH_QUADRATIC !<Quadratic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonLinesearchCubic = SOLVER_NEWTON_LINESEARCH_CUBIC !<Cubic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_NONORMS = SOLVER_NEWTON_LINESEARCH_NONORMS !<No norms line search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_NONE = SOLVER_NEWTON_LINESEARCH_NONE !<No line search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_QUADRATIC = SOLVER_NEWTON_LINESEARCH_QUADRATIC !<Quadratic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_LINESEARCH_CUBIC = SOLVER_NEWTON_LINESEARCH_CUBIC !<Cubic search for Newton line search nonlinear solves \see OPENCMISS_NewtonLineSearchTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_JacobianCalculationTypes OPENCMISS::Solver::JacobianCalculationTypes
   !> \brief The Jacobian calculation types for a nonlinear solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianNotCaclulated = SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED !<The Jacobian values will not be calculated for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianAnalyticCalculated = SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED !<The Jacobian values will be calculated analytically for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverNewtonJacobianFDCalculated = SOLVER_NEWTON_JACOBIAN_FD_CALCULATED !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED = SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED !<The Jacobian values will not be calculated for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED = SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED !<The Jacobian values will be calculated analytically for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED = SOLVER_NEWTON_JACOBIAN_FD_CALCULATED !<The Jacobian values will be calcualted using finite differences for the nonlinear equations set. \see OPENCMISS_JacobianCalculationTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DynamicOrderTypes OPENCMISS::Solver::DynamicOrderTypes
   !> \brief The order types for a dynamic solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicFirstOrder = SOLVER_DYNAMIC_FIRST_ORDER !<Dynamic solver has first order terms. \see OPENCMISS_DynamicOrderTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicSecondOrder = SOLVER_DYNAMIC_SECOND_ORDER !<Dynamic solver has second order terms. \see OPENCMISS_DynamicOrderTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_FIRST_ORDER = SOLVER_DYNAMIC_FIRST_ORDER !<Dynamic solver has first order terms. \see OPENCMISS_DynamicOrderTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_SECOND_ORDER = SOLVER_DYNAMIC_SECOND_ORDER !<Dynamic solver has second order terms. \see OPENCMISS_DynamicOrderTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DynamicLinearityTypes OPENCMISS::Solver::DynamicLinearityTypes
   !> \brief The time linearity types for a dynamic solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicLinear = SOLVER_DYNAMIC_LINEAR !<Dynamic solver has linear terms. \see OPENCMISS_DynamicLinearityTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicNonlinear = SOLVER_DYNAMIC_NONLINEAR !<Dynamic solver has nonlinear terms. \see OPENCMISS_DynamicLinearityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_LINEAR = SOLVER_DYNAMIC_LINEAR !<Dynamic solver has linear terms. \see OPENCMISS_DynamicLinearityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_NONLINEAR = SOLVER_DYNAMIC_NONLINEAR !<Dynamic solver has nonlinear terms. \see OPENCMISS_DynamicLinearityTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DynamicDegreeTypes OPENCMISS::Solver::DynamicDegreeTypes
   !> \brief The time interpolation polynomial degree types for a dynamic solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicFirstDegree = SOLVER_DYNAMIC_FIRST_DEGREE !<Dynamic solver uses a first degree polynomial for time interpolation. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicSecondDegree = SOLVER_DYNAMIC_SECOND_DEGREE !<Dynamic solver uses a second degree polynomial for time interpolation. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegree = SOLVER_DYNAMIC_THIRD_DEGREE !<Dynamic solver uses a third degree polynomial for time interpolation. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_FIRST_DEGREE = SOLVER_DYNAMIC_FIRST_DEGREE !<Dynamic solver uses a first degree polynomial for time interpolation. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_SECOND_DEGREE = SOLVER_DYNAMIC_SECOND_DEGREE !<Dynamic solver uses a second degree polynomial for time interpolation. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_THIRD_DEGREE = SOLVER_DYNAMIC_THIRD_DEGREE !<Dynamic solver uses a third degree polynomial for time interpolation. \see OPENCMISS_DynamicDegreeTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DynamicSchemeTypes OPENCMISS::Solver::DynamicSchemeTypes
   !> \brief The types of dynamic solver scheme.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicEulerScheme = SOLVER_DYNAMIC_EULER_SCHEME !<Euler (explicit) dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBackwardEulerScheme = SOLVER_DYNAMIC_BACKWARD_EULER_SCHEME !<Backward Euler (implicit) dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicCrankNicolsonScheme = SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME !<Crank-Nicolson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicGalerkinScheme = SOLVER_DYNAMIC_GALERKIN_SCHEME !<Galerkin dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicZlamalScheme = SOLVER_DYNAMIC_ZLAMAL_SCHEME !<Zlamal dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicSecondDegreeGearScheme = SOLVER_DYNAMIC_SECOND_DEGREE_GEAR_SCHEME !<2nd degree Gear dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicSecondDegreeLiniger1Scheme = SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER1_SCHEME !<1st 2nd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicSecondDegreeLiniger2Scheme = SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER2_SCHEME !<2nd 2nd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicNewmark1Scheme = SOLVER_DYNAMIC_NEWMARK1_SCHEME !<1st Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicNewmark2Scheme = SOLVER_DYNAMIC_NEWMARK2_SCHEME !<2nd Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicNewmark3Scheme = SOLVER_DYNAMIC_NEWMARK3_SCHEME !<3rd Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeGearScheme = SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME !<3rd degree Gear dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger1Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME !<1st 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicThirdDegreeLiniger2Scheme = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME !<2nd 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHouboltScheme = SOLVER_DYNAMIC_HOUBOLT_SCHEME !<Houbolt dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicWilsonScheme = SOLVER_DYNAMIC_WILSON_SCHEME !<Wilson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBossakNewmark1Scheme = SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME !<1st Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicBossakNewmark2Scheme = SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME !<2nd Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHilbertHughesTaylor1Scheme = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicHilbertHughesTaylor2Scheme = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDynamicUserDefinedScheme = SOLVER_DYNAMIC_USER_DEFINED_SCHEME !<User specified degree and theta dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_EULER_SCHEME = SOLVER_DYNAMIC_EULER_SCHEME !<Euler (explicit) dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_BACKWARD_EULER_SCHEME = SOLVER_DYNAMIC_BACKWARD_EULER_SCHEME !<Backward Euler (implicit) dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME = SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME !<Crank-Nicolson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_GALERKIN_SCHEME = SOLVER_DYNAMIC_GALERKIN_SCHEME !<Galerkin dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_ZLAMAL_SCHEME = SOLVER_DYNAMIC_ZLAMAL_SCHEME !<Zlamal dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_SECOND_DEGREE_GEAR_SCHEME = SOLVER_DYNAMIC_SECOND_DEGREE_GEAR_SCHEME !<2nd degree Gear dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER1_SCHEME = SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER1_SCHEME !<1st 2nd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER2_SCHEME = SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER2_SCHEME !<2nd 2nd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_NEWMARK1_SCHEME = SOLVER_DYNAMIC_NEWMARK1_SCHEME !<1st Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_NEWMARK2_SCHEME = SOLVER_DYNAMIC_NEWMARK2_SCHEME !<2nd Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_NEWMARK3_SCHEME = SOLVER_DYNAMIC_NEWMARK3_SCHEME !<3rd Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME = SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME !<3rd degree Gear dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME !<1st 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME = SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME !<2nd 3rd degree Liniger dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_HOUBOLT_SCHEME = SOLVER_DYNAMIC_HOUBOLT_SCHEME !<Houbolt dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_WILSON_SCHEME = SOLVER_DYNAMIC_WILSON_SCHEME !<Wilson dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME = SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME !<1st Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME = SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME !<2nd Bossak-Newmark dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME = SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME !<1st Hilbert-Hughes-Taylor dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DYNAMIC_USER_DEFINED_SCHEME = SOLVER_DYNAMIC_USER_DEFINED_SCHEME !<User specified degree and theta dynamic solver. \see OPENCMISS_DynamicSchemeTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DAETypes OPENCMISS::Solver::DAETypes
   !> \brief The type of differential-algebraic equation.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEDifferentialOnly = SOLVER_DAE_DIFFERENTIAL_ONLY !<Differential equations only. \see OPENCMISS_DAETypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEIndex1 = SOLVER_DAE_INDEX_1 !<Index 1 differential-algebraic equation. \see OPENCMISS_DAETypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEIndex2 = SOLVER_DAE_INDEX_2 !<Index 2 differential-algebraic equation. \see OPENCMISS_DAETypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEIndex3 = SOLVER_DAE_INDEX_3 !<Index 3 differential-algebraic equation. \see OPENCMISS_DAETypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_DIFFERENTIAL_ONLY = SOLVER_DAE_DIFFERENTIAL_ONLY !<Differential equations only. \see OPENCMISS_DAETypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_INDEX_1 = SOLVER_DAE_INDEX_1 !<Index 1 differential-algebraic equation. \see OPENCMISS_DAETypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_INDEX_2 = SOLVER_DAE_INDEX_2 !<Index 2 differential-algebraic equation. \see OPENCMISS_DAETypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_INDEX_3 = SOLVER_DAE_INDEX_3 !<Index 3 differential-algebraic equation. \see OPENCMISS_DAETypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_DAESolverTypes OPENCMISS::Solver::DAESolverTypes
   !> \brief The differential-algebraic equation solver types for a differential-algebraic equation solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEEuler = SOLVER_DAE_EULER !<Euler differential-algebraic equation solver. \see
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAECrankNicolson = SOLVER_DAE_CRANK_NICOLSON !<Crank-Nicolson differential-algebraic equation solver. \see
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAERungeKutta = SOLVER_DAE_RUNGE_KUTTA !<Runge-Kutta differential-algebraic equation solver. \see
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEAdamsMoulton = SOLVER_DAE_ADAMS_MOULTON !<Adams-Moulton differential-algebraic equation solver. \see
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEBDF = SOLVER_DAE_BDF !<General BDF differential-algebraic equation solver. \see
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAERushLarson = SOLVER_DAE_RUSH_LARSON !<Rush-Larson differential-algebraic equation solver. \see
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEExternal = SOLVER_DAE_EXTERNAL !<External (e.g., CellML generated) differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_EULER = SOLVER_DAE_EULER !<Euler differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_CRANK_NICOLSON = SOLVER_DAE_CRANK_NICOLSON !<Crank-Nicolson differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_RUNGE_KUTTA = SOLVER_DAE_RUNGE_KUTTA !<Runge-Kutta differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_ADAMS_MOULTON = SOLVER_DAE_ADAMS_MOULTON !<Adams-Moulton differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_BDF = SOLVER_DAE_BDF !<General BDF differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_RUSH_LARSON = SOLVER_DAE_RUSH_LARSON !<Rush-Larson differential-algebraic equation solver. \see
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_EXTERNAL = SOLVER_DAE_EXTERNAL !<External (e.g., CellML generated) differential-algebraic equation solver. \see
   !>@}
   !> \addtogroup OPENCMISS_EulerDAESolverTypes OPENCMISS::Solver::EulerDAESolverTypes
   !> \brief The Euler solver types for a differential-algebriac equation solver.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEEulerForward = SOLVER_DAE_EULER_FORWARD !<Forward Euler differential equation solver. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEEulerBackward = SOLVER_DAE_EULER_BACKWARD !<Backward Euler differential equation solver. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverDAEEulerImproved = SOLVER_DAE_EULER_IMPROVED !<Improved Euler differential equation solver. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_EULER_FORWARD = SOLVER_DAE_EULER_FORWARD !<Forward Euler differential equation solver. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_EULER_BACKWARD = SOLVER_DAE_EULER_BACKWARD !<Backward Euler differential equation solver. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_DAE_EULER_IMPROVED = SOLVER_DAE_EULER_IMPROVED !<Improved Euler differential equation solver. \see OPENCMISS_EulerDAESolverTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_SolutionInitialiseTypes OPENCMISS::Solver::SolutionInitialiseTypes
   !> \brief The types of solution initialisation.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverSolutionInitialiseZero = SOLVER_SOLUTION_INITIALISE_ZERO !<Initialise the solution by zeroing it before a solve. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverSolutionInitialiseCurrentField = SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD !<Initialise the solution by copying in the current dependent field values. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverSolutionInitialiseNoChange = SOLVER_SOLUTION_INITIALISE_NO_CHANGE !<Do not change the solution before a solve. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_SOLUTION_INITIALISE_ZERO = SOLVER_SOLUTION_INITIALISE_ZERO !<Initialise the solution by zeroing it before a solve. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD = SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD !<Initialise the solution by copying in the current dependent field values. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_SOLUTION_INITIALISE_NO_CHANGE = SOLVER_SOLUTION_INITIALISE_NO_CHANGE !<Do not change the solution before a solve. \see OPENCMISS_SolutionInitialiseTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_SolverOutputTypes OPENCMISS::Solver::OutputTypes
   !> \brief The types of output.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverNoOutput = SOLVER_NO_OUTPUT !<No output from the solver routines. \see OPENCMISS_SolverOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverProgressOutput = SOLVER_PROGRESS_OUTPUT !<Progress output from solver routines. \see OPENCMISS_SolverOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverTimingOutput = SOLVER_TIMING_OUTPUT !<Timing output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverSolverOutput = SOLVER_SOLVER_OUTPUT !<Solver specific output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverSolverMatrixOutput = SOLVER_MATRIX_OUTPUT !<Solver matrices output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_NO_OUTPUT = SOLVER_NO_OUTPUT !<No output from the solver routines. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_PROGRESS_OUTPUT = SOLVER_PROGRESS_OUTPUT !<Progress output from solver routines. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_TIMING_OUTPUT = SOLVER_TIMING_OUTPUT !<Timing output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_SOLVER_OUTPUT = SOLVER_SOLVER_OUTPUT !<Solver specific output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_MATRIX_OUTPUT = SOLVER_MATRIX_OUTPUT !<Solver matrices output from the solver routines plus below. \see OPENCMISS_SolverOutputTypes,OPENCMISS
   !>@}
   !> \addtogroup OPENCMISS_SolverEquationsSparsityTypes OPENCMISS::SolverEquations::SparsityTypes
   !> \brief The types of sparse solver equations matrices.
   !> \see OPENCMISS::Solver::Constants,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISSSolverEquationsSparseMatrices = SOLVER_SPARSE_MATRICES !<Use sparse solver matrices. \see OPENCMISS_SolverEquationsSparsityTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSSolverEquationsFullMatrices = SOLVER_FULL_MATRICES !<Use fully populated solver matrices. \see OPENCMISS_SolverEquationsSparsityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_SPARSE_MATRICES = SOLVER_SPARSE_MATRICES !<Use sparse solver matrices. \see OPENCMISS_SolverEquationsSparsityTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_SOLVER_FULL_MATRICES = SOLVER_FULL_MATRICES !<Use fully populated solver matrices. \see OPENCMISS_SolverEquationsSparsityTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -5581,60 +5661,66 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSSolverEquationsBoundaryConditionsGetObj
   END INTERFACE !CMISSSolverEquationsBoundaryConditionsGet
 
-  PUBLIC CMISSSolverLinearType,CMISSSolverNonlinearType,CMISSSolverDynamicType,CMISSSolverDAEType,CMISSSolverEigenproblemType, &
-    & CMISSSolverOptimiserType
+  PUBLIC CMISS_SOLVER_LINEAR_TYPE,CMISS_SOLVER_NONLINEAR_TYPE,CMISS_SOLVER_DYNAMIC_TYPE,CMISS_SOLVER_DAE_TYPE, &
+    & CMISS_SOLVER_EIGENPROBLEM_TYPE, &
+    & CMISS_SOLVER_OPTIMISER_TYPE
 
-  PUBLIC CMISSSolverCMISSLibrary,CMISSSolverPETScLibrary,CMISSSolverMUMPSLibrary,CMISSSolverSuperLULibrary, &
-    & CMISSSolverSpoolesLULibrary,CMISSSolverUMFPACKLibrary,CMISSSolverLUSOLLibrary,CMISSSolverESSLLibrary, &
-    & CMISSSolverLAPACKLibrary,CMISSSolverTAOLibrary,CMISSSolverHypreLibrary,CMISSSolverPaStiXLibrary
+  PUBLIC CMISS_SOLVER_CMISS_LIBRARY,CMISS_SOLVER_PETSC_LIBRARY,CMISS_SOLVER_MUMPS_LIBRARY,CMISS_SOLVER_SUPERLU_LIBRARY, &
+    & CMISS_SOLVER_SPOOLES_LIBRARY,CMISS_SOLVER_UMFPACK_LIBRARY,CMISS_SOLVER_LUSOL_LIBRARY,CMISS_SOLVER_ESSL_LIBRARY, &
+    & CMISS_SOLVER_LAPACK_LIBRARY,CMISS_SOLVER_TAO_LIBRARY,CMISS_SOLVER_HYPRE_LIBRARY,CMISS_SOLVER_PASTIX_LIBRARY
 
-  PUBLIC CMISSSolverLinearDirectSolveType,CMISSSolverLinearIterativeSolveType
+  PUBLIC CMISS_SOLVER_LINEAR_DIRECT_SOLVE_TYPE,CMISS_SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE
 
-  PUBLIC CMISSSolverIterativeRichardson,CMISSSolverIterativeChebychev,CMISSSolverIterativeConjugateGradient, &
-    & CMISSSolverIterativeBiconjugateGradient,CMISSSolverIterativeGMRES,CMISSSolverIterativeBiCGSTAB,CMISSSolverConjgradSquared
+  PUBLIC CMISS_SOLVER_ITERATIVE_RICHARDSON,CMISS_SOLVER_ITERATIVE_CHEBYCHEV,CMISS_SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
+    & CMISS_SOLVER_ITERATIVE_BICONJUGATE_GRADIENT,CMISS_SOLVER_ITERATIVE_GMRES,CMISS_SOLVER_ITERATIVE_BiCGSTAB, &
+    & CMISS_SOLVER_ITERATIVE_CONJGRAD_SQUARED
 
-  PUBLIC CMISSSolverIterativeNoPreconditioner,CMISSSolverIterativeJacobiPreconditioner, &
-    & CMISSSolverIterativeBlockJacobiPreconditioner,CMISSSolverIterativeSORPreconditioner, &
-    & CMISSSolverIterativeIncompleteCholeskyPreconditioner,CMISSSolverIterativeIncompleteLUPreconditioner, &
-    & CMISSSolverIterativeAdditiveSchwarzPreconditioner
+  PUBLIC CMISS_SOLVER_ITERATIVE_NO_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_JACOBI_PRECONDITIONER, &
+    & CMISS_SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_SOR_PRECONDITIONER, &
+    & CMISS_SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER,CMISS_SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER, &
+    & CMISS_SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER
 
-  PUBLIC CMISSSolverNonlinearNewton,CMISSSolverNonlinearBFGSInverse,CMISSSolverNonlinearSQP
+  PUBLIC CMISS_SOLVER_NONLINEAR_NEWTON,CMISS_SOLVER_NONLINEAR_BFGS_INVERSE,CMISS_SOLVER_NONLINEAR_SQP
 
-  PUBLIC CMISSSolverNewtonLinesearch,CMISSSolverNewtonTrustregion
+  PUBLIC CMISS_SOLVER_NEWTON_LINESEARCH,CMISS_SOLVER_NEWTON_TRUSTREGION
 
-  PUBLIC CMISSSolverNewtonLinesearchNoNorms,CMISSSolverNewtonLinesearchNone,CMISSSolverNewtonLinesearchQuadratic, &
-    & CMISSSolverNewtonLinesearchCubic
+  PUBLIC CMISS_SOLVER_NEWTON_LINESEARCH_NONORMS,CMISS_SOLVER_NEWTON_LINESEARCH_NONE,CMISS_SOLVER_NEWTON_LINESEARCH_QUADRATIC, &
+    & CMISS_SOLVER_NEWTON_LINESEARCH_CUBIC
 
-  PUBLIC CMISSSolverNewtonJacobianNotCaclulated,CMISSSolverNewtonJacobianAnalyticCalculated, &
-    & CMISSSolverNewtonJacobianFDCalculated
+  PUBLIC CMISS_SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED,CMISS_SOLVER_NEWTON_JACOBIAN_ANALTYIC_CALCULATED, &
+    & CMISS_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
 
-  PUBLIC CMISSSolverDynamicFirstOrder,CMISSSolverDynamicSecondOrder
+  PUBLIC CMISS_SOLVER_DYNAMIC_FIRST_ORDER,CMISS_SOLVER_DYNAMIC_SECOND_ORDER
 
-  PUBLIC CMISSSolverDynamicLinear,CMISSSolverDynamicNonlinear
+  PUBLIC CMISS_SOLVER_DYNAMIC_LINEAR,CMISS_SOLVER_DYNAMIC_NONLINEAR
 
-  PUBLIC CMISSSolverDynamicFirstDegree,CMISSSolverDynamicSecondDegree,CMISSSolverDynamicThirdDegree
+  PUBLIC CMISS_SOLVER_DYNAMIC_FIRST_DEGREE,CMISS_SOLVER_DYNAMIC_SECOND_DEGREE,CMISS_SOLVER_DYNAMIC_THIRD_DEGREE
 
-  PUBLIC CMISSSolverDynamicEulerScheme,CMISSSolverDynamicBackwardEulerScheme,CMISSSolverDynamicCrankNicolsonScheme, &
-    & CMISSSolverDynamicGalerkinScheme,CMISSSolverDynamicZlamalScheme,CMISSSolverDynamicSecondDegreeGearScheme, &
-    & CMISSSolverDynamicSecondDegreeLiniger1Scheme,CMISSSolverDynamicSecondDegreeLiniger2Scheme, &
-    & CMISSSolverDynamicNewmark1Scheme,CMISSSolverDynamicNewmark2Scheme,CMISSSolverDynamicNewmark3Scheme, &
-    & CMISSSolverDynamicThirdDegreeGearScheme,CMISSSolverDynamicThirdDegreeLiniger1Scheme, &
-    & CMISSSolverDynamicThirdDegreeLiniger2Scheme,CMISSSolverDynamicHouboltScheme,CMISSSolverDynamicWilsonScheme, &
-    & CMISSSolverDynamicBossakNewmark1Scheme,CMISSSolverDynamicBossakNewmark2Scheme,CMISSSolverDynamicHilbertHughesTaylor1Scheme, &
-    & CMISSSolverDynamicHilbertHughesTaylor2Scheme,CMISSSolverDynamicUserDefinedScheme
+  PUBLIC CMISS_SOLVER_DYNAMIC_EULER_SCHEME,CMISS_SOLVER_DYNAMIC_BACKWARD_EULER_SCHEME,CMISS_SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_GALERKIN_SCHEME,CMISS_SOLVER_DYNAMIC_ZLAMAL_SCHEME,CMISS_SOLVER_DYNAMIC_SECOND_DEGREE_GEAR_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER1_SCHEME,CMISS_SOLVER_DYNAMIC_SECOND_DEGREE_LINIGER2_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_NEWMARK1_SCHEME,CMISS_SOLVER_DYNAMIC_NEWMARK2_SCHEME,CMISS_SOLVER_DYNAMIC_NEWMARK3_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_THIRD_DEGREE_GEAR_SCHEME,CMISS_SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER1_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_THIRD_DEGREE_LINIGER2_SCHEME,CMISS_SOLVER_DYNAMIC_HOUBOLT_SCHEME,CMISS_SOLVER_DYNAMIC_WILSON_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_BOSSAK_NEWMARK1_SCHEME,CMISS_SOLVER_DYNAMIC_BOSSAK_NEWMARK2_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR1_SCHEME, &
+    & CMISS_SOLVER_DYNAMIC_HILBERT_HUGHES_TAYLOR2_SCHEME,CMISS_SOLVER_DYNAMIC_USER_DEFINED_SCHEME
 
-  PUBLIC CMISSSolverDAEDifferentialOnly,CMISSSolverDAEIndex1,CMISSSolverDAEIndex2,CMISSSolverDAEIndex3
+  PUBLIC CMISS_SOLVER_DAE_DIFFERENTIAL_ONLY,CMISS_SOLVER_DAE_INDEX_1,CMISS_SOLVER_DAE_INDEX_2,CMISS_SOLVER_DAE_INDEX_3
 
-  PUBLIC CMISSSolverDAEEuler,CMISSSolverDAECrankNicolson,CMISSSolverDAERungeKutta,CMISSSolverDAEAdamsMoulton,CMISSSolverDAEBDF, &
-    & CMISSSolverDAERushLarson,CMISSSolverDAEExternal
+  PUBLIC CMISS_SOLVER_DAE_EULER,CMISS_SOLVER_DAE_CRANK_NICOLSON,CMISS_SOLVER_DAE_RUNGE_KUTTA,CMISS_SOLVER_DAE_ADAMS_MOULTON, &
+    & CMISS_SOLVER_DAE_BDF, &
+    & CMISS_SOLVER_DAE_RUSH_LARSON,CMISS_SOLVER_DAE_EXTERNAL
 
-  PUBLIC CMISSSolverDAEEulerForward,CMISSSolverDAEEulerBackward,CMISSSolverDAEEulerImproved
+  PUBLIC CMISS_SOLVER_DAE_EULER_FORWARD,CMISS_SOLVER_DAE_EULER_BACKWARD,CMISS_SOLVER_DAE_EULER_IMPROVED
 
-  PUBLIC CMISSSolverSolutionInitialiseZero,CMISSSolverSolutionInitialiseCurrentField,CMISSSolverSolutionInitialiseNoChange
+  PUBLIC CMISS_SOLVER_SOLUTION_INITIALISE_ZERO,CMISS_SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD, &
+    & CMISS_SOLVER_SOLUTION_INITIALISE_NO_CHANGE
 
-  PUBLIC CMISSSolverNoOutput,CMISSSolverProgressOutput,CMISSSolverTimingOutput,CMISSSolverSolverOutput,CMISSSolverSolverMatrixOutput
+  PUBLIC CMISS_SOLVER_NO_OUTPUT,CMISS_SOLVER_PROGRESS_OUTPUT,CMISS_SOLVER_TIMING_OUTPUT,CMISS_SOLVER_SOLVER_OUTPUT, &
+    & CMISS_SOLVER_MATRIX_OUTPUT
 
-  PUBLIC CMISSSolverEquationsSparseMatrices,CMISSSolverEquationsFullMatrices
+  PUBLIC CMISS_SOLVER_SPARSE_MATRICES,CMISS_SOLVER_FULL_MATRICES
 
   PUBLIC CMISSSolverCellMLEquationsGet
 
