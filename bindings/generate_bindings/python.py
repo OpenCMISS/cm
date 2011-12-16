@@ -425,14 +425,14 @@ def remove_prefix_and_suffix(names):
     suffix_length = 0
     if len(names) == 1:
         # Special cases we have to specify
-        if names[0] == 'CMISSControlLoopNode':
-            prefix_length = len('CMISSControlLoop')
-        elif names[0] == 'CMISSEquationsSetHelmholtzEquationTwoDim1':
-            prefix_length = len('CMISSEquationsSetHelmholtzEquation')
-        elif names[0] == 'CMISSEquationsSetPoiseuilleTwoDim1':
-            prefix_length = len('CMISSEquationsSetPoiseuille')
-        elif names[0] == 'CMISSEquationsSetFiniteElasticityCylinder':
-            prefix_length = len('CMISSEquationsSetFiniteElasticity')
+        if names[0] == 'CMISS_CONTROL_LOOP_NODE':
+            prefix_length = len('CMISS_CONTROL_LOOP')
+        elif names[0] == 'CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION')
+        elif names[0] == 'CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TWO_DIM_1':
+            prefix_length = len('CMISS_EQUATIONS_SET_POISEUILLE_EQUATION')
+        elif names[0] == 'CMISS_EQUATIONS_SET_FINITE_ELASTICITY_CYLINDER':
+            prefix_length = len('CMISS_EQUATIONS_SET_FINITE_ELASTICITY')
         else:
             sys.stderr.write("Warning: Found an unknown enum "
                     "group with only one name: %s.\n" % names[0])
@@ -453,28 +453,15 @@ def remove_prefix_and_suffix(names):
             else:
                 break
 
-        # Make sure the suffix starts with uppercase.  So we get eg.
-        # EquationsLumpingTypes.Unlumped and Lumped rather than Unl and L
-        # Do the same for the prefix so that TwoDim and ThreeDim don't become
-        # woDim and hreeDim.  This breaks with a CMISS or CMISSCellML prefix
-        # for example though.
-        #
-        # Constants will change to capitals with underscores soon so this
-        # won't be an issue then, we can just check the prefix ends with an
-        # underscore
+        # Make sure the suffix starts with an underscore.  So we get eg.
+        # EquationsLumpingTypes.UNLUMPED and LUMPED rather than UNL and L
+        # Do the same for the prefix so that TWO_DIM and THREE_DIM don't become
+        # WO_DIM and HREE_DIM.
         if prefix_length > 0:
-            prefix = names[0][0:prefix_length]
-            if prefix == PREFIX:
-                pass
-            elif prefix == PREFIX + 'CellML':
-                pass
-            elif prefix == PREFIX + 'FieldML':
-                pass
-            else:
-                while names[0][prefix_length - 1].isupper():
-                    prefix_length -= 1
+            while names[0][prefix_length - 1] != '_' and prefix_length > 0:
+                prefix_length -= 1
         if suffix_length > 0:
-            while names[0][-suffix_length].islower():
+            while names[0][-suffix_length] != '_' and suffix_length > 0:
                 suffix_length -= 1
 
     if suffix_length == 0:
@@ -483,16 +470,13 @@ def remove_prefix_and_suffix(names):
         new_names = [name[prefix_length:-suffix_length] for name in names]
     for (i, name) in enumerate(new_names):
         # Eg. NoOutputType should become None, not No
-        if name == 'No':
-            new_names[i] = 'NONE'
-        elif name == 'None':
-            # Can't assign to None
+        if name == 'NO':
             new_names[i] = 'NONE'
         elif name[0].isdigit():
             new_names[i] = digit_to_word(name[0]) + name[1:]
-        elif name.endswith('VariableType'):
+        elif name.endswith('_VARIABLE_TYPE'):
             # The NumberOfVariableSubtypes in this enum stuffs everything up
-            new_names[i] = name[:-len('VariableType')]
+            new_names[i] = name[:-len('_VARIABLE_TYPE')]
 
     return new_names
 
