@@ -220,7 +220,7 @@ class LibrarySource(object):
         # takes an allocatable array but will be removed soon anyways.
         self.public_subroutines = filter(
                 lambda r:
-                not (r.name.startswith('CMISSGeneratedMeshSurfaceGet') or
+                not (r.name.startswith('CMISSGeneratedMesh_SurfaceGet') or
                 r.name.endswith('TypesCopy')),
                 self.public_subroutines)
 
