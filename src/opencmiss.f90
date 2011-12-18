@@ -297,7 +297,7 @@ MODULE OPENCMISS
   !PUBLIC CMISS_Finalise,CMISS_Initialise
   PUBLIC CMISSFinalise,CMISSInitialise
 
-  PUBLIC CMISSBasisType,CMISSBasis_TypesCopy,CMISSBasis_Finalise,CMISSBasis_Initialise
+  PUBLIC CMISSBasisType,CMISSBasisTypesCopy,CMISSBasis_Finalise,CMISSBasis_Initialise
 
   PUBLIC CMISSBoundaryConditionsType,CMISSBoundaryConditions_Finalise,CMISSBoundaryConditions_Initialise
 
@@ -2989,7 +2989,7 @@ MODULE OPENCMISS
   !> \see OPENCMISS::Field,OPENCMISS
   !>@{
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_VALUES_SET_TYPE = FIELD_VALUES_SET_TYPE !<The parameter set corresponding to the field values (at time T+DT for dynamic problems) \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISSBoundaryConditionsSetType = FIELD_BOUNDARY_CONDITIONS_SET_TYPE !<The parameter set corresponding to the field boundary condition values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_FIELD_BOUNDARY_CONDITIONS_SET_TYPE = FIELD_BOUNDARY_CONDITIONS_SET_TYPE !<The parameter set corresponding to the field boundary condition values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_INITIAL_VALUES_SET_TYPE = FIELD_INITIAL_VALUES_SET_TYPE !<The parameter set corresponding to the field initial values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_INCREMENTAL_VALUES_SET_TYPE = FIELD_INCREMENTAL_VALUES_SET_TYPE !<The parameter set corresponding to the field incremental values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_FIELD_ANALYTIC_VALUES_SET_TYPE = FIELD_ANALYTIC_VALUES_SET_TYPE !<The parameter set corresponding to the analytic field values \see OPENCMISS_FieldParameterSetTypes,OPENCMISS
@@ -3482,6 +3482,7 @@ MODULE OPENCMISS
   PUBLIC CMISS_FIELD_SEPARATED_COMPONENT_DOF_ORDER,CMISS_FIELD_CONTIGUOUS_COMPONENT_DOF_ORDER
 
   PUBLIC CMISS_FIELD_VALUES_SET_TYPE,CMISS_FIELD_INITIAL_VALUES_SET_TYPE,CMISS_FIELD_INCREMENTAL_VALUES_SET_TYPE, &
+    & CMISS_FIELD_BOUNDARY_CONDITIONS_SET_TYPE, &
     & CMISS_FIELD_ANALYTIC_VALUES_SET_TYPE, &
     & CMISS_FIELD_PREVIOUS_VALUES_SET_TYPE,CMISS_FIELD_MEAN_PREDICTED_DISPLACEMENT_SET_TYPE,CMISS_FIELD_VELOCITY_VALUES_SET_TYPE, &
     & CMISS_FIELD_INITIAL_VELOCITY_SET_TYPE,CMISS_FIELD_PREVIOUS_VELOCITY_SET_TYPE,CMISS_FIELD_MEAN_PREDICTED_VELOCITY_SET_TYPE, &
@@ -6045,7 +6046,7 @@ CONTAINS
   !
 
   !>Copy an array of CMISSBasisTypes from C to an allocated Fortran array, for use by the C bindings
-  SUBROUTINE CMISSBasis_TypesCopy(bases,basesSize,basesPtr,err)
+  SUBROUTINE CMISSBasisTypesCopy(bases,basesSize,basesPtr,err)
 
     !Argument variables
     TYPE(CMISSBasisType), INTENT(INOUT) :: bases(:) !<On return, the array of CMISSBasisTypes
@@ -6057,7 +6058,7 @@ CONTAINS
     TYPE(C_PTR), POINTER :: BasesCPtrs(:)
     TYPE(CMISSBasisType), POINTER :: Basis
 
-    CALL ENTERS("CMISSBasis_TypesCopy",err,error,*999)
+    CALL ENTERS("CMISSBasisTypesCopy",err,error,*999)
 
     IF(C_ASSOCIATED(basesPtr)) THEN
       CALL C_F_POINTER(basesPtr,BasesCPtrs,[basesSize])
@@ -6077,14 +6078,14 @@ CONTAINS
       CALL FLAG_ERROR("bases C pointer is not associated.",ERR,error,*999)
     END IF
 
-    CALL EXITS("CMISSBasis_TypesCopy")
+    CALL EXITS("CMISSBasisTypesCopy")
     RETURN
-999 CALL ERRORS("CMISSBasis_TypesCopy",err,error)
-    CALL EXITS("CMISSBasis_TypesCopy")
+999 CALL ERRORS("CMISSBasisTypesCopy",err,error)
+    CALL EXITS("CMISSBasisTypesCopy")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
-  END SUBROUTINE CMISSBasis_TypesCopy
+  END SUBROUTINE CMISSBasisTypesCopy
 
   !
   !================================================================================================================================

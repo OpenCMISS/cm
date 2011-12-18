@@ -458,6 +458,7 @@ class Subroutine(CodeObject):
         self.source_file = source_file
         self.parameters = None
         self.interface = None
+        self.self_idx = -1
         self._get_comments()
 
     def get_parameters(self):
@@ -528,36 +529,33 @@ class Subroutine(CodeObject):
 
     def get_class(self):
         """Work out if this routine is a method of a class
+
+        Sets the self_idx attribute
+
+        Uses the routine name, which will be in the form Object_Method
+        if this is a method of a class. The same naming is also used
+        for user number routines so we have to check the parameter
+        type is correct.
         """
 
-        # Have to include this specifically as it doesn't match other CreateStart
-        # routines
-        if self.name.startswith('CMISSFieldMLOutputCreate'):
-            type_name = self.parameters[-1].type_name
-            return type_name
+        if len(self.parameters) == 0:
+            return
 
-        # CreateStart routines have last parameter that returns a new type
-        if (self.name.endswith('CreateStartObj') or
-                self.name.endswith('CreateStartRegionObj') or
-                self.name.endswith('CreateStartInterfaceObj')):
-            type_name = self.parameters[-1].type_name
-            if type_name is None:
-                # Last parameter isn't CUSTOM_TYPE
-                pass
-            elif self.name.startswith(type_name[:-len('Type')] + 'CreateStart'):
-                return type_name
-        try:
+        if '_' in self.name:
+            routine_type_name = self.name.split('_')[0]
+            # Object parameter is either first or last, it is last if this
+            # is a Create or CreateStart routine, otherwise it is first
             if self.parameters[0].var_type == Parameter.CUSTOM_TYPE:
-                type_name = self.parameters[0].type_name
-                if type_name == 'CMISSFieldMLIOType':
-                    # Have to account for routines that don't have an 'IO' in the name
-                    check_name = 'CMISSFieldML'
-                else:
-                    check_name = type_name[:-len('Type')]
-                if self.name.startswith(check_name):
-                    return type_name
-        except IndexError:
-            pass
+                param_type_name = self.parameters[0].type_name
+                if param_type_name.startswith(routine_type_name):
+                    self.self_idx = 0
+                    return param_type_name
+            if (self.parameters[-1].var_type == Parameter.CUSTOM_TYPE and
+                    self.name.find('Create') > -1):
+                param_type_name = self.parameters[-1].type_name
+                if param_type_name.startswith(routine_type_name):
+                    self.self_idx = len(self.parameters) - 1
+                    return param_type_name
 
 
 class Parameter(object):
